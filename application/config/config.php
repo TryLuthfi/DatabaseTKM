@@ -1,4 +1,11 @@
 <?php
+
+if (!defined('BASEPATH')) exit('No direct script access allowed');
+    ob_start();
+    /* Remaining Part Of your file
+     .........................................
+   */
+   
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /*

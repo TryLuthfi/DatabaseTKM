@@ -9,7 +9,7 @@
 <script src="<?= base_url('assets') ?>/dist/js/adminlte.js"></script>
 
 <!-- OPTIONAL SCRIPTS -->
-<script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
+<script src="<?= base_url('assets') ?>dist/js/demo.js"></script>
 
 <!-- PAGE PLUGINS -->
 <!-- jQuery Mapael -->

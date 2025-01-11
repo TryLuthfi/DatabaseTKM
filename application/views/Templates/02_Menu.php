@@ -6,14 +6,17 @@ $id_menu = $this->uri->segment('1');
     <nav class="main-header navbar navbar-expand navbar-grey-dark navbar-dark">
         <!-- Left navbar links -->
         <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+          <li class="nav-item">
+            <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+          </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="index3.html" class="nav-link">Monitoring Project</a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="index3.html" class="nav-link">Home</a>
+                <a href="#" class="nav-link">Logistik</a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="#" class="nav-link">Contact</a>
+                <a href="#" class="nav-link">Keuangan</a>
             </li>
         </ul>
 
@@ -94,8 +97,8 @@ $id_menu = $this->uri->segment('1');
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
         <!-- Brand Logo -->
         <a href="index3.html" class="brand-link">
-            <img src="<?= base_url('assets') ?>/dist/img/logo_size.jpg" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text font-weight-light">RAYA GUNA</span>
+            <img src="<?= base_url('assets') ?>/dist/img/logotkmsolid.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+            <span class="brand-text font-weight-light">PT. TKM</span>
         </a>
 
         <!-- Sidebar -->
@@ -103,10 +106,10 @@ $id_menu = $this->uri->segment('1');
             <!-- Sidebar user panel (optional) -->
             <div class="user-panel mt-3 pb-3 mb-3 d-flex">
                 <div class="image">
-                    <img src="<?= base_url('assets') ?>/dist/img/unnamed.png" class="img-circle elevation-2" alt="User Image">
+                    <img src="<?= base_url('assets') ?>/dist/img/avatar5.png" class="img-circle elevation-2" alt="User Image">
                 </div>
                 <div class="info">
-                    <a href="#" class="d-block"><?= $this->session->userdata('userid') ?></a>
+                    <a href="#" class="d-block"><?= $this->session->userdata('nama_user') ?></a>
                 </div>
             </div>
 
@@ -116,7 +119,7 @@ $id_menu = $this->uri->segment('1');
                     <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
                     <li class="nav-item">
-                        <a href="<?= base_url('') ?>" class="nav-link <?php if ($id_menu ==  'Dashboard') {
+                        <a href="<?= base_url('Dashboard') ?>" class="nav-link <?php if ($id_menu ==  'Dashboard') {
                                                                             echo "active";
                                                                         } ?>">
                             <i class="nav-icon fas fa-tachometer-alt"></i>
@@ -125,37 +128,121 @@ $id_menu = $this->uri->segment('1');
                             </p>
                         </a>
                     </li>
-                    <li class="nav-item has-treeview <?php if ($id_menu == 'Kodeakun' || $id_menu == 'BayarHutang') {
+
+                    <li class="nav-item has-treeview <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea') {
                                                             echo "menu-open";
                                                         } ?>">
-                        <a href="#" class="nav-link <?php if ($id_menu == 'Kodeakun' || $id_menu == 'BayarHutang') {
+                        <a href="#" class="nav-link <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea') {
                                                         echo "active";
                                                     } ?>">
                             <i class="nav-icon fas fa-money-check-alt"></i>
                             <p>
-                                Master
+                                Super Admin
                                 <i class="fas fa-angle-left right"></i>
-                                <span class="badge badge-info right">1</span>
+                                <span class="badge badge-info right">3</span>
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a href="<?= base_url('Kodeakun') ?>" class="nav-link <?php if ($id_menu == 'Kodeakun') {
-                                                                                            echo "active";
-                                                                                        } ?>">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>Kode Akun</p>
+                               <a href="<?= base_url('ListArea') ?>" class="nav-link <?php if ($id_menu == 'ListArea') {
+                                                                                           echo "active";
+                                                                                       } ?>">
+                                   <i class="far fa-circle nav-icon"></i>
+                                   <p>List Area</p>
+                                </a>
+                            </li>
+                        </ul>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                               <a href="<?= base_url('ListUser') ?>" class="nav-link <?php if ($id_menu == 'ListUser') {
+                                                                                           echo "active";
+                                                                                       } ?>">
+                                   <i class="far fa-circle nav-icon"></i>
+                                   <p>List User</p>
+                                </a>
+                            </li>
+                        </ul>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                               <a href="<?= base_url('ListBowheer') ?>" class="nav-link <?php if ($id_menu == 'ListBowheer') {
+                                                                                           echo "active";
+                                                                                       } ?>">
+                                   <i class="far fa-circle nav-icon"></i>
+                                   <p>List Bowheer</p>
                                 </a>
                             </li>
                         </ul>
                     </li>
+
+                    <li class="nav-item has-treeview <?php if ($id_menu == 'Fiberstar_PO' || $id_menu == 'Fiberstar_Project') {
+                                                            echo "menu-open";
+                                                        } ?>">
+                        <a href="#" class="nav-link <?php if ($id_menu == 'Fiberstar_PO' || $id_menu == 'Fiberstar_Project') {
+                                                        echo "active";
+                                                    } ?>">
+                            <i class="nav-icon fas fa-money-check-alt"></i>
+                            <p>
+                                Fiberstar
+                                <i class="fas fa-angle-left right"></i>
+                                <span class="badge badge-info right">2</span>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                              <a href="<?= base_url('Fiberstar_Project') ?>" class="nav-link <?php if ($id_menu == 'Fiberstar_Project') {
+                                                                                          echo "active";
+                                                                                      } ?>">
+                                  <i class="far fa-circle nav-icon"></i>
+                                  <p>List Project</p>
+                               </a>
+                              <a href="<?= base_url('Fiberstar_PO') ?>" class="nav-link <?php if ($id_menu == 'Fiberstar_PO') {
+                                                                                          echo "active";
+                                                                                      } ?>">
+                                  <i class="far fa-circle nav-icon"></i>
+                                  <p>PO & Invoice</p>
+                               </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item has-treeview <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
+                                                            echo "menu-open";
+                                                        } ?>">
+                        <a href="#" class="nav-link <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
+                                                        echo "active";
+                                                    } ?>">
+                            <i class="nav-icon fas fa-money-check-alt"></i>
+                            <p>
+                                My Republik
+                                <i class="fas fa-angle-left right"></i>
+                                <span class="badge badge-info right">2</span>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                              <a class="nav-link <?php if ($id_menu == 'MyRepublik_Project') {
+                                                                                          echo "active";
+                                                                                      } ?>">
+                                  <i class="far fa-circle nav-icon"></i>
+                                  <p>List Project</p>
+                               </a>
+                              <a class="nav-link <?php if ($id_menu == 'MyRepublik_PO') {
+                                                                                          echo "active";
+                                                                                      } ?>">
+                                  <i class="far fa-circle nav-icon"></i>
+                                  <p>PO & Invoice</p>
+                               </a>
+                            </li>
+                        </ul>
+                    </li>
+
                     <li class="nav-item">
                         <a href="<?= base_url('Rincian') ?>" class="nav-link <?php if ($id_menu == 'Rincian') {
                                                                                     echo "active";
                                                                                 } ?>">
                             <i class="nav-icon fas fa-money-bill-wave"></i>
                             <p>
-                                Rincian Akun
+                                Logistik
                                 <!-- <span class="right badge badge-danger">New</span> -->
                             </p>
                         </a>
@@ -167,8 +254,15 @@ $id_menu = $this->uri->segment('1');
                                                                             } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
-                                Neraca
-                                <!-- <span class="right badge badge-danger">New</span> -->
+                                Pendapatan
+                            </p>
+                        </a>
+                        <a href="<?= base_url('Neraca') ?>" class="nav-link <?php if ($id_menu == 'Neraca') {
+                                                                                echo "active";
+                                                                            } ?>">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Invoice
                             </p>
                         </a>
                     </li>
@@ -179,13 +273,13 @@ $id_menu = $this->uri->segment('1');
         <!-- /.sidebar -->
     </aside>
 
-    <script src="plugins/jquery/jquery.min.js"></script>
+    <script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
     <!-- Bootstrap -->
-    <script src="plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <!-- AdminLTE -->
-    <script src="dist/js/adminlte.js"></script>
+    <script src="<?= base_url('assets') ?>dist/js/adminlte.js"></script>
 
     <!-- OPTIONAL SCRIPTS -->
-    <script src="plugins/chart.js/Chart.min.js"></script>
-    <script src="dist/js/demo.js"></script>
-    <script src="dist/js/pages/dashboard3.js"></script>
+    <script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
+    <script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
+    <script src="<?= base_url('assets') ?>/dist/js/pages/dashboard3.js"></script>

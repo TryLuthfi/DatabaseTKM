@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Pembukuan harian - Masuk</title>
+    <title>Database Project TKM</title>
     <!-- Tell the browser to be responsive to screen width -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -23,7 +23,7 @@
 <body class="hold-transition login-page">
     <div class="login-box">
         <div class="login-logo">
-            <a href="<?= base_url('') ?>"><b>Aplikasi</b>Pembukuan</a>
+            <a href="<?= base_url('') ?>"><b>Database</b>Project TKM</a>
         </div>
         <!-- /.login-logo -->
         <div class="card">
