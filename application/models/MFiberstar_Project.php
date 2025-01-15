@@ -10,6 +10,12 @@ class MFiberstar_Project extends CI_Model
         return $data;
     }
 
+    public function getMainData()
+    {
+        $data = $this->db->query('SELECT * FROM `tb_project_progress_fiberstar` ORDER BY `primary_access_id_project` ASC;')->result_array();
+        return $data;
+    }
+
     public function addPO($data_array)
     {
         $res = $this->db->insert("tb_kode", $data_array);

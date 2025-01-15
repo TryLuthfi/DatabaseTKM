@@ -18,6 +18,7 @@ class Fiberstar_Project extends CI_Controller
         $data['title'] = 'LIST PO';
         $data['judul'] = 'PT. Fiberstar';
         $data['rincian'] = $this->MFiberstar_Project->getData();
+        $data['main_data'] = $this->MFiberstar_Project->getMainData();
         $data['kode_akun'] = $this->db->get('tb_project_fiberstar')->result_array();
 
         $this->load->view('Templates/01_Header', $data);
