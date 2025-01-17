@@ -10,6 +10,13 @@ class MFiberstar_PO extends CI_Model
         return $data;
     }
 
+    public function getInvoiceFiberstar()
+    {
+        $data = $this->db->query('select * from tb_project_progress_fiberstar where nilai_awal_po != 0 ORDER BY tanggal_po ASC;')->result_array();
+        return $data;
+    }
+
+
     public function addPO($data_array)
     {
         $res = $this->db->insert("tb_kode", $data_array);

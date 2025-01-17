@@ -20,9 +20,11 @@ class MAuth extends CI_Model
             if ($akun['password_user'] == $pass) {
                 $data =
                     [
-                        'id_akun' => $akun['id_user'],
+                        'id_user' => $akun['id_user'],
                         'nama_user' => $akun['nama_user'],
-                        'username' => $akun['username_user'],
+                        'username_user' => $akun['username_user'],
+                        'password_user' => $akun['password_user'],
+                        'tim_project' => $akun['tim_project'],
                         'nama_level' => $akun['nama_level']
                     ];
                 $this->session->set_userdata($data);

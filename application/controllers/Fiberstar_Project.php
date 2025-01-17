@@ -19,6 +19,21 @@ class Fiberstar_Project extends CI_Controller
         $data['judul'] = 'PT. Fiberstar';
         $data['rincian'] = $this->MFiberstar_Project->getData();
         $data['main_data'] = $this->MFiberstar_Project->getMainData();
+        $data['data_invoice'] = $this->MFiberstar_Project->getInvoice();
+        $data['unique_regional'] = $this->MFiberstar_Project->getUniqueRegional();
+        $data['unique_pic'] = $this->MFiberstar_Project->getUniquePic();
+        $data['unique_area'] = $this->MFiberstar_Project->getUniqueArea();
+        $data['unique_stagging'] = $this->MFiberstar_Project->getUniqueStagging();
+        $data['top_area_bak'] = $this->MFiberstar_Project->gettopAreaBAK();
+
+            if( $this->session->userdata('tim_project') == "HO"){
+            $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasiAll();
+            $data['total_hp_plan'] = $this->MFiberstar_Project->getTotalHpPlanAll();
+            } else {
+                $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasiArea(); 
+                $data['total_hp_plan'] = $this->MFiberstar_Project->getTotalHpPlanArea(); 
+            }
+
         $data['kode_akun'] = $this->db->get('tb_project_fiberstar')->result_array();
 
         $this->load->view('Templates/01_Header', $data);
@@ -39,30 +54,27 @@ class Fiberstar_Project extends CI_Controller
         // print_r($_POST);
         // echo ("</pre>");
 
-        $hasil_data = array(
-            'kode_provider' => 1,
-            'nomor_po' => $_POST['nomor_po'],
-            'nilai_po' => $_POST['nilai_po'],
-            'tanggal_po' => $_POST['tanggal_po'],
-            'versi_po' => $_POST['versi_po'],
-            'kode_po' => $_POST['kode_po'],
-            'status_po' => $_POST['status_po']
+        $post_progress_implementasi = array(
+            'primary_access_id_project' => $_POST['primary_access_id_project'],
+            'id_user' => $_POST['id_user'],
+            'achiev_tiang' => $_POST['achiev_tiang'],
+            'achiev_kabel_24' => $_POST['achiev_kabel_24'],
+            'achiev_kabel_48' => $_POST['achiev_kabel_48'],
+            'achiev_fat' => $_POST['achiev_fat'],
+            'achiev_closure' => $_POST['achiev_closure'],
+            'data_created' => $_POST['data_created'],
+            'keterangan_progress' => $_POST['keterangan_progress']
         );
 
-        $po = $this->db->get_where('tb_kode', ['nomor_po' => $_POST['nomor_po']])->row_array();
-        if ($_POST['nomor_po'] == $po['nomor_po']) {
-            $this->session->set_flashdata('status', 'PO sudah ada');
-            redirect('Fiberstar_Project');
-        } else {
-            $res = $this->MFiberstar_Project->addPO($hasil_data);
+        $res = $this->MFiberstar_Project->addProgressImplementasi($post_progress_implementasi);
+        $previousUrl = $this->input->server('HTTP_REFERER');
 
-            if ($res >= 1) {
-                $this->session->set_flashdata('status', 'sukses_tambah');
-                redirect("Fiberstar_Project");
-            } else {
-                $this->session->set_flashdata('status', 'gagal_tambah');
-                redirect("Fiberstar_Project");
-            }
+        if ($res >= 1) {
+            $this->session->set_flashdata('status', 'sukses_tambah');
+            redirect($previousUrl);
+        } else {
+            $this->session->set_flashdata('status', 'gagal_tambah');
+            redirect($previousUrl);
         }
     }
 
@@ -106,5 +118,33 @@ class Fiberstar_Project extends CI_Controller
             $this->session->set_flashdata('status', 'gagal_hapus');
             redirect("Fiberstar_Project");
         }
+    }
+
+    public function detailImplementasi($primary_access_id_project)
+    {
+        $primary_access_id_project = array('primary_access_id_project' => $primary_access_id_project);
+
+        $now = date('Y-m-d');
+
+        $data['title'] = 'LIST PO';
+        $data['judul'] = 'PT. Fiberstar';
+        $data['rincian'] = $this->MFiberstar_Project->getData();
+        $data['main_data'] = $this->MFiberstar_Project->getMainData();
+        $data['data_invoice'] = $this->MFiberstar_Project->getInvoice();
+        $data['total_hp_plan'] = $this->MFiberstar_Project->getTotalHpPlan();
+        $data['unique_regional'] = $this->MFiberstar_Project->getUniqueRegional();
+        $data['unique_pic'] = $this->MFiberstar_Project->getUniquePic();
+        $data['unique_area'] = $this->MFiberstar_Project->getUniqueArea();
+        $data['unique_stagging'] = $this->MFiberstar_Project->getUniqueStagging();
+        $data['top_area_bak'] = $this->MFiberstar_Project->gettopAreaBAK();
+        $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasi();
+        $data['kode_akun'] = $this->db->get('tb_project_fiberstar')->result_array();
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('Fiberstar_Project/Index', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
+
     }
 }

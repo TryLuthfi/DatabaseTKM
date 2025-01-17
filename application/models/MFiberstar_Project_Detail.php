@@ -1,0 +1,61 @@
+<?php
+defined('BASEPATH') or exit('No direct script access allowed');
+
+class MFiberstar_Project_Detail extends CI_Model
+{
+    public function getProgressImplementasi(): mixed
+    {
+        $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+        if (preg_match('/\/(\d+)$/', $currentUrl, $matches)) {
+            $number = $matches[1]; // Angka setelah slash terakhir
+        } else {
+            $number = "Tidak ada angka di belakang URL";
+        }
+
+        $data = $this->db->query('SELECT tb_project_progress_fiberstar.*, 
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.plan_tiang), 0) as plan_tiang, 
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_tiang), 0) as achiev_tiang, 
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.plan_kabel_24), 0) as plan_kabel_24,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_kabel_24), 0) as achiev_kabel_24,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.plan_kabel_48), 0) as plan_kabel_48,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_kabel_48), 0) as achiev_kabel_48,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.plan_fat), 0) as plan_fat,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_fat), 0) as achiev_fat,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.plan_closure), 0) as plan_closure,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_closure), 0) as achiev_closure
+                                    FROM tb_project_progress_fiberstar 
+                                    LEFT JOIN tb_project_implementasi_fiberstar 
+                                    ON tb_project_implementasi_fiberstar.primary_access_id_project = tb_project_progress_fiberstar.primary_access_id_project  
+                                    WHERE tb_project_progress_fiberstar.primary_access_id_project = "'.$number.'"
+                                    GROUP BY tb_project_progress_fiberstar.primary_access_id_project')
+            ->result_array();
+        return $data;
+    }
+
+    public function getDetailProgressImplementasi(): mixed
+    {
+        $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+        if (preg_match('/\/(\d+)$/', $currentUrl, $matches)) {
+            $number = $matches[1]; // Angka setelah slash terakhir
+        } else {
+            $number = "Tidak ada angka di belakang URL";
+        }
+
+        $data = $this->db->query('SELECT tb_project_progress_fiberstar.*, tb_project_implementasi_fiberstar.*, tb_user.* 
+                                  FROM tb_project_implementasi_fiberstar 
+                                  LEFT JOIN tb_project_progress_fiberstar 
+                                  ON tb_project_implementasi_fiberstar.primary_access_id_project = tb_project_progress_fiberstar.primary_access_id_project 
+                                  LEFT JOIN tb_user 
+                                  ON tb_project_implementasi_fiberstar.id_user = tb_user.id_user
+                                  WHERE tb_project_implementasi_fiberstar.primary_access_id_project = "'.$number.'"
+                                  ')
+            ->result_array();
+        return $data;
+    }
+
+    public function addProgressRAB($data_array)
+    {
+        $res = $this->db->insert("tb_project_implementasi_fiberstar", $data_array);
+        return $res;
+    }
+}

@@ -9,14 +9,11 @@ $sisa_invoice = 0;
 $total = 1;
 $total_nilai_invoice = 0;
 $total_sisa_invoice = 0;
-$jumlah_hp = 0;
-$jumlah_tiang = 0;
-$jumlah_kabel = 0;
-$jumlah_fat = 0;
 
-foreach ($rincian as $data):
+$persentase_plan = 0;
+$persentase_achiev = 0;
+$persentase_total = 0;
 
-endforeach;
 ?>
 
 <!-- <?php $now = date('Y-m-d') . " 00:00:00"; ?> -->
@@ -32,6 +29,108 @@ endforeach;
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="container-fluid">
+
+      <div class="row">
+        <div class="col-md-12" style="margin_botttom:10px;">
+          <!-- DIRECT CHAT DANGER -->
+          <div class="card card-primary direct-chat direct-chat-primary shadow-lg">
+            <div class="card-header">
+              <h3 class="card-title">FILTER DATA</h3>
+
+              <div class="card-tools">
+                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                  <i class="fas fa-minus"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="card-body" style="margin-top:10px;">
+              <div class="container-fluid">
+                <!-- Info boxes -->
+                <div class="row">
+                  <div class="col-sm-3">
+                    <div class="form-group">
+                      <label style="display: flex; justify-content: center; align-items: center;">REGIONAL</label>
+                      <select id="filter_regional" class="select2" multiple="multiple" data-placeholder="Pilih Regional"
+                        style="width: 100%;">
+                        <?php foreach ($unique_regional as $data): ?>
+                          <option value="<?php echo $data['regional_project'] ?>"> <?php echo $data['regional_project'] ?>
+                          </option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-sm-3">
+                    <div class="form-group">
+                      <label style="display: flex; justify-content: center; align-items: center;">PIC</label>
+                      <select id="filter_pic" class="select2" multiple="multiple" data-placeholder="Pilih PIC"
+                        style="width: 100%;">
+                        <?php foreach ($unique_pic as $data): ?>
+                          <option value="<?php echo $data['pic_project'] ?>"> <?php echo $data['pic_project'] ?>
+                          </option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-sm-3">
+                    <div class="form-group">
+                      <label style="display: flex; justify-content: center; align-items: center;">AREA</label>
+                      <select id="filter_area" class="select2" multiple="multiple" data-placeholder="Pilih Area"
+                        style="width: 100%;">
+                        <?php foreach ($unique_area as $data): ?>
+                          <option value="<?php echo $data['area_project'] ?>"> <?php echo $data['area_project'] ?>
+                          </option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-sm-3">
+                    <div class="form-group">
+                      <label style="display: flex; justify-content: center; align-items: center;">STAGGING</label>
+                      <select id="filter_stagging" class="select2" multiple="multiple" data-placeholder="Pilih Stagging"
+                        style="width: 100%;">
+                        <?php foreach ($unique_stagging as $data): ?>
+                          <option value="<?php echo $data['main_status'] ?>"> <?php echo $data['main_status'] ?>
+                          </option>
+                        <?php endforeach; ?>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-sm-3">
+                    <div class="form_group">
+                      <label style="display: flex; justify-content: center; align-items: center;">RANGE TANGGAL</label>
+                      <form action="<?= base_url('Rincian/search') ?>" method="POST">
+                        <div class="form-group">
+                          <div class="input-group">
+                            <div class="input-group-prepend">
+                              <span class="input-group-text">
+                                <i class="far fa-calendar-alt"></i>
+                              </span>
+                            </div>
+                            <input type="text" class="form-control float-right" id="date-range" name="date"
+                              value="<?= date('m/d/Y') ?> - <?= date('m/d/Y') ?>">
+                          </div>
+                        </div>
+                    </div>
+                  </div>
+
+                  <div class="modal-footer col-sm-12">
+                    <button type="button" id="reset_filter" class="btn btn-danger" data-dismiss="modal">Hapus</button>
+                    <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i
+                        class="fa fa-spinner fa-spin loading" style="display:none"></i> Cari </button>
+                  </div>
+                </div>
+
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <div class="container-fluid">
@@ -62,7 +161,7 @@ endforeach;
                         <div class="info-box-content">
                           <span class="info-box-text">TARGET RKAP 2025</span>
                           <span class="info-box-number">
-                            Rp. 345.000.000.000
+                            345,000,000,000 IDR
                           </span>
                         </div>
                         <!-- /.info-box-content -->
@@ -79,7 +178,9 @@ endforeach;
                         <div class="info-box-content">
                           <span class="info-box-text">ACHIEVE PO 2025</span>
                           <span class="info-box-number">
-                            Rp. 4.773.699.535 ( 1.38% )
+                            <?php foreach ($data_invoice as $dataInvoice): ?>
+                              <?= number_format($dataInvoice['nilai_awal_po'], 0, ".") . " IDR" ?>
+                            <?php endforeach ?>
                           </span>
                         </div>
                         <!-- /.info-box-content -->
@@ -95,7 +196,9 @@ endforeach;
                         <div class="info-box-content">
                           <span class="info-box-text">ACHIEVE INVOICE 2025</span>
                           <span class="info-box-number">
-                            Rp. 0 ( 0% )
+                            <?php foreach ($data_invoice as $dataInvoice): ?>
+                              <?= number_format($dataInvoice['total_invoice'], 0, ".") . " IDR" ?>
+                            <?php endforeach ?>
                           </span>
                         </div>
                         <!-- /.info-box-content -->
@@ -111,7 +214,9 @@ endforeach;
                         <div class="info-box-content">
                           <span class="info-box-text">SISA INVOICE 2025</span>
                           <span class="info-box-number">
-                            Rp. 4.773.699.535 ( 100% )
+                            <?php foreach ($data_invoice as $dataInvoice): ?>
+                              <?= number_format($dataInvoice['total_sisa_invoice'], 0, ".") . " IDR" ?>
+                            <?php endforeach ?>
                           </span>
                         </div>
                         <!-- /.info-box-content -->
@@ -154,98 +259,141 @@ endforeach;
                   <div class="col-lg-3 col-6">
                     <div class="small-box bg-info">
                       <div class="inner">
-                        <h3>820 HP</h3>
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3><?= number_format($totalHpPlan['total_hp_plan'], 0, ".") . " HP" ?></h3>
+                        <?php endforeach ?>
 
-                        <p>ATP</p>
+                        <p>TOTAL CLEANLIST</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
                       </div>
-                      <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
                     </div>
                   </div>
                   <div class="col-lg-3 col-6">
                     <div class="small-box bg-info">
                       <div class="inner">
-                        <h3>820 HP</h3>
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3><?= number_format($totalHpPlan['total_hp_canvasing'], 0, ".") . " HP" ?></h3>
+                        <?php endforeach ?>
 
-                        <p>ATP</p>
+                        <p>DONE CANVASING</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
                       </div>
-                      <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
-                    </div>
-                  </div>
-
-                </div>
-                <div class="row">
-                  <div class="col-lg-3 col-6">
-                    <div class="small-box bg-info">
-                      <div class="inner">
-                        <h3>820 HP</h3>
-
-                        <p>ATP</p>
-                      </div>
-                      <div class="icon">
-                        <i class="ion ion-bag"></i>
-                      </div>
-                      <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
                     </div>
                   </div>
                   <div class="col-lg-3 col-6">
                     <div class="small-box bg-info">
                       <div class="inner">
-                        <h3>820 HP</h3>
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3><?= number_format($totalHpPlan['total_hp_bak'], 0, ".") . " HP" ?></h3>
+                        <?php endforeach ?>
 
-                        <p>ATP</p>
+                        <p>DONE BAK</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
                       </div>
-                      <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
                     </div>
                   </div>
                   <div class="col-lg-3 col-6">
                     <div class="small-box bg-info">
                       <div class="inner">
-                        <h3>820 HP</h3>
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3><?= number_format($totalHpPlan['total_hp_spk'], 0, ".") . " HP" ?></h3>
+                        <?php endforeach ?>
 
-                        <p>ATP</p>
+                        <p>SPK RELEASED</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
                       </div>
-                      <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
-                    </div>
-                  </div>
-
-                </div>
-                <div class="row">
-                  <div class="col-lg-3 col-6">
-                    <div class="small-box bg-info">
-                      <div class="inner">
-                        <h3>820 HP</h3>
-
-                        <p>ATP</p>
-                      </div>
-                      <div class="icon">
-                        <i class="ion ion-bag"></i>
-                      </div>
-                      <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
                     </div>
                   </div>
                   <div class="col-lg-3 col-6">
                     <div class="small-box bg-info">
                       <div class="inner">
-                        <h3>820 HP</h3>
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3><?= number_format($totalHpPlan['total_hp_hld'], 0, ".") . " HP" ?></h3>
+                        <?php endforeach ?>
 
-                        <p>ATP</p>
+                        <p>DONE HLD</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
                       </div>
-                      <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3><?= number_format($totalHpPlan['total_hp_lld'], 0, ".") . " HP" ?></h3>
+                        <?php endforeach ?>
+
+                        <p>DONE LLD</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3><?= number_format($totalHpPlan['total_hp_kom'], 0, ".") . " HP" ?></h3>
+                        <?php endforeach ?>
+
+                        <p>ON PROGRESS IMPLEMENTASI</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3><?= number_format($totalHpPlan['total_hp_rfs'], 0, ".") . " HP" ?></h3>
+                        <?php endforeach ?>
+
+                        <p>DONE RFS</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3><?= number_format($totalHpPlan['total_hp_atp'], 0, ".") . " HP" ?></h3>
+                        <?php endforeach ?>
+
+                        <p>DONE ATP</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3><?= number_format($totalHpPlan['total_hp_closed'], 0, ".") . " HP" ?></h3>
+                        <?php endforeach ?>
+
+                        <p>CLOSED STAGGING</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
                     </div>
                   </div>
 
@@ -260,15 +408,12 @@ endforeach;
     </div>
 
     <div class="container-fluid">
-      <h5 class="mb-12" style="text-align: center; margin-bottom:15px; margin-top:10px;">RFS GRAFIK</h5>
-    </div>
-    <div class="container-fluid">
       <div class="row">
         <div class="col-lg-6">
           <div class="card">
             <div class="card-header border-0">
               <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved RFS Week - 01 </h3>
+                <h3 class="card-title">Achieved TOP BAK </h3>
                 <a href="javascript:void(0);">View Report</a>
               </div>
             </div>
@@ -293,11 +438,7 @@ endforeach;
 
               <div class="d-flex flex-row justify-content-end">
                 <span class="mr-2">
-                  <i class="fas fa-square text-primary"></i> Achieved RFS
-                </span>
-
-                <span>
-                  <i class="fas fa-square text-gray"></i> Target RFS
+                  <i class="fas fa-square text-primary"></i> Achieved
                 </span>
               </div>
             </div>
@@ -309,7 +450,7 @@ endforeach;
           <div class="card">
             <div class="card-header border-0">
               <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved RFS Week - 01 </h3>
+                <h3 class="card-title">Achieved TOP BAK</h3>
                 <a href="javascript:void(0);">View Report</a>
               </div>
             </div>
@@ -334,11 +475,7 @@ endforeach;
 
               <div class="d-flex flex-row justify-content-end">
                 <span class="mr-2">
-                  <i class="fas fa-square text-primary"></i> Achieved RFS
-                </span>
-
-                <span>
-                  <i class="fas fa-square text-gray"></i> Target RFS
+                  <i class="fas fa-square text-primary"></i> Achieved
                 </span>
               </div>
             </div>
@@ -349,13 +486,6 @@ endforeach;
       </div>
     </div>
   </section>
-
-
-  <div class="container-fluid">
-    <h5 class="mb-12" style="text-align: center; margin-bottom:15px; margin-top:10px;">TABEL DATA</h5>
-  </div>
-
-
 
   <!-- Main content -->
   <section class="content">
@@ -372,20 +502,16 @@ endforeach;
                 <div class="col-6">
                   <h3 class="card-title">List Cleanlist Cluster</h3>
                 </div>
-                <div class="col-5">
+                <div class="col-6">
                   <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah-manual"
                     data-toggle="modal">Tambah &nbsp;<i class="fas fa-plus"></i> </a>
-                </div>
-                <div class="col-1">
-                  <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah-file"
-                    data-toggle="modal">File &nbsp;<i class="fas fa-plus"></i> </a>
                 </div>
               </div>
 
             </div>
             <!-- /.card-header -->
             <div class="card-body table-responsive text-nowrap ">
-              <table id="tabel_pemasukan" class="table table-bordered">
+              <table id="table_data" class="table table-bordered table-hover">
                 <thead class="thead-dark">
                   <tr>
                     <th>No</th>
@@ -402,7 +528,6 @@ endforeach;
                     <th>Status BAK</th>
                     <th>Status CBN</th>
                     <th>Nomor SPK</th>
-                    <th>HP SPK</th>
                     <th>Status HLD</th>
                     <th>Status LLD</th>
                     <th>KOM</th>
@@ -413,6 +538,8 @@ endforeach;
                     <th>Stagging</th>
                     <th>Done Invoice</th>
                     <th>Sisa Invoice</th>
+                    <th>Progress</th>
+                    <th>Label</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -420,48 +547,72 @@ endforeach;
                   <?php
 
 
-                  foreach ($main_data as $data):
+                  foreach ($progress_implementasi as $data):
 
-                    // $jumlah_hp += $data['homepass_cluster_fiberstar'];
-                    // $jumlah_tiang += $data['realisasi_tiang_project_fiberstar_progress'];
-                    // $jumlah_kabel += $data['realisasi_kabel_project_fiberstar_progress'];
-                    // $jumlah_fat += $data['realisasi_fat_project_fiberstar_progress'];
+                    $persentase_plan = $data['plan_tiang'] + $data['plan_kabel_24'] + $data['plan_kabel_48'] + $data['plan_fat'] + $data['plan_closure'];
+                    $persentase_achiev = $data['achiev_tiang'] + $data['achiev_kabel_24'] + $data['achiev_kabel_48'] + $data['achiev_fat'] + $data['achiev_closure'];
+
+                    if($persentase_achiev == 0 || $persentase_plan == 0){
+                      $persentase_total = 0;
+                    } else{
+                      $persentase_total = ($persentase_achiev / $persentase_plan) * 100;
+                    }
                   
                     ?>
 
                     <tr>
-                      <td><?= $total++ ?></td>
-                      <td><?= $data['regional_project'] ?></td>
-                      <td><?= $data['area_project'] ?></td>
-                      <td><?= $data['pic_project'] ?></td>
-                      <td><?= $data['access_id_project'] ?></td>
-                      <td><?= $data['access_name_project'] ?></td>
-                      <td><?= $data['hpplan_project'] ?></td>
-                      <td><?= $data['number_po'] ?></td>
-                      <td><?= $data['tanggal_po'] ?></td>
-                      <td><?= $data['nilai_awal_po'] ?></td>
-                      <td><?= $data['tgl_canvasing'] ?></td>
-                      <td><?= $data['status_bak'] ?></td>
-                      <td><?= $data['status_cbn'] ?></td>
-                      <td><?= $data['spk_nomor'] ?></td>
-                      <td><?= $data['spk_hp'] ?></td>
-                      <td><?= $data['status_hld'] ?></td>
-                      <td><?= $data['status_lld'] ?></td>
-                      <td><?= $data['tgl_kom'] ?></td>
-                      <td><?= $data['tgl_pks'] ?></td>
-                      <td><?= $data['status_implementasi'] ?></td>
-                      <td><?= $data['tanggal_rfs'] ?></td>
-                      <td><?= $data['tanggal_atp'] ?></td>
-                      <td><?= $data['main_status'] ?></td>
-                      <td><?= $data['total_invoice'] ?></td>
-                      <td><?= $data['total_sisa_invoice'] ?></td>
+                      <td class="align-middle text-center"><?= $total++ ?></td>
+                      <td class="align-middle"><?= $data['regional_project'] ?></td>
+                      <td class="align-middle"><?= $data['area_project'] ?></td>
+                      <td class="align-middle"><?= $data['pic_project'] ?></td>
+                      <td class="align-middle"><?= $data['access_id_project'] ?></td>
+                      <td class="align-middle"><?= $data['access_name_project'] ?></td>
+                      <td class="align-middle text-center"><?= $data['hpplan_project'] ?></td>
+                      <td class="align-middle text-center"><?= $data['number_po'] ?></td>
+                      <td class="align-middle text-center"><?= $data['tanggal_po'] ?></td>
+                      <td class="align-middle"><?= $data['nilai_awal_po'] ?></td>
+                      <td class="align-middle"><?= $data['tgl_canvasing'] ?></td>
+                      <td class="align-middle"><?= $data['status_bak'] ?></td>
+                      <td class="align-middle"><?= $data['status_cbn'] ?></td>
+                      <td class="align-middle"><?= $data['spk_nomor'] ?></td>
+                      <td class="align-middle"><?= $data['status_hld'] ?></td>
+                      <td class="align-middle"><?= $data['status_lld'] ?></td>
+                      <td class="align-middle"><?= $data['tgl_kom'] ?></td>
+                      <td class="align-middle"><?= $data['tgl_pks'] ?></td>
+                      <td class="align-middle text-center"><?= $data['status_implementasi'] ?></td>
+                      <td class="align-middle"><?= $data['tanggal_rfs'] ?></td>
+                      <td class="align-middle"><?= $data['tanggal_atp'] ?></td>
+                      <td class="align-middle text-center"><?= $data['main_status'] ?></td>
+                      <td class="align-middle"><?= $data['total_invoice'] ?></td>
+                      <td class="align-middle"><?= $data['total_sisa_invoice'] ?></td>
+                      <td class="align-middle">
+                        <div class="progress progress-xs">
+                          <?php if( $persentase_total < '25'){ ?>
+                            <div class="progress-bar bg-danger" style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
+                          <?php } else if ( $persentase_total >= '25' && $persentase_total < '70'){ ?>
+                            <div class="progress-bar bg-warning" style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
+                          <?php } else if ( $persentase_total >= '70' && $persentase_total < '100'){ ?>
+                            <div class="progress-bar bg-primary" style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
+                          <?php } else { ?>
+                            <div class="progress-bar bg-success" style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
+                          <?php } ?>
+                        </div>
+                      </td>
+                      <?php if( $persentase_total < '25'){ ?>
+                        <td class="align-middle text-center"><span class="badge bg-danger"><?= round($persentase_total, 1) . "%" ?></span></td>
+                          <?php } else if ( $persentase_total >= '25' && $persentase_total < '70'){ ?>
+                            <td class="align-middle text-center"><span class="badge bg-warning"><?= round($persentase_total, 1) . "%" ?></span></td>
+                          <?php } else if ( $persentase_total >= '70' && $persentase_total < '100'){ ?>
+                            <td class="align-middle text-center"><span class="badge bg-primary"><?= round($persentase_total, 1) . "%" ?></span></td>
+                          <?php } else { ?>
+                            <td class="align-middle text-center"><span class="badge bg-success"><?= round($persentase_total, 1) . "%" ?></span></td>
+                          <?php } ?>
 
                       <td>
-                        <a href="<?php echo site_url('Fiberstar/delete/' . $data['primary_access_id_project']); ?>"
-                          id="tombol_hapus" class="btn btn-danger tombol_hapus"><i class=" fas fa-trash"></i></a>
-                        <a href="#" class="btn btn-warning"
-                          data-target="#modal-lg-edit<?= $data['primary_access_id_project'] ?>" data-toggle="modal"><i
-                            class="fas fa-edit"></i></a>
+                        <?php if ($data['main_status'] == "R. OGP Tanam Tiang" || $data['main_status'] == "S. OGP Penarikan Kabel") { ?>
+                          <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/'.$data['primary_access_id_project']); ?>" id="tombol_detail" class="btn btn-primary tombol_detail"><i class=" fas fa-share"></i></a>
+                        <?php } ?>
+                        
                       </td>
                     </tr>
 
@@ -470,8 +621,10 @@ endforeach;
                 </tbody>
                 <tfoot>
                   <tr>
-                    <th colspan="4">Total</th>
-                    <th colspan="25"></th>
+                    <th colspan="6">Total</th>
+                    <th colspan="1"><span id="totalValue">0</span></th>
+                    <th colspan="19"></th>
+                    <th colspan="1"></th>
                   </tr>
                 </tfoot>
               </table>
@@ -581,28 +734,84 @@ endforeach;
 
           <!-- modal untuk edit data -->
           <?php $tgl = date('Y-m-d'); ?>
-          <?php foreach ($rincian as $data):
+          <?php foreach ($progress_implementasi as $data):
             ?>
-            <form action="<?php echo site_url('Kodeakun/edit'); ?>" method="post">
-              <div class="modal fade" id="modal-lg-edit<?= $data['id_project_fiberstar'] ?>">
+            <form action="<?php echo site_url('Fiberstar_Project/add'); ?>" method="post">
+              <div class="modal fade" id="modal-lg-tambah_implementasi<?= $data['primary_access_id_project'] ?>">
                 <div class="modal-dialog modal-lg">
                   <div class="modal-content">
                     <div class="modal-header">
-                      <h4 class="modal-title">Edit Rincian <?= $data['id_kode'] ?></h4>
+                      <h4 class="modal-title">Tambah Implementasi</h4>
                       <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                       </button>
                     </div>
                     <div class="modal-body">
+                      <input type="hidden" name="primary_access_id_project" value="<?= $data['primary_access_id_project'] ?>">
+                      <input type="hidden" name="id_user" value="<?= $this->session->userdata('id_akun') ?>">
                       <div class="form-group">
-                        <label class="col-form-label">Kode Akun</label>
-                        <input type="text" class="form-control" name="kode_akun" autocomplete="off"
-                          value="<?= $data['kode_akun'] ?>">
+                        <label class="col-form-label">Access ID Project</label>
+                        <input readonly type="text" class="form-control" name="access_id_project" autocomplete="off"
+                          value="<?= $data['access_id_project'] ?>">
                       </div>
                       <div class="form-group">
-                        <label class="col-form-label">Nama Akun</label>
-                        <input type="text" class="form-control" name="nama_kode" autocomplete="off"
-                          value="<?= $data['nama_kode'] ?>">
+                        <label class="col-form-label">Access Name Project</label>
+                        <input readonly type="text" class="form-control" name="access_name_project" autocomplete="off"
+                          value="<?= $data['access_name_project'] ?>">
+                        </div>
+                        <div class="form-group">
+                          <label class="col-form-label">Input Date</label>
+                          <input type="date" class="form-control" name="data_created" autocomplete="off"
+                            value="<?php echo (new \DateTime())->format('Y-m-d'); ?>">
+                        </div>
+                      <div class="form-group">
+                        <label class="col-form-label">Plan Tiang / Achiev Tiang / Deviasi</label>
+                        <input readonly type="text" class="form-control" name="plan_tiang" autocomplete="off"
+                          value="<?php echo $data['plan_tiang'] ." / ". $data['achiev_tiang'] ." / ".($data['plan_tiang'] - $data['achiev_tiang']) ?>">
+                      </div>
+                      <div class="form-group">
+                        <label class="col-form-label">Daily Progress Tiang</label>
+                        <input type="text" class="form-control" name="achiev_tiang" autocomplete="off" placeholder="0">
+                      </div>
+                      <div class="form-group">
+                        <label class="col-form-label">Plan Kabel 24C / Achiev Kabel 24C / Deviasi</label>
+                        <input readonly type="text" class="form-control" name="plan_kabel_24" autocomplete="off"
+                          value="<?= $data['plan_kabel_24']  ." / ". $data['achiev_kabel_24'] ." / ".($data['plan_kabel_24'] - $data['achiev_kabel_24']) ?>">
+                      </div>
+                      <div class="form-group">
+                        <label class="col-form-label">Daily Progress Kabel 24C</label>
+                        <input type="text" class="form-control" name="achiev_kabel_24" autocomplete="off" placeholder="0">
+                      </div>
+                      <div class="form-group">
+                        <label class="col-form-label">Plan Kabel 48C / Achiev Kabel 48C / Deviasi</label>
+                        <input readonly type="text" class="form-control" name="plan_kabel_48" autocomplete="off"
+                          value="<?= $data['plan_kabel_48']  ." / ". $data['achiev_kabel_48'] ." / ".($data['plan_kabel_48'] - $data['achiev_kabel_48'])?>">
+                      </div>
+                      <div class="form-group">
+                        <label class="col-form-label">Daily Progress Kabel 48C</label>
+                        <input type="text" class="form-control" name="achiev_kabel_48" autocomplete="off" placeholder="0">
+                      </div>
+                      <div class="form-group">
+                        <label class="col-form-label">Plan FAT / Achiev FAT / Deviasi</label>
+                        <input readonly type="text" class="form-control" name="plan_fat" autocomplete="off"
+                          value="<?= $data['plan_fat']  ." / ". $data['achiev_fat'] ." / ".($data['plan_fat'] - $data['achiev_fat']) ?>">
+                      </div>
+                      <div class="form-group">
+                        <label class="col-form-label">Daily Progress FAT</label>
+                        <input type="text" class="form-control" name="achiev_fat" autocomplete="off" placeholder="0">
+                      </div>
+                      <div class="form-group">
+                        <label class="col-form-label">Plan Closure / Achiev Closure / Deviasi</label>
+                        <input readonly type="text" class="form-control" name="plan_closure" autocomplete="off"
+                          value="<?= $data['plan_closure']  ." / ". $data['achiev_closure'] ." / ".($data['plan_closure'] - $data['achiev_closure']) ?>">
+                      </div>
+                      <div class="form-group">
+                        <label class="col-form-label">Daily Progress Closure</label>
+                        <input type="text" class="form-control" name="achiev_closure" autocomplete="off" placeholder="0">
+                      </div>
+                      <div class="form-group">
+                        <label class="col-form-label">Catatan</label>
+                        <input type="text" class="form-control" name="keterangan_progress" autocomplete="off" placeholder="0">
                       </div>
                       <div class="modal-footer">
                         <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
@@ -697,14 +906,239 @@ endforeach;
     })
 
   });
-</script>
-<script type="text/javascript">
+
   $(document).ready(function () {
 
     // Format mata uang.
     $('.nilai_po2').mask('000.000.000', { reverse: true });
 
   })
+
+  $(document).ready(function () {
+    $('.card[data-card-widget="collapse"]').addClass('card-tools');
+  });
+
+  document.getElementById('reset_filter').addEventListener('click', function () {
+    const selectRegional = document.getElementById('filter_regional');
+    const selectPic = document.getElementById('filter_pic');
+    const selectArea = document.getElementById('filter_area');
+    const selectStagging = document.getElementById('filter_stagging');
+
+    const optionsRegional = selectRegional.options;
+    const optionsPic = selectPic.options;
+    const optionsArea = selectArea.options;
+    const optionsStagging = selectStagging.options;
+
+    // Hapus semua pilihan
+    for (let i = 0; i < optionsRegional.length; i++) {
+      optionsRegional[i].selected = false; // Hilangkan pilihan
+    }
+
+    for (let i = 0; i < optionsPic.length; i++) {
+      optionsPic[i].selected = false; // Hilangkan pilihan
+    }
+
+    for (let i = 0; i < optionsArea.length; i++) {
+      optionsArea[i].selected = false; // Hilangkan pilihan
+    }
+
+    for (let i = 0; i < optionsStagging.length; i++) {
+      optionsStagging[i].selected = false; // Hilangkan pilihan
+    }
+
+    // Pilih opsi default (indeks 0)
+    selectRegional.dispatchEvent(new Event('change'));
+    selectPic.dispatchEvent(new Event('change'));
+    selectArea.dispatchEvent(new Event('change'));
+    selectStagging.dispatchEvent(new Event('change'));
+  });
+
+  $(function () {
+    'use strict'
+
+    var ticksStyle = {
+      fontColor: '#495057',
+      fontStyle: 'bold'
+    }
+
+    var mode = 'index'
+    var intersect = true
+
+    var $fiberstarChartBar = $('#fiberstar_chart_bar')
+
+    const dataBar = <?php echo json_encode($top_area_bak); ?>;
+    const areaAchievBar = dataBar.map(item => item.area_project);
+    const hpAchievBar = dataBar.map(item => item.achiev_bak);
+
+
+    // eslint-disable-next-line no-unused-vars
+    var fiberstarChartBar = new Chart($fiberstarChartBar, {
+      type: 'bar',
+      data: {
+        labels: areaAchievBar,
+        datasets: [
+          {
+            backgroundColor: '#007bff',
+            borderColor: '#007bff',
+            data: hpAchievBar
+          }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        tooltips: {
+          mode: mode,
+          intersect: intersect
+        },
+        hover: {
+          mode: mode,
+          intersect: intersect
+        },
+        legend: {
+          display: false
+        },
+        scales: {
+          yAxes: [{
+            // display: false,
+            gridLines: {
+              display: true,
+              lineWidth: '4px',
+              color: 'rgba(0, 0, 0, .2)',
+              zeroLineColor: 'transparent'
+            },
+            ticks: $.extend({
+              beginAtZero: true,
+
+              // Include a dollar sign in the ticks
+              callback: function (value) {
+                return `${value.toLocaleString('id-ID')} Hp`;
+              }
+            }, ticksStyle)
+          }],
+          xAxes: [{
+            display: true,
+            gridLines: {
+              display: false
+            },
+            ticks: ticksStyle
+          }]
+        }
+      }
+    })
+
+    const dataLine = <?php echo json_encode($top_area_bak); ?>;
+    const areaAchievLine = dataLine.map(item => item.area_project);
+    const hpAchievLine = dataLine.map(item => item.achiev_bak);
+
+    var $fiberstarChartLine = $('#fiberstar_chart_line')
+    // eslint-disable-next-line no-unused-vars
+    var fiberstarChartLine = new Chart($fiberstarChartLine, {
+      data: {
+        labels: areaAchievLine,
+        datasets: [{
+          type: 'line',
+          data: hpAchievLine,
+          backgroundColor: 'transparent',
+          borderColor: '#007bff',
+          pointBorderColor: '#007bff',
+          pointBackgroundColor: '#007bff',
+          fill: false
+          // pointHoverBackgroundColor: '#007bff',
+          // pointHoverBorderColor    : '#007bff'
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        tooltips: {
+          mode: mode,
+          intersect: intersect
+        },
+        hover: {
+          mode: mode,
+          intersect: intersect
+        },
+        legend: {
+          display: false
+        },
+        scales: {
+          yAxes: [{
+            // display: false,
+            gridLines: {
+              display: true,
+              lineWidth: '4px',
+              color: 'rgba(0, 0, 0, .2)',
+              zeroLineColor: 'transparent'
+            },
+            ticks: $.extend({
+              beginAtZero: true,
+
+              // Include a dollar sign in the ticks
+              callback: function (value, index, ticks) {
+                // Format nilai ke Rupiah
+                return `${value.toLocaleString('id-ID')} Hp`;
+              }
+            }, ticksStyle)
+          }],
+          xAxes: [{
+            display: true,
+            gridLines: {
+              display: false
+            },
+            ticks: ticksStyle
+          }]
+        }
+      }
+    })
+  })
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const cards = document.querySelectorAll('[data-card-widget="collapse"]');
+    cards.forEach(card => {
+      const parentCard = card.closest('.card');
+      if (parentCard) {
+        parentCard.classList.add('collapsed-card'); // Tambahkan kelas 'collapsed-card'
+      }
+    });
+
+  });
+
+  $(document).ready(function () {
+        $('#table_data').DataTable({
+            responsive: false, // Matikan fitur Responsive
+        });
+    });
+
+    $(document).ready(function () {
+        const table = $('#table_data').DataTable({
+            footerCallback: function () {
+                updateTotal();
+            }
+        });
+
+        // Fungsi untuk menghitung total dari data yang tampil
+        function updateTotal() {
+            // Ambil semua data yang terlihat
+            const data = table.rows({ search: 'applied' }).data();
+
+            // Hitung total dari kolom Value (index 2)
+            let total = 0;
+            data.each(function (row) {
+                total += parseFloat(row[6]) || 0; // Index 2 adalah kolom Value
+            });
+
+            // Update elemen Total
+            $('#totalValue').text(total.toLocaleString('id-ID'));
+        }
+
+        // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+        table.on('draw', function () {
+            updateTotal();
+        });
+
+        // Hitung total pertama kali saat tabel dimuat
+        updateTotal();
+    });
+
 </script>
 
 <script>
@@ -732,6 +1166,140 @@ endforeach;
   $(function () {
     bsCustomFileInput.init();
   });
+</script>
+<script>
+  $(function () {
+    //Initialize Select2 Elements
+    $('.select2').select2()
+
+    //Initialize Select2 Elements
+    $('.select2bs4').select2({
+      theme: 'bootstrap4'
+    })
+
+    //Datemask dd/mm/yyyy
+    $('#datemask').inputmask('dd/mm/yyyy', { 'placeholder': 'dd/mm/yyyy' })
+    //Datemask2 mm/dd/yyyy
+    $('#datemask2').inputmask('mm/dd/yyyy', { 'placeholder': 'mm/dd/yyyy' })
+    //Money Euro
+    $('[data-mask]').inputmask()
+
+    //Date picker
+    $('#reservationdate').datetimepicker({
+      format: 'L'
+    });
+
+    //Date and time picker
+    $('#reservationdatetime').datetimepicker({ icons: { time: 'far fa-clock' } });
+
+    //Date range picker
+    $('#reservation').daterangepicker()
+    //Date range picker with time picker
+    $('#reservationtime').daterangepicker({
+      timePicker: true,
+      timePickerIncrement: 30,
+      locale: {
+        format: 'MM/DD/YYYY hh:mm A'
+      }
+    })
+    //Date range as a button
+    $('#daterange-btn').daterangepicker(
+      {
+        ranges: {
+          'Today': [moment(), moment()],
+          'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+          'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+          'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+          'This Month': [moment().startOf('month'), moment().endOf('month')],
+          'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+        },
+        startDate: moment().subtract(29, 'days'),
+        endDate: moment()
+      },
+      function (start, end) {
+        $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'))
+      }
+    )
+
+    //Timepicker
+    $('#timepicker').datetimepicker({
+      format: 'LT'
+    })
+
+    //Bootstrap Duallistbox
+    $('.duallistbox').bootstrapDualListbox()
+
+    //Colorpicker
+    $('.my-colorpicker1').colorpicker()
+    //color picker with addon
+    $('.my-colorpicker2').colorpicker()
+
+    $('.my-colorpicker2').on('colorpickerChange', function (event) {
+      $('.my-colorpicker2 .fa-square').css('color', event.color.toString());
+    })
+
+    $("input[data-bootstrap-switch]").each(function () {
+      $(this).bootstrapSwitch('state', $(this).prop('checked'));
+    })
+
+  })
+  // BS-Stepper Init
+  document.addEventListener('DOMContentLoaded', function () {
+    window.stepper = new Stepper(document.querySelector('.bs-stepper'))
+  })
+
+  // DropzoneJS Demo Code Start
+  Dropzone.autoDiscover = false
+
+  // Get the template HTML and remove it from the doumenthe template HTML and remove it from the doument
+  var previewNode = document.querySelector("#template")
+  previewNode.id = ""
+  var previewTemplate = previewNode.parentNode.innerHTML
+  previewNode.parentNode.removeChild(previewNode)
+
+  var myDropzone = new Dropzone(document.body, { // Make the whole body a dropzone
+    url: "/target-url", // Set the url
+    thumbnailWidth: 80,
+    thumbnailHeight: 80,
+    parallelUploads: 20,
+    previewTemplate: previewTemplate,
+    autoQueue: false, // Make sure the files aren't queued until manually added
+    previewsContainer: "#previews", // Define the container to display the previews
+    clickable: ".fileinput-button" // Define the element that should be used as click trigger to select files.
+  })
+
+  myDropzone.on("addedfile", function (file) {
+    // Hookup the start button
+    file.previewElement.querySelector(".start").onclick = function () { myDropzone.enqueueFile(file) }
+  })
+
+  // Update the total progress bar
+  myDropzone.on("totaluploadprogress", function (progress) {
+    document.querySelector("#total-progress .progress-bar").style.width = progress + "%"
+  })
+
+  myDropzone.on("sending", function (file) {
+    // Show the total progress bar when upload starts
+    document.querySelector("#total-progress").style.opacity = "1"
+    // And disable the start button
+    file.previewElement.querySelector(".start").setAttribute("disabled", "disabled")
+  })
+
+  // Hide the total progress bar when nothing's uploading anymore
+  myDropzone.on("queuecomplete", function (progress) {
+    document.querySelector("#total-progress").style.opacity = "0"
+  })
+
+  // Setup the buttons for all transfers
+  // The "add files" button doesn't need to be setup because the config
+  // `clickable` has already been specified.
+  document.querySelector("#actions .start").onclick = function () {
+    myDropzone.enqueueFiles(myDropzone.getFilesWithStatus(Dropzone.ADDED))
+  }
+  document.querySelector("#actions .cancel").onclick = function () {
+    myDropzone.removeAllFiles(true)
+  }
+  // DropzoneJS Demo Code End
 </script>
 <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
@@ -803,6 +1371,6 @@ endforeach;
 <!-- Font Awesome Icons -->
 <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartfibertstar.js"></script>
+<!-- <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartfibertstar.js"></script> -->
 <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartmyrep.js"></script>
 <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardrkap.js"></script>
