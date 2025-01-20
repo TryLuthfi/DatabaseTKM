@@ -89,9 +89,16 @@ class MFiberstar_Project extends CI_Model
         return $data;
     }
 
+    public function gettopAreaCleanlist(): mixed
+    {
+        $data = $this->db->query('SELECT *, ROUND(SUM(hpplan_project)) as achiev_cleanlist from tb_project_progress_fiberstar GROUP BY area_project order by achiev_cleanlist DESC LIMIT 5;')
+            ->result_array();
+        return $data;
+    }
+
     public function gettopAreaBAK(): mixed
     {
-        $data = $this->db->query('select *, SUM(hp_bak) as achiev_bak from tb_project_progress_fiberstar GROUP BY area_project order by achiev_bak DESC LIMIT 5;')
+        $data = $this->db->query('SELECT *, SUM(hp_bak) as achiev_bak from tb_project_progress_fiberstar GROUP BY area_project order by achiev_bak DESC LIMIT 5;')
             ->result_array();
         return $data;
     }

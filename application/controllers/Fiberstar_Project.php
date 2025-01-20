@@ -24,15 +24,16 @@ class Fiberstar_Project extends CI_Controller
         $data['unique_pic'] = $this->MFiberstar_Project->getUniquePic();
         $data['unique_area'] = $this->MFiberstar_Project->getUniqueArea();
         $data['unique_stagging'] = $this->MFiberstar_Project->getUniqueStagging();
+        $data['top_area_cleanlist'] = $this->MFiberstar_Project->gettopAreaCleanlist();
         $data['top_area_bak'] = $this->MFiberstar_Project->gettopAreaBAK();
 
-            if( $this->session->userdata('tim_project') == "HO"){
+        if ($this->session->userdata('tim_project') == "HO") {
             $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasiAll();
             $data['total_hp_plan'] = $this->MFiberstar_Project->getTotalHpPlanAll();
-            } else {
-                $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasiArea(); 
-                $data['total_hp_plan'] = $this->MFiberstar_Project->getTotalHpPlanArea(); 
-            }
+        } else {
+            $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasiArea();
+            $data['total_hp_plan'] = $this->MFiberstar_Project->getTotalHpPlanArea();
+        }
 
         $data['kode_akun'] = $this->db->get('tb_project_fiberstar')->result_array();
 
@@ -47,6 +48,7 @@ class Fiberstar_Project extends CI_Controller
         //   $total_nilai_po +=
         // endforeach
     }
+
 
     public function add()
     {
@@ -81,15 +83,15 @@ class Fiberstar_Project extends CI_Controller
     public function edit()
     {
 
-      $data_array = array(
-          'kode_provider' => 1,
-          'nomor_po' => $_POST['nomor_po'],
-          'nilai_po' => $_POST['nilai_po'],
-          'tanggal_po' => $_POST['tanggal_po'],
-          'versi_po' => $_POST['versi_po'],
-          'kode_po' => $_POST['kode_po'],
-          'status_po' => $_POST['status_po']
-      );
+        $data_array = array(
+            'kode_provider' => 1,
+            'nomor_po' => $_POST['nomor_po'],
+            'nilai_po' => $_POST['nilai_po'],
+            'tanggal_po' => $_POST['tanggal_po'],
+            'versi_po' => $_POST['versi_po'],
+            'kode_po' => $_POST['kode_po'],
+            'status_po' => $_POST['status_po']
+        );
 
         $where = array('kode_akun' => $_POST['kode_akun']);
 

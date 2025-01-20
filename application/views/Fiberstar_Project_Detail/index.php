@@ -62,7 +62,7 @@ $persentase_total = 0;
                 <dt>Regional</dt>
                 <dd>  <?= $data['regional_project'] ?></dd>
                 <dt>Area</dt>
-                <dd> - <?= $data['area_project'] ?></dd>
+                <dd>  <?= $data['area_project'] ?></dd>
                 <dt>PIC</dt>
                 <dd>  <?= $data['pic_project'] ?></dd>
                 <dt>Access ID</dt>
@@ -167,7 +167,7 @@ $persentase_total = 0;
                       <tr>
                         <td><?= $total++ ?></td>
                         <td><?= $data['tanggal_po'] ?></td>
-                        <td><?= $data['nilai_awal_po'] ?></td>
+                        <td><?= number_format(floatval($data['nilai_awal_po']), 0, ".") ?></td>
                         <td><?= $data['tgl_canvasing'] ?></td>
                         <td><?= $data['status_bak'] ?></td>
                         <td><?= $data['status_cbn'] ?></td>
@@ -178,8 +178,8 @@ $persentase_total = 0;
                         <td><?= $data['tanggal_rfs'] ?></td>
                         <td><?= $data['tanggal_atp'] ?></td>
                         <td><?= $data['main_status'] ?></td>
-                        <td><?= $data['total_invoice'] ?></td>
-                        <td><?= $data['total_sisa_invoice'] ?></td>
+                        <td><?= number_format(floatval($data['total_invoice']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['total_sisa_invoice']), 0, ".") ?></td>
 
                       </tr>
 
@@ -276,7 +276,7 @@ $persentase_total = 0;
 
                       <tr>
                         <td><?= $total++ ?></td>
-                        <td><?= number_format($data['hp_hld'], 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['hp_hld']), 0, ".") ?></td>
                         <td><?= $data['plan_tiang'] ?></td>
                         <td><?= $data['achiev_tiang'] ?></td>
                         <td><?= $data['plan_kabel_24'] ?></td>
@@ -445,7 +445,7 @@ $persentase_total = 0;
                         <div class="form-group">
                           <label class="col-form-label">Input Date</label>
                           <input type="date" class="form-control" name="data_created" autocomplete="off"
-                            placeholder="<?php echo (new \DateTime())->format('Y-m-d'); ?>">
+                            value="<?php echo (new \DateTime())->format('Y-m-d'); ?>">
                         </div>
                         <div class="form-group">
                           <label class="col-form-label">Homepass HLD</label>

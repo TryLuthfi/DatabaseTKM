@@ -42,7 +42,7 @@ $persentase_total = 0;
 
               <div class="card-tools">
                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                  <i class="fas fa-minus"></i>
+                  <i class="fas fa-plus"></i>
                 </button>
               </div>
             </div>
@@ -102,25 +102,24 @@ $persentase_total = 0;
                   <div class="col-sm-3">
                     <div class="form_group">
                       <label style="display: flex; justify-content: center; align-items: center;">RANGE TANGGAL</label>
-                      <form action="<?= base_url('Rincian/search') ?>" method="POST">
-                        <div class="form-group">
-                          <div class="input-group">
-                            <div class="input-group-prepend">
-                              <span class="input-group-text">
-                                <i class="far fa-calendar-alt"></i>
-                              </span>
-                            </div>
-                            <input type="text" class="form-control float-right" id="date-range" name="date"
-                              value="<?= date('m/d/Y') ?> - <?= date('m/d/Y') ?>">
+                      <div class="form-group">
+                        <div class="input-group">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text">
+                              <i class="far fa-calendar-alt"></i>
+                            </span>
                           </div>
+                          <input type="text" class="form-control float-right" id="date-range" name="date"
+                            value="<?= date('m/d/Y') ?> - <?= date('m/d/Y') ?>">
                         </div>
+                      </div>
                     </div>
                   </div>
 
                   <div class="modal-footer col-sm-12">
                     <button type="button" id="reset_filter" class="btn btn-danger" data-dismiss="modal">Hapus</button>
-                    <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i
-                        class="fa fa-spinner fa-spin loading" style="display:none"></i> Cari </button>
+                    <button id="btnFilterDataProject" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading"
+                        style="display:none"></i> Cari </button>
                   </div>
                 </div>
 
@@ -144,7 +143,7 @@ $persentase_total = 0;
 
               <div class="card-tools">
                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                  <i class="fas fa-minus"></i>
+                  <i class="fas fa-plus"></i>
                 </button>
               </div>
             </div>
@@ -177,13 +176,12 @@ $persentase_total = 0;
                             class="fas fa-file-invoice-dollar"></i></span>
                         <div class="info-box-content">
                           <span class="info-box-text">ACHIEVE PO 2025</span>
-                          <span class="info-box-number">
+                          <span class="info-box-number" id="idtotalDonePO">
                             <?php foreach ($data_invoice as $dataInvoice): ?>
-                              <?= number_format($dataInvoice['nilai_awal_po'], 0, ".") . " IDR" ?>
+                              <?= number_format(floatval($dataInvoice['nilai_awal_po']), 0, ".") . " IDR" ?>
                             <?php endforeach ?>
                           </span>
                         </div>
-                        <!-- /.info-box-content -->
                       </div>
                     </a>
                     <!-- /.info-box -->
@@ -195,9 +193,9 @@ $persentase_total = 0;
                         <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
                         <div class="info-box-content">
                           <span class="info-box-text">ACHIEVE INVOICE 2025</span>
-                          <span class="info-box-number">
+                          <span class="info-box-number" id="idtotalDoneInvoice">
                             <?php foreach ($data_invoice as $dataInvoice): ?>
-                              <?= number_format($dataInvoice['total_invoice'], 0, ".") . " IDR" ?>
+                              <?= number_format(floatval($dataInvoice['total_invoice']), 0, ".") . " IDR" ?>
                             <?php endforeach ?>
                           </span>
                         </div>
@@ -213,9 +211,9 @@ $persentase_total = 0;
                         <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
                         <div class="info-box-content">
                           <span class="info-box-text">SISA INVOICE 2025</span>
-                          <span class="info-box-number">
+                          <span class="info-box-number" id="idtotalSisaInvoice">
                             <?php foreach ($data_invoice as $dataInvoice): ?>
-                              <?= number_format($dataInvoice['total_sisa_invoice'], 0, ".") . " IDR" ?>
+                              <?= number_format(floatval($dataInvoice['total_sisa_invoice']), 0, ".") . " IDR" ?>
                             <?php endforeach ?>
                           </span>
                         </div>
@@ -224,10 +222,7 @@ $persentase_total = 0;
                     </a>
                     <!-- /.info-box -->
                   </div>
-
                 </div>
-
-
               </div>
             </div>
           </div>
@@ -247,7 +242,7 @@ $persentase_total = 0;
 
               <div class="card-tools">
                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                  <i class="fas fa-minus"></i>
+                  <i class="fas fa-plus"></i>
                 </button>
               </div>
             </div>
@@ -260,7 +255,7 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3><?= number_format($totalHpPlan['total_hp_plan'], 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_plan"><?= number_format(floatval($totalHpPlan['total_hp_plan']), 0, ".") . " HP" ?></h3>
                         <?php endforeach ?>
 
                         <p>TOTAL CLEANLIST</p>
@@ -274,7 +269,7 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3><?= number_format($totalHpPlan['total_hp_canvasing'], 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_canvasing"><?= number_format(floatval($totalHpPlan['total_hp_canvasing']), 0, ".") . " HP" ?></h3>
                         <?php endforeach ?>
 
                         <p>DONE CANVASING</p>
@@ -288,7 +283,7 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3><?= number_format($totalHpPlan['total_hp_bak'], 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_bak"><?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ".") . " HP" ?></h3>
                         <?php endforeach ?>
 
                         <p>DONE BAK</p>
@@ -302,7 +297,7 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3><?= number_format($totalHpPlan['total_hp_spk'], 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_spk"><?= number_format(floatval($totalHpPlan['total_hp_spk']), 0, ".") . " HP" ?></h3>
                         <?php endforeach ?>
 
                         <p>SPK RELEASED</p>
@@ -316,7 +311,7 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3><?= number_format($totalHpPlan['total_hp_hld'], 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_hld"><?= number_format(floatval($totalHpPlan['total_hp_hld']), 0, ".") . " HP" ?></h3>
                         <?php endforeach ?>
 
                         <p>DONE HLD</p>
@@ -330,7 +325,7 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3><?= number_format($totalHpPlan['total_hp_lld'], 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_lld"><?= number_format(floatval($totalHpPlan['total_hp_lld']), 0, ".") . " HP" ?></h3>
                         <?php endforeach ?>
 
                         <p>DONE LLD</p>
@@ -344,7 +339,7 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3><?= number_format($totalHpPlan['total_hp_kom'], 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_kom"><?= number_format(floatval($totalHpPlan['total_hp_kom']), 0, ".") . " HP" ?></h3>
                         <?php endforeach ?>
 
                         <p>ON PROGRESS IMPLEMENTASI</p>
@@ -358,7 +353,7 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3><?= number_format($totalHpPlan['total_hp_rfs'], 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_rfs"><?= number_format(floatval($totalHpPlan['total_hp_rfs']), 0, ".") . " HP" ?></h3>
                         <?php endforeach ?>
 
                         <p>DONE RFS</p>
@@ -372,7 +367,7 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3><?= number_format($totalHpPlan['total_hp_atp'], 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_atp"><?= number_format(floatval($totalHpPlan['total_hp_atp']), 0, ".") . " HP" ?></h3>
                         <?php endforeach ?>
 
                         <p>DONE ATP</p>
@@ -386,7 +381,7 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3><?= number_format($totalHpPlan['total_hp_closed'], 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_closed"><?= number_format(floatval($totalHpPlan['total_hp_closed']), 0, ".") . " HP" ?></h3>
                         <?php endforeach ?>
 
                         <p>CLOSED STAGGING</p>
@@ -409,31 +404,33 @@ $persentase_total = 0;
 
     <div class="container-fluid">
       <div class="row">
-        <div class="col-lg-6">
+      <div class="col-lg-6">
           <div class="card">
             <div class="card-header border-0">
               <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved TOP BAK </h3>
+                <h3 class="card-title">Top Area Cleanlist</h3>
                 <a href="javascript:void(0);">View Report</a>
               </div>
             </div>
             <div class="card-body">
               <div class="d-flex">
                 <p class="d-flex flex-column">
-                  <span class="text-bold text-lg">18.280 HP</span>
-                  <span>TOP Area</span>
+                <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                  <span class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_plan']), 0, ".") . " HP" ?></span>
+                <?php endforeach ?>
+                  <span>TOP AREA</span>
                 </p>
                 <p class="ml-auto d-flex flex-column text-right">
                   <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> 80.1%
+                    <i class="fas fa-arrow-up"></i> 57.0%
                   </span>
-                  <span class="text-muted">Week - 01</span>
+                  <span class="text-muted">By RKAP ( % )</span>
                 </p>
               </div>
               <!-- /.d-flex -->
 
               <div class="position-relative mb-4">
-                <canvas id="fiberstar_chart_line" height="200"></canvas>
+                <canvas id="fiberstar_chart_bar_cleanlist" height="200"></canvas>
               </div>
 
               <div class="d-flex flex-row justify-content-end">
@@ -443,34 +440,36 @@ $persentase_total = 0;
               </div>
             </div>
           </div>
-          <!-- /.card -->
+
         </div>
 
         <div class="col-lg-6">
           <div class="card">
             <div class="card-header border-0">
               <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved TOP BAK</h3>
+                <h3 class="card-title">Top Area BAK</h3>
                 <a href="javascript:void(0);">View Report</a>
               </div>
             </div>
             <div class="card-body">
               <div class="d-flex">
                 <p class="d-flex flex-column">
-                  <span class="text-bold text-lg">18.280 HP</span>
+                <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                  <span class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ".") . " HP" ?></span>
+                <?php endforeach ?>
                   <span>TOP AREA</span>
                 </p>
                 <p class="ml-auto d-flex flex-column text-right">
                   <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> 80.1%
+                    <i class="fas fa-arrow-up"></i> 17.0%
                   </span>
-                  <span class="text-muted">Week - 01</span>
+                  <span class="text-muted">By Cleanlist ( % )</span>
                 </p>
               </div>
               <!-- /.d-flex -->
 
               <div class="position-relative mb-4">
-                <canvas id="fiberstar_chart_bar" height="200"></canvas>
+                <canvas id="fiberstar_chart_bar_bak" height="200"></canvas>
               </div>
 
               <div class="d-flex flex-row justify-content-end">
@@ -486,6 +485,7 @@ $persentase_total = 0;
       </div>
     </div>
   </section>
+
 
   <!-- Main content -->
   <section class="content">
@@ -514,33 +514,33 @@ $persentase_total = 0;
               <table id="table_data" class="table table-bordered table-hover">
                 <thead class="thead-dark">
                   <tr>
-                    <th>No</th>
-                    <th>Regional</th>
-                    <th>Area</th>
-                    <th>PIC</th>
-                    <th>Access ID</th>
-                    <th>Access Name</th>
-                    <th>HP Plan</th>
-                    <th>Nomor PO</th>
-                    <th>Tanggal PO</th>
-                    <th>Nilai PO</th>
-                    <th>Canvasing</th>
-                    <th>Status BAK</th>
-                    <th>Status CBN</th>
-                    <th>Nomor SPK</th>
-                    <th>Status HLD</th>
-                    <th>Status LLD</th>
-                    <th>KOM</th>
-                    <th>PKS</th>
-                    <th>Status Implementasi</th>
-                    <th>RFS</th>
-                    <th>ATP</th>
-                    <th>Stagging</th>
-                    <th>Done Invoice</th>
-                    <th>Sisa Invoice</th>
-                    <th>Progress</th>
-                    <th>Label</th>
-                    <th>Action</th>
+                    <th>No</th> <!-- 0 -->
+                    <th>Regional</th> <!-- 1 -->
+                    <th>Area</th> <!-- 2 -->
+                    <th>PIC</th> <!-- 3 -->
+                    <th>Access ID</th> <!-- 4 -->
+                    <th>Access Name</th> <!-- 5 -->
+                    <th>HP Plan</th> <!-- 6 -->
+                    <th>Nomor PO</th> <!-- 7 -->
+                    <th>Tanggal PO</th> <!-- 8 -->
+                    <th>Nilai PO</th> <!-- 9 -->
+                    <th>Canvasing</th> <!-- 10 -->
+                    <th>Status BAK</th> <!-- 11 -->
+                    <th>Status CBN</th> <!-- 12 -->
+                    <th>Nomor SPK</th> <!-- 13 -->
+                    <th>Status HLD</th> <!-- 14 -->
+                    <th>Status LLD</th> <!-- 15 -->
+                    <th>KOM</th> <!-- 16 -->
+                    <th>PKS</th> <!-- 17 -->
+                    <th>Status Implementasi</th> <!-- 18 -->
+                    <th>RFS</th> <!-- 19 -->
+                    <th>ATP</th> <!-- 20 -->
+                    <th>Stagging</th> <!-- 21 -->
+                    <th>Done Invoice</th> <!-- 22 -->
+                    <th>Sisa Invoice</th> <!-- 23 -->
+                    <th>Progress</th> <!-- 24 -->
+                    <th>Label</th> <!-- 25 -->
+                    <th>Action</th> <!-- 26 -->
                   </tr>
                 </thead>
                 <tbody>
@@ -552,12 +552,11 @@ $persentase_total = 0;
                     $persentase_plan = $data['plan_tiang'] + $data['plan_kabel_24'] + $data['plan_kabel_48'] + $data['plan_fat'] + $data['plan_closure'];
                     $persentase_achiev = $data['achiev_tiang'] + $data['achiev_kabel_24'] + $data['achiev_kabel_48'] + $data['achiev_fat'] + $data['achiev_closure'];
 
-                    if($persentase_achiev == 0 || $persentase_plan == 0){
+                    if ($persentase_achiev == 0 || $persentase_plan == 0) {
                       $persentase_total = 0;
-                    } else{
+                    } else {
                       $persentase_total = ($persentase_achiev / $persentase_plan) * 100;
                     }
-                  
                     ?>
 
                     <tr>
@@ -567,10 +566,10 @@ $persentase_total = 0;
                       <td class="align-middle"><?= $data['pic_project'] ?></td>
                       <td class="align-middle"><?= $data['access_id_project'] ?></td>
                       <td class="align-middle"><?= $data['access_name_project'] ?></td>
-                      <td class="align-middle text-center"><?= $data['hpplan_project'] ?></td>
+                      <td class="align-middle text-center"><?= number_format(floatval($data['hpplan_project']), 0, ".") ?></td>
                       <td class="align-middle text-center"><?= $data['number_po'] ?></td>
                       <td class="align-middle text-center"><?= $data['tanggal_po'] ?></td>
-                      <td class="align-middle"><?= $data['nilai_awal_po'] ?></td>
+                      <td class="align-middle"><?= number_format(floatval($data['nilai_awal_po']), 0, ".") ?></td>
                       <td class="align-middle"><?= $data['tgl_canvasing'] ?></td>
                       <td class="align-middle"><?= $data['status_bak'] ?></td>
                       <td class="align-middle"><?= $data['status_cbn'] ?></td>
@@ -583,36 +582,45 @@ $persentase_total = 0;
                       <td class="align-middle"><?= $data['tanggal_rfs'] ?></td>
                       <td class="align-middle"><?= $data['tanggal_atp'] ?></td>
                       <td class="align-middle text-center"><?= $data['main_status'] ?></td>
-                      <td class="align-middle"><?= $data['total_invoice'] ?></td>
-                      <td class="align-middle"><?= $data['total_sisa_invoice'] ?></td>
+                      <td class="align-middle"><?= number_format(floatval($data['total_invoice']), 0, ".") ?></td>
+                      <td class="align-middle"><?= number_format(floatval($data['total_sisa_invoice']), 0, ".") ?></td>
                       <td class="align-middle">
                         <div class="progress progress-xs">
-                          <?php if( $persentase_total < '25'){ ?>
-                            <div class="progress-bar bg-danger" style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
-                          <?php } else if ( $persentase_total >= '25' && $persentase_total < '70'){ ?>
-                            <div class="progress-bar bg-warning" style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
-                          <?php } else if ( $persentase_total >= '70' && $persentase_total < '100'){ ?>
-                            <div class="progress-bar bg-primary" style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
+                          <?php if ($persentase_total < '25') { ?>
+                            <div class="progress-bar bg-danger" style="width: <?= round($persentase_total, 1) . "%" ?>">
+                            </div>
+                          <?php } else if ($persentase_total >= '25' && $persentase_total < '70') { ?>
+                              <div class="progress-bar bg-warning" style="width: <?= round($persentase_total, 1) . "%" ?>">
+                              </div>
+                          <?php } else if ($persentase_total >= '70' && $persentase_total < '100') { ?>
+                                <div class="progress-bar bg-primary" style="width: <?= round($persentase_total, 1) . "%" ?>">
+                                </div>
                           <?php } else { ?>
-                            <div class="progress-bar bg-success" style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
+                                <div class="progress-bar bg-success" style="width: <?= round($persentase_total, 1) . "%" ?>">
+                                </div>
                           <?php } ?>
                         </div>
                       </td>
-                      <?php if( $persentase_total < '25'){ ?>
-                        <td class="align-middle text-center"><span class="badge bg-danger"><?= round($persentase_total, 1) . "%" ?></span></td>
-                          <?php } else if ( $persentase_total >= '25' && $persentase_total < '70'){ ?>
-                            <td class="align-middle text-center"><span class="badge bg-warning"><?= round($persentase_total, 1) . "%" ?></span></td>
-                          <?php } else if ( $persentase_total >= '70' && $persentase_total < '100'){ ?>
-                            <td class="align-middle text-center"><span class="badge bg-primary"><?= round($persentase_total, 1) . "%" ?></span></td>
-                          <?php } else { ?>
-                            <td class="align-middle text-center"><span class="badge bg-success"><?= round($persentase_total, 1) . "%" ?></span></td>
-                          <?php } ?>
+                      <?php if ($persentase_total < '25') { ?>
+                        <td class="align-middle text-center"><span
+                            class="badge bg-danger"><?= round($persentase_total, 1) . "%" ?></span></td>
+                      <?php } else if ($persentase_total >= '25' && $persentase_total < '70') { ?>
+                          <td class="align-middle text-center"><span
+                              class="badge bg-warning"><?= round($persentase_total, 1) . "%" ?></span></td>
+                      <?php } else if ($persentase_total >= '70' && $persentase_total < '100') { ?>
+                            <td class="align-middle text-center"><span
+                                class="badge bg-primary"><?= round($persentase_total, 1) . "%" ?></span></td>
+                      <?php } else { ?>
+                            <td class="align-middle text-center"><span
+                                class="badge bg-success"><?= round($persentase_total, 1) . "%" ?></span></td>
+                      <?php } ?>
 
                       <td>
-                        <?php if ($data['main_status'] == "R. OGP Tanam Tiang" || $data['main_status'] == "S. OGP Penarikan Kabel") { ?>
-                          <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/'.$data['primary_access_id_project']); ?>" id="tombol_detail" class="btn btn-primary tombol_detail"><i class=" fas fa-share"></i></a>
+                        <?php if ($data['status_lld'] == "OK") { ?>
+                          <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                            id="tombol_detail" class="btn btn-primary tombol_detail"><i class=" fas fa-share"></i></a>
                         <?php } ?>
-                        
+
                       </td>
                     </tr>
 
@@ -622,9 +630,14 @@ $persentase_total = 0;
                 <tfoot>
                   <tr>
                     <th colspan="6">Total</th>
-                    <th colspan="1"><span id="totalValue">0</span></th>
-                    <th colspan="19"></th>
-                    <th colspan="1"></th>
+                    <th colspan="1"><span id="totalHP">0</span></th>
+                    <th colspan="2"></th>
+                    <th colspan="1"><span id="totalPO">0</span></th>
+                    <th colspan="12"></th>
+                    <th colspan="1"><span id="totalDoneInvoice">0</span></th>
+                    <th colspan="1"><span id="totalSisaInvoice">0</span></th>
+                    <th colspan="3"></th>
+                    <!--  27 -->
                   </tr>
                 </tfoot>
               </table>
@@ -747,7 +760,8 @@ $persentase_total = 0;
                       </button>
                     </div>
                     <div class="modal-body">
-                      <input type="hidden" name="primary_access_id_project" value="<?= $data['primary_access_id_project'] ?>">
+                      <input type="hidden" name="primary_access_id_project"
+                        value="<?= $data['primary_access_id_project'] ?>">
                       <input type="hidden" name="id_user" value="<?= $this->session->userdata('id_akun') ?>">
                       <div class="form-group">
                         <label class="col-form-label">Access ID Project</label>
@@ -758,16 +772,16 @@ $persentase_total = 0;
                         <label class="col-form-label">Access Name Project</label>
                         <input readonly type="text" class="form-control" name="access_name_project" autocomplete="off"
                           value="<?= $data['access_name_project'] ?>">
-                        </div>
-                        <div class="form-group">
-                          <label class="col-form-label">Input Date</label>
-                          <input type="date" class="form-control" name="data_created" autocomplete="off"
-                            value="<?php echo (new \DateTime())->format('Y-m-d'); ?>">
-                        </div>
+                      </div>
+                      <div class="form-group">
+                        <label class="col-form-label">Input Date</label>
+                        <input type="date" class="form-control" name="data_created" autocomplete="off"
+                          value="<?php echo (new \DateTime())->format('Y-m-d'); ?>">
+                      </div>
                       <div class="form-group">
                         <label class="col-form-label">Plan Tiang / Achiev Tiang / Deviasi</label>
                         <input readonly type="text" class="form-control" name="plan_tiang" autocomplete="off"
-                          value="<?php echo $data['plan_tiang'] ." / ". $data['achiev_tiang'] ." / ".($data['plan_tiang'] - $data['achiev_tiang']) ?>">
+                          value="<?php echo $data['plan_tiang'] . " / " . $data['achiev_tiang'] . " / " . ($data['plan_tiang'] - $data['achiev_tiang']) ?>">
                       </div>
                       <div class="form-group">
                         <label class="col-form-label">Daily Progress Tiang</label>
@@ -776,7 +790,7 @@ $persentase_total = 0;
                       <div class="form-group">
                         <label class="col-form-label">Plan Kabel 24C / Achiev Kabel 24C / Deviasi</label>
                         <input readonly type="text" class="form-control" name="plan_kabel_24" autocomplete="off"
-                          value="<?= $data['plan_kabel_24']  ." / ". $data['achiev_kabel_24'] ." / ".($data['plan_kabel_24'] - $data['achiev_kabel_24']) ?>">
+                          value="<?= $data['plan_kabel_24'] . " / " . $data['achiev_kabel_24'] . " / " . ($data['plan_kabel_24'] - $data['achiev_kabel_24']) ?>">
                       </div>
                       <div class="form-group">
                         <label class="col-form-label">Daily Progress Kabel 24C</label>
@@ -785,7 +799,7 @@ $persentase_total = 0;
                       <div class="form-group">
                         <label class="col-form-label">Plan Kabel 48C / Achiev Kabel 48C / Deviasi</label>
                         <input readonly type="text" class="form-control" name="plan_kabel_48" autocomplete="off"
-                          value="<?= $data['plan_kabel_48']  ." / ". $data['achiev_kabel_48'] ." / ".($data['plan_kabel_48'] - $data['achiev_kabel_48'])?>">
+                          value="<?= $data['plan_kabel_48'] . " / " . $data['achiev_kabel_48'] . " / " . ($data['plan_kabel_48'] - $data['achiev_kabel_48']) ?>">
                       </div>
                       <div class="form-group">
                         <label class="col-form-label">Daily Progress Kabel 48C</label>
@@ -794,7 +808,7 @@ $persentase_total = 0;
                       <div class="form-group">
                         <label class="col-form-label">Plan FAT / Achiev FAT / Deviasi</label>
                         <input readonly type="text" class="form-control" name="plan_fat" autocomplete="off"
-                          value="<?= $data['plan_fat']  ." / ". $data['achiev_fat'] ." / ".($data['plan_fat'] - $data['achiev_fat']) ?>">
+                          value="<?= $data['plan_fat'] . " / " . $data['achiev_fat'] . " / " . ($data['plan_fat'] - $data['achiev_fat']) ?>">
                       </div>
                       <div class="form-group">
                         <label class="col-form-label">Daily Progress FAT</label>
@@ -803,7 +817,7 @@ $persentase_total = 0;
                       <div class="form-group">
                         <label class="col-form-label">Plan Closure / Achiev Closure / Deviasi</label>
                         <input readonly type="text" class="form-control" name="plan_closure" autocomplete="off"
-                          value="<?= $data['plan_closure']  ." / ". $data['achiev_closure'] ." / ".($data['plan_closure'] - $data['achiev_closure']) ?>">
+                          value="<?= $data['plan_closure'] . " / " . $data['achiev_closure'] . " / " . ($data['plan_closure'] - $data['achiev_closure']) ?>">
                       </div>
                       <div class="form-group">
                         <label class="col-form-label">Daily Progress Closure</label>
@@ -811,11 +825,11 @@ $persentase_total = 0;
                       </div>
                       <div class="form-group">
                         <label class="col-form-label">Catatan</label>
-                        <input type="text" class="form-control" name="keterangan_progress" autocomplete="off" placeholder="0">
+                        <input type="text" class="form-control" name="keterangan_progress" autocomplete="off"
+                          placeholder="0">
                       </div>
                       <div class="modal-footer">
                         <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-
                         <button type="submit" name="btnEdit" class="btn btn-primary"><i
                             class="fa fa-spinner fa-spin loading" style="display:none"></i> Simpan</button>
                       </div>
@@ -825,8 +839,6 @@ $persentase_total = 0;
               </div>
             </form>
           <?php endforeach; ?>
-
-
 
           <!-- COBA PANGGIL DATA MSQL -->
           <div class="row">
@@ -964,7 +976,7 @@ $persentase_total = 0;
     var mode = 'index'
     var intersect = true
 
-    var $fiberstarChartBar = $('#fiberstar_chart_bar')
+    var $fiberstarChartBarBak = $('#fiberstar_chart_bar_bak')
 
     const dataBar = <?php echo json_encode($top_area_bak); ?>;
     const areaAchievBar = dataBar.map(item => item.area_project);
@@ -972,7 +984,7 @@ $persentase_total = 0;
 
 
     // eslint-disable-next-line no-unused-vars
-    var fiberstarChartBar = new Chart($fiberstarChartBar, {
+    var fiberstarChartBarBak = new Chart($fiberstarChartBarBak, {
       type: 'bar',
       data: {
         labels: areaAchievBar,
@@ -1026,26 +1038,25 @@ $persentase_total = 0;
       }
     })
 
-    const dataLine = <?php echo json_encode($top_area_bak); ?>;
-    const areaAchievLine = dataLine.map(item => item.area_project);
-    const hpAchievLine = dataLine.map(item => item.achiev_bak);
+    var $fiberstarChartBarCleanlist = $('#fiberstar_chart_bar_cleanlist')
 
-    var $fiberstarChartLine = $('#fiberstar_chart_line')
+    const dataBarCleanlist = <?php echo json_encode($top_area_cleanlist); ?>;
+    const areaAchievBarCleanlist = dataBarCleanlist.map(item => item.area_project);
+    const hpAchievBarCleanlist = dataBarCleanlist.map(item => item.achiev_cleanlist);
+
+
     // eslint-disable-next-line no-unused-vars
-    var fiberstarChartLine = new Chart($fiberstarChartLine, {
+    var fiberstarChartBarCleanlist = new Chart($fiberstarChartBarCleanlist, {
+      type: 'bar',
       data: {
-        labels: areaAchievLine,
-        datasets: [{
-          type: 'line',
-          data: hpAchievLine,
-          backgroundColor: 'transparent',
-          borderColor: '#007bff',
-          pointBorderColor: '#007bff',
-          pointBackgroundColor: '#007bff',
-          fill: false
-          // pointHoverBackgroundColor: '#007bff',
-          // pointHoverBorderColor    : '#007bff'
-        }]
+        labels: areaAchievBarCleanlist,
+        datasets: [
+          {
+            backgroundColor: '#007bff',
+            borderColor: '#007bff',
+            data: hpAchievBarCleanlist
+          }
+        ]
       },
       options: {
         maintainAspectRatio: false,
@@ -1073,8 +1084,7 @@ $persentase_total = 0;
               beginAtZero: true,
 
               // Include a dollar sign in the ticks
-              callback: function (value, index, ticks) {
-                // Format nilai ke Rupiah
+              callback: function (value) {
                 return `${value.toLocaleString('id-ID')} Hp`;
               }
             }, ticksStyle)
@@ -1089,6 +1099,7 @@ $persentase_total = 0;
         }
       }
     })
+
   })
 
   document.addEventListener("DOMContentLoaded", function () {
@@ -1099,45 +1110,129 @@ $persentase_total = 0;
         parentCard.classList.add('collapsed-card'); // Tambahkan kelas 'collapsed-card'
       }
     });
-
   });
 
   $(document).ready(function () {
-        $('#table_data').DataTable({
-            responsive: false, // Matikan fitur Responsive
-        });
+    $('#table_data').DataTable({
+      responsive: false, // Matikan fitur Responsive
     });
+  });
 
-    $(document).ready(function () {
-        const table = $('#table_data').DataTable({
-            footerCallback: function () {
-                updateTotal();
-            }
-        });
-
-        // Fungsi untuk menghitung total dari data yang tampil
-        function updateTotal() {
-            // Ambil semua data yang terlihat
-            const data = table.rows({ search: 'applied' }).data();
-
-            // Hitung total dari kolom Value (index 2)
-            let total = 0;
-            data.each(function (row) {
-                total += parseFloat(row[6]) || 0; // Index 2 adalah kolom Value
-            });
-
-            // Update elemen Total
-            $('#totalValue').text(total.toLocaleString('id-ID'));
-        }
-
-        // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
-        table.on('draw', function () {
-            updateTotal();
-        });
-
-        // Hitung total pertama kali saat tabel dimuat
+  $(document).ready(function () {
+    const table = $('#table_data').DataTable({
+      footerCallback: function () {
         updateTotal();
+      }
     });
+
+    // Fungsi untuk menghitung total dari data yang tampil
+    function updateTotal() {
+      // Ambil semua data yang terlihat
+      const data = table.rows({ search: 'applied' }).data();
+
+      // Hitung total dari kolom Value (index 2)
+      let totalHP = 0;
+      let totalPO = 0;
+      let totalDoneInvoice = 0;
+      let totalSisaInvoice = 0;
+
+      let totalHpCanvasing = 0 ;
+      let totalHpBAK = 0 ;
+      let totalHpSPK = 0 ;
+      let totalHpHLD = 0 ;
+      let totalHpLLD = 0 ;
+      let totalHpKOM = 0 ;
+      let totalHpRFS = 0 ;
+      let totalHpATP = 0 ;
+      let totalHpClosed = 0 ;
+
+      data.each(function (row) {
+        totalHP += parseFloat(row[6].replace(/,/g, '')) || 0; // Index 2 adalah kolom Value
+        totalPO += parseFloat(row[9].replace(/,/g, '')) || 0; // Index 2 adalah kolom Value
+        totalDoneInvoice += parseFloat(row[22].replace(/,/g, '')) || 0; // Index 2 adalah kolom Value
+        totalSisaInvoice += parseFloat(row[23].replace(/,/g, '')) || 0; // Index 2 adalah kolom Value
+
+        if (row['10'] != 0 ){
+          totalHpCanvasing += parseFloat(row[6].replace(/,/g, ''))
+        } if (row['11'] == "OK" ){
+          totalHpBAK += parseFloat(row[6].replace(/,/g, ''))
+        } if (row['13'] != 0 ){
+          totalHpSPK += parseFloat(row[6].replace(/,/g, ''))
+        } if (row['14'] == "OK" ){
+          totalHpHLD += parseFloat(row[6].replace(/,/g, ''))
+        } if (row['15'] == "OK" ){
+          totalHpLLD += parseFloat(row[6].replace(/,/g, ''))
+        } if (row['16'] != 0 ){
+          totalHpKOM += parseFloat(row[6].replace(/,/g, ''))
+        } if (row['19'] != 0 ){
+          totalHpRFS += parseFloat(row[6].replace(/,/g, ''))
+        } if (row['20'] != 0 ){
+          totalHpATP += parseFloat(row[6].replace(/,/g, ''))
+        } if (row['21'].includes("close")){
+          totalHpClosed += parseFloat(row[6].replace(/,/g, ''))
+        }
+      });
+
+      // Update elemen Total
+      $('#totalHP').text(totalHP.toLocaleString('id-ID'));
+      $('#totalPO').text(totalPO.toLocaleString('id-ID'));
+      $('#totalDoneInvoice').text(totalDoneInvoice.toLocaleString('id-ID'));
+      $('#totalSisaInvoice').text(totalSisaInvoice.toLocaleString('id-ID'));
+
+      document.getElementById('idtotalDonePO').innerText = totalPO.toLocaleString('id-ID') + ' IDR';
+      document.getElementById('idtotalDoneInvoice').innerText = totalDoneInvoice.toLocaleString('id-ID') + ' IDR';
+      document.getElementById('idtotalSisaInvoice').innerText = totalSisaInvoice.toLocaleString('id-ID') + ' IDR';
+
+      document.getElementById('idtotal_hp_plan').innerText = totalHP.toLocaleString('id-ID') + ' HP';
+      document.getElementById('idtotal_hp_canvasing').innerText = totalHpCanvasing.toLocaleString('id-ID') + ' HP';
+      document.getElementById('idtotal_hp_bak').innerText = totalHpBAK.toLocaleString('id-ID') + ' HP';
+      document.getElementById('idtotal_hp_spk').innerText = totalHpSPK.toLocaleString('id-ID') + ' HP';
+      document.getElementById('idtotal_hp_hld').innerText = totalHpHLD.toLocaleString('id-ID') + ' HP';
+      document.getElementById('idtotal_hp_lld').innerText = totalHpLLD.toLocaleString('id-ID') + ' HP';
+      document.getElementById('idtotal_hp_kom').innerText = totalHpKOM.toLocaleString('id-ID') + ' HP';
+      document.getElementById('idtotal_hp_rfs').innerText = totalHpRFS.toLocaleString('id-ID') + ' HP';
+      document.getElementById('idtotal_hp_atp').innerText = totalHpATP.toLocaleString('id-ID') + ' HP';
+      document.getElementById('idtotal_hp_closed').innerText = totalHpClosed.toLocaleString('id-ID') + ' HP';
+    }
+
+    // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+    table.on('draw', function () {
+      updateTotal();
+    });
+
+    // Hitung total pertama kali saat tabel dimuat
+    updateTotal();
+  });
+
+  $(document).ready(function () {
+    // Inisialisasi DataTable
+    var table = $('#table_data').DataTable();
+
+    // Event saat tombol "Cari" diklik
+    $('#btnFilterDataProject').on('click', function () {
+      // Ambil nilai dari multiple select filter kategori
+      var selectedRegional = $('#filter_regional').val() || []; // Array of selected values
+      var selectedPIC = $('#filter_pic').val() || []; // Array of selected values
+      var selectedArea = $('#filter_area').val() || []; // Array of selected values
+      var selectedStagging = $('#filter_stagging').val() || []; // Array of selected values
+
+      // Gabungkan nilai ke dalam regex untuk pencarian DataTable
+      var regionalFilter = selectedRegional.length > 0 ? selectedRegional.join('|') : '';
+      var picFilter = selectedPIC.length > 0 ? selectedPIC.join('|') : '';
+      var areaFilter = selectedArea.length > 0 ? selectedArea.join('|') : '';
+      var staggingFilter = selectedStagging.length > 0 ? selectedStagging.join('|') : '';
+
+      // Terapkan filter ke DataTable
+      table
+        .column(1).search(regionalFilter, true, false) // Filter kategori (regex search)
+        .column(3).search(picFilter, true, false) // Filter kategori (regex search)
+        .column(2).search(areaFilter, true, false) // Filter kategori (regex search)
+        .column(21).search(staggingFilter, true, false) // Filter kategori (regex search)
+        .draw(); // Render ulang tabel
+
+    });
+
+  });
 
 </script>
 
