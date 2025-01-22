@@ -18,6 +18,31 @@ $persentase_plan = 0;
 $persentase_achiev = 0;
 $persentase_total = 0;
 
+function formatTanggalIndonesia($date)
+{
+  $months = [
+    1 => 'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember'
+  ];
+
+  $datetime = new DateTime($date);
+  $day = $datetime->format('d');
+  $month = (int) $datetime->format('m');
+  $year = $datetime->format('Y');
+
+  return $day . ' ' . $months[$month] . ' ' . $year;
+}
+
 ?>
 
 <!-- Content Wrapper. Contains page content -->
@@ -29,6 +54,9 @@ $persentase_total = 0;
         <div class="row mb-2">
           <div class="col-sm-6">
             <h1 class="m-0 text-dark"><?= $judul ?></h1>
+            <?php if (isset($error)) : ?>
+            <div class="alert alert-danger"><?php echo $error; ?></div>
+        <?php endif; ?>
           </div>
         </div>
       </div>
@@ -55,24 +83,45 @@ $persentase_total = 0;
                 $persentase_total = ($persentase_achiev / $persentase_plan) * 100;
               }
 
+              if ($data['number_po'] == '') {
+                $data['number_po'] = "-";
+              }
+
+              if ($data['tgl_kom'] == '') {
+                $hasil30hari = "-";
+                $data['tgl_kom'] = "-";
+              } else {
+                $tanggal = $data['tgl_kom'];
+                $parts = explode('/', $tanggal);
+                $newFormat = $parts[1] . '/' . $parts[0] . '/' . $parts[2];
+                $newTimestamp = strtotime($newFormat . ' +30 days');
+                $hasil30hari = date('d/m/Y', $newTimestamp);
+              }
+
+
+
               ?>
 
 
               <dl>
                 <dt>Regional</dt>
-                <dd>  <?= $data['regional_project'] ?></dd>
+                <dd> <?= $data['regional_project'] ?></dd>
                 <dt>Area</dt>
-                <dd>  <?= $data['area_project'] ?></dd>
+                <dd> <?= $data['area_project'] ?></dd>
                 <dt>PIC</dt>
-                <dd>  <?= $data['pic_project'] ?></dd>
+                <dd> <?= $data['pic_project'] ?></dd>
                 <dt>Access ID</dt>
-                <dd>  <?= $data['access_id_project'] ?></dd>
+                <dd> <?= $data['access_id_project'] ?></dd>
                 <dt>Access Name</dt>
-                <dd>  <?= $data['access_name_project'] ?></dd>
+                <dd> <?= $data['access_name_project'] ?></dd>
                 <dt>Home Pass</dt>
-                <dd>  <?= number_format($data['hp_hld'], 0, ".") ?></dd>
+                <dd> <?= number_format($data['hp_hld'], 0, ".") ?></dd>
                 <dt>Nomor PO</dt>
                 <dd><?= $data['number_po'] ?></dd>
+                <dt>Tanggal KOM</dt>
+                <dd><?= $data['tgl_kom'] ?></dd>
+                <dt>Target RFS</dt>
+                <dd><?= $hasil30hari ?></dd>
                 <dt>Persentase Progress ( % )</dt>
                 <dt>
                   <?php if ($persentase_total < '25') { ?>
@@ -118,26 +167,42 @@ $persentase_total = 0;
       </div>
     </section>
 
-    <!-- Main content -->
     <section class="content">
-      <div class="container-fluid">
-        <!-- Info boxes -->
-        <div class="row">
-          <!-- fix for small devices only -->
-          <div class="clearfix hidden-md-up"></div>
+      <div class="col-12 col-sm-12">
+        <div class="card card-dark card-tabs">
+          <div class="card-header p-0 pt-1">
+            <ul class="nav nav-tabs" id="custom-tabs-two-tab" role="tablist">
+              <li class="pt-2 px-3">
+                <h3 class="card-title">Detail Progress</h3>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link active" id="custom-tabs-two-home-tab" data-toggle="pill"
+                  href="#custom-tabs-two-poinvoice" role="tab" aria-controls="custom-tabs-two-home"
+                  aria-selected="true">PO & Invoice</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
+                  href="#custom-tabs-two-implementasi" role="tab" aria-controls="custom-tabs-two-profile"
+                  aria-selected="false">Implementasi</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="custom-tabs-two-messages-tab" data-toggle="pill"
+                  href="#custom-tabs-two-messages" role="tab" aria-controls="custom-tabs-two-messages"
+                  aria-selected="false">Checklist Dokument</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="custom-tabs-two-settings-tab" data-toggle="pill"
+                  href="#custom-tabs-two-settings" role="tab" aria-controls="custom-tabs-two-settings"
+                  aria-selected="false">Dokumentasi Lapangan</a>
+              </li>
+            </ul>
+          </div>
+          <div class="card-body">
+            <div class="tab-content" id="custom-tabs-two-tabContent">
 
-          <div class="col-12">
-            <div class="card">
-              <div class="card-header">
-                <div class="row">
-                  <div class="col-6">
-                    <h3 class="card-title">List Cleanlist Cluster</h3>
-                  </div>
-                </div>
-
-              </div>
-              <!-- /.card-header -->
-              <div class="card-body table-responsive text-nowrap ">
+              <!-- TAB NAV PERTAMA -->
+              <div class="tab-pane show active" id="custom-tabs-two-poinvoice" role="tabpanel"
+                aria-labelledby="custom-tabs-two-profile-tab">
                 <table id="table_detail" class="table table-bordered table-hover">
                   <thead class="thead-dark">
                     <tr>
@@ -190,46 +255,10 @@ $persentase_total = 0;
                   </tfoot>
                 </table>
               </div>
-              <!-- /.card-body -->
-            </div>
 
-            <!-- COBA PANGGIL DATA MSQL -->
-            <div class="row">
-              <!-- ISI -->
-            </div>
-
-
-          </div>
-    </section>
-
-    <section class="content">
-      <div class="container-fluid">
-        <!-- Info boxes -->
-        <div class="row">
-          <!-- fix for small devices only -->
-          <div class="clearfix hidden-md-up"></div>
-
-          <div class="col-12">
-            <div class="card">
-              <div class="card-header">
-                <div class="row">
-                  <div class="col-6">
-                    <h3 class="card-title">Detail Implementasi</h3>
-                  </div>
-                  <div class="col-6">
-                    <?php if( $this->session->userdata('tim_project') == "HO" ){ ?>
-                      <a href="#" class="btn btn-success float-right text-bold"
-                      data-target="#modal-lg-tambah_rab" data-toggle="modal">Tambah RAB &nbsp;</a>
-                    <?php } else {?>
-                      <a href="#" class="btn btn-success float-right text-bold"
-                      data-target="#modal-lg-tambah_implementasi" data-toggle="modal">Tambah Progress &nbsp;</i> </a>
-                    <?php } ?>
-                  </div>
-                </div>
-
-              </div>
-              <!-- /.card-header -->
-              <div class="card-body table-responsive text-nowrap ">
+              <!-- TAB NAV KEDUA -->
+              <div class="tab-pane fade" id="custom-tabs-two-implementasi" role="tabpanel"
+                aria-labelledby="custom-tabs-two-home-tab">
                 <table id="table_detail" class="table table-bordered table-hover">
                   <thead class="thead-dark">
                     <tr>
@@ -267,11 +296,6 @@ $persentase_total = 0;
                       $total_plan_closure += $data['achiev_closure'];
                       $total_achiev_closure += $data['achiev_closure'];
 
-                      // $jumlah_hp += $data['homepass_cluster_fiberstar'];
-                      // $jumlah_tiang += $data['realisasi_tiang_project_fiberstar_progress'];
-                      // $jumlah_kabel += $data['realisasi_kabel_project_fiberstar_progress'];
-                      // $jumlah_fat += $data['realisasi_fat_project_fiberstar_progress'];
-                    
                       ?>
 
                       <tr>
@@ -313,9 +337,601 @@ $persentase_total = 0;
                     </tr>
                   </tfoot>
                 </table>
+                <div class="col-12" style="margin-top:2%">
+                  <?php if ($this->session->userdata('tim_project') == "HO") { ?>
+                    <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah_boq"
+                      data-toggle="modal">Tambah BOQ &nbsp;</a>
+                  <?php } else { ?>
+                    <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah_implementasi"
+                      data-toggle="modal">Tambah Progress &nbsp;</i> </a>
+                  <?php } ?>
+                </div>
               </div>
-              <!-- /.card-body -->
+
+              <!-- TAB NAV KETIGA -->
+              <div class="tab-pane fade" id="custom-tabs-two-messages" role="tabpanel"
+                aria-labelledby="custom-tabs-two-messages-tab">
+                <table class="table table-bordered table-hover">
+                  <thead class="thead-dark">
+                    <tr>
+                      <th>No</th>
+                      <th>Stagging</th>
+                      <th>Status</th>
+                      <th>Last Update</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr data-widget="expandable-table" aria-expanded="false">
+                      <td>1</td>
+                      <td>APPROVAL CBN</td>
+                      <td>0/3</td>
+                      <td>21-Januari-2025</td>
+                    </tr>
+                    <tr class="expandable-body">
+                      <td colspan="5">
+                        <div class="card-body">
+                          <table id="table_detail" class="table table-bordered table-hover">
+                            <thead class="bg-primary">
+                              <tr>
+                                <th>No</th>
+                                <th>Dokument Support Approval VBN</th>
+                                <th>Status</th>
+                                <th>Upload</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+
+                              <?php $total = 1; ?>
+
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>SURAT IJIN SURVEY</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="#" data-toggle="modal" data-target="#modal-approval-cbn-suratijinsurvey"
+                                    class="btn btn-primary"><i class=" fas fa-info"></i></a>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr data-widget="expandable-table" aria-expanded="false">
+                      <td>1</td>
+                      <td>ATP</td>
+                      <td>ON REVIEW</td>
+                      <td>11-Oktober-2025</td>
+                    </tr>
+                    <tr class="expandable-body">
+                      <td colspan="5">
+                        <div class="card-body">
+                          <table id="table_detail" class="table table-bordered table-hover">
+                            <thead class="bg-primary">
+                              <tr>
+                                <th>No</th>
+                                <th>Dokument Support ATP</th>
+                                <th>Status</th>
+                                <th>Upload</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+
+                              <?php $total = 1; ?>
+
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BERITA ACARA SERAH TERIMA ( HARDCOPY )</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" checked
+                                    disabled></td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BERITA ACARA CLOSING TERMINT ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BERITA ACARA UJI TERIMA ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>FORM TEMUAN ATP & DOKUMENTASI ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BA KETIDAKSESUAIAN ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BILL OF MATERIAL ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BILL OF QUANTITY ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>AS PLAN DRAWING ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>ABD SUMMARY & DETAIL ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>DIAGRAM FLOW ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>CORE CONNECTION ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BOOKING ID ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>OTDR SUMMARY & DETAIL ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>OPM SUMMARY & DETAIL ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>DATA HOMEPASS ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>DOKUMENTASI ( SOFTCOPY ) </td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr data-widget="expandable-table" aria-expanded="false">
+                      <td>2</td>
+                      <td>RFS</td>
+                      <td>ON REVIEW</td>
+                      <td>11-Oktober-2025</td>
+                    </tr>
+                    <tr class="expandable-body">
+                      <td colspan="5">
+                        <div class="card-body">
+                          <table id="table_detail" class="table table-bordered table-hover">
+                            <thead class="bg-primary">
+                              <tr>
+                                <th>No</th>
+                                <th>Dokument Support RFS</th>
+                                <th>Status</th>
+                                <th>Upload</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+
+                              <?php $total = 1; ?>
+
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>ABD MAP</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>ABD CORE CONNECTION</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>ABD DIAGRAM FLOW</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BOOKING ID</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>KMZ ACTUAL</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BILL OF MATERIAL</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BILL OF QUANTITY</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr data-widget="expandable-table" aria-expanded="false">
+                      <td>3</td>
+                      <td>BAST</td>
+                      <td>ON REVIEW</td>
+                      <td>11-Oktober-2025</td>
+                    </tr>
+                    <tr class="expandable-body">
+                      <td colspan="5">
+                        <div class="card-body">
+                          <table id="table_detail" class="table table-bordered table-hover">
+                            <thead class="bg-primary">
+                              <tr>
+                                <th>No</th>
+                                <th>Dokument Support BAST</th>
+                                <th>Status</th>
+                                <th>Upload</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+
+                              <?php $total = 1; ?>
+
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>DOKUMENT ATP</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>MOM KOM</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>TIMELINE</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BA LAPANGAN</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BA LAPANGAN</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BAP 1-3</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>BA PELURUSAN</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>PO MATERIAL</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>
+                                  <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                                    id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                      class=" fas fa-share"></i></a>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- TAB NAV KEEMPAT -->
+              <div class="tab-pane fade" id="custom-tabs-two-settings" role="tabpanel"
+                aria-labelledby="custom-tabs-two-settings-tab">
+                <table class="table table-bordered table-hover">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>User</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr data-widget="expandable-table" aria-expanded="false">
+                      <td>183</td>
+                      <td>John Doe</td>
+                      <td>11-7-2014</td>
+                      <td>Approved</td>
+                      <td>Bacon ipsum dolor sit amet salami venison chicken flank fatback doner.</td>
+                    </tr>
+                    <tr class="expandable-body">
+                      <td colspan="5">
+                        <p>
+                          Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has
+                          been the industry's standard dummy text ever since the 1500s, when an unknown printer took a
+                          galley of type and scrambled it to make a type specimen book. It has survived not only five
+                          centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It
+                          was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum
+                          passages, and more recently with desktop publishing software like Aldus PageMaker including
+                          versions of Lorem Ipsum.
+                        </p>
+                      </td>
+                    </tr>
+                    <tr data-widget="expandable-table" aria-expanded="false">
+                      <td>219</td>
+                      <td>Alexander Pierce</td>
+                      <td>11-7-2014</td>
+                      <td>Pending</td>
+                      <td>Bacon ipsum dolor sit amet salami venison chicken flank fatback doner.</td>
+                    </tr>
+                    <tr class="expandable-body">
+                      <td colspan="5">
+                        <p>
+                          Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has
+                          been the industry's standard dummy text ever since the 1500s, when an unknown printer took a
+                          galley of type and scrambled it to make a type specimen book. It has survived not only five
+                          centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It
+                          was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum
+                          passages, and more recently with desktop publishing software like Aldus PageMaker including
+                          versions of Lorem Ipsum.
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
+          </div>
+          <!-- /.card -->
+        </div>
+      </div>
+    </section>
+
+    <section class="content">
+      <div class="container-fluid">
+        <!-- Info boxes -->
+        <div class="row">
+          <!-- fix for small devices only -->
+          <div class="clearfix hidden-md-up"></div>
+
+          <div class="col-12">
 
             <?php $tgl = date(format: 'Y-m-d'); ?>
             <?php foreach ($progress_implementasi as $data):
@@ -418,12 +1034,12 @@ $persentase_total = 0;
             <?php $tgl = date(format: 'Y-m-d'); ?>
             <?php foreach ($progress_implementasi as $data):
               ?>
-              <form action="<?php echo site_url('Fiberstar_Project_Detail/addRAB'); ?>" method="post">
-                <div class="modal fade" id="modal-lg-tambah_rab">
+              <form action="<?php echo site_url('Fiberstar_Project_Detail/addBOQ'); ?>" method="post">
+                <div class="modal fade" id="modal-lg-tambah_boq">
                   <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                       <div class="modal-header">
-                        <h4 class="modal-title">Tambah RAB</h4>
+                        <h4 class="modal-title">Tambah BOQ</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                           <span aria-hidden="true">&times;</span>
                         </button>
@@ -454,33 +1070,28 @@ $persentase_total = 0;
                         </div>
                         <div class="form-group">
                           <label class="col-form-label">Plan Tiang</label>
-                          <input type="text" class="form-control" name="plan_tiang" autocomplete="off"
-                          placeholder="0">
+                          <input type="text" class="form-control" name="plan_tiang" autocomplete="off" placeholder="0">
                         </div>
                         <div class="form-group">
                           <label class="col-form-label">Plan Kabel 24C</label>
-                          <input type="text" class="form-control" name="plan_kabel_24" autocomplete="off"
-                          placeholder="0">
+                          <input type="text" class="form-control" name="plan_kabel_24" autocomplete="off" placeholder="0">
                         </div>
                         <div class="form-group">
                           <label class="col-form-label">Plan Kabel 48C</label>
-                          <input type="text" class="form-control" name="plan_kabel_48" autocomplete="off"
-                          placeholder="0">
+                          <input type="text" class="form-control" name="plan_kabel_48" autocomplete="off" placeholder="0">
                         </div>
                         <div class="form-group">
                           <label class="col-form-label">Plan FAT</label>
-                          <input type="text" class="form-control" name="plan_fat" autocomplete="off"
-                          placeholder="0">
+                          <input type="text" class="form-control" name="plan_fat" autocomplete="off" placeholder="0">
                         </div>
                         <div class="form-group">
                           <label class="col-form-label">Plan Closure</label>
-                          <input type="text" class="form-control" name="plan_closure" autocomplete="off"
-                          placeholder="0">
+                          <input type="text" class="form-control" name="plan_closure" autocomplete="off" placeholder="0">
                         </div>
                         <div class="form-group">
                           <label class="col-form-label">Catatan</label>
                           <input type="text" class="form-control" name="keterangan_progress" autocomplete="off"
-                            value="RAB Awal">
+                            value="BOQ Awal">
                         </div>
                         <div class="modal-footer">
                           <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
@@ -491,6 +1102,51 @@ $persentase_total = 0;
                       </div>
                     </div>
                   </div>
+                </div>
+              </form>
+            <?php endforeach; ?>
+
+            <!-- modal untuk tambah data -->  
+            <?php foreach ($progress_implementasi as $data): ?>
+              <form id="uploadForm" action="<?php echo base_url('Fiberstar_Project_Detail/upload_file'); ?>" method="post" enctype="multipart/form-data">
+                <div class="modal fade" id="modal-approval-cbn-suratijinsurvey">
+                  <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h4 class="modal-title">Surat Ijin Survey</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                        <input type="hidden" name="primary_access_id_project"
+                          value="<?= $data['primary_access_id_project'] ?>">
+                        <input type="hidden" name="id_user" value="<?= $this->session->userdata('id_user') ?>">
+                        <div class="form-group">
+                          <label class="col-form-label">Access ID Project</label>
+                          <input readonly type="text" class="form-control" name="access_id_project" autocomplete="off"
+                            value="<?= $data['access_id_project'] ?> || <?= $data['access_name_project'] ?>">
+                        </div>
+                        <div class="form-group">
+                    <label for="exampleInputFile">Upload Dokument</label>
+                    <div class="input-group">
+                      <div class="custom-file">
+                      <label for="fileInput">Pilih File:</label>
+        <input type="file" id="fileInput" name="file" required>
+                      </div>
+                    </div>
+                  </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+
+                          <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i
+                              class="fa fa-spinner fa-spin loading" style="display:none"></i> Tambah</button>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- /.modal-content -->
+                  </div>
+                  <!-- /.modal-dialog -->
                 </div>
               </form>
             <?php endforeach; ?>
@@ -791,6 +1447,36 @@ $persentase_total = 0;
     });
   });
 
+  document.getElementById('uploadForm').addEventListener('submit', function (event) {
+    event.preventDefault(); // Mencegah form untuk di-submit secara tradisional
+
+    // Ambil elemen input file
+    var fileInput = document.getElementById('fileInput');
+    var file = fileInput.files[0]; // Mengambil file yang dipilih
+
+    if (file) {
+        var formData = new FormData();
+        formData.append('file', file);
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'Fiberstar_Project_Detail/upload_file', true); // Mengirim ke upload.php di server
+
+        // Fungsi callback saat proses upload selesai
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                document.getElementById('message').textContent = 'File berhasil diupload!';
+            } else {
+                document.getElementById('message').textContent = 'Terjadi kesalahan saat mengupload file.';
+            }
+        };
+
+        // Mengirimkan file
+        xhr.send(formData);
+    } else {
+        document.getElementById('message').textContent = 'Pilih file terlebih dahulu.';
+    }
+});
+
 
 
 </script>
@@ -1013,6 +1699,7 @@ $persentase_total = 0;
 <script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
 <!-- Bootstrap -->
 <script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="<?= base_url('assets') ?>/plugins/icheck-bootstrap/icheck-bootstrap.min.css"></script>
 
 <!-- OPTIONAL SCRIPTS -->
 <script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>

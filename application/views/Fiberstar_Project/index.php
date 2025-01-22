@@ -14,6 +14,18 @@ $persentase_plan = 0;
 $persentase_achiev = 0;
 $persentase_total = 0;
 
+$total_hp_plan_regional = 0;
+$total_hp_canvasing_regional = 0;
+$total_hp_bak_regional = 0;
+$total_hp_spk_regional = 0;
+$total_hp_hld_regional = 0;
+$total_hp_lld_regional = 0;
+$total_hp_kom_regional = 0;
+$total_hp_pks_regional = 0;
+$total_hp_rfs_regional = 0;
+$total_hp_atp_regional = 0;
+$total_hp_closed_regional = 0;
+
 ?>
 
 <!-- <?php $now = date('Y-m-d') . " 00:00:00"; ?> -->
@@ -255,7 +267,9 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_plan"><?= number_format(floatval($totalHpPlan['total_hp_plan']), 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_plan">
+                            <?= number_format(floatval($totalHpPlan['total_hp_plan']), 0, ".") . " HP" ?>
+                          </h3>
                         <?php endforeach ?>
 
                         <p>TOTAL CLEANLIST</p>
@@ -269,7 +283,9 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_canvasing"><?= number_format(floatval($totalHpPlan['total_hp_canvasing']), 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_canvasing">
+                            <?= number_format(floatval($totalHpPlan['total_hp_canvasing']), 0, ".") . " HP" ?>
+                          </h3>
                         <?php endforeach ?>
 
                         <p>DONE CANVASING</p>
@@ -283,7 +299,9 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_bak"><?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_bak">
+                            <?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ".") . " HP" ?>
+                          </h3>
                         <?php endforeach ?>
 
                         <p>DONE BAK</p>
@@ -297,7 +315,9 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_spk"><?= number_format(floatval($totalHpPlan['total_hp_spk']), 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_spk">
+                            <?= number_format(floatval($totalHpPlan['total_hp_spk']), 0, ".") . " HP" ?>
+                          </h3>
                         <?php endforeach ?>
 
                         <p>SPK RELEASED</p>
@@ -311,7 +331,9 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_hld"><?= number_format(floatval($totalHpPlan['total_hp_hld']), 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_hld">
+                            <?= number_format(floatval($totalHpPlan['total_hp_hld']), 0, ".") . " HP" ?>
+                          </h3>
                         <?php endforeach ?>
 
                         <p>DONE HLD</p>
@@ -325,7 +347,9 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_lld"><?= number_format(floatval($totalHpPlan['total_hp_lld']), 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_lld">
+                            <?= number_format(floatval($totalHpPlan['total_hp_lld']), 0, ".") . " HP" ?>
+                          </h3>
                         <?php endforeach ?>
 
                         <p>DONE LLD</p>
@@ -339,7 +363,9 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_kom"><?= number_format(floatval($totalHpPlan['total_hp_kom']), 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_kom">
+                            <?= number_format(floatval($totalHpPlan['total_hp_kom']), 0, ".") . " HP" ?>
+                          </h3>
                         <?php endforeach ?>
 
                         <p>ON PROGRESS IMPLEMENTASI</p>
@@ -353,7 +379,9 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_rfs"><?= number_format(floatval($totalHpPlan['total_hp_rfs']), 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_rfs">
+                            <?= number_format(floatval($totalHpPlan['total_hp_rfs']), 0, ".") . " HP" ?>
+                          </h3>
                         <?php endforeach ?>
 
                         <p>DONE RFS</p>
@@ -367,7 +395,9 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_atp"><?= number_format(floatval($totalHpPlan['total_hp_atp']), 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_atp">
+                            <?= number_format(floatval($totalHpPlan['total_hp_atp']), 0, ".") . " HP" ?>
+                          </h3>
                         <?php endforeach ?>
 
                         <p>DONE ATP</p>
@@ -381,7 +411,9 @@ $persentase_total = 0;
                     <div class="small-box bg-info">
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_closed"><?= number_format(floatval($totalHpPlan['total_hp_closed']), 0, ".") . " HP" ?></h3>
+                          <h3 id="idtotal_hp_closed">
+                            <?= number_format(floatval($totalHpPlan['total_hp_closed']), 0, ".") . " HP" ?>
+                          </h3>
                         <?php endforeach ?>
 
                         <p>CLOSED STAGGING</p>
@@ -394,6 +426,99 @@ $persentase_total = 0;
 
                 </div>
               </div>
+              <section class="content">
+      <div class="container-fluid">
+        <!-- Info boxes -->
+        <div class="row">
+          <!-- fix for small devices only -->
+          <div class="clearfix hidden-md-up"></div>
+
+          <div class="col-12">
+            <div class="card">
+              <!-- /.card-header -->
+              <div class="card-body table-responsive text-nowrap ">
+                <table id="table_detail" class="table table-bordered table-hover">
+                  <thead class="bg-info">
+                    <tr>
+                      <th>No</th>
+                      <th>Regional Project</th>
+                      <th>HP Plan</th>
+                      <th>Canvasing</th>
+                      <th>DONE BAK</th>
+                      <th>DONE SPK</th>
+                      <th>DONE HLD</th>
+                      <th>DONE LLD</th>
+                      <th>DONE KOM</th>
+                      <th>DONE PKS</th>
+                      <th>DONE RFS</th>
+                      <th>DONE</th>
+                      <th>CLOSED</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php
+                    $total = 1;
+
+                    foreach ($stagging_regional as $data):
+                      
+                      $total_hp_plan_regional += $data['total_hp_plan'];
+                      $total_hp_canvasing_regional += $data['total_hp_canvasing'];
+                      $total_hp_bak_regional += $data['total_hp_bak'];
+                      $total_hp_spk_regional += $data['total_hp_spk'];
+                      $total_hp_hld_regional += $data['total_hp_hld'];
+                      $total_hp_lld_regional += $data['total_hp_lld'];
+                      $total_hp_kom_regional += $data['total_hp_kom'];
+                      $total_hp_pks_regional += $data['total_hp_pks'];
+                      $total_hp_rfs_regional += $data['total_hp_rfs'];
+                      $total_hp_atp_regional += $data['total_hp_atp'];
+                      $total_hp_closed_regional += $data['total_hp_closed'];
+
+                      ?>
+
+                      <tr>
+                        <td><?= $total++ ?></td>
+                        <td><?= $data['regional_project'] ?></td>
+                        <td><?= number_format(floatval($data['total_hp_plan']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['total_hp_canvasing']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['total_hp_bak']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['total_hp_spk']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['total_hp_hld']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['total_hp_lld']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['total_hp_kom']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['total_hp_pks']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['total_hp_rfs']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['total_hp_atp']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['total_hp_closed']), 0, ".") ?></td>
+                      </tr>
+
+                    <?php endforeach; ?>
+
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th colspan="2">Total</th>
+                      <th colspan="1"><?= number_format(floatval($total_hp_plan_regional), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_hp_canvasing_regional), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_hp_bak_regional), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_hp_spk_regional), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_hp_hld_regional), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_hp_lld_regional), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_hp_kom_regional), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ".") ?></th>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <!-- /.card-body -->
+            </div>
+            <div class="row">
+              <!-- ISI -->
+            </div>
+          </div>
+    </section>
             </div>
           </div>
         </div>
@@ -404,7 +529,7 @@ $persentase_total = 0;
 
     <div class="container-fluid">
       <div class="row">
-      <div class="col-lg-6">
+        <div class="col-lg-6">
           <div class="card">
             <div class="card-header border-0">
               <div class="d-flex justify-content-between">
@@ -415,9 +540,10 @@ $persentase_total = 0;
             <div class="card-body">
               <div class="d-flex">
                 <p class="d-flex flex-column">
-                <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                  <span class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_plan']), 0, ".") . " HP" ?></span>
-                <?php endforeach ?>
+                  <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                    <span
+                      class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_plan']), 0, ".") . " HP" ?></span>
+                  <?php endforeach ?>
                   <span>TOP AREA</span>
                 </p>
                 <p class="ml-auto d-flex flex-column text-right">
@@ -454,9 +580,10 @@ $persentase_total = 0;
             <div class="card-body">
               <div class="d-flex">
                 <p class="d-flex flex-column">
-                <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                  <span class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ".") . " HP" ?></span>
-                <?php endforeach ?>
+                  <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                    <span
+                      class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ".") . " HP" ?></span>
+                  <?php endforeach ?>
                   <span>TOP AREA</span>
                 </p>
                 <p class="ml-auto d-flex flex-column text-right">
@@ -526,27 +653,33 @@ $persentase_total = 0;
                     <th>Nilai PO</th> <!-- 9 -->
                     <th>Canvasing</th> <!-- 10 -->
                     <th>Status BAK</th> <!-- 11 -->
-                    <th>Status CBN</th> <!-- 12 -->
-                    <th>Nomor SPK</th> <!-- 13 -->
-                    <th>Status HLD</th> <!-- 14 -->
-                    <th>Status LLD</th> <!-- 15 -->
-                    <th>KOM</th> <!-- 16 -->
-                    <th>PKS</th> <!-- 17 -->
-                    <th>Status Implementasi</th> <!-- 18 -->
-                    <th>RFS</th> <!-- 19 -->
-                    <th>ATP</th> <!-- 20 -->
-                    <th>Stagging</th> <!-- 21 -->
-                    <th>Done Invoice</th> <!-- 22 -->
-                    <th>Sisa Invoice</th> <!-- 23 -->
-                    <th>Progress</th> <!-- 24 -->
-                    <th>Label</th> <!-- 25 -->
-                    <th>Action</th> <!-- 26 -->
+                    <th style="display: none;">HP BAK</th> <!-- 12 -->
+                    <th>Status CBN</th> <!-- 13 -->
+                    <th>Nomor SPK</th> <!-- 14 -->
+                    <th style="display: none;">HP SPK</th> <!-- 15 -->
+                    <th>Status HLD</th> <!-- 16 -->
+                    <th style="display: none;">HP HLD</th> <!-- 17 -->
+                    <th>Status LLD</th> <!-- 18 -->
+                    <th style="display: none;">HP LLD</th> <!-- 19 -->
+                    <th>KOM</th> <!-- 20 -->
+                    <th>PKS</th> <!-- 21 -->
+                    <th>Status Implementasi</th> <!-- 22 -->
+                    <th>RFS</th> <!-- 23 -->
+                    <th style="display: none;">HP RFS</th> <!-- 24 -->
+                    <th>ATP</th> <!-- 25 -->
+                    <th style="display: none;">HP ATP</th> <!-- 26 -->
+                    <th>Stagging</th> <!-- 27 -->
+                    <th>Done Invoice</th> <!-- 28 -->
+                    <th>Sisa Invoice</th> <!-- 29 -->
+                    <th>Progress</th> <!-- 30 -->
+                    <th>Label</th> <!-- 31 -->
+                    <th>Action</th> <!-- 32 -->
                   </tr>
                 </thead>
                 <tbody>
                   <?php
 
-
+                  $total = 1;
                   foreach ($progress_implementasi as $data):
 
                     $persentase_plan = $data['plan_tiang'] + $data['plan_kabel_24'] + $data['plan_kabel_48'] + $data['plan_fat'] + $data['plan_closure'];
@@ -557,6 +690,7 @@ $persentase_total = 0;
                     } else {
                       $persentase_total = ($persentase_achiev / $persentase_plan) * 100;
                     }
+
                     ?>
 
                     <tr>
@@ -566,21 +700,40 @@ $persentase_total = 0;
                       <td class="align-middle"><?= $data['pic_project'] ?></td>
                       <td class="align-middle"><?= $data['access_id_project'] ?></td>
                       <td class="align-middle"><?= $data['access_name_project'] ?></td>
-                      <td class="align-middle text-center"><?= number_format(floatval($data['hpplan_project']), 0, ".") ?></td>
+                      <td class="align-middle text-center"><?= number_format(floatval($data['hpplan_project']), 0, ".") ?>
+                      </td>
                       <td class="align-middle text-center"><?= $data['number_po'] ?></td>
                       <td class="align-middle text-center"><?= $data['tanggal_po'] ?></td>
                       <td class="align-middle"><?= number_format(floatval($data['nilai_awal_po']), 0, ".") ?></td>
                       <td class="align-middle"><?= $data['tgl_canvasing'] ?></td>
                       <td class="align-middle"><?= $data['status_bak'] ?></td>
+                      <td class="align-middle" style="display: none;">
+                        <?= number_format(floatval($data['hp_bak']), 0, ".") ?>
+                      </td>
                       <td class="align-middle"><?= $data['status_cbn'] ?></td>
                       <td class="align-middle"><?= $data['spk_nomor'] ?></td>
+                      <td class="align-middle" style="display: none;">
+                        <?= number_format(floatval($data['spk_hp']), 0, ".") ?>
+                      </td>
                       <td class="align-middle"><?= $data['status_hld'] ?></td>
+                      <td class="align-middle" style="display: none;">
+                        <?= number_format(floatval($data['hp_hld']), 0, ".") ?>
+                      </td>
                       <td class="align-middle"><?= $data['status_lld'] ?></td>
+                      <td class="align-middle" style="display: none;">
+                        <?= number_format(floatval($data['hp_lld']), 0, ".") ?>
+                      </td>
                       <td class="align-middle"><?= $data['tgl_kom'] ?></td>
                       <td class="align-middle"><?= $data['tgl_pks'] ?></td>
                       <td class="align-middle text-center"><?= $data['status_implementasi'] ?></td>
                       <td class="align-middle"><?= $data['tanggal_rfs'] ?></td>
+                      <td class="align-middle" style="display: none;">
+                        <?= number_format(floatval($data['hp_rfs']), 0, ".") ?>
+                      </td>
                       <td class="align-middle"><?= $data['tanggal_atp'] ?></td>
+                      <td class="align-middle" style="display: none;">
+                        <?= number_format(floatval($data['hp_atp']), 0, ".") ?>
+                      </td>
                       <td class="align-middle text-center"><?= $data['main_status'] ?></td>
                       <td class="align-middle"><?= number_format(floatval($data['total_invoice']), 0, ".") ?></td>
                       <td class="align-middle"><?= number_format(floatval($data['total_sisa_invoice']), 0, ".") ?></td>
@@ -1136,40 +1289,40 @@ $persentase_total = 0;
       let totalDoneInvoice = 0;
       let totalSisaInvoice = 0;
 
-      let totalHpCanvasing = 0 ;
-      let totalHpBAK = 0 ;
-      let totalHpSPK = 0 ;
-      let totalHpHLD = 0 ;
-      let totalHpLLD = 0 ;
-      let totalHpKOM = 0 ;
-      let totalHpRFS = 0 ;
-      let totalHpATP = 0 ;
-      let totalHpClosed = 0 ;
+      let totalHpCanvasing = 0;
+      let totalHpBAK = 0;
+      let totalHpSPK = 0;
+      let totalHpHLD = 0;
+      let totalHpLLD = 0;
+      let totalHpKOM = 0;
+      let totalHpRFS = 0;
+      let totalHpATP = 0;
+      let totalHpClosed = 0;
 
       data.each(function (row) {
         totalHP += parseFloat(row[6].replace(/,/g, '')) || 0; // Index 2 adalah kolom Value
         totalPO += parseFloat(row[9].replace(/,/g, '')) || 0; // Index 2 adalah kolom Value
-        totalDoneInvoice += parseFloat(row[22].replace(/,/g, '')) || 0; // Index 2 adalah kolom Value
-        totalSisaInvoice += parseFloat(row[23].replace(/,/g, '')) || 0; // Index 2 adalah kolom Value
+        totalDoneInvoice += parseFloat(row[28].replace(/,/g, '')) || 0; // Index 2 adalah kolom Value
+        totalSisaInvoice += parseFloat(row[29].replace(/,/g, '')) || 0; // Index 2 adalah kolom Value
 
-        if (row['10'] != 0 ){
+        if (row['10'] != 0) {
           totalHpCanvasing += parseFloat(row[6].replace(/,/g, ''))
-        } if (row['11'] == "OK" ){
-          totalHpBAK += parseFloat(row[6].replace(/,/g, ''))
-        } if (row['13'] != 0 ){
-          totalHpSPK += parseFloat(row[6].replace(/,/g, ''))
-        } if (row['14'] == "OK" ){
-          totalHpHLD += parseFloat(row[6].replace(/,/g, ''))
-        } if (row['15'] == "OK" ){
-          totalHpLLD += parseFloat(row[6].replace(/,/g, ''))
-        } if (row['16'] != 0 ){
-          totalHpKOM += parseFloat(row[6].replace(/,/g, ''))
-        } if (row['19'] != 0 ){
-          totalHpRFS += parseFloat(row[6].replace(/,/g, ''))
-        } if (row['20'] != 0 ){
-          totalHpATP += parseFloat(row[6].replace(/,/g, ''))
-        } if (row['21'].includes("close")){
-          totalHpClosed += parseFloat(row[6].replace(/,/g, ''))
+        } if (row['11'] == "OK") {
+          totalHpBAK += parseFloat(row[12].replace(/,/g, ''))
+        } if (row['14'] != 0) {
+          totalHpSPK += parseFloat(row[15].replace(/,/g, ''))
+        } if (row['16'] == "OK") {
+          totalHpHLD += parseFloat(row[17].replace(/,/g, ''))
+        } if (row['18'] == "OK") {
+          totalHpLLD += parseFloat(row[19].replace(/,/g, ''))
+        } if (row['20'] != 0) {
+          totalHpKOM += parseFloat(row[19].replace(/,/g, ''))
+        } if (row['23'] != 0) {
+          totalHpRFS += parseFloat(row[24].replace(/,/g, ''))
+        } if (row['25'] != 0) {
+          totalHpATP += parseFloat(row[26].replace(/,/g, ''))
+        } if (row['27'].includes("close")) {
+          totalHpClosed += parseFloat(row[26].replace(/,/g, ''))
         }
       });
 
@@ -1227,7 +1380,7 @@ $persentase_total = 0;
         .column(1).search(regionalFilter, true, false) // Filter kategori (regex search)
         .column(3).search(picFilter, true, false) // Filter kategori (regex search)
         .column(2).search(areaFilter, true, false) // Filter kategori (regex search)
-        .column(21).search(staggingFilter, true, false) // Filter kategori (regex search)
+        .column(27).search(staggingFilter, true, false) // Filter kategori (regex search)
         .draw(); // Render ulang tabel
 
     });

@@ -58,4 +58,9 @@ class MFiberstar_Project_Detail extends CI_Model
         $res = $this->db->insert("tb_project_implementasi_fiberstar", $data_array);
         return $res;
     }
+
+    public function insert_file($data) {
+        $res = $this->db->insert('tb_ds_approval_cbn', $data);
+        return $res;
+    }
 }

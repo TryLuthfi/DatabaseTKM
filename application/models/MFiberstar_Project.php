@@ -40,6 +40,26 @@ class MFiberstar_Project extends CI_Model
         return $data;
     }
 
+    public function getStaggingRegional()
+    {
+        $data = $this->db->query('SELECT regional_project,
+        SUM(hpplan_project) as total_hp_plan, 
+        SUM(CASE WHEN tgl_canvasing IS NOT NULL AND tgl_canvasing != "" THEN hpplan_project ELSE 0 END) as total_hp_canvasing, 
+        SUM(CASE WHEN status_bak IS NOT NULL AND status_bak = "OK" THEN hp_bak ELSE 0 END) as total_hp_bak, 
+        SUM(CASE WHEN spk_nomor IS NOT NULL AND spk_nomor != "" THEN spk_hp ELSE 0 END) as total_hp_spk, 
+        SUM(CASE WHEN status_hld IS NOT NULL AND status_hld = "OK" THEN hp_hld ELSE 0 END) as total_hp_hld,
+        SUM(CASE WHEN status_lld IS NOT NULL AND status_lld = "OK" THEN hp_lld ELSE 0 END) as total_hp_lld,
+        SUM(CASE WHEN tgl_kom IS NOT NULL AND tgl_kom != "" THEN hp_lld ELSE 0 END) as total_hp_kom,
+        SUM(CASE WHEN tgl_pks IS NOT NULL AND tgl_pks != "" THEN hp_lld ELSE 0 END) as total_hp_pks,
+        SUM(CASE WHEN status_implementasi IS NOT NULL AND status_implementasi = "OK" THEN hp_rfs ELSE 0 END) as total_hp_rfs,
+        SUM(CASE WHEN tanggal_atp IS NOT NULL AND tanggal_atp != "" THEN hp_atp ELSE 0 END) as total_hp_atp,
+        SUM(CASE WHEN main_status IS NOT NULL AND main_status = "CLOSED" THEN hp_atp ELSE 0 END) as total_hp_closed
+        FROM tb_project_progress_fiberstar
+        GROUP BY regional_project;')
+            ->result_array();
+        return $data;
+    }
+
     public function getTotalHpPlanArea()
     {
         $sessionLevel = $this->session->userdata('tim_project');

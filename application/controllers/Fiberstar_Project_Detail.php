@@ -7,6 +7,14 @@ class Fiberstar_Project_Detail extends CI_Controller
     public function __construct()
     {
         parent::__construct();
+
+        $config['upload_path'] = FCPATH . 'folders\\';
+        $config['allowed_types'] = 'jpg|png|pdf|docx';
+        $config['max_size'] = 2048; // Maksimum 2MB
+        $config['encrypt_name'] = TRUE; // Enkripsi nama file
+
+        $this->load->library('upload', $config);
+
         $this->load->library('form_validation');
         $this->load->model('MFiberstar_Project_Detail');
     }
@@ -60,4 +68,37 @@ class Fiberstar_Project_Detail extends CI_Controller
             redirect($previousUrl);
         }
     }
+
+    public function upload_file()
+    {
+        $uploadDir = './uploads/';
+
+// Pastikan folder upload ada
+if (!is_dir($uploadDir)) {
+    mkdir($uploadDir, 0777, true);
+}
+
+// Cek apakah ada file yang diupload
+if (isset($_FILES['file'])) {
+    $fileName = $_FILES['file']['name'];
+    $fileTmp = $_FILES['file']['tmp_name'];
+    $fileSize = $_FILES['file']['size'];
+    $fileError = $_FILES['file']['error'];
+
+    // Mengecek apakah tidak ada error saat upload
+    if ($fileError === UPLOAD_ERR_OK) {
+        // Menyimpan file ke folder upload
+        if (move_uploaded_file($fileTmp, $uploadDir . $fileName)) {
+            echo 'File berhasil diupload!';
+        } else {
+            echo 'Gagal menyimpan file!';
+        }
+    } else {
+        echo 'Terjadi kesalahan saat upload file!';
+    }
+} else {
+    echo 'Tidak ada file yang diupload!';
+}
+    }
+
 }

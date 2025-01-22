@@ -26,6 +26,7 @@ class Fiberstar_Project extends CI_Controller
         $data['unique_stagging'] = $this->MFiberstar_Project->getUniqueStagging();
         $data['top_area_cleanlist'] = $this->MFiberstar_Project->gettopAreaCleanlist();
         $data['top_area_bak'] = $this->MFiberstar_Project->gettopAreaBAK();
+        $data['stagging_regional'] = $this->MFiberstar_Project->getStaggingRegional();
 
         if ($this->session->userdata('tim_project') == "HO") {
             $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasiAll();
