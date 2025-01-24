@@ -23,6 +23,23 @@ class MMyRepublik_Project extends CI_Model
         return $data;
     }
 
+    public function getGrafikByKota()
+    {
+        $data = $this->db->query('SELECT kota_project,
+		SUM(hp_plan) as total_hp_plan,
+	    SUM(panjang_plan) as total_panjang_plan,
+        SUM(CASE WHEN tanggal_bak IS NOT NULL AND tanggal_bak != "" THEN hp_bak ELSE 0 END) as total_hp_bak,
+        SUM(CASE WHEN status_bap_snd IS NOT NULL and status_bap_snd != "" THEN hp_snd ELSE 0 END) as total_hp_snd,
+        SUM(CASE WHEN tanggal_drm_sf IS NOT NULL and tanggal_drm_sf = "DONE" THEN hp_drm ELSE 0 END) as total_hp_drm,
+        SUM(CASE WHEN tanggal_rfs IS NOT NULL and tanggal_rfs != "" THEN hp_rfs ELSE 0 END) as total_hp_rfs
+        FROM tb_project_progress_myrep
+        GROUP BY kota_project
+        ORDER BY total_hp_plan DESC
+        LIMIt 10;')
+            ->result_array();
+        return $data;
+    }
+
     public function getStaggingRegional()
     {
         $data = $this->db->query('SELECT regional_project,

@@ -29,6 +29,7 @@ class MyRepublik_Project extends CI_Controller
             $data['top_area_cleanlist'] = $this->MMyRepublik_Project->gettopAreaCleanlist();
             $data['top_area_bak'] = $this->MMyRepublik_Project->gettopAreaBAK();
             $data['top_area_rfs'] = $this->MMyRepublik_Project->gettopAreaRFS();
+            $data['grafik_by_kota'] = $this->MMyRepublik_Project->getGrafikByKota();
             $data['stagging_regional'] = $this->MMyRepublik_Project->getStaggingRegional();
 
             if ($this->session->userdata('tim_project') == "HO") {

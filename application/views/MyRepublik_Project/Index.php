@@ -582,6 +582,50 @@ $total_hp_closed_regional = 0;
           </div>
         </div>
 
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-header border-0">
+              <div class="d-flex justify-content-between">
+                <h3 class="card-title">Top Area RFS</h3>
+                <a href="javascript:void(0);">View Report</a>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="d-flex">
+                <p class="d-flex flex-column">
+                  <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                    <span
+                      class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_rfs']), 0, ".") . " HP" ?></span>
+                  <?php endforeach ?>
+                  <span>TOP AREA</span>
+                </p>
+                <p class="ml-auto d-flex flex-column text-right">
+                  <span class="text-success">
+                    <i class="fas fa-arrow-up"></i> <?= round($persentase_bak_to_cleanlist, 2) . "%" ?>
+                  </span>
+                  <span class="text-muted">By Cleanlist ( % )</span>
+                </p>
+              </div>
+              <!-- /.d-flex -->
+
+              <div class="position-relative mb-4">
+                <canvas id="fiberstar_chart_bar_cleanlist_3" height="200"></canvas>
+              </div>
+
+              <div class="d-flex flex-row justify-content-end">
+                <span class="mr-2">
+                  <i class="fas fa-square" style="color: #007bff;"></i> Cleanlist
+                  <i class="fas fa-square" style="color: #CED4DA;"></i> BAK
+                  <i class="fas fa-square" style="color: #FD7E14;"></i> DRM
+                  <i class="fas fa-square" style="color: #6610F2;"></i> SND
+                  <i class="fas fa-square" style="color: #28A745;"></i> RFS
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
         <!-- /.col-md-6 -->
       </div>
     </div>
@@ -808,6 +852,8 @@ $total_hp_closed_regional = 0;
   $(function () {
     'use strict'
 
+    
+
     var ticksStyle = {
       fontColor: '#495057',
       fontStyle: 'bold'
@@ -826,6 +872,7 @@ $total_hp_closed_regional = 0;
     // eslint-disable-next-line no-unused-vars
     var fiberstarChartBarBak = new Chart($fiberstarChartBarBak, {
       type: 'bar',
+      
       data: {
         labels: areaAchievBar,
         datasets: [
@@ -1000,7 +1047,115 @@ $total_hp_closed_regional = 0;
       }
     })
 
+    
+
+    var $fiberstarChartBarCleanlist_3 = $('#fiberstar_chart_bar_cleanlist_3')
+
+    const dataBarCleanlist_3 = <?php echo json_encode($grafik_by_kota); ?>;
+    const areaAchievBarCleanlist_3 = dataBarCleanlist_3.map(item => item.kota_project);
+    const hpAchievBarPlan_3 = dataBarCleanlist_3.map(item => item.total_hp_plan);
+    const hpAchievBarBak_3 = dataBarCleanlist_3.map(item => item.total_hp_bak);
+    const hpAchievBarSnd_3 = dataBarCleanlist_3.map(item => item.total_hp_snd);
+    const hpAchievBarDrm_3 = dataBarCleanlist_3.map(item => item.total_hp_drm);
+    const hpAchievBarRfs_3 = dataBarCleanlist_3.map(item => item.total_hp_rfs);
+
+    var fiberstarChartBarCleanlist_3 = new Chart($fiberstarChartBarCleanlist_3, {
+      type: 'bar',
+      data: {
+        labels: areaAchievBarCleanlist_3,
+        datasets: [
+          {
+            backgroundColor: '#007bff',
+            borderColor: '#007bff',
+            data: hpAchievBarPlan_3
+          },
+          {
+            backgroundColor: '#CED4DA',
+            borderColor: '#CED4DA',
+            data: hpAchievBarBak_3
+          }
+          ,
+          {
+            backgroundColor: '#FD7E14',
+            borderColor: '#FD7E14',
+            data: hpAchievBarSnd_3
+          }
+          ,
+          {
+            backgroundColor: '#6610F2',
+            borderColor: '#6610F2',
+            data: hpAchievBarDrm_3
+          }
+          ,
+          {
+            backgroundColor: '#28A745',
+            borderColor: '#28A745',
+            data: hpAchievBarRfs_3
+          }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+      datalabels: {
+        display: true, // Tampilkan data label
+        color: 'black', // Warna teks
+        anchor: 'end', // Posisi label pada ujung bar
+        align: 'start', // Teks sejajar dengan bar
+        font: {
+          weight: 'bold',
+          size: 10 // Ukuran font
+        },
+        formatter: function(value) {
+          return `${value.toLocaleString('id-ID')} Hp`; // Format angka
+        }
+      }
+    },
+        tooltips: {
+          mode: mode,
+          intersect: intersect
+        },
+        hover: {
+          mode: mode,
+          intersect: intersect
+        },
+        legend: {
+          display: false
+        },
+        scales: {
+          yAxes: [{
+            // display: false,
+            gridLines: {
+              display: true,
+              lineWidth: '4px',
+              color: 'rgba(0, 0, 0, .2)',
+              zeroLineColor: 'transparent'
+            },
+            ticks: $.extend({
+              beginAtZero: true,
+
+              // Include a dollar sign in the ticks
+              callback: function (value) {
+                return `${value.toLocaleString('id-ID')} Hp`;
+              }
+            }, ticksStyle)
+          }],
+          xAxes: [{
+            display: true,
+            gridLines: {
+              display: false
+            },
+            ticks: ticksStyle
+          }]
+        }
+      }
+    })
+
   })
+
+
+
+  
 
   document.addEventListener("DOMContentLoaded", function () {
     const cards = document.querySelectorAll('[data-card-widget="collapse"]');
@@ -1305,6 +1460,9 @@ $total_hp_closed_regional = 0;
 <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
 
 <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/fontawesome-free/css/all.min.css">
 <!-- overlayScrollbars -->
@@ -1333,7 +1491,6 @@ $total_hp_closed_regional = 0;
 <!-- Bootstrap 4 -->
 <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js">
 <!-- ChartJS -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js">
 <!-- Sparkline -->
 <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/sparklines/sparkline.js">
 <!-- JQVMap -->
@@ -1362,6 +1519,7 @@ $total_hp_closed_regional = 0;
 
 <!-- OPTIONAL SCRIPTS -->
 <script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
+<script src="<?= base_url('assets') ?>/plugins/chart.js/chartjs-plugin-datalabels.js"></script>
 <!-- AdminLTE for demo purposes -->
 <script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
 <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
@@ -1370,7 +1528,3 @@ $total_hp_closed_regional = 0;
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
 <!-- Font Awesome Icons -->
 <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
-
-<!-- <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartfibertstar.js"></script> -->
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartmyrep.js"></script>
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardrkap.js"></script>
