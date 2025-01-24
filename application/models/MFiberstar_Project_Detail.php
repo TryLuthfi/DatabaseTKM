@@ -53,9 +53,38 @@ class MFiberstar_Project_Detail extends CI_Model
         return $data;
     }
 
+    public function getDokumentSupportApprovalCBN(): mixed
+    {
+        $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+        if (preg_match('/\/(\d+)$/', $currentUrl, $matches)) {
+            $number = $matches[1]; // Angka setelah slash terakhir
+        } else {
+            $number = "Tidak ada angka di belakang URL";
+        }
+
+        $data = $this->db->query('SELECT tb_project_progress_fiberstar.*, tb_ds_approval_cbn.* 
+                                    FROM tb_project_progress_fiberstar 
+                                    LEFT JOIN tb_ds_approval_cbn 
+                                    ON tb_project_progress_fiberstar.primary_access_id_project = tb_ds_approval_cbn.primary_access_id_project 
+                                    WHERE tb_project_progress_fiberstar.primary_access_id_project = "'.$number.'";
+                                  ')
+            ->result_array();
+        return $data;
+    }
+
     public function addProgressRAB($data_array)
     {
         $res = $this->db->insert("tb_project_implementasi_fiberstar", $data_array);
+        return $res;
+    }
+
+    public function editStatusImplementasi($data){
+        $res = $this->db->query('UPDATE tb_project_progress_fiberstar SET status_implementasi = "OK" WHERE primary_access_id_project ="'.$data.'"');
+        return $res;
+    }
+
+    public function editStatusImplementasiBack($data){
+        $res = $this->db->query('UPDATE tb_project_progress_fiberstar SET status_implementasi = "NOT OK" WHERE primary_access_id_project ="'.$data.'"');
         return $res;
     }
 

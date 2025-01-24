@@ -14,46 +14,50 @@ class Rincian extends CI_Controller
 
     public function index()
     {
-        $now = date('Y-m-d');
+        if (!empty($this->session->userdata('id_user'))) {
+            $now = date('Y-m-d');
 
-        $data = [];
+            $data = [];
 
-        $data['title'] = 'Rincian';
-        $data['judul'] = 'Rincian Hari Ini';
-        $data['kode_akun'] = $this->db->get('tb_kode')->result_array();
+            $data['title'] = 'Rincian';
+            $data['judul'] = 'Rincian Hari Ini';
+            $data['kode_akun'] = $this->db->get('tb_kode')->result_array();
 
-        $real = $this->MRincian->getData();
+            $real = $this->MRincian->getData();
 
-        $ids = array_column($real, 'kode_rincian');
+            $ids = array_column($real, 'kode_rincian');
 
-        if (count($ids) !== 0) {
-            $detail = $this->MDetail->findKode($ids);
+            if (count($ids) !== 0) {
+                $detail = $this->MDetail->findKode($ids);
+            } else {
+                $data['rincian'] = [];
+            }
+
+            foreach ($real as $map) {
+                $filter = $this->filter($detail, $map['kode_rincian']);
+                $data['rincian'][] = [
+                    'detail' => $filter,
+                    'kode_rincian' => $map['kode_rincian'],
+                    'id_rincian' => $map['id_rincian'],
+                    'tanggal_rincian' => $map['tanggal_rincian'],
+                    'keterangan_rincian' => $map['keterangan_rincian'],
+                    'nama_kode' => $map['nama_kode'],
+                    'debit_rincian' => $map['debit_rincian'],
+                    'nominal_rincian' => $map['nominal_rincian'],
+                    'kredit_rincian' => $map['kredit_rincian']
+                ];
+            }
+
+            // var_dump($data);
+
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('Rincian/Index', $data);
+            $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
         } else {
-            $data['rincian'] = [];
+            redirect('Auth');
         }
-
-        foreach ($real as $map) {
-            $filter = $this->filter($detail, $map['kode_rincian']);
-            $data['rincian'][] = [
-                'detail' => $filter,
-                'kode_rincian' => $map['kode_rincian'],
-                'id_rincian' => $map['id_rincian'],
-                'tanggal_rincian' => $map['tanggal_rincian'],
-                'keterangan_rincian' => $map['keterangan_rincian'],
-                'nama_kode' => $map['nama_kode'],
-                'debit_rincian' => $map['debit_rincian'],
-                'nominal_rincian' => $map['nominal_rincian'],
-                'kredit_rincian' => $map['kredit_rincian']
-            ];
-        }
-
-        // var_dump($data);
-
-        $this->load->view('Templates/01_Header', $data);
-        $this->load->view('Templates/02_Menu');
-        $this->load->view('Rincian/Index', $data);
-        $this->load->view('Templates/03_Footer');
-        $this->load->view('Templates/99_JS');
     }
 
     private function filter(array $data, $key)
@@ -89,7 +93,7 @@ class Rincian extends CI_Controller
         $last_data = $this->db->query('SELECT id_dr FROM tb_detail_rincian order by id_dr DESC LIMIT 1');
 
         foreach ($last_data->result() as $row) {
-            $hasil_data =  $row->id_dr;
+            $hasil_data = $row->id_dr;
         }
 
         $hasil_data = $hasil_data + 1;
@@ -215,7 +219,9 @@ class Rincian extends CI_Controller
 
     public function search()
     {
-        $tgl = $this->input->post('date');
+        
+        if (!empty($this->session->userdata('id_user'))) {
+            $tgl = $this->input->post('date');
 
         $tglpecah = explode(" - ", $tgl);
         $start = $tglpecah[0];
@@ -278,5 +284,11 @@ ON
         $this->load->view('Rincian/Index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    } else {
+        redirect('Auth');
     }
+
+    } 
+
+
 }

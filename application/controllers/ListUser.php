@@ -13,27 +13,27 @@ class ListUser extends CI_Controller
 
     public function index()
     {
-        $now = date('Y-m-d');
 
-        $data['title'] = 'List User';
-        $data['judul'] = 'List User TKM';
-        $data['rincian_user'] = $this->MListUser->getData();
-        $data['rincian_jabatan'] = $this->MListUser->getJabatan();
-        $data['rincian_level'] = $this->MListUser->getLevel();
-        $data['count_jabatan'] = $this->MListUser->getCountJabatan();
-        $data['count_active_user'] = $this->MListUser->getCountActiveUser();
-        $data['user'] = $this->db->get('tb_user')->result_array();
+        if (!empty($this->session->userdata('id_user'))) {
 
-        $this->load->view('Templates/01_Header', $data);
-        $this->load->view('Templates/02_Menu');
-        $this->load->view('ListUser/Index', $data);
-        $this->load->view('Templates/03_Footer');
-        $this->load->view('Templates/99_JS');
+            $data['title'] = 'List User';
+            $data['judul'] = 'List User TKM';
+            $data['rincian_user'] = $this->MListUser->getData();
+            $data['rincian_jabatan'] = $this->MListUser->getJabatan();
+            $data['rincian_level'] = $this->MListUser->getLevel();
+            $data['count_jabatan'] = $this->MListUser->getCountJabatan();
+            $data['count_active_user'] = $this->MListUser->getCountActiveUser();
+            $data['user'] = $this->db->get('tb_user')->result_array();
 
-        // $total_nilai_po = 0;
-        // foreach ($rincian as $data) :
-        //   $total_nilai_po +=
-        // endforeach
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('ListUser/Index', $data);
+            $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
+
+        } else {
+            redirect('Auth');
+        }
     }
 
     public function add()
@@ -45,12 +45,12 @@ class ListUser extends CI_Controller
         $rincian_user = $this->db->get('tb_user')->row_array();
 
         $hasil_data = array(
-          'nama_user' => $_POST['nama_user'],
-          'username_user' => $_POST['username_user'],
-          'password_user' => $_POST['password_user'],
-          'id_level' => $_POST['id_level'],
-          'id_jabatan' => $_POST['id_jabatan'],
-          'status_user' => $_POST['status_user']
+            'nama_user' => $_POST['nama_user'],
+            'username_user' => $_POST['username_user'],
+            'password_user' => $_POST['password_user'],
+            'id_level' => $_POST['id_level'],
+            'id_jabatan' => $_POST['id_jabatan'],
+            'status_user' => $_POST['status_user']
         );
 
         $res = $this->MListUser->addUser($hasil_data);
@@ -68,13 +68,13 @@ class ListUser extends CI_Controller
     public function edit($id)
     {
 
-      $data_array = array(
-          'nama_user' => $_POST['nama_user'],
-          'username_user' => $_POST['username_user'],
-          'id_level' => $_POST['id_level'],
-          'id_jabatan' => $_POST['id_jabatan'],
-          'status_user' => $_POST['status_user']
-      );
+        $data_array = array(
+            'nama_user' => $_POST['nama_user'],
+            'username_user' => $_POST['username_user'],
+            'id_level' => $_POST['id_level'],
+            'id_jabatan' => $_POST['id_jabatan'],
+            'status_user' => $_POST['status_user']
+        );
 
         $where = array('id_user' => $id);
 

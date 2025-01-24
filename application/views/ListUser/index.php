@@ -905,7 +905,7 @@
 <!-- AdminLTE for demo purposes -->
 <script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
 <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardListUser.js"></script>
+<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardlistuser.js"></script>
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
 <!-- Font Awesome Icons -->

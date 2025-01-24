@@ -1,5 +1,6 @@
 <?php
 $status = $this->session->flashdata('status');
+$status == 'sukses_tambah';
 $error_log = $this->session->flashdata('error_log');
 $total = 1;
 $total_hp = 0;
@@ -17,6 +18,15 @@ $total_achiev_closure = 0;
 $persentase_plan = 0;
 $persentase_achiev = 0;
 $persentase_total = 0;
+
+$total_upload_approval_cbn = 0;
+$row_status_implementasi;
+$row_primary_access_id_project;
+
+foreach ($progress_implementasi as $data):
+  $row_status_implementasi = $data['status_implementasi'];
+  $row_primary_access_id_project = $data['primary_access_id_project'];
+endforeach;
 
 function formatTanggalIndonesia($date)
 {
@@ -54,9 +64,9 @@ function formatTanggalIndonesia($date)
         <div class="row mb-2">
           <div class="col-sm-6">
             <h1 class="m-0 text-dark"><?= $judul ?></h1>
-            <?php if (isset($error)) : ?>
-            <div class="alert alert-danger"><?php echo $error; ?></div>
-        <?php endif; ?>
+            <?php if (isset($error)): ?>
+              <div class="alert alert-danger"><?php echo $error; ?></div>
+            <?php endif; ?>
           </div>
         </div>
       </div>
@@ -115,7 +125,14 @@ function formatTanggalIndonesia($date)
                 <dt>Access Name</dt>
                 <dd> <?= $data['access_name_project'] ?></dd>
                 <dt>Home Pass</dt>
-                <dd> <?= number_format($data['hp_hld'], 0, ".") ?></dd>
+                <dd>
+                  <?php if ($data['hp_hld'] == '') { ?>
+                    0
+                  <?php } else { ?>
+                    <?= number_format(floatval($data['hp_hld']), 0, ".") ?>
+                  <?php } ?>
+
+                </dd>
                 <dt>Nomor PO</dt>
                 <dd><?= $data['number_po'] ?></dd>
                 <dt>Tanggal KOM</dt>
@@ -297,53 +314,77 @@ function formatTanggalIndonesia($date)
                       $total_achiev_closure += $data['achiev_closure'];
 
                       ?>
-
-                      <tr>
+                      <tr <?php if (str_contains($data['keterangan_progress'], "RAB") || str_contains($data['keterangan_progress'], "BOQ")) { ?>
+                          style="background-color: lightblue;" <?php } else if (str_contains($data['keterangan_progress'], "Done") || str_contains($data['keterangan_progress'], "DONE")) { ?>
+                            style="background-color: yellow;" <?php } else { ?>   <?php } ?>>
                         <td><?= $total++ ?></td>
                         <td><?= number_format(floatval($data['hp_hld']), 0, ".") ?></td>
-                        <td><?= $data['plan_tiang'] ?></td>
-                        <td><?= $data['achiev_tiang'] ?></td>
-                        <td><?= $data['plan_kabel_24'] ?></td>
-                        <td><?= $data['achiev_kabel_24'] ?></td>
-                        <td><?= $data['plan_kabel_48'] ?></td>
-                        <td><?= $data['achiev_kabel_48'] ?></td>
-                        <td><?= $data['plan_fat'] ?></td>
-                        <td><?= $data['achiev_fat'] ?></td>
-                        <td><?= $data['plan_closure'] ?></td>
-                        <td><?= $data['achiev_closure'] ?></td>
+                        <td><?= number_format(floatval($data['plan_tiang']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['achiev_tiang']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['plan_kabel_24']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['achiev_kabel_24']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['plan_kabel_48']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['achiev_kabel_48']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['plan_fat']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['achiev_fat']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['plan_closure']), 0, ".") ?></td>
+                        <td><?= number_format(floatval($data['achiev_closure']), 0, ".") ?></td>
                         <td><?= $data['data_created'] ?></td>
                         <td><?= $data['keterangan_progress'] ?></td>
                       </tr>
+
 
                     <?php endforeach; ?>
 
                   </tbody>
                   <tfoot>
                     <tr>
-                      <th colspan="1">Total</th>
-                      <th colspan="1"><?= number_format($data['hp_hld'], 0, ".") ?></th>
-                      <th colspan="1"><?= number_format($total_plan_tiang, 0, ".") ?></th>
-                      <th colspan="1"><?= number_format($total_achiev_tiang, 0, ".") ?></th>
-                      <th colspan="1"><?= number_format($total_plan_kabel_24C, 0, ".") ?></th>
-                      <th colspan="1"><?= number_format($total_achiev_kabel_24C, 0, ".") ?></th>
-                      <th colspan="1"><?= number_format($total_plan_kabel_48C, 0, ".") ?></th>
-                      <th colspan="1"><?= number_format($total_achiev_kabel_48C, 0, ".") ?></th>
-                      <th colspan="1"><?= number_format($total_plan_fat, 0, ".") ?></th>
-                      <th colspan="1"><?= number_format($total_achiev_fat, 0, ".") ?></th>
-                      <th colspan="1"><?= number_format($total_plan_closure, 0, ".") ?></th>
-                      <th colspan="1"><?= number_format($total_achiev_closure, 0, ".") ?></th>
-                      <th colspan="1"></th>
-                      <th colspan="1"></th>
+                      <th colspan="2">Total</th>
+                      <th colspan="1"><?= number_format(floatval($total_plan_tiang), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_achiev_tiang), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_plan_kabel_24C), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_achiev_kabel_24C), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_plan_kabel_48C), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_achiev_kabel_48C), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_plan_fat), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_achiev_fat), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_plan_closure), 0, ".") ?></th>
+                      <th colspan="1"><?= number_format(floatval($total_achiev_closure), 0, ".") ?></th>
+                      <th colspan="2"></th>
+                    </tr>
+                    <tr>
+                      <th colspan="2">Selisih</th>
+                      <th colspan="2"><?= number_format(floatval($total_plan_tiang - $total_achiev_tiang), 0, ".") ?>
+                      </th>
+                      <th colspan="2">
+                        <?= number_format(floatval($total_plan_kabel_24C - $total_achiev_kabel_24C), 0, ".") ?></th>
+                      <th colspan="2">
+                        <?= number_format(floatval($total_plan_kabel_48C - $total_achiev_kabel_48C), 0, ".") ?></th>
+                      <th colspan="2"><?= number_format(floatval($total_plan_fat - $total_achiev_fat), 0, ".") ?></th>
+                      <th colspan="2">
+                        <?= number_format(floatval($total_plan_closure - $total_achiev_closure), 0, ".") ?></th>
+                      <th colspan="2"></th>
                     </tr>
                   </tfoot>
                 </table>
-                <div class="col-12" style="margin-top:2%">
+                <div class="modal-footer">
                   <?php if ($this->session->userdata('tim_project') == "HO") { ?>
-                    <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah_boq"
+                    <?php if($row_status_implementasi == "OK") {?>
+                      <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasiBack/'.$row_primary_access_id_project); ?>" class="btn btn-success float-right text-bold" >Tambah Implementasi</a>
+                    <?php } else { ?>
+                    <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasi/'.$row_primary_access_id_project); ?>" class="btn btn-secondary float-right text-bold" >Close Implementasi</a>
+                      <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah_boq"
                       data-toggle="modal">Tambah BOQ &nbsp;</a>
+                    <?php } ?>
                   <?php } else { ?>
-                    <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah_implementasi"
-                      data-toggle="modal">Tambah Progress &nbsp;</i> </a>
+                    <?php if($row_status_implementasi == "OK") {?>
+                    
+                    <?php } else { ?>
+                      <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasi/'.$row_primary_access_id_project); ?>" class="btn btn-secondary float-right text-bold" >Close Implementasi</i> </a>
+                      <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah_implementasi"
+                      data-toggle="modal">Tambah Progess &nbsp;</a>
+                    <?php } ?>
+                    
                   <?php } ?>
                 </div>
               </div>
@@ -356,7 +397,7 @@ function formatTanggalIndonesia($date)
                     <tr>
                       <th>No</th>
                       <th>Stagging</th>
-                      <th>Status</th>
+                      <th>Doc Uploaded</th>
                       <th>Last Update</th>
                     </tr>
                   </thead>
@@ -364,7 +405,7 @@ function formatTanggalIndonesia($date)
                     <tr data-widget="expandable-table" aria-expanded="false">
                       <td>1</td>
                       <td>APPROVAL CBN</td>
-                      <td>0/3</td>
+                      <td id="total_upload_approval_cbn"></td>
                       <td>21-Januari-2025</td>
                     </tr>
                     <tr class="expandable-body">
@@ -374,9 +415,10 @@ function formatTanggalIndonesia($date)
                             <thead class="bg-primary">
                               <tr>
                                 <th>No</th>
-                                <th>Dokument Support Approval VBN</th>
+                                <th>Dokument Support Approval CBN</th>
                                 <th>Status</th>
                                 <th>Upload</th>
+                                <th>Remark</th>
                                 <th>Action</th>
                               </tr>
                             </thead>
@@ -387,12 +429,82 @@ function formatTanggalIndonesia($date)
                               <tr>
                                 <td><?= $total++ ?></td>
                                 <td>SURAT IJIN SURVEY</td>
+                                <td>
+                                  <?php foreach ($dokument_support_approval_cbn as $data): ?>
+                                    <?= $data['ds_approval_cbn_sis_status'] ?>
+                                  <?php endforeach ?>
+                                </td>
+                                <td class="align-middle" style="text-align:center;">
+                                  <input type="checkbox" disabled <?php foreach ($dokument_support_approval_cbn as $data):
+                                    if (!empty($data['ds_approval_cbn_sis_status'])) {
+                                      $total_upload_approval_cbn++ ?> checked <?php
+                                    } else {
+                                      ?>     <?php
+                                    }
+                                  endforeach ?>>
+                                </td>
+                                <td>
+                                  <?php foreach ($dokument_support_approval_cbn as $data):
+                                    echo $data['ds_approval_cbn_sis_remarks']; endforeach ?>
+                                </td>
+                                <td>
+                                  <?php foreach ($dokument_support_approval_cbn as $data):
+                                    if ($data['ds_approval_cbn_sis_status'] == "ON GOING REVIEW") {
+                                      ?> <a href="<?php echo base_url('Fiberstar_Project_Detail/download_file'); ?>"
+                                        class="btn btn-primary"><i class=" fas fa-download"></i></a> <?php
+                                    } else {
+                                      ?> <a href="#" class="btn btn-primary swalDefaultError"><i
+                                          class=" fas fa-download"></i></a> <?php
+                                    }
+                                  endforeach ?>
+                                  <a href="#" data-toggle="modal" data-target="#modal-approval-cbn-suratijinsurvey"
+                                    class="btn btn-success"><i class=" fas fa-plus"></i></a>
+                                  <a href="http://databasetkm.infinityfreeapp.com/assets/files/Kediri/asd.pdf"
+                                    target="_blank" class="btn btn-success"><i class="fas fa-solid fa-info "></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>KMZ BOUNDARY</td>
                                 <td>NY UPLOAD</td>
                                 <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
                                 </td>
+                                <td>SURAT IJIN SURVEY</td>
                                 <td>
-                                  <a href="#" data-toggle="modal" data-target="#modal-approval-cbn-suratijinsurvey"
-                                    class="btn btn-primary"><i class=" fas fa-info"></i></a>
+                                  <?php foreach ($dokument_support_approval_cbn as $data):
+                                    if ($data['ds_approval_cbn_kmzb_status'] == "ON REVIEW") {
+                                      ?> <a
+                                        href="<?php echo base_url('Fiberstar_Project_Detail/download_file/' . $data['ds_approval_cbn_kmzb_status']); ?>"
+                                        class="btn btn-primary"><i class=" fas fa-download"></i></a> <?php
+                                    } else {
+                                      ?> <a class="btn btn-primary swalDefaultError"><i
+                                          class=" fas fa-download"></i></a> <?php
+                                    }
+                                  endforeach ?>
+                                  <a href="#" data-toggle="modal" data-target="#modal-approval-cbn-kmzb"
+                                    class="btn btn-success"><i class=" fas fa-plus"></i></a>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td><?= $total++ ?></td>
+                                <td>TSSR</td>
+                                <td>NY UPLOAD</td>
+                                <td class="align-middle" style="text-align:center;"><input type="checkbox" disabled>
+                                </td>
+                                <td>SURAT IJIN SURVEY</td>
+                                <td>
+                                  <?php foreach ($dokument_support_approval_cbn as $data):
+                                    if ($data['ds_approval_cbn_tssr_status'] == "ON REVIEW") {
+                                      ?> <a
+                                        href="<?php echo base_url('Fiberstar_Project_Detail/download_file/' . $data['ds_approval_cbn_tssr_status']); ?>"
+                                        class="btn btn-primary"><i class=" fas fa-download"></i></a> <?php
+                                    } else {
+                                      ?> <a class="btn btn-primary swalDefaultError"><i
+                                          class=" fas fa-download"></i></a> <?php
+                                    }
+                                  endforeach ?>
+                                  <a href="#" data-toggle="modal" data-target="#modal-approval-cbn-tssr"
+                                    class="btn btn-success"><i class=" fas fa-plus"></i></a>
                                 </td>
                               </tr>
                             </tbody>
@@ -401,7 +513,7 @@ function formatTanggalIndonesia($date)
                       </td>
                     </tr>
                     <tr data-widget="expandable-table" aria-expanded="false">
-                      <td>1</td>
+                      <td>2</td>
                       <td>ATP</td>
                       <td>ON REVIEW</td>
                       <td>11-Oktober-2025</td>
@@ -1106,9 +1218,10 @@ function formatTanggalIndonesia($date)
               </form>
             <?php endforeach; ?>
 
-            <!-- modal untuk tambah data -->  
+            <!-- modal untuk tambah data -->
             <?php foreach ($progress_implementasi as $data): ?>
-              <form id="uploadForm" action="<?php echo base_url('Fiberstar_Project_Detail/upload_file'); ?>" method="post" enctype="multipart/form-data">
+              <form id="uploadForm" action="<?php echo base_url('Fiberstar_Project_Detail/upload_file'); ?>" method="post"
+                enctype="multipart/form-data">
                 <div class="modal fade" id="modal-approval-cbn-suratijinsurvey">
                   <div class="modal-dialog modal-lg">
                     <div class="modal-content">
@@ -1128,14 +1241,14 @@ function formatTanggalIndonesia($date)
                             value="<?= $data['access_id_project'] ?> || <?= $data['access_name_project'] ?>">
                         </div>
                         <div class="form-group">
-                    <label for="exampleInputFile">Upload Dokument</label>
-                    <div class="input-group">
-                      <div class="custom-file">
-                      <label for="fileInput">Pilih File:</label>
-        <input type="file" id="fileInput" name="file" required>
-                      </div>
-                    </div>
-                  </div>
+                          <label for="exampleInputFile">Upload Dokument</label>
+                          <div class="input-group">
+                            <div class="custom-file">
+                              <input type="file" name="file" class="custom-file-input" required>
+                              <label class="custom-file-label" for="custom-file-input">Choose file</label>
+                            </div>
+                          </div>
+                        </div>
                         <div class="modal-footer">
                           <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
 
@@ -1160,6 +1273,7 @@ function formatTanggalIndonesia($date)
 </div>
 <!-- /.content-wrapper -->
 
+
 <?php $this->session->set_flashdata('status', 'kosong'); ?>
 
 <!-- Control Sidebar -->
@@ -1175,8 +1289,13 @@ function formatTanggalIndonesia($date)
 <script type="text/javascript"
   src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/progressbar.js@1.1.0/dist/progressbar.min.js"></script>
-<script src="<?= base_url('assets') ?>/plugins/bsCustomFileInput/bsCustomFileInput.min.js"></script>
+
+
 <script>
+  var total_upload_approval_cbn = <?= $total_upload_approval_cbn ?>;
+  document.getElementById('total_upload_approval_cbn').innerText = total_upload_approval_cbn + " / 3";
+
+
   $('#1').datepicker({
     inputs: $('input[name=tanggal_berangkat]'),
     format: 'dd/mm/yyyy'
@@ -1187,9 +1306,6 @@ function formatTanggalIndonesia($date)
   })
 </script>
 <script type="text/javascript">
-  console.log("Hello World!")
-
-
   $(function () {
 
     // format angka rupiah
@@ -1200,18 +1316,24 @@ function formatTanggalIndonesia($date)
 
     // notifikasi allert sukses atau tidak
     <?php if ($status == 'sukses_tambah') { ?>
-      swal("Success!", "Berhasil menambah PO!", "success");
+      swal("Success!", "Berhasil Ditambah!", "success");
     <?php } else if ($status == 'sukses_hapus') { ?>
-        swal("Success!", "Berhasil menghapus PO!", "success");
-    <?php } else if ($status == 'PO sudah ada') { ?>
-          swal("Gagal!", "PO Sudah ada", "warning");
-    <?php } else if ($status == 'sukses_hapus') { ?>
-            swal("Success!", "Berhasil menghapus PO!", "success");>
-      <?php } else if ($status == 'gagal_hapus') { ?>
-              swal("Gagal!", "Gagal menghapus PO!", "warning");>
-      <?php } else { ?>
+        swal("Success!", "Berhasil Dihapus!", "success");
+    <?php } else if ($status == 'sukses_edit') { ?>
+          swal("Success!", "Berhasil Edit Data!", "success");
+    <?php } else if ($status == 'gagal_tambah') { ?>
+            swal("Gagal!", "Gagal Menambah Data!", "warning");
+    <?php } else if ($status == 'gagal_edit') { ?>
+              swal("Gagal!", "Gagal Mengedit Data!", "warning");
+    <?php } else if ($status == 'gagal_hapus') { ?>
+                swal("Gagal!", "Gagal Menghapus Data!", "warning");
+    <?php } else { ?>
     <?php } ?>
 
+  });
+
+  $('.swalDefaultError').click(function () {
+    swal("Gagal!", "Dokument Belum Di Upload!", "warning");
   });
 
   $('.tombol_hapus').on('click', function (e) {
@@ -1233,362 +1355,6 @@ function formatTanggalIndonesia($date)
 
   });
 
-  $(document).ready(function () {
-
-    // Format mata uang.
-    $('.nilai_po2').mask('000.000.000', { reverse: true });
-
-  })
-
-  $(document).ready(function () {
-    $('.card[data-card-widget="collapse"]').addClass('card-tools');
-  });
-
-  document.getElementById('reset_filter').addEventListener('click', function () {
-    const selectRegional = document.getElementById('filter_regional');
-    const selectPic = document.getElementById('filter_pic');
-    const selectArea = document.getElementById('filter_area');
-    const selectStagging = document.getElementById('filter_stagging');
-
-    const optionsRegional = selectRegional.options;
-    const optionsPic = selectPic.options;
-    const optionsArea = selectArea.options;
-    const optionsStagging = selectStagging.options;
-
-    // Hapus semua pilihan
-    for (let i = 0; i < optionsRegional.length; i++) {
-      optionsRegional[i].selected = false; // Hilangkan pilihan
-    }
-
-    for (let i = 0; i < optionsPic.length; i++) {
-      optionsPic[i].selected = false; // Hilangkan pilihan
-    }
-
-    for (let i = 0; i < optionsArea.length; i++) {
-      optionsArea[i].selected = false; // Hilangkan pilihan
-    }
-
-    for (let i = 0; i < optionsStagging.length; i++) {
-      optionsStagging[i].selected = false; // Hilangkan pilihan
-    }
-
-    // Pilih opsi default (indeks 0)
-    selectRegional.dispatchEvent(new Event('change'));
-    selectPic.dispatchEvent(new Event('change'));
-    selectArea.dispatchEvent(new Event('change'));
-    selectStagging.dispatchEvent(new Event('change'));
-  });
-
-  $(function () {
-    'use strict'
-
-    var ticksStyle = {
-      fontColor: '#495057',
-      fontStyle: 'bold'
-    }
-
-    var mode = 'index'
-    var intersect = true
-
-    var $fiberstarChartBar = $('#fiberstar_chart_bar')
-
-    const dataBar = <?php echo json_encode($top_area_bak); ?>;
-    const areaAchievBar = dataBar.map(item => item.area_project);
-    const hpAchievBar = dataBar.map(item => item.achiev_bak);
-
-
-    // eslint-disable-next-line no-unused-vars
-    var fiberstarChartBar = new Chart($fiberstarChartBar, {
-      type: 'bar',
-      data: {
-        labels: areaAchievBar,
-        datasets: [
-          {
-            backgroundColor: '#007bff',
-            borderColor: '#007bff',
-            data: hpAchievBar
-          }
-        ]
-      },
-      options: {
-        maintainAspectRatio: false,
-        tooltips: {
-          mode: mode,
-          intersect: intersect
-        },
-        hover: {
-          mode: mode,
-          intersect: intersect
-        },
-        legend: {
-          display: false
-        },
-        scales: {
-          yAxes: [{
-            // display: false,
-            gridLines: {
-              display: true,
-              lineWidth: '4px',
-              color: 'rgba(0, 0, 0, .2)',
-              zeroLineColor: 'transparent'
-            },
-            ticks: $.extend({
-              beginAtZero: true,
-
-              // Include a dollar sign in the ticks
-              callback: function (value) {
-                return `${value.toLocaleString('id-ID')} Hp`;
-              }
-            }, ticksStyle)
-          }],
-          xAxes: [{
-            display: true,
-            gridLines: {
-              display: false
-            },
-            ticks: ticksStyle
-          }]
-        }
-      }
-    })
-
-    const dataLine = <?php echo json_encode($top_area_bak); ?>;
-    const areaAchievLine = dataLine.map(item => item.area_project);
-    const hpAchievLine = dataLine.map(item => item.achiev_bak);
-
-    var $fiberstarChartLine = $('#fiberstar_chart_line')
-    // eslint-disable-next-line no-unused-vars
-    var fiberstarChartLine = new Chart($fiberstarChartLine, {
-      data: {
-        labels: areaAchievLine,
-        datasets: [{
-          type: 'line',
-          data: hpAchievLine,
-          backgroundColor: 'transparent',
-          borderColor: '#007bff',
-          pointBorderColor: '#007bff',
-          pointBackgroundColor: '#007bff',
-          fill: false
-          // pointHoverBackgroundColor: '#007bff',
-          // pointHoverBorderColor    : '#007bff'
-        }]
-      },
-      options: {
-        maintainAspectRatio: false,
-        tooltips: {
-          mode: mode,
-          intersect: intersect
-        },
-        hover: {
-          mode: mode,
-          intersect: intersect
-        },
-        legend: {
-          display: false
-        },
-        scales: {
-          yAxes: [{
-            // display: false,
-            gridLines: {
-              display: true,
-              lineWidth: '4px',
-              color: 'rgba(0, 0, 0, .2)',
-              zeroLineColor: 'transparent'
-            },
-            ticks: $.extend({
-              beginAtZero: true,
-
-              // Include a dollar sign in the ticks
-              callback: function (value, index, ticks) {
-                // Format nilai ke Rupiah
-                return `${value.toLocaleString('id-ID')} Hp`;
-              }
-            }, ticksStyle)
-          }],
-          xAxes: [{
-            display: true,
-            gridLines: {
-              display: false
-            },
-            ticks: ticksStyle
-          }]
-        }
-      }
-    })
-  })
-
-  document.addEventListener("DOMContentLoaded", function () {
-    const cards = document.querySelectorAll('[data-card-widget="collapse"]');
-    cards.forEach(card => {
-      const parentCard = card.closest('.card');
-      if (parentCard) {
-        parentCard.classList.add('collapsed-card'); // Tambahkan kelas 'collapsed-card'
-      }
-    });
-
-  });
-
-  $(document).ready(function () {
-    // Tambahkan event click ke setiap row
-    $('#tabel_pemasukan tbody').on('click', 'tr', function () {
-      const url = $(this).data('url');
-      if (url) {
-        window.location.href = url; // Pindah ke halaman detail
-      }
-    });
-
-    // Tambahkan gaya kursor pointer
-    $('#tabel_pemasukan tbody tr').css('cursor', 'pointer');
-  });
-
-  $(document).ready(function () {
-    $('#table_detail').DataTable({
-      searching: false // Nonaktifkan fitur pencarian
-    });
-  });
-
-  document.getElementById('uploadForm').addEventListener('submit', function (event) {
-    event.preventDefault(); // Mencegah form untuk di-submit secara tradisional
-
-    // Ambil elemen input file
-    var fileInput = document.getElementById('fileInput');
-    var file = fileInput.files[0]; // Mengambil file yang dipilih
-
-    if (file) {
-        var formData = new FormData();
-        formData.append('file', file);
-
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'Fiberstar_Project_Detail/upload_file', true); // Mengirim ke upload.php di server
-
-        // Fungsi callback saat proses upload selesai
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                document.getElementById('message').textContent = 'File berhasil diupload!';
-            } else {
-                document.getElementById('message').textContent = 'Terjadi kesalahan saat mengupload file.';
-            }
-        };
-
-        // Mengirimkan file
-        xhr.send(formData);
-    } else {
-        document.getElementById('message').textContent = 'Pilih file terlebih dahulu.';
-    }
-});
-
-
-
-</script>
-
-<script>
-  // Membuat circle progress bar
-  var bar = new ProgressBar.Circle('#progress-bar-container', {
-    color: '#FF5733', // Warna progress bar
-    strokeWidth: 10, // Ketebalan garis
-    trailWidth: 10,  // Ketebalan garis latar belakang
-    easing: 'easeInOut',  // Animasi progress bar
-    duration: 1400,  // Durasi animasi dalam milidetik
-    from: { color: '#ddd', width: 10 },
-    to: { color: '#FF5733', width: 10 },
-    step: function (state, circle) {
-      circle.path.setAttribute('stroke', state.color);
-      circle.path.setAttribute('stroke-width', state.width);
-      var value = Math.round(circle.value() * 100);
-      circle.setText(value + '%');
-    }
-  });
-
-  // Mengatur nilai progress bar
-  bar.animate(<?= $persentase_po ?>);  // Nilai antara 0.0 hingga 1.0 (70% dalam contoh ini)
-</script>
-<script>
-  $(function () {
-    bsCustomFileInput.init();
-  });
-</script>
-<script>
-  $(function () {
-    //Initialize Select2 Elements
-    $('.select2').select2()
-
-    //Initialize Select2 Elements
-    $('.select2bs4').select2({
-      theme: 'bootstrap4'
-    })
-
-    //Datemask dd/mm/yyyy
-    $('#datemask').inputmask('dd/mm/yyyy', { 'placeholder': 'dd/mm/yyyy' })
-    //Datemask2 mm/dd/yyyy
-    $('#datemask2').inputmask('mm/dd/yyyy', { 'placeholder': 'mm/dd/yyyy' })
-    //Money Euro
-    $('[data-mask]').inputmask()
-
-    //Date picker
-    $('#reservationdate').datetimepicker({
-      format: 'L'
-    });
-
-    //Date and time picker
-    $('#reservationdatetime').datetimepicker({ icons: { time: 'far fa-clock' } });
-
-    //Date range picker
-    $('#reservation').daterangepicker()
-    //Date range picker with time picker
-    $('#reservationtime').daterangepicker({
-      timePicker: true,
-      timePickerIncrement: 30,
-      locale: {
-        format: 'MM/DD/YYYY hh:mm A'
-      }
-    })
-    //Date range as a button
-    $('#daterange-btn').daterangepicker(
-      {
-        ranges: {
-          'Today': [moment(), moment()],
-          'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-          'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-          'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-          'This Month': [moment().startOf('month'), moment().endOf('month')],
-          'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-        },
-        startDate: moment().subtract(29, 'days'),
-        endDate: moment()
-      },
-      function (start, end) {
-        $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'))
-      }
-    )
-
-    //Timepicker
-    $('#timepicker').datetimepicker({
-      format: 'LT'
-    })
-
-    //Bootstrap Duallistbox
-    $('.duallistbox').bootstrapDualListbox()
-
-    //Colorpicker
-    $('.my-colorpicker1').colorpicker()
-    //color picker with addon
-    $('.my-colorpicker2').colorpicker()
-
-    $('.my-colorpicker2').on('colorpickerChange', function (event) {
-      $('.my-colorpicker2 .fa-square').css('color', event.color.toString());
-    })
-
-    $("input[data-bootstrap-switch]").each(function () {
-      $(this).bootstrapSwitch('state', $(this).prop('checked'));
-    })
-
-  })
-  // BS-Stepper Init
-  document.addEventListener('DOMContentLoaded', function () {
-    window.stepper = new Stepper(document.querySelector('.bs-stepper'))
-  })
-
-  // DropzoneJS Demo Code Start
   Dropzone.autoDiscover = false
 
   // Get the template HTML and remove it from the doumenthe template HTML and remove it from the doument
@@ -1605,7 +1371,7 @@ function formatTanggalIndonesia($date)
     previewTemplate: previewTemplate,
     autoQueue: false, // Make sure the files aren't queued until manually added
     previewsContainer: "#previews", // Define the container to display the previews
-    clickable: ".fileinput-button" // Define the element that should be used as click trigger to select files.
+    clickable: ".custom-file-input" // Define the element that should be used as click trigger to select files.
   })
 
   myDropzone.on("addedfile", function (file) {
@@ -1639,11 +1405,41 @@ function formatTanggalIndonesia($date)
   document.querySelector("#actions .cancel").onclick = function () {
     myDropzone.removeAllFiles(true)
   }
-  // DropzoneJS Demo Code End
+</script>
+<script type="text/javascript">
+  $(document).ready(function () {
+
+    // Format mata uang.
+    $('.nilai_po2').mask('000.000.000', { reverse: true });
+
+  })
+</script>
+
+<script>
+  // Membuat circle progress bar
+  var bar = new ProgressBar.Circle('#progress-bar-container', {
+    color: '#FF5733', // Warna progress bar
+    strokeWidth: 10, // Ketebalan garis
+    trailWidth: 10,  // Ketebalan garis latar belakang
+    easing: 'easeInOut',  // Animasi progress bar
+    duration: 1400,  // Durasi animasi dalam milidetik
+    from: { color: '#ddd', width: 10 },
+    to: { color: '#FF5733', width: 10 },
+    step: function (state, circle) {
+      circle.path.setAttribute('stroke', state.color);
+      circle.path.setAttribute('stroke-width', state.width);
+      var value = Math.round(circle.value() * 100);
+      circle.setText(value + '%');
+    }
+  });
+
+  // Mengatur nilai progress bar
+  bar.animate(<?= $persentase_po ?>);  // Nilai antara 0.0 hingga 1.0 (70% dalam contoh ini)
 </script>
 <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
 
 <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/fontawesome-free/css/all.min.css">
@@ -1699,7 +1495,6 @@ function formatTanggalIndonesia($date)
 <script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
 <!-- Bootstrap -->
 <script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="<?= base_url('assets') ?>/plugins/icheck-bootstrap/icheck-bootstrap.min.css"></script>
 
 <!-- OPTIONAL SCRIPTS -->
 <script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
@@ -1711,7 +1506,5 @@ function formatTanggalIndonesia($date)
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
 <!-- Font Awesome Icons -->
 <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
-
-<!-- <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartfibertstar.js"></script> -->
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartmyrep.js"></script>
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardrkap.js"></script>
+<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/toastr/toastr.min.css">
+<script src="<?= base_url('assets') ?>/plugins/toastr/toastr.min.css"></script>

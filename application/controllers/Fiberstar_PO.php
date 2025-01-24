@@ -13,7 +13,7 @@ class Fiberstar_PO extends CI_Controller
     
     public function index()
     {
-        $now = date('Y-m-d');
+        if (!empty($this->session->userdata('id_user'))) {
 
         $data['title'] = 'PT. Fiberstar';
         $data['judul'] = 'PT. Fiberstar';
@@ -26,11 +26,9 @@ class Fiberstar_PO extends CI_Controller
         $this->load->view('Fiberstar_PO/Index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
-
-        // $total_nilai_po = 0;
-        // foreach ($rincian as $data) :
-        //   $total_nilai_po +=
-        // endforeach
+        } else {
+            redirect('Auth');
+        }
     }
 
     public function add()

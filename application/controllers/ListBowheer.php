@@ -13,19 +13,23 @@ class ListBowheer extends CI_Controller
 
     public function index()
     {
-        $now = date('Y-m-d');
+        if (!empty($this->session->userdata('id_user'))) {
 
-        $data['title'] = 'List Target Bowheer';
-        $data['judul'] = 'List Target Bowheer TKM';
-        $data['rincian_bowheer'] = $this->MListBowheer->getData();
-        $data['bowheer'] = $this->db->get('tb_bowheer')->result_array();
-        $data['list_user'] = $this->db->get('tb_user')->result_array();
+            $data['title'] = 'List Target Bowheer';
+            $data['judul'] = 'List Target Bowheer TKM';
+            $data['rincian_bowheer'] = $this->MListBowheer->getData();
+            $data['bowheer'] = $this->db->get('tb_bowheer')->result_array();
+            $data['list_user'] = $this->db->get('tb_user')->result_array();
 
-        $this->load->view('Templates/01_Header', $data);
-        $this->load->view('Templates/02_Menu');
-        $this->load->view('ListBowheer/Index', $data);
-        $this->load->view('Templates/03_Footer');
-        $this->load->view('Templates/99_JS');
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('ListBowheer/Index', $data);
+            $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
+
+        } else {
+            redirect('Auth');
+        }
 
     }
 
@@ -63,11 +67,11 @@ class ListBowheer extends CI_Controller
     public function edit($id)
     {
 
-      $data_array = array(
-          'nama_bowheer' => $_POST['nama_bowheer'],
-          'id_user' => $_POST['id_user'],
-          'target_bowheer' => preg_replace('/[^0-9]/', '', $_POST['target_bowheer'])
-      );
+        $data_array = array(
+            'nama_bowheer' => $_POST['nama_bowheer'],
+            'id_user' => $_POST['id_user'],
+            'target_bowheer' => preg_replace('/[^0-9]/', '', $_POST['target_bowheer'])
+        );
 
         $where = array('id_bowheer' => $id);
 

@@ -13,31 +13,29 @@ class ListArea extends CI_Controller
 
     public function index()
     {
-        $now = date('Y-m-d');
+        if (!empty($this->session->userdata('id_user'))) {
 
-        $data['title'] = 'List Area';
-        $data['judul'] = 'List Area TKM';
-        $data['area'] = $this->db->get('tb_area')->result_array();
+            $data['title'] = 'List Area';
+            $data['judul'] = 'List Area TKM';
+            $data['area'] = $this->db->get('tb_area')->result_array();
 
-        $this->load->view('Templates/01_Header', $data);
-        $this->load->view('Templates/02_Menu');
-        $this->load->view('ListArea/Index', $data);
-        $this->load->view('Templates/03_Footer');
-        $this->load->view('Templates/99_JS');
-
-        // $total_nilai_po = 0;
-        // foreach ($rincian as $data) :
-        //   $total_nilai_po +=
-        // endforeach
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('ListArea/Index', $data);
+            $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
+        } else {
+            redirect('Auth');
+        }
     }
 
     public function add()
     {
         $hasil_data = array(
-          'regional_area' => $_POST['regional_area'],
-          'provinsi_area' => $_POST['provinsi_area'],
-          'kota_area' => $_POST['kota_area'],
-          'kecamatan_area' => $_POST['kecamatan_area']
+            'regional_area' => $_POST['regional_area'],
+            'provinsi_area' => $_POST['provinsi_area'],
+            'kota_area' => $_POST['kota_area'],
+            'kecamatan_area' => $_POST['kecamatan_area']
         );
 
         $res = $this->MListArea->addArea($hasil_data);

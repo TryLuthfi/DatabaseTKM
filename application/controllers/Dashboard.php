@@ -10,6 +10,7 @@ class Dashboard extends CI_Controller
 
     public function index()
     {
+        if (!empty($this->session->userdata('id_user'))) {
         $data['title'] = 'Dashboard';
 
         $this->load->view('Templates/01_Header', $data);
@@ -17,5 +18,8 @@ class Dashboard extends CI_Controller
         $this->load->view('Dashboard/Index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+        } else {
+            redirect('Auth');
+        }
     }
 }

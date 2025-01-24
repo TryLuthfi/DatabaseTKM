@@ -8,13 +8,6 @@ class Fiberstar_Project_Detail extends CI_Controller
     {
         parent::__construct();
 
-        $config['upload_path'] = FCPATH . 'folders\\';
-        $config['allowed_types'] = 'jpg|png|pdf|docx';
-        $config['max_size'] = 2048; // Maksimum 2MB
-        $config['encrypt_name'] = TRUE; // Enkripsi nama file
-
-        $this->load->library('upload', $config);
-
         $this->load->library('form_validation');
         $this->load->model('MFiberstar_Project_Detail');
     }
@@ -22,20 +15,23 @@ class Fiberstar_Project_Detail extends CI_Controller
 
     public function detailImplementasi($primary_access_id_project)
     {
-        $primary_access_id_project = array('primary_access_id_project' => $primary_access_id_project);
+        if (!empty($this->session->userdata('id_user'))) {
+            $primary_access_id_project = array('primary_access_id_project' => $primary_access_id_project);
 
-        $now = date('Y-m-d');
+            $data['title'] = 'LIST PO';
+            $data['judul'] = 'PT. Fiberstar';
+            $data['progress_implementasi'] = $this->MFiberstar_Project_Detail->getProgressImplementasi();
+            $data['detail_progress_implementasi'] = $this->MFiberstar_Project_Detail->getDetailProgressImplementasi();
+            $data['dokument_support_approval_cbn'] = $this->MFiberstar_Project_Detail->getDokumentSupportApprovalCBN();
 
-        $data['title'] = 'LIST PO';
-        $data['judul'] = 'PT. Fiberstar';
-        $data['progress_implementasi'] = $this->MFiberstar_Project_Detail->getProgressImplementasi();
-        $data['detail_progress_implementasi'] = $this->MFiberstar_Project_Detail->getDetailProgressImplementasi();
-
-        $this->load->view('Templates/01_Header', $data);
-        $this->load->view('Templates/02_Menu');
-        $this->load->view('Fiberstar_Project_Detail/Index', $data);
-        $this->load->view('Templates/03_Footer');
-        $this->load->view('Templates/99_JS');
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('Fiberstar_Project_Detail/Index', $data);
+            $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
+        } else {
+            redirect('Auth');
+        }
 
     }
 
@@ -69,36 +65,83 @@ class Fiberstar_Project_Detail extends CI_Controller
         }
     }
 
+    public function editStatusImplementasi($primary_access_id_project){
+        $primary = $primary_access_id_project;
+        $previousUrl = $this->input->server('HTTP_REFERER');
+
+        $res = $this->MFiberstar_Project_Detail->editStatusImplementasi($primary);
+        if ($res >= 1) {
+            $this->session->set_flashdata('status', 'sukses_tambah');
+            redirect($previousUrl);
+        } else {
+            $this->session->set_flashdata('status', 'gagal_tambah');
+            redirect($previousUrl);
+        }
+    }
+
+    public function editStatusImplementasiBack($primary_access_id_project){
+        $primary = $primary_access_id_project;
+        $previousUrl = $this->input->server('HTTP_REFERER');
+
+        $res = $this->MFiberstar_Project_Detail->editStatusImplementasiBack($primary);
+        if ($res >= 1) {
+            $this->session->set_flashdata('status', 'sukses_tambah');
+            redirect($previousUrl);
+        } else {
+            $this->session->set_flashdata('status', 'gagal_tambah');
+            redirect($previousUrl);
+        }
+    }
+
     public function upload_file()
     {
-        $uploadDir = './uploads/';
+        $uploadDir = './Doc Control/Kediri/ACCESS0047-11-2024 -  FBEOPA KDR REJOMULYO TK/ds_approval_cbn/sis/';
+        $previousUrl = $this->input->server('HTTP_REFERER');
 
-// Pastikan folder upload ada
-if (!is_dir($uploadDir)) {
-    mkdir($uploadDir, 0777, true);
-}
-
-// Cek apakah ada file yang diupload
-if (isset($_FILES['file'])) {
-    $fileName = $_FILES['file']['name'];
-    $fileTmp = $_FILES['file']['tmp_name'];
-    $fileSize = $_FILES['file']['size'];
-    $fileError = $_FILES['file']['error'];
-
-    // Mengecek apakah tidak ada error saat upload
-    if ($fileError === UPLOAD_ERR_OK) {
-        // Menyimpan file ke folder upload
-        if (move_uploaded_file($fileTmp, $uploadDir . $fileName)) {
-            echo 'File berhasil diupload!';
-        } else {
-            echo 'Gagal menyimpan file!';
+        // Pastikan folder upload ada
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
         }
-    } else {
-        echo 'Terjadi kesalahan saat upload file!';
+
+        // Cek apakah ada file yang diupload
+        if (isset($_FILES['file'])) {
+            $fileName = $_FILES['file']['name'];
+            $fileTmp = $_FILES['file']['tmp_name'];
+            $fileSize = $_FILES['file']['size'];
+            $fileError = $_FILES['file']['error'];
+
+            // Mengecek apakah tidak ada error saat upload
+            if ($fileError === UPLOAD_ERR_OK) {
+                // Menyimpan file ke folder upload
+                if (move_uploaded_file($fileTmp, $uploadDir . $fileName)) {
+                    $this->session->set_flashdata('status', 'sukses_tambah');
+                    redirect($previousUrl);
+                } else {
+                    $this->session->set_flashdata('status', 'gagal_tambah');
+                    redirect($previousUrl);
+                }
+            } else {
+                echo 'Terjadi kesalahan saat upload file!';
+            }
+        } else {
+            echo 'Tidak ada file yang diupload!';
+        }
     }
-} else {
-    echo 'Tidak ada file yang diupload!';
-}
+
+    public function download_file()
+    {
+        // $file_path = base_url('assets')."/files/Kediri/asd.pdf"; // Ganti dengan path file yang ingin Anda buka atau unduh
+        $file_path = "http://databasetkm.infinityfreeapp.com/assets/files/Kediri/asd.pdf"; // Ganti dengan path file yang ingin Anda buka atau unduh
+
+        // echo $file_path;
+        // Periksa apakah file ada
+        if (file_exists($file_path)) {
+            // Set header untuk mendownload file
+            force_download($file_path, NULL); // function ini memaksa file diunduh
+        } else {
+            echo $file_path;
+            echo "File tidak ditemukan.";
+        }
     }
 
 }

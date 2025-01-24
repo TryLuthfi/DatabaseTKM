@@ -10,13 +10,13 @@ $id_menu = $this->uri->segment('1');
                 <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="index3.html" class="nav-link">Monitoring Project</a>
+                <a href="<?= base_url('Dashboard') ?>" class="nav-link">Dashboard</a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="#" class="nav-link">Logistik</a>
+                <a href="<?= base_url('Fiberstar_Project') ?>" class="nav-link">Fiberstar</a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="#" class="nav-link">Keuangan</a>
+                <a href="<?= base_url('MyRepublik_Project') ?>" class="nav-link">My Republik</a>
             </li>
         </ul>
 
@@ -228,7 +228,7 @@ $id_menu = $this->uri->segment('1');
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a class="nav-link <?php if ($id_menu == 'MyRepublik_Project') {
+                                <a href="<?= base_url('MyRepublik_Project') ?>" class="nav-link <?php if ($id_menu == 'MyRepublik_Project') {
                                     echo "active";
                                 } ?>">
                                     <i class="far fa-circle nav-icon"></i>

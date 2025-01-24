@@ -3,6 +3,7 @@ $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 $nilai_po = 0;
 $rkap = 345000000000;
+$target_cleanlist_rkap = 345000;
 $persentase_po = 0;
 $nilai_invoice = 0;
 $sisa_invoice = 0;
@@ -13,6 +14,9 @@ $total_sisa_invoice = 0;
 $persentase_plan = 0;
 $persentase_achiev = 0;
 $persentase_total = 0;
+
+$persentase_cleanlist_to_total = 0;
+$persentase_bak_to_cleanlist = 0;
 
 $total_hp_plan_regional = 0;
 $total_hp_canvasing_regional = 0;
@@ -165,7 +169,7 @@ $total_hp_closed_regional = 0;
                 <!-- Info boxes -->
                 <div class="row">
                   <div class="col-12 col-sm-6 col-md-3">
-                    <a href="<?= base_url("Pengeluaran") ?>">
+                    <a href="#">
                       <div class="info-box mb-3">
                         <span class="info-box-icon bg-danger elevation-1"><i
                             class="fas fa-file-invoice-dollar"></i></span>
@@ -182,7 +186,7 @@ $total_hp_closed_regional = 0;
                   </div>
 
                   <div class="col-12 col-sm-6 col-md-3">
-                    <a href="<?= base_url("Pengeluaran") ?>">
+                    <a href="#">
                       <div class="info-box mb-3">
                         <span class="info-box-icon bg-danger elevation-1"><i
                             class="fas fa-file-invoice-dollar"></i></span>
@@ -200,7 +204,7 @@ $total_hp_closed_regional = 0;
                   </div>
 
                   <div class="col-12 col-sm-6 col-md-3">
-                    <a href="<?= base_url("Laporan") ?>">
+                    <a href="#">
                       <div class="info-box mb-3">
                         <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
                         <div class="info-box-content">
@@ -218,7 +222,7 @@ $total_hp_closed_regional = 0;
                   </div>
 
                   <div class="col-12 col-sm-6 col-md-3">
-                    <a href="<?= base_url("Laporan") ?>">
+                    <a href="#">
                       <div class="info-box mb-3">
                         <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
                         <div class="info-box-content">
@@ -426,99 +430,104 @@ $total_hp_closed_regional = 0;
 
                 </div>
               </div>
+
+              <?php if ($this->session->userdata('tim_project') == "HO") { ?>
               <section class="content">
-      <div class="container-fluid">
-        <!-- Info boxes -->
-        <div class="row">
-          <!-- fix for small devices only -->
-          <div class="clearfix hidden-md-up"></div>
 
-          <div class="col-12">
-            <div class="card">
-              <!-- /.card-header -->
-              <div class="card-body table-responsive text-nowrap ">
-                <table id="table_detail" class="table table-bordered table-hover">
-                  <thead class="bg-info">
-                    <tr>
-                      <th>No</th>
-                      <th>Regional Project</th>
-                      <th>HP Plan</th>
-                      <th>Canvasing</th>
-                      <th>DONE BAK</th>
-                      <th>DONE SPK</th>
-                      <th>DONE HLD</th>
-                      <th>DONE LLD</th>
-                      <th>DONE KOM</th>
-                      <th>DONE PKS</th>
-                      <th>DONE RFS</th>
-                      <th>DONE</th>
-                      <th>CLOSED</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <?php
-                    $total = 1;
+                <div class="container-fluid">
+                  <!-- Info boxes -->
+                  <div class="row">
+                    <!-- fix for small devices only -->
+                    <div class="clearfix hidden-md-up"></div>
 
-                    foreach ($stagging_regional as $data):
-                      
-                      $total_hp_plan_regional += $data['total_hp_plan'];
-                      $total_hp_canvasing_regional += $data['total_hp_canvasing'];
-                      $total_hp_bak_regional += $data['total_hp_bak'];
-                      $total_hp_spk_regional += $data['total_hp_spk'];
-                      $total_hp_hld_regional += $data['total_hp_hld'];
-                      $total_hp_lld_regional += $data['total_hp_lld'];
-                      $total_hp_kom_regional += $data['total_hp_kom'];
-                      $total_hp_pks_regional += $data['total_hp_pks'];
-                      $total_hp_rfs_regional += $data['total_hp_rfs'];
-                      $total_hp_atp_regional += $data['total_hp_atp'];
-                      $total_hp_closed_regional += $data['total_hp_closed'];
+                    <div class="col-12">
+                      <div class="card">
+                        <!-- /.card-header -->
+                        <div class="card-body table-responsive text-nowrap ">
+                          <table id="table_detail" class="table table-bordered table-hover">
+                            <thead class="bg-info">
+                              <tr>
+                                <th>No</th>
+                                <th>Regional Project</th>
+                                <th>HP Plan</th>
+                                <th>Canvasing</th>
+                                <th>DONE BAK</th>
+                                <th>DONE SPK</th>
+                                <th>DONE HLD</th>
+                                <th>DONE LLD</th>
+                                <th>DONE KOM</th>
+                                <th>DONE PKS</th>
+                                <th>DONE RFS</th>
+                                <th>DONE</th>
+                                <th>CLOSED</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <?php
+                              $total = 1;
 
-                      ?>
+                              foreach ($stagging_regional as $data):
 
-                      <tr>
-                        <td><?= $total++ ?></td>
-                        <td><?= $data['regional_project'] ?></td>
-                        <td><?= number_format(floatval($data['total_hp_plan']), 0, ".") ?></td>
-                        <td><?= number_format(floatval($data['total_hp_canvasing']), 0, ".") ?></td>
-                        <td><?= number_format(floatval($data['total_hp_bak']), 0, ".") ?></td>
-                        <td><?= number_format(floatval($data['total_hp_spk']), 0, ".") ?></td>
-                        <td><?= number_format(floatval($data['total_hp_hld']), 0, ".") ?></td>
-                        <td><?= number_format(floatval($data['total_hp_lld']), 0, ".") ?></td>
-                        <td><?= number_format(floatval($data['total_hp_kom']), 0, ".") ?></td>
-                        <td><?= number_format(floatval($data['total_hp_pks']), 0, ".") ?></td>
-                        <td><?= number_format(floatval($data['total_hp_rfs']), 0, ".") ?></td>
-                        <td><?= number_format(floatval($data['total_hp_atp']), 0, ".") ?></td>
-                        <td><?= number_format(floatval($data['total_hp_closed']), 0, ".") ?></td>
-                      </tr>
+                                $total_hp_plan_regional += $data['total_hp_plan'];
+                                $total_hp_canvasing_regional += $data['total_hp_canvasing'];
+                                $total_hp_bak_regional += $data['total_hp_bak'];
+                                $total_hp_spk_regional += $data['total_hp_spk'];
+                                $total_hp_hld_regional += $data['total_hp_hld'];
+                                $total_hp_lld_regional += $data['total_hp_lld'];
+                                $total_hp_kom_regional += $data['total_hp_kom'];
+                                $total_hp_pks_regional += $data['total_hp_pks'];
+                                $total_hp_rfs_regional += $data['total_hp_rfs'];
+                                $total_hp_atp_regional += $data['total_hp_atp'];
+                                $total_hp_closed_regional += $data['total_hp_closed'];
 
-                    <?php endforeach; ?>
+                                ?>
 
-                  </tbody>
-                  <tfoot>
-                    <tr>
-                      <th colspan="2">Total</th>
-                      <th colspan="1"><?= number_format(floatval($total_hp_plan_regional), 0, ".") ?></th>
-                      <th colspan="1"><?= number_format(floatval($total_hp_canvasing_regional), 0, ".") ?></th>
-                      <th colspan="1"><?= number_format(floatval($total_hp_bak_regional), 0, ".") ?></th>
-                      <th colspan="1"><?= number_format(floatval($total_hp_spk_regional), 0, ".") ?></th>
-                      <th colspan="1"><?= number_format(floatval($total_hp_hld_regional), 0, ".") ?></th>
-                      <th colspan="1"><?= number_format(floatval($total_hp_lld_regional), 0, ".") ?></th>
-                      <th colspan="1"><?= number_format(floatval($total_hp_kom_regional), 0, ".") ?></th>
-                      <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ".") ?></th>
-                      <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ".") ?></th>
-                      <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ".") ?></th>
-                      <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ".") ?></th>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-              <!-- /.card-body -->
-            </div>
-            <div class="row">
-              <!-- ISI -->
-            </div>
-          </div>
-    </section>
+                                <tr>
+                                  <td><?= $total++ ?></td>
+                                  <td><?= $data['regional_project'] ?></td>
+                                  <td><?= number_format(floatval($data['total_hp_plan']), 0, ".") ?></td>
+                                  <td><?= number_format(floatval($data['total_hp_canvasing']), 0, ".") ?></td>
+                                  <td><?= number_format(floatval($data['total_hp_bak']), 0, ".") ?></td>
+                                  <td><?= number_format(floatval($data['total_hp_spk']), 0, ".") ?></td>
+                                  <td><?= number_format(floatval($data['total_hp_hld']), 0, ".") ?></td>
+                                  <td><?= number_format(floatval($data['total_hp_lld']), 0, ".") ?></td>
+                                  <td><?= number_format(floatval($data['total_hp_kom']), 0, ".") ?></td>
+                                  <td><?= number_format(floatval($data['total_hp_pks']), 0, ".") ?></td>
+                                  <td><?= number_format(floatval($data['total_hp_rfs']), 0, ".") ?></td>
+                                  <td><?= number_format(floatval($data['total_hp_atp']), 0, ".") ?></td>
+                                  <td><?= number_format(floatval($data['total_hp_closed']), 0, ".") ?></td>
+                                </tr>
+
+                              <?php endforeach; ?>
+
+                            </tbody>
+                            <tfoot>
+                              <tr>
+                                <th colspan="2">Total</th>
+                                <th colspan="1"><?= number_format(floatval($total_hp_plan_regional), 0, ".") ?></th>
+                                <th colspan="1"><?= number_format(floatval($total_hp_canvasing_regional), 0, ".") ?>
+                                </th>
+                                <th colspan="1"><?= number_format(floatval($total_hp_bak_regional), 0, ".") ?></th>
+                                <th colspan="1"><?= number_format(floatval($total_hp_spk_regional), 0, ".") ?></th>
+                                <th colspan="1"><?= number_format(floatval($total_hp_hld_regional), 0, ".") ?></th>
+                                <th colspan="1"><?= number_format(floatval($total_hp_lld_regional), 0, ".") ?></th>
+                                <th colspan="1"><?= number_format(floatval($total_hp_kom_regional), 0, ".") ?></th>
+                                <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ".") ?></th>
+                                <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ".") ?></th>
+                                <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ".") ?></th>
+                                <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ".") ?></th>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                        <!-- /.card-body -->
+                      </div>
+                      <div class="row">
+                        <!-- ISI -->
+                      </div>
+                    </div>
+              </section>
+              <?php } ?>
             </div>
           </div>
         </div>
@@ -526,6 +535,13 @@ $total_hp_closed_regional = 0;
       </div>
 
     </div>
+
+    <?php
+
+     $persentase_cleanlist_to_total = ($total_hp_plan_regional / $target_cleanlist_rkap) * 100;
+     $persentase_bak_to_cleanlist = ($total_hp_bak_regional / $total_hp_plan_regional) * 100;
+
+    ?>
 
     <div class="container-fluid">
       <div class="row">
@@ -548,7 +564,7 @@ $total_hp_closed_regional = 0;
                 </p>
                 <p class="ml-auto d-flex flex-column text-right">
                   <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> 57.0%
+                    <i class="fas fa-arrow-up"></i> <?= round($persentase_cleanlist_to_total,2)."%" ?>
                   </span>
                   <span class="text-muted">By RKAP ( % )</span>
                 </p>
@@ -588,7 +604,7 @@ $total_hp_closed_regional = 0;
                 </p>
                 <p class="ml-auto d-flex flex-column text-right">
                   <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> 17.0%
+                  <i class="fas fa-arrow-up"></i> <?= round($persentase_bak_to_cleanlist,2)."%" ?>
                   </span>
                   <span class="text-muted">By Cleanlist ( % )</span>
                 </p>
@@ -629,10 +645,10 @@ $total_hp_closed_regional = 0;
                 <div class="col-6">
                   <h3 class="card-title">List Cleanlist Cluster</h3>
                 </div>
-                <div class="col-6">
+                <!-- <div class="col-6">
                   <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah-manual"
                     data-toggle="modal">Tambah &nbsp;<i class="fas fa-plus"></i> </a>
-                </div>
+                </div> -->
               </div>
 
             </div>
@@ -769,10 +785,8 @@ $total_hp_closed_regional = 0;
                       <?php } ?>
 
                       <td>
-                        <?php if ($data['status_lld'] == "OK") { ?>
                           <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
                             id="tombol_detail" class="btn btn-primary tombol_detail"><i class=" fas fa-share"></i></a>
-                        <?php } ?>
 
                       </td>
                     </tr>
@@ -1198,7 +1212,6 @@ $total_hp_closed_regional = 0;
     const hpAchievBarCleanlist = dataBarCleanlist.map(item => item.achiev_cleanlist);
 
 
-    // eslint-disable-next-line no-unused-vars
     var fiberstarChartBarCleanlist = new Chart($fiberstarChartBarCleanlist, {
       type: 'bar',
       data: {
@@ -1281,6 +1294,7 @@ $total_hp_closed_regional = 0;
     // Fungsi untuk menghitung total dari data yang tampil
     function updateTotal() {
       // Ambil semua data yang terlihat
+
       const data = table.rows({ search: 'applied' }).data();
 
       // Hitung total dari kolom Value (index 2)
