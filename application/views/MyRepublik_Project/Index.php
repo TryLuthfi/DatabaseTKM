@@ -348,23 +348,51 @@ $total_hp_closed_regional = 0;
                       </div>
                     </div>
                   </div>
-
                 </div>
               </div>
             </div>
           </div>
         </div>
-
       </div>
-
     </div>
 
-    <?php
+    <section class="content">
+      <div class="container-fluid">
+        <div class="row">
+          <!-- /.col (LEFT) -->
+          <div class="col-md-12">
+            <!-- LINE CHART -->
+            <!-- /.card -->
 
-    //  $persentase_cleanlist_to_total = ($total_hp_plan_regional / $target_cleanlist_rkap) * 100;
-    //  $persentase_bak_to_cleanlist = ($total_hp_bak_regional / $total_hp_plan_regional) * 100;
-    
-    ?>
+            <!-- BAR CHART -->
+            <div class="card card-success">
+              <div class="card-header">
+                <h3 class="card-title">Bar Chart</h3>
+
+                <div class="card-tools">
+                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="chart" style="height: 300px;">
+                  <canvas id="barChart"
+                    style="min-height: 250px; height: 300px; max-height: 300px; max-width: 100%;"></canvas>
+                </div>
+                <div id="paginationControls" class="mt-3"></div>
+              </div>
+              <!-- /.card-body -->
+            </div>
+            <!-- /.card -->
+            <!-- /.card -->
+
+          </div>
+          <!-- /.col (RIGHT) -->
+        </div>
+        <!-- /.row -->
+      </div><!-- /.container-fluid -->
+    </section>
 
     <div class="container-fluid">
       <div class="row">
@@ -488,56 +516,13 @@ $total_hp_closed_regional = 0;
           </div>
         </div>
 
-        <div class="col-lg-12">
-          <div class="card">
-            <div class="card-header border-0">
-              <div class="d-flex justify-content-between">
-                <h3 class="card-title">Top Area RFS</h3>
-                <a href="javascript:void(0);">View Report</a>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex">
-                <p class="d-flex flex-column">
-                  <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                    <span
-                      class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_rfs']), 0, ".") . " HP" ?></span>
-                  <?php endforeach ?>
-                  <span>TOP AREA</span>
-                </p>
-                <p class="ml-auto d-flex flex-column text-right">
-                  <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> <?= round($persentase_bak_to_cleanlist, 2) . "%" ?>
-                  </span>
-                  <span class="text-muted">By Cleanlist ( % )</span>
-                </p>
-              </div>
-              <!-- /.d-flex -->
-
-              <div class="position-relative mb-4">
-                <canvas id="fiberstar_chart_bar_cleanlist_3" height="200"></canvas>
-              </div>
-
-              <div class="d-flex flex-row justify-content-end">
-                <span class="mr-2">
-                  <i class="fas fa-square" style="color: #007bff;"></i> Cleanlist
-                  <i class="fas fa-square" style="color: #CED4DA;"></i> BAK
-                  <i class="fas fa-square" style="color: #FD7E14;"></i> DRM
-                  <i class="fas fa-square" style="color: #6610F2;"></i> SND
-                  <i class="fas fa-square" style="color: #28A745;"></i> RFS
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
 
         <!-- /.col-md-6 -->
       </div>
     </div>
   </section>
 
-  
+
 
 
   <!-- Main content -->
@@ -669,94 +654,95 @@ $total_hp_closed_regional = 0;
 </script>
 <script type="text/javascript">
 
-document.addEventListener("DOMContentLoaded", function () {
-  const table = document.getElementById("table_data_myrep");
-  let selectedRows = []; // Array untuk menyimpan baris yang dipilih
-  let lastSelectedIndex = null; // Index baris terakhir yang dipilih
+  document.addEventListener("DOMContentLoaded", function () {
+    $.fn.dataTable.ext.errMode = 'none';
+    const table = document.getElementById("table_data_myrep");
+    let selectedRows = []; // Array untuk menyimpan baris yang dipilih
+    let lastSelectedIndex = null; // Index baris terakhir yang dipilih
 
-  // Event listener untuk menangani klik pada tabel
-  table.addEventListener("click", function (event) {
-    const row = event.target.closest("tr");
+    // Event listener untuk menangani klik pada tabel
+    table.addEventListener("click", function (event) {
+      const row = event.target.closest("tr");
 
-    // Pastikan hanya baris di <tbody> yang bisa dipilih
-    if (row && row.parentElement.tagName === "TBODY") {
-      const rows = Array.from(table.querySelectorAll("tbody tr"));
-      const rowIndex = rows.indexOf(row);
+      // Pastikan hanya baris di <tbody> yang bisa dipilih
+      if (row && row.parentElement.tagName === "TBODY") {
+        const rows = Array.from(table.querySelectorAll("tbody tr"));
+        const rowIndex = rows.indexOf(row);
 
-      if (row.classList.contains("selected-row")) {
-        // Jika baris sudah dipilih, hapus status "selected-row"
-        row.classList.remove("selected-row");
-        selectedRows = selectedRows.filter(r => r !== row); // Hapus dari array
-      } else if (event.shiftKey && lastSelectedIndex !== null) {
-        // Pilih rentang baris dengan "Shift"
-        const [start, end] = [lastSelectedIndex, rowIndex].sort((a, b) => a - b);
-        rows.slice(start, end + 1).forEach(r => {
-          if (!selectedRows.includes(r)) {
-            selectedRows.push(r);
-            r.classList.add("selected-row");
+        if (row.classList.contains("selected-row")) {
+          // Jika baris sudah dipilih, hapus status "selected-row"
+          row.classList.remove("selected-row");
+          selectedRows = selectedRows.filter(r => r !== row); // Hapus dari array
+        } else if (event.shiftKey && lastSelectedIndex !== null) {
+          // Pilih rentang baris dengan "Shift"
+          const [start, end] = [lastSelectedIndex, rowIndex].sort((a, b) => a - b);
+          rows.slice(start, end + 1).forEach(r => {
+            if (!selectedRows.includes(r)) {
+              selectedRows.push(r);
+              r.classList.add("selected-row");
+            }
+          });
+        } else if (event.ctrlKey || event.metaKey) {
+          // Pilih atau batalkan pilihan baris dengan "Ctrl"
+          row.classList.toggle("selected-row");
+          if (selectedRows.includes(row)) {
+            selectedRows = selectedRows.filter(r => r !== row); // Hapus jika sudah dipilih
+          } else {
+            selectedRows.push(row); // Tambahkan jika belum dipilih
           }
-        });
-      } else if (event.ctrlKey || event.metaKey) {
-        // Pilih atau batalkan pilihan baris dengan "Ctrl"
-        row.classList.toggle("selected-row");
-        if (selectedRows.includes(row)) {
-          selectedRows = selectedRows.filter(r => r !== row); // Hapus jika sudah dipilih
         } else {
-          selectedRows.push(row); // Tambahkan jika belum dipilih
+          // Pilih hanya satu baris tanpa tombol modifier
+          rows.forEach(r => r.classList.remove("selected-row"));
+          selectedRows = [row];
+          row.classList.add("selected-row");
         }
-      } else {
-        // Pilih hanya satu baris tanpa tombol modifier
-        rows.forEach(r => r.classList.remove("selected-row"));
-        selectedRows = [row];
-        row.classList.add("selected-row");
+
+        // Update index baris terakhir yang dipilih
+        lastSelectedIndex = rowIndex;
       }
+    });
 
-      // Update index baris terakhir yang dipilih
-      lastSelectedIndex = rowIndex;
-    }
-  });
+    // Event listener untuk salin data dengan "Ctrl + C"
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "c" && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
 
-  // Event listener untuk salin data dengan "Ctrl + C"
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "c" && (event.ctrlKey || event.metaKey)) {
-      event.preventDefault();
+        if (selectedRows.length === 0) {
+          alert("Pilih setidaknya satu baris untuk disalin.");
+          return;
+        }
 
-      if (selectedRows.length === 0) {
-        alert("Pilih setidaknya satu baris untuk disalin.");
-        return;
+        // Ambil header tabel
+        const headers = Array.from(table.querySelectorAll("thead th"))
+          .map(th => th.innerText.trim())
+          .join("\t");
+
+        // Ambil data dari baris yang dipilih
+        const data = selectedRows
+          .map(row => Array.from(row.children).map(cell => cell.innerText.trim()).join("\t"))
+          .join("\n");
+
+        // Gabungkan header dan data
+        const clipboardText = `${headers}\n${data}`;
+
+        // Salin ke clipboard
+        navigator.clipboard.writeText(clipboardText).then(() => {
+          console.log("Data berhasil disalin!");
+        }).catch(err => console.error("Gagal menyalin data:", err));
       }
+    });
 
-      // Ambil header tabel
-      const headers = Array.from(table.querySelectorAll("thead th"))
-        .map(th => th.innerText.trim())
-        .join("\t");
-
-      // Ambil data dari baris yang dipilih
-      const data = selectedRows
-        .map(row => Array.from(row.children).map(cell => cell.innerText.trim()).join("\t"))
-        .join("\n");
-
-      // Gabungkan header dan data
-      const clipboardText = `${headers}\n${data}`;
-
-      // Salin ke clipboard
-      navigator.clipboard.writeText(clipboardText).then(() => {
-        console.log("Data berhasil disalin!");
-      }).catch(err => console.error("Gagal menyalin data:", err));
-    }
+    // Hapus pilihan jika klik terjadi di luar tabel
+    document.addEventListener("click", function (event) {
+      if (!event.target.closest("#table_data_myrep")) {
+        document.querySelectorAll("#table_data_myrep tbody tr").forEach(row => {
+          row.classList.remove("selected-row");
+        });
+        selectedRows = [];
+        lastSelectedIndex = null;
+      }
+    });
   });
-
-  // Hapus pilihan jika klik terjadi di luar tabel
-  document.addEventListener("click", function (event) {
-    if (!event.target.closest("#table_data_myrep")) {
-      document.querySelectorAll("#table_data_myrep tbody tr").forEach(row => {
-        row.classList.remove("selected-row");
-      });
-      selectedRows = [];
-      lastSelectedIndex = null;
-    }
-  });
-});
 
   $(function () {
 
@@ -848,6 +834,190 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   $(function () {
+
+
+    const dataBarCleanlist_4 = <?php echo json_encode($grafik_by_kota); ?>;
+    const areaAchievBarCleanlist_4 = dataBarCleanlist_4.map(item => item.kota_project);
+    const hpAchievBarPlan_4 = dataBarCleanlist_4.map(item => item.total_hp_plan);
+    const hpAchievBarBak_4 = dataBarCleanlist_4.map(item => item.total_hp_bak);
+    const hpAchievBarSnd_4 = dataBarCleanlist_4.map(item => item.total_hp_snd);
+    const hpAchievBarDrm_4 = dataBarCleanlist_4.map(item => item.total_hp_drm);
+    const hpAchievBarRfs_4 = dataBarCleanlist_4.map(item => item.total_hp_rfs);
+
+    const originalData = {
+      labels: areaAchievBarCleanlist_4, // Semua label asli
+      datasets: [
+        {
+          label: 'Cleanlist',
+          backgroundColor: '#007bff',
+          borderColor: '#007bff',
+          data: hpAchievBarPlan_4
+        },
+        {
+          label: 'BAK',
+          backgroundColor: '#d2d6de',
+          borderColor: '#d2d6de',
+          data: hpAchievBarBak_4
+        },
+        {
+          label: 'DRM',
+          backgroundColor: '#FD7E14',
+          borderColor: '#FD7E14',
+          data: hpAchievBarDrm_4
+        },
+        {
+          label: 'SND',
+          backgroundColor: '#6610F2',
+          borderColor: '#6610F2',
+          data: hpAchievBarSnd_4
+        },
+        {
+          label: 'RFS',
+          backgroundColor: '#28A745',
+          borderColor: '#28A745',
+          data: hpAchievBarRfs_4
+        }
+      ]
+    };
+
+    const itemsPerPage = 5; // Tampilkan 5 data per halaman
+let currentPage = 1; // Halaman aktif
+let filterState = []; // Menyimpan state filter legend
+
+    function getPagedData(page) {
+  const startIndex = (page - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+
+  // Filter data berdasarkan halaman
+  const pagedLabels = originalData.labels.slice(startIndex, endIndex);
+  const pagedDatasets = originalData.datasets.map((dataset, index) => ({
+    ...dataset,
+    data: dataset.data.slice(startIndex, endIndex)
+  }));
+
+  return { labels: pagedLabels, datasets: pagedDatasets };
+}
+
+const barChartCanvas = $('#barChart').get(0).getContext('2d');
+let barChart; // Variabel untuk menyimpan instance Chart.js
+
+function renderChart(page) {
+  const pagedData = getPagedData(page);
+
+  if (barChart) {
+    barChart.destroy(); // Hancurkan chart lama sebelum membuat baru
+  }
+
+  barChart = new Chart(barChartCanvas, {
+    type: 'bar',
+    data: pagedData,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      datasetFill: false,
+      plugins: {
+        legend: {
+          onClick: function (e, legendItem) {
+            const datasetIndex = legendItem.datasetIndex;
+            const chart = legendItem.chart;
+
+            // Toggle visibility dataset
+            const meta = chart.getDatasetMeta(datasetIndex);
+            meta.hidden = meta.hidden === null ? !chart.data.datasets[datasetIndex].hidden : null;
+
+            // Simpan status filter ke filterState
+            filterState[datasetIndex] = meta.hidden;
+
+            chart.update(); // Update chart setelah perubahan
+          }
+        }
+      }
+    }
+  });
+
+  // Terapkan filter yang disimpan
+  applyFilterState(barChart);
+}
+
+function applyFilterState(chart) {
+  if (filterState.length > 0) {
+    chart.data.datasets.forEach((dataset, index) => {
+      const meta = chart.getDatasetMeta(index);
+      meta.hidden = filterState[index] || null;
+    });
+    chart.update();
+  }
+}
+
+function createPaginationControls(totalPages) {
+  const paginationContainer = $('#paginationControls');
+  paginationContainer.empty(); // Hapus tombol lama
+
+  // Tombol Previous
+  const prevButton = $(`<button class="btn btn-sm btn-secondary m-1">Previous</button>`);
+  prevButton.prop('disabled', currentPage === 1);
+  prevButton.on('click', function () {
+    if (currentPage > 1) {
+      currentPage--;
+      renderChart(currentPage);
+      highlightActivePage(totalPages);
+    }
+  });
+  paginationContainer.append(prevButton);
+
+  // Tombol untuk setiap halaman
+  for (let i = 1; i <= totalPages; i++) {
+    const button = $(`<button class="btn btn-sm btn-primary m-1">${i}</button>`);
+    if (i === currentPage) {
+      button.addClass('active'); // Tambahkan class aktif pada halaman saat ini
+    }
+    button.on('click', function () {
+      currentPage = i;
+      renderChart(currentPage); // Render chart untuk halaman baru
+      highlightActivePage(totalPages);
+    });
+    paginationContainer.append(button);
+  }
+
+  // Tombol Next
+  const nextButton = $(`<button class="btn btn-sm btn-secondary m-1">Next</button>`);
+  nextButton.prop('disabled', currentPage === totalPages);
+  nextButton.on('click', function () {
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderChart(currentPage);
+      highlightActivePage(totalPages);
+    }
+  });
+  paginationContainer.append(nextButton);
+}
+
+function highlightActivePage(totalPages) {
+  const paginationContainer = $('#paginationControls');
+  paginationContainer.find('button').removeClass('active'); // Hapus highlight dari semua tombol
+
+  // Highlight tombol aktif
+  paginationContainer
+    .find('button')
+    .filter(function () {
+      return $(this).text() == currentPage || $(this).text() == "Next" || $(this).text() == "Previous";
+    })
+    .addClass('active');
+
+  // Perbarui tombol Previous dan Next
+  paginationContainer.find('button:contains("Previous")').prop('disabled', currentPage === 1);
+  paginationContainer.find('button:contains("Next")').prop('disabled', currentPage === totalPages);
+}
+
+const totalPages = Math.ceil(originalData.labels.length / itemsPerPage);
+
+// Inisialisasi
+renderChart(currentPage);
+createPaginationControls(totalPages);
+
+
+    //BAR BIASA TANPA SELECTED
+
     'use strict'
 
 
@@ -1000,95 +1170,6 @@ document.addEventListener("DOMContentLoaded", function () {
             backgroundColor: '#007bff',
             borderColor: '#007bff',
             data: hpAchievBarCleanlist_2
-          }
-        ]
-      },
-      options: {
-        maintainAspectRatio: false,
-        tooltips: {
-          mode: mode,
-          intersect: intersect
-        },
-        hover: {
-          mode: mode,
-          intersect: intersect
-        },
-        legend: {
-          display: false
-        },
-        scales: {
-          yAxes: [{
-            // display: false,
-            gridLines: {
-              display: true,
-              lineWidth: '4px',
-              color: 'rgba(0, 0, 0, .2)',
-              zeroLineColor: 'transparent'
-            },
-            ticks: $.extend({
-              beginAtZero: true,
-
-              // Include a dollar sign in the ticks
-              callback: function (value) {
-                return `${value.toLocaleString('id-ID')} Hp`;
-              }
-            }, ticksStyle)
-          }],
-          xAxes: [{
-            display: true,
-            gridLines: {
-              display: false
-            },
-            ticks: ticksStyle
-          }]
-        }
-      }
-    })
-
-
-
-    var $fiberstarChartBarCleanlist_3 = $('#fiberstar_chart_bar_cleanlist_3')
-
-    const dataBarCleanlist_3 = <?php echo json_encode($grafik_by_kota); ?>;
-    const areaAchievBarCleanlist_3 = dataBarCleanlist_3.map(item => item.kota_project);
-    const hpAchievBarPlan_3 = dataBarCleanlist_3.map(item => item.total_hp_plan);
-    const hpAchievBarBak_3 = dataBarCleanlist_3.map(item => item.total_hp_bak);
-    const hpAchievBarSnd_3 = dataBarCleanlist_3.map(item => item.total_hp_snd);
-    const hpAchievBarDrm_3 = dataBarCleanlist_3.map(item => item.total_hp_drm);
-    const hpAchievBarRfs_3 = dataBarCleanlist_3.map(item => item.total_hp_rfs);
-
-    var fiberstarChartBarCleanlist_3 = new Chart($fiberstarChartBarCleanlist_3, {
-      type: 'bar',
-      data: {
-        labels: areaAchievBarCleanlist_3,
-        datasets: [
-          {
-            backgroundColor: '#007bff',
-            borderColor: '#007bff',
-            data: hpAchievBarPlan_3
-          },
-          {
-            backgroundColor: '#CED4DA',
-            borderColor: '#CED4DA',
-            data: hpAchievBarBak_3
-          }
-          ,
-          {
-            backgroundColor: '#FD7E14',
-            borderColor: '#FD7E14',
-            data: hpAchievBarSnd_3
-          }
-          ,
-          {
-            backgroundColor: '#6610F2',
-            borderColor: '#6610F2',
-            data: hpAchievBarDrm_3
-          }
-          ,
-          {
-            backgroundColor: '#28A745',
-            borderColor: '#28A745',
-            data: hpAchievBarRfs_3
           }
         ]
       },
@@ -1514,6 +1595,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <style>
   .selected-row {
-    background-color: lightblue !important; /* Warna biru terang */
+    background-color: lightblue !important;
+    /* Warna biru terang */
   }
 </style>

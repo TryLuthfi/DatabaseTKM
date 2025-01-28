@@ -23,7 +23,7 @@ $id_menu = $this->uri->segment('1');
         <!-- SEARCH FORM -->
         <!-- <form class="form-inline ml-3">
             <div class="input-group input-group-sm">
-                <input class="form-control form-control-navbar" type="search" placeholder="Search" aria-label="Search">
+                <input class="form-control form-co  ntrol-navbar" type="search" placeholder="Search" aria-label="Search">
                 <div class="input-group-append">
                     <button class="btn btn-navbar" type="submit">
                         <i class="fas fa-search"></i>
@@ -148,6 +148,10 @@ $id_menu = $this->uri->segment('1');
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
+                            </li>
+                        </ul>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
                                 <a href="<?= base_url('ListArea') ?>" class="nav-link <?php if ($id_menu == 'ListArea') {
                                       echo "active";
                                   } ?>">
@@ -177,7 +181,6 @@ $id_menu = $this->uri->segment('1');
                             </li>
                         </ul>
                     </li>
-                    <?php } else { ?>
                     <?php }?>
 
                     <li class="nav-item has-treeview <?php if ($id_menu == 'Fiberstar_PO' || $id_menu == 'Fiberstar_Project' || $id_menu == 'Fiberstar_Project_Detail') {
@@ -195,12 +198,21 @@ $id_menu = $this->uri->segment('1');
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
+                            </li>
+                        </ul>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
                                 <a href="<?= base_url('Fiberstar_Project') ?>" class="nav-link <?php if ($id_menu == 'Fiberstar_Project' || $id_menu == 'Fiberstar_Project_Detail') {
                                       echo "active";
                                   } ?>">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>List Project</p>
                                 </a>
+                            </li>
+                        </ul>
+                        <?php if ($this->session->userdata('nama_level') == "Super Admin"){?>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
                                 <?php if ($this->session->userdata('nama_level') == "Super Admin"){?>
                                 <a href="<?= base_url('Fiberstar_PO') ?>" class="nav-link <?php if ($id_menu == 'Fiberstar_PO') {
                                       echo "active";
@@ -211,6 +223,7 @@ $id_menu = $this->uri->segment('1');
                                 <?php } ?>
                             </li>
                         </ul>
+                                <?php } ?>
                     </li>
 
                     <li class="nav-item has-treeview <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
@@ -228,12 +241,20 @@ $id_menu = $this->uri->segment('1');
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
+                            </li>
+                        </ul>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
                                 <a href="<?= base_url('MyRepublik_Project') ?>" class="nav-link <?php if ($id_menu == 'MyRepublik_Project') {
                                     echo "active";
                                 } ?>">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>List Project</p>
                                 </a>
+                            </li>
+                        </ul>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
                                 <a class="nav-link <?php if ($id_menu == 'MyRepublik_PO') {
                                     echo "active";
                                 } ?>">
