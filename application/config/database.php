@@ -75,12 +75,11 @@ $query_builder = TRUE;
 
 // $db['default'] = array(
 // 	'dsn'	=> '',
-// 	// 'hostname' => '192.168.1.6',
-// 	'hostname' => 'localhost',
-// 	'username' => 'sa',
-// 	'password' => '12345678',
-// 	'database' => 'Truck',
-// 	'dbdriver' => 'sqlsrv',
+// 	'hostname' => 'sql301.infinityfree.com',
+// 	'username' => 'if0_38154568',
+// 	'password' => 'ycwbUvcUIKA',
+// 	'database' => 'if0_38154568_db_tkm_project',
+// 	'dbdriver' => 'mysqli',
 // 	'dbprefix' => '',
 // 	'pconnect' => FALSE,
 // 	'db_debug' => (ENVIRONMENT !== 'production'),
@@ -95,6 +94,7 @@ $query_builder = TRUE;
 // 	'failover' => array(),
 // 	'save_queries' => TRUE
 // );
+
 
 $db['default'] = array(
 	'dsn'	=> '',

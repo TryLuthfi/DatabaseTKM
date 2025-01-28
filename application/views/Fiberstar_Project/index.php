@@ -1246,7 +1246,7 @@ $total_hp_closed_regional = 0;
               color: 'rgba(0, 0, 0, .2)',
               zeroLineColor: 'transparent'
             },
-            ticks: $.extend({
+            ticks: $.exten  d({
               beginAtZero: true,
 
               // Include a dollar sign in the ticks
@@ -1279,8 +1279,9 @@ $total_hp_closed_regional = 0;
   });
 
   $(document).ready(function () {
+    $.fn.dataTable.ext.errMode = 'none';
     $('#table_data').DataTable({
-      responsive: false, // Matikan fitur Responsive
+      responsive: false // Matikan fitur Responsive
     });
   });
 

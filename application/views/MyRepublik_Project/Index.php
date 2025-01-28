@@ -177,7 +177,7 @@ $total_hp_closed_regional = 0;
                         <div class="info-box-content">
                           <span class="info-box-text">TARGET RKAP 2025</span>
                           <span class="info-box-number">
-                            345,000,000,000 IDR
+                            150,000,000,000 IDR
                           </span>
                         </div>
                         <!-- /.info-box-content -->
@@ -351,100 +351,6 @@ $total_hp_closed_regional = 0;
 
                 </div>
               </div>
-              <section class="content">
-                <div class="container-fluid">
-                  <!-- Info boxes -->
-                  <div class="row">
-                    <!-- fix for small devices only -->
-                    <div class="clearfix hidden-md-up"></div>
-
-                    <div class="col-12">
-                      <div class="card">
-                        <!-- /.card-header -->
-                        <div class="card-body table-responsive text-nowrap ">
-                          <table id="table_detail" class="table table-bordered table-hover">
-                            <thead class="bg-info">
-                              <tr>
-                                <th>No</th>
-                                <th>Regional Project</th>
-                                <th>HP Plan</th>
-                                <th>Canvasing</th>
-                                <th>DONE BAK</th>
-                                <th>DONE SPK</th>
-                                <th>DONE HLD</th>
-                                <th>DONE LLD</th>
-                                <th>DONE KOM</th>
-                                <th>DONE PKS</th>
-                                <th>DONE RFS</th>
-                                <th>DONE</th>
-                                <th>CLOSED</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <?php
-                              $total = 1;
-
-                              foreach ($stagging_regional as $data):
-
-                                $total_hp_plan_regional += $data['total_hp_plan'];
-                                $total_hp_canvasing_regional += $data['total_hp_canvasing'];
-                                $total_hp_bak_regional += $data['total_hp_bak'];
-                                $total_hp_spk_regional += $data['total_hp_spk'];
-                                $total_hp_hld_regional += $data['total_hp_hld'];
-                                $total_hp_lld_regional += $data['total_hp_lld'];
-                                $total_hp_kom_regional += $data['total_hp_kom'];
-                                $total_hp_pks_regional += $data['total_hp_pks'];
-                                $total_hp_rfs_regional += $data['total_hp_rfs'];
-                                $total_hp_atp_regional += $data['total_hp_atp'];
-                                $total_hp_closed_regional += $data['total_hp_closed'];
-
-                                ?>
-
-                                <tr>
-                                  <td><?= $total++ ?></td>
-                                  <td><?= $data['regional_project'] ?></td>
-                                  <td><?= number_format(floatval($data['total_hp_plan']), 0, ".") ?></td>
-                                  <td><?= number_format(floatval($data['total_hp_canvasing']), 0, ".") ?></td>
-                                  <td><?= number_format(floatval($data['total_hp_bak']), 0, ".") ?></td>
-                                  <td><?= number_format(floatval($data['total_hp_spk']), 0, ".") ?></td>
-                                  <td><?= number_format(floatval($data['total_hp_hld']), 0, ".") ?></td>
-                                  <td><?= number_format(floatval($data['total_hp_lld']), 0, ".") ?></td>
-                                  <td><?= number_format(floatval($data['total_hp_kom']), 0, ".") ?></td>
-                                  <td><?= number_format(floatval($data['total_hp_pks']), 0, ".") ?></td>
-                                  <td><?= number_format(floatval($data['total_hp_rfs']), 0, ".") ?></td>
-                                  <td><?= number_format(floatval($data['total_hp_atp']), 0, ".") ?></td>
-                                  <td><?= number_format(floatval($data['total_hp_closed']), 0, ".") ?></td>
-                                </tr>
-
-                              <?php endforeach; ?>
-
-                            </tbody>
-                            <tfoot>
-                              <tr>
-                                <th colspan="2">Total</th>
-                                <th colspan="1"><?= number_format(floatval($total_hp_plan_regional), 0, ".") ?></th>
-                                <th colspan="1"><?= number_format(floatval($total_hp_canvasing_regional), 0, ".") ?>
-                                </th>
-                                <th colspan="1"><?= number_format(floatval($total_hp_bak_regional), 0, ".") ?></th>
-                                <th colspan="1"><?= number_format(floatval($total_hp_spk_regional), 0, ".") ?></th>
-                                <th colspan="1"><?= number_format(floatval($total_hp_hld_regional), 0, ".") ?></th>
-                                <th colspan="1"><?= number_format(floatval($total_hp_lld_regional), 0, ".") ?></th>
-                                <th colspan="1"><?= number_format(floatval($total_hp_kom_regional), 0, ".") ?></th>
-                                <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ".") ?></th>
-                                <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ".") ?></th>
-                                <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ".") ?></th>
-                                <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ".") ?></th>
-                              </tr>
-                            </tfoot>
-                          </table>
-                        </div>
-                        <!-- /.card-body -->
-                      </div>
-                      <div class="row">
-                        <!-- ISI -->
-                      </div>
-                    </div>
-              </section>
             </div>
           </div>
         </div>
@@ -631,6 +537,8 @@ $total_hp_closed_regional = 0;
     </div>
   </section>
 
+  
+
 
   <!-- Main content -->
   <section class="content">
@@ -760,6 +668,96 @@ $total_hp_closed_regional = 0;
   })
 </script>
 <script type="text/javascript">
+
+document.addEventListener("DOMContentLoaded", function () {
+  const table = document.getElementById("table_data_myrep");
+  let selectedRows = []; // Array untuk menyimpan baris yang dipilih
+  let lastSelectedIndex = null; // Index baris terakhir yang dipilih
+
+  // Event listener untuk menangani klik pada tabel
+  table.addEventListener("click", function (event) {
+    const row = event.target.closest("tr");
+
+    // Pastikan hanya baris di <tbody> yang bisa dipilih
+    if (row && row.parentElement.tagName === "TBODY") {
+      const rows = Array.from(table.querySelectorAll("tbody tr"));
+      const rowIndex = rows.indexOf(row);
+
+      if (row.classList.contains("selected-row")) {
+        // Jika baris sudah dipilih, hapus status "selected-row"
+        row.classList.remove("selected-row");
+        selectedRows = selectedRows.filter(r => r !== row); // Hapus dari array
+      } else if (event.shiftKey && lastSelectedIndex !== null) {
+        // Pilih rentang baris dengan "Shift"
+        const [start, end] = [lastSelectedIndex, rowIndex].sort((a, b) => a - b);
+        rows.slice(start, end + 1).forEach(r => {
+          if (!selectedRows.includes(r)) {
+            selectedRows.push(r);
+            r.classList.add("selected-row");
+          }
+        });
+      } else if (event.ctrlKey || event.metaKey) {
+        // Pilih atau batalkan pilihan baris dengan "Ctrl"
+        row.classList.toggle("selected-row");
+        if (selectedRows.includes(row)) {
+          selectedRows = selectedRows.filter(r => r !== row); // Hapus jika sudah dipilih
+        } else {
+          selectedRows.push(row); // Tambahkan jika belum dipilih
+        }
+      } else {
+        // Pilih hanya satu baris tanpa tombol modifier
+        rows.forEach(r => r.classList.remove("selected-row"));
+        selectedRows = [row];
+        row.classList.add("selected-row");
+      }
+
+      // Update index baris terakhir yang dipilih
+      lastSelectedIndex = rowIndex;
+    }
+  });
+
+  // Event listener untuk salin data dengan "Ctrl + C"
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "c" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+
+      if (selectedRows.length === 0) {
+        alert("Pilih setidaknya satu baris untuk disalin.");
+        return;
+      }
+
+      // Ambil header tabel
+      const headers = Array.from(table.querySelectorAll("thead th"))
+        .map(th => th.innerText.trim())
+        .join("\t");
+
+      // Ambil data dari baris yang dipilih
+      const data = selectedRows
+        .map(row => Array.from(row.children).map(cell => cell.innerText.trim()).join("\t"))
+        .join("\n");
+
+      // Gabungkan header dan data
+      const clipboardText = `${headers}\n${data}`;
+
+      // Salin ke clipboard
+      navigator.clipboard.writeText(clipboardText).then(() => {
+        console.log("Data berhasil disalin!");
+      }).catch(err => console.error("Gagal menyalin data:", err));
+    }
+  });
+
+  // Hapus pilihan jika klik terjadi di luar tabel
+  document.addEventListener("click", function (event) {
+    if (!event.target.closest("#table_data_myrep")) {
+      document.querySelectorAll("#table_data_myrep tbody tr").forEach(row => {
+        row.classList.remove("selected-row");
+      });
+      selectedRows = [];
+      lastSelectedIndex = null;
+    }
+  });
+});
+
   $(function () {
 
     // format angka rupiah
@@ -852,7 +850,7 @@ $total_hp_closed_regional = 0;
   $(function () {
     'use strict'
 
-    
+
 
     var ticksStyle = {
       fontColor: '#495057',
@@ -872,7 +870,7 @@ $total_hp_closed_regional = 0;
     // eslint-disable-next-line no-unused-vars
     var fiberstarChartBarBak = new Chart($fiberstarChartBarBak, {
       type: 'bar',
-      
+
       data: {
         labels: areaAchievBar,
         datasets: [
@@ -1047,7 +1045,7 @@ $total_hp_closed_regional = 0;
       }
     })
 
-    
+
 
     var $fiberstarChartBarCleanlist_3 = $('#fiberstar_chart_bar_cleanlist_3')
 
@@ -1096,21 +1094,6 @@ $total_hp_closed_regional = 0;
       },
       options: {
         maintainAspectRatio: false,
-        plugins: {
-      datalabels: {
-        display: true, // Tampilkan data label
-        color: 'black', // Warna teks
-        anchor: 'end', // Posisi label pada ujung bar
-        align: 'start', // Teks sejajar dengan bar
-        font: {
-          weight: 'bold',
-          size: 10 // Ukuran font
-        },
-        formatter: function(value) {
-          return `${value.toLocaleString('id-ID')} Hp`; // Format angka
-        }
-      }
-    },
         tooltips: {
           mode: mode,
           intersect: intersect
@@ -1155,7 +1138,7 @@ $total_hp_closed_regional = 0;
 
 
 
-  
+
 
   document.addEventListener("DOMContentLoaded", function () {
     const cards = document.querySelectorAll('[data-card-widget="collapse"]');
@@ -1528,3 +1511,9 @@ $total_hp_closed_regional = 0;
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
 <!-- Font Awesome Icons -->
 <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+
+<style>
+  .selected-row {
+    background-color: lightblue !important; /* Warna biru terang */
+  }
+</style>

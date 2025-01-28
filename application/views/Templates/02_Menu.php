@@ -13,7 +13,7 @@ $id_menu = $this->uri->segment('1');
                 <a href="<?= base_url('Dashboard') ?>" class="nav-link">Dashboard</a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="<?= base_url('Fiberstar_Project') ?>" class="nav-link">Fiberstar</a>
+                <a href="<?= base_url('Fiberstar_Project') ?>" class="nav-link">Fiberstars</a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
                 <a href="<?= base_url('MyRepublik_Project') ?>" class="nav-link">My Republik</a>

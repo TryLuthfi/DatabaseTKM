@@ -97,7 +97,7 @@ function formatTanggalIndonesia($date)
                 $data['number_po'] = "-";
               }
 
-              if ($data['tgl_kom'] == '') {
+              if ($data['tgl_kom'] == '' || empty($data['tgl_kom'])) {
                 $hasil30hari = "-";
                 $data['tgl_kom'] = "-";
               } else {
@@ -392,7 +392,7 @@ function formatTanggalIndonesia($date)
               <!-- TAB NAV KETIGA -->
               <div class="tab-pane fade" id="custom-tabs-two-messages" role="tabpanel"
                 aria-labelledby="custom-tabs-two-messages-tab">
-                <table class="table table-bordered table-hover">
+                <table id="table_data_dokument" class="table table-bordered table-hover">
                   <thead class="thead-dark">
                     <tr>
                       <th>No</th>
@@ -1241,11 +1241,11 @@ function formatTanggalIndonesia($date)
                             value="<?= $data['access_id_project'] ?> || <?= $data['access_name_project'] ?>">
                         </div>
                         <div class="form-group">
-                          <label for="exampleInputFile">Upload Dokument</label>
+                          <label>Upload Dokument</label>
                           <div class="input-group">
                             <div class="custom-file">
-                              <input type="file" name="file" class="custom-file-input" required>
-                              <label class="custom-file-label" for="custom-file-input">Choose file</label>
+                              <label class="custom-file-label" for="file">Choose file</label>
+                              <input type="file" name="file" id="file" class="custom-file-input" required>
                             </div>
                           </div>
                         </div>
@@ -1292,6 +1292,38 @@ function formatTanggalIndonesia($date)
 
 
 <script>
+
+document.addEventListener("DOMContentLoaded", function () {
+  const table = document.getElementById("table_data_dokument");
+  let selectedRows = []; // Array untuk menyimpan baris yang dipilih
+  let lastSelectedIndex = null; // Index baris terakhir yang dipilih
+
+  // Event listener untuk menangani klik pada tabel
+  table.addEventListener("click", function (event) {
+    const row = event.target.closest("tr");
+
+    // Pastikan hanya baris di <tbody> yang bisa dipilih
+    if (row && row.parentElement.tagName === "TBODY") {
+      const rows = Array.from(table.querySelectorAll("tbody tr"));
+      const rowIndex = rows.indexOf(row);
+
+      if (row.classList.contains("selected-row")) {
+        // Jika baris sudah dipilih, hapus status "selected-row"
+        row.classList.remove("selected-row");
+        selectedRows = selectedRows.filter(r => r !== row); // Hapus dari array
+      } else {
+        // Pilih hanya satu baris tanpa tombol modifier
+        // rows.forEach(r => r.classList.remove("selected-row"));
+        selectedRows = [row];
+        row.classList.add("selected-row");
+      }
+
+      // Update index baris terakhir yang dipilih
+      lastSelectedIndex = rowIndex;
+    }
+  });
+});
+
   var total_upload_approval_cbn = <?= $total_upload_approval_cbn ?>;
   document.getElementById('total_upload_approval_cbn').innerText = total_upload_approval_cbn + " / 3";
 
@@ -1416,6 +1448,10 @@ function formatTanggalIndonesia($date)
 </script>
 
 <script>
+  $(function () {
+  bsCustomFileInput.init();
+});
+
   // Membuat circle progress bar
   var bar = new ProgressBar.Circle('#progress-bar-container', {
     color: '#FF5733', // Warna progress bar
@@ -1447,6 +1483,7 @@ function formatTanggalIndonesia($date)
 <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
 <!-- Theme style -->
 <link rel="stylesheet" href="<?= base_url('assets') ?>/dist/css/adminlte.min.css">
+<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/bs-custom-file-input/bs-custom-file-input.min.js">
 <!-- Google Font: Source Sans Pro -->
 <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
 <!-- DataTables -->
@@ -1508,3 +1545,9 @@ function formatTanggalIndonesia($date)
 <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/toastr/toastr.min.css">
 <script src="<?= base_url('assets') ?>/plugins/toastr/toastr.min.css"></script>
+
+<style>
+  .selected-row {
+    background-color: lightblue !important; /* Warna biru terang */
+  }
+</style>
