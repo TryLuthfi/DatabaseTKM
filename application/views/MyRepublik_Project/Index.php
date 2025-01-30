@@ -564,7 +564,7 @@ $total_hp_closed_regional = 0;
                     <th>Status Project EMR</th> <!-- 7 -->
                     <th>Status Project TKM</th> <!-- 8 -->
                     <th>Status ATP</th> <!-- 10 -->
-                    <th>Action</th> <!-- 32 -->
+                    <!-- <th>Action</th> -->
                   </tr>
                 </thead>
                 <tbody>
@@ -589,11 +589,11 @@ $total_hp_closed_regional = 0;
                       <td class="align-middle text-center"><?= $data['status_project_emr'] ?></td>
                       <td class="align-middle text-center"><?= $data['status_project_tkm'] ?></td>
                       <td class="align-middle text-center"><?= $data['status_atp'] ?></td>
-                      <td>
+                      <!-- <td>
                         <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
                           id="tombol_detail" class="btn btn-primary tombol_detail"><i class=" fas fa-share"></i></a>
 
-                      </td>
+                      </td> -->
                     </tr>
 
                   <?php endforeach; ?>
@@ -607,7 +607,7 @@ $total_hp_closed_regional = 0;
                     <th colspan="1"></th>
                     <th colspan="1"></th>
                     <th colspan="1"></th>
-                    <th colspan="1"></th>
+                    <!-- <th colspan="1"></th> -->
                     <!--  27 -->
                   </tr>
                 </tfoot>
@@ -880,140 +880,140 @@ $total_hp_closed_regional = 0;
       ]
     };
 
-    const itemsPerPage = 5; // Tampilkan 5 data per halaman
-let currentPage = 1; // Halaman aktif
-let filterState = []; // Menyimpan state filter legend
+    const itemsPerPage = 10; // Tampilkan 5 data per halaman
+    let currentPage = 1; // Halaman aktif
+    let filterState = []; // Menyimpan state filter legend
 
     function getPagedData(page) {
-  const startIndex = (page - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
+      const startIndex = (page - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
 
-  // Filter data berdasarkan halaman
-  const pagedLabels = originalData.labels.slice(startIndex, endIndex);
-  const pagedDatasets = originalData.datasets.map((dataset, index) => ({
-    ...dataset,
-    data: dataset.data.slice(startIndex, endIndex)
-  }));
+      // Filter data berdasarkan halaman
+      const pagedLabels = originalData.labels.slice(startIndex, endIndex);
+      const pagedDatasets = originalData.datasets.map((dataset, index) => ({
+        ...dataset,
+        data: dataset.data.slice(startIndex, endIndex)
+      }));
 
-  return { labels: pagedLabels, datasets: pagedDatasets };
-}
+      return { labels: pagedLabels, datasets: pagedDatasets };
+    }
 
-const barChartCanvas = $('#barChart').get(0).getContext('2d');
-let barChart; // Variabel untuk menyimpan instance Chart.js
+    const barChartCanvas = $('#barChart').get(0).getContext('2d');
+    let barChart; // Variabel untuk menyimpan instance Chart.js
 
-function renderChart(page) {
-  const pagedData = getPagedData(page);
+    function renderChart(page) {
+      const pagedData = getPagedData(page);
 
-  if (barChart) {
-    barChart.destroy(); // Hancurkan chart lama sebelum membuat baru
-  }
+      if (barChart) {
+        barChart.destroy(); // Hancurkan chart lama sebelum membuat baru
+      }
 
-  barChart = new Chart(barChartCanvas, {
-    type: 'bar',
-    data: pagedData,
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      datasetFill: false,
-      plugins: {
-        legend: {
-          onClick: function (e, legendItem) {
-            const datasetIndex = legendItem.datasetIndex;
-            const chart = legendItem.chart;
+      barChart = new Chart(barChartCanvas, {
+        type: 'bar',
+        data: pagedData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          datasetFill: false,
+          plugins: {
+            legend: {
+              onClick: function (e, legendItem) {
+                const datasetIndex = legendItem.datasetIndex;
+                const chart = legendItem.chart;
 
-            // Toggle visibility dataset
-            const meta = chart.getDatasetMeta(datasetIndex);
-            meta.hidden = meta.hidden === null ? !chart.data.datasets[datasetIndex].hidden : null;
+                // Toggle visibility dataset
+                const meta = chart.getDatasetMeta(datasetIndex);
+                meta.hidden = meta.hidden === null ? !chart.data.datasets[datasetIndex].hidden : null;
 
-            // Simpan status filter ke filterState
-            filterState[datasetIndex] = meta.hidden;
+                // Simpan status filter ke filterState
+                filterState[datasetIndex] = meta.hidden;
 
-            chart.update(); // Update chart setelah perubahan
+                chart.update(); // Update chart setelah perubahan
+              }
+            }
           }
         }
+      });
+
+      // Terapkan filter yang disimpan
+      applyFilterState(barChart);
+    }
+
+    function applyFilterState(chart) {
+      if (filterState.length > 0) {
+        chart.data.datasets.forEach((dataset, index) => {
+          const meta = chart.getDatasetMeta(index);
+          meta.hidden = filterState[index] || null;
+        });
+        chart.update();
       }
     }
-  });
 
-  // Terapkan filter yang disimpan
-  applyFilterState(barChart);
-}
+    function createPaginationControls(totalPages) {
+      const paginationContainer = $('#paginationControls');
+      paginationContainer.empty(); // Hapus tombol lama
 
-function applyFilterState(chart) {
-  if (filterState.length > 0) {
-    chart.data.datasets.forEach((dataset, index) => {
-      const meta = chart.getDatasetMeta(index);
-      meta.hidden = filterState[index] || null;
-    });
-    chart.update();
-  }
-}
+      // Tombol Previous
+      const prevButton = $(`<button class="btn btn-sm btn-secondary m-1">Previous</button>`);
+      prevButton.prop('disabled', currentPage === 1);
+      prevButton.on('click', function () {
+        if (currentPage > 1) {
+          currentPage--;
+          renderChart(currentPage);
+          highlightActivePage(totalPages);
+        }
+      });
+      paginationContainer.append(prevButton);
 
-function createPaginationControls(totalPages) {
-  const paginationContainer = $('#paginationControls');
-  paginationContainer.empty(); // Hapus tombol lama
+      // Tombol untuk setiap halaman
+      for (let i = 1; i <= totalPages; i++) {
+        const button = $(`<button class="btn btn-sm btn-primary m-1">${i}</button>`);
+        if (i === currentPage) {
+          button.addClass('active'); // Tambahkan class aktif pada halaman saat ini
+        }
+        button.on('click', function () {
+          currentPage = i;
+          renderChart(currentPage); // Render chart untuk halaman baru
+          highlightActivePage(totalPages);
+        });
+        paginationContainer.append(button);
+      }
 
-  // Tombol Previous
-  const prevButton = $(`<button class="btn btn-sm btn-secondary m-1">Previous</button>`);
-  prevButton.prop('disabled', currentPage === 1);
-  prevButton.on('click', function () {
-    if (currentPage > 1) {
-      currentPage--;
-      renderChart(currentPage);
-      highlightActivePage(totalPages);
+      // Tombol Next
+      const nextButton = $(`<button class="btn btn-sm btn-secondary m-1">Next</button>`);
+      nextButton.prop('disabled', currentPage === totalPages);
+      nextButton.on('click', function () {
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderChart(currentPage);
+          highlightActivePage(totalPages);
+        }
+      });
+      paginationContainer.append(nextButton);
     }
-  });
-  paginationContainer.append(prevButton);
 
-  // Tombol untuk setiap halaman
-  for (let i = 1; i <= totalPages; i++) {
-    const button = $(`<button class="btn btn-sm btn-primary m-1">${i}</button>`);
-    if (i === currentPage) {
-      button.addClass('active'); // Tambahkan class aktif pada halaman saat ini
+    function highlightActivePage(totalPages) {
+      const paginationContainer = $('#paginationControls');
+      paginationContainer.find('button').removeClass('active'); // Hapus highlight dari semua tombol
+
+      // Highlight tombol aktif
+      paginationContainer
+        .find('button')
+        .filter(function () {
+          return $(this).text() == currentPage || $(this).text() == "Next" || $(this).text() == "Previous";
+        })
+        .addClass('active');
+
+      // Perbarui tombol Previous dan Next
+      paginationContainer.find('button:contains("Previous")').prop('disabled', currentPage === 1);
+      paginationContainer.find('button:contains("Next")').prop('disabled', currentPage === totalPages);
     }
-    button.on('click', function () {
-      currentPage = i;
-      renderChart(currentPage); // Render chart untuk halaman baru
-      highlightActivePage(totalPages);
-    });
-    paginationContainer.append(button);
-  }
 
-  // Tombol Next
-  const nextButton = $(`<button class="btn btn-sm btn-secondary m-1">Next</button>`);
-  nextButton.prop('disabled', currentPage === totalPages);
-  nextButton.on('click', function () {
-    if (currentPage < totalPages) {
-      currentPage++;
-      renderChart(currentPage);
-      highlightActivePage(totalPages);
-    }
-  });
-  paginationContainer.append(nextButton);
-}
+    const totalPages = Math.ceil(originalData.labels.length / itemsPerPage);
 
-function highlightActivePage(totalPages) {
-  const paginationContainer = $('#paginationControls');
-  paginationContainer.find('button').removeClass('active'); // Hapus highlight dari semua tombol
-
-  // Highlight tombol aktif
-  paginationContainer
-    .find('button')
-    .filter(function () {
-      return $(this).text() == currentPage || $(this).text() == "Next" || $(this).text() == "Previous";
-    })
-    .addClass('active');
-
-  // Perbarui tombol Previous dan Next
-  paginationContainer.find('button:contains("Previous")').prop('disabled', currentPage === 1);
-  paginationContainer.find('button:contains("Next")').prop('disabled', currentPage === totalPages);
-}
-
-const totalPages = Math.ceil(originalData.labels.length / itemsPerPage);
-
-// Inisialisasi
-renderChart(currentPage);
-createPaginationControls(totalPages);
+    // Inisialisasi
+    renderChart(currentPage);
+    createPaginationControls(totalPages);
 
 
     //BAR BIASA TANPA SELECTED
@@ -1066,7 +1066,6 @@ createPaginationControls(totalPages);
         },
         scales: {
           yAxes: [{
-            // display: false,
             gridLines: {
               display: true,
               lineWidth: '4px',
@@ -1075,8 +1074,6 @@ createPaginationControls(totalPages);
             },
             ticks: $.extend({
               beginAtZero: true,
-
-              // Include a dollar sign in the ticks
               callback: function (value) {
                 return `${value.toLocaleString('id-ID')} Hp`;
               }
@@ -1089,6 +1086,19 @@ createPaginationControls(totalPages);
             },
             ticks: ticksStyle
           }]
+        },
+        // Tambahkan event onClick untuk menangkap klik pada bar chart
+        onClick: function (event, elements) {
+          if (elements.length > 0) {
+            var datasetIndex = elements[0]._datasetIndex; // Ambil index dataset
+            var dataIndex = elements[0]._index; // Ambil index data dalam dataset
+
+            var label = this.data.labels[dataIndex]; // Ambil label pada sumbu X
+            var value = this.data.datasets[datasetIndex].data[dataIndex]; // Ambil nilai data yang diklik
+
+            // Tampilkan alert dengan informasi
+            alert(`Anda mengklik bar:\nLabel: ${label}\nNilai: ${value.toLocaleString('id-ID')} Hp`);
+          }
         }
       }
     })
@@ -1221,15 +1231,15 @@ createPaginationControls(totalPages);
 
 
 
-  document.addEventListener("DOMContentLoaded", function () {
-    const cards = document.querySelectorAll('[data-card-widget="collapse"]');
-    cards.forEach(card => {
-      const parentCard = card.closest('.card');
-      if (parentCard) {
-        parentCard.classList.add('collapsed-card'); // Tambahkan kelas 'collapsed-card'
-      }
-    });
-  });
+  // document.addEventListener("DOMContentLoaded", function () {
+  //   const cards = document.querySelectorAll('[data-card-widget="collapse"]');
+  //   cards.forEach(card => {
+  //     const parentCard = card.closest('.card');
+  //     if (parentCard) {
+  //       parentCard.classList.add('collapsed-card'); // Tambahkan kelas 'collapsed-card'
+  //     }
+  //   });
+  // });
 
   $(document).ready(function () {
     $('#table_data_myrep').DataTable({

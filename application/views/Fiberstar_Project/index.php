@@ -115,7 +115,7 @@ $total_hp_closed_regional = 0;
                       </select>
                     </div>
                   </div>
-                  <div class="col-sm-3">
+                  <!-- <div class="col-sm-3">
                     <div class="form_group">
                       <label style="display: flex; justify-content: center; align-items: center;">RANGE TANGGAL</label>
                       <div class="form-group">
@@ -130,7 +130,7 @@ $total_hp_closed_regional = 0;
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </div> -->
 
                   <div class="modal-footer col-sm-12">
                     <button type="button" id="reset_filter" class="btn btn-danger" data-dismiss="modal">Hapus</button>
@@ -431,6 +431,16 @@ $total_hp_closed_regional = 0;
                 </div>
               </div>
 
+              <div class="content-header">
+                <div class="container-fluid">
+                  <div class="row mb-2">
+                    <div class="col-sm-12">
+                      <h1 class="m-0 text-dark" style="text-align: center;">STAGGING REGIONAL</h1>
+                    </div><!-- /.col -->
+                  </div><!-- /.row -->
+                </div><!-- /.container-fluid -->
+              </div>
+
               <?php if ($this->session->userdata('tim_project') == "HO") { ?>
                 <section class="content">
 
@@ -485,17 +495,83 @@ $total_hp_closed_regional = 0;
                                   <tr>
                                     <td><?= $total++ ?></td>
                                     <td><?= $data['regional_project'] ?></td>
-                                    <td><?= number_format(floatval($data['total_hp_plan']), 0, ".") ?></td>
-                                    <td><?= number_format(floatval($data['total_hp_canvasing']), 0, ".") ?></td>
-                                    <td><?= number_format(floatval($data['total_hp_bak']), 0, ".") ?></td>
-                                    <td><?= number_format(floatval($data['total_hp_spk']), 0, ".") ?></td>
-                                    <td><?= number_format(floatval($data['total_hp_hld']), 0, ".") ?></td>
-                                    <td><?= number_format(floatval($data['total_hp_lld']), 0, ".") ?></td>
-                                    <td><?= number_format(floatval($data['total_hp_kom']), 0, ".") ?></td>
-                                    <td><?= number_format(floatval($data['total_hp_pks']), 0, ".") ?></td>
-                                    <td><?= number_format(floatval($data['total_hp_rfs']), 0, ".") ?></td>
-                                    <td><?= number_format(floatval($data['total_hp_atp']), 0, ".") ?></td>
-                                    <td><?= number_format(floatval($data['total_hp_closed']), 0, ".") ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_plan'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_plan']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_canvasing'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_canvasing']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_bak'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_bak']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_spk'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_spk']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_hld'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_hld']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_lld'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_lld']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_kom'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_kom']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_pks'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_pks']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_rfs'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_rfs']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_atp'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_atp']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_closed'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_closed']), 0, ".");
+                                    }
+                                    ?></td>
                                   </tr>
 
                                 <?php endforeach; ?>
@@ -527,6 +603,189 @@ $total_hp_closed_regional = 0;
                         </div>
                       </div>
                 </section>
+
+                <div class="content-header">
+                  <div class="container-fluid">
+                    <div class="row mb-2">
+                      <div class="col-sm-12">
+                        <h1 class="m-0 text-dark" style="text-align: center;">STAGGING AREA</h1>
+                      </div><!-- /.col -->
+                    </div><!-- /.row -->
+                  </div><!-- /.container-fluid -->
+                </div>
+
+                <section class="content">
+
+                  <div class="container-fluid">
+                    <!-- Info boxes -->
+                    <div class="row">
+                      <!-- fix for small devices only -->
+                      <div class="clearfix hidden-md-up"></div>
+
+                      <div class="col-12">
+                        <div class="card">
+                          <!-- /.card-header -->
+                          <div class="card-body table-responsive text-nowrap ">
+                            <table id="table_detail" class="table table-bordered table-hover">
+                              <thead class="bg-info">
+                                <tr>
+                                  <th>No</th>
+                                  <th>Regional Project</th>
+                                  <th>Area Project</th>
+                                  <th>HP Plan</th>
+                                  <th>Canvasing</th>
+                                  <th>DONE BAK</th>
+                                  <th>DONE SPK</th>
+                                  <th>DONE HLD</th>
+                                  <th>DONE LLD</th>
+                                  <th>DONE KOM</th>
+                                  <th>DONE PKS</th>
+                                  <th>DONE RFS</th>
+                                  <th>DONE</th>
+                                  <th>CLOSED</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <?php
+                                $total = 1;
+
+                                foreach ($stagging_area as $data):
+
+                                  $total_hp_plan_regional += $data['total_hp_plan'];
+                                  $total_hp_canvasing_regional += $data['total_hp_canvasing'];
+                                  $total_hp_bak_regional += $data['total_hp_bak'];
+                                  $total_hp_spk_regional += $data['total_hp_spk'];
+                                  $total_hp_hld_regional += $data['total_hp_hld'];
+                                  $total_hp_lld_regional += $data['total_hp_lld'];
+                                  $total_hp_kom_regional += $data['total_hp_kom'];
+                                  $total_hp_pks_regional += $data['total_hp_pks'];
+                                  $total_hp_rfs_regional += $data['total_hp_rfs'];
+                                  $total_hp_atp_regional += $data['total_hp_atp'];
+                                  $total_hp_closed_regional += $data['total_hp_closed'];
+
+                                  ?>
+
+                                  <tr>
+                                    <td><?= $total++ ?></td>
+                                    <td><?= $data['regional_project'] ?></td>
+                                    <td><?= $data['area_project'] ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_plan'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_plan']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_canvasing'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_canvasing']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_bak'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_bak']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_spk'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_spk']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_hld'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_hld']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_lld'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_lld']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_kom'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_kom']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_pks'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_pks']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_rfs'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_rfs']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_atp'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_atp']), 0, ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['total_hp_closed'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['total_hp_closed']), 0, ".");
+                                    }
+                                    ?></td>
+                                  </tr>
+
+                                <?php endforeach; ?>
+
+                              </tbody>
+                              <tfoot>
+                                <tr>
+                                  <th colspan="3">Total</th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_plan_regional), 0, ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_canvasing_regional), 0, ".") ?>
+                                  </th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_bak_regional), 0, ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_spk_regional), 0, ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_hld_regional), 0, ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_lld_regional), 0, ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_kom_regional), 0, ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ".") ?></th>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
+                          <!-- /.card-body -->
+                        </div>
+                        <div class="row">
+                          <!-- ISI -->
+                        </div>
+                      </div>
+                </section>
+
+                <div class="card-body">
+                  <div class="chart" style="height: 300px;">
+                    <canvas id="barChart"
+                      style="min-height: 250px; height: 400px; max-height: 400px; max-width: 100%;"></canvas>
+                  </div>
+                  <div id="paginationControls" class="mt-3"></div>
+                </div>
+
               <?php } ?>
             </div>
           </div>
@@ -536,9 +795,9 @@ $total_hp_closed_regional = 0;
 
     <?php
 
-    $persentase_cleanlist_to_total = ($total_hp_plan_regional / $target_cleanlist_rkap) * 100;
-    $persentase_bak_to_cleanlist = ($total_hp_bak_regional / $total_hp_plan_regional) * 100;
-
+    // $persentase_cleanlist_to_total = ($total_hp_plan_regional / $target_cleanlist_rkap) * 100;
+    // $persentase_bak_to_cleanlist = ($total_hp_bak_regional / $total_hp_plan_regional) * 100;
+    
     ?>
 
     <div class="container-fluid">
@@ -783,7 +1042,7 @@ $total_hp_closed_regional = 0;
                       <?php } ?>
 
                       <td>
-                        <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
+                        <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['access_id_project']); ?>"
                           id="tombol_detail" class="btn btn-primary tombol_detail"><i class=" fas fa-share"></i></a>
 
                       </td>
@@ -1084,6 +1343,278 @@ $total_hp_closed_regional = 0;
     })
 
   });
+
+  $(function () {
+
+
+    const dataBarCleanlist_4 = <?php echo json_encode($stagging_area); ?>;
+    const areaAchievBarCleanlist_4 = dataBarCleanlist_4.map(item => item.area_project);
+    const hpAchievBarPlan_4 = dataBarCleanlist_4.map(item => item.total_hp_plan);
+    const hpAchievBarBak_4 = dataBarCleanlist_4.map(item => item.total_hp_bak);
+    const hpAchievBarSnd_4 = dataBarCleanlist_4.map(item => item.total_hp_spk);
+    const hpAchievBarDrm_4 = dataBarCleanlist_4.map(item => item.total_hp_lld);
+    const hpAchievBarRfs_4 = dataBarCleanlist_4.map(item => item.total_hp_rfs);
+
+    const originalData = {
+      labels: areaAchievBarCleanlist_4, // Semua label asli
+      datasets: [
+        {
+          label: 'Cleanlist',
+          backgroundColor: '#007bff',
+          borderColor: '#007bff',
+          data: hpAchievBarPlan_4
+        },
+        {
+          label: 'BAK',
+          backgroundColor: '#d2d6de',
+          borderColor: '#d2d6de',
+          data: hpAchievBarBak_4
+        },
+        {
+          label: 'SPK',
+          backgroundColor: '#FD7E14',
+          borderColor: '#FD7E14',
+          data: hpAchievBarDrm_4
+        },
+        {
+          label: 'LLD',
+          backgroundColor: '#6610F2',
+          borderColor: '#6610F2',
+          data: hpAchievBarSnd_4
+        },
+        {
+          label: 'RFS',
+          backgroundColor: '#28A745',
+          borderColor: '#28A745',
+          data: hpAchievBarRfs_4
+        }
+      ]
+    };
+
+    const itemsPerPage = 10; // Tampilkan 5 data per halaman
+    let currentPage = 1; // Halaman aktif
+    let filterState = []; // Menyimpan state filter legend
+
+    function getPagedData(page) {
+      const startIndex = (page - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+
+      // Filter data berdasarkan halaman
+      const pagedLabels = originalData.labels.slice(startIndex, endIndex);
+      const pagedDatasets = originalData.datasets.map((dataset, index) => ({
+        ...dataset,
+        data: dataset.data.slice(startIndex, endIndex)
+      }));
+
+      return { labels: pagedLabels, datasets: pagedDatasets };
+    }
+
+    const barChartCanvas = $('#barChart').get(0).getContext('2d');
+    let barChart; // Variabel untuk menyimpan instance Chart.js
+
+    function renderChart(page) {
+      const pagedData = getPagedData(page);
+
+      if (barChart) {
+        barChart.destroy(); // Hancurkan chart lama sebelum membuat baru
+      }
+
+      barChart = new Chart(barChartCanvas, {
+        type: 'bar',
+        data: pagedData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          datasetFill: false,
+          plugins: {
+            legend: {
+              onClick: function (e, legendItem) {
+                const datasetIndex = legendItem.datasetIndex;
+                const chart = legendItem.chart;
+
+                // Toggle visibility dataset
+                const meta = chart.getDatasetMeta(datasetIndex);
+                meta.hidden = meta.hidden === null ? !chart.data.datasets[datasetIndex].hidden : null;
+
+                // Simpan status filter ke filterState
+                filterState[datasetIndex] = meta.hidden;
+
+                chart.update(); // Update chart setelah perubahan
+              }
+            }
+          }
+        }
+      });
+
+      // Terapkan filter yang disimpan
+      applyFilterState(barChart);
+    }
+
+    function applyFilterState(chart) {
+      if (filterState.length > 0) {
+        chart.data.datasets.forEach((dataset, index) => {
+          const meta = chart.getDatasetMeta(index);
+          meta.hidden = filterState[index] || null;
+        });
+        chart.update();
+      }
+    }
+
+    function createPaginationControls(totalPages) {
+      const paginationContainer = $('#paginationControls');
+      paginationContainer.empty(); // Hapus tombol lama
+
+      // Tombol Previous
+      const prevButton = $(`<button class="btn btn-sm btn-secondary m-1">Previous</button>`);
+      prevButton.prop('disabled', currentPage === 1);
+      prevButton.on('click', function () {
+        if (currentPage > 1) {
+          currentPage--;
+          renderChart(currentPage);
+          highlightActivePage(totalPages);
+        }
+      });
+      paginationContainer.append(prevButton);
+
+      // Tombol untuk setiap halaman
+      for (let i = 1; i <= totalPages; i++) {
+        const button = $(`<button class="btn btn-sm btn-primary m-1">${i}</button>`);
+        if (i === currentPage) {
+          button.addClass('active'); // Tambahkan class aktif pada halaman saat ini
+        }
+        button.on('click', function () {
+          currentPage = i;
+          renderChart(currentPage); // Render chart untuk halaman baru
+          highlightActivePage(totalPages);
+        });
+        paginationContainer.append(button);
+      }
+
+      // Tombol Next
+      const nextButton = $(`<button class="btn btn-sm btn-secondary m-1">Next</button>`);
+      nextButton.prop('disabled', currentPage === totalPages);
+      nextButton.on('click', function () {
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderChart(currentPage);
+          highlightActivePage(totalPages);
+        }
+      });
+      paginationContainer.append(nextButton);
+    }
+
+    function highlightActivePage(totalPages) {
+      const paginationContainer = $('#paginationControls');
+      paginationContainer.find('button').removeClass('active'); // Hapus highlight dari semua tombol
+
+      // Highlight tombol aktif
+      paginationContainer
+        .find('button')
+        .filter(function () {
+          return $(this).text() == currentPage || $(this).text() == "Next" || $(this).text() == "Previous";
+        })
+        .addClass('active');
+
+      // Perbarui tombol Previous dan Next
+      paginationContainer.find('button:contains("Previous")').prop('disabled', currentPage === 1);
+      paginationContainer.find('button:contains("Next")').prop('disabled', currentPage === totalPages);
+    }
+
+    const totalPages = Math.ceil(originalData.labels.length / itemsPerPage);
+
+    // Inisialisasi
+    renderChart(currentPage);
+    createPaginationControls(totalPages);
+
+
+    //BAR BIASA TANPA SELECTED
+
+    'use strict'
+
+
+
+    var ticksStyle = {
+      fontColor: '#495057',
+      fontStyle: 'bold'
+    }
+
+    var mode = 'index'
+    var intersect = true
+
+    var $fiberstarChartBarBak = $('#fiberstar_chart_bar_bak')
+
+    const dataBar = <?php echo json_encode($top_area_bak); ?>;
+    const areaAchievBar = dataBar.map(item => item.kota_project);
+    const hpAchievBar = dataBar.map(item => item.achiev_bak);
+
+
+    // eslint-disable-next-line no-unused-vars
+    var fiberstarChartBarBak = new Chart($fiberstarChartBarBak, {
+      type: 'bar',
+
+      data: {
+        labels: areaAchievBar,
+        datasets: [
+          {
+            backgroundColor: '#007bff',
+            borderColor: '#007bff',
+            data: hpAchievBar
+          }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        tooltips: {
+          mode: mode,
+          intersect: intersect
+        },
+        hover: {
+          mode: mode,
+          intersect: intersect
+        },
+        legend: {
+          display: false
+        },
+        scales: {
+          yAxes: [{
+            gridLines: {
+              display: true,
+              lineWidth: '4px',
+              color: 'rgba(0, 0, 0, .2)',
+              zeroLineColor: 'transparent'
+            },
+            ticks: $.extend({
+              beginAtZero: true,
+              callback: function (value) {
+                return `${value.toLocaleString('id-ID')} Hp`;
+              }
+            }, ticksStyle)
+          }],
+          xAxes: [{
+            display: true,
+            gridLines: {
+              display: false
+            },
+            ticks: ticksStyle
+          }]
+        },
+        // Tambahkan event onClick untuk menangkap klik pada bar chart
+        onClick: function (event, elements) {
+          if (elements.length > 0) {
+            var datasetIndex = elements[0]._datasetIndex; // Ambil index dataset
+            var dataIndex = elements[0]._index; // Ambil index data dalam dataset
+
+            var label = this.data.labels[dataIndex]; // Ambil label pada sumbu X
+            var value = this.data.datasets[datasetIndex].data[dataIndex]; // Ambil nilai data yang diklik
+
+            // Tampilkan alert dengan informasi
+            alert(`Anda mengklik bar:\nLabel: ${label}\nNilai: ${value.toLocaleString('id-ID')} Hp`);
+          }
+        }
+      }
+    })
+
+  })
 
   $(document).ready(function () {
 

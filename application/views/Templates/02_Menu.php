@@ -193,7 +193,7 @@ $id_menu = $this->uri->segment('1');
                             <p>
                                 Fiberstar
                                 <i class="fas fa-angle-left right"></i>
-                                <span class="badge badge-info right"> <?php if ($this->session->userdata('nama_level') == "Super Admin"){?>2<?php } else {?>1<?php }?></span>
+                                <span class="badge badge-info right"> <?php if ($this->session->userdata('nama_level') == "Super Admin"){?>2<?php } else {?>2<?php }?></span>
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
@@ -210,20 +210,16 @@ $id_menu = $this->uri->segment('1');
                                 </a>
                             </li>
                         </ul>
-                        <?php if ($this->session->userdata('nama_level') == "Super Admin"){?>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <?php if ($this->session->userdata('nama_level') == "Super Admin"){?>
                                 <a href="<?= base_url('Fiberstar_PO') ?>" class="nav-link <?php if ($id_menu == 'Fiberstar_PO') {
                                       echo "active";
                                   } ?>">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>PO & Invoice</p>
                                 </a>
-                                <?php } ?>
                             </li>
                         </ul>
-                                <?php } ?>
                     </li>
 
                     <li class="nav-item has-treeview <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {

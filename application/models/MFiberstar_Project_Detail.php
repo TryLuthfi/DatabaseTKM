@@ -5,12 +5,9 @@ class MFiberstar_Project_Detail extends CI_Model
 {
     public function getProgressImplementasi(): mixed
     {
-        $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-        if (preg_match('/\/(\d+)$/', $currentUrl, $matches)) {
-            $number = $matches[1]; // Angka setelah slash terakhir
-        } else {
-            $number = "Tidak ada angka di belakang URL";
-        }
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
 
         $data = $this->db->query('SELECT tb_project_progress_fiberstar.*, 
                                     COALESCE(SUM(tb_project_implementasi_fiberstar.plan_tiang), 0) as plan_tiang, 
@@ -25,8 +22,8 @@ class MFiberstar_Project_Detail extends CI_Model
                                     COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_closure), 0) as achiev_closure
                                     FROM tb_project_progress_fiberstar 
                                     LEFT JOIN tb_project_implementasi_fiberstar 
-                                    ON tb_project_implementasi_fiberstar.primary_access_id_project = tb_project_progress_fiberstar.primary_access_id_project  
-                                    WHERE tb_project_progress_fiberstar.primary_access_id_project = "'.$number.'"
+                                    ON tb_project_implementasi_fiberstar.access_id_project = tb_project_progress_fiberstar.access_id_project  
+                                    WHERE tb_project_progress_fiberstar.access_id_project = "'.$last_segment.'"
                                     GROUP BY tb_project_progress_fiberstar.primary_access_id_project')
             ->result_array();
         return $data;
@@ -34,20 +31,17 @@ class MFiberstar_Project_Detail extends CI_Model
 
     public function getDetailProgressImplementasi(): mixed
     {
-        $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-        if (preg_match('/\/(\d+)$/', $currentUrl, $matches)) {
-            $number = $matches[1]; // Angka setelah slash terakhir
-        } else {
-            $number = "Tidak ada angka di belakang URL";
-        }
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
 
         $data = $this->db->query('SELECT tb_project_progress_fiberstar.*, tb_project_implementasi_fiberstar.*, tb_user.* 
                                   FROM tb_project_implementasi_fiberstar 
                                   LEFT JOIN tb_project_progress_fiberstar 
-                                  ON tb_project_implementasi_fiberstar.primary_access_id_project = tb_project_progress_fiberstar.primary_access_id_project 
+                                  ON tb_project_implementasi_fiberstar.access_id_project = tb_project_progress_fiberstar.access_id_project 
                                   LEFT JOIN tb_user 
                                   ON tb_project_implementasi_fiberstar.id_user = tb_user.id_user
-                                  WHERE tb_project_implementasi_fiberstar.primary_access_id_project = "'.$number.'"
+                                  WHERE tb_project_implementasi_fiberstar.access_id_project = "'.$last_segment.'"
                                   ')
             ->result_array();
         return $data;
@@ -66,13 +60,19 @@ class MFiberstar_Project_Detail extends CI_Model
                                     FROM tb_project_progress_fiberstar 
                                     LEFT JOIN tb_ds_approval_cbn 
                                     ON tb_project_progress_fiberstar.primary_access_id_project = tb_ds_approval_cbn.primary_access_id_project 
-                                    WHERE tb_project_progress_fiberstar.primary_access_id_project = "'.$number.'";
+                                    WHERE tb_project_progress_fiberstar.access_id_project = "'.$number.'";
                                   ')
             ->result_array();
         return $data;
     }
 
     public function addProgressRAB($data_array)
+    {
+        $res = $this->db->insert("tb_project_implementasi_fiberstar", $data_array);
+        return $res;
+    }
+
+    public function addProgressImplementasi($data_array)
     {
         $res = $this->db->insert("tb_project_implementasi_fiberstar", $data_array);
         return $res;

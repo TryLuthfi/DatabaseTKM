@@ -12,7 +12,7 @@ $totalPoFiberstar = 0;
 $totalDoneInvoicePoFiberstar = 0;
 $totalSisaInvoicePoFiberstar = 0;
 
-foreach ($totalInvoiceFiberstar as $data):
+foreach ($list_po as $data):
     $totalHpFiberstar += $data['hpplan_project'];
     $totalPoFiberstar += $data['nilai_awal_po'];
     $totalDoneInvoicePoFiberstar += $data['total_invoice'];
@@ -125,11 +125,6 @@ $persentase_sisa_invoice_to_po = ($totalSisaInvoicePoFiberstar / $totalPoFiberst
                                 <div class="col-6">
                                     <h3 class="card-title">List PO Fiberstar</h3>
                                 </div>
-                                <div class="col-6">
-                                    <a href="#" class="btn btn-success float-right text-bold"
-                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                            class="fas fa-plus"></i> </a>
-                                </div>
                             </div>
                         </div>
                         <!-- /.card-header -->
@@ -148,14 +143,13 @@ $persentase_sisa_invoice_to_po = ($totalSisaInvoicePoFiberstar / $totalPoFiberst
                                         <th>Done Invoice</th>
                                         <th>Sisa Invoice</th>
                                         <th>Stagging</th>
-                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
 
 
-                                    foreach ($totalInvoiceFiberstar as $data):
+                                    foreach ($list_po as $data):
                                         ?>
                                         <tr>
                                             <td><?= $total++ ?></td>
@@ -169,14 +163,6 @@ $persentase_sisa_invoice_to_po = ($totalSisaInvoicePoFiberstar / $totalPoFiberst
                                             <td><?= number_format($data['total_invoice'], 0, ',', '.') ?></td>
                                             <td><?= number_format($data['total_sisa_invoice'], 0, ',', '.') ?></td>
                                             <td><?= $data['main_status'] ?></td>
-                                            <td>
-                                                <a href="<?php echo site_url('Fiberstar/delete/' . $data['primary_access_id_project']); ?>"
-                                                    id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                        class=" fas fa-trash"></i></a>
-                                                <a href="#" class="btn btn-warning"
-                                                    data-target="#modal-lg-edit<?= $data['primary_access_id_project'] ?>"
-                                                    data-toggle="modal"><i class="fas fa-edit"></i></a>
-                                            </td>
                                         </tr>
 
                                     <?php endforeach; ?>
@@ -184,14 +170,14 @@ $persentase_sisa_invoice_to_po = ($totalSisaInvoicePoFiberstar / $totalPoFiberst
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="6">Total</th>
-                                        <th colspan="1"><?= number_format($totalPoFiberstar, 0, ',', '.') ?></th>
+                                        <th colspan="5">Total</th>
                                         <th colspan="1"><?= number_format($totalHpFiberstar, 0, ',', '.') ?></th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"><?= number_format($totalPoFiberstar, 0, ',', '.') ?></th>
                                         <th colspan="1"><?= number_format($totalDoneInvoicePoFiberstar, 0, ',', '.') ?>
                                         </th>
                                         <th colspan="1"><?= number_format($totalSisaInvoicePoFiberstar, 0, ',', '.') ?>
                                         </th>
-                                        <th colspan="1"></th>
                                         <th colspan="1"></th>
                                     </tr>
                                 </tfoot>
@@ -200,121 +186,6 @@ $persentase_sisa_invoice_to_po = ($totalSisaInvoicePoFiberstar / $totalPoFiberst
                         <!-- /.card-body -->
                     </div>
                     <!-- /.card -->
-
-                    <!-- modal untuk tambah data -->
-                    <form action=" <?php echo base_url('Fiberstar/add') ?>" method="post">
-                        <div class="modal fade" id="modal-lg-tambah">
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h4 class="modal-title">Tambah Purcase Order</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="form-group">
-                                            <label class="col-form-label">Provider</label>
-                                            <input type="text" class="form-control" name="kode_provider"
-                                                autocomplete="off" value="PT. Fiberstar">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="col-form-label">Nomor PO</label>
-                                            <input type="text" class="form-control" name="nomor_po" autocomplete="off"
-                                                placeholder="00000000">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="col-form-label">Nilai PO</label>
-                                            <input type="number" class="form-control" name="nilai_po" id="nilai_po2"
-                                                autocomplete="off" placeholder="Rp. 000.000.000">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="col-form-label">Tanggal PO</label>
-                                            <input type="date" class="form-control" name="tanggal_po" autocomplete="off"
-                                                value="<?php echo (new \DateTime())->format('Y-m-d'); ?>">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="col-form-label">Term Of Payment</label>
-                                            <select name="versi_po" class="form-control">
-                                                <option value="100%">100%</option>
-                                                <option value="50% ; 50%">50% ; 50%</option>
-                                                <option value="20% ; 20% ; 25% ; 25% ; 10%">20% ; 20% ; 25% ; 25% ; 10%
-                                                </option>
-                                                <option value="top4">20% ; 20% ; 25% ; 25% ; 10%</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="col-form-label">Versi PO</label>
-                                            <select name="kode_po" class="form-control">
-                                                <option value="NEW">NEW PO</option>
-                                                <option value="FINAL">FINAL PO</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="col-form-label">STATUS PO</label>
-                                            <select name="status_po" class="form-control">
-                                                <option value="ACTIVE">AKTIF</option>
-                                                <option value="NONACTIVE">NONAKTIF</option>
-                                            </select>
-                                        </div>
-
-
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-danger"
-                                                data-dismiss="modal">Batal</button>
-
-                                            <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i
-                                                    class="fa fa-spinner fa-spin loading" style="display:none"></i>
-                                                Tambah</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- /.modal-content -->
-                            </div>
-                            <!-- /.modal-dialog -->
-                        </div>
-                    </form>
-
-                    <!-- modal untuk edit data -->
-                    <?php $tgl = date('Y-m-d'); ?>
-                    <?php foreach ($list_po as $data):
-                        ?>
-                        <form action="<?php echo site_url('Kodeakun/edit'); ?>" method="post">
-                            <div class="modal fade" id="modal-lg-edit<?= $data['id_project_fiberstar'] ?>">
-                                <div class="modal-dialog modal-lg">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h4 class="modal-title">Edit Rincian <?= $data['id_kode'] ?></h4>
-                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                <span aria-hidden="true">&times;</span>
-                                            </button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <div class="form-group">
-                                                <label class="col-form-label">Kode Akun</label>
-                                                <input type="text" class="form-control" name="kode_akun" autocomplete="off"
-                                                    value="<?= $data['kode_akun'] ?>">
-                                            </div>
-                                            <div class="form-group">
-                                                <label class="col-form-label">Nama Akun</label>
-                                                <input type="text" class="form-control" name="nama_kode" autocomplete="off"
-                                                    value="<?= $data['nama_kode'] ?>">
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-danger"
-                                                    data-dismiss="modal">Batal</button>
-
-                                                <button type="submit" name="btnEdit" class="btn btn-primary"><i
-                                                        class="fa fa-spinner fa-spin loading" style="display:none"></i>
-                                                    Simpan</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    <?php endforeach; ?>
-
 
 
                     <!-- COBA PANGGIL DATA MSQL -->

@@ -18,8 +18,11 @@ class Fiberstar_PO extends CI_Controller
         $data['title'] = 'PT. Fiberstar';
         $data['judul'] = 'PT. Fiberstar';
         $data['list_bowheer'] = $this->db->get('tb_bowheer')->result_array();
-        $data['totalInvoiceFiberstar'] = $this->MFiberstar_PO->getInvoiceFiberstar();
-        $data['list_po'] = $this->db->query('SELECT * FROM `tb_project_fiberstar_po` join tb_project_fiberstar ON tb_project_fiberstar_po.id_cluster_fiberstar = tb_project_fiberstar.id_cluster_fiberstar JOIN tb_area ON tb_project_fiberstar.id_area = tb_area.id_area LEFT JOIN tb_project_fiberstar_progress ON tb_project_fiberstar_po.id_cluster_fiberstar = tb_project_fiberstar_progress.id_cluster_fiberstar_po LEFT JOIN tb_project_fiberstar_stagging ON tb_project_fiberstar_progress.stagging_pekerjaan_project_fiberstar_progress = tb_project_fiberstar_stagging.id_project_fiberstar_stagging;')->result_array();
+        if ($this->session->userdata('tim_project') == "HO") {
+            $data['list_po'] = $this->MFiberstar_PO->getPoAll();
+        } else {
+            $data['list_po'] = $this->MFiberstar_PO->getPoArea();
+        }
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');

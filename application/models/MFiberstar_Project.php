@@ -60,6 +60,27 @@ class MFiberstar_Project extends CI_Model
         return $data;
     }
 
+    public function getStaggingArea()
+    {
+        $data = $this->db->query('SELECT regional_project,area_project,
+        SUM(hpplan_project) as total_hp_plan, 
+        SUM(CASE WHEN tgl_canvasing IS NOT NULL AND tgl_canvasing != "" THEN hpplan_project ELSE 0 END) as total_hp_canvasing, 
+        SUM(CASE WHEN status_bak IS NOT NULL AND status_bak = "OK" THEN hp_bak ELSE 0 END) as total_hp_bak, 
+        SUM(CASE WHEN spk_nomor IS NOT NULL AND spk_nomor != "" THEN spk_hp ELSE 0 END) as total_hp_spk, 
+        SUM(CASE WHEN status_hld IS NOT NULL AND status_hld = "OK" THEN hp_hld ELSE 0 END) as total_hp_hld,
+        SUM(CASE WHEN status_lld IS NOT NULL AND status_lld = "OK" THEN hp_lld ELSE 0 END) as total_hp_lld,
+        SUM(CASE WHEN tgl_kom IS NOT NULL AND tgl_kom != "" THEN hp_lld ELSE 0 END) as total_hp_kom,
+        SUM(CASE WHEN tgl_pks IS NOT NULL AND tgl_pks != "" THEN hp_lld ELSE 0 END) as total_hp_pks,
+        SUM(CASE WHEN status_implementasi IS NOT NULL AND status_implementasi = "OK" THEN hp_rfs ELSE 0 END) as total_hp_rfs,
+        SUM(CASE WHEN tanggal_atp IS NOT NULL AND tanggal_atp != "" THEN hp_atp ELSE 0 END) as total_hp_atp,
+        SUM(CASE WHEN main_status IS NOT NULL AND main_status = "CLOSED" THEN hp_atp ELSE 0 END) as total_hp_closed
+        FROM tb_project_progress_fiberstar
+        GROUP BY area_project
+        ORDER BY regional_project ASC;')
+            ->result_array();
+        return $data;
+    }
+
     public function getTotalHpPlanArea()
     {
         $sessionLevel = $this->session->userdata('tim_project');
@@ -138,7 +159,7 @@ class MFiberstar_Project extends CI_Model
                                     COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_closure), 0) as achiev_closure
                                     FROM tb_project_progress_fiberstar 
                                     LEFT JOIN tb_project_implementasi_fiberstar 
-                                    ON tb_project_implementasi_fiberstar.primary_access_id_project = tb_project_progress_fiberstar.primary_access_id_project  
+                                    ON tb_project_implementasi_fiberstar.access_id_project = tb_project_progress_fiberstar.access_id_project  
                                     GROUP BY tb_project_progress_fiberstar.primary_access_id_project 
                                     ORDER BY CASE WHEN tb_project_progress_fiberstar.main_status 
                                     LIKE '%DROP%' OR tb_project_progress_fiberstar.main_status 
@@ -163,7 +184,7 @@ class MFiberstar_Project extends CI_Model
                                     COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_closure), 0) as achiev_closure
                                     FROM tb_project_progress_fiberstar 
                                     LEFT JOIN tb_project_implementasi_fiberstar 
-                                    ON tb_project_implementasi_fiberstar.primary_access_id_project = tb_project_progress_fiberstar.primary_access_id_project 
+                                    ON tb_project_implementasi_fiberstar.access_id_project = tb_project_progress_fiberstar.access_id_project 
                                     WHERE tb_project_progress_fiberstar.pic_project = "'.$sessionLevel.'"
                                     GROUP BY tb_project_progress_fiberstar.primary_access_id_project 
                                     ORDER BY CASE WHEN tb_project_progress_fiberstar.main_status 
@@ -171,12 +192,6 @@ class MFiberstar_Project extends CI_Model
                                     LIKE "%HOLD%" THEN 1 ELSE 0 END, tb_project_progress_fiberstar.main_status DESC;')
             ->result_array();
         return $data;
-    }
-
-    public function addProgressImplementasi($data_array)
-    {
-        $res = $this->db->insert("tb_project_implementasi_fiberstar", $data_array);
-        return $res;
     }
 
     public function deleteData($id)
@@ -189,5 +204,21 @@ class MFiberstar_Project extends CI_Model
     {
         $res = $this->db->update("tb_kode", $data_array, $id);
         return $res;
+    }
+
+    public function getGrafikByKota()
+    {
+        $data = $this->db->query('SELECT kota_project,
+		SUM(hp_plan) as total_hp_plan,
+	    SUM(panjang_plan) as total_panjang_plan,
+        SUM(CASE WHEN tanggal_bak IS NOT NULL AND tanggal_bak != "" THEN hp_bak ELSE 0 END) as total_hp_bak,
+        SUM(CASE WHEN status_bap_snd IS NOT NULL and status_bap_snd != "" THEN hp_snd ELSE 0 END) as total_hp_snd,
+        SUM(CASE WHEN tanggal_drm_sf IS NOT NULL and tanggal_drm_sf = "DONE" THEN hp_drm ELSE 0 END) as total_hp_drm,
+        SUM(CASE WHEN tanggal_rfs IS NOT NULL and tanggal_rfs != "" THEN hp_rfs ELSE 0 END) as total_hp_rfs
+        FROM tb_project_progress_myrep
+        GROUP BY kota_project
+        ORDER BY total_hp_plan DESC;')
+            ->result_array();
+        return $data;
     }
 }

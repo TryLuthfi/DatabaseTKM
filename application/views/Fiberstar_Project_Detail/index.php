@@ -1048,7 +1048,7 @@ function formatTanggalIndonesia($date)
             <?php $tgl = date(format: 'Y-m-d'); ?>
             <?php foreach ($progress_implementasi as $data):
               ?>
-              <form action="<?php echo site_url('Fiberstar_Project/add'); ?>" method="post">
+              <form action="<?php echo site_url('Fiberstar_Project_Detail/addImplementasi'); ?>" method="post">
                 <div class="modal fade" id="modal-lg-tambah_implementasi">
                   <div class="modal-dialog modal-lg">
                     <div class="modal-content">
@@ -1059,8 +1059,8 @@ function formatTanggalIndonesia($date)
                         </button>
                       </div>
                       <div class="modal-body">
-                        <input type="hidden" name="primary_access_id_project"
-                          value="<?= $data['primary_access_id_project'] ?>">
+                        <input type="hidden" name="access_id_project"
+                          value="<?= $data['access_id_project'] ?>">
                         <input type="hidden" name="id_user" value="<?= $this->session->userdata('id_akun') ?>">
                         <div class="form-group">
                           <label class="col-form-label">Access ID Project</label>
@@ -1157,8 +1157,8 @@ function formatTanggalIndonesia($date)
                         </button>
                       </div>
                       <div class="modal-body">
-                        <input type="hidden" name="primary_access_id_project"
-                          value="<?= $data['primary_access_id_project'] ?>">
+                        <input type="hidden" name="access_id_project"
+                          value="<?= $data['access_id_project'] ?>">
                         <input type="hidden" name="id_user" value="<?= $this->session->userdata('id_user') ?>">
                         <div class="form-group">
                           <label class="col-form-label">Access ID Project</label>

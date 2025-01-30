@@ -28,6 +28,8 @@ class Fiberstar_Project extends CI_Controller
             $data['top_area_cleanlist'] = $this->MFiberstar_Project->gettopAreaCleanlist();
             $data['top_area_bak'] = $this->MFiberstar_Project->gettopAreaBAK();
             $data['stagging_regional'] = $this->MFiberstar_Project->getStaggingRegional();
+            $data['stagging_area'] = $this->MFiberstar_Project->getStaggingArea();
+            $data['grafik_by_kota'] = $this->MFiberstar_Project->getGrafikByKota();
 
             if ($this->session->userdata('tim_project') == "HO") {
                 $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasiAll();
@@ -46,37 +48,6 @@ class Fiberstar_Project extends CI_Controller
             $this->load->view('Templates/99_JS');
         } else {
             redirect('Auth');
-        }
-    }
-
-
-    public function add()
-    {
-        // echo ("<pre>");
-        // print_r($_POST);
-        // echo ("</pre>");
-
-        $post_progress_implementasi = array(
-            'primary_access_id_project' => $_POST['primary_access_id_project'],
-            'id_user' => $_POST['id_user'],
-            'achiev_tiang' => $_POST['achiev_tiang'],
-            'achiev_kabel_24' => $_POST['achiev_kabel_24'],
-            'achiev_kabel_48' => $_POST['achiev_kabel_48'],
-            'achiev_fat' => $_POST['achiev_fat'],
-            'achiev_closure' => $_POST['achiev_closure'],
-            'data_created' => $_POST['data_created'],
-            'keterangan_progress' => $_POST['keterangan_progress']
-        );
-
-        $res = $this->MFiberstar_Project->addProgressImplementasi($post_progress_implementasi);
-        $previousUrl = $this->input->server('HTTP_REFERER');
-
-        if ($res >= 1) {
-            $this->session->set_flashdata('status', 'sukses_tambah');
-            redirect($previousUrl);
-        } else {
-            $this->session->set_flashdata('status', 'gagal_tambah');
-            redirect($previousUrl);
         }
     }
 
