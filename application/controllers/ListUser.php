@@ -23,7 +23,7 @@ class ListUser extends CI_Controller
             $data['rincian_level'] = $this->MListUser->getLevel();
             $data['count_jabatan'] = $this->MListUser->getCountJabatan();
             $data['count_active_user'] = $this->MListUser->getCountActiveUser();
-            $data['user'] = $this->db->get('tb_user')->result_array();
+            $data['user'] = $this->db->get('tb_master_user')->result_array();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -42,7 +42,7 @@ class ListUser extends CI_Controller
         // print_r($_POST);
         // echo ("</pre>");
 
-        $rincian_user = $this->db->get('tb_user')->row_array();
+        $rincian_user = $this->db->get('tb_master_user')->row_array();
 
         $hasil_data = array(
             'nama_user' => $_POST['nama_user'],

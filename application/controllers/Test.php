@@ -22,4 +22,8 @@ class Test extends CI_Controller
             redirect('Auth');
         }
     }
+
+    public function testAjax() {
+        echo json_encode(["status" => "success", "message" => "AJAX Berjalan"]);
+    }
 }

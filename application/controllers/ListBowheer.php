@@ -18,8 +18,8 @@ class ListBowheer extends CI_Controller
             $data['title'] = 'List Target Bowheer';
             $data['judul'] = 'List Target Bowheer TKM';
             $data['rincian_bowheer'] = $this->MListBowheer->getData();
-            $data['bowheer'] = $this->db->get('tb_bowheer')->result_array();
-            $data['list_user'] = $this->db->get('tb_user')->result_array();
+            $data['bowheer'] = $this->db->get('tb_master_bowheer')->result_array();
+            $data['list_user'] = $this->db->get('tb_master_user')->result_array();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -36,7 +36,7 @@ class ListBowheer extends CI_Controller
     public function add()
     {
 
-        $rincian_bowheer = $this->db->get('tb_bowheer')->row_array();
+        $rincian_bowheer = $this->db->get('tb_master_bowheer')->row_array();
         // echo "<script>console.log('".$this->session->userdata('id_akun'). "');</script>";
 
         $target_bowheer = preg_replace('/[^0-9]/', '', $_POST['target_bowheer']);

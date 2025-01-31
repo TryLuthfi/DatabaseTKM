@@ -97,7 +97,7 @@ class MFiberstar_Project extends CI_Model
         SUM(CASE WHEN tanggal_atp IS NOT NULL AND tanggal_atp != "" THEN hp_atp ELSE 0 END) as total_hp_atp,
         SUM(CASE WHEN main_status IS NOT NULL AND main_status = "CLOSED" THEN hp_atp ELSE 0 END) as total_hp_closed
         FROM tb_project_progress_fiberstar
-        WHERE tb_project_progress_fiberstar.pic_project = "'.$sessionLevel.'";')
+        WHERE tb_project_progress_fiberstar.pic_project = "' . $sessionLevel . '";')
             ->result_array();
         return $data;
     }
@@ -133,6 +133,22 @@ class MFiberstar_Project extends CI_Model
     public function gettopAreaCleanlist(): mixed
     {
         $data = $this->db->query('SELECT *, ROUND(SUM(hpplan_project)) as achiev_cleanlist from tb_project_progress_fiberstar GROUP BY area_project order by achiev_cleanlist DESC LIMIT 5;')
+            ->result_array();
+        return $data;
+    }
+
+    public function gettopAreaRFS(): mixed
+    {
+        $data = $this->db->query('SELECT *, 
+    ROUND(SUM(CASE 
+        WHEN tanggal_rfs IS NOT NULL AND tanggal_rfs != "" THEN hp_rfs 
+        ELSE 0 
+    END)) AS achiev_rfs 
+FROM tb_project_progress_fiberstar 
+WHERE tanggal_rfs IS NOT NULL AND tanggal_rfs != "" 
+GROUP BY area_project 
+ORDER BY achiev_rfs DESC 
+LIMIT 5;')
             ->result_array();
         return $data;
     }
@@ -185,7 +201,7 @@ class MFiberstar_Project extends CI_Model
                                     FROM tb_project_progress_fiberstar 
                                     LEFT JOIN tb_project_implementasi_fiberstar 
                                     ON tb_project_implementasi_fiberstar.access_id_project = tb_project_progress_fiberstar.access_id_project 
-                                    WHERE tb_project_progress_fiberstar.pic_project = "'.$sessionLevel.'"
+                                    WHERE tb_project_progress_fiberstar.pic_project = "' . $sessionLevel . '"
                                     GROUP BY tb_project_progress_fiberstar.primary_access_id_project 
                                     ORDER BY CASE WHEN tb_project_progress_fiberstar.main_status 
                                     LIKE "%DROP%" OR tb_project_progress_fiberstar.main_status 
@@ -218,6 +234,18 @@ class MFiberstar_Project extends CI_Model
         FROM tb_project_progress_myrep
         GROUP BY kota_project
         ORDER BY total_hp_plan DESC;')
+            ->result_array();
+        return $data;
+    }
+
+    public function gettopAreaCleanlistFilterTanggalSama($tanggal_sama){
+        $data = $this->db->query('SELECT * FROM tb_project_progress_fiberstar WHERE tanggal_bak = "' . $tanggal_sama . '";')
+            ->result_array();
+        return $data;
+    }
+
+    public function gettopAreaCleanlistFilterTanggalBeda($filterTanggalAwal, $filterTanggalAkhir){
+        $data = $this->db->query('SELECT * FROM tb_project_progress_fiberstar WHERE tanggal_bak >= "' . $filterTanggalAwal . '" && tanggal_bak <= "' . $filterTanggalAkhir . '";')
             ->result_array();
         return $data;
     }

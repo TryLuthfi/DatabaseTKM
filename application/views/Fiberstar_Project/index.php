@@ -115,22 +115,6 @@ $total_hp_closed_regional = 0;
                       </select>
                     </div>
                   </div>
-                  <!-- <div class="col-sm-3">
-                    <div class="form_group">
-                      <label style="display: flex; justify-content: center; align-items: center;">RANGE TANGGAL</label>
-                      <div class="form-group">
-                        <div class="input-group">
-                          <div class="input-group-prepend">
-                            <span class="input-group-text">
-                              <i class="far fa-calendar-alt"></i>
-                            </span>
-                          </div>
-                          <input type="text" class="form-control float-right" id="date-range" name="date"
-                            value="<?= date('m/d/Y') ?> - <?= date('m/d/Y') ?>">
-                        </div>
-                      </div>
-                    </div>
-                  </div> -->
 
                   <div class="modal-footer col-sm-12">
                     <button type="button" id="reset_filter" class="btn btn-danger" data-dismiss="modal">Hapus</button>
@@ -778,6 +762,16 @@ $total_hp_closed_regional = 0;
                       </div>
                 </section>
 
+                <div class="content-header">
+                  <div class="container-fluid">
+                    <div class="row mb-2">
+                      <div class="col-sm-12">
+                        <h1 class="m-0 text-dark" style="text-align: center;">CHART STAGGING</h1>
+                      </div><!-- /.col -->
+                    </div><!-- /.row -->
+                  </div><!-- /.container-fluid -->
+                </div>
+
                 <div class="card-body">
                   <div class="chart" style="height: 300px;">
                     <canvas id="barChart"
@@ -800,90 +794,190 @@ $total_hp_closed_regional = 0;
     
     ?>
 
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-header border-0">
-              <div class="d-flex justify-content-between">
-                <h3 class="card-title">Top Area Cleanlist</h3>
-                <a href="javascript:void(0);">View Report</a>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex">
-                <p class="d-flex flex-column">
-                  <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                    <span
-                      class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_plan']), 0, ".") . " HP" ?></span>
-                  <?php endforeach ?>
-                  <span>TOP AREA</span>
-                </p>
-                <p class="ml-auto d-flex flex-column text-right">
-                  <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> <?= round($persentase_cleanlist_to_total, 2) . "%" ?>
-                  </span>
-                  <span class="text-muted">By RKAP ( % )</span>
-                </p>
-              </div>
-              <!-- /.d-flex -->
+    <section class="content">
+      <div class="container-fluid">
+        <div class="row">
+          <!-- /.col (LEFT) -->
+          <div class="col-md-12">
+            <!-- LINE CHART -->
+            <!-- /.card -->
 
-              <div class="position-relative mb-4">
-                <canvas id="fiberstar_chart_bar_cleanlist" height="200"></canvas>
+            <!-- BAR CHART -->
+            <div class="card card-success">
+              <div class="card-header">
+                <h3 class="card-title">SUMMARY WEEKLY ACHIEVEMENT</h3>
+
+                <div class="card-tools">
+                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="content-header">
+                <div class="container-fluid">
+                  <div class="row mb-2">
+                    <div class="col-sm-12">
+                      <h1 class="m-0 text-dark" style="text-align: center;">RANGE TANGGAL</h1>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="row">
+                      <div class="col-6">
+                        <div class="form-group">
+                          <div class="input-group">
+                            <div class="input-group-prepend">
+                              <span class="input-group-text">
+                                <i class="far fa-calendar-alt"></i>
+                              </span>
+                            </div>
+                            <input type="text" class="form-control float-right" id="date-range" name="date"
+                              value="<?= date('m/d/Y') ?> - <?= date('m/d/Y') ?>">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <button type="button" class="btn btn-info" id="test-ajax">Cari</button>
+                      </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div class="d-flex flex-row justify-content-end">
-                <span class="mr-2">
-                  <i class="fas fa-square text-primary"></i> Achieved
-                </span>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-lg-6">
+                    <div class="card">
+                      <div class="card-header border-0">
+                        <div class="d-flex justify-content-center">
+                          <h3 class="card-title">Top Area Cleanlist</h3>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        <div class="d-flex">
+                          <p class="d-flex flex-column">
+                            <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                              <span
+                                class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_plan']), 0, ".") . " HP" ?></span>
+                            <?php endforeach ?>
+                            <span>TOP AREA</span>
+                          </p>
+                          <p class="ml-auto d-flex flex-column text-right">
+                            <span class="text-success">
+                              <i class="fas fa-arrow-up"></i> <?= round($persentase_cleanlist_to_total, 2) . "%" ?>
+                            </span>
+                            <span class="text-muted">By RKAP ( % )</span>
+                          </p>
+                        </div>
+                        <!-- /.d-flex -->
+
+                        <div class="position-relative mb-4">
+                          <canvas id="fiberstar_chart_bar_cleanlist" height="200"></canvas>
+                        </div>
+
+                        <div class="d-flex flex-row justify-content-end">
+                          <span class="mr-2">
+                            <i class="fas fa-square text-primary"></i> Achieved
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+
+                  <div class="col-lg-6">
+                    <div class="card">
+                      <div class="card-header border-0">
+                        <div class="d-flex justify-content-center">
+                          <h3 class="card-title">TOP AREA BAK</h3>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        <div class="d-flex">
+                          <p class="d-flex flex-column">
+                            <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                              <span
+                                class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ".") . " HP" ?></span>
+                            <?php endforeach ?>
+                            <span>TOP AREA</span>
+                          </p>
+                          <p class="ml-auto d-flex flex-column text-right">
+                            <span class="text-success">
+                              <i class="fas fa-arrow-up"></i> <?= round($persentase_bak_to_cleanlist, 2) . "%" ?>
+                            </span>
+                            <span class="text-muted">By Cleanlist ( % )</span>
+                          </p>
+                        </div>
+                        <!-- /.d-flex -->
+
+                        <div class="position-relative mb-4">
+                          <canvas id="fiberstar_chart_bar_bak" height="200"></canvas>
+                        </div>
+
+                        <div class="d-flex flex-row justify-content-end">
+                          <span class="mr-2">
+                            <i class="fas fa-square text-primary"></i> Achieved
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                  <!-- /.col-md-6 -->
+
+                  <div class="col-lg-12">
+                    <div class="card">
+                      <div class="card-header border-0">
+                        <div class="d-flex justify-content-center">
+                          <h3 class="card-title">TOP AREA BAK</h3>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        <div class="d-flex">
+                          <p class="d-flex flex-column">
+                            <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                              <span
+                                class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ".") . " HP" ?></span>
+                            <?php endforeach ?>
+                            <span>TOP AREA</span>
+                          </p>
+                          <p class="ml-auto d-flex flex-column text-right">
+                            <span class="text-success">
+                              <i class="fas fa-arrow-up"></i> <?= round($persentase_bak_to_cleanlist, 2) . "%" ?>
+                            </span>
+                            <span class="text-muted">By Cleanlist ( % )</span>
+                          </p>
+                        </div>
+                        <!-- /.d-flex -->
+
+                        <div class="position-relative mb-4">
+                          <canvas id="fiberstar_chart_bar_rfs" height="200"></canvas>
+                        </div>
+
+                        <div class="d-flex flex-row justify-content-end">
+                          <span class="mr-2">
+                            <i class="fas fa-square text-primary"></i> Achieved
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
               </div>
+              <!-- /.card-body -->
             </div>
+            <!-- /.card -->
+            <!-- /.card -->
+
           </div>
-
+          <!-- /.col (RIGHT) -->
         </div>
+        <!-- /.row -->
+      </div><!-- /.container-fluid -->
+    </section>
 
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-header border-0">
-              <div class="d-flex justify-content-between">
-                <h3 class="card-title">Top Area BAK</h3>
-                <a href="javascript:void(0);">View Report</a>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex">
-                <p class="d-flex flex-column">
-                  <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                    <span
-                      class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ".") . " HP" ?></span>
-                  <?php endforeach ?>
-                  <span>TOP AREA</span>
-                </p>
-                <p class="ml-auto d-flex flex-column text-right">
-                  <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> <?= round($persentase_bak_to_cleanlist, 2) . "%" ?>
-                  </span>
-                  <span class="text-muted">By Cleanlist ( % )</span>
-                </p>
-              </div>
-              <!-- /.d-flex -->
-
-              <div class="position-relative mb-4">
-                <canvas id="fiberstar_chart_bar_bak" height="200"></canvas>
-              </div>
-
-              <div class="d-flex flex-row justify-content-end">
-                <span class="mr-2">
-                  <i class="fas fa-square text-primary"></i> Achieved
-                </span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-        <!-- /.col-md-6 -->
-      </div>
-    </div>
   </section>
 
 
@@ -902,10 +996,21 @@ $total_hp_closed_regional = 0;
                 <div class="col-6">
                   <h3 class="card-title">List Cleanlist Cluster</h3>
                 </div>
-                <!-- <div class="col-6">
-                  <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah-manual"
-                    data-toggle="modal">Tambah &nbsp;<i class="fas fa-plus"></i> </a>
-                </div> -->
+                <div class="col-6">
+                  <div class="input-group-prepend float-right mr-2">
+                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                      Download Report &nbsp; <i class="fas fa-print"></i>
+                    </button>
+                    <div class="dropdown-menu">
+                      <a class="dropdown-item">Excel</a>
+                      <a class="dropdown-item">CSV</a>
+                      <a class="dropdown-item">PDF</a>
+                      <a class="dropdown-item">Print</a>
+                    </div>
+                  </div>
+                  <a href="#" class="btn btn-success float-right text-bold mr-2">Tambah Data &nbsp;<i
+                      class="fas fa-plus"></i> </a>
+                </div>
               </div>
 
             </div>
@@ -1300,7 +1405,123 @@ $total_hp_closed_regional = 0;
     format: 'dd/mm/yyyy'
   })
 </script>
+<script>
+  $(document).ready(function () {
+
+    var ticksStyle = {
+      fontColor: '#495057',
+      fontStyle: 'bold'
+    }
+
+    var mode = 'index'
+    var intersect = true
+
+    var $fiberstarChartBarBak = $('#fiberstar_chart_bar_bak')
+
+    const dataBar = <?php echo json_encode($top_area_bak); ?>;
+    const areaAchievBar = dataBar.map(item => item.area_project);
+    const hpAchievBar = dataBar.map(item => item.achiev_bak);
+
+
+    // eslint-disable-next-line no-unused-vars
+    let fiberstarChartBarBak = new Chart($fiberstarChartBarBak, {
+      type: 'bar',
+
+      data: {
+        labels: areaAchievBar,
+        datasets: [
+          {
+            backgroundColor: '#007bff',
+            borderColor: '#007bff',
+            data: hpAchievBar
+          }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        tooltips: {
+          mode: mode,
+          intersect: intersect
+        },
+        hover: {
+          mode: mode,
+          intersect: intersect
+        },
+        legend: {
+          display: false
+        },
+        scales: {
+          yAxes: [{
+            gridLines: {
+              display: true,
+              lineWidth: '4px',
+              color: 'rgba(0, 0, 0, .2)',
+              zeroLineColor: 'transparent'
+            },
+            ticks: $.extend({
+              beginAtZero: true,
+              callback: function (value) {
+                return `${value.toLocaleString('id-ID')} Hp`;
+              }
+            }, ticksStyle)
+          }],
+          xAxes: [{
+            display: true,
+            gridLines: {
+              display: false
+            },
+            ticks: ticksStyle
+          }]
+        },
+        // Tambahkan event onClick untuk menangkap klik pada bar chart
+        onClick: function (event, elements) {
+          if (elements.length > 0) {
+            var datasetIndex = elements[0]._datasetIndex; // Ambil index dataset
+            var dataIndex = elements[0]._index; // Ambil index data dalam dataset
+
+            var label = this.data.labels[dataIndex]; // Ambil label pada sumbu X
+            var value = this.data.datasets[datasetIndex].data[dataIndex]; // Ambil nilai data yang diklik
+
+            // Tampilkan alert dengan informasi
+            alert(`Anda mengklik bar:\nLabel: ${label}\nNilai: ${value.toLocaleString('id-ID')} Hp`);
+          }
+        }
+      }
+    })
+
+    $("#test-ajax").click(function () {
+      var dateRange = $('#date-range').val();
+      alert("AJAX Dipanggil!"); // Cek apakah tombol berfungsi
+      console.log($("#date-range").val());
+
+      $.ajax({
+        url: "<?= base_url('Fiberstar_Project/filterTanggalChart') ?>",
+        type: "POST",
+        data: { date_range: dateRange },
+        dataType: "json",
+        success: function (response) {
+          if (response.status === "success") {
+            alert("AJAX Dipanggil!");
+            // Update Chart Data
+            fiberstarChartBarBak.data.labels = response.labels;
+            fiberstarChartBarBak.data.datasets[0].data = response.data;
+            fiberstarChartBarBak.update();
+          } else {
+            alert("Data tidak ditemukan!");
+          }
+        },error: function (xhr, status, error) {
+            console.error(xhr.responseText);
+            alert("Terjadi kesalahan saat mengambil data.");
+        }
+      });
+    });
+  });
+</script>
 <script type="text/javascript">
+
+  //download report 
+
+
   $(function () {
 
     // format angka rupiah
@@ -1531,89 +1752,6 @@ $total_hp_closed_regional = 0;
 
     'use strict'
 
-
-
-    var ticksStyle = {
-      fontColor: '#495057',
-      fontStyle: 'bold'
-    }
-
-    var mode = 'index'
-    var intersect = true
-
-    var $fiberstarChartBarBak = $('#fiberstar_chart_bar_bak')
-
-    const dataBar = <?php echo json_encode($top_area_bak); ?>;
-    const areaAchievBar = dataBar.map(item => item.kota_project);
-    const hpAchievBar = dataBar.map(item => item.achiev_bak);
-
-
-    // eslint-disable-next-line no-unused-vars
-    var fiberstarChartBarBak = new Chart($fiberstarChartBarBak, {
-      type: 'bar',
-
-      data: {
-        labels: areaAchievBar,
-        datasets: [
-          {
-            backgroundColor: '#007bff',
-            borderColor: '#007bff',
-            data: hpAchievBar
-          }
-        ]
-      },
-      options: {
-        maintainAspectRatio: false,
-        tooltips: {
-          mode: mode,
-          intersect: intersect
-        },
-        hover: {
-          mode: mode,
-          intersect: intersect
-        },
-        legend: {
-          display: false
-        },
-        scales: {
-          yAxes: [{
-            gridLines: {
-              display: true,
-              lineWidth: '4px',
-              color: 'rgba(0, 0, 0, .2)',
-              zeroLineColor: 'transparent'
-            },
-            ticks: $.extend({
-              beginAtZero: true,
-              callback: function (value) {
-                return `${value.toLocaleString('id-ID')} Hp`;
-              }
-            }, ticksStyle)
-          }],
-          xAxes: [{
-            display: true,
-            gridLines: {
-              display: false
-            },
-            ticks: ticksStyle
-          }]
-        },
-        // Tambahkan event onClick untuk menangkap klik pada bar chart
-        onClick: function (event, elements) {
-          if (elements.length > 0) {
-            var datasetIndex = elements[0]._datasetIndex; // Ambil index dataset
-            var dataIndex = elements[0]._index; // Ambil index data dalam dataset
-
-            var label = this.data.labels[dataIndex]; // Ambil label pada sumbu X
-            var value = this.data.datasets[datasetIndex].data[dataIndex]; // Ambil nilai data yang diklik
-
-            // Tampilkan alert dengan informasi
-            alert(`Anda mengklik bar:\nLabel: ${label}\nNilai: ${value.toLocaleString('id-ID')} Hp`);
-          }
-        }
-      }
-    })
-
   })
 
   $(document).ready(function () {
@@ -1672,68 +1810,6 @@ $total_hp_closed_regional = 0;
 
     var mode = 'index'
     var intersect = true
-
-    var $fiberstarChartBarBak = $('#fiberstar_chart_bar_bak')
-
-    const dataBar = <?php echo json_encode($top_area_bak); ?>;
-    const areaAchievBar = dataBar.map(item => item.area_project);
-    const hpAchievBar = dataBar.map(item => item.achiev_bak);
-
-
-    // eslint-disable-next-line no-unused-vars
-    var fiberstarChartBarBak = new Chart($fiberstarChartBarBak, {
-      type: 'bar',
-      data: {
-        labels: areaAchievBar,
-        datasets: [
-          {
-            backgroundColor: '#007bff',
-            borderColor: '#007bff',
-            data: hpAchievBar
-          }
-        ]
-      },
-      options: {
-        maintainAspectRatio: false,
-        tooltips: {
-          mode: mode,
-          intersect: intersect
-        },
-        hover: {
-          mode: mode,
-          intersect: intersect
-        },
-        legend: {
-          display: false
-        },
-        scales: {
-          yAxes: [{
-            // display: false,
-            gridLines: {
-              display: true,
-              lineWidth: '4px',
-              color: 'rgba(0, 0, 0, .2)',
-              zeroLineColor: 'transparent'
-            },
-            ticks: $.extend({
-              beginAtZero: true,
-
-              // Include a dollar sign in the ticks
-              callback: function (value) {
-                return `${value.toLocaleString('id-ID')} Hp`;
-              }
-            }, ticksStyle)
-          }],
-          xAxes: [{
-            display: true,
-            gridLines: {
-              display: false
-            },
-            ticks: ticksStyle
-          }]
-        }
-      }
-    })
 
     var $fiberstarChartBarCleanlist = $('#fiberstar_chart_bar_cleanlist')
 
@@ -1796,18 +1872,79 @@ $total_hp_closed_regional = 0;
       }
     })
 
+    var $fiberstarChartBarRfs = $('#fiberstar_chart_bar_rfs')
+
+    const dataBarRfs = <?php echo json_encode($top_area_rfs); ?>;
+    const areaAchievBarRfs = dataBarRfs.map(item => item.area_project);
+    const hpAchievBarRfs = dataBarRfs.map(item => item.achiev_rfs);
+
+
+    var fiberstarChartBarRfs = new Chart($fiberstarChartBarRfs, {
+      type: 'bar',
+      data: {
+        labels: areaAchievBarRfs,
+        datasets: [
+          {
+            backgroundColor: '#007bff',
+            borderColor: '#007bff',
+            data: hpAchievBarRfs
+          }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        tooltips: {
+          mode: mode,
+          intersect: intersect
+        },
+        hover: {
+          mode: mode,
+          intersect: intersect
+        },
+        legend: {
+          display: false
+        },
+        scales: {
+          yAxes: [{
+            // display: false,
+            gridLines: {
+              display: true,
+              lineWidth: '4px',
+              color: 'rgba(0, 0, 0, .2)',
+              zeroLineColor: 'transparent'
+            },
+            ticks: $.extend({
+              beginAtZero: true,
+
+              // Include a dollar sign in the ticks
+              callback: function (value) {
+                return `${value.toLocaleString('id-ID')} Hp`;
+              }
+            }, ticksStyle)
+          }],
+          xAxes: [{
+            display: true,
+            gridLines: {
+              display: false
+            },
+            ticks: ticksStyle
+          }]
+        }
+      }
+    })
+
   })
 
 
-  document.addEventListener("DOMContentLoaded", function () {
-    const cards = document.querySelectorAll('[data-card-widget="collapse"]');
-    cards.forEach(card => {
-      const parentCard = card.closest('.card');
-      if (parentCard) {
-        parentCard.classList.add('collapsed-card'); // Tambahkan kelas 'collapsed-card'
-      }
-    });
-  });
+  // document.addEventListener("DOMContentLoaded", function () {
+  //   const cards = document.querySelectorAll('[data-card-widget="collapse"]');
+  //   cards.forEach(card => {
+  //     const parentCard = card.closest('.card');
+  //     if (parentCard) {
+  //       parentCard.classList.add('collapsed-card'); // Tambahkan kelas 'collapsed-card'
+  //     }
+  //   });
+  // });
 
   $(document).ready(function () {
     $.fn.dataTable.ext.errMode = 'none';
@@ -1930,7 +2067,6 @@ $total_hp_closed_regional = 0;
         .draw(); // Render ulang tabel
 
     });
-
   });
 
 </script>
@@ -2099,6 +2235,8 @@ $total_hp_closed_regional = 0;
 <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/TableExport/5.2.0/js/tableexport.min.js"></script>
+
 
 <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/fontawesome-free/css/all.min.css">
 <!-- overlayScrollbars -->

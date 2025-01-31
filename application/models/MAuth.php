@@ -3,7 +3,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MAuth extends CI_Model
 {
-    private $_table = 'tb_user';
+    private $_table = 'tb_master_user';
     // public $username_acc;
     // public $password_acc;
 
@@ -15,7 +15,7 @@ class MAuth extends CI_Model
         $pass = $_POST['pass'];
 
         $akun = $this->db->get_where($this->_table, ['username_user' => $username])->row_array();
-        $akun = $this->db->query("select * from tb_user join tb_level on tb_user.id_level = tb_level.id_level where tb_user.username_user = '".$username."'")->row_array();
+        $akun = $this->db->query("select * from tb_master_user join tb_level on tb_master_user.id_level = tb_level.id_level where tb_master_user.username_user = '".$username."'")->row_array();
         if ($akun) {
             if ($akun['password_user'] == $pass) {
                 $data =

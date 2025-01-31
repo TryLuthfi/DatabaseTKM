@@ -541,8 +541,18 @@ $total_hp_closed_regional = 0;
                   <h3 class="card-title">List Cleanlist Cluster</h3>
                 </div>
                 <div class="col-6">
-                  <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah-manual"
-                    data-toggle="modal">Tambah &nbsp;<i class="fas fa-plus"></i> </a>
+                  <div class="input-group-prepend float-right mr-2">
+                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                      Download Report &nbsp; <i class="fas fa-print"></i> 
+                    </button>
+                    <div class="dropdown-menu">
+                      <a class="dropdown-item" href="#">Excel</a>
+                      <a class="dropdown-item" href="#">CSV</a>
+                      <a class="dropdown-item" href="#">PDF</a>
+                      <a class="dropdown-item" href="#">Print</a>
+                    </div>
+                  </div>
+                  <a href="#" class="btn btn-success float-right text-bold mr-2">Tambah Data &nbsp;<i class="fas fa-plus"></i> </a>
                 </div>
               </div>
 

@@ -19,67 +19,7 @@ $id_menu = $this->uri->segment('1');
                 <a href="<?= base_url('MyRepublik_Project') ?>" class="nav-link">My Republik</a>
             </li>
         </ul>
-
-        <!-- SEARCH FORM -->
-        <!-- <form class="form-inline ml-3">
-            <div class="input-group input-group-sm">
-                <input class="form-control form-co  ntrol-navbar" type="search" placeholder="Search" aria-label="Search">
-                <div class="input-group-append">
-                    <button class="btn btn-navbar" type="submit">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </div>
-        </form> -->
-
-        <!-- Right navbar links -->
         <ul class="navbar-nav ml-auto">
-            <!-- Messages Dropdown Menu -->
-            <!-- <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#">
-                    <i class="far fa-comments"></i>
-                    <span class="badge badge-danger navbar-badge">3</span>
-                </a>
-                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                    <a href="#" class="dropdown-item"> -->
-            <!-- Message Start -->
-            <!-- <div class="media">
-                            <img src="<?= base_url('assets') ?>/dist/img/user1-128x128.jpg" alt="User Avatar" class="img-size-50 mr-3 img-circle">
-                            <div class="media-body">
-                                <h3 class="dropdown-item-title">
-                                    Brad Diesel
-                                    <span class="float-right text-sm text-danger"><i class="fas fa-star"></i></span>
-                                </h3>
-                                <p class="text-sm">Call me whenever you can...</p>
-                                <p class="text-sm text-muted"><i class="far fa-clock mr-1"></i> 4 Hours Ago</p>
-                            </div>
-                        </div> -->
-            <!-- Message End -->
-            <!-- </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="#" class="dropdown-item dropdown-footer">See All Messages</a>
-                </div>
-            </li> -->
-            <!-- Notifications Dropdown Menu -->
-            <!-- <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#">
-                    <i class="far fa-bell"></i>
-                    <span class="badge badge-warning navbar-badge">15</span>
-                </a>
-                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                    <span class="dropdown-item dropdown-header">15 Notifications</span>
-                    <div class="dropdown-divider"></div>
-                    <a href="#" class="dropdown-item">
-                        <i class="fas fa-envelope mr-2"></i> 4 new messages
-                        <span class="float-right text-muted text-sm">3 mins</span>
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
-                </div>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button"><i class="fas fa-th-large"></i></a>
-            </li> -->
             <li class="nav-item dropdown">
                 <a class="nav-link" data-toggle="dropdown" href="#">
                     <i class="fas fa-sign-out-alt"></i>
@@ -114,6 +54,7 @@ $id_menu = $this->uri->segment('1');
                     <a href="#" class="d-block"><?= $this->session->userdata('nama_user') ?></a>
                 </div>
             </div>
+            
 
             <!-- Sidebar Menu -->
             <nav class="mt-2">
@@ -132,56 +73,122 @@ $id_menu = $this->uri->segment('1');
                         </a>
                     </li>
 
-                    <?php if ($this->session->userdata('nama_level') == "Super Admin"){?>
+                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                         <li class="nav-item has-treeview <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea') {
-                        echo "menu-open";
-                    } ?>">
-                        <a href="#" class="nav-link <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea') {
-                            echo "active";
+                            echo "menu-open";
                         } ?>">
-                            <i class="nav-icon fas fa-money-check-alt"></i>
+                            <a href="#" class="nav-link <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea') {
+                                echo "active";
+                            } ?>">
+                                <i class="nav-icon fas fa-money-check-alt"></i>
+                                <p>
+                                    Super Admin
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right">3</span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="<?= base_url('ListArea') ?>" class="nav-link <?php if ($id_menu == 'ListArea') {
+                                          echo "active";
+                                      } ?>">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>List Area</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="<?= base_url('ListUser') ?>" class="nav-link <?php if ($id_menu == 'ListUser') {
+                                          echo "active";
+                                      } ?>">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>List User</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="<?= base_url('ListBowheer') ?>" class="nav-link <?php if ($id_menu == 'ListBowheer') {
+                                          echo "active";
+                                      } ?>">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>List Bowheer</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    <?php } ?>
+
+                    <li class="nav-header">Logistik</li>
+
+                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                        <li class="nav-item has-treeview <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang' || $id_menu == 'Master_Logistik_Kode_Item' || $id_menu == 'Master_Logistik_Sumber_Material') {
+                            echo "menu-open";
+                        } ?>">
+                            <a href="#" class="nav-link <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang' || $id_menu == 'Master_Logistik_Kode_Item' || $id_menu == 'Master_Logistik_Sumber_Material') {
+                                echo "active";
+                            } ?>">
+                                <i class="nav-icon fas fa-money-check-alt"></i>
+                                <p>
+                                    Master Logistik
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right">3</span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="<?= base_url('Master_Logistik_Lokasi_Gudang') ?>" class="nav-link <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang') {
+                                          echo "active";
+                                      } ?>">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Lokasi Gudang</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="<?= base_url('Master_Logistik_Kode_Item') ?>" class="nav-link <?php if ($id_menu == 'Master_Logistik_Kode_Item') {
+                                          echo "active";
+                                      } ?>">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Kode Item</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="<?= base_url('Master_Logistik_Sumber_Material') ?>" class="nav-link <?php if ($id_menu == 'Master_Logistik_Sumber_Material') {
+                                          echo "active";
+                                      } ?>">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Sumber Material</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    <?php } ?>
+
+                    <li class="nav-item">
+                        <a href="<?= base_url('Neraca') ?>" class="nav-link <?php if ($id_menu == 'Neraca') {
+                              echo "active";
+                          } ?>">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
-                                Super Admin
-                                <i class="fas fa-angle-left right"></i>
-                                <span class="badge badge-info right">3</span>
+                                Dashboard Logistik
                             </p>
                         </a>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                            </li>
-                        </ul>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="<?= base_url('ListArea') ?>" class="nav-link <?php if ($id_menu == 'ListArea') {
-                                      echo "active";
-                                  } ?>">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>List Area</p>
-                                </a>
-                            </li>
-                        </ul>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="<?= base_url('ListUser') ?>" class="nav-link <?php if ($id_menu == 'ListUser') {
-                                      echo "active";
-                                  } ?>">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>List User</p>
-                                </a>
-                            </li>
-                        </ul>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item">
-                                <a href="<?= base_url('ListBowheer') ?>" class="nav-link <?php if ($id_menu == 'ListBowheer') {
-                                      echo "active";
-                                  } ?>">
-                                    <i class="far fa-circle nav-icon"></i>
-                                    <p>List Bowheer</p>
-                                </a>
-                            </li>
-                        </ul>
                     </li>
-                    <?php }?>
+
+                    <li class="nav-header">Project</li>
 
                     <li class="nav-item has-treeview <?php if ($id_menu == 'Fiberstar_PO' || $id_menu == 'Fiberstar_Project' || $id_menu == 'Fiberstar_Project_Detail') {
                         echo "menu-open";
@@ -193,7 +200,8 @@ $id_menu = $this->uri->segment('1');
                             <p>
                                 Fiberstar
                                 <i class="fas fa-angle-left right"></i>
-                                <span class="badge badge-info right"> <?php if ($this->session->userdata('nama_level') == "Super Admin"){?>2<?php } else {?>2<?php }?></span>
+                                <span class="badge badge-info right">
+                                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>2<?php } else { ?>2<?php } ?></span>
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
@@ -242,8 +250,8 @@ $id_menu = $this->uri->segment('1');
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
                                 <a href="<?= base_url('MyRepublik_Project') ?>" class="nav-link <?php if ($id_menu == 'MyRepublik_Project') {
-                                    echo "active";
-                                } ?>">
+                                      echo "active";
+                                  } ?>">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>List Project</p>
                                 </a>
@@ -259,18 +267,6 @@ $id_menu = $this->uri->segment('1');
                                 </a>
                             </li>
                         </ul>
-                    </li>
-
-                    <li class="nav-item">
-                        <a href="<?= base_url('Rincian') ?>" class="nav-link <?php if ($id_menu == 'Rincian') {
-                              echo "active";
-                          } ?>">
-                            <i class="nav-icon fas fa-money-bill-wave"></i>
-                            <p>
-                                Logistik
-                                <!-- <span class="right badge badge-danger">New</span> -->
-                            </p>
-                        </a>
                     </li>
                     <li class="nav-header">Report</li>
                     <li class="nav-item">

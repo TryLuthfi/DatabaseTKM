@@ -27,6 +27,7 @@ class Fiberstar_Project extends CI_Controller
             $data['unique_stagging'] = $this->MFiberstar_Project->getUniqueStagging();
             $data['top_area_cleanlist'] = $this->MFiberstar_Project->gettopAreaCleanlist();
             $data['top_area_bak'] = $this->MFiberstar_Project->gettopAreaBAK();
+            $data['top_area_rfs'] = $this->MFiberstar_Project->gettopAreaRFS();
             $data['stagging_regional'] = $this->MFiberstar_Project->getStaggingRegional();
             $data['stagging_area'] = $this->MFiberstar_Project->getStaggingArea();
             $data['grafik_by_kota'] = $this->MFiberstar_Project->getGrafikByKota();
@@ -49,6 +50,27 @@ class Fiberstar_Project extends CI_Controller
         } else {
             redirect('Auth');
         }
+    }
+
+    public function filterTanggalChart(){
+
+        $dateRange = $this->input->post('date_range');
+        list($startDate, $endDate) = explode(" - ", $dateRange);
+        $startDate = date("Y-m-d", strtotime($startDate));
+        $endDate = date("Y-m-d", strtotime($endDate));
+
+        $data = $this->MFiberstar_Project->gettopAreaCleanlistFilterTanggalBeda($startDate, $endDate);
+
+        if (!empty($data)) {
+            echo json_encode([
+                "status" => "success",
+                "labels" => array_column($data, 'area_project'),
+                "data" => array_column($data, 'hp_bak')
+            ]);
+        } else {
+            echo json_encode(["status" => "error"]);
+        }
+
     }
 
     public function edit()

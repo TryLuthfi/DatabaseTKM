@@ -20,14 +20,14 @@
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
 </head>
 
-<body class="hold-transition login-page">
+<body class="hold-transition login-page" style="background: linear-gradient(rgba(0, 0, 0, 0.74), rgba(0, 0, 0, 0.41)), url('<?= base_url("assets/img/IMG_1247.jpg") ?>') no-repeat center center fixed; background-size: cover;">
     <div class="login-box">
         <div class="login-logo">
-            <a href="<?= base_url('') ?>"><b>Database</b>Project TKM</a>
+            <a style="color: white;"><b>Database</b>Project TKM</a>
         </div>
         <!-- /.login-logo -->
         <div class="card">
-            <?php if ($this->session->flashdata('error_log') == 'salah') : ?>
+            <?php if ($this->session->flashdata('error_log') == 'salah'): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     <strong>Gagal</strong> Password yang anda masukkan salah
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -35,7 +35,7 @@
                     </button>
                 </div>
             <?php endif; ?>
-            <?php if ($this->session->flashdata('error_log') == 'tidak_ada') : ?>
+            <?php if ($this->session->flashdata('error_log') == 'tidak_ada'): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     <strong>Gagal</strong> Akun anda tidak ditemukan
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -66,47 +66,20 @@
                         </div>
                     </div>
                     <div class="row">
-                        <!-- <div class="col-8">
-                            <div class="icheck-primary">
-                                <input type="checkbox" id="remember">
-                                <label for="remember">
-                                    Remember Me
-                                </label>
-                            </div>
-                        </div> -->
                         <div class="col-12">
                             <button type="submit" class="btn btn-primary btn-block">Masuk</button>
                         </div>
                     </div>
                 </form>
-
-                <!-- <div class="social-auth-links text-center mb-3">
-                    <p>- OR -</p>
-                    <a href="#" class="btn btn-block btn-primary">
-                        <i class="fab fa-facebook mr-2"></i> Sign in using Facebook
-                    </a>
-                    <a href="#" class="btn btn-block btn-danger">
-                        <i class="fab fa-google-plus mr-2"></i> Sign in using Google+
-                    </a>
-                </div> -->
-                <!-- /.social-auth-links -->
-
-                <!-- <p class="mb-1">
-                    <a href="forgot-password.html">I forgot my password</a>
-                </p> -->
             </div>
-            <!-- /.login-card-body -->
         </div>
     </div>
-    <!-- /.login-box -->
-
-    <!-- jQuery -->
-    <script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
-    <!-- Bootstrap 4 -->
-    <script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <!-- AdminLTE App -->
-    <script src="<?= base_url('assets') ?>/dist/js/adminlte.min.js"></script>
-
 </body>
+
+<script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
+<!-- Bootstrap 4 -->
+<script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- AdminLTE App -->
+<script src="<?= base_url('assets') ?>/dist/js/adminlte.min.js"></script>
 
 </html>

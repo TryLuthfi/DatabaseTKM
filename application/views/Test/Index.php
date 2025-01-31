@@ -3,12 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AdminLTE 3 | ChartJS</title>
+  <title>AdminLTE 3 | DataTables</title>
 
   <!-- Google Font: Source Sans Pro -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
+  <!-- DataTables -->
+  <link rel="stylesheet" href="../../plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
+  <link rel="stylesheet" href="../../plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+  <link rel="stylesheet" href="../../plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
   <!-- Theme style -->
   <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
 </head>
@@ -156,14 +160,13 @@
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <!-- Brand Logo -->
     <a href="../../index3.html" class="brand-link">
-      <img src="../../dist/img/AdminLTELogo.png"
-           alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+      <img src="../../dist/img/AdminLTELogo.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
       <span class="brand-text font-weight-light">AdminLTE 3</span>
     </a>
 
     <!-- Sidebar -->
     <div class="sidebar">
-      <!-- Sidebar user panel (optional) -->
+      <!-- Sidebar user (optional) -->
       <div class="user-panel mt-3 pb-3 mb-3 d-flex">
         <div class="image">
           <img src="../../dist/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image">
@@ -288,8 +291,8 @@
               </li>
             </ul>
           </li>
-          <li class="nav-item menu-open">
-            <a href="#" class="nav-link active">
+          <li class="nav-item">
+            <a href="#" class="nav-link">
               <i class="nav-icon fas fa-chart-pie"></i>
               <p>
                 Charts
@@ -298,25 +301,25 @@
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
-                <a href="chartjs.html" class="nav-link active">
+                <a href="../charts/chartjs.html" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
                   <p>ChartJS</p>
                 </a>
               </li>
               <li class="nav-item">
-                <a href="flot.html" class="nav-link">
+                <a href="../charts/flot.html" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
                   <p>Flot</p>
                 </a>
               </li>
               <li class="nav-item">
-                <a href="inline.html" class="nav-link">
+                <a href="../charts/inline.html" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
                   <p>Inline</p>
                 </a>
               </li>
               <li class="nav-item">
-                <a href="uplot.html" class="nav-link">
+                <a href="../charts/uplot.html" class="nav-link">
                   <i class="far fa-circle nav-icon"></i>
                   <p>uPlot</p>
                 </a>
@@ -417,8 +420,8 @@
               </li>
             </ul>
           </li>
-          <li class="nav-item">
-            <a href="#" class="nav-link">
+          <li class="nav-item menu-open">
+            <a href="#" class="nav-link active">
               <i class="nav-icon fas fa-table"></i>
               <p>
                 Tables
@@ -433,7 +436,7 @@
                 </a>
               </li>
               <li class="nav-item">
-                <a href="../tables/data.html" class="nav-link">
+                <a href="../tables/data.html" class="nav-link active">
                   <i class="far fa-circle nav-icon"></i>
                   <p>DataTables</p>
                 </a>
@@ -835,12 +838,12 @@
       <div class="container-fluid">
         <div class="row mb-2">
           <div class="col-sm-6">
-            <h1>ChartJS</h1>
+            <h1>DataTables</h1>
           </div>
           <div class="col-sm-6">
             <ol class="breadcrumb float-sm-right">
               <li class="breadcrumb-item"><a href="#">Home</a></li>
-              <li class="breadcrumb-item active">ChartJS</li>
+              <li class="breadcrumb-item active">DataTables</li>
             </ol>
           </div>
         </div>
@@ -848,58 +851,9 @@
     </section>
 
     <!-- Main content -->
-    <section class="content">
-      <div class="container-fluid">
-        <div class="row">
-          <!-- /.col (LEFT) -->
-          <div class="col-md-6">
-            <!-- LINE CHART -->
-            <!-- /.card -->
-
-            <!-- BAR CHART -->
-            <div class="card card-success">
-              <div class="card-header">
-                <h3 class="card-title">Bar Chart</h3>
-
-                <div class="card-tools">
-                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                    <i class="fas fa-minus"></i>
-                  </button>
-                  <button type="button" class="btn btn-tool" data-card-widget="remove">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="card-body">
-                <div class="chart">
-                  <canvas id="barChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-                </div>
-              </div>
-              <!-- /.card-body -->
-            </div>
-            <!-- /.card -->
-            <!-- /.card -->
-
-          </div>
-          <!-- /.col (RIGHT) -->
-        </div>
-        <!-- /.row -->
-      </div><!-- /.container-fluid -->
-    </section>
+    <button id="test-ajax">Test AJAX</button>
     <!-- /.content -->
   </div>
-  <!-- /.content-wrapper -->
-  <footer class="main-footer">
-    <div class="float-right d-none d-sm-block">
-      <b>Version</b> 3.2.0
-    </div>
-    <strong>Copyright &copy; 2014-2021 <a href="https://adminlte.io">AdminLTE.io</a>.</strong> All rights reserved.
-  </footer>
-
-  <!-- Control Sidebar -->
-  <aside class="control-sidebar control-sidebar-dark">
-    <!-- Add Content Here -->
-  </aside>
   <!-- /.control-sidebar -->
 </div>
 <!-- ./wrapper -->
@@ -908,772 +862,42 @@
 <script src="../../plugins/jquery/jquery.min.js"></script>
 <!-- Bootstrap 4 -->
 <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<!-- ChartJS -->
-<script src="../../plugins/chart.js/Chart.min.js"></script>
+<!-- DataTables  & Plugins -->
+<script src="../../plugins/datatables/jquery.dataTables.min.js"></script>
+<script src="../../plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
+<script src="../../plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
+<script src="../../plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
+<script src="../../plugins/datatables-buttons/js/dataTables.buttons.min.js"></script>
+<script src="../../plugins/datatables-buttons/js/buttons.bootstrap4.min.js"></script>
+<script src="../../plugins/jszip/jszip.min.js"></script>
+<script src="../../plugins/pdfmake/pdfmake.min.js"></script>
+<script src="../../plugins/pdfmake/vfs_fonts.js"></script>
+<script src="../../plugins/datatables-buttons/js/buttons.html5.min.js"></script>
+<script src="../../plugins/datatables-buttons/js/buttons.print.min.js"></script>
+<script src="../../plugins/datatables-buttons/js/buttons.colVis.min.js"></script>
 <!-- AdminLTE App -->
 <script src="../../dist/js/adminlte.min.js"></script>
 <!-- AdminLTE for demo purposes -->
 <script src="../../dist/js/demo.js"></script>
 <!-- Page specific script -->
 <script>
-  $(function () {
+    $("#test-ajax").click(function () {
+        alert("AJAX Dipanggil!"); // Cek apakah tombol berfungsi
 
-    var areaChartData = {
-      labels  : ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-      datasets: [
-        {
-          label               : 'Digital Goods',
-          backgroundColor     : 'rgba(60,141,188,0.9)',
-          borderColor         : 'rgba(60,141,188,0.8)',
-          pointRadius          : false,
-          pointColor          : '#3b8bba',
-          pointStrokeColor    : 'rgba(60,141,188,1)',
-          pointHighlightFill  : '#fff',
-          pointHighlightStroke: 'rgba(60,141,188,1)',
-          data                : [28, 48, 40, 19, 86, 27, 90]
-        },
-        {
-          label               : 'Electronics',
-          backgroundColor     : 'rgba(210, 214, 222, 1)',
-          borderColor         : 'rgba(210, 214, 222, 1)',
-          pointRadius         : false,
-          pointColor          : 'rgba(210, 214, 222, 1)',
-          pointStrokeColor    : '#c1c7d1',
-          pointHighlightFill  : '#fff',
-          pointHighlightStroke: 'rgba(220,220,220,1)',
-          data                : [65, 59, 80, 81, 56, 55, 40]
-        },
-      ]
-    }
-
-    //-------------
-    //- BAR CHART -
-    //-------------
-    var barChartCanvas = $('#barChart').get(0).getContext('2d')
-
-    var barChartOptions = {
-      responsive              : true,
-      maintainAspectRatio     : false,
-      datasetFill             : false
-    }
-
-    new Chart(barChartCanvas, {
-      type: 'bar',
-      data: areaChartData,
-      options: barChartOptions
-    })
-
-  })
+        $.ajax({
+            url: "<?= site_url('Test/testAjax') ?>",
+            type: "POST",
+            data: { test: "test" },
+            success: function (response) {
+                alert("AJAX Berhasil!");
+                console.log(response);
+            },
+            error: function (xhr, status, error) {
+                alert("AJAX Gagal!");
+                console.error(xhr.responseText);
+            }
+        });
+    });
 </script>
 </body>
 </html>
-
-<!-- Content Wrapper. Contains page content -->
-<div class="content-wrapper">
-  <!-- Content Header (Page header) -->
-  <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-12 ">
-          <h1 class="m-0 text-dark" style="text-align: center;">DASHBOARD RKAP 2025 ( ALL PROJECT )</h1>
-        </div><!-- /.col -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div>
-  <!-- /.content-header -->
-
-  <!-- Main content -->
-  <section class="content">
-    <div class="container-fluid">
-        <h5 class="mb-12" style="text-align: center; margin-top:-10px; margin-bottom:30px;">REKAP INVOICE & RFS</h5>
-    </div>
-    <div class="container-fluid">
-      <!-- Info boxes -->
-      <div class="row">
-        <!-- /.col -->
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Pengeluaran") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-file-invoice-dollar"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">TARGET RKAP 2025</span>
-                <span class="info-box-number">
-                  Rp. 650.000.000.000
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Pengeluaran") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-file-invoice-dollar"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">ACHIEVE PO 2025</span>
-                <span class="info-box-number">
-                  Rp. 0
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Laporan") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">ACHIEVE INVOICE 2025</span>
-                <span class="info-box-number">
-                  Rp. 0
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Laporan") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">SISA INVOICE 2025</span>
-                <span class="info-box-number">
-                  Rp. 0
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-      </div>
-    </div>
-
-    <div class="container-fluid">
-      <div class="row">
-
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-header border-0">
-              <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved RFS Week - 01 </h3>
-                <a href="javascript:void(0);">View Report</a>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex">
-                <p class="d-flex flex-column">
-                  <span class="text-bold text-lg">18.280 HP</span>
-                  <span>TOP Area</span>
-                </p>
-                <p class="ml-auto d-flex flex-column text-right">
-                  <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> 80.1%
-                  </span>
-                  <span class="text-muted">Week - 01</span>
-                </p>
-              </div>
-              <!-- /.d-flex -->
-
-              <div class="position-relative mb-4">
-                <canvas id="rkap_chart_line" height="200"></canvas>
-              </div>
-
-              <div class="d-flex flex-row justify-content-end">
-                <span class="mr-3">
-                  <i class="fas fa-square text-primary"></i> Target RKAP
-                </span>
-
-                <span class="mr-3">
-                  <i class="fas fa-square text-green"></i> Achieved PO
-                </span>
-
-                <span class="mr-3">
-                  <i class="fas fa-square text-orange"></i> Achieved Invoice
-                </span>
-
-              </div>
-            </div>
-          </div>
-          <!-- /.card -->
-        </div>
-
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-header border-0">
-              <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved RFS Week - 01 </h3>
-                <a href="javascript:void(0);">View Report</a>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex">
-                <p class="d-flex flex-column">
-                  <span class="text-bold text-lg">18.280 HP</span>
-                  <span>TOP AREA</span>
-                </p>
-                <p class="ml-auto d-flex flex-column text-right">
-                  <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> 80.1%
-                  </span>
-                  <span class="text-muted">Week - 01</span>
-                </p>
-              </div>
-              <!-- /.d-flex -->
-
-              <div class="position-relative mb-4">
-                <canvas id="rkap_chart_bar" height="200"></canvas>
-              </div>
-
-              <div class="d-flex flex-row justify-content-end">
-                <span class="mr-3">
-                  <i class="fas fa-square text-primary"></i> Target RKAP
-                </span>
-
-                <span class="mr-3">
-                  <i class="fas fa-square text-green"></i> Achieved PO
-                </span>
-
-                <span class="mr-3">
-                  <i class="fas fa-square text-orange"></i> Achieved Invoice
-                </span>
-
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-    </div>
-
-  </section>
-  <!-- /.content -->
-
-  <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-12">
-          <h1 class="m-0 text-dark" style="text-align: center;">DASHBOARD FIBERSTAR</h1>
-        </div><!-- /.col -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div>
-
-  <section class="content">
-    <div class="container-fluid">
-        <h5 class="mb-12" style="text-align: center; margin-top:-10px; margin-bottom:30px;">REKAP INVOICE & RFS</h5>
-    </div>
-    <div class="container-fluid">
-      <!-- Info boxes -->
-      <div class="row">
-        <!-- /.col -->
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Pengeluaran") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-file-invoice-dollar"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">TARGET RKAP 2025</span>
-                <span class="info-box-number">
-                  Rp. 345.000.000.000
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Pengeluaran") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-file-invoice-dollar"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">ACHIEVE PO 2025</span>
-                <span class="info-box-number">
-                  Rp. 4.773.699.535 ( 1.38% )
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Laporan") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">ACHIEVE INVOICE 2025</span>
-                <span class="info-box-number">
-                  Rp. 0 ( 0% )
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Laporan") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">SISA INVOICE 2025</span>
-                <span class="info-box-number">
-                  Rp. 4.773.699.535 ( 100% )
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-
-        <div class="col-lg-3 col-6">
-          <!-- small box -->
-          <div class="small-box bg-info">
-            <div class="inner">
-              <h3>820 HP</h3>
-
-              <p>ACHIEVED BAK</p>
-            </div>
-            <div class="icon">
-              <i class="ion ion-bag"></i>
-            </div>
-            <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
-          </div>
-        </div>
-
-        <div class="col-lg-3 col-6">
-          <!-- small box -->
-          <div class="small-box bg-info">
-            <div class="inner">
-              <h3>150 HP</h3>
-
-              <p>ACHIEVED RFS</p>
-            </div>
-            <div class="icon">
-              <i class="ion ion-bag"></i>
-            </div>
-            <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
-          </div>
-        </div>
-
-        <div class="col-lg-3 col-6">
-          <!-- small box -->
-          <div class="small-box bg-info">
-            <div class="inner">
-              <h3>650 HP</h3>
-
-              <p>CLOSING ATP</p>
-            </div>
-            <div class="icon">
-              <i class="ion ion-bag"></i>
-            </div>
-            <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-header border-0">
-              <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved RFS Week - 01 </h3>
-                <a href="javascript:void(0);">View Report</a>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex">
-                <p class="d-flex flex-column">
-                  <span class="text-bold text-lg">18.280 HP</span>
-                  <span>TOP Area</span>
-                </p>
-                <p class="ml-auto d-flex flex-column text-right">
-                  <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> 80.1%
-                  </span>
-                  <span class="text-muted">Week - 01</span>
-                </p>
-              </div>
-              <!-- /.d-flex -->
-
-              <div class="position-relative mb-4">
-                <canvas id="fiberstar_chart_line" height="200"></canvas>
-              </div>
-
-              <div class="d-flex flex-row justify-content-end">
-                <span class="mr-2">
-                  <i class="fas fa-square text-primary"></i> Achieved RFS
-                </span>
-
-                <span>
-                  <i class="fas fa-square text-gray"></i> Target RFS
-                </span>
-              </div>
-            </div>
-          </div>
-          <!-- /.card -->
-        </div>
-
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-header border-0">
-              <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved RFS Week - 01 </h3>
-                <a href="javascript:void(0);">View Report</a>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex">
-                <p class="d-flex flex-column">
-                  <span class="text-bold text-lg">18.280 HP</span>
-                  <span>TOP AREA</span>
-                </p>
-                <p class="ml-auto d-flex flex-column text-right">
-                  <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> 80.1%
-                  </span>
-                  <span class="text-muted">Week - 01</span>
-                </p>
-              </div>
-              <!-- /.d-flex -->
-
-              <div class="position-relative mb-4">
-                <canvas id="fiberstar_chart_bar" height="200"></canvas>
-              </div>
-
-              <div class="d-flex flex-row justify-content-end">
-                <span class="mr-2">
-                  <i class="fas fa-square text-primary"></i> Achieved RFS
-                </span>
-
-                <span>
-                  <i class="fas fa-square text-gray"></i> Target RFS
-                </span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-        <!-- /.col-md-6 -->
-      </div>
-    </div>
-
-  </section>
-
-  <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-12">
-          <h1 class="m-0 text-dark" style="text-align: center;">DASHBOARD MY REPUBLIK</h1>
-        </div><!-- /.col -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div>
-
-  <section class="content">
-    <div class="container-fluid">
-        <h5 class="mb-12" style="text-align: center; margin-top:-10px; margin-bottom:30px;">REKAP INVOICE & RFS</h5>
-    </div>
-    <div class="container-fluid">
-      <!-- Info boxes -->
-      <div class="row">
-        <!-- /.col -->
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Pengeluaran") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-file-invoice-dollar"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">TARGET RKAP 2025</span>
-                <span class="info-box-number">
-                  Rp. 345.000.000.000
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Pengeluaran") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-file-invoice-dollar"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">ACHIEVE PO 2025</span>
-                <span class="info-box-number">
-                  Rp. 4.773.699.535 ( 1.38% )
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Laporan") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">ACHIEVE INVOICE 2025</span>
-                <span class="info-box-number">
-                  Rp. 0 ( 0% )
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Laporan") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">SISA INVOICE 2025</span>
-                <span class="info-box-number">
-                  Rp. 4.773.699.535 ( 100% )
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-
-        <div class="col-lg-3 col-6">
-          <!-- small box -->
-          <div class="small-box bg-info">
-            <div class="inner">
-              <h3>820 HP</h3>
-
-              <p>ACHIEVED BAK</p>
-            </div>
-            <div class="icon">
-              <i class="ion ion-bag"></i>
-            </div>
-            <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
-          </div>
-        </div>
-
-        <div class="col-lg-3 col-6">
-          <!-- small box -->
-          <div class="small-box bg-info">
-            <div class="inner">
-              <h3>150 HP</h3>
-
-              <p>ACHIEVED RFS</p>
-            </div>
-            <div class="icon">
-              <i class="ion ion-bag"></i>
-            </div>
-            <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
-          </div>
-        </div>
-
-        <div class="col-lg-3 col-6">
-          <!-- small box -->
-          <div class="small-box bg-info">
-            <div class="inner">
-              <h3>650 HP</h3>
-
-              <p>CLOSING ATP</p>
-            </div>
-            <div class="icon">
-              <i class="ion ion-bag"></i>
-            </div>
-            <a href="#" class="small-box-footer">More info <i class="fas fa-arrow-circle-right"></i></a>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-header border-0">
-              <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved RFS Week - 01 </h3>
-                <a href="javascript:void(0);">View Report</a>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex">
-                <p class="d-flex flex-column">
-                  <span class="text-bold text-lg">18.280 HP</span>
-                  <span>TOP Area</span>
-                </p>
-                <p class="ml-auto d-flex flex-column text-right">
-                  <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> 80.1%
-                  </span>
-                  <span class="text-muted">Week - 01</span>
-                </p>
-              </div>
-              <!-- /.d-flex -->
-
-              <div class="position-relative mb-4">
-                <canvas id="myrep_chart_line" height="200"></canvas>
-              </div>
-
-              <div class="d-flex flex-row justify-content-end">
-                <span class="mr-2">
-                  <i class="fas fa-square text-primary"></i> Achieved RFS
-                </span>
-
-                <span>
-                  <i class="fas fa-square text-gray"></i> Target RFS
-                </span>
-              </div>
-            </div>
-          </div>
-          <!-- /.card -->
-        </div>
-
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-header border-0">
-              <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved RFS Week - 01 </h3>
-                <a href="javascript:void(0);">View Report</a>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex">
-                <p class="d-flex flex-column">
-                  <span class="text-bold text-lg">18.280 HP</span>
-                  <span>TOP AREA</span>
-                </p>
-                <p class="ml-auto d-flex flex-column text-right">
-                  <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> 80.1%
-                  </span>
-                  <span class="text-muted">Week - 01</span>
-                </p>
-              </div>
-              <!-- /.d-flex -->
-
-              <div class="position-relative mb-4">
-                <canvas id="myrep_chart_bar" height="200"></canvas>
-              </div>
-
-              <div class="d-flex flex-row justify-content-end">
-                <span class="mr-2">
-                  <i class="fas fa-square text-primary"></i> Achieved RFS
-                </span>
-
-                <span>
-                  <i class="fas fa-square text-gray"></i> Target RFS
-                </span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-        <!-- /.col-md-6 -->
-      </div>
-    </div>
-
-  </section>
-
-</div>
-<!-- /.content-wrapper -->
-
-<!-- Control Sidebar -->
-<aside class="control-sidebar control-sidebar-dark">
-  <!-- Control sidebar content goes here -->
-</aside>
-<!-- /.control-sidebar -->
-
-<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-<script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
-
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/fontawesome-free/css/all.min.css">
-<!-- overlayScrollbars -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-<!-- Theme style -->
-<script src="<?= base_url('assets') ?>dist/js/adminlte.js"></script>
-<!-- Google Font: Source Sans Pro -->
-<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-<!-- DataTables -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
-<!-- daterange picker -->
-<!-- <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/daterangepicker/daterangepicker.css"> -->
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/select2/css/select2.min.css">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
-<!-- jQuery UI 1.11.4 -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jquery-ui/jquery-ui.min.js"></script>
-<!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
-<script>
-  $.widget.bridge('uibutton', $.ui.button)
-</script>
-<!-- Bootstrap 4 -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js">
-<!-- ChartJS -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js">
-<!-- Sparkline -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/sparklines/sparkline.js">
-<!-- JQVMap -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jqvmap/jquery.vmap.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jqvmap/maps/jquery.vmap.usa.js">
-<!-- jQuery Knob Chart -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jquery-knob/jquery.knob.min.js">
-<!-- daterangepicker -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/moment/moment.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/daterangepicker/daterangepicker.js">
-<!-- Tempusdominus Bootstrap 4 -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js">
-<!-- Summernote -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/summernote/summernote-bs4.min.js">
-<!-- overlayScrollbars -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js">
-<!-- AdminLTE App -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/dist/js/adminlte.js">
-<!-- AdminLTE for demo purposes -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/dist/js/demo.js">
-<!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/dist/js/pages/dashboard.js">
-
-<script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
-<!-- Bootstrap -->
-<script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-
-<!-- OPTIONAL SCRIPTS -->
-<script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
-<!-- AdminLTE for demo purposes -->
-<script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
-<!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartfibertstar.js"></script>
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartmyrep.js"></script>
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardrkap.js"></script>
-
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-<!-- Font Awesome Icons -->
-<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
-
