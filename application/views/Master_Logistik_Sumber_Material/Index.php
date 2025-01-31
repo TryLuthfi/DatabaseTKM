@@ -35,8 +35,8 @@ $total = 1;
                                     </div>
                                     <div class="col-6">
                                         <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
+                                            data-target="#modal-lg-tambah-material-masuk" data-toggle="modal">Tambah
+                                            &nbsp;<i class="fas fa-plus"></i> </a>
                                     </div>
                                 </div>
                             </div>
@@ -58,7 +58,7 @@ $total = 1;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_sumber_material'] ?></td>
                                                 <td>
-                                                    <a href="<?php echo site_url('ListArea/delete/' . $data['id_sumber_material']); ?>"
+                                                    <a href="<?php echo site_url('Master_Logistik_Sumber_Material/hapusSumberMaterial/' . $data['id_sumber_material']); ?>"
                                                         id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                             class=" fas fa-trash"></i></a>
                                                     <a href="#" class="btn btn-warning"
@@ -100,8 +100,8 @@ $total = 1;
                                     </div>
                                     <div class="col-6">
                                         <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
+                                            data-target="#modal-lg-tambah-material-keluar" data-toggle="modal">Tambah
+                                            &nbsp;<i class="fas fa-plus"></i> </a>
                                     </div>
                                 </div>
                             </div>
@@ -124,7 +124,7 @@ $total = 1;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_sumber_material'] ?></td>
                                                 <td>
-                                                    <a href="<?php echo site_url('ListArea/delete/' . $data['id_sumber_material']); ?>"
+                                                    <a href="<?php echo site_url('Master_Logistik_Sumber_Material/hapusSumberMaterial/' . $data['id_sumber_material']); ?>"
                                                         id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                             class=" fas fa-trash"></i></a>
                                                     <a href="#" class="btn btn-warning"
@@ -149,6 +149,115 @@ $total = 1;
                     </div>
                 </div>
         </section>
+
+        <!-- MODAL TAMBAH SUMBER MATERIAL MASUK LOGISTIK -->
+        <form action=" <?php echo base_url('Master_Logistik_Sumber_Material/tambahSumberMaterialMasuk') ?>"
+            method="post">
+            <div class="modal fade" id="modal-lg-tambah-material-masuk">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Tambah Sumber Material Masuk</h4>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label class="col-form-label">Nama Sumber Material Masuk</label>
+                                <input type="text" class="form-control" name="nama_sumber_material" autocomplete="off"
+                                    placeholder="Nama Sumber Material" required>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+
+                                <button type="submit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading"
+                                        style="display:none"></i> Tambah</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.modal-content -->
+                </div>
+                <!-- /.modal-dialog -->
+            </div>
+        </form>
+
+        <!-- MODAL TAMBAH SUMBER MATERIAL KELUAR LOGISTIK -->
+        <form action=" <?php echo base_url('Master_Logistik_Sumber_Material/tambahSumberMaterialKeluar') ?>"
+            method="post">
+            <div class="modal fade" id="modal-lg-tambah-material-keluar">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Tambah Sumber Material Keluar</h4>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label class="col-form-label">Nama Sumber Material Keluar</label>
+                                <input type="text" class="form-control" name="nama_sumber_material" autocomplete="off"
+                                    placeholder="Nama Sumber Material" required>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+
+                                <button type="submit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading"
+                                        style="display:none"></i> Tambah</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.modal-content -->
+                </div>
+                <!-- /.modal-dialog -->
+            </div>
+        </form>
+
+        <!-- MODAL EDIT SUMBER MATERIAL LOGISTIK -->
+        <?php foreach ($getMasterLogistikSumberMaterial as $data): ?>
+            <form action="<?php echo site_url('Master_Logistik_Sumber_Material/editSumberMaterial/' . $data['id_sumber_material']); ?>"
+                method="post">
+                <div class="modal fade" id="modal-lg-edit<?= $data['id_sumber_material'] ?>">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Edit Sumber Material</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label class="col-form-label">Jenis</label>
+                                    <input type="text" class="form-control" name="nama_sumber_material" autocomplete="off"
+                                        placeholder="Nama Item" value="<?= $data['nama_sumber_material'] ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-form-label">Jumlah Satuan</label>
+                                    <select name="status_sumber_material" class="form-control">
+                                        <option value="IN" <?php if ($data['status_sumber_material'] == 'IN') { ?>selected <?php } ?> >IN</option>
+                                        <option value="OUT" <?php if ($data['status_sumber_material'] == 'OUT') { ?>selected <?php } ?> >OUT</option>
+                                    </select>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+
+                                    <button type="submit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading"
+                                            style="display:none"></i> Edit</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+            </form>
+        <?php endforeach; ?>
+
     </section>
 </div>
 <!-- /.content-wrapper -->
@@ -159,6 +268,27 @@ $total = 1;
 <aside class="control-sidebar control-sidebar-dark">
     <!-- Control sidebar content goes here -->
 </aside>
+
+<script>
+    $(function () {
+
+        // notifikasi allert sukses atau tidak
+        <?php if ($status == 'sukses_tambah') { ?>
+            swal("Success!", "Berhasil Ditambah!", "success");
+        <?php } else if ($status == 'sukses_hapus') { ?>
+                swal("Success!", "Berhasil Dihapus!", "success");
+        <?php } else if ($status == 'sukses_edit') { ?>
+                    swal("Success!", "Berhasil Edit Data!", "success");
+        <?php } else if ($status == 'gagal_tambah') { ?>
+                        swal("Gagal!", "Gagal Menambah Data!", "warning");
+        <?php } else if ($status == 'gagal_edit') { ?>
+                            swal("Gagal!", "Gagal Mengedit Data!", "warning");
+        <?php } else if ($status == 'gagal_hapus') { ?>
+                                swal("Gagal!", "Gagal Menghapus Data!", "warning");
+        <?php } else { ?>
+        <?php } ?>
+    })
+</script>
 
 
 <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
