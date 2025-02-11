@@ -50,16 +50,18 @@ class Master_Logistik_Pabrik extends CI_Controller
         }
     }
 
-    public function editSumberMaterial($id_sumber_material)
+    public function editPabrik($id_pabrik)
     {
 
         $data_array = array(
-            'nama_sumber_material' => $_POST['nama_sumber_material'],
-            'status_sumber_material' => $_POST['status_sumber_material']
+            'nama_pabrik' => $_POST['nama_pabrik'],
+            'lokasi_pabrik' => $_POST['lokasi_pabrik'],
+            'jenis_pabrik' => $_POST['jenis_pabrik'],
+            'status_pabrik' => $_POST['status_pabrik']
         );
 
-        $where = array('id_sumber_material' => $id_sumber_material);
-        $res = $this->MMaster_Logistik_Pabrik->editSumberMaterial($data_array, $where);
+        $where = array('id_pabrik' => $id_pabrik);
+        $res = $this->MMaster_Logistik_Pabrik->editPabrik($data_array, $where);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_edit');
@@ -70,10 +72,10 @@ class Master_Logistik_Pabrik extends CI_Controller
         }
     }
 
-    public function hapusSumberMaterial($id_sumber_material)
+    public function hapusPabrik($id_pabrik)
     {
-        $id_sumber_material = array('id_sumber_material' => $id_sumber_material);
-        $res = $this->MMaster_Logistik_Pabrik->hapusSumberMaterial($id_sumber_material);
+        $id_pabrik = array('id_pabrik' => $id_pabrik);
+        $res = $this->MMaster_Logistik_Pabrik->hapusPabrik($id_pabrik);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_hapus');

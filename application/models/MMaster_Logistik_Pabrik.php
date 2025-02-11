@@ -16,15 +16,15 @@ class MMaster_Logistik_Pabrik extends CI_Model
         return $res;
     }
 
-    public function hapusSumberMaterial($id_sumber_material)
+    public function hapusPabrik($id_pabrik)
     {
-        $res = $this->db->delete("tb_master_logistik_sumber_material", $id_sumber_material);
+        $res = $this->db->delete("tb_master_logistik_pabrik", $id_pabrik);
         return $res;
     }
 
-    public function editSumberMaterial($data_array, $id_sumber_material)
+    public function editPabrik($data_array, $id_pabrik)
     {
-        $res = $this->db->update("tb_master_logistik_sumber_material", $data_array, $id_sumber_material);
+        $res = $this->db->update("tb_master_logistik_pabrik", $data_array, $id_pabrik);
         return $res;
     }
 }

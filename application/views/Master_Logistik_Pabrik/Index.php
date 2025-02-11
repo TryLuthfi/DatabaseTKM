@@ -3,7 +3,7 @@ $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
 $total = 1;
-$satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
+$satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aksesoris'];
 ?>
 
 <div class="content-wrapper">
@@ -65,7 +65,7 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
                                                 <td><?= $data['jenis_pabrik'] ?></td>
                                                 <td><?= $data['status_pabrik'] ?></td>
                                                 <td>
-                                                    <a href="<?php echo site_url('Master_Logistik_Pabrik/hapusSumberMaterial/' . $data['id_pabrik']); ?>"
+                                                    <a href="<?php echo site_url('Master_Logistik_Pabrik/hapusPabrik/' . $data['id_pabrik']); ?>"
                                                         id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                             class=" fas fa-trash"></i></a>
                                                     <a href="#" class="btn btn-warning"
@@ -80,7 +80,7 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
                                     <tfoot>
                                         <tr>
                                             <th colspan="1">Total</th>
-                                            <th colspan="2"><?= number_format($total - 1, 0, ',', '.') ?></th>
+                                            <th colspan="5"><?= number_format($total - 1, 0, ',', '.') ?></th>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -91,7 +91,7 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
                 </div>
         </section>
 
-        <!-- MODAL TAMBAH SUMBER MATERIAL KELUAR LOGISTIK -->
+        <!-- MODAL TAMBAH LIST PABRIK -->
         <form action=" <?php echo base_url('Master_Logistik_Pabrik/tambahPabrik') ?>" method="post">
             <div class="modal fade" id="modal-lg-tambah-pabrik">
                 <div class="modal-dialog modal-lg">
@@ -124,7 +124,7 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="col-form-label">Status</label>
+                                <label class="col-form-label">Status Pabrik</label>
                                 <select name="status_pabrik" class="form-control">
                                     <option value="ACTIVE" selected>ACTIVE</option>
                                     <option value="UNCATIVE">UNCATIVE</option>
@@ -145,32 +145,46 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
             </div>
         </form>
 
-        <!-- MODAL EDIT SUMBER MATERIAL LOGISTIK -->
+        <!-- MODAL EDIT PABRIK -->
         <?php foreach ($getMasterLogistikPabrik as $data): ?>
-            <form action="<?php echo site_url('Master_Logistik_Pabrik/editSumberMaterial/' . $data['id_pabrik']); ?>"
-                method="post">
+            <form action="<?php echo site_url('Master_Logistik_Pabrik/editPabrik/' . $data['id_pabrik']); ?>" method="post">
                 <div class="modal fade" id="modal-lg-edit<?= $data['id_pabrik'] ?>">
                     <div class="modal-dialog modal-lg">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h4 class="modal-title">Edit Sumber Material</h4>
+                                <h4 class="modal-title">Edit Pabrik</h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
                             <div class="modal-body">
                                 <div class="form-group">
-                                    <label class="col-form-label">Jenis</label>
-                                    <input type="text" class="form-control" name="nama_sumber_material" autocomplete="off"
-                                        placeholder="Nama Item" value="<?= $data['nama_sumber_material'] ?>">
+                                    <label class="col-form-label">Nama Pabrik</label>
+                                    <input type="text" class="form-control" name="nama_pabrik" autocomplete="off"
+                                        placeholder="Nama Pabrik" value="<?= $data['nama_pabrik'] ?>">
                                 </div>
                                 <div class="form-group">
-                                    <label class="col-form-label">Jumlah Satuan</label>
-                                    <select name="status_sumber_material" class="form-control">
-                                        <option value="IN" <?php if ($data['status_sumber_material'] == 'IN') { ?>selected
-                                            <?php } ?>>IN</option>
-                                        <option value="OUT" <?php if ($data['status_sumber_material'] == 'OUT') { ?>selected
-                                            <?php } ?>>OUT</option>
+                                    <label class="col-form-label">Lokasi Pabrik</label>
+                                    <input type="text" class="form-control" name="lokasi_pabrik" autocomplete="off"
+                                        placeholder="Lokasi Pabrik" value="<?= $data['lokasi_pabrik'] ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-form-label">Jenis Pabrik</label>
+                                    <select name="jenis_pabrik" class="form-control">
+                                        <?php foreach ($satuan_options as $option): ?>
+                                            <option value="<?= $option ?>" <?= $data['jenis_pabrik'] == $option ? 'selected' : '' ?>>
+                                                <?= $option ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-form-label">Status Pabrik</label>
+                                    <select name="status_pabrik" class="form-control">
+                                        <option value="ACTIVE" <?php if ($data['status_pabrik'] == 'ACTIVE') { ?>selected
+                                            <?php } ?>>ACTIVE</option>
+                                        <option value="UNACTIVE" <?php if ($data['status_pabrik'] == 'UNACTIVE') { ?>selected
+                                            <?php } ?>>UNACTIVE</option>
                                     </select>
                                 </div>
 
