@@ -14,6 +14,19 @@ class MDashboard_Logistik_Stok extends CI_Model
                                         ->result_array();
         return $data;
     }
+
+    public function getAllStokByKategory()
+    {
+        $data = $this->db->query('SELECT *, SUM(CASE WHEN tmlsm.status_sumber_material LIKE "IN" THEN tls.jumlah_stok
+					WHEN tmlsm.status_sumber_material LIKE "OUT" THEN -tls.jumlah_stok
+					ELSE 0 END) AS total_jumlah_stok
+	FROM tb_logistik_stok tls 
+	LEFT JOIN tb_master_logistik_sumber_material tmlsm USING(id_sumber_material)
+	RIGHT JOIN tb_master_logistik_kode_item tmlki USING(id_kode_item)
+	GROUP BY tmlki.kategori_item')
+                                        ->result_array();
+        return $data;
+    }
     public function getUniqueKotaGudang()
     {
         $data = $this->db->query('SELECT tb_logistik_stok.id_lokasi_gudang, tb_master_logistik_lokasi_gudang.kota_lokasi_gudang 

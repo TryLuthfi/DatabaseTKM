@@ -2,13 +2,14 @@
 $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
+$satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
+
 $total = 1;
-$satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aksesoris'];
 ?>
 
 <div class="content-wrapper">
 
-    <section class="content">
+    <div class="content">
         <div class="content-header">
             <div class="container-fluid">
                 <div class="row mb-2">
@@ -19,12 +20,9 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
             </div>
         </div>
 
-        <!-- Main content -->
         <section class="content">
             <div class="container-fluid">
-                <!-- Info boxes -->
                 <div class="row">
-                    <!-- fix for small devices only -->
                     <div class="clearfix hidden-md-up"></div>
 
                     <div class="col-12">
@@ -32,69 +30,43 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
                             <div class="card-header">
                                 <div class="row">
                                     <div class="col-6">
-                                        <h3 class="card-title">List Pabrik</h3>
+                                        <h3 class="card-title">List Area Dashboard </h3>
                                     </div>
                                     <div class="col-6">
                                         <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah-pabrik" data-toggle="modal">Tambah
-                                            &nbsp;<i class="fas fa-plus"></i> </a>
+                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                                class="fas fa-plus"></i> </a>
                                     </div>
                                 </div>
                             </div>
-                            <!-- /.card-header -->
                             <div class="card-body table-scrollable">
-                                <table id="tabel_pesanan_pabrik" class="table table-bordered table-striped">
+                                <table id="tabel_pemasukan" class="table table-bordered table-striped">
                                     <thead>
                                         <tr>
                                             <th>No</th>
-                                            <th>Nomor PO</th>
-                                            <th>Pabrik</th>
-                                            <th>Item</th>
+                                            <th>Nomor PO Pabrik</th>
                                             <th>QTY Pesanan</th>
                                             <th>QTY Pengiriman</th>
-                                            <th>QTY Sisa</th>
-                                            <th>Nominal PO</th>
-                                            <th>Aksi</th>
+                                            <th>Tanggal PO</th>
+                                            <th>Tanggal Kirim</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php
-                                        foreach ($getOustandingPesananPabrik as $data):
+                                        foreach ($getDetailPesananPabrik as $data):
                                             ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nomor_po_pabrik'] ?></td>
-                                                <td><?= $data['nama_pabrik'] ?></td>
-                                                <td><?= $data['nama_item'] ?></td>
-                                                <td><?= number_format($data['qty_material_pesanan'], 0, '.', ',') ?></td>
-                                                <td><?= number_format($data['total_qty_material_pengiriman'], 0, '.', ',') ?></td>
-                                                <td><?= number_format($data['sisa_qty_material_pengiriman'], 0, '.', ',') ?></td>
-                                                <td><?= number_format($data['harga_total_po_pabrik'], 0, '.', ',') ?></td>
-                                                <td>
-                                                    <a href="<?php echo site_url('Master_Logistik_Pabrik/hapusPabrik/' . $data['id_pesanan_pabrik']); ?>"
-                                                        id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                            class=" fas fa-trash"></i></a>
-                                                    <a href="#" class="btn btn-warning"
-                                                        data-target="#modal-lg-edit<?= $data['id_pabrik'] ?>"
-                                                        data-toggle="modal"><i class="fas fa-edit"></i></a>
-                                                    <a href="<?php echo site_url('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $data['nomor_po_pabrik']); ?>" class="btn btn-primary"><i class="fas fa-eye"></i></a>
-                                                </td>
+                                                <td><?= $data['qty_material_pesanan'] ?></td>
+                                                <td><?= $data['qty_material_pengiriman'] ?></td>
+                                                <td><?= $data['tanggal_po_pabrik'] ?></td>
+                                                <td><?= $data['tanggal_pengiriman_pabrik'] ?></td>
                                             </tr>
 
                                         <?php endforeach; ?>
 
                                     </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th colspan="1">Total</th>
-                                            <th colspan="3"></th>
-                                            <th colspan="1"><span id="totalQTYPesanan"></span></th>
-                                            <th colspan="1"><span id="totalQTYPengiriman"></span></th>
-                                            <th colspan="1"><span id="totalQTYSisa"></span></th>
-                                            <th colspan="1"><span id="totalQTYHargaPO"></span></th>
-                                            <th colspan="1"></th>
-                                        </tr>
-                                    </tfoot>
                                 </table>
                             </div>
                             <!-- /.card-body -->
@@ -103,16 +75,17 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
                 </div>
         </section>
 
-    </section>
+    </div>
+    <!-- /.content-wrapper -->
+
+    <?php $this->session->set_flashdata('status', 'kosong'); ?>
+
+    <!-- Control Sidebar -->
+    <aside class="control-sidebar control-sidebar-dark">
+        <!-- Control sidebar content goes here -->
+    </aside>
+
 </div>
-<!-- /.content-wrapper -->
-
-<?php $this->session->set_flashdata('status', 'kosong'); ?>
-
-<!-- Control Sidebar -->
-<aside class="control-sidebar control-sidebar-dark">
-    <!-- Control sidebar content goes here -->
-</aside>
 
 <script>
     $(function () {
@@ -133,41 +106,9 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
         <?php } else { ?>
         <?php } ?>
     })
-
-    $(document).ready(function () {
-    setTimeout(function () {
-        const table = $('#tabel_pesanan_pabrik').DataTable();
-
-        function updateTotal() {
-            let totalQTYPesanan = 0;
-            let totalQTYPengiriman = 0;
-            let totalQTYSisa = 0;
-            let totalQTYHargaPO = 0;
-
-            table.rows({ search: 'applied' }).data().each(function (row) {
-
-                if (row['4'] != 0) {
-                    totalQTYPesanan += parseFloat(row[4].replace(/,/g, ''))
-                } if (row['5'] != 0) {
-                    totalQTYPengiriman += parseFloat(row[5].replace(/,/g, ''))
-                } if (row['6'] != 0) {
-                    totalQTYSisa += parseFloat(row[6].replace(/,/g, ''))
-                } if (row['7'] != 0) {
-                    totalQTYHargaPO += parseFloat(row[7].replace(/,/g, ''))
-                }
-
-            });
-            $('#totalQTYPesanan').text(totalQTYPesanan.toLocaleString('id-ID'));
-            $('#totalQTYPengiriman').text(totalQTYPengiriman.toLocaleString('id-ID'));
-            $('#totalQTYSisa').text(totalQTYSisa.toLocaleString('id-ID'));
-            $('#totalQTYHargaPO').text(totalQTYHargaPO.toLocaleString('id-ID'));
-        }
-
-        table.on('search.dt draw.dt', updateTotal);
-        updateTotal();
-    }, 1);
-});
 </script>
+
+
 
 
 <script src="https://code.jquery.com/jquery-3.5.1.js"></script>

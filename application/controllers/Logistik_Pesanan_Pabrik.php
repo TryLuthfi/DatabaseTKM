@@ -15,8 +15,8 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
     {
         if (!empty($this->session->userdata('id_user'))) {
 
-        $data['title'] = 'List Material Pabrik';
-        $data['judul'] = 'List Material Pabrik';
+        $data['title'] = 'List PO Pabrik';
+        $data['judul'] = 'List PO Pabrik';
         $data['getMasterLogistikPesananPabrik'] = $this->MLogistik_Pesanan_Pabrik->getMasterLogistikPesananPabrik();
         $data['getOustandingPesananPabrik'] = $this->MLogistik_Pesanan_Pabrik->getOustandingPesananPabrik();
 

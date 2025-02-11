@@ -1,3 +1,4 @@
+
 <?php
 $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
@@ -125,7 +126,7 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
           <!-- DIRECT CHAT DANGER -->
           <div class="card card-primary direct-chat direct-chat-primary shadow-lg">
             <div class="card-header">
-              <h3 class="card-title">TOTAL MATERIAL</h3>
+              <h3 class="card-title">TOTAL MATERIAL AREA</h3>
 
               <div class="card-tools">
                 <button type="button" class="btn btn-tool" data-card-widget="collapse">
@@ -138,145 +139,27 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
               <div class="container-fluid">
                 <!-- Info boxes -->
                 <div class="row">
+                <?php foreach ($getAllStokByKategory as $stokKategory): ?>
                   <div class="col-lg-3 col-6">
                     <div class="small-box bg-info">
                       <div class="inner">
-                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                        
                           <h3 id="idtotal_hp_plan">
-                            <?= number_format(floatval($totalHpPlan['total_hp_plan']), 0, ".") . " HP" ?>
+                            <?= number_format(floatval($stokKategory['total_jumlah_stok']), 0, ".") . " ".$stokKategory['satuan_item'] ?>
                           </h3>
-                        <?php endforeach ?>
+                        
 
-                        <p>KABEL</p>
+                        <p><?= $stokKategory['kategori_item'] ?></p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
                       </div>
                     </div>
                   </div>
-                  <div class="col-lg-3 col-6">
-                    <div class="small-box bg-info">
-                      <div class="inner">
-                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_canvasing">
-                            <?= number_format(floatval($totalHpPlan['total_hp_canvasing']), 0, ".") . " HP" ?>
-                          </h3>
-                        <?php endforeach ?>
-
-                        <p>TIANG</p>
-                      </div>
-                      <div class="icon">
-                        <i class="ion ion-bag"></i>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-lg-3 col-6">
-                    <div class="small-box bg-info">
-                      <div class="inner">
-                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_bak">
-                            <?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ".") . " HP" ?>
-                          </h3>
-                        <?php endforeach ?>
-
-                        <p>HDPE</p>
-                      </div>
-                      <div class="icon">
-                        <i class="ion ion-bag"></i>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-lg-3 col-6">
-                    <div class="small-box bg-info">
-                      <div class="inner">
-                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_spk">
-                            <?= number_format(floatval($totalHpPlan['total_hp_spk']), 0, ".") . " HP" ?>
-                          </h3>
-                        <?php endforeach ?>
-
-                        <p>CLOSURE</p>
-                      </div>
-                      <div class="icon">
-                        <i class="ion ion-bag"></i>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-lg-3 col-6">
-                    <div class="small-box bg-info">
-                      <div class="inner">
-                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_hld">
-                            <?= number_format(floatval($totalHpPlan['total_hp_hld']), 0, ".") . " HP" ?>
-                          </h3>
-                        <?php endforeach ?>
-
-                        <p>OTB</p>
-                      </div>
-                      <div class="icon">
-                        <i class="ion ion-bag"></i>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-lg-3 col-6">
-                    <div class="small-box bg-info">
-                      <div class="inner">
-                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_lld">
-                            <?= number_format(floatval($totalHpPlan['total_hp_lld']), 0, ".") . " HP" ?>
-                          </h3>
-                        <?php endforeach ?>
-
-                        <p>FAT</p>
-                      </div>
-                      <div class="icon">
-                        <i class="ion ion-bag"></i>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-lg-3 col-6">
-                    <div class="small-box bg-info">
-                      <div class="inner">
-                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_kom">
-                            <?= number_format(floatval($totalHpPlan['total_hp_kom']), 0, ".") . " HP" ?>
-                          </h3>
-                        <?php endforeach ?>
-
-                        <p>FDT</p>
-                      </div>
-                      <div class="icon">
-                        <i class="ion ion-bag"></i>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-lg-3 col-6">
-                    <div class="small-box bg-info">
-                      <div class="inner">
-                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                          <h3 id="idtotal_hp_rfs">
-                            <?= number_format(floatval($totalHpPlan['total_hp_rfs']), 0, ".") . " HP" ?>
-                          </h3>
-                        <?php endforeach ?>
-
-                        <p>AKSESORIS</p>
-                      </div>
-                      <div class="icon">
-                        <i class="ion ion-bag"></i>
-                      </div>
-                    </div>
-                  </div>
+                  <?php endforeach ?>
 
                 </div>
               </div>
-
-                <div class="card-body">
-                  <div class="chart" style="height: 300px;">
-                    <canvas id="barChart"
-                      style="min-height: 250px; height: 400px; max-height: 400px; max-width: 100%;"></canvas>
-                  </div>
-                  <div id="paginationControls" class="mt-3"></div>
-                </div>
             </div>
           </div>
         </div>
@@ -313,6 +196,7 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
                                             <th>No</th>
                                             <th>Lokasi</th>
                                             <th>Project</th>
+                                            <th>Kategori</th>
                                             <th>Item</th>
                                             <th>Status</th>
                                             <th>QTY</th>
@@ -328,6 +212,7 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['kota_lokasi_gudang'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
+                                                <td><?= $data['kategori_item'] ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['nama_sumber_material'] ?></td>
                                                 <td><?= $data['jumlah_stok'] ?></td>
@@ -340,15 +225,6 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th colspan="1">Total</th>
-                                            <th colspan="4"></th>
-                                            <th colspan="1"><span id="totalQTY"></span></th>
-                                            <th colspan="1"></th>
-                                            <th colspan="1"></th>
-                                        </tr>
-                                    </tfoot>
                                 </table>
                             </div>
                             <!-- /.card-body -->
@@ -568,8 +444,8 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
             table
                 .column(1).search(lokasiFilter, true, false) // Filter kategori (regex search)
                 .column(2).search(bowheerFilter, true, false) // Filter kategori (regex search)
-                .column(3).search(itemFilter, true, false) // Filter kategori (regex search)
-                .column(4).search(statusFilter, true, false) // Filter kategori (regex search)
+                .column(4).search(itemFilter, true, false) // Filter kategori (regex search)
+                .column(5).search(statusFilter, true, false) // Filter kategori (regex search)
                 .draw(); // Render ulang tabel
 
         });
@@ -580,41 +456,6 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
         $('#table_data').DataTable({
             responsive: false // Matikan fitur Responsive
         });
-    });
-
-    $(document).ready(function () {
-        const table = $('#table_data').DataTable({
-            footerCallback: function () {
-                updateTotal();
-            }
-        });
-
-        // Fungsi untuk menghitung total dari data yang tampil
-        function updateTotal() {
-            // Ambil semua data yang terlihat
-
-            const data = table.rows({ search: 'applied' }).data();
-
-            // Hitung total dari kolom Value (index 2)
-            let totalQTY = 0;
-
-            data.each(function (row) {
-
-                if (row['5'] != 0) {
-                    totalQTY += parseFloat(row[5].replace(/,/g, ''))
-                }
-            });
-
-            $('#totalQTY').text(totalQTY.toLocaleString('id-ID'));
-        }
-
-        // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
-        table.on('draw', function () {
-            updateTotal();
-        });
-
-        // Hitung total pertama kali saat tabel dimuat
-        updateTotal();
     });
 
 </script>
@@ -636,32 +477,3 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
 <script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
 <script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
 <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardlistarea.js"></script>
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/fontawesome-free/css/all.min.css">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/dist/css/adminlte.min.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/daterangepicker/daterangepicker.css">
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/select2/css/select2.min.css">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/select2/js/select2.full.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jquery-ui/jquery-ui.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/sparklines/sparkline.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jqvmap/jquery.vmap.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jqvmap/maps/jquery.vmap.usa.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jquery-knob/jquery.knob.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/moment/moment.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/daterangepicker/daterangepicker.js">
-<link rel="stylesheet"
-    href="<?= base_url('assets') ?>/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/summernote/summernote-bs4.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/dist/js/demo.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/dist/js/pages/dashboard.js">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">

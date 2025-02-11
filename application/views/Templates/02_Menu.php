@@ -127,10 +127,10 @@ $id_menu = $this->uri->segment('1');
                     <li class="nav-header">Logistik</li>
 
                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
-                        <li class="nav-item has-treeview <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang' || $id_menu == 'Master_Logistik_Kode_Item' || $id_menu == 'Master_Logistik_Sumber_Material') {
+                        <li class="nav-item has-treeview <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang' || $id_menu == 'Master_Logistik_Kode_Item' || $id_menu == 'Master_Logistik_Sumber_Material' || $id_menu == 'Master_Logistik_Pabrik') {
                             echo "menu-open";
                         } ?>">
-                            <a href="#" class="nav-link <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang' || $id_menu == 'Master_Logistik_Kode_Item' || $id_menu == 'Master_Logistik_Sumber_Material') {
+                            <a href="#" class="nav-link <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang' || $id_menu == 'Master_Logistik_Kode_Item' || $id_menu == 'Master_Logistik_Sumber_Material' || $id_menu == 'Master_Logistik_Pabrik') {
                                 echo "active";
                             } ?>">
                                 <i class="nav-icon fas fa-money-check-alt"></i>
