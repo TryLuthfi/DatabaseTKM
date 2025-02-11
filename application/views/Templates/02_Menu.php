@@ -178,7 +178,7 @@ $id_menu = $this->uri->segment('1');
                     <?php } ?>
 
                     <li class="nav-item">
-                        <a href="<?= base_url('Neraca') ?>" class="nav-link <?php if ($id_menu == 'Neraca') {
+                        <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok') {
                               echo "active";
                           } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
