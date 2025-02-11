@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 11 Feb 2025 pada 10.47
+-- Waktu pembuatan: 11 Feb 2025 pada 12.17
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -77,7 +77,7 @@ CREATE TABLE `tb_ds_approval_cbn` (
 --
 
 INSERT INTO `tb_ds_approval_cbn` (`id_ds_approval_cbn`, `primary_access_id_project`, `ds_approval_cbn_sis_name`, `ds_approval_cbn_sis_file`, `ds_approval_cbn_sis_status`, `ds_approval_cbn_sis_approval`, `ds_approval_cbn_sis_tanggal`, `ds_approval_cbn_sis_remarks`, `ds_approval_cbn_kmzb_file`, `ds_approval_cbn_kmzb_status`, `ds_approval_cbn_kmzb_approval`, `ds_approval_cbn_kmzb_tanggal`, `ds_approval_cbn_tssr_file`, `ds_approval_cbn_tssr_status`, `ds_approval_cbn_tssr_approval`, `ds_approval_cbn_tssr_tanggal`, `user_upload`) VALUES
-(1, 143, 'SIS FBEOPA KDR REJOMULYO TK.PDF', 'SIS FBEOPA KDR REJOMULYO TK.PDF', 'ON GOING REVIEW', '1', '21/01/2025', 'Waiting Approval HO', '', '', '', '', '', '', '', '', 1);
+(1, 143, 'SIS FBEOPA KDR REJOMULYO TK.PDF', 'SIS FBEOPA KDR REJOMULYO TK.PDF', 'ON GOING REVIEW', '1', '21/01/2025', 'Foto Buram', '', '', '', '', '', '', '', '', 1);
 
 -- --------------------------------------------------------
 
@@ -577,6 +577,28 @@ INSERT INTO `tb_master_logistik_lokasi_gudang` (`id_lokasi_gudang`, `regional_lo
 -- --------------------------------------------------------
 
 --
+-- Struktur dari tabel `tb_master_logistik_pabrik`
+--
+
+CREATE TABLE `tb_master_logistik_pabrik` (
+  `id_pabrik` int(50) NOT NULL,
+  `nama_pabrik` varchar(50) NOT NULL,
+  `lokasi_pabrik` varchar(50) NOT NULL,
+  `jenis_pabrik` varchar(50) NOT NULL,
+  `status_pabrik` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_master_logistik_pabrik`
+--
+
+INSERT INTO `tb_master_logistik_pabrik` (`id_pabrik`, `nama_pabrik`, `lokasi_pabrik`, `jenis_pabrik`, `status_pabrik`) VALUES
+(1, 'PT. ZEMBO', 'KARAWANG', 'KABEL', 'ACTIVE'),
+(0, 'aff', 'asd', 'Meter', 'ACTIVE');
+
+-- --------------------------------------------------------
+
+--
 -- Struktur dari tabel `tb_master_logistik_sumber_material`
 --
 
@@ -789,10 +811,7 @@ CREATE TABLE `tb_project_implementasi_fiberstar` (
 --
 
 INSERT INTO `tb_project_implementasi_fiberstar` (`id_implementasi`, `access_id_project`, `id_user`, `plan_tiang`, `achiev_tiang`, `plan_kabel_24`, `achiev_kabel_24`, `plan_kabel_48`, `achiev_kabel_48`, `plan_fat`, `achiev_fat`, `plan_closure`, `achiev_closure`, `keterangan_progress`, `data_created`) VALUES
-(41, 'ACCESS0074-11-2024', 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 'BOQ Awal', '2025-01-30'),
-(42, 'ACCESS0074-11-2024', 1, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 'BOQ Awal', '2025-01-30'),
-(43, 'ACCESS0047-11-2024', 1, 6, 0, 6, 0, 6, 0, 6, 0, 6, 0, 'BOQ Awal', '2025-01-30'),
-(44, 'ACCESS0047-11-2024', 0, 0, 6, 0, 6, 0, 6, 0, 0, 0, 0, '', '2025-01-30');
+(45, 'ACCESS0047-11-2024', 1, 100, 0, 3000, 0, 1000, 0, 0, 0, 0, 0, 'BOQ Awal', '2025-02-11');
 
 -- --------------------------------------------------------
 
@@ -4346,7 +4365,7 @@ ALTER TABLE `tb_project_fiberstar_stagging`
 -- AUTO_INCREMENT untuk tabel `tb_project_implementasi_fiberstar`
 --
 ALTER TABLE `tb_project_implementasi_fiberstar`
-  MODIFY `id_implementasi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+  MODIFY `id_implementasi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
 --
 -- AUTO_INCREMENT untuk tabel `tb_project_progress_myrep`

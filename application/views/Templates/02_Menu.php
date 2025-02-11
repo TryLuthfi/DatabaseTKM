@@ -174,6 +174,16 @@ $id_menu = $this->uri->segment('1');
                                     </a>
                                 </li>
                             </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="<?= base_url('Master_Logistik_Pabrik') ?>" class="nav-link <?php if ($id_menu == 'Master_Logistik_Pabrik') {
+                                          echo "active";
+                                      } ?>">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Pabrik</p>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                     <?php } ?>
 
