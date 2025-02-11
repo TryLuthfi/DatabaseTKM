@@ -95,13 +95,15 @@ $query_builder = TRUE;
 // 	'save_queries' => TRUE
 // );
 
+$env = parse_ini_file(__DIR__ . '/../../.env');
+
 
 $db['default'] = array(
 	'dsn'	=> '',
-	'hostname' => 'localhost',
-	'username' => 'root',
-	'password' => '',
-	'database' => 'db_tkm_project',
+	'hostname' => $env['HOSTNAME'],
+	'username' => $env['USERNAME'],
+	'password' => $env['PASSWORD'],
+	'database' => $env['DATABASE'],
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => FALSE,
