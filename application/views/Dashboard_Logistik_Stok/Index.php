@@ -118,6 +118,171 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
 
         </div>
 
+        <div class="container-fluid">
+
+      <div class="row">
+        <div class="col-md-12" style="margin_botttom:10px;">
+          <!-- DIRECT CHAT DANGER -->
+          <div class="card card-primary direct-chat direct-chat-primary shadow-lg">
+            <div class="card-header">
+              <h3 class="card-title">TOTAL MATERIAL</h3>
+
+              <div class="card-tools">
+                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="card-body" style="margin-top:10px;">
+              <div class="container-fluid">
+                <!-- Info boxes -->
+                <div class="row">
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3 id="idtotal_hp_plan">
+                            <?= number_format(floatval($totalHpPlan['total_hp_plan']), 0, ".") . " HP" ?>
+                          </h3>
+                        <?php endforeach ?>
+
+                        <p>KABEL</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3 id="idtotal_hp_canvasing">
+                            <?= number_format(floatval($totalHpPlan['total_hp_canvasing']), 0, ".") . " HP" ?>
+                          </h3>
+                        <?php endforeach ?>
+
+                        <p>TIANG</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3 id="idtotal_hp_bak">
+                            <?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ".") . " HP" ?>
+                          </h3>
+                        <?php endforeach ?>
+
+                        <p>HDPE</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3 id="idtotal_hp_spk">
+                            <?= number_format(floatval($totalHpPlan['total_hp_spk']), 0, ".") . " HP" ?>
+                          </h3>
+                        <?php endforeach ?>
+
+                        <p>CLOSURE</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3 id="idtotal_hp_hld">
+                            <?= number_format(floatval($totalHpPlan['total_hp_hld']), 0, ".") . " HP" ?>
+                          </h3>
+                        <?php endforeach ?>
+
+                        <p>OTB</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3 id="idtotal_hp_lld">
+                            <?= number_format(floatval($totalHpPlan['total_hp_lld']), 0, ".") . " HP" ?>
+                          </h3>
+                        <?php endforeach ?>
+
+                        <p>FAT</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3 id="idtotal_hp_kom">
+                            <?= number_format(floatval($totalHpPlan['total_hp_kom']), 0, ".") . " HP" ?>
+                          </h3>
+                        <?php endforeach ?>
+
+                        <p>FDT</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3 id="idtotal_hp_rfs">
+                            <?= number_format(floatval($totalHpPlan['total_hp_rfs']), 0, ".") . " HP" ?>
+                          </h3>
+                        <?php endforeach ?>
+
+                        <p>AKSESORIS</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+                <div class="card-body">
+                  <div class="chart" style="height: 300px;">
+                    <canvas id="barChart"
+                      style="min-height: 250px; height: 400px; max-height: 400px; max-width: 100%;"></canvas>
+                  </div>
+                  <div id="paginationControls" class="mt-3"></div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
         <!-- Main content -->
         <section class="content">
             <div class="container-fluid">
