@@ -21,7 +21,7 @@ class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
-        $this->load->view('Logistik_Pesanan_Pabrik_Detail/Index', $data);
+        $this->load->view('Logistik_Pesanan_Pabrik_Detail/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
         } else {

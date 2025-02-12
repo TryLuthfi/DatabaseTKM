@@ -27,7 +27,7 @@ class ListUser extends CI_Controller
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
-            $this->load->view('ListUser/Index', $data);
+            $this->load->view('ListUser/index', $data);
             $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
 
