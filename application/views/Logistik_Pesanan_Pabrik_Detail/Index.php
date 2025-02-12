@@ -49,6 +49,9 @@ $total = 1;
                                             <th>QTY Pengiriman</th>
                                             <th>Tanggal PO</th>
                                             <th>Tanggal Kirim</th>
+                                            <th>Lokasi Gudang</th>
+                                            <th>SJ PABRIK</th>
+                                            <th>SJ KANTOR</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -62,6 +65,9 @@ $total = 1;
                                                 <td><?= $data['qty_material_pengiriman'] ?></td>
                                                 <td><?= $data['tanggal_po_pabrik'] ?></td>
                                                 <td><?= $data['tanggal_pengiriman_pabrik'] ?></td>
+                                                <td><?= $data['kota_lokasi_gudang'] ?></td>
+                                                <td>Nomor Dummy &nbsp;<a href="" class="btn btn-primary"><i class="fas fa-eye"></i></a></td>
+                                                <td>Nomor Dummy &nbsp;<a href="" class="btn btn-primary"><i class="fas fa-eye"></i></a></td>
                                             </tr>
 
                                         <?php endforeach; ?>
