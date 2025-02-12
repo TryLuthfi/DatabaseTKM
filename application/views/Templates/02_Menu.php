@@ -299,12 +299,14 @@ $id_menu = $this->uri->segment('1');
                                 Pendapatan
                             </p>
                         </a>
-                        <a href="<?= base_url('Neraca') ?>" class="nav-link <?php if ($id_menu == 'Neraca') {
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= base_url('Rincian') ?>" class="nav-link <?php if ($id_menu == 'Rincian') {
                               echo "active";
                           } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
-                                Invoice
+                                Rincian Pendapatan
                             </p>
                         </a>
                     </li>

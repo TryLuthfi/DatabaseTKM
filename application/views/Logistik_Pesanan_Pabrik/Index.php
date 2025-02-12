@@ -36,7 +36,7 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
                                     </div>
                                     <div class="col-6">
                                         <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah-pabrik" data-toggle="modal">Tambah
+                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah
                                             &nbsp;<i class="fas fa-plus"></i> </a>
                                     </div>
                                 </div>
@@ -102,6 +102,94 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
                     </div>
                 </div>
         </section>
+
+        <?php $tgl = date('Y-m-d'); ?>  
+        <form action=" <?php echo base_url('Rincian/add') ?>" method="post">
+                <div class="modal fade" id="modal-lg-tambah">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Tambah Rincian Harian</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label class="col-form-label">Tanggal :</label>
+                                    <input type="date" value="<?php echo  $tgl ?>" class="form-control text-dark" name="tanggal" id="tgl1">
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-form-label">Keterangan</label>
+                                    <input type="text" class="form-control" name="keterangan_1" autocomplete="off" placeholder="Keterangan...">
+                                </div>
+                                <div id="keterangan">
+
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-form-label">Kode Akun (D)</label>
+                                    <select name="debit" id="debit" class="form-control">
+                                        <option name="kode_kredit">Pilih Kode</option>
+                                        <?php foreach ($kode_akun as $data) : ?>
+                                            <option value="<?= $data['kode_akun'] ?>"><?= $data['nama_kode'] ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="kredit_r">
+                                    <label class="col-form-label">Kode Akun (K)</label>
+                                    <select name="kredit_1" id="kredit" class="form-control">
+                                        <option name="kode_kredit">Pilih Kode</option>
+                                        <?php foreach ($kode_akun as $data) : ?>
+                                            <option value="<?= $data['kode_akun'] ?>"><?= $data['nama_kode'] ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-form-label">Nominal</label>
+                                    <input type="text" class="form-control" name="nominal_d1" data-inputmask="'alias': 'currency' " data-mask>
+                                </div>
+                                <div id="kredit_t">
+
+                                </div>
+                                <div id="nominal_k">
+
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+
+                                    <button type="submit" name="btnSubmit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i> Simpan</button>
+                                    <? $asu = 0; ?>
+                                    <button id="tambah" type="button" onclick="addNominal(this.value)" value="2">Form Nominal</button>
+                                    <script>
+                                        function addNominal(val) {
+                                            document.getElementById('nominal_k').innerHTML +=
+                                                `<div class="form-group">
+                                                <label class="col-form-label">Nominal (K) ${val}</label>
+                                                <input type="text" class="form-control" name="nominal_d${val}" data-inputmask="'alias': 'currency' " data-mask>
+                                                </div>`;
+                                            const newEl = document.getElementById('kredit_r')
+                                            document.getElementById('kredit_t').appendChild(newEl.cloneNode(true))
+                                            const el = document.getElementsByName('kredit_1')
+                                            el[el.length - 1].setAttribute('name', 'kredit_' + val)
+                                            const result = document.getElementById('tambah');
+                                            result.value = result.value ? parseInt(result.value) + 1 : parseInt(val)
+                                            $(function() {
+                                                // format angka rupiah
+                                                $('[data-mask]').inputmask("currency", {
+                                                    prefix: " Rp. ",
+                                                    digitsOptional: true
+                                                })
+                                            });
+                                        }
+                                    </script>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+            </form>
 
     </section>
 </div>
