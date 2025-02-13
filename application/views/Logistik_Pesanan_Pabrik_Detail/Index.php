@@ -5,6 +5,10 @@ $error_log = $this->session->flashdata('error_log');
 $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
 
 $total = 1;
+
+$total_qty_pesanan = 0;
+$total_qty_pengiriman = 0;
+$sisa_pesanan = 0;
 ?>
 
 <div class="content-wrapper">
@@ -57,6 +61,9 @@ $total = 1;
                                     <tbody>
                                         <?php
                                         foreach ($getDetailPesananPabrik as $data):
+
+                                            $total_qty_pesanan += $data['qty_material_pesanan'];
+                                            $total_qty_pengiriman += $data['qty_material_pengiriman'];
                                             ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
@@ -73,6 +80,22 @@ $total = 1;
                                         <?php endforeach; ?>
 
                                     </tbody>
+                                    <?php $sisa_pesanan = $total_qty_pesanan - $total_qty_pengiriman;  ?>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="2">Sisa Pesanan</th>
+                                            <th colspan="2"><?= number_format($sisa_pesanan, 0, '.', ',') ?></th>
+                                            <th colspan="6"></th>
+                                        </tr>
+                                    </tfoot>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="2">Total Pesanan</th>
+                                            <th colspan="1"><?= number_format($total_qty_pesanan, 0, '.', ',') ?></th>
+                                            <th colspan="1"><?= number_format($total_qty_pengiriman, 0, '.', ',') ?></th>
+                                            <th colspan="5"></th>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                             <!-- /.card-body -->
