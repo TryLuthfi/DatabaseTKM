@@ -593,7 +593,7 @@ $jumlah_Tiang = 0;
                             <div class="form-group">
                                 <label class="col-form-label">Area Gudang</label>
                                 <select name="id_lokasi_gudang" class="form-control">
-                                    <?php foreach ($x as $data2): ?>
+                                    <?php foreach ($getListGudangLokasiUser as $data2): ?>
                                         <option value="<?php echo $data2['id_lokasi_gudang'] ?>">
                                             <?php echo $data2['kota_lokasi_gudang'] ?>
                                         </option>

@@ -23,14 +23,7 @@ class Logistik_Stok_Detail extends CI_Controller
         $data['title'] = 'Detail Stok '.$last_segment;
         $data['judul'] = 'Detail Stok '.$last_segment;
         $data['lokasi'] = $last_segment;
-        $data['getDetailStokAksesoriesArea'] = $this->MLogistik_Stok_Detail->getDetailStokAksesoriesArea();
-        $data['getDetailStokClosureArea'] = $this->MLogistik_Stok_Detail->getDetailStokClosureArea();
-        $data['getDetailStokFATArea'] = $this->MLogistik_Stok_Detail->getDetailStokFATArea();
-        $data['getDetailStokFDTArea'] = $this->MLogistik_Stok_Detail->getDetailStokFDTArea();
-        $data['getDetailStokHDPEArea'] = $this->MLogistik_Stok_Detail->getDetailStokHDPEArea();
-        $data['getDetailStokKabelArea'] = $this->MLogistik_Stok_Detail->getDetailStokKabelArea();
-        $data['getDetailStokOTBArea'] = $this->MLogistik_Stok_Detail->getDetailStokOTBArea();
-        $data['getDetailStokTiangArea'] = $this->MLogistik_Stok_Detail->getDetailStokTiangArea();
+        $data['getStokDetailArea'] = $this->MLogistik_Stok_Detail->getStokDetailArea();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');

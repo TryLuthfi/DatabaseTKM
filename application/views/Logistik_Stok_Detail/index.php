@@ -6,569 +6,584 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
 
 $total = 1;
 
-$total_qty_pesanan = 0;
-$total_qty_pengiriman = 0;
-$sisa_pesanan = 0;
+$total_aksesories = 0;
+$total_closure = 0;
+$total_fat = 0;
+$total_fdt = 0;
+$total_hdpe = 0;
+$total_kabel = 0;
+$total_otb = 0;
+$total_tiang = 0;
 ?>
 
 <div class="content-wrapper">
 
-    <div class="content">
-        <div class="content-header">
-            <div class="container-fluid">
-                <div class="row mb-2">
-                    <div class="col-sm-12">
-                        <h1 class="m-0 text-dark" style="text-align: center;">STOK AKSESORIES <?= "".$lokasi?></h1>
-                    </div><!-- /.col -->
-                </div><!-- /.row -->
-            </div><!-- /.container-fluid -->
-        </div>
-
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="clearfix hidden-md-up"></div>
-
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <h3 class="card-title">Stok Aksesories</h3>
-                                    </div>
-                                    <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body table-scrollable">
-                                <table id="tabel_pemasukan" class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Jenis Item</th>
-                                            <th>Jumlah</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php
-                                        // Ambil daftar kategori dari kolom (semua key kecuali lokasi)
-                                        if (!empty($getDetailStokAksesoriesArea)) {
-                                            $categories = array_keys($getDetailStokAksesoriesArea[0]);
-                                            array_shift($categories); // Hapus kolom kota_lokasi_gudang
-                                        
-                                            // Loop untuk menampilkan kategori ke bawah
-                                            foreach ($categories as $category) {
-                                                echo "<tr>";
-                                                echo "<td>" . ucfirst(str_replace("_", " ", $category)) . "</td>"; // Nama kategori
-                                        
-                                                // Loop lokasi sebagai kolom
-                                                foreach ($getDetailStokAksesoriesArea as $row) {
-                                                    echo "<td>" . $row[$category] . "</td>";
-                                                }
-
-                                                echo "</tr>";
-                                            }
-                                        }
-                                        ?>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th colspan="2">Total</th>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            <!-- /.card-body -->
-                        </div>
-                    </div>
-                </div>
-        </section>
-
-        <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-12">
-          <h1 class="m-0 text-dark" style="text-align: center;">STOK CLOSURE <?= "".$lokasi?></h1>
-        </div><!-- /.col -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div>
-
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="clearfix hidden-md-up"></div>
-
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <h3 class="card-title">Stok Closure</h3>
-                                    </div>
-                                    <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body table-scrollable">
-                                <table id="tabel_stok_closure" class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Jenis Item</th>
-                                            <th>Jumlah</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php
-                                        // Ambil daftar kategori dari kolom (semua key kecuali lokasi)
-                                        if (!empty($getDetailStokClosureArea)) {
-                                            $categories = array_keys($getDetailStokClosureArea[0]);
-                                            array_shift($categories); // Hapus kolom kota_lokasi_gudang
-                                        
-                                            // Loop untuk menampilkan kategori ke bawah
-                                            foreach ($categories as $category) {
-                                                echo "<tr>";
-                                                echo "<td>" . ucfirst(str_replace("_", " ", $category)) . "</td>"; // Nama kategori
-                                        
-                                                // Loop lokasi sebagai kolom
-                                                foreach ($getDetailStokClosureArea as $row) {
-                                                    echo "<td>" . $row[$category] . "</td>";
-                                                }
-
-                                                echo "</tr>";
-                                            }
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!-- /.card-body -->
-                        </div>
-                    </div>
-                </div>
-        </section>
-
-        <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-12">
-          <h1 class="m-0 text-dark" style="text-align: center;">STOK FAT <?= "".$lokasi?></h1>
-        </div><!-- /.col -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div>
-
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="clearfix hidden-md-up"></div>
-
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <h3 class="card-title">Stok FAT</h3>
-                                    </div>
-                                    <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body table-scrollable">
-                                <table id="tabel_stok_fat" class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Jenis Item</th>
-                                            <th>Jumlah</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php
-                                        // Ambil daftar kategori dari kolom (semua key kecuali lokasi)
-                                        if (!empty($getDetailStokFATArea)) {
-                                            $categories = array_keys($getDetailStokFATArea[0]);
-                                            array_shift($categories); // Hapus kolom kota_lokasi_gudang
-                                        
-                                            // Loop untuk menampilkan kategori ke bawah
-                                            foreach ($categories as $category) {
-                                                echo "<tr>";
-                                                echo "<td>" . ucfirst(str_replace("_", " ", $category)) . "</td>"; // Nama kategori
-                                        
-                                                // Loop lokasi sebagai kolom
-                                                foreach ($getDetailStokFATArea as $row) {
-                                                    echo "<td>" . $row[$category] . "</td>";
-                                                }
-
-                                                echo "</tr>";
-                                            }
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!-- /.card-body -->
-                        </div>
-                    </div>
-                </div>
-        </section>
-
-        <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-12">
-          <h1 class="m-0 text-dark" style="text-align: center;">STOK FDT <?= "".$lokasi?></h1>
-        </div><!-- /.col -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div>
-
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="clearfix hidden-md-up"></div>
-
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <h3 class="card-title">Stok FDT</h3>
-                                    </div>
-                                    <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body table-scrollable">
-                                <table id="tabel_stok_fdt" class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Jenis Item</th>
-                                            <th>Jumlah</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php
-                                        // Ambil daftar kategori dari kolom (semua key kecuali lokasi)
-                                        if (!empty($getDetailStokFDTArea)) {
-                                            $categories = array_keys($getDetailStokFDTArea[0]);
-                                            array_shift($categories); // Hapus kolom kota_lokasi_gudang
-                                        
-                                            // Loop untuk menampilkan kategori ke bawah
-                                            foreach ($categories as $category) {
-                                                echo "<tr>";
-                                                echo "<td>" . ucfirst(str_replace("_", " ", $category)) . "</td>"; // Nama kategori
-                                        
-                                                // Loop lokasi sebagai kolom
-                                                foreach ($getDetailStokFDTArea as $row) {
-                                                    echo "<td>" . $row[$category] . "</td>";
-                                                }
-
-                                                echo "</tr>";
-                                            }
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!-- /.card-body -->
-                        </div>
-                    </div>
-                </div>
-        </section>
-
-        <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-12">
-          <h1 class="m-0 text-dark" style="text-align: center;">STOK HDPE <?= "".$lokasi?></h1>
-        </div><!-- /.col -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div>
-
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="clearfix hidden-md-up"></div>
-
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <h3 class="card-title">Stok HDPE</h3>
-                                    </div>
-                                    <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body table-scrollable">
-                                <table id="tabel_stok_hdpe" class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Jenis Item</th>
-                                            <th>Jumlah</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php
-                                        // Ambil daftar kategori dari kolom (semua key kecuali lokasi)
-                                        if (!empty($getDetailStokHDPEArea)) {
-                                            $categories = array_keys($getDetailStokHDPEArea[0]);
-                                            array_shift($categories); // Hapus kolom kota_lokasi_gudang
-                                        
-                                            // Loop untuk menampilkan kategori ke bawah
-                                            foreach ($categories as $category) {
-                                                echo "<tr>";
-                                                echo "<td>" . ucfirst(str_replace("_", " ", $category)) . "</td>"; // Nama kategori
-                                        
-                                                // Loop lokasi sebagai kolom
-                                                foreach ($getDetailStokHDPEArea as $row) {
-                                                    echo "<td>" . $row[$category] . "</td>";
-                                                }
-
-                                                echo "</tr>";
-                                            }
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!-- /.card-body -->
-                        </div>
-                    </div>
-                </div>
-        </section>
-
-        <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-12">
-          <h1 class="m-0 text-dark" style="text-align: center;">STOK KABEL <?= "".$lokasi?></h1>
-        </div><!-- /.col -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div>
-
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="clearfix hidden-md-up"></div>
-
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <h3 class="card-title">Stok Kabel</h3>
-                                    </div>
-                                    <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body table-scrollable">
-                                <table id="tabel_stok_kabel" class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Jenis Item</th>
-                                            <th>Jumlah</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php
-                                        // Ambil daftar kategori dari kolom (semua key kecuali lokasi)
-                                        if (!empty($getDetailStokKabelArea)) {
-                                            $categories = array_keys($getDetailStokKabelArea[0]);
-                                            array_shift($categories); // Hapus kolom kota_lokasi_gudang
-                                        
-                                            // Loop untuk menampilkan kategori ke bawah
-                                            foreach ($categories as $category) {
-                                                echo "<tr>";
-                                                echo "<td>" . ucfirst(str_replace("_", " ", $category)) . "</td>"; // Nama kategori
-                                        
-                                                // Loop lokasi sebagai kolom
-                                                foreach ($getDetailStokKabelArea as $row) {
-                                                    echo "<td>" . $row[$category] . "</td>";
-                                                }
-
-                                                echo "</tr>";
-                                            }
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!-- /.card-body -->
-                        </div>
-                    </div>
-                </div>
-        </section>
-
-        <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-12">
-          <h1 class="m-0 text-dark" style="text-align: center;">STOK OTB <?= "".$lokasi?></h1>
-        </div><!-- /.col -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div>
-
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="clearfix hidden-md-up"></div>
-
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <h3 class="card-title">Stok OTB</h3>
-                                    </div>
-                                    <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body table-scrollable">
-                                <table id="tabel_stok_otb" class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Jenis Item</th>
-                                            <th>Jumlah</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php
-                                        // Ambil daftar kategori dari kolom (semua key kecuali lokasi)
-                                        if (!empty($getDetailStokOTBArea)) {
-                                            $categories = array_keys($getDetailStokOTBArea[0]);
-                                            array_shift($categories); // Hapus kolom kota_lokasi_gudang
-                                        
-                                            // Loop untuk menampilkan kategori ke bawah
-                                            foreach ($categories as $category) {
-                                                echo "<tr>";
-                                                echo "<td>" . ucfirst(str_replace("_", " ", $category)) . "</td>"; // Nama kategori
-                                        
-                                                // Loop lokasi sebagai kolom
-                                                foreach ($getDetailStokOTBArea as $row) {
-                                                    echo "<td>" . $row[$category] . "</td>";
-                                                }
-
-                                                echo "</tr>";
-                                            }
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!-- /.card-body -->
-                        </div>
-                    </div>
-                </div>
-        </section>
-
-        <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-12">
-          <h1 class="m-0 text-dark" style="text-align: center;">STOK TIANG <?= "".$lokasi?></h1>
-        </div><!-- /.col -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div>
-
-        <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="clearfix hidden-md-up"></div>
-
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <h3 class="card-title">Stok Tiang</h3>
-                                    </div>
-                                    <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body table-scrollable">
-                                <table id="tabel_stok_tiang" class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Jenis Item</th>
-                                            <th>Jumlah</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php
-                                        // Ambil daftar kategori dari kolom (semua key kecuali lokasi)
-                                        if (!empty($getDetailStokTiangArea)) {
-                                            $categories = array_keys($getDetailStokTiangArea[0]);
-                                            array_shift($categories); // Hapus kolom kota_lokasi_gudang
-                                        
-                                            // Loop untuk menampilkan kategori ke bawah
-                                            foreach ($categories as $category) {
-                                                echo "<tr>";
-                                                echo "<td>" . ucfirst(str_replace("_", " ", $category)) . "</td>"; // Nama kategori
-                                        
-                                                // Loop lokasi sebagai kolom
-                                                foreach ($getDetailStokTiangArea as $row) {
-                                                    echo "<td>" . $row[$category] . "</td>";
-                                                }
-
-                                                echo "</tr>";
-                                            }
-                                        }
-                                        ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!-- /.card-body -->
-                        </div>
-                    </div>
-                </div>
-        </section>
-
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">STOK AKSESORIES <?= "" . $lokasi ?></h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
     </div>
-    <!-- /.content-wrapper -->
 
-    <?php $this->session->set_flashdata('status', 'kosong'); ?>
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="clearfix hidden-md-up"></div>
 
-    <!-- Control Sidebar -->
-    <aside class="control-sidebar control-sidebar-dark">
-        <!-- Control sidebar content goes here -->
-    </aside>
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="card-title">Stok Aksesories</h3>
+                                </div>
+                                <div class="col-6">
+                                    <a href="#" class="btn btn-success float-right text-bold"
+                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                            class="fas fa-plus"></i> </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body table-scrollable">
+                            <table id="tabel_aksesories" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Nama Item</th>
+                                        <th>Project Item</th>
+                                        <th>Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    foreach ($getStokDetailArea as $data):
+                                        if ($data['kategori_item'] == "Aksesories "):
+                                            $total_aksesories += $data['jumlah_stok'];
+                                            ?>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['nama_item'] ?></td>
+                                                <td><?= $data['project_item'] ?></td>
+                                                <td><?= $data['jumlah_stok'] ?></td>
+                                            </tr>
+                                            <?php
+                                        endif;
+                                    endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">Total</th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"><?= $total_aksesories?></th>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                </div>
+            </div>
+    </section>
+
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">STOK CLOSURE <?= "" . $lokasi ?></h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="clearfix hidden-md-up"></div>
+
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="card-title">Stok Closure</h3>
+                                </div>
+                                <div class="col-6">
+                                    <a href="#" class="btn btn-success float-right text-bold"
+                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                            class="fas fa-plus"></i> </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body table-scrollable">
+                            <table id="tabel_stok_closure" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Nama Item</th>
+                                        <th>Project Item</th>
+                                        <th>Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    foreach ($getStokDetailArea as $data):
+                                        if ($data['kategori_item'] == "Closure"):
+                                            $total_closure += $data['jumlah_stok'];
+                                            ?>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['nama_item'] ?></td>
+                                                <td><?= $data['project_item'] ?></td>
+                                                <td><?= $data['jumlah_stok'] ?></td>
+                                            </tr>
+                                            <?php
+                                        endif;
+                                    endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">Total</th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"><?= $total_closure?></th>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                </div>
+            </div>
+    </section>
+
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">STOK FAT <?= "" . $lokasi ?></h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="clearfix hidden-md-up"></div>
+
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="card-title">Stok FAT</h3>
+                                </div>
+                                <div class="col-6">
+                                    <a href="#" class="btn btn-success float-right text-bold"
+                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                            class="fas fa-plus"></i> </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body table-scrollable">
+                            <table id="tabel_stok_fat" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Nama Item</th>
+                                        <th>Project Item</th>
+                                        <th>Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    foreach ($getStokDetailArea as $data):
+                                        if ($data['kategori_item'] == "FAT"):
+                                            $total_fat += $data['jumlah_stok'];
+                                            ?>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['nama_item'] ?></td>
+                                                <td><?= $data['project_item'] ?></td>
+                                                <td><?= $data['jumlah_stok'] ?></td>
+                                            </tr>
+                                            <?php
+                                        endif;
+                                    endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">Total</th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"><?= $total_fat?></th>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                </div>
+            </div>
+    </section>
+
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">STOK FDT <?= "" . $lokasi ?></h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="clearfix hidden-md-up"></div>
+
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="card-title">Stok FDT</h3>
+                                </div>
+                                <div class="col-6">
+                                    <a href="#" class="btn btn-success float-right text-bold"
+                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                            class="fas fa-plus"></i> </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body table-scrollable">
+                            <table id="tabel_stok_fdt" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Nama Item</th>
+                                        <th>Project Item</th>
+                                        <th>Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    foreach ($getStokDetailArea as $data):
+                                        if ($data['kategori_item'] == "FDT"):
+                                            $total_fdt += $data['jumlah_stok'];
+                                            ?>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['nama_item'] ?></td>
+                                                <td><?= $data['project_item'] ?></td>
+                                                <td><?= $data['jumlah_stok'] ?></td>
+                                            </tr>
+                                            <?php
+                                        endif;
+                                    endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">Total</th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"><?= $total_fdt?></th>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                </div>
+            </div>
+    </section>
+
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">STOK HDPE <?= "" . $lokasi ?></h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="clearfix hidden-md-up"></div>
+
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="card-title">Stok HDPE</h3>
+                                </div>
+                                <div class="col-6">
+                                    <a href="#" class="btn btn-success float-right text-bold"
+                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                            class="fas fa-plus"></i> </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body table-scrollable">
+                            <table id="tabel_stok_hdpe" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Nama Item</th>
+                                        <th>Project Item</th>
+                                        <th>Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    foreach ($getStokDetailArea as $data):
+                                        if ($data['kategori_item'] == "HDPE "):
+                                            $total_hdpe += $data['jumlah_stok'];
+                                            ?>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['nama_item'] ?></td>
+                                                <td><?= $data['project_item'] ?></td>
+                                                <td><?= $data['jumlah_stok'] ?></td>
+                                            </tr>
+                                            <?php
+                                        endif;
+                                    endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">Total</th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"><?= $total_hdpe?></th>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                </div>
+            </div>
+    </section>
+
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">STOK KABEL <?= "" . $lokasi ?></h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="clearfix hidden-md-up"></div>
+
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="card-title">Stok Kabel</h3>
+                                </div>
+                                <div class="col-6">
+                                    <a href="#" class="btn btn-success float-right text-bold"
+                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                            class="fas fa-plus"></i> </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body table-scrollable">
+                            <table id="tabel_stok_kabel" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Nama Item</th>
+                                        <th>Project Item</th>
+                                        <th>Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    foreach ($getStokDetailArea as $data):
+                                        if ($data['kategori_item'] == "Kabel "):
+                                            $total_kabel += $data['jumlah_stok'];
+                                            ?>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['nama_item'] ?></td>
+                                                <td><?= $data['project_item'] ?></td>
+                                                <td><?= $data['jumlah_stok'] ?></td>
+                                            </tr>
+                                            <?php
+                                        endif;
+                                    endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">Total</th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"><?= $total_kabel?></th>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                </div>
+            </div>
+    </section>
+
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">STOK OTB <?= "" . $lokasi ?></h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="clearfix hidden-md-up"></div>
+
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="card-title">Stok OTB</h3>
+                                </div>
+                                <div class="col-6">
+                                    <a href="#" class="btn btn-success float-right text-bold"
+                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                            class="fas fa-plus"></i> </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body table-scrollable">
+                            <table id="tabel_stok_otb" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Nama Item</th>
+                                        <th>Project Item</th>
+                                        <th>Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    foreach ($getStokDetailArea as $data):
+                                        if ($data['kategori_item'] == "OTB "):
+                                            $total_otb += $data['jumlah_stok'];
+                                            ?>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['nama_item'] ?></td>
+                                                <td><?= $data['project_item'] ?></td>
+                                                <td><?= $data['jumlah_stok'] ?></td>
+                                            </tr>
+                                            <?php
+                                        endif;
+                                    endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">Total</th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"><?= $total_otb?></th>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                </div>
+            </div>
+    </section>
+
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">STOK TIANG <?= "" . $lokasi ?></h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="clearfix hidden-md-up"></div>
+
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="card-title">Stok Tiang</h3>
+                                </div>
+                                <div class="col-6">
+                                    <a href="#" class="btn btn-success float-right text-bold"
+                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                            class="fas fa-plus"></i> </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body table-scrollable">
+                            <table id="tabel_stok_tiang" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Nama Item</th>
+                                        <th>Project Item</th>
+                                        <th>Stok</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    foreach ($getStokDetailArea as $data):
+                                        if ($data['kategori_item'] == "Tiang"):
+                                            $total_tiang += $data['jumlah_stok'];
+                                            ?>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['nama_item'] ?></td>
+                                                <td><?= $data['project_item'] ?></td>
+                                                <td><?= $data['jumlah_stok'] ?></td>
+                                            </tr>
+                                            <?php
+                                        endif;
+                                    endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">Total</th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"><?= $total_tiang?></th>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                </div>
+            </div>
+    </section>
+
+
 
 </div>
 
+<?php $this->session->set_flashdata('status', 'kosong'); ?>
+
+<!-- Control Sidebar -->
+<aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content goes here -->
+</aside>
+
 <script>
     $(function () {
-        $("#tabel_pemasukan").DataTable({
+        $("#tabel_aksesories").DataTable({
             "responsive": true,
         });
         $("#tabel_stok_closure").DataTable({
