@@ -24,7 +24,7 @@ class Fiberstar_Project_Detail extends CI_Controller
             $data['master_data_dokument'] = $this->MFiberstar_Project_Detail->getMasterDataDokument();
             $data['master_data_stagging'] = array_unique(array_column($data['master_data_dokument'], 'stagging_document_support'));
             $data['data_document_support_approval'] = $this->MFiberstar_Project_Detail->getDataDocumentSupportApproval($data['progress_implementasi'][0]["primary_access_id_project"]);
-            $data['count_document_support_approval'] = $this->MFiberstar_Project_Detail->getCountDocumentSupportApproval();
+            $data['count_document_support_approval'] = $this->MFiberstar_Project_Detail->getCountDocumentSupportApproval($data['progress_implementasi'][0]["primary_access_id_project"]);
             $data['dokument_support_approval_cbn'] = $this->MFiberstar_Project_Detail->getDokumentSupportApprovalCBN();
 
             $this->load->view('Templates/01_Header', $data);

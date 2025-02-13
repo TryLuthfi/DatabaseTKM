@@ -16,7 +16,7 @@ class MFiberstar_Project_Detail extends CI_Model
         return $data;
     }
 
-    public function getCountDocumentSupportApproval(): mixed 
+    public function getCountDocumentSupportApproval($string): mixed 
     {
         try {
             $data = $this->db->query("
@@ -31,6 +31,7 @@ class MFiberstar_Project_Detail extends CI_Model
                     mdsf.id_document_support = tdac.id_document_support_fiberstar
                 WHERE
                     mdsf.stagging_document_support IN ('APPROVAL CBN', 'ATP', 'RFS', 'BAST')
+                    AND tdac.primary_access_id_project = '".$string."'
                 GROUP BY
                     mdsf.stagging_document_support;
             ")->result_array();

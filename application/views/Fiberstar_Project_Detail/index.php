@@ -497,8 +497,10 @@ function formatTanggalIndonesia($date)
                                                                                 <a href="<?= base_url(isset($first['document_support_location']) ? $first['document_support_location'] : '') ?>" target="_blank" class="btn btn-warning <?= empty($first['document_support_location']) ? 'disabled' : '' ?>">
                                                                                     <i class="fas fa-solid fa-eye"></i>
                                                                                 </a>
-                                                                                <a href="#" class="btn btn-success <?= empty($first['document_support_location']) ? 'disabled' : '' ?>"><i class="fas fa-check"></i></a>
-                                                                                <a href="#" class="btn btn-danger <?= empty($first['document_support_location']) ? 'disabled' : '' ?>"><i class="fas fa-times"></i></a>
+                                                                                <?php if ($this->session->userdata('tim_project') === 'HO') { ?>
+                                                                                    <a href="#" class="btn btn-success <?= empty($first['document_support_location']) ? 'disabled' : '' ?>"><i class="fas fa-check"></i></a>
+                                                                                    <a href="#" class="btn btn-danger <?= empty($first['document_support_location']) ? 'disabled' : '' ?>"><i class="fas fa-times"></i></a>
+                                                                                <?php } ?>
                                                                             </td>
                                                                         </tr>
                                                                     <?php }; ?>
