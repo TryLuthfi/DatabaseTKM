@@ -40,7 +40,7 @@ class Fiberstar_Project_Detail extends CI_Controller
     {
         $this->load->helper('date');
         $config['upload_path'] = "./uploads/";
-        $config['allowed_types'] = 'pdf|docx|rar';
+        $config['allowed_types'] = 'pdf|docx|xlsx|';
         $config['max_size']      = 5120;
         $file_ext = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
         $original_name = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
