@@ -1509,9 +1509,9 @@ $total_hp_closed_regional = 0;
           } else {
             alert("Data tidak ditemukan!");
           }
-        },error: function (xhr, status, error) {
-            console.error(xhr.responseText);
-            alert("Terjadi kesalahan saat mengambil data.");
+        }, error: function (xhr, status, error) {
+          console.error(xhr.responseText);
+          alert("Terjadi kesalahan saat mengambil data.");
         }
       });
     });

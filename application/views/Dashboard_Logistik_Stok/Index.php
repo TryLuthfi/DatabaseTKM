@@ -1,10 +1,19 @@
-
 <?php
 $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
 $total = 1;
 $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
+
+$jumlah_Aksesories = 0;
+$jumlah_Closure = 0;
+$jumlah_FAT = 0;
+$jumlah_FDT = 0;
+$jumlah_HDPE = 0;
+$jumlah_Kabel = 0;
+$jumlah_OTB = 0;
+$jumlah_Tiang = 0;
+
 ?>
 
 <div class="content-wrapper">
@@ -121,50 +130,374 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
 
         <div class="container-fluid">
 
-      <div class="row">
-        <div class="col-md-12" style="margin_botttom:10px;">
-          <!-- DIRECT CHAT DANGER -->
-          <div class="card card-primary direct-chat direct-chat-primary shadow-lg">
-            <div class="card-header">
-              <h3 class="card-title">TOTAL MATERIAL AREA</h3>
+            <div class="row">
+                <div class="col-md-12" style="margin_botttom:10px;">
+                    <!-- DIRECT CHAT DANGER -->
+                    <div class="card card-primary direct-chat direct-chat-primary shadow-lg">
+                        <div class="card-header">
+                            <h3 class="card-title">TOTAL MATERIAL AREA</h3>
 
-              <div class="card-tools">
-                <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                  <i class="fas fa-plus"></i>
-                </button>
-              </div>
-            </div>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
 
-            <div class="card-body" style="margin-top:10px;">
-              <div class="container-fluid">
-                <!-- Info boxes -->
-                <div class="row">
-                <?php foreach ($getAllStokByKategory as $stokKategory): ?>
-                  <div class="col-lg-3 col-6">
-                    <div class="small-box bg-info">
-                      <div class="inner">
-                        
-                          <h3 id="idtotal_hp_plan">
-                            <?= number_format(floatval($stokKategory['total_jumlah_stok']), 0, ".") . " ".$stokKategory['satuan_item'] ?>
-                          </h3>
-                        
+                        <div class="card-body" style="margin-top:10px;">
+                            <div class="container-fluid">
+                                <!-- Info boxes -->
+                                <div class="row">
+                                    <?php foreach ($getAllStokByKategory as $stokKategory): ?>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
 
-                        <p><?= $stokKategory['kategori_item'] ?></p>
-                      </div>
-                      <div class="icon">
-                        <i class="ion ion-bag"></i>
-                      </div>
+                                                    <h3 id="idtotal_hp_plan">
+                                                        <?= number_format(floatval($stokKategory['total_jumlah_stok']), 0, ".") . " " . $stokKategory['satuan_item'] ?>
+                                                    </h3>
+
+
+                                                    <p><?= $stokKategory['kategori_item'] ?></p>
+                                                </div>
+                                                <div class="icon">
+                                                    <i class="ion ion-bag"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach ?>
+
+                                </div>
+                            </div>
+                            <div class="content-header">
+                                <div class="container-fluid">
+                                    <div class="row mb-2">
+                                        <div class="col-sm-12">
+                                            <h1 class="m-0 text-dark" style="text-align: center;">LOGISTIK REGIONAL</h1>
+                                        </div><!-- /.col -->
+                                    </div><!-- /.row -->
+                                </div><!-- /.container-fluid -->
+                            </div>
+
+                            <section class="content">
+
+                                <div class="container-fluid">
+                                    <!-- Info boxes -->
+                                    <div class="row">
+                                        <!-- fix for small devices only -->
+                                        <div class="clearfix hidden-md-up"></div>
+
+                                        <div class="col-12">
+                                            <div class="card">
+                                                <!-- /.card-header -->
+                                                <div class="card-body table-responsive text-nowrap ">
+                                                    <table id="table_detail" class="table table-bordered table-hover">
+                                                        <thead class="bg-info">
+                                                            <tr>
+                                                                <th>No</th>
+                                                                <th>Lokasi Gudang</th>
+                                                                <th>Aksesoris</th>
+                                                                <th>Closure</th>
+                                                                <th>FAT</th>
+                                                                <th>FDT</th>
+                                                                <th>HPDE</th>
+                                                                <th>Kabel</th>
+                                                                <th>OTB</th>
+                                                                <th>Tiang</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php
+                                                            $total = 1;
+
+                                                            foreach ($getAllStokByKategoryFilterRegional as $data):
+
+                                                                $jumlah_Aksesories += $data['jumlah_Aksesories'];
+                                                                $jumlah_Closure += $data['jumlah_Closure'];
+                                                                $jumlah_FAT += $data['jumlah_FAT'];
+                                                                $jumlah_FDT += $data['jumlah_FDT'];
+                                                                $jumlah_HDPE += $data['jumlah_HDPE'];
+                                                                $jumlah_Kabel += $data['jumlah_Kabel'];
+                                                                $jumlah_OTB += $data['jumlah_OTB'];
+                                                                $jumlah_Tiang += $data['jumlah_Tiang'];
+
+                                                                ?>
+
+                                                                <tr>
+                                                                    <td><?= $total++ ?></td>
+                                                                    <td><?= $data['regional_lokasi_gudang'] ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_Aksesories'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Aksesories']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_Closure'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Closure']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_FAT'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_FAT']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_FDT'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_FDT']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_HDPE'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_HDPE']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_Kabel'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Kabel']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_OTB'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_OTB']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_Tiang'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Tiang']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                </tr>
+
+                                                            <?php endforeach; ?>
+
+                                                        </tbody>
+                                                        <tfoot>
+                                                            <tr>
+                                                                <th colspan="2">Total</th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_Aksesories), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_Closure), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_FAT), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_FDT), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_HDPE), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_Kabel), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_OTB), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_Tiang), 0, ".") ?>
+                                                                </th>
+                                                            </tr>
+                                                        </tfoot>
+                                                    </table>
+                                                </div>
+                                                <!-- /.card-body -->
+                                            </div>
+                                            <div class="row">
+                                                <!-- ISI -->
+                                            </div>
+                                        </div>
+                            </section>
+
+                            <div class="content-header">
+                                <div class="container-fluid">
+                                    <div class="row mb-2">
+                                        <div class="col-sm-12">
+                                            <h1 class="m-0 text-dark" style="text-align: center;">LOGISTIK AREA</h1>
+                                        </div><!-- /.col -->
+                                    </div><!-- /.row -->
+                                </div><!-- /.container-fluid -->
+                            </div>
+
+                            <section class="content">
+
+                                <div class="container-fluid">
+                                    <!-- Info boxes -->
+                                    <div class="row">
+                                        <!-- fix for small devices only -->
+                                        <div class="clearfix hidden-md-up"></div>
+
+                                        <div class="col-12">
+                                            <div class="card">
+                                                <!-- /.card-header -->
+                                                <div class="card-body table-responsive text-nowrap ">
+                                                    <table id="table_detail" class="table table-bordered table-hover">
+                                                        <thead class="bg-info">
+                                                            <tr>
+                                                                <th>No</th>
+                                                                <th>Lokasi Gudang</th>
+                                                                <th>Aksesoris</th>
+                                                                <th>Closure</th>
+                                                                <th>FAT</th>
+                                                                <th>FDT</th>
+                                                                <th>HPDE</th>
+                                                                <th>Kabel</th>
+                                                                <th>OTB</th>
+                                                                <th>Tiang</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php
+                                                            $total = 1;
+
+                                                            $jumlah_Aksesories = 0;
+                                                            $jumlah_Closure = 0;
+                                                            $jumlah_FAT = 0;
+                                                            $jumlah_FDT = 0;
+                                                            $jumlah_HDPE = 0;
+                                                            $jumlah_Kabel = 0;
+                                                            $jumlah_OTB = 0;
+                                                            $jumlah_Tiang = 0;
+
+                                                            foreach ($getAllStokByKategoryFilterCity as $data):
+
+
+                                                                $jumlah_Aksesories += $data['jumlah_Aksesories'];
+                                                                $jumlah_Closure += $data['jumlah_Closure'];
+                                                                $jumlah_FAT += $data['jumlah_FAT'];
+                                                                $jumlah_FDT += $data['jumlah_FDT'];
+                                                                $jumlah_HDPE += $data['jumlah_HDPE'];
+                                                                $jumlah_Kabel += $data['jumlah_Kabel'];
+                                                                $jumlah_OTB += $data['jumlah_OTB'];
+                                                                $jumlah_Tiang += $data['jumlah_Tiang'];
+
+                                                                ?>
+
+                                                                <tr>
+                                                                    <td><?= $total++ ?></td>
+                                                                    <td><?= $data['kota_lokasi_gudang'] ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_Aksesories'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Aksesories']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_Closure'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Closure']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_FAT'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_FAT']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_FDT'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_FDT']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_HDPE'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_HDPE']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_Kabel'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Kabel']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_OTB'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_OTB']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                    <td><?php
+                                                                    if ($data['jumlah_Tiang'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Tiang']), 0, ".");
+                                                                    }
+                                                                    ?></td>
+                                                                </tr>
+
+                                                            <?php endforeach; ?>
+
+                                                        </tbody>
+                                                        <tfoot>
+                                                            <tr>
+                                                                <th colspan="2">Total</th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_Aksesories), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_Closure), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_FAT), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_FDT), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_HDPE), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_Kabel), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_OTB), 0, ".") ?>
+                                                                </th>
+                                                                <th colspan="1">
+                                                                    <?= number_format(floatval($jumlah_Tiang), 0, ".") ?>
+                                                                </th>
+                                                            </tr>
+                                                        </tfoot>
+                                                    </table>
+                                                </div>
+                                                <!-- /.card-body -->
+                                            </div>
+                                            <div class="row">
+                                                <!-- ISI -->
+                                            </div>
+                                        </div>
+                            </section>
+
+                        </div>
                     </div>
-                  </div>
-                  <?php endforeach ?>
-
                 </div>
-              </div>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
 
         <!-- Main content -->
         <section class="content">

@@ -19,6 +19,8 @@ class Dashboard_Logistik_Stok extends CI_Controller
         $data['judul'] = 'Dashboard Logistik';
         $data['getAllStokLogistik'] = $this->MDashboard_Logistik_Stok->getAllStokLogistik();
         $data['getAllStokByKategory'] = $this->MDashboard_Logistik_Stok->getAllStokByKategory();
+        $data['getAllStokByKategoryFilterCity'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterCity();
+        $data['getAllStokByKategoryFilterRegional'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterRegional();
         $data['getListGudangLokasiUser'] = $this->MDashboard_Logistik_Stok->getListGudangLokasiUser();
         $data['getMasterProject'] = $this->MDashboard_Logistik_Stok->getMasterProject();
         $data['getMasterSumberMaterial'] = $this->MDashboard_Logistik_Stok->getMasterSumberMaterial();
