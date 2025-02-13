@@ -11,7 +11,7 @@ class MDashboard_Logistik_Stok extends CI_Model
                                         JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
                                         JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
                                         JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user')
-                                        ->result_array();
+            ->result_array();
         return $data;
     }
 
@@ -24,7 +24,7 @@ class MDashboard_Logistik_Stok extends CI_Model
 	LEFT JOIN tb_master_logistik_sumber_material tmlsm USING(id_sumber_material)
 	RIGHT JOIN tb_master_logistik_kode_item tmlki USING(id_kode_item)
 	GROUP BY tmlki.kategori_item')
-                                        ->result_array();
+            ->result_array();
         return $data;
     }
     public function getUniqueKotaGudang()
@@ -33,7 +33,7 @@ class MDashboard_Logistik_Stok extends CI_Model
                                         FROM tb_logistik_stok 
                                         JOIN tb_master_logistik_lokasi_gudang ON tb_logistik_stok.id_lokasi_gudang = tb_master_logistik_lokasi_gudang.id_lokasi_gudang
                                         GROUP BY tb_master_logistik_lokasi_gudang.kota_lokasi_gudang;')
-                                        ->result_array();
+            ->result_array();
         return $data;
     }
 
@@ -109,7 +109,7 @@ GROUP BY
     lg.kota_lokasi_gudang
 ORDER BY 
     lg.kota_lokasi_gudang;')
-                                        ->result_array();
+            ->result_array();
         return $data;
     }
 
@@ -185,7 +185,7 @@ GROUP BY
     lg.regional_lokasi_gudang
 ORDER BY 
     lg.regional_lokasi_gudang;')
-                                        ->result_array();
+            ->result_array();
         return $data;
     }
 
@@ -195,7 +195,7 @@ ORDER BY
                                         FROM tb_logistik_stok 
                                         JOIN tb_master_bowheer ON tb_logistik_stok.id_bowheer = tb_master_bowheer.id_bowheer
                                         GROUP BY tb_master_bowheer.nama_bowheer;')
-                                        ->result_array();
+            ->result_array();
         return $data;
     }
     public function getUniqueItemLogistik()
@@ -204,7 +204,7 @@ ORDER BY
                                         FROM tb_logistik_stok 
                                         JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
                                         GROUP BY tb_master_logistik_kode_item.nama_item;')
-                                        ->result_array();
+            ->result_array();
         return $data;
     }
     public function getUniqueSumberMaterial()
@@ -213,14 +213,14 @@ ORDER BY
                                         FROM tb_logistik_stok 
                                         JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
                                         GROUP BY tb_master_logistik_sumber_material.nama_sumber_material;')
-                                        ->result_array();
+            ->result_array();
         return $data;
     }
 
     public function getListGudangLokasiUser(): mixed
     {
         $id_user = $this->session->userdata('id_user');
-        $data = $this->db->query('SELECT * FROM `tb_master_logistik_lokasi_gudang` WHERE id_user = "'.$id_user.'"')->result_array();
+        $data = $this->db->query('SELECT * FROM `tb_master_logistik_lokasi_gudang` WHERE id_user = "' . $id_user . '"')->result_array();
         return $data;
     }
 

@@ -361,6 +361,7 @@ $jumlah_Tiang = 0;
                                                                 <th>Kabel</th>
                                                                 <th>OTB</th>
                                                                 <th>Tiang</th>
+                                                                <th>Detail</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -449,6 +450,12 @@ $jumlah_Tiang = 0;
                                                                         echo number_format(floatval($data['jumlah_Tiang']), 0, ".");
                                                                     }
                                                                     ?></td>
+                                                                    <td>
+                                                                        <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['kota_lokasi_gudang']); ?>"
+                                                                            id="tombol_hapus"
+                                                                            class="btn btn-primary tombol_hapus"><i
+                                                                                class=" fas fa-eye"></i></a>
+                                                                    </td>
                                                                 </tr>
 
                                                             <?php endforeach; ?>
@@ -586,7 +593,7 @@ $jumlah_Tiang = 0;
                             <div class="form-group">
                                 <label class="col-form-label">Area Gudang</label>
                                 <select name="id_lokasi_gudang" class="form-control">
-                                    <?php foreach ($getListGudangLokasiUser as $data2): ?>
+                                    <?php foreach ($x as $data2): ?>
                                         <option value="<?php echo $data2['id_lokasi_gudang'] ?>">
                                             <?php echo $data2['kota_lokasi_gudang'] ?>
                                         </option>
