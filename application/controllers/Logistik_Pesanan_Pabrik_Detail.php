@@ -1,29 +1,27 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-class Master_Logistik_Kode_Item extends CI_Controller
+class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
 {
 
     public function __construct()
     {
         parent::__construct();
         $this->load->library('form_validation');
-        $this->load->model('MMaster_Logistik_Kode_Item');
+        $this->load->model('MLogistik_Pesanan_Pabrik_Detail');
     }
     
-    public function index()
+    public function detailPesanan()
     {
         if (!empty($this->session->userdata('id_user'))) {
 
-        $data['title'] = 'Kode Item Logistik';
-        $data['judul'] = 'Kode Item Logistik';
-        $data['getMasterLogistikKodeItem'] = $this->MMaster_Logistik_Kode_Item->getMasterLogistikKodeItem();
-        $data['getMasterBowheer'] = $this->MMaster_Logistik_Kode_Item->getMasterBowheer();
-        $data['getMasterKepemilikan'] = $this->MMaster_Logistik_Kode_Item->getMasterKepemilikan();
+        $data['title'] = 'Detail PO Pabrik';
+        $data['judul'] = 'Detail PO Pabrik';
+        $data['getDetailPesananPabrik'] = $this->MLogistik_Pesanan_Pabrik_Detail->getDetailPesananPabrik();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
-        $this->load->view('Master_Logistik_Kode_Item/index', $data);
+        $this->load->view('Logistik_Pesanan_Pabrik_Detail/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
         } else {
@@ -50,14 +48,14 @@ class Master_Logistik_Kode_Item extends CI_Controller
             'project_item' => $kota_string
         );
 
-        $res = $this->MMaster_Logistik_Kode_Item->tambahKodeItem($hasil_data);
+        $res = $this->MLogistik_Pesanan_Pabrik_Detail->tambahKodeItem($hasil_data);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_tambah');
-            redirect("Master_Logistik_Kode_Item");
+            redirect("Logistik_Pesanan_Pabrik_Detail");
         } else {
             $this->session->set_flashdata('status', 'gagal_tambah');
-            redirect("Master_Logistik_Kode_Item");
+            redirect("Logistik_Pesanan_Pabrik_Detail");
         }
     }
 
@@ -82,28 +80,28 @@ class Master_Logistik_Kode_Item extends CI_Controller
         );
 
         $where = array('id_kode_item' => $id_kode_item);
-        $res = $this->MMaster_Logistik_Kode_Item->editKodeItem($data_array, $where);
+        $res = $this->MLogistik_Pesanan_Pabrik_Detail->editKodeItem($data_array, $where);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_edit');
-            redirect("Master_Logistik_Kode_Item");
+            redirect("Logistik_Pesanan_Pabrik_Detail");
         } else {
             $this->session->set_flashdata('status', 'gagal_edit');
-            redirect("Master_Logistik_Kode_Item");
+            redirect("Logistik_Pesanan_Pabrik_Detail");
         }
     }
 
     public function hapusKodeItem($id_kode_item)
     {
         $id_kode_item = array('id_kode_item' => $id_kode_item);
-        $res = $this->MMaster_Logistik_Kode_Item->hapusKodeItem($id_kode_item);
+        $res = $this->MLogistik_Pesanan_Pabrik_Detail->hapusKodeItem($id_kode_item);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_hapus');
-            redirect("Master_Logistik_Kode_Item");
+            redirect("Logistik_Pesanan_Pabrik_Detail");
         } else {
             $this->session->set_flashdata('status', 'gagal_hapus');
-            redirect("Master_Logistik_Kode_Item");
+            redirect("Logistik_Pesanan_Pabrik_Detail");
         }
     }
 }

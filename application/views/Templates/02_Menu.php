@@ -127,10 +127,10 @@ $id_menu = $this->uri->segment('1');
                     <li class="nav-header">Logistik</li>
 
                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
-                        <li class="nav-item has-treeview <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang' || $id_menu == 'Master_Logistik_Kode_Item' || $id_menu == 'Master_Logistik_Sumber_Material') {
+                        <li class="nav-item has-treeview <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang' || $id_menu == 'Master_Logistik_Kode_Item' || $id_menu == 'Master_Logistik_Sumber_Material' || $id_menu == 'Master_Logistik_Pabrik') {
                             echo "menu-open";
                         } ?>">
-                            <a href="#" class="nav-link <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang' || $id_menu == 'Master_Logistik_Kode_Item' || $id_menu == 'Master_Logistik_Sumber_Material') {
+                            <a href="#" class="nav-link <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang' || $id_menu == 'Master_Logistik_Kode_Item' || $id_menu == 'Master_Logistik_Sumber_Material' || $id_menu == 'Master_Logistik_Pabrik') {
                                 echo "active";
                             } ?>">
                                 <i class="nav-icon fas fa-money-check-alt"></i>
@@ -186,6 +186,17 @@ $id_menu = $this->uri->segment('1');
                             </ul>
                         </li>
                     <?php } ?>
+
+                    <li class="nav-item">
+                        <a href="<?= base_url('Logistik_Pesanan_Pabrik') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Pesanan_Pabrik') {
+                              echo "active";
+                          } ?>">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Pesanan Pabrik
+                            </p>
+                        </a>
+                    </li>
 
                     <li class="nav-item">
                         <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok') {
@@ -288,12 +299,14 @@ $id_menu = $this->uri->segment('1');
                                 Pendapatan
                             </p>
                         </a>
-                        <a href="<?= base_url('Neraca') ?>" class="nav-link <?php if ($id_menu == 'Neraca') {
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= base_url('Rincian') ?>" class="nav-link <?php if ($id_menu == 'Rincian') {
                               echo "active";
                           } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
-                                Invoice
+                                Rincian Pendapatan
                             </p>
                         </a>
                     </li>
