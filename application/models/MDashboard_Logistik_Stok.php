@@ -223,6 +223,12 @@ ORDER BY
         $data = $this->db->query('SELECT * FROM `tb_master_logistik_lokasi_gudang` WHERE id_user = "'.$id_user.'"')->result_array();
         return $data;
     }
+
+    public function getListGudangLokasiUserAll(): mixed
+    {
+        $data = $this->db->query('SELECT * FROM `tb_master_logistik_lokasi_gudang`')->result_array();
+        return $data;
+    }
     public function getMasterProject(): mixed
     {
         $data = $this->db->query('SELECT * FROM `tb_master_bowheer`')->result_array();

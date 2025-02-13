@@ -21,7 +21,11 @@ class Dashboard_Logistik_Stok extends CI_Controller
         $data['getAllStokByKategory'] = $this->MDashboard_Logistik_Stok->getAllStokByKategory();
         $data['getAllStokByKategoryFilterCity'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterCity();
         $data['getAllStokByKategoryFilterRegional'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterRegional();
-        $data['getListGudangLokasiUser'] = $this->MDashboard_Logistik_Stok->getListGudangLokasiUser();
+        if ($this->session->userdata('tim_project') == "HO") {
+            $data['getListGudangLokasiUser'] = $this->MDashboard_Logistik_Stok->getListGudangLokasiUserAll();
+        } else {
+            $data['getListGudangLokasiUser'] = $this->MDashboard_Logistik_Stok->getListGudangLokasiUser();
+        }
         $data['getMasterProject'] = $this->MDashboard_Logistik_Stok->getMasterProject();
         $data['getMasterSumberMaterial'] = $this->MDashboard_Logistik_Stok->getMasterSumberMaterial();
         $data['getMasterKodeItem'] = $this->MDashboard_Logistik_Stok->getMasterKodeItem();
