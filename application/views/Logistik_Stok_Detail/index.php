@@ -4,7 +4,6 @@ $error_log = $this->session->flashdata('error_log');
 
 $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
 
-$total = 1;
 
 $total_aksesories = 0;
 $total_closure = 0;
@@ -17,6 +16,41 @@ $total_tiang = 0;
 ?>
 
 <div class="content-wrapper">
+
+<div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">SUMMARY STOK <?= "" . $lokasi ?></h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    <div class="container-fluid">
+        <!-- Info boxes -->
+        <div class="row">
+            <?php foreach ($getSummaryDetailArea as $stokKategory): ?>
+                <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+
+                            <h3 id="idtotal_hp_plan">
+                                <?= number_format(floatval($stokKategory['total_jumlah_stok']), 0, ".") . " " . $stokKategory['satuan_item'] ?>
+                            </h3>
+
+
+                            <p><?= $stokKategory['kategori_item'] ?></p>
+                        </div>
+                        <div class="icon">
+                            <i class="ion ion-bag"></i>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach ?>
+
+        </div>
+    </div>
 
     <div class="content-header">
         <div class="container-fluid">
@@ -40,11 +74,6 @@ $total_tiang = 0;
                                 <div class="col-6">
                                     <h3 class="card-title">Stok Aksesories</h3>
                                 </div>
-                                <div class="col-6">
-                                    <a href="#" class="btn btn-success float-right text-bold"
-                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                            class="fas fa-plus"></i> </a>
-                                </div>
                             </div>
                         </div>
                         <div class="card-body table-scrollable">
@@ -55,10 +84,12 @@ $total_tiang = 0;
                                         <th>Nama Item</th>
                                         <th>Project Item</th>
                                         <th>Stok</th>
+                                        <th>Satuan Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
+                                    $total = 1;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "Aksesories "):
                                             $total_aksesories += $data['jumlah_stok'];
@@ -67,7 +98,8 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= $data['jumlah_stok'] ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= $data['satuan_item'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -77,7 +109,8 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">Total</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= $total_aksesories?></th>
+                                        <th colspan="1"><?= number_format($total_aksesories, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                 </tfoot>
                             </table>
                         </div>
@@ -109,11 +142,6 @@ $total_tiang = 0;
                                 <div class="col-6">
                                     <h3 class="card-title">Stok Closure</h3>
                                 </div>
-                                <div class="col-6">
-                                    <a href="#" class="btn btn-success float-right text-bold"
-                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                            class="fas fa-plus"></i> </a>
-                                </div>
                             </div>
                         </div>
                         <div class="card-body table-scrollable">
@@ -124,10 +152,12 @@ $total_tiang = 0;
                                         <th>Nama Item</th>
                                         <th>Project Item</th>
                                         <th>Stok</th>
+                                        <th>Satuan Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
+                                    $total = 1;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "Closure"):
                                             $total_closure += $data['jumlah_stok'];
@@ -136,7 +166,8 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= $data['jumlah_stok'] ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= $data['satuan_item'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -146,7 +177,8 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">Total</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= $total_closure?></th>
+                                        <th colspan="1"><?= number_format($total_closure, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                 </tfoot>
                             </table>
                         </div>
@@ -178,11 +210,6 @@ $total_tiang = 0;
                                 <div class="col-6">
                                     <h3 class="card-title">Stok FAT</h3>
                                 </div>
-                                <div class="col-6">
-                                    <a href="#" class="btn btn-success float-right text-bold"
-                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                            class="fas fa-plus"></i> </a>
-                                </div>
                             </div>
                         </div>
                         <div class="card-body table-scrollable">
@@ -193,10 +220,12 @@ $total_tiang = 0;
                                         <th>Nama Item</th>
                                         <th>Project Item</th>
                                         <th>Stok</th>
+                                        <th>Satuan Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
+                                    $total = 1;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "FAT"):
                                             $total_fat += $data['jumlah_stok'];
@@ -205,7 +234,8 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= $data['jumlah_stok'] ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= $data['satuan_item'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -215,7 +245,8 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">Total</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= $total_fat?></th>
+                                        <th colspan="1"><?= number_format($total_fat, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                 </tfoot>
                             </table>
                         </div>
@@ -247,11 +278,6 @@ $total_tiang = 0;
                                 <div class="col-6">
                                     <h3 class="card-title">Stok FDT</h3>
                                 </div>
-                                <div class="col-6">
-                                    <a href="#" class="btn btn-success float-right text-bold"
-                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                            class="fas fa-plus"></i> </a>
-                                </div>
                             </div>
                         </div>
                         <div class="card-body table-scrollable">
@@ -262,10 +288,12 @@ $total_tiang = 0;
                                         <th>Nama Item</th>
                                         <th>Project Item</th>
                                         <th>Stok</th>
+                                        <th>Satuan Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
+                                    $total = 1;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "FDT"):
                                             $total_fdt += $data['jumlah_stok'];
@@ -274,7 +302,8 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= $data['jumlah_stok'] ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= $data['satuan_item'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -284,7 +313,8 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">Total</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= $total_fdt?></th>
+                                        <th colspan="1"><?= number_format($total_fdt, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                 </tfoot>
                             </table>
                         </div>
@@ -316,11 +346,6 @@ $total_tiang = 0;
                                 <div class="col-6">
                                     <h3 class="card-title">Stok HDPE</h3>
                                 </div>
-                                <div class="col-6">
-                                    <a href="#" class="btn btn-success float-right text-bold"
-                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                            class="fas fa-plus"></i> </a>
-                                </div>
                             </div>
                         </div>
                         <div class="card-body table-scrollable">
@@ -331,10 +356,12 @@ $total_tiang = 0;
                                         <th>Nama Item</th>
                                         <th>Project Item</th>
                                         <th>Stok</th>
+                                        <th>Satuan Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
+                                    $total = 1;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "HDPE "):
                                             $total_hdpe += $data['jumlah_stok'];
@@ -343,7 +370,8 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= $data['jumlah_stok'] ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= $data['satuan_item'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -353,7 +381,8 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">Total</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= $total_hdpe?></th>
+                                        <th colspan="1"><?= number_format($total_hdpe, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                 </tfoot>
                             </table>
                         </div>
@@ -385,11 +414,6 @@ $total_tiang = 0;
                                 <div class="col-6">
                                     <h3 class="card-title">Stok Kabel</h3>
                                 </div>
-                                <div class="col-6">
-                                    <a href="#" class="btn btn-success float-right text-bold"
-                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                            class="fas fa-plus"></i> </a>
-                                </div>
                             </div>
                         </div>
                         <div class="card-body table-scrollable">
@@ -400,10 +424,12 @@ $total_tiang = 0;
                                         <th>Nama Item</th>
                                         <th>Project Item</th>
                                         <th>Stok</th>
+                                        <th>Satuan Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
+                                    $total = 1;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "Kabel "):
                                             $total_kabel += $data['jumlah_stok'];
@@ -412,7 +438,8 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= $data['jumlah_stok'] ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= $data['satuan_item'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -422,7 +449,8 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">Total</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= $total_kabel?></th>
+                                        <th colspan="1"><?= number_format($total_kabel, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                 </tfoot>
                             </table>
                         </div>
@@ -454,11 +482,6 @@ $total_tiang = 0;
                                 <div class="col-6">
                                     <h3 class="card-title">Stok OTB</h3>
                                 </div>
-                                <div class="col-6">
-                                    <a href="#" class="btn btn-success float-right text-bold"
-                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                            class="fas fa-plus"></i> </a>
-                                </div>
                             </div>
                         </div>
                         <div class="card-body table-scrollable">
@@ -469,10 +492,12 @@ $total_tiang = 0;
                                         <th>Nama Item</th>
                                         <th>Project Item</th>
                                         <th>Stok</th>
+                                        <th>Satuan Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
+                                    $total = 1;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "OTB "):
                                             $total_otb += $data['jumlah_stok'];
@@ -481,7 +506,8 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= $data['jumlah_stok'] ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= $data['satuan_item'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -491,7 +517,8 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">Total</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= $total_otb?></th>
+                                        <th colspan="1"><?= number_format($total_otb, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                 </tfoot>
                             </table>
                         </div>
@@ -523,11 +550,6 @@ $total_tiang = 0;
                                 <div class="col-6">
                                     <h3 class="card-title">Stok Tiang</h3>
                                 </div>
-                                <div class="col-6">
-                                    <a href="#" class="btn btn-success float-right text-bold"
-                                        data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                            class="fas fa-plus"></i> </a>
-                                </div>
                             </div>
                         </div>
                         <div class="card-body table-scrollable">
@@ -538,10 +560,12 @@ $total_tiang = 0;
                                         <th>Nama Item</th>
                                         <th>Project Item</th>
                                         <th>Stok</th>
+                                        <th>Satuan Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
+                                    $total = 1;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "Tiang"):
                                             $total_tiang += $data['jumlah_stok'];
@@ -550,7 +574,8 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= $data['jumlah_stok'] ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= $data['satuan_item'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -560,7 +585,8 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">Total</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= $total_tiang?></th>
+                                        <th colspan="1"><?= number_format($total_tiang, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                 </tfoot>
                             </table>
                         </div>
