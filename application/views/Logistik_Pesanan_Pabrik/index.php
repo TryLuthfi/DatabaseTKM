@@ -36,41 +36,48 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
                                     </div>
                                     <div class="col-6">
                                         <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah-pabrik" data-toggle="modal">Tambah
+                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah
                                             &nbsp;<i class="fas fa-plus"></i> </a>
                                     </div>
                                 </div>
                             </div>
                             <!-- /.card-header -->
                             <div class="card-body table-scrollable">
-                                <table id="tabel_pemasukan" class="table table-bordered table-striped">
+                                <table id="tabel_pesanan_pabrik" class="table table-bordered table-striped">
                                     <thead>
                                         <tr>
                                             <th>No</th>
-                                            <th>Nama Pabrik</th>
-                                            <th>Lokasi Pabrik</th>
-                                            <th>Jenis Pabrik</th>
-                                            <th>Status Pabrik</th>
+                                            <th>Nomor PO</th>
+                                            <th>Pabrik</th>
+                                            <th>Item</th>
+                                            <th>QTY Pesanan</th>
+                                            <th>QTY Pengiriman</th>
+                                            <th>QTY Sisa</th>
+                                            <th>Nominal PO</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php
-                                        foreach ($getMasterLogistikPabrik as $data):
+                                        foreach ($getOustandingPesananPabrik as $data):
                                             ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
+                                                <td><?= $data['nomor_po_pabrik'] ?></td>
                                                 <td><?= $data['nama_pabrik'] ?></td>
-                                                <td><?= $data['lokasi_pabrik'] ?></td>
-                                                <td><?= $data['jenis_pabrik'] ?></td>
-                                                <td><?= $data['status_pabrik'] ?></td>
+                                                <td><?= $data['nama_item'] ?></td>
+                                                <td><?= number_format($data['qty_material_pesanan'], 0, '.', ',') ?></td>
+                                                <td><?= number_format($data['total_qty_material_pengiriman'], 0, '.', ',') ?></td>
+                                                <td><?= number_format($data['sisa_qty_material_pengiriman'], 0, '.', ',') ?></td>
+                                                <td><?= number_format($data['harga_total_po_pabrik'], 0, '.', ',') ?></td>
                                                 <td>
-                                                    <a href="<?php echo site_url('Master_Logistik_Pabrik/hapusPabrik/' . $data['id_pabrik']); ?>"
+                                                    <a href="<?php echo site_url('Master_Logistik_Pabrik/hapusPabrik/' . $data['id_pesanan_pabrik']); ?>"
                                                         id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                             class=" fas fa-trash"></i></a>
                                                     <a href="#" class="btn btn-warning"
                                                         data-target="#modal-lg-edit<?= $data['id_pabrik'] ?>"
                                                         data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                    <a href="<?php echo site_url('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $data['nomor_po_pabrik']); ?>" class="btn btn-primary"><i class="fas fa-eye"></i></a>
                                                 </td>
                                             </tr>
 
@@ -80,7 +87,12 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
                                     <tfoot>
                                         <tr>
                                             <th colspan="1">Total</th>
-                                            <th colspan="5"><?= number_format($total - 1, 0, ',', '.') ?></th>
+                                            <th colspan="3"></th>
+                                            <th colspan="1"><span id="totalQTYPesanan"></span></th>
+                                            <th colspan="1"><span id="totalQTYPengiriman"></span></th>
+                                            <th colspan="1"><span id="totalQTYSisa"></span></th>
+                                            <th colspan="1"><span id="totalQTYHargaPO"></span></th>
+                                            <th colspan="1"></th>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -91,108 +103,85 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
                 </div>
         </section>
 
-        <!-- MODAL TAMBAH LIST PABRIK -->
-        <form action=" <?php echo base_url('Master_Logistik_Pabrik/tambahPabrik') ?>" method="post">
-            <div class="modal fade" id="modal-lg-tambah-pabrik">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h4 class="modal-title">Tambah List Pabrik</h4>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label class="col-form-label">Nama Pabrik</label>
-                                <input type="text" class="form-control" name="nama_pabrik" autocomplete="off"
-                                    placeholder="PT. XXX" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Lokasi Pabrik</label>
-                                <input type="text" class="form-control" name="lokasi_pabrik" autocomplete="off"
-                                    placeholder="Nama Kota" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Jenis Pabrik</label>
-                                <select name="jenis_pabrik" class="form-control">
-                                    <?php foreach ($satuan_options as $option): ?>
-                                        <option value="<?= $option ?>" <?= isset($data['satuan_item']) && $data['satuan_item'] == $option ? 'selected' : '' ?>>
-                                            <?= $option ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Status Pabrik</label>
-                                <select name="status_pabrik" class="form-control">
-                                    <option value="ACTIVE" selected>ACTIVE</option>
-                                    <option value="UNCATIVE">UNCATIVE</option>
-                                </select>
-                            </div>
-
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-
-                                <button type="submit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading"
-                                        style="display:none"></i> Tambah</button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- /.modal-content -->
-                </div>
-                <!-- /.modal-dialog -->
-            </div>
-        </form>
-
-        <!-- MODAL EDIT PABRIK -->
-        <?php foreach ($getMasterLogistikPabrik as $data): ?>
-            <form action="<?php echo site_url('Master_Logistik_Pabrik/editPabrik/' . $data['id_pabrik']); ?>" method="post">
-                <div class="modal fade" id="modal-lg-edit<?= $data['id_pabrik'] ?>">
+        <?php $tgl = date('Y-m-d'); ?>  
+        <form action=" <?php echo base_url('Rincian/add') ?>" method="post">
+                <div class="modal fade" id="modal-lg-tambah">
                     <div class="modal-dialog modal-lg">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h4 class="modal-title">Edit Pabrik</h4>
+                                <h4 class="modal-title">Tambah Rincian Harian</h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
                             <div class="modal-body">
                                 <div class="form-group">
-                                    <label class="col-form-label">Nama Pabrik</label>
-                                    <input type="text" class="form-control" name="nama_pabrik" autocomplete="off"
-                                        placeholder="Nama Pabrik" value="<?= $data['nama_pabrik'] ?>">
+                                    <label class="col-form-label">Tanggal :</label>
+                                    <input type="date" value="<?php echo  $tgl ?>" class="form-control text-dark" name="tanggal" id="tgl1">
                                 </div>
                                 <div class="form-group">
-                                    <label class="col-form-label">Lokasi Pabrik</label>
-                                    <input type="text" class="form-control" name="lokasi_pabrik" autocomplete="off"
-                                        placeholder="Lokasi Pabrik" value="<?= $data['lokasi_pabrik'] ?>">
+                                    <label class="col-form-label">Keterangan</label>
+                                    <input type="text" class="form-control" name="keterangan_1" autocomplete="off" placeholder="Keterangan...">
+                                </div>
+                                <div id="keterangan">
+
                                 </div>
                                 <div class="form-group">
-                                    <label class="col-form-label">Jenis Pabrik</label>
-                                    <select name="jenis_pabrik" class="form-control">
-                                        <?php foreach ($satuan_options as $option): ?>
-                                            <option value="<?= $option ?>" <?= $data['jenis_pabrik'] == $option ? 'selected' : '' ?>>
-                                                <?= $option ?>
-                                            </option>
+                                    <label class="col-form-label">Kode Akun (D)</label>
+                                    <select name="debit" id="debit" class="form-control">
+                                        <option name="kode_kredit">Pilih Kode</option>
+                                        <?php foreach ($kode_akun as $data) : ?>
+                                            <option value="<?= $data['kode_akun'] ?>"><?= $data['nama_kode'] ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="kredit_r">
+                                    <label class="col-form-label">Kode Akun (K)</label>
+                                    <select name="kredit_1" id="kredit" class="form-control">
+                                        <option name="kode_kredit">Pilih Kode</option>
+                                        <?php foreach ($kode_akun as $data) : ?>
+                                            <option value="<?= $data['kode_akun'] ?>"><?= $data['nama_kode'] ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label class="col-form-label">Status Pabrik</label>
-                                    <select name="status_pabrik" class="form-control">
-                                        <option value="ACTIVE" <?php if ($data['status_pabrik'] == 'ACTIVE') { ?>selected
-                                            <?php } ?>>ACTIVE</option>
-                                        <option value="UNACTIVE" <?php if ($data['status_pabrik'] == 'UNACTIVE') { ?>selected
-                                            <?php } ?>>UNACTIVE</option>
-                                    </select>
+                                    <label class="col-form-label">Nominal</label>
+                                    <input type="text" class="form-control" name="nominal_d1" data-inputmask="'alias': 'currency' " data-mask>
                                 </div>
+                                <div id="kredit_t">
 
+                                </div>
+                                <div id="nominal_k">
+
+                                </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
 
-                                    <button type="submit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading"
-                                            style="display:none"></i> Edit</button>
+                                    <button type="submit" name="btnSubmit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i> Simpan</button>
+                                    <? $asu = 0; ?>
+                                    <button id="tambah" type="button" onclick="addNominal(this.value)" value="2">Form Nominal</button>
+                                    <script>
+                                        function addNominal(val) {
+                                            document.getElementById('nominal_k').innerHTML +=
+                                                `<div class="form-group">
+                                                <label class="col-form-label">Nominal (K) ${val}</label>
+                                                <input type="text" class="form-control" name="nominal_d${val}" data-inputmask="'alias': 'currency' " data-mask>
+                                                </div>`;
+                                            const newEl = document.getElementById('kredit_r')
+                                            document.getElementById('kredit_t').appendChild(newEl.cloneNode(true))
+                                            const el = document.getElementsByName('kredit_1')
+                                            el[el.length - 1].setAttribute('name', 'kredit_' + val)
+                                            const result = document.getElementById('tambah');
+                                            result.value = result.value ? parseInt(result.value) + 1 : parseInt(val)
+                                            $(function() {
+                                                // format angka rupiah
+                                                $('[data-mask]').inputmask("currency", {
+                                                    prefix: " Rp. ",
+                                                    digitsOptional: true
+                                                })
+                                            });
+                                        }
+                                    </script>
                                 </div>
                             </div>
                         </div>
@@ -201,7 +190,6 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
                     <!-- /.modal-dialog -->
                 </div>
             </form>
-        <?php endforeach; ?>
 
     </section>
 </div>
@@ -233,6 +221,40 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
         <?php } else { ?>
         <?php } ?>
     })
+
+    $(document).ready(function () {
+    setTimeout(function () {
+        const table = $('#tabel_pesanan_pabrik').DataTable();
+
+        function updateTotal() {
+            let totalQTYPesanan = 0;
+            let totalQTYPengiriman = 0;
+            let totalQTYSisa = 0;
+            let totalQTYHargaPO = 0;
+
+            table.rows({ search: 'applied' }).data().each(function (row) {
+
+                if (row['4'] != 0) {
+                    totalQTYPesanan += parseFloat(row[4].replace(/,/g, ''))
+                } if (row['5'] != 0) {
+                    totalQTYPengiriman += parseFloat(row[5].replace(/,/g, ''))
+                } if (row['6'] != 0) {
+                    totalQTYSisa += parseFloat(row[6].replace(/,/g, ''))
+                } if (row['7'] != 0) {
+                    totalQTYHargaPO += parseFloat(row[7].replace(/,/g, ''))
+                }
+
+            });
+            $('#totalQTYPesanan').text(totalQTYPesanan.toLocaleString('id-ID'));
+            $('#totalQTYPengiriman').text(totalQTYPengiriman.toLocaleString('id-ID'));
+            $('#totalQTYSisa').text(totalQTYSisa.toLocaleString('id-ID'));
+            $('#totalQTYHargaPO').text(totalQTYHargaPO.toLocaleString('id-ID'));
+        }
+
+        table.on('search.dt draw.dt', updateTotal);
+        updateTotal();
+    }, 1);
+});
 </script>
 
 

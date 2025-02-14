@@ -3,6 +3,7 @@ $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
 $total = 1;
+$satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aksesoris'];
 ?>
 
 <div class="content-wrapper">
@@ -31,12 +32,12 @@ $total = 1;
                             <div class="card-header">
                                 <div class="row">
                                     <div class="col-6">
-                                        <h3 class="card-title">List Area Dashboard </h3>
+                                        <h3 class="card-title">List Pabrik</h3>
                                     </div>
                                     <div class="col-6">
                                         <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
+                                            data-target="#modal-lg-tambah-pabrik" data-toggle="modal">Tambah
+                                            &nbsp;<i class="fas fa-plus"></i> </a>
                                     </div>
                                 </div>
                             </div>
@@ -46,31 +47,29 @@ $total = 1;
                                     <thead>
                                         <tr>
                                             <th>No</th>
-                                            <th>Regional</th>
-                                            <th>Provinsi</th>
-                                            <th>Kota</th>
-                                            <th>Kecamatan</th>
-                                            <th>PIC</th>
+                                            <th>Nama Pabrik</th>
+                                            <th>Lokasi Pabrik</th>
+                                            <th>Jenis Pabrik</th>
+                                            <th>Status Pabrik</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php
-                                        foreach ($getMasterLogistikLokasiGudang as $data):
+                                        foreach ($getMasterLogistikPabrik as $data):
                                             ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
-                                                <td><?= $data['regional_lokasi_gudang'] ?></td>
-                                                <td><?= $data['provinsi_lokasi_gudang'] ?></td>
-                                                <td><?= $data['kota_lokasi_gudang'] ?></td>
-                                                <td><?= $data['kecamatan_lokasi_gudang'] ?></td>
-                                                <td><?= $data['nama_user'] ?></td>
+                                                <td><?= $data['nama_pabrik'] ?></td>
+                                                <td><?= $data['lokasi_pabrik'] ?></td>
+                                                <td><?= $data['jenis_pabrik'] ?></td>
+                                                <td><?= $data['status_pabrik'] ?></td>
                                                 <td>
-                                                    <a href="<?php echo site_url('Master_Logistik_Lokasi_Gudang/hapusLokasiGudang/' . $data['id_lokasi_gudang']); ?>"
+                                                    <a href="<?php echo site_url('Master_Logistik_Pabrik/hapusPabrik/' . $data['id_pabrik']); ?>"
                                                         id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                             class=" fas fa-trash"></i></a>
                                                     <a href="#" class="btn btn-warning"
-                                                        data-target="#modal-lg-edit<?= $data['id_lokasi_gudang'] ?>"
+                                                        data-target="#modal-lg-edit<?= $data['id_pabrik'] ?>"
                                                         data-toggle="modal"><i class="fas fa-edit"></i></a>
                                                 </td>
                                             </tr>
@@ -81,8 +80,7 @@ $total = 1;
                                     <tfoot>
                                         <tr>
                                             <th colspan="1">Total</th>
-                                            <th colspan="2"><?= number_format($total - 1, 0, ',', '.') ?></th>
-                                            <th colspan="4"></th>
+                                            <th colspan="5"><?= number_format($total - 1, 0, ',', '.') ?></th>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -93,59 +91,51 @@ $total = 1;
                 </div>
         </section>
 
-        <!-- MODAL TAMBAH LOKASI GUDANG LOGISTIK -->
-        <form action=" <?php echo base_url('Master_Logistik_Lokasi_Gudang/tambahLokasiGudang') ?>" method="post">
-            <div class="modal fade" id="modal-lg-tambah">
+        <!-- MODAL TAMBAH LIST PABRIK -->
+        <form action=" <?php echo base_url('Master_Logistik_Pabrik/tambahPabrik') ?>" method="post">
+            <div class="modal fade" id="modal-lg-tambah-pabrik">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h4 class="modal-title">Tambah Lokasi Gudang</h4>
+                            <h4 class="modal-title">Tambah List Pabrik</h4>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
                         <div class="modal-body">
                             <div class="form-group">
-                                <label class="col-form-label">Regional</label>
-                                <select name="regional_lokasi_gudang" class="form-control">
-                                    <option value="Regional 1">Regional 1</option>
-                                    <option value="Regional 2">Regional 2</option>
-                                    <option value="Regional 3">Regional 3</option>
-                                    <option value="Regional 4">Regional 4</option>
-                                    <option value="Regional 5">Regional 5</option>
-                                </select>
+                                <label class="col-form-label">Nama Pabrik</label>
+                                <input type="text" class="form-control" name="nama_pabrik" autocomplete="off"
+                                    placeholder="PT. XXX" required>
                             </div>
                             <div class="form-group">
-                                <label class="col-form-label">Provinsi</label>
-                                <input type="text" class="form-control" name="provinsi_lokasi_gudang" autocomplete="off"
-                                    placeholder="Nama Provinsi">
+                                <label class="col-form-label">Lokasi Pabrik</label>
+                                <input type="text" class="form-control" name="lokasi_pabrik" autocomplete="off"
+                                    placeholder="Nama Kota" required>
                             </div>
                             <div class="form-group">
-                                <label class="col-form-label">Kota</label>
-                                <input type="text" class="form-control" name="kota_lokasi_gudang" autocomplete="off"
-                                    placeholder="Nama Kota">
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Kecamatan</label>
-                                <input type="text" class="form-control" name="kecamatan_lokasi_gudang"
-                                    autocomplete="off" placeholder="Nama Kecamatan">
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Person In Control</label>
-                                <select name="id_user" class="form-control">
-                                    <?php foreach ($getMasterUser as $data2): ?>
-                                        <option value="<?php echo $data2['id_user'] ?>"> <?php echo $data2['nama_user'] ?>
+                                <label class="col-form-label">Jenis Pabrik</label>
+                                <select name="jenis_pabrik" class="form-control">
+                                    <?php foreach ($satuan_options as $option): ?>
+                                        <option value="<?= $option ?>" <?= isset($data['satuan_item']) && $data['satuan_item'] == $option ? 'selected' : '' ?>>
+                                            <?= $option ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-
+                            <div class="form-group">
+                                <label class="col-form-label">Status Pabrik</label>
+                                <select name="status_pabrik" class="form-control">
+                                    <option value="ACTIVE" selected>ACTIVE</option>
+                                    <option value="UNCATIVE">UNCATIVE</option>
+                                </select>
+                            </div>
 
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
 
-                                <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i
-                                        class="fa fa-spinner fa-spin loading" style="display:none"></i> Tambah</button>
+                                <button type="submit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading"
+                                        style="display:none"></i> Tambah</button>
                             </div>
                         </div>
                     </div>
@@ -155,54 +145,46 @@ $total = 1;
             </div>
         </form>
 
-        <!-- MODAL EDIT LOKASI GUDANG LOGISTIK -->
-        <?php foreach ($getMasterLogistikLokasiGudang as $data): ?>
-            <form
-                action="<?php echo site_url('Master_Logistik_Lokasi_Gudang/editLokasiGudang/' . $data['id_lokasi_gudang']); ?>"
-                method="post">
-                <div class="modal fade" id="modal-lg-edit<?= $data['id_lokasi_gudang'] ?>">
+        <!-- MODAL EDIT PABRIK -->
+        <?php foreach ($getMasterLogistikPabrik as $data): ?>
+            <form action="<?php echo site_url('Master_Logistik_Pabrik/editPabrik/' . $data['id_pabrik']); ?>" method="post">
+                <div class="modal fade" id="modal-lg-edit<?= $data['id_pabrik'] ?>">
                     <div class="modal-dialog modal-lg">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h4 class="modal-title">Edit Lokasi Gudang</h4>
+                                <h4 class="modal-title">Edit Pabrik</h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
                             <div class="modal-body">
                                 <div class="form-group">
-                                    <label class="col-form-label">Level</label>
-                                    <select name="regional_lokasi_gudang" class="form-control">
-                                        <option value="Regional 1" <?php if ($data['regional_lokasi_gudang'] == 'Regional 1') { ?>selected <?php } ?>>Regional 1</option>
-                                        <option value="Regional 2" <?php if ($data['regional_lokasi_gudang'] == 'Regional 2') { ?>selected <?php } ?>>Regional 2</option>
-                                        <option value="Regional 3" <?php if ($data['regional_lokasi_gudang'] == 'Regional 3') { ?>selected <?php } ?>>Regional 3</option>
-                                        <option value="Regional 4" <?php if ($data['regional_lokasi_gudang'] == 'Regional 4') { ?>selected <?php } ?>>Regional 4</option>
-                                        <option value="Regional 5" <?php if ($data['regional_lokasi_gudang'] == 'Regional 5') { ?>selected <?php } ?>>Regional 5</option>
+                                    <label class="col-form-label">Nama Pabrik</label>
+                                    <input type="text" class="form-control" name="nama_pabrik" autocomplete="off"
+                                        placeholder="Nama Pabrik" value="<?= $data['nama_pabrik'] ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-form-label">Lokasi Pabrik</label>
+                                    <input type="text" class="form-control" name="lokasi_pabrik" autocomplete="off"
+                                        placeholder="Lokasi Pabrik" value="<?= $data['lokasi_pabrik'] ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-form-label">Jenis Pabrik</label>
+                                    <select name="jenis_pabrik" class="form-control">
+                                        <?php foreach ($satuan_options as $option): ?>
+                                            <option value="<?= $option ?>" <?= $data['jenis_pabrik'] == $option ? 'selected' : '' ?>>
+                                                <?= $option ?>
+                                            </option>
+                                        <?php endforeach; ?>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label class="col-form-label">Provinsi</label>
-                                    <input type="text" class="form-control" name="provinsi_lokasi_gudang" autocomplete="off"
-                                        value="<?= $data['provinsi_lokasi_gudang'] ?>">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Kota</label>
-                                    <input type="text" class="form-control" name="kota_lokasi_gudang" autocomplete="off"
-                                        value="<?= $data['kota_lokasi_gudang'] ?>">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Kecamatan</label>
-                                    <input type="text" class="form-control" name="kecamatan_lokasi_gudang"
-                                        autocomplete="off" value="<?= $data['kecamatan_lokasi_gudang'] ?>">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Person In Control</label>
-                                    <select name="id_user" class="form-control">
-                                        <?php foreach ($getMasterUser as $data2): ?>
-                                            <option value="<?php echo $data2['id_user'] ?>" <?php if ($data2['id_user'] == $data['id_user']) { ?>selected <?php } ?>>
-                                                <?php echo $data2['nama_user'] ?>
-                                            </option>
-                                        <?php endforeach; ?>
+                                    <label class="col-form-label">Status Pabrik</label>
+                                    <select name="status_pabrik" class="form-control">
+                                        <option value="ACTIVE" <?php if ($data['status_pabrik'] == 'ACTIVE') { ?>selected
+                                            <?php } ?>>ACTIVE</option>
+                                        <option value="UNACTIVE" <?php if ($data['status_pabrik'] == 'UNACTIVE') { ?>selected
+                                            <?php } ?>>UNACTIVE</option>
                                     </select>
                                 </div>
 
@@ -221,6 +203,7 @@ $total = 1;
             </form>
         <?php endforeach; ?>
 
+    </section>
 </div>
 <!-- /.content-wrapper -->
 
