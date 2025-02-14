@@ -450,6 +450,7 @@ function formatTanggalIndonesia($date)
                                                                     <th>Dokument Support Approval CBN</th>
                                                                     <th>Status</th>
                                                                     <th>Remark</th>
+                                                                    <th>Nama Dokumen</th>
                                                                     <th>Action</th>
                                                                 </tr>
                                                             </thead>
@@ -493,13 +494,22 @@ function formatTanggalIndonesia($date)
                                                                                 ?>
                                                                             </td>
                                                                             <td>
-                                                                                <a href="#" data-toggle="modal" data-target="#modal-upload-document" class="btn btn-success btn-upload-document" data-id-ds-approval="<?= isset($first['id_document_support_approval']) ? $first['id_document_support_approval'] : '' ?>" data-id-document="<?= $values['id_document_support'] ?>" data-nama-document="<?= $values['nama_document_support'] ?>"><i class="fas fa-plus"></i></a>
+                                                                                <?php
+                                                                                if (!isset($first) || !is_array($first) || !isset($first['document_support_location'])) {
+                                                                                    echo 'belum ada dokumen';
+                                                                                } else {
+                                                                                    echo substr($first['document_support_location'], 10);
+                                                                                }
+                                                                                ?>
+                                                                            </td>
+                                                                            <td>
+                                                                                <a href="#" data-toggle="modal" data-target="#modal-upload-document" class="btn btn-success btn-upload-document <?= (!isset($first['status_document_support']) || $first['status_document_support'] == 2) ? 'disabled' : '' ?>" data-id-ds-approval="<?= isset($first['id_document_support_approval']) ? $first['id_document_support_approval'] : '' ?>" data-id-document="<?= $values['id_document_support'] ?>" data-nama-document="<?= $values['nama_document_support'] ?>"><i class="fas fa-plus"></i></a>
                                                                                 <a href="<?= base_url(isset($first['document_support_location']) ? $first['document_support_location'] : '') ?>" target="_blank" class="btn btn-warning <?= empty($first['document_support_location']) ? 'disabled' : '' ?>">
                                                                                     <i class="fas fa-solid fa-eye"></i>
                                                                                 </a>
                                                                                 <?php if ($this->session->userdata('tim_project') === 'HO') { ?>
-                                                                                    <a href="#" class="btn btn-success <?= empty($first['document_support_location']) ? 'disabled' : '' ?>"><i class="fas fa-check"></i></a>
-                                                                                    <a href="#" class="btn btn-danger <?= empty($first['document_support_location']) ? 'disabled' : '' ?>"><i class="fas fa-times"></i></a>
+                                                                                    <a href="<?= base_url('Fiberstar_Project_Detail/approve_dokumen/' . ($first['id_document_support_approval'] ?? '') . '/' . $data['access_id_project']) ?>" class="btn btn-success <?= empty($first['document_support_location']) ? 'disabled' : '' ?>"><i class="fas fa-check"></i></a>
+                                                                                    <a href="#" data-toggle="modal" data-target="#modal-reject-document" class="btn btn-danger btn-reject-document <?= empty($first['document_support_location']) ? 'disabled' : '' ?>" data-id-ds-approval-reject="<?= isset($first['id_document_support_approval']) ? $first['id_document_support_approval'] : '' ?>" data-nama-document-reject="<?= $values['nama_document_support'] ?>"><i class="fas fa-times"></i></a>
                                                                                 <?php } ?>
                                                                             </td>
                                                                         </tr>
@@ -551,7 +561,7 @@ function formatTanggalIndonesia($date)
                                                     </div>
                                                     <div class="modal-footer">
                                                         <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-                                                        <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i> Tambah</button>
+                                                        <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i>Upload</button>
                                                     </div>
                                                 </form>
                                             </div>
@@ -560,6 +570,49 @@ function formatTanggalIndonesia($date)
                                 </div>
 
                                 <!-- END MODAL UPLOAD DOKUMEN -->
+
+                                <!-- START MODAL REJECT DOKUMEN -->
+
+                                <div class="modal fade" id="modal-reject-document">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h4 class="modal-title">REJECT <span id="name_document_support_reject"></span></h4>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+
+                                                <form method="post" action="<?= base_url('Fiberstar_Project_Detail/reject_dokumen') ?>" enctype="multipart/form-data">
+                                                    <input type="hidden" name="id_document_support_approval_reject" id="id_document_support_approval_reject" value="">
+                                                    <input type="hidden" name="id_user" value="<?= $this->session->userdata('id_user') ?>">
+
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Access ID Project</label>
+                                                        <input readonly type="text" class="form-control" name="access_id_project" autocomplete="off" value="<?= $data['access_id_project'] ?>">
+                                                    </div>
+
+                                                    <div class="form-group">
+                                                        <label class="mb-4">Remark Dokumen</label>
+                                                        <div class="input-group">
+                                                            <div class="custom-file">
+                                                                <label for="remark-comment"></label>
+                                                                <textarea class="form-control" name="remark" id="remark-comment"></textarea>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                                                        <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i>Reject</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- END MODAL REJECT DOKUMEN -->
 
                             </div>
 
@@ -922,13 +975,19 @@ function formatTanggalIndonesia($date)
         $('#file-ds').val('');
         $('.custom-file-label').text('Choose file');
 
-        console.log(id_document_support);
-        console.log(name_document_support);
-
         $('#name_document_support').text(name_document_support);
         $('#id_document_support_input').val(id_document_support);
         $('#name_document_support_input').val(name_document_support);
         $('#id_document_support_approval').val(id_document_support_approval);
+    });
+
+    $('.btn-reject-document').on('click', function() {
+        var id_document_support_approval = $(this).data('id-ds-approval-reject');
+        var name_document_support = $(this).data('nama-document-reject');
+        $('#remark-comment').val('');
+
+        $('#name_document_support_reject').text(name_document_support);
+        $('#id_document_support_approval_reject').val(id_document_support_approval);
     });
 
     $(document).ready(function() {

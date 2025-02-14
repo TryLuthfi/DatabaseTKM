@@ -79,7 +79,7 @@ class Fiberstar_Project_Detail extends CI_Controller
                 // UPDATE 
                 $this->db->where('id_document_support_approval', $this->input->post('id_document_support_approval'));
                 $this->db->update('tb_ds_approval_cbn', $data);
-            }else{
+            } else {
                 // INSERT
                 $this->db->insert('tb_ds_approval_cbn', $data);
             }
@@ -87,6 +87,24 @@ class Fiberstar_Project_Detail extends CI_Controller
             $this->session->set_flashdata('success', 'Dokumen berhasil diupload!');
             redirect('Fiberstar_Project_Detail/detailImplementasi/' . $this->input->post('access_id_project'));
         }
+    }
+
+    public function approve_dokumen($id_document_support_approval = null, $access_id_project = null)
+    {
+        $this->db->where('id_document_support_approval', $id_document_support_approval)
+            ->update('tb_ds_approval_cbn', ['status_document_support' => '2', 'remark' => '']);
+        $this->session->set_flashdata('success', 'Dokumen berhasil di approve!');
+
+        redirect('Fiberstar_Project_Detail/detailImplementasi/' . $access_id_project);
+    }
+
+    public function reject_dokumen()
+    {
+        $this->db->where('id_document_support_approval', $this->input->post('id_document_support_approval_reject'))
+            ->update('tb_ds_approval_cbn', ['status_document_support' => '3', 'remark' => $this->input->post('remark')]);
+        $this->session->set_flashdata('success', 'Dokumen berhasil di reject!');
+
+        redirect('Fiberstar_Project_Detail/detailImplementasi/' . $this->input->post('access_id_project'));
     }
 
     public function addBoq()
