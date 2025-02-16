@@ -83,7 +83,7 @@ class MFiberstar_Project extends CI_Model
 
     public function getTotalHpPlanArea()
     {
-        $sessionLevel = $this->session->userdata('tim_project');
+        $sessionLevel = $this->session->userdata('lokasi_user');
 
         $data = $this->db->query('SELECT SUM(hpplan_project) as total_hp_plan, 
         SUM(CASE WHEN tgl_canvasing IS NOT NULL AND tgl_canvasing != "" THEN hpplan_project ELSE 0 END) as total_hp_canvasing, 
