@@ -18,7 +18,7 @@ class Fiberstar_PO extends CI_Controller
         $data['title'] = 'PT. Fiberstar';
         $data['judul'] = 'PT. Fiberstar';
         $data['list_bowheer'] = $this->db->get('tb_master_bowheer')->result_array();
-        if ($this->session->userdata('tim_project') == "HO") {
+        if ($this->session->userdata('lokasi_user') == "HO") {
             $data['list_po'] = $this->MFiberstar_PO->getPoAll();
         } else {
             $data['list_po'] = $this->MFiberstar_PO->getPoArea();
