@@ -884,9 +884,9 @@ $jumlah_Tiang = 0;
                     <td>${selectedText}</td>
                     <td><input type="number" class="form-control" name="jumlah_stok[${counter}]" autocomplete="off" placeholder="1.000" required></td>
                     <td><input type="text" class="form-control disabled" name="satuan_stok[${counter}]" autocomplete="off" value="${selectedSatuan}" readonly></td>
-                    <td><input type="text" class="form-control" name="merk_item[${counter}]" autocomplete="off" placeholder="' Furukawa ' / ' ZTT ' / ' CCSI '" required></td>
-                    <td><input type="text" class="form-control" name="no_haspel_item[${counter}]" autocomplete="off" placeholder="' D11-11*** '" required></td>
-                    <td><input type="text" class="form-control" name="no_ref_item[${counter}]" autocomplete="off" placeholder="' 1***/EMR/NRO-GDR/02/2025 '" required></td>
+                    <td><input type="text" class="form-control" name="merk_item[${counter}]" autocomplete="off" placeholder="' Furukawa ' / ' ZTT ' / ' CCSI '"></td>
+                    <td><input type="text" class="form-control" name="no_haspel_item[${counter}]" autocomplete="off" placeholder="' D11-11*** '"></td>
+                    <td><input type="text" class="form-control" name="no_ref_item[${counter}]" autocomplete="off" placeholder="' 1***/EMR/NRO-GDR/02/2025 '"></td>
                     <td><button class="btn btn-danger hapus-item"><i class="fa fa-trash"></i></button></td>
                 </tr>
             `);
