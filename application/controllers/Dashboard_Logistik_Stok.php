@@ -81,7 +81,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
         if (!$this->upload->do_upload('file')) {
             $error = $this->upload->display_errors(); //TAMPILKAN ERROR
-            $this->session->set_flashdata('error', 'Format file tidak sesuai! atau File terlalu besar! ');
+            $this->session->set_flashdata('error', $error);
             redirect('Dashboard_Logistik_Stok/index/');
         } else {
             $fileData = $this->upload->data();
