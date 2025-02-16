@@ -650,12 +650,23 @@ $total_tiang = 0;
         <?php } ?>
     })
 
-    <?php foreach ($getSummaryDetailArea as $stokKategory): ?>
-        document.getElementById("box_detail_area_<?= $stokKategory['kategori_item'] ?>").addEventListener("click", function() {
-            document.getElementById("judul_stok_aksesories").scrollIntoView({ behavior: "smooth" });
-            alert("<?= $stokKategory['kategori_item'] ?>");
-        });
-    <?php endforeach ?>
+    document.addEventListener("DOMContentLoaded", function() {
+        <?php foreach ($getSummaryDetailArea as $stokKategory): ?>
+            var boxElement = document.getElementById("box_detail_area_<?= $stokKategory['kategori_item'] ?>");
+            
+            if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
+                boxElement.addEventListener("click", function() {
+                    <?php if($stokKategory['kategori_item'] == 'Aksesories') { ?>
+                        var targetElement = document.getElementById("judul_stok_aksesories");
+                        
+                        if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                            targetElement.scrollIntoView({ behavior: "smooth" });
+                        }
+                    <?php } ?>
+                });
+            }
+        <?php endforeach; ?>
+    });
 </script>
 
 
