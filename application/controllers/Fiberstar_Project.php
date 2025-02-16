@@ -32,7 +32,7 @@ class Fiberstar_Project extends CI_Controller
             $data['stagging_area'] = $this->MFiberstar_Project->getStaggingArea();
             $data['grafik_by_kota'] = $this->MFiberstar_Project->getGrafikByKota();
 
-            if ($this->session->userdata('tim_project') == "HO") {
+            if ($this->session->userdata('lokasi_user') == "HO") {
                 $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasiAll();
                 $data['total_hp_plan'] = $this->MFiberstar_Project->getTotalHpPlanAll();
             } else {
