@@ -71,6 +71,7 @@ class ListUser extends CI_Controller
         $data_array = array(
             'nama_user' => $_POST['nama_user'],
             'username_user' => $_POST['username_user'],
+            'password_user' => $_POST['password_user'],
             'id_level' => $_POST['id_level'],
             'id_jabatan' => $_POST['id_jabatan'],
             'status_user' => $_POST['status_user']
