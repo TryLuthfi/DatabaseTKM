@@ -29,6 +29,23 @@ $jumlah_Tiang = 0;
             </div>
         </div>
 
+        <?php if ($this->session->flashdata('success')): ?>
+            <div class="alert alert-success">
+                <?= $this->session->flashdata('success') ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($this->session->flashdata('error')): ?>
+            <div class="alert alert-danger">
+                <?= $this->session->flashdata('error') ?>
+            </div>
+        <?php endif; ?>
+
+        <?php
+        $this->session->unset_userdata('success');
+        $this->session->unset_userdata('error');
+        ?>
+
         <div class="container-fluid">
 
             <div class="row">
@@ -221,67 +238,67 @@ $jumlah_Tiang = 0;
                                                                 $jumlah_OTB += $data['jumlah_OTB'];
                                                                 $jumlah_Tiang += $data['jumlah_Tiang'];
 
-                                                                ?>
+                                                            ?>
 
                                                                 <tr>
                                                                     <td><?= $total++ ?></td>
                                                                     <td><?= $data['regional_lokasi_gudang'] ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Aksesories'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Aksesories']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Aksesories'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Aksesories']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Closure'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Closure']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Closure'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Closure']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_FAT'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_FAT']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_FAT'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_FAT']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_FDT'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_FDT']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_FDT'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_FDT']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_HDPE'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_HDPE']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_HDPE'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_HDPE']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Kabel'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Kabel']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Kabel'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Kabel']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_OTB'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_OTB']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_OTB'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_OTB']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Tiang'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Tiang']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Tiang'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Tiang']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                 </tr>
 
                                                             <?php endforeach; ?>
@@ -389,67 +406,67 @@ $jumlah_Tiang = 0;
                                                                 $jumlah_OTB += $data['jumlah_OTB'];
                                                                 $jumlah_Tiang += $data['jumlah_Tiang'];
 
-                                                                ?>
+                                                            ?>
 
                                                                 <tr>
                                                                     <td><?= $total++ ?></td>
                                                                     <td><?= $data['kota_lokasi_gudang'] ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Aksesories'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Aksesories']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Aksesories'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Aksesories']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Closure'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Closure']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Closure'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Closure']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_FAT'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_FAT']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_FAT'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_FAT']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_FDT'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_FDT']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_FDT'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_FDT']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_HDPE'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_HDPE']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_HDPE'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_HDPE']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Kabel'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Kabel']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Kabel'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Kabel']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_OTB'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_OTB']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_OTB'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_OTB']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Tiang'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Tiang']), 0, ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Tiang'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Tiang']), 0, ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td>
                                                                         <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['kota_lokasi_gudang']); ?>"
                                                                             id="tombol_hapus"
@@ -522,8 +539,8 @@ $jumlah_Tiang = 0;
                                         <h3 class="card-title">List Stok Logistik </h3>
                                     </div>
                                     <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                        <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
+                                            data-target="#modal-xl-tambah" data-toggle="modal">Tambah &nbsp;<i
                                                 class="fas fa-plus"></i> </a>
                                     </div>
                                 </div>
@@ -547,7 +564,7 @@ $jumlah_Tiang = 0;
                                     <tbody>
                                         <?php
                                         foreach ($getAllStokLogistik as $data):
-                                            ?>
+                                        ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['kota_lokasi_gudang'] ?></td>
@@ -573,9 +590,131 @@ $jumlah_Tiang = 0;
                 </div>
         </section>
 
+        <!-- MODAL TAMBAH DATA -->
+
+        <form method="post" id="form_tambah_stok" action="<?php echo site_url('Dashboard_Logistik_Stok/tambahReportStokLogistik'); ?>" enctype="multipart/form-data">
+            <div class="modal fade" id="modal-xl-tambah" data-backdrop="static">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Tambah Report Stok Logistik</h4>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Nomor Surat Jalan</label>
+                                        <input type="text" class="form-control" name="nomor_surat_jalan" id="nomor_surat_jalan" autocomplete="off"
+                                            value="" placeholder="tec.005/TKM-01/II/2025" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Input Date</label>
+                                        <input type="date" class="form-control" name="tanggal_upload_stok" autocomplete="off"
+                                            value="<?php echo (new \DateTime())->format('Y-m-d'); ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Area Gudang</label>
+                                        <select name="id_lokasi_gudang" id="id_lokasi_gudang" class="form-control">
+                                            <option value="">Pilih Salah Satu</option>
+                                            <?php foreach ($getListGudangLokasiUser as $data2): ?>
+                                                <option value="<?php echo $data2['id_lokasi_gudang'] ?>"><?php echo $data2['kota_lokasi_gudang'] ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Project</label>
+                                        <select name="id_bowheer" id="id_project" class="form-control">
+                                            <option value="">Pilih Salah Satu</option>
+                                            <?php foreach ($getMasterProject as $data2): ?>
+                                                <option value="<?php echo $data2['id_bowheer'] ?>" data-id-bowheer="<?php echo $data2['nama_bowheer'] ?>">
+                                                    <?php echo $data2['nama_bowheer'] ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Sumber Material</label>
+                                        <select name="id_sumber_material" id="id_sumber_material" class="form-control">
+                                            <option value="">Pilih Salah Satu</option>
+                                            <?php foreach ($getMasterSumberMaterial as $data2): ?>
+                                                <option value="<?php echo $data2['id_sumber_material'] ?>">
+                                                    <?php echo $data2['status_sumber_material'] ?> -
+                                                    <?php echo $data2['nama_sumber_material'] ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Jenis Material</label>
+                                        <select class="form-control select2" id="id_kode_item" name="id_kode_item">
+                                            <option value="">Pilih Jenis Material</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <table class="table table-bordered" id="table_item_stok">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 5%;">No</th>
+                                                <th>Nama</th>
+                                                <th>Qty</th>
+                                                <th>Satuan Item</th>
+                                                <th>Merk Item</th>
+                                                <th>No Haspel</th>
+                                                <th>No Ref</th>
+                                                <th>Hapus</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Keterangan</label>
+                                        <textarea type="text" class="form-control" name="keterangan_stok" id="keterangan_stok_item"
+                                            autocomplete="Keterangan"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>Upload Surat Jalan</label>
+                                        <label>Upload Dokument</label>
+                                        <div class="input-group">
+                                            <div class="custom-file">
+                                                <label class="custom-file-label" for="file-sj">Choose file</label>
+                                                <input type="file" name="file" id="file-sj" class="custom-file-input" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer justify-content-between">
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
         <!-- MODAL TAMBAH LOKASI GUDANG LOGISTIK -->
         <form action=" <?php echo base_url('Dashboard_Logistik_Stok/tambahReportStokLogistik') ?>" method="post">
-            <div class="modal fade" id="modal-lg-tambah">
+            <div class="modal fade" id="modal-lg-tambah-old">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -702,21 +841,189 @@ $jumlah_Tiang = 0;
 </aside>
 
 <script type="text/javascript">
-    $(function () {
+    // START LOGIC TAMBAH STOK ITEM
+
+    // AJAX SELECT 2 JENIS MATERIAL
+
+    $(document).ready(function() {
+        $('#id_kode_item').select2({
+            placeholder: "Pilih Jenis Material",
+            allowClear: true
+        });
+
+        $('#id_kode_item').on('change', function() {
+            if ($(this).val() === "") {
+                return;
+            }
+            var selectedValue = $('#id_kode_item').val();
+            var selectedText = $('#id_kode_item option:selected').text();
+            var selectedSatuan = $('#id_kode_item option:selected').data('satuan-item');
+
+            if (selectedValue === "") {
+                alert("Pilih item terlebih dahulu!");
+                return;
+            }
+
+            $('#table_item_stok tbody').append(`
+                <tr>
+                    <td>${counter}</td>
+                    <td hidden><input type="hidden" name="id_kode_item[${counter}]" value="${selectedValue}">${selectedValue}</td>
+                    <td>${selectedText}</td>
+                    <td><input type="number" class="form-control" name="jumlah_stok[${counter}]" autocomplete="off" placeholder="1.000" required></td>
+                    <td><input type="text" class="form-control disabled" name="satuan_stok[${counter}]" autocomplete="off" value="${selectedSatuan}" readonly></td>
+                    <td><input type="text" class="form-control" name="merk_item[${counter}]" autocomplete="off" placeholder="' Furukawa ' / ' ZTT ' / ' CCSI '" required></td>
+                    <td><input type="text" class="form-control" name="no_haspel_item[${counter}]" autocomplete="off" placeholder="' D11-11*** '" required></td>
+                    <td><input type="text" class="form-control" name="no_ref_item[${counter}]" autocomplete="off" placeholder="' 1***/EMR/NRO-GDR/02/2025 '" required></td>
+                    <td><button class="btn btn-danger hapus-item"><i class="fa fa-trash"></i></button></td>
+                </tr>
+            `);
+            counter++;
+
+            $('#id_kode_item').val("").trigger('change');
+        });
+
+        $('#id_project').change(function() {
+            $('#table_item_stok tbody').empty();
+            counter = 1;
+            let idBowheer = $(this).find(':selected').data('id-bowheer');
+
+            if (idBowheer === "") {
+                $('#id_kode_item').empty().append('<option value="">Pilih Jenis Material</option>').trigger('change');
+                return;
+            }
+
+            $.ajax({
+                url: "<?= base_url() . 'Dashboard_Logistik_Stok/getProjectByBowheer' ?>",
+                type: "GET",
+                data: {
+                    id_bowheer: idBowheer.toString()
+                },
+                dataType: "json",
+                success: function(response) {
+
+                    $('#id_kode_item').empty().append('<option value="">Pilih Jenis Material</option>');
+
+                    $.each(response, function(index, project) {
+                        $('#id_kode_item').append(
+                            `<option value="${project.id_kode_item}" data-satuan-item="${project.satuan_item}">${project.nama_item}</option>`
+                        );
+                    });
+
+                    $('#id_kode_item').trigger('change');
+                },
+                error: function(xhr, status, error) {
+                    console.error(error);
+                }
+            });
+        });
+
+        var counter = 1;
+
+        $(document).on('click', '.hapus-item', function() {
+            $(this).closest('tr').remove();
+
+            $('#table_item_stok tbody tr').each(function(index) {
+                $(this).find('td:first').text(index + 1);
+            });
+
+            counter--;
+        });
+
+        $('#modal-xl-tambah').on('hidden.bs.modal', function() {
+            $('#table_item_stok tbody').empty();
+            $('#nomor_surat_jalan').val('');
+            $('#id_project').val('').trigger('change');
+            $('#id_lokasi_gudang').val('').trigger('change');
+            $('#id_sumber_material').val('').trigger('change');
+            counter = 1;
+        });
+
+        $('.btn-tambah-data-item').on('click', function() {
+            $('#file-sj').val('');
+            $('.custom-file-label').text('Choose file');
+            $('#keterangan_stok_item').val('');
+        })
+
+        $('#file-sj').on('change', function(e) {
+            var fileName = e.target.files.length > 0 ? e.target.files[0].name : "Choose file";
+            $(this).siblings('.custom-file-label').text(fileName);
+        });
+
+        $("#file-sj").change(function() {
+            let file = this.files[0];
+            let allowedExtensions = /(\.pdf|\.docx|\.xlsx)$/i;
+            let maxSize = 5120 * 1024;
+
+            if (file) {
+                if (!allowedExtensions.test(file.name)) {
+                    alert("File harus berupa PDF, DOCX, atau XLSX!");
+                    $(this).val("");
+                    $('.custom-file-label').text('Choose file');
+                    return;
+                }
+
+                if (file.size > maxSize) {
+                    alert("Ukuran file tidak boleh lebih dari 5MB!");
+                    $(this).val("");
+                    $('.custom-file-label').text('Choose file');
+                    return;
+                }
+            }
+        });
+
+        $("#form_tambah_stok").submit(function(event) {
+            let isValid = true;
+            let errorMessage = [];
+
+            // Cek input tanggal harus valid
+            let tanggalUpload = $("input[name='tanggal_upload_stok']").val();
+            if (!tanggalUpload) {
+                errorMessage.push("Tanggal upload stok harus diisi.");
+            }
+
+            // Cek setiap input yang harus memiliki nilai
+            let requiredFields = {
+                "#id_lokasi_gudang": "Lokasi gudang",
+                "#id_project": "Proyek",
+                "#id_sumber_material": "Sumber material"
+            };
+
+            $.each(requiredFields, function(selector, fieldName) {
+                if ($(selector).val() === "") {
+                    errorMessage.push(fieldName + " harus dipilih.");
+                }
+            });
+
+            // Cek apakah tabel memiliki minimal 1 row
+            if ($("#table_item_stok tbody tr").length === 0) {
+                errorMessage.push("Minimal harus ada satu item stok dalam tabel.");
+            }
+
+            // Jika ada error, tampilkan alert sekaligus
+            if (errorMessage.length > 0) {
+                alert(errorMessage.join("\n"));
+                event.preventDefault();
+            }
+        });
+    });
+
+    // END LOGIC OF MODAL TAMBAH STOK 
+
+    $(function() {
 
         // notifikasi allert sukses atau tidak
         <?php if ($status == 'sukses_tambah') { ?>
             swal("Success!", "Berhasil Ditambah!", "success");
         <?php } else if ($status == 'sukses_hapus') { ?>
-                swal("Success!", "Berhasil Dihapus!", "success");
+            swal("Success!", "Berhasil Dihapus!", "success");
         <?php } else if ($status == 'sukses_edit') { ?>
-                    swal("Success!", "Berhasil Edit Data!", "success");
+            swal("Success!", "Berhasil Edit Data!", "success");
         <?php } else if ($status == 'gagal_tambah') { ?>
-                        swal("Gagal!", "Gagal Menambah Data!", "warning");
+            swal("Gagal!", "Gagal Menambah Data!", "warning");
         <?php } else if ($status == 'gagal_edit') { ?>
-                            swal("Gagal!", "Gagal Mengedit Data!", "warning");
+            swal("Gagal!", "Gagal Mengedit Data!", "warning");
         <?php } else if ($status == 'gagal_hapus') { ?>
-                                swal("Gagal!", "Gagal Menghapus Data!", "warning");
+            swal("Gagal!", "Gagal Menghapus Data!", "warning");
         <?php } else { ?>
         <?php } ?>
 
@@ -729,7 +1036,7 @@ $jumlah_Tiang = 0;
     })
 
     // HAPUS FILTER DATA SELECT2
-    document.getElementById('reset_filter').addEventListener('click', function () {
+    document.getElementById('reset_filter').addEventListener('click', function() {
         const selectLokasi = document.getElementById('filter_lokasi');
         const selectBowheer = document.getElementById('filter_bowheer');
         const selectItem = document.getElementById('filter_item');
@@ -765,8 +1072,8 @@ $jumlah_Tiang = 0;
     });
 
     // FUNCTION UPDATE DATA TABLE MENGGUNAKAN FILTER DATA
-    $(document).ready(function () {
-        $('#btnFilterDataProject').on('click', function () {
+    $(document).ready(function() {
+        $('#btnFilterDataProject').on('click', function() {
             var table = $('#table_data').DataTable();
             // Ambil nilai dari multiple select filter kategori
             var selectLokasi = $('#filter_lokasi').val() || []; // Array of selected values
@@ -791,13 +1098,12 @@ $jumlah_Tiang = 0;
         });
     });
 
-    $(document).ready(function () {
+    $(document).ready(function() {
         $.fn.dataTable.ext.errMode = 'none';
         $('#table_data').DataTable({
             responsive: false // Matikan fitur Responsive
         });
     });
-
 </script>
 
 
