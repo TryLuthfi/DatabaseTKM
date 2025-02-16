@@ -27,6 +27,7 @@ class Logistik_Stok_Detail extends CI_Controller
         $data['lokasi'] = $decoded_url_area;
         $data['getStokDetailArea'] = $this->MLogistik_Stok_Detail->getStokDetailArea();
         $data['getSummaryDetailArea'] = $this->MLogistik_Stok_Detail->getSummaryDetailArea();
+        $data['getHistoriInOUtLogistik'] = $this->MLogistik_Stok_Detail->getHistoriInOUtLogistik();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
