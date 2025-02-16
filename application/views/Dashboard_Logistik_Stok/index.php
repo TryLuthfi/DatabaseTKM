@@ -564,6 +564,7 @@ $jumlah_Tiang = 0;
                                     <thead>
                                         <tr>
                                             <th>No</th>
+                                            <th>Regional</th>
                                             <th>Lokasi</th>
                                             <th>Project</th>
                                             <th>Kategori</th>
@@ -571,6 +572,7 @@ $jumlah_Tiang = 0;
                                             <th>Status</th>
                                             <th>QTY</th>
                                             <th>PIC</th>
+                                            <th>Tanggal</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
@@ -580,6 +582,7 @@ $jumlah_Tiang = 0;
                                         ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
+                                                <td><?= $data['regional_lokasi_gudang'] ?></td>
                                                 <td><?= $data['kota_lokasi_gudang'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                                 <td><?= $data['kategori_item'] ?></td>
@@ -587,6 +590,7 @@ $jumlah_Tiang = 0;
                                                 <td><?= $data['nama_sumber_material'] ?></td>
                                                 <td><?= $data['jumlah_stok'] ?></td>
                                                 <td><?= $data['nama_user'] ?></td>
+                                                <td><?= $data['tanggal_upload_stok'] ?></td>
                                                 <td>
                                                     <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . $data['id_logistik_stok']); ?>"
                                                         id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
