@@ -10,6 +10,15 @@ class MLogistik_Stok_Detail extends CI_Model
         $segments = explode("/", $url_path); // Pecah berdasarkan "/"
         $last_segment = end($segments); // Ambil bagian terakhir dari URL
 
+        $filter_area = "lg.kota_lokasi_gudang";
+        $decoded_url_area = urldecode($last_segment);
+
+        if (stripos($decoded_url_area, "regional") !== false) {
+            $filter_area = "lg.regional_lokasi_gudang";
+        } else {
+            $filter_area = "lg.kota_lokasi_gudang";
+        }
+
         $data = $this->db->query('SELECT 
     ROW_NUMBER() OVER () AS nomor,
     ki.kategori_item, 
@@ -30,7 +39,7 @@ LEFT JOIN tb_logistik_stok ls
     AND ki.id_kode_item = ls.id_kode_item
 LEFT JOIN tb_master_logistik_sumber_material sm 
     ON ls.id_sumber_material = sm.id_sumber_material
-    WHERE lg.kota_lokasi_gudang = "' . $last_segment . '"
+    WHERE '.$filter_area.' = "' . $decoded_url_area . '"
 GROUP BY lg.kota_lokasi_gudang, ki.kategori_item, ki.project_item
 ORDER BY lg.kota_lokasi_gudang, ki.kategori_item;')
             ->result_array();
@@ -45,9 +54,18 @@ ORDER BY lg.kota_lokasi_gudang, ki.kategori_item;')
         $segments = explode("/", $url_path); // Pecah berdasarkan "/"
         $last_segment = end($segments); // Ambil bagian terakhir dari URL
 
+        $filter_area = "tmllg.kota_lokasi_gudang";
+        $decoded_url_area = urldecode($last_segment);
+
+        if (stripos($decoded_url_area, "regional") !== false) {
+            $filter_area = "tmllg.regional_lokasi_gudang";
+        } else {
+            $filter_area = "tmllg.kota_lokasi_gudang";
+        }
+
         $data = $this->db->query('SELECT 
     tmlki.*, 
-    tmllg.kota_lokasi_gudang, 
+    '.$filter_area.', 
     COALESCE(SUM(
         CASE 
             WHEN tmlsm.status_sumber_material = "IN" THEN tls.jumlah_stok
@@ -59,7 +77,7 @@ FROM tb_master_logistik_kode_item tmlki
 LEFT JOIN tb_logistik_stok tls ON tmlki.id_kode_item = tls.id_kode_item
 LEFT JOIN tb_master_logistik_sumber_material tmlsm ON tls.id_sumber_material = tmlsm.id_sumber_material
 LEFT JOIN tb_master_logistik_lokasi_gudang tmllg ON tls.id_lokasi_gudang = tmllg.id_lokasi_gudang
-WHERE (tmllg.kota_lokasi_gudang = "' . $last_segment . '" OR tmllg.kota_lokasi_gudang IS NULL)
+WHERE ('.$filter_area.' = "' . $decoded_url_area . '" OR '.$filter_area.' IS NULL)
 GROUP BY tmlki.kategori_item
 ORDER BY tmlki.kategori_item;')
             ->result_array();

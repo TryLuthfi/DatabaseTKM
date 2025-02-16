@@ -204,6 +204,7 @@ $jumlah_Tiang = 0;
                                                                 <th>Kabel</th>
                                                                 <th>OTB</th>
                                                                 <th>Tiang</th>
+                                                                <th>Detail</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -282,6 +283,12 @@ $jumlah_Tiang = 0;
                                                                         echo number_format(floatval($data['jumlah_Tiang']), 0, ".");
                                                                     }
                                                                     ?></td>
+                                                                    <td>
+                                                                        <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['regional_lokasi_gudang']); ?>"
+                                                                            id="tombol_hapus"
+                                                                            class="btn btn-primary tombol_hapus"><i
+                                                                                class=" fas fa-eye"></i></a>
+                                                                    </td>
                                                                 </tr>
 
                                                             <?php endforeach; ?>
@@ -314,6 +321,7 @@ $jumlah_Tiang = 0;
                                                                 <th colspan="1">
                                                                     <?= number_format(floatval($jumlah_Tiang), 0, ".") ?>
                                                                 </th>
+                                                                <th colspan="1"></th>
                                                             </tr>
                                                         </tfoot>
                                                     </table>
