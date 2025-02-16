@@ -16,6 +16,8 @@ $jumlah_Tiang = 0;
 
 ?>
 
+
+
 <div class="content-wrapper">
 
     <section class="content">
@@ -191,7 +193,8 @@ $jumlah_Tiang = 0;
                                             <div class="card">
                                                 <!-- /.card-header -->
                                                 <div class="card-body table-responsive text-nowrap ">
-                                                    <table id="table_detail" class="table table-bordered table-hover">
+                                                    <table id="table_detail_regional"
+                                                        class="table table-bordered table-hover">
                                                         <thead class="bg-info">
                                                             <tr>
                                                                 <th>No</th>
@@ -356,7 +359,8 @@ $jumlah_Tiang = 0;
                                             <div class="card">
                                                 <!-- /.card-header -->
                                                 <div class="card-body table-responsive text-nowrap ">
-                                                    <table id="table_detail" class="table table-bordered table-hover">
+                                                    <table id="table_detail_kota"
+                                                        class="table table-bordered table-hover">
                                                         <thead class="bg-info">
                                                             <tr>
                                                                 <th>No</th>
@@ -496,6 +500,7 @@ $jumlah_Tiang = 0;
                                                                 <th colspan="1">
                                                                     <?= number_format(floatval($jumlah_Tiang), 0, ".") ?>
                                                                 </th>
+                                                                <th colspan="1"></th>
                                                             </tr>
                                                         </tfoot>
                                                     </table>
@@ -735,6 +740,17 @@ $jumlah_Tiang = 0;
             theme: 'bootstrap4'
         })
     })
+
+    $(document).ready(function () {
+        $('#table_detail_kota').DataTable({
+            "paging": true,          // Tetap gunakan pagination
+            "pageLength": 10,        // Menampilkan 10 data per halaman
+            "info": false,           // Menghilangkan "Showing 1 to X of X entries"
+            "searching": true,      // Menghilangkan search bar
+            "lengthChange": false    // Menghilangkan dropdown "Show entries"
+        });
+    });
+
 
     // HAPUS FILTER DATA SELECT2
     document.getElementById('reset_filter').addEventListener('click', function () {

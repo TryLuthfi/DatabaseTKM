@@ -17,7 +17,7 @@ $total_tiang = 0;
 
 <div class="content-wrapper">
 
-<div class="content-header">
+    <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12">
@@ -31,7 +31,7 @@ $total_tiang = 0;
         <!-- Info boxes -->
         <div class="row">
             <?php foreach ($getSummaryDetailArea as $stokKategory): ?>
-                <div class="col-lg-3 col-6">
+                <div class="col-lg-3 col-6" id="<?php echo 'box_detail_area_'.$stokKategory['kategori_item']?>">
                     <div class="small-box bg-info">
                         <div class="inner">
 
@@ -48,14 +48,13 @@ $total_tiang = 0;
                     </div>
                 </div>
             <?php endforeach ?>
-
         </div>
     </div>
 
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-12">
+                <div class="col-sm-12" id="judul_stok_aksesories">
                     <h1 class="m-0 text-dark" style="text-align: center;">STOK AKSESORIES <?= "" . $lokasi ?></h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -123,7 +122,7 @@ $total_tiang = 0;
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-12">
+                <div class="col-sm-12" id="judul_stok_closure">
                     <h1 class="m-0 text-dark" style="text-align: center;">STOK CLOSURE <?= "" . $lokasi ?></h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -191,7 +190,7 @@ $total_tiang = 0;
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-12">
+                <div class="col-sm-12" id="judul_stok_fat">
                     <h1 class="m-0 text-dark" style="text-align: center;">STOK FAT <?= "" . $lokasi ?></h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -259,7 +258,7 @@ $total_tiang = 0;
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-12">
+                <div class="col-sm-12" id="judul_stok_fdt">
                     <h1 class="m-0 text-dark" style="text-align: center;">STOK FDT <?= "" . $lokasi ?></h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -327,7 +326,7 @@ $total_tiang = 0;
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-12">
+                <div class="col-sm-12" id="judul_stok_hdpe">
                     <h1 class="m-0 text-dark" style="text-align: center;">STOK HDPE <?= "" . $lokasi ?></h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -395,7 +394,7 @@ $total_tiang = 0;
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-12">
+                <div class="col-sm-12" id="judul_stok_kabel">
                     <h1 class="m-0 text-dark" style="text-align: center;">STOK KABEL <?= "" . $lokasi ?></h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -463,7 +462,7 @@ $total_tiang = 0;
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-12">
+                <div class="col-sm-12" id="judul_stok_otb">
                     <h1 class="m-0 text-dark" style="text-align: center;">STOK OTB <?= "" . $lokasi ?></h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -531,7 +530,7 @@ $total_tiang = 0;
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-12">
+                <div class="col-sm-12" id="judul_stok_tiang">
                     <h1 class="m-0 text-dark" style="text-align: center;">STOK TIANG <?= "" . $lokasi ?></h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -650,6 +649,13 @@ $total_tiang = 0;
         <?php } else { ?>
         <?php } ?>
     })
+
+    <?php foreach ($getSummaryDetailArea as $stokKategory): ?>
+        document.getElementById("box_detail_area_<?= $stokKategory['kategori_item'] ?>").addEventListener("click", function() {
+            document.getElementById("judul_stok_aksesories").scrollIntoView({ behavior: "smooth" });
+            alert("<?= $stokKategory['kategori_item'] ?>");
+        });
+    <?php endforeach ?>
 </script>
 
 
