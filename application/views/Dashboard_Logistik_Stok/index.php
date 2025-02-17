@@ -185,6 +185,7 @@ $jumlah_Tiang = 0;
                                                 <div class="icon">
                                                     <i class="ion ion-bag"></i>
                                                 </div>
+                                                <a href="#" class="small-box-footer" id="<?php echo 'box_detai_kategori_item_' . $stokKategory['kategori_item'] ?>">Lihat Detail <i class="fas fa-arrow-circle-right"></i></a>
                                             </div>
                                         </div>
                                     <?php endforeach ?>
@@ -1213,6 +1214,25 @@ $jumlah_Tiang = 0;
         });
 
         // END LOGIC OF MODAL DETAIL SURAT JALAN
+
+        // GET DETAIL SUMMARY KATEGORI ITEM
+
+        document.addEventListener("DOMContentLoaded", function () {
+        <?php foreach ($getAllStokByKategory as $stokKategory): ?>
+            var boxElement = document.getElementById("box_detai_kategori_item_<?= $stokKategory['kategori_item'] ?>");
+
+            if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
+                boxElement.addEventListener("click", function () {
+                    console.log("<?= $stokKategory['kategori_item'] ?>");
+
+                    window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_bowheer/".$stokKategory['kategori_item']) ?>"
+                    
+                });
+            }
+        <?php endforeach; ?>
+    });
+
+        // END GET DETAIL SUMMARY KATEGORI ITEM
 
         $(function () {
 
