@@ -44,7 +44,7 @@ class Fiberstar_Project_Detail extends CI_Controller
         $config['max_size']      = 5120;
         $file_ext = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
         $original_name = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
-        $new_filename = str_replace(" ", "_", $this->input->post('name_document_support')) . "_" . date('Y-m-d') . "." . $file_ext;
+        $new_filename = str_replace(" ", "_", $this->input->post('name_document_support')) . "_"  . $this->input->post('primary_access_id_project') . "_" . date('Y-m-d') . "." . $file_ext;
         $config['file_name'] = $new_filename;
         $file_path = $config['upload_path'] . $new_filename;
 
