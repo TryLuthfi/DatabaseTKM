@@ -582,6 +582,7 @@ $jumlah_Tiang = 0;
                                     </thead>
                                     <tbody>
                                         <?php
+                                        $total = 1;
                                         foreach ($getAllStokLogistik as $data):
                                             ?>
                                             <tr>
@@ -601,7 +602,7 @@ $jumlah_Tiang = 0;
                                                         id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                             class=" fas fa-trash"></i></a>
 
-                                                    <a href="#" data-suratjalan="<?= $data['no_surat_jalan']; ?>"
+                                                    <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>"
                                                         data-target="#form_detail_surat_jalan" data-toggle="modal"
                                                         class="btn btn-primary tombol_detail"><i
                                                             class=" fas fa-eye"></i></a>
@@ -827,8 +828,8 @@ $jumlah_Tiang = 0;
                                                         <div class="flex-grow-1">
                                                             <h5 class="font-size-15 mb-1 text-truncate"
                                                                 id="detail_nama_file"></h5>
-                                                            <a href="#"
-                                                                class="font-size-14 text-muted text-truncate" id="view_detail_surat_jalan"><u>View
+                                                            <a href=""
+                                                                class="font-size-14 text-muted text-truncate" id="view_detail_surat_jalan" target="_blank"><u>View
                                                                     Folder</u></a>
                                                         </div>
                                                     </div>
@@ -1170,6 +1171,8 @@ $jumlah_Tiang = 0;
                             tbody.empty();
 
                             var nomor = 1;
+                            let baseUrl = "<?= base_url() ?>"
+                            let lokasiUrl = response.getDetailAreaBySJ[0].evidence_stok;
 
                             $.each(response.getDetailAreaBySJ, function (index, getDetailAreaBySJ) {
                                 var row = "<tr>" +
@@ -1195,6 +1198,7 @@ $jumlah_Tiang = 0;
 
                             document.getElementById("detail_nama_file").innerText = fileName;
                             document.getElementById("view_detail_surat_jalan").style.display = "block";
+                            document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl;
                             console.log("Response:", response);
                         },
                         error: function (xhr, status, error) {
