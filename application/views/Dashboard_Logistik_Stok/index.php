@@ -218,7 +218,7 @@ $jumlah_Tiang = 0;
                                                         <thead class="bg-info">
                                                             <tr>
                                                                 <th>No</th>
-                                                                <th>Lokasi Gudang</th>
+                                                                <th>Regional Gudang</th>
                                                                 <th>Aksesoris</th>
                                                                 <th>Closure</th>
                                                                 <th>FAT</th>
@@ -384,6 +384,7 @@ $jumlah_Tiang = 0;
                                                         <thead class="bg-info">
                                                             <tr>
                                                                 <th>No</th>
+                                                                <th>Regional</th>
                                                                 <th>Lokasi Gudang</th>
                                                                 <th>Aksesoris</th>
                                                                 <th>Closure</th>
@@ -425,6 +426,7 @@ $jumlah_Tiang = 0;
 
                                                                 <tr>
                                                                     <td><?= $total++ ?></td>
+                                                                    <td><?= $data['regional_lokasi_gudang'] ?></td>
                                                                     <td><?= $data['kota_lokasi_gudang'] ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_Aksesories'] == "0") {
@@ -495,7 +497,7 @@ $jumlah_Tiang = 0;
                                                         </tbody>
                                                         <tfoot>
                                                             <tr>
-                                                                <th colspan="2">Total</th>
+                                                                <th colspan="3">Total</th>
                                                                 <th colspan="1">
                                                                     <?= number_format(floatval($jumlah_Aksesories), 0, ".") ?>
                                                                 </th>
@@ -769,7 +771,7 @@ $jumlah_Tiang = 0;
                                 <div class="form-group">
                                     <label class="col-form-label">Input Date</label>
                                     <input type="date" class="form-control" name="tanggal_upload_stok"
-                                        autocomplete="off" value="<?php echo (new \DateTime())->format('Y-m-d'); ?>">
+                                        autocomplete="off" value="<?php echo (new \DateTime())->format('Y-m-d'); ?>" disabled>
                                 </div>
                             </div>
                             <div class="col-md-6">

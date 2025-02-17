@@ -41,6 +41,7 @@ class MDashboard_Logistik_Stok extends CI_Model
     public function getAllStokByKategoryFilterCity()
     {
         $data = $this->db->query('SELECT 
+    lg.regional_lokasi_gudang,
     lg.kota_lokasi_gudang,
     COALESCE(SUM(CASE 
                     WHEN ki.kategori_item = "Aksesories" 
@@ -109,7 +110,7 @@ LEFT JOIN
 GROUP BY 
     lg.kota_lokasi_gudang
 ORDER BY 
-    lg.kota_lokasi_gudang;')
+    lg.regional_lokasi_gudang;')
             ->result_array();
         return $data;
     }
