@@ -388,7 +388,7 @@ function formatTanggalIndonesia($date)
                                     </tfoot>
                                 </table>
                                 <div class="modal-footer">
-                                    <?php if ($this->session->userdata('tim_project') == "HO") { ?>
+                                    <?php if ($this->session->userdata('lokasi_user') == "HO") { ?>
                                         <?php if ($row_status_implementasi == "OK") { ?>
                                             <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasiBack/' . $row_primary_access_id_project); ?>" class="btn btn-success float-right text-bold">Tambah Implementasi</a>
                                         <?php } else { ?>
@@ -507,7 +507,7 @@ function formatTanggalIndonesia($date)
                                                                                 <a href="<?= base_url(isset($first['document_support_location']) ? $first['document_support_location'] : '') ?>" target="_blank" class="btn btn-warning <?= empty($first['document_support_location']) ? 'disabled' : '' ?>">
                                                                                     <i class="fas fa-solid fa-eye"></i>
                                                                                 </a>
-                                                                                <?php if ($this->session->userdata('tim_project') === 'HO') { ?>
+                                                                                <?php if ($this->session->userdata('lokasi_user') === 'HO') { ?>
                                                                                     <a href="<?= base_url('Fiberstar_Project_Detail/approve_dokumen/' . ($first['id_document_support_approval'] ?? '') . '/' . $data['access_id_project']) ?>" class="btn btn-success <?= empty($first['document_support_location']) ? 'disabled' : '' ?>"><i class="fas fa-check"></i></a>
                                                                                     <a href="#" data-toggle="modal" data-target="#modal-reject-document" class="btn btn-danger btn-reject-document <?= empty($first['document_support_location']) ? 'disabled' : '' ?>" data-id-ds-approval-reject="<?= isset($first['id_document_support_approval']) ? $first['id_document_support_approval'] : '' ?>" data-nama-document-reject="<?= $values['nama_document_support'] ?>"><i class="fas fa-times"></i></a>
                                                                                 <?php } ?>

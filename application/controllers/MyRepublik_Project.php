@@ -32,7 +32,7 @@ class MyRepublik_Project extends CI_Controller
             $data['grafik_by_kota'] = $this->MMyRepublik_Project->getGrafikByKota();
             $data['stagging_regional'] = $this->MMyRepublik_Project->getStaggingRegional();
 
-            if ($this->session->userdata('tim_project') == "HO") {
+            if ($this->session->userdata('lokasi_user') == "HO") {
                 $data['progress_implementasi'] = $this->MMyRepublik_Project->getProgressImplementasiAll();
                 $data['total_hp_plan'] = $this->MMyRepublik_Project->getTotalHpPlanAll();
             } else {

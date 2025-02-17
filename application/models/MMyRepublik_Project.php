@@ -25,7 +25,7 @@ class MMyRepublik_Project extends CI_Model
 
     public function getTotalHpPlanArea()
     {
-        $sessionLevel = $this->session->userdata('tim_project');
+        $sessionLevel = $this->session->userdata('lokasi_user');
 
         $data = $this->db->query('SELECT SUM(hp_plan) as total_hp_plan,
 	    SUM(panjang_plan) as total_panjang_plan,
@@ -150,7 +150,7 @@ class MMyRepublik_Project extends CI_Model
 
     public function getProgressImplementasiArea(): mixed
     {
-        $sessionLevel = $this->session->userdata('tim_project');
+        $sessionLevel = $this->session->userdata('lokasi_user');
         $data = $this->db->query('SELECT * FROM tb_project_progress_myrep')
             ->result_array();
         return $data;

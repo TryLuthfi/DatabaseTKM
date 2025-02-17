@@ -368,7 +368,7 @@ function formatTanggalIndonesia($date)
                   </tfoot>
                 </table>
                 <div class="modal-footer">
-                  <?php if ($this->session->userdata('tim_project') == "HO") { ?>
+                  <?php if ($this->session->userdata('lokasi_user') == "HO") { ?>
                     <?php if($row_status_implementasi == "OK") {?>
                       <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasiBack/'.$row_primary_access_id_project); ?>" class="btn btn-success float-right text-bold" >Tambah Implementasi</a>
                     <?php } else { ?>

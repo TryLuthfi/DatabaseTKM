@@ -186,7 +186,7 @@ LIMIT 5;')
 
     public function getProgressImplementasiArea(): mixed
     {
-        $sessionLevel = $this->session->userdata('tim_project');
+        $sessionLevel = $this->session->userdata('username_user');
         $data = $this->db->query('SELECT tb_project_progress_fiberstar.*, 
                                     COALESCE(SUM(tb_project_implementasi_fiberstar.plan_tiang), 0) as plan_tiang, 
                                     COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_tiang), 0) as achiev_tiang, 

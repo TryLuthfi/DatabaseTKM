@@ -18,7 +18,7 @@ class MFiberstar_PO extends CI_Model
 
     public function getPoArea()
     {
-        $sessionLevel = $this->session->userdata('tim_project');
+        $sessionLevel = $this->session->userdata('lokasi_user');
 
         $data = $this->db->query('SELECT * FROM tb_project_progress_fiberstar WHERE number_po IS NOT NULL AND number_po != "" AND pic_project = "'.$sessionLevel.'";')->result_array();
         return $data;

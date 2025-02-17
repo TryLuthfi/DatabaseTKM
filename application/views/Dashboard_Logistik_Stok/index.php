@@ -1194,6 +1194,7 @@ $jumlah_Tiang = 0;
                             var fileName = filePath.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
 
                             document.getElementById("detail_nama_file").innerText = fileName;
+                            document.getElementById("view_detail_surat_jalan").style.display = "block";
                             console.log("Response:", response);
                         },
                         error: function (xhr, status, error) {
