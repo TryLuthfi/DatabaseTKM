@@ -236,7 +236,7 @@
                                       <option value="<?php echo $jabatan['id_jabatan']?>" > <?php echo $jabatan['nama_jabatan']?></option>
                                     <?php endforeach; ?>
                                     </select>
-                                </div
+                                    </div>
                                 <div class="form-group">
                                     <label class="col-form-label">Status</label>
                                     <select name="status_user" class="form-control" >
@@ -294,7 +294,7 @@
                                         </select>
                                     </div>
                                     <div class="form-group">
-                                        <label class="col-form-label">Person In Control</label>
+                                        <label class="col-form-label">Jabatan</label>
                                         <select name="id_jabatan" class="form-control" >
                                           <?php foreach ($rincian_jabatan as $data3) : ?>
                                             <option value="<?php echo $data3['id_jabatan']?>" <?php if ($data['id_jabatan'] == $data3['id_jabatan']) { ?>selected <?php } ?> > <?php echo $data3['nama_jabatan']?></option>
@@ -462,68 +462,7 @@
                 </div>
             </form>
 
-            <!-- modal untuk edit data -->
-            <?php $tgl = date('Y-m-d'); ?>
-            <?php foreach ($rincian_user as $data) :
-            ?>
-                <form action="<?php echo site_url('ListUser/edit/'.$data['id_user']); ?>" method="post">
-                    <div class="modal fade" id="modal-lg-edit<?= $data['id_user'] ?>">
-                        <div class="modal-dialog modal-lg">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h4 class="modal-title">Edit Rincian</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="form-group">
-                                        <label class="col-form-label">Nama User</label>
-                                        <input type="text" class="form-control" name="nama_user" autocomplete="off" value="<?= $data['nama_user'] ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Username</label>
-                                        <input type="text" class="form-control" name="username_user" autocomplete="off" value="<?= $data['username_user'] ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Password</label>
-                                        <input type="password" class="form-control" name="password_user" autocomplete="off" value="<?= $data['password_user'] ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Level</label>
-                                        <select name="id_level" class="form-control" >
-                                          <option value="1" <?php if ($data['id_level'] == '1') { ?>selected <?php } ?> >Super Admin</option>
-                                          <option value="2" <?php if ($data['id_level'] == '2') { ?>selected <?php } ?> >Admin</option>
-                                          <option value="3" <?php if ($data['id_level'] == '3') { ?>selected <?php } ?> >User</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Level</label>
-                                        <select name="jabatan_user" class="form-control" >
-                                          <option value="Project Manager" <?php if ($data['jabatan_user'] == 'Project Manager') { ?>selected <?php } ?> >Project Manager</option>
-                                          <option value="Site Manager" <?php if ($data['jabatan_user'] == 'Site Manager') { ?>selected <?php } ?> >Site Manager</option>
-                                          <option value="Supervisor" <?php if ($data['jabatan_user'] == 'Supervisor') { ?>selected <?php } ?> >Supervisor</option>
-                                          <option value="Admin Project" <?php if ($data['jabatan_user'] == 'Admin Project') { ?>selected <?php } ?> >Admin Project</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Status</label>
-                                        <select name="status_user" class="form-control" >
-                                          <option value="Active" <?php if ($data['status_user'] == 'Active') { ?>selected <?php } ?> >Active</option>
-                                          <option value="Non Active" <?php if ($data['status_user'] == 'Non Active') { ?>selected <?php } ?> >Non Active</option>
-                                        </select>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-
-                                        <button type="submit" name="btnEdit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i> Simpan</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            <?php endforeach; ?>
+            
 
 
 
@@ -666,69 +605,6 @@
                     <!-- /.modal-dialog -->
                 </div>
             </form>
-
-            <!-- modal untuk edit data -->
-            <?php $tgl = date('Y-m-d'); ?>
-            <?php foreach ($rincian_user as $data) :
-            ?>
-                <form action="<?php echo site_url('ListUser/edit/'.$data['id_user']); ?>" method="post">
-                    <div class="modal fade" id="modal-lg-edit<?= $data['id_user'] ?>">
-                        <div class="modal-dialog modal-lg">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h4 class="modal-title">Edit Rincian</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="form-group">
-                                        <label class="col-form-label">Nama User</label>
-                                        <input type="text" class="form-control" name="nama_user" autocomplete="off" value="<?= $data['nama_user'] ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Username</label>
-                                        <input type="text" class="form-control" name="username_user" autocomplete="off" value="<?= $data['username_user'] ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Password</label>
-                                        <input type="password" class="form-control" name="password_user" autocomplete="off" value="<?= $data['password_user'] ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Level</label>
-                                        <select name="id_level" class="form-control" >
-                                          <option value="1" <?php if ($data['id_level'] == '1') { ?>selected <?php } ?> >Super Admin</option>
-                                          <option value="2" <?php if ($data['id_level'] == '2') { ?>selected <?php } ?> >Admin</option>
-                                          <option value="3" <?php if ($data['id_level'] == '3') { ?>selected <?php } ?> >User</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Level</label>
-                                        <select name="jabatan_user" class="form-control" >
-                                          <option value="Project Manager" <?php if ($data['jabatan_user'] == 'Project Manager') { ?>selected <?php } ?> >Project Manager</option>
-                                          <option value="Site Manager" <?php if ($data['jabatan_user'] == 'Site Manager') { ?>selected <?php } ?> >Site Manager</option>
-                                          <option value="Supervisor" <?php if ($data['jabatan_user'] == 'Supervisor') { ?>selected <?php } ?> >Supervisor</option>
-                                          <option value="Admin Project" <?php if ($data['jabatan_user'] == 'Admin Project') { ?>selected <?php } ?> >Admin Project</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Status</label>
-                                        <select name="status_user" class="form-control" >
-                                          <option value="Active" <?php if ($data['status_user'] == 'Active') { ?>selected <?php } ?> >Active</option>
-                                          <option value="Non Active" <?php if ($data['status_user'] == 'Non Active') { ?>selected <?php } ?> >Non Active</option>
-                                        </select>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-
-                                        <button type="submit" name="btnEdit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i> Simpan</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            <?php endforeach; ?>
 
 
 

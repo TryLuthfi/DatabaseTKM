@@ -47,6 +47,32 @@ ORDER BY lg.kota_lokasi_gudang, ki.kategori_item;')
         return $data;
     }
 
+    public function getHistoriInOUtLogistik()
+    {
+
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $filter_area = "kota_lokasi_gudang";
+        $decoded_url_area = urldecode($last_segment);
+
+        if (stripos($decoded_url_area, "regional") !== false) {
+            $filter_area = "regional_lokasi_gudang";
+        } else {
+            $filter_area = "kota_lokasi_gudang";
+        }
+
+        $data = $this->db->query('SELECT * FROM `tb_logistik_stok` JOIN tb_master_logistik_lokasi_gudang ON tb_logistik_stok.id_lokasi_gudang = tb_master_logistik_lokasi_gudang.id_lokasi_gudang
+	                                    JOIN tb_master_bowheer ON tb_logistik_stok.id_bowheer = tb_master_bowheer.id_bowheer
+                                        JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
+                                        JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
+                                        JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user
+                                        WHERE '.$filter_area.' = "' . $decoded_url_area . '";')
+            ->result_array();
+        return $data;
+    }
+
     public function getSummaryDetailArea()
     {
 

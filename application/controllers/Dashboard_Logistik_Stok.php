@@ -6,6 +6,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
     public function __construct()
     {
+
         parent::__construct();
         $this->load->library('form_validation');
         $this->load->model('MDashboard_Logistik_Stok');
@@ -21,7 +22,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
             $data['getAllStokByKategory'] = $this->MDashboard_Logistik_Stok->getAllStokByKategory();
             $data['getAllStokByKategoryFilterCity'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterCity();
             $data['getAllStokByKategoryFilterRegional'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterRegional();
-            if ($this->session->userdata('tim_project') == "HO") {
+            if ($this->session->userdata('lokasi_user') == "HO") {
                 $data['getListGudangLokasiUser'] = $this->MDashboard_Logistik_Stok->getListGudangLokasiUserAll();
             } else {
                 $data['getListGudangLokasiUser'] = $this->MDashboard_Logistik_Stok->getListGudangLokasiUser();
@@ -135,5 +136,14 @@ class Dashboard_Logistik_Stok extends CI_Controller
             $this->session->set_flashdata('status', 'gagal_hapus');
             redirect("Dashboard_Logistik_Stok");
         }
+    }
+
+    public function filterDetailArea(){
+        $no_surat_jalan = $this->input->post('no_surat_jalan');
+        $data['getDetailAreaBySJ'] = $this->MDashboard_Logistik_Stok->getDetailAreaBySJ($no_surat_jalan);
+
+        echo json_encode($data);
+        die();
+
     }
 }

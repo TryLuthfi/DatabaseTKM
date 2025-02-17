@@ -425,7 +425,7 @@ $total_hp_closed_regional = 0;
                 </div><!-- /.container-fluid -->
               </div>
 
-              <?php if ($this->session->userdata('tim_project') == "HO") { ?>
+              <?php if ($this->session->userdata('lokasi_user') == "HO") { ?>
                 <section class="content">
 
                   <div class="container-fluid">

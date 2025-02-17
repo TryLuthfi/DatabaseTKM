@@ -31,7 +31,7 @@ $total_tiang = 0;
         <!-- Info boxes -->
         <div class="row">
             <?php foreach ($getSummaryDetailArea as $stokKategory): ?>
-                <div class="col-lg-3 col-6" id="<?php echo 'box_detail_area_'.$stokKategory['kategori_item']?>">
+                <div class="col-lg-3 col-6" id="<?php echo 'box_detail_area_' . $stokKategory['kategori_item'] ?>">
                     <div class="small-box bg-info">
                         <div class="inner">
 
@@ -595,6 +595,86 @@ $total_tiang = 0;
             </div>
     </section>
 
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">HISTORY IN OUT MATERIAL <?= "" . $lokasi ?></h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    <section class="content">
+            <div class="container-fluid">
+                <!-- Info boxes -->
+                <div class="row">
+                    <!-- fix for small devices only -->
+                    <div class="clearfix hidden-md-up"></div>
+
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <h3 class="card-title">List Stok Logistik </h3>
+                                    </div>
+                                    <div class="col-6">
+                                        <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
+                                            data-target="#modal-xl-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                                class="fas fa-plus"></i> </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- /.card-header -->
+                            <div class="card-body table-scrollable">
+                                <table id="table_data" class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Regional</th>
+                                            <th>Lokasi</th>
+                                            <th>Project</th>
+                                            <th>Kategori</th>
+                                            <th>Item</th>
+                                            <th>Status</th>
+                                            <th>QTY</th>
+                                            <th>PIC</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+
+                                        $total = 1;
+                                        foreach ($getHistoriInOUtLogistik as $data):
+                                        ?>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['regional_lokasi_gudang'] ?></td>
+                                                <td><?= $data['kota_lokasi_gudang'] ?></td>
+                                                <td><?= $data['nama_bowheer'] ?></td>
+                                                <td><?= $data['kategori_item'] ?></td>
+                                                <td><?= $data['nama_item'] ?></td>
+                                                <td><?= $data['nama_sumber_material'] ?></td>
+                                                <td><?= $data['jumlah_stok'] ?></td>
+                                                <td><?= $data['nama_user'] ?></td>
+                                                <td>
+                                                    <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . $data['id_logistik_stok']); ?>"
+                                                        id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                            class=" fas fa-trash"></i></a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- /.card-body -->
+                        </div>
+                    </div>
+                </div>
+        </section>
+
 
 
 </div>
@@ -632,6 +712,9 @@ $total_tiang = 0;
         $("#tabel_stok_tiang").DataTable({
             "responsive": true,
         });
+        $("#table_data").DataTable({
+            "responsive": true,
+        });
 
         // notifikasi allert sukses atau tidak
         <?php if ($status == 'sukses_tambah') { ?>
@@ -650,12 +733,66 @@ $total_tiang = 0;
         <?php } ?>
     })
 
-    <?php foreach ($getSummaryDetailArea as $stokKategory): ?>
-        document.getElementById("box_detail_area_<?= $stokKategory['kategori_item'] ?>").addEventListener("click", function() {
-            document.getElementById("judul_stok_aksesories").scrollIntoView({ behavior: "smooth" });
-            alert("<?= $stokKategory['kategori_item'] ?>");
-        });
-    <?php endforeach ?>
+    document.addEventListener("DOMContentLoaded", function () {
+        <?php foreach ($getSummaryDetailArea as $stokKategory): ?>
+            var boxElement = document.getElementById("box_detail_area_<?= $stokKategory['kategori_item'] ?>");
+
+            if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
+                boxElement.addEventListener("click", function () {
+                    console.log("<?= $stokKategory['kategori_item'] ?>");
+                    <?php if ($stokKategory['kategori_item'] == 'Aksesories ') { ?>
+                        var targetElement = document.getElementById("judul_stok_aksesories");
+
+                        if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                            targetElement.scrollIntoView({ behavior: "smooth" });
+                        }
+                    <?php } else if ($stokKategory['kategori_item'] == 'HDPE ') { ?>
+                            var targetElement = document.getElementById("judul_stok_hdpe");
+
+                            if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                                targetElement.scrollIntoView({ behavior: "smooth" });
+                            }
+                    <?php } else if ($stokKategory['kategori_item'] == 'Kabel ') { ?>
+                                var targetElement = document.getElementById("judul_stok_kabel");
+
+                                if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                                    targetElement.scrollIntoView({ behavior: "smooth" });
+                                }
+                    <?php } else if ($stokKategory['kategori_item'] == 'Closure') { ?>
+                                    var targetElement = document.getElementById("judul_stok_closure");
+
+                                    if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                                        targetElement.scrollIntoView({ behavior: "smooth" });
+                                    }
+                    <?php } else if ($stokKategory['kategori_item'] == 'FAT') { ?>
+                                        var targetElement = document.getElementById("judul_stok_fat");
+
+                                        if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                                            targetElement.scrollIntoView({ behavior: "smooth" });
+                                        }
+                    <?php } else if ($stokKategory['kategori_item'] == 'FDT') { ?>
+                                            var targetElement = document.getElementById("judul_stok_fdt");
+
+                                            if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                                                targetElement.scrollIntoView({ behavior: "smooth" });
+                                            }
+                    <?php } else if ($stokKategory['kategori_item'] == 'OTB ') { ?>
+                                                var targetElement = document.getElementById("judul_stok_otb");
+
+                                                if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                                                    targetElement.scrollIntoView({ behavior: "smooth" });
+                                                }
+                    <?php } else if ($stokKategory['kategori_item'] == 'Tiang') { ?>
+                                                    var targetElement = document.getElementById("judul_stok_tiang");
+
+                                                    if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                                                        targetElement.scrollIntoView({ behavior: "smooth" });
+                                                    }
+                    <?php } ?>
+                });
+            }
+        <?php endforeach; ?>
+    });
 </script>
 
 
