@@ -176,7 +176,7 @@ $jumlah_Tiang = 0;
                                                 <div class="inner">
 
                                                     <h3 id="idtotal_hp_plan">
-                                                        <?= number_format(floatval($stokKategory['total_jumlah_stok']), 0, ".") . " " . $stokKategory['satuan_item'] ?>
+                                                        <?= number_format(floatval($stokKategory['total_jumlah_stok']), 0,  ",", ".") . " " . $stokKategory['satuan_item'] ?>
                                                     </h3>
 
 
@@ -255,56 +255,56 @@ $jumlah_Tiang = 0;
                                                                     if ($data['jumlah_Aksesories'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_Aksesories']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_Aksesories']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_Closure'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_Closure']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_Closure']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_FAT'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_FAT']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_FAT']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_FDT'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_FDT']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_FDT']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_HDPE'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_HDPE']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_HDPE']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_Kabel'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_Kabel']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_Kabel']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_OTB'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_OTB']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_OTB']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_Tiang'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_Tiang']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_Tiang']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td>
@@ -322,28 +322,28 @@ $jumlah_Tiang = 0;
                                                             <tr>
                                                                 <th colspan="2">Total</th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_Aksesories), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_Aksesories), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_Closure), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_Closure), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_FAT), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_FAT), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_FDT), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_FDT), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_HDPE), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_HDPE), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_Kabel), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_Kabel), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_OTB), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_OTB), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_Tiang), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_Tiang), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1"></th>
                                                             </tr>
@@ -433,56 +433,56 @@ $jumlah_Tiang = 0;
                                                                     if ($data['jumlah_Aksesories'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_Aksesories']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_Aksesories']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_Closure'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_Closure']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_Closure']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_FAT'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_FAT']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_FAT']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_FDT'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_FDT']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_FDT']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_HDPE'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_HDPE']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_HDPE']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_Kabel'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_Kabel']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_Kabel']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_OTB'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_OTB']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_OTB']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td><?php
                                                                     if ($data['jumlah_Tiang'] == "0") {
                                                                         echo "-";
                                                                     } else {
-                                                                        echo number_format(floatval($data['jumlah_Tiang']), 0, ".");
+                                                                        echo number_format(floatval($data['jumlah_Tiang']), 0, ",", ".");
                                                                     }
                                                                     ?></td>
                                                                     <td>
@@ -500,28 +500,28 @@ $jumlah_Tiang = 0;
                                                             <tr>
                                                                 <th colspan="3">Total</th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_Aksesories), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_Aksesories), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_Closure), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_Closure), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_FAT), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_FAT), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_FDT), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_FDT), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_HDPE), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_HDPE), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_Kabel), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_Kabel), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_OTB), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_OTB), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_Tiang), 0, ".") ?>
+                                                                    <?= number_format(floatval($jumlah_Tiang), 0, ",", ".") ?>
                                                                 </th>
                                                                 <th colspan="1"></th>
                                                             </tr>
