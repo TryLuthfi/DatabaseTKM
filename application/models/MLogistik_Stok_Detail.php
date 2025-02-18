@@ -109,7 +109,7 @@ LEFT JOIN tb_logistik_stok ls
 LEFT JOIN tb_master_logistik_sumber_material sm 
     ON ls.id_sumber_material = sm.id_sumber_material
     WHERE ki.kategori_item = "' . $last_segment . '" && jumlah_stok != "0"
-GROUP BY lg.kota_lokasi_gudang, ki.project_item
+GROUP BY ki.nama_item, ki.project_item, lg.kota_lokasi_gudang
 ORDER BY lg.regional_lokasi_gudang, ki.project_item;')
             ->result_array();
         echo "<script>console.log('" . json_encode($data) . "');</script>";
