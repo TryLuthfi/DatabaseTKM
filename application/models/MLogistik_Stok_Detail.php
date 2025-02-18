@@ -39,9 +39,8 @@ LEFT JOIN tb_logistik_stok ls
     AND ki.id_kode_item = ls.id_kode_item
 LEFT JOIN tb_master_logistik_sumber_material sm 
     ON ls.id_sumber_material = sm.id_sumber_material
-    WHERE ' . $filter_area . ' = "' . $decoded_url_area . '"
-GROUP BY lg.kota_lokasi_gudang, ki.kategori_item, ki.project_item
-ORDER BY lg.kota_lokasi_gudang, ki.kategori_item;')
+    WHERE ' . $filter_area . ' = "' . $decoded_url_area . '" && jumlah_stok != "0"
+GROUP BY ki.nama_item')
             ->result_array();
         echo "<script>console.log('" . json_encode($data) . "');</script>";
         return $data;
@@ -73,7 +72,7 @@ LEFT JOIN tb_logistik_stok ls
     AND ki.id_kode_item = ls.id_kode_item
 LEFT JOIN tb_master_logistik_sumber_material sm 
     ON ls.id_sumber_material = sm.id_sumber_material
-    WHERE ki.kategori_item = "' . $last_segment . '"
+    WHERE ki.kategori_item = "' . $last_segment . '" && jumlah_stok != "0"
 GROUP BY ki.kategori_item, ki.project_item
 ORDER BY ki.kategori_item;')
             ->result_array();

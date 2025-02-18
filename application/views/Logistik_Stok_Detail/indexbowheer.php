@@ -113,7 +113,6 @@ $total_item_inner = 0;
                                     <tr>
                                         <th>No</th>
                                         <th>Kategori Item</th>
-                                        <th>Nama Item</th>
                                         <th>Project Item</th>
                                         <th>Stok</th>
                                         <th>Satuan item</th>
@@ -128,7 +127,6 @@ $total_item_inner = 0;
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['kategori_item'] ?></td>
-                                                <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
                                                 <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
@@ -139,7 +137,6 @@ $total_item_inner = 0;
                                 <tfoot>
                                     <tr>
                                         <th colspan="2">Total</th>
-                                        <th colspan="1"></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_item, 0, '.', ',') ?></th>
                                         <th colspan="1"></th>
