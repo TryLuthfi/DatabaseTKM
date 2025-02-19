@@ -68,7 +68,7 @@ $total_item_inner = 0;
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="2">Total</th>
+                                        <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
@@ -136,7 +136,7 @@ $total_item_inner = 0;
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="2">Total</th>
+                                        <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_item, 0, '.', ',') ?></th>
                                         <th colspan="1"></th>

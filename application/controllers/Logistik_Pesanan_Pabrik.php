@@ -17,8 +17,8 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
 
         $data['title'] = 'List PO Pabrik';
         $data['judul'] = 'List PO Pabrik';
-        $data['getMasterLogistikPesananPabrik'] = $this->MLogistik_Pesanan_Pabrik->getMasterLogistikPesananPabrik();
-        $data['getOustandingPesananPabrik'] = $this->MLogistik_Pesanan_Pabrik->getOustandingPesananPabrik();
+        // $data['getMasterLogistikPesananPabrik'] = $this->MLogistik_Pesanan_Pabrik->getMasterLogistikPesananPabrik();
+        // $data['getOustandingPesananPabrik'] = $this->MLogistik_Pesanan_Pabrik->getOustandingPesananPabrik();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');

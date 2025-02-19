@@ -320,7 +320,7 @@ $jumlah_Tiang = 0;
                                                         </tbody>
                                                         <tfoot>
                                                             <tr>
-                                                                <th colspan="2">Total</th>
+                                                                <th colspan="2">TOTAL</th>
                                                                 <th colspan="1">
                                                                     <?= number_format(floatval($jumlah_Aksesories), 0, ",", ".") ?>
                                                                 </th>
@@ -498,7 +498,7 @@ $jumlah_Tiang = 0;
                                                         </tbody>
                                                         <tfoot>
                                                             <tr>
-                                                                <th colspan="3">Total</th>
+                                                                <th colspan="3">TOTAL</th>
                                                                 <th colspan="1">
                                                                     <?= number_format(floatval($jumlah_Aksesories), 0, ",", ".") ?>
                                                                 </th>
@@ -1325,8 +1325,8 @@ $jumlah_Tiang = 0;
 
                 // Terapkan filter ke DataTable
                 table
-                    .column(1).search(lokasiFilter, true, false) // Filter kategori (regex search)
-                    .column(2).search(bowheerFilter, true, false) // Filter kategori (regex search)
+                    .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
+                    .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
                     .column(4).search(itemFilter, true, false) // Filter kategori (regex search)
                     .column(5).search(statusFilter, true, false) // Filter kategori (regex search)
                     .draw(); // Render ulang tabel

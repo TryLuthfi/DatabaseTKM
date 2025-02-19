@@ -22,9 +22,9 @@ class Logistik_Stok_Detail extends CI_Controller
 
         if (!empty($this->session->userdata('id_user'))) {
 
-            $data['title'] = 'Detail Stok ' . $decoded_url_area;
-            $data['judul'] = 'Detail Stok ' . $decoded_url_area;
-            $data['lokasi'] = $decoded_url_area;
+            $data['title'] = 'Detail Stok ' . strtoupper($decoded_url_area);
+            $data['judul'] = 'Detail Stok ' . strtoupper($decoded_url_area);
+            $data['lokasi'] = strtoupper($decoded_url_area);
             $data['getStokDetailArea'] = $this->MLogistik_Stok_Detail->getStokDetailArea();
             $data['getSummaryDetailArea'] = $this->MLogistik_Stok_Detail->getSummaryDetailArea();
             $data['getHistoriInOUtLogistik'] = $this->MLogistik_Stok_Detail->getHistoriInOUtLogistik();
@@ -50,9 +50,9 @@ class Logistik_Stok_Detail extends CI_Controller
 
         if (!empty($this->session->userdata('id_user'))) {
 
-            $data['title'] = 'Detail Stok ' . $decoded_url_area;
+            $data['title'] = 'Detail Stok ' . strtoupper($decoded_url_area);
             $data['judul'] = 'Detail Stok ' . $decoded_url_area;
-            $data['kategori_item'] = $decoded_url_area;
+            $data['kategori_item'] = strtoupper($decoded_url_area);
             $data['getStokPerBowheer'] = $this->MLogistik_Stok_Detail->getStokPerBowheer();
             $data['getDistribusiPerBowheer'] = $this->MLogistik_Stok_Detail->getDistribusiPerBowheer();
 

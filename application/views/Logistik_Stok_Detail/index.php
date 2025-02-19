@@ -106,7 +106,7 @@ $total_tiang = 0;
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="2">Total</th>
+                                        <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_aksesories, 0, '.', ',') ?></th>
                                         <th colspan="1"></th>
@@ -174,7 +174,7 @@ $total_tiang = 0;
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="2">Total</th>
+                                        <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_closure, 0, '.', ',') ?></th>
                                         <th colspan="1"></th>
@@ -242,7 +242,7 @@ $total_tiang = 0;
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="2">Total</th>
+                                        <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_fat, 0, '.', ',') ?></th>
                                         <th colspan="1"></th>
@@ -310,7 +310,7 @@ $total_tiang = 0;
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="2">Total</th>
+                                        <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_fdt, 0, '.', ',') ?></th>
                                         <th colspan="1"></th>
@@ -378,7 +378,7 @@ $total_tiang = 0;
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="2">Total</th>
+                                        <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_hdpe, 0, '.', ',') ?></th>
                                         <th colspan="1"></th>
@@ -446,7 +446,7 @@ $total_tiang = 0;
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="2">Total</th>
+                                        <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_kabel, 0, '.', ',') ?></th>
                                         <th colspan="1"></th>
@@ -514,7 +514,7 @@ $total_tiang = 0;
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="2">Total</th>
+                                        <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_otb, 0, '.', ',') ?></th>
                                         <th colspan="1"></th>
@@ -582,7 +582,7 @@ $total_tiang = 0;
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="2">Total</th>
+                                        <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_tiang, 0, '.', ',') ?></th>
                                         <th colspan="1"></th>
