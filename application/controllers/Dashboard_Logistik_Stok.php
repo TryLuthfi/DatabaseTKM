@@ -45,13 +45,14 @@ class Dashboard_Logistik_Stok extends CI_Controller
         }
     }
 
-    public function bowheer($kategori_item){
-            $this->load->view('Templates/01_Header', $kategori_item);
-            $this->load->view('Templates/02_Menu');
-            $this->load->view('Dashboard_Logistik_Stok/indexbowheer', $kategori_item);
-            $this->load->view('Templates/03_Footer');
-            $this->load->view('Templates/99_JS');
-        
+    public function bowheer($kategori_item)
+    {
+        $this->load->view('Templates/01_Header', $kategori_item);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('Dashboard_Logistik_Stok/indexbowheer', $kategori_item);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
+
     }
 
     public function getProjectByBowheer()
@@ -80,7 +81,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
         $this->load->helper('date');
         $config['upload_path'] = "./uploads/";
         $config['allowed_types'] = 'pdf|docx|xlsx|';
-        $config['max_size']      = 5120;
+        $config['max_size'] = 5120;
         $file_ext = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
         $new_filename = "SURAT_JALAN" . "_" . $this->input->post('id_lokasi_gudang') . "_" . $this->input->post('id_bowheer') . "_" . $this->input->post('id_sumber_material') . "_TIME_" . date('d_m_Y_h_i_s') . "." . $file_ext;
         $config['file_name'] = $new_filename;
@@ -147,12 +148,30 @@ class Dashboard_Logistik_Stok extends CI_Controller
         }
     }
 
-    public function filterDetailArea(){
+    public function filterDetailSuratJalan()
+    {
         $no_surat_jalan = $this->input->post('no_surat_jalan');
         $data['getDetailAreaBySJ'] = $this->MDashboard_Logistik_Stok->getDetailAreaBySJ($no_surat_jalan);
 
         echo json_encode($data);
         die();
+
+    }
+
+    public function filterDashboardLogistik()
+    {
+        header('Content-Type: application/json'); // Pastikan respons dalam JSON
+
+    $lokasi = json_decode($this->input->post('lokasi'), true);
+    $bowheer = json_decode($this->input->post('bowheer'), true);
+    $item = json_decode($this->input->post('item'), true);
+    $status = json_decode($this->input->post('status'), true);
+
+    $data['getDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getDashboardFiltered($lokasi, $bowheer, $item, $status);
+
+    echo json_encode($data, JSON_PRETTY_PRINT);
+    exit;
+
 
     }
 }

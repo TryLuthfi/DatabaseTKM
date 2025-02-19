@@ -14,6 +14,9 @@ $jumlah_Kabel = 0;
 $jumlah_OTB = 0;
 $jumlah_Tiang = 0;
 
+$total_stok_dashboard = [];
+
+
 
 ?>
 
@@ -170,13 +173,19 @@ $jumlah_Tiang = 0;
                             <div class="container-fluid">
                                 <!-- Info boxes -->
                                 <div class="row">
-                                    <?php foreach ($getAllStokByKategory as $stokKategory): ?>
+                                    <?php
+                                    foreach ($getAllStokByKategory as $stokKategory):
+
+                                        $total_stok_dashboard[$stokKategory['kategori_item']] = number_format(floatval($stokKategory['total_jumlah_stok']), 0, ",", ".") . " " . $stokKategory['satuan_item'];
+                                        ?>
                                         <div class="col-lg-3 col-6">
                                             <div class="small-box bg-info">
                                                 <div class="inner">
 
-                                                    <h3 id="idtotal_hp_plan">
-                                                        <?= number_format(floatval($stokKategory['total_jumlah_stok']), 0,  ",", ".") . " " . $stokKategory['satuan_item'] ?>
+
+                                                    <h3
+                                                        id="<?php echo 'total_dashboard_' . $stokKategory['kategori_item'] ?>">
+                                                        <?= number_format(floatval($stokKategory['total_jumlah_stok']), 0, ",", ".") . " " . $stokKategory['satuan_item'] ?>
                                                     </h3>
 
 
@@ -185,7 +194,9 @@ $jumlah_Tiang = 0;
                                                 <div class="icon">
                                                     <i class="ion ion-bag"></i>
                                                 </div>
-                                                <a href="#" class="small-box-footer" id="<?php echo 'box_detai_kategori_item_' . $stokKategory['kategori_item'] ?>">Lihat Detail <i class="fas fa-arrow-circle-right"></i></a>
+                                                <a href="#" class="small-box-footer"
+                                                    id="<?php echo 'box_detai_kategori_item_' . $stokKategory['kategori_item'] ?>">Lihat
+                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
                                             </div>
                                         </div>
                                     <?php endforeach ?>
@@ -772,7 +783,8 @@ $jumlah_Tiang = 0;
                                 <div class="form-group">
                                     <label class="col-form-label">Input Date</label>
                                     <input type="date" class="form-control" name="tanggal_upload_stok"
-                                        autocomplete="off" value="<?php echo (new \DateTime())->format('Y-m-d'); ?>" disabled>
+                                        autocomplete="off" value="<?php echo (new \DateTime())->format('Y-m-d'); ?>"
+                                        disabled>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -824,21 +836,21 @@ $jumlah_Tiang = 0;
                                 <div class="form-group">
                                     <label>Lihat Surat Jalan</label>
                                     <div class="card">
-                                            <div class="card-body p-6">
-                                                <div class="">
-                                                    <div class="d-flex align-items-center overflow-hidden">
+                                        <div class="card-body p-6">
+                                            <div class="">
+                                                <div class="d-flex align-items-center overflow-hidden">
 
-                                                        <div class="flex-grow-1">
-                                                            <h5 class="font-size-15 mb-1 text-truncate"
-                                                                id="detail_nama_file"></h5>
-                                                            <a href=""
-                                                                class="font-size-14 text-muted text-truncate" id="view_detail_surat_jalan" target="_blank"><u>View
-                                                                    Folder</u></a>
-                                                        </div>
+                                                    <div class="flex-grow-1">
+                                                        <h5 class="font-size-15 mb-1 text-truncate"
+                                                            id="detail_nama_file"></h5>
+                                                        <a href="" class="font-size-14 text-muted text-truncate"
+                                                            id="view_detail_surat_jalan" target="_blank"><u>View
+                                                                Folder</u></a>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1165,7 +1177,7 @@ $jumlah_Tiang = 0;
 
                 } else {
                     $.ajax({
-                        url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailArea') ?>",  // Arahkan ke file PHP yang menangani filtering
+                        url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>",  // Arahkan ke file PHP yang menangani filtering
                         method: "POST",
                         data: { no_surat_jalan: selectedSJ },
                         dataType: "json",
@@ -1218,19 +1230,19 @@ $jumlah_Tiang = 0;
         // GET DETAIL SUMMARY KATEGORI ITEM
 
         document.addEventListener("DOMContentLoaded", function () {
-        <?php foreach ($getAllStokByKategory as $stokKategory): ?>
-            var boxElement = document.getElementById("box_detai_kategori_item_<?= $stokKategory['kategori_item'] ?>");
+            <?php foreach ($getAllStokByKategory as $stokKategory): ?>
+                var boxElement = document.getElementById("box_detai_kategori_item_<?= $stokKategory['kategori_item'] ?>");
 
-            if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
-                boxElement.addEventListener("click", function () {
-                    console.log("<?= $stokKategory['kategori_item'] ?>");
+                if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
+                    boxElement.addEventListener("click", function () {
+                        console.log("<?= $stokKategory['kategori_item'] ?>");
 
-                    window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_bowheer/".$stokKategory['kategori_item']) ?>"
-                    
-                });
-            }
-        <?php endforeach; ?>
-    });
+                        window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_bowheer/" . $stokKategory['kategori_item']) ?>"
+
+                    });
+                }
+            <?php endforeach; ?>
+        });
 
         // END GET DETAIL SUMMARY KATEGORI ITEM
 
@@ -1317,19 +1329,93 @@ $jumlah_Tiang = 0;
                 var selectItem = $('#filter_item').val() || []; // Array of selected values
                 var selectStatus = $('#filter_status').val() || []; // Array of selected values
 
+
                 // Gabungkan nilai ke dalam regex untuk pencarian DataTable
                 var lokasiFilter = selectLokasi.length > 0 ? selectLokasi.join('|') : '';
                 var bowheerFilter = selectBowheer.length > 0 ? selectBowheer.join('|') : '';
                 var itemFilter = selectItem.length > 0 ? selectItem.join('|') : '';
                 var statusFilter = selectStatus.length > 0 ? selectStatus.join('|') : '';
 
+                var lokasiFilter2 = selectLokasi.length > 0 ? '"' + selectLokasi.join('", "') + '"' : '';
+                var bowheerFilter2 = selectBowheer.length > 0 ? '"' + selectBowheer.join('", "') + '"' : '';
+                var itemFilter2 = selectItem.length > 0 ? '"' + selectItem.join('", "') + '"' : '';
+                var statusFilter2 = selectStatus.length > 0 ? '"' + selectStatus.join('", "') + '"' : '';
+
+                if (selectLokasi.length === 0 && selectBowheer.length === 0 && selectItem.length === 0 && selectStatus.length === 0) {
+
+                    var totalStokDashboard = <?= json_encode($total_stok_dashboard); ?>;
+                    console.log(totalStokDashboard)
+
+                    document.getElementById("total_dashboard_Aksesories ").innerText = totalStokDashboard['Aksesories '];
+                    document.getElementById("total_dashboard_Closure").innerText = totalStokDashboard['Closure'];
+                    document.getElementById("total_dashboard_FAT").innerText = totalStokDashboard['FAT'];
+                    document.getElementById("total_dashboard_FDT").innerText = totalStokDashboard['FDT'];
+                    document.getElementById("total_dashboard_HDPE ").innerText = totalStokDashboard['HDPE '];
+                    document.getElementById("total_dashboard_Kabel ").innerText = totalStokDashboard['Kabel '];
+                    document.getElementById("total_dashboard_OTB ").innerText = totalStokDashboard['OTB '];
+                    document.getElementById("total_dashboard_Tiang").innerText = totalStokDashboard['Tiang'];
+                } else {
+                    table
+                        .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
+                        .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
+                        .column(4).search(itemFilter, true, false) // Filter kategori (regex search)
+                        .column(5).search(statusFilter, true, false) // Filter kategori (regex search)
+                        .draw(); // Render ulang tabel
+
+                    $.ajax({
+                        url: "<?= base_url('Dashboard_Logistik_Stok/filterDashboardLogistik') ?>",
+                        method: "POST",
+                        data: {
+                            lokasi: JSON.stringify(lokasiFilter2), // Kirim sebagai JSON string
+                            bowheer: JSON.stringify(bowheerFilter2),
+                            item: JSON.stringify(itemFilter2),
+                            status: JSON.stringify(statusFilter2)
+                        },
+                        dataType: "json",
+                        success: function (response) {
+                            console.log("Filtered Data:", response);
+
+                            let totalAksesories = 0;
+                            let totalClosure = 0;
+                            let totalFAT = 0;
+                            let totalFDT = 0;
+                            let totalHDPE = 0;
+                            let totalKabel = 0;
+                            let totalOTB = 0;
+                            let totalTiang = 0;
+
+
+                            $.each(response.getDashboardFiltered, function (index, getDashboardFiltered) {
+                                totalAksesories += Number(getDashboardFiltered.jumlah_Aksesories);
+                                totalClosure += Number(getDashboardFiltered.jumlah_Closure);
+                                totalFAT += Number(getDashboardFiltered.jumlah_FAT);
+                                totalFDT += Number(getDashboardFiltered.jumlah_FDT);
+                                totalHDPE += Number(getDashboardFiltered.jumlah_HDPE);
+                                totalKabel += Number(getDashboardFiltered.jumlah_Kabel);
+                                totalOTB += Number(getDashboardFiltered.jumlah_OTB);
+                                totalTiang += Number(getDashboardFiltered.jumlah_Tiang);
+                            });
+
+                            document.getElementById("total_dashboard_Aksesories ").innerText = totalAksesories.toLocaleString('id-ID').replace(/,/g, '.') + ' Pc(s)';
+                            document.getElementById("total_dashboard_Closure").innerText = totalClosure.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
+                            document.getElementById("total_dashboard_FAT").innerText = totalFAT.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
+                            document.getElementById("total_dashboard_FDT").innerText = totalFDT.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
+                            document.getElementById("total_dashboard_HDPE ").innerText = totalHDPE.toLocaleString('id-ID').replace(/,/g, '.') + ' Meter';
+                            document.getElementById("total_dashboard_Kabel ").innerText = totalKabel.toLocaleString('id-ID').replace(/,/g, '.') + ' Meter';
+                            document.getElementById("total_dashboard_OTB ").innerText = totalOTB.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
+                            document.getElementById("total_dashboard_Tiang").innerText = totalTiang.toLocaleString('id-ID').replace(/,/g, '.') + ' Batang';
+
+                            console.log(Number(response.getDashboardFiltered[0].jumlah_Aksesories.toLocaleString('id-ID').replace(/,/g, '.')));
+                        },
+                        error: function (xhr, status, error) {
+                            console.error("Error:", error);
+                            console.log("Server Response:", xhr.responseText);
+                        }
+                    });
+
+                }
+
                 // Terapkan filter ke DataTable
-                table
-                    .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
-                    .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
-                    .column(4).search(itemFilter, true, false) // Filter kategori (regex search)
-                    .column(5).search(statusFilter, true, false) // Filter kategori (regex search)
-                    .draw(); // Render ulang tabel
 
             });
         });
@@ -1338,6 +1424,15 @@ $jumlah_Tiang = 0;
             $.fn.dataTable.ext.errMode = 'none';
             $('#table_data').DataTable({
                 responsive: false // Matikan fitur Responsive
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Cari semua elemen yang memiliki ID yang diawali dengan "total_dashboard_"
+            document.querySelectorAll("h3[id^='total_dashboard_']").forEach(function (element) {
+                element.addEventListener("click", function () {
+                    alert("ID yang diklik: " + this.id);
+                });
             });
         });
     </script>
