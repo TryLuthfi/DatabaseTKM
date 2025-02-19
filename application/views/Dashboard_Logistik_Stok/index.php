@@ -608,13 +608,13 @@ $total_stok_dashboard = [];
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['nama_sumber_material'] ?></td>
                                                 <td><?= $data['no_surat_jalan'] ?></td>
-                                                <td><?= $data['jumlah_stok'] ?></td>
+                                                <td><?= number_format(floatval($data['jumlah_stok']), 0, ",", "."); ?></td>
                                                 <td><?= $data['nama_user'] ?></td>
                                                 <td><?= $data['tanggal_upload_stok'] ?></td>
                                                 <td>
-                                                    <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . $data['id_logistik_stok']); ?>"
+                                                    <!-- <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . $data['id_logistik_stok']); ?>"
                                                         id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                            class=" fas fa-trash"></i></a>
+                                                            class=" fas fa-trash"></i></a> -->
 
                                                     <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>"
                                                         data-target="#form_detail_surat_jalan" data-toggle="modal"
@@ -1237,7 +1237,7 @@ $total_stok_dashboard = [];
                     boxElement.addEventListener("click", function () {
                         console.log("<?= $stokKategory['kategori_item'] ?>");
 
-                        window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_bowheer/" . $stokKategory['kategori_item']) ?>"
+                        window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_kategori/" . $stokKategory['kategori_item']) ?>"
 
                     });
                 }
@@ -1424,15 +1424,6 @@ $total_stok_dashboard = [];
             $.fn.dataTable.ext.errMode = 'none';
             $('#table_data').DataTable({
                 responsive: false // Matikan fitur Responsive
-            });
-        });
-
-        document.addEventListener("DOMContentLoaded", function () {
-            // Cari semua elemen yang memiliki ID yang diawali dengan "total_dashboard_"
-            document.querySelectorAll("h3[id^='total_dashboard_']").forEach(function (element) {
-                element.addEventListener("click", function () {
-                    alert("ID yang diklik: " + this.id);
-                });
             });
         });
     </script>

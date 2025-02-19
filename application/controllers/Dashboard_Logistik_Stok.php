@@ -49,7 +49,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
     {
         $this->load->view('Templates/01_Header', $kategori_item);
         $this->load->view('Templates/02_Menu');
-        $this->load->view('Dashboard_Logistik_Stok/indexbowheer', $kategori_item);
+        $this->load->view('Dashboard_Logistik_Stok/indexkategori', $kategori_item);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
 
