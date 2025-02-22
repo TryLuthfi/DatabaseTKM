@@ -57,7 +57,7 @@ $total_hp_closed_regional = 0;
               <h3 class="card-title">FILTER DATA</h3>
 
               <div class="card-tools">
-                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <button id="cardfiltercollapse" type="button" class="btn btn-tool" data-card-widget="collapse">
                   <i class="fas fa-plus"></i>
                 </button>
               </div>
@@ -142,7 +142,7 @@ $total_hp_closed_regional = 0;
               <h3 class="card-title">ACHIEVED PO & INVOICE</h3>
 
               <div class="card-tools">
-                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <button id="cardpocollapse" type="button" class="btn btn-tool" data-card-widget="collapse">
                   <i class="fas fa-plus"></i>
                 </button>
               </div>
@@ -241,7 +241,7 @@ $total_hp_closed_regional = 0;
               <h3 class="card-title">STAGGING PROJECT</h3>
 
               <div class="card-tools">
-                <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                <button id="cardstaggingcollapse" type="button" class="btn btn-tool" data-card-widget="collapse">
                   <i class="fas fa-plus"></i>
                 </button>
               </div>
@@ -808,11 +808,13 @@ $total_hp_closed_regional = 0;
                 <h3 class="card-title">SUMMARY WEEKLY ACHIEVEMENT</h3>
 
                 <div class="card-tools">
-                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                  <button id="cardsummarycollapse" type="button" class="btn btn-tool" data-card-widget="collapse">
                     <i class="fas fa-plus"></i>
                   </button>
                 </div>
               </div>
+
+              <div class="card-body">
               <div class="content-header">
                 <div class="container-fluid">
                   <div class="row mb-2">
@@ -843,53 +845,13 @@ $total_hp_closed_regional = 0;
                   </div>
                 </div>
               </div>
-
-              <div class="card-body">
                 <div class="row">
-                  <div class="col-lg-6">
-                    <div class="card">
-                      <div class="card-header border-0">
-                        <div class="d-flex justify-content-center">
-                          <h3 class="card-title">Top Area Cleanlist</h3>
-                        </div>
-                      </div>
-                      <div class="card-body">
-                        <div class="d-flex">
-                          <p class="d-flex flex-column">
-                            <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                              <span
-                                class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_plan']), 0, ".") . " HP" ?></span>
-                            <?php endforeach ?>
-                            <span>TOP AREA</span>
-                          </p>
-                          <p class="ml-auto d-flex flex-column text-right">
-                            <span class="text-success">
-                              <i class="fas fa-arrow-up"></i> <?= round($persentase_cleanlist_to_total, 2) . "%" ?>
-                            </span>
-                            <span class="text-muted">By RKAP ( % )</span>
-                          </p>
-                        </div>
-                        <!-- /.d-flex -->
-
-                        <div class="position-relative mb-4">
-                          <canvas id="fiberstar_chart_bar_cleanlist" height="200"></canvas>
-                        </div>
-
-                        <div class="d-flex flex-row justify-content-end">
-                          <span class="mr-2">
-                            <i class="fas fa-square text-primary"></i> Achieved
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
 
                   <div class="col-lg-6">
                     <div class="card">
                       <div class="card-header border-0">
                         <div class="d-flex justify-content-center">
-                          <h3 class="card-title">TOP AREA BAK</h3>
+                          <h3 class="card-title">TOP AREA DONE BAK</h3>
                         </div>
                       </div>
                       <div class="card-body">
@@ -919,17 +881,16 @@ $total_hp_closed_regional = 0;
                             <i class="fas fa-square text-primary"></i> Achieved
                           </span>
                         </div>
+                        <div id="paginationControlsbak" class="mt-3 text-center"></div>
                       </div>
                     </div>
-
                   </div>
-                  <!-- /.col-md-6 -->
 
-                  <div class="col-lg-12">
+                  <div class="col-lg-6">
                     <div class="card">
                       <div class="card-header border-0">
                         <div class="d-flex justify-content-center">
-                          <h3 class="card-title">TOP AREA BAK</h3>
+                          <h3 class="card-title">TOP AREA DONE SPK</h3>
                         </div>
                       </div>
                       <div class="card-body">
@@ -937,7 +898,46 @@ $total_hp_closed_regional = 0;
                           <p class="d-flex flex-column">
                             <?php foreach ($total_hp_plan as $totalHpPlan): ?>
                               <span
-                                class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ".") . " HP" ?></span>
+                                class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_spk']), 0, ".") . " HP" ?></span>
+                            <?php endforeach ?>
+                            <span>TOP AREA</span>
+                          </p>
+                          <p class="ml-auto d-flex flex-column text-right">
+                            <span class="text-success">
+                              <i class="fas fa-arrow-up"></i> <?= round($persentase_bak_to_cleanlist, 2) . "%" ?>
+                            </span>
+                            <span class="text-muted">By Cleanlist ( % )</span>
+                          </p>
+                        </div>
+                        <!-- /.d-flex -->
+
+                        <div class="position-relative mb-4">
+                          <canvas id="fiberstar_chart_bar_spk" height="200"></canvas>
+                        </div>
+
+                        <div class="d-flex flex-row justify-content-end">
+                          <span class="mr-2">
+                            <i class="fas fa-square text-primary"></i> Achieved
+                          </span>
+                        </div>
+                        <div id="paginationControlsspk" class="mt-3 text-center"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-lg-6">
+                    <div class="card">
+                      <div class="card-header border-0">
+                        <div class="d-flex justify-content-center">
+                          <h3 class="card-title">TOP AREA DONE RFS</h3>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        <div class="d-flex">
+                          <p class="d-flex flex-column">
+                            <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                              <span
+                                class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_rfs']), 0, ".") . " HP" ?></span>
                             <?php endforeach ?>
                             <span>TOP AREA</span>
                           </p>
@@ -952,6 +952,44 @@ $total_hp_closed_regional = 0;
 
                         <div class="position-relative mb-4">
                           <canvas id="fiberstar_chart_bar_rfs" height="200"></canvas>
+                        </div>
+
+                        <div class="d-flex flex-row justify-content-end">
+                          <span class="mr-2">
+                            <i class="fas fa-square text-primary"></i> Achieved
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-lg-6">
+                    <div class="card">
+                      <div class="card-header border-0">
+                        <div class="d-flex justify-content-center">
+                          <h3 class="card-title">TOP AREA DONE ATP</h3>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        <div class="d-flex">
+                          <p class="d-flex flex-column">
+                            <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                              <span
+                                class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_atp']), 0, ".") . " HP" ?></span>
+                            <?php endforeach ?>
+                            <span>TOP AREA</span>
+                          </p>
+                          <p class="ml-auto d-flex flex-column text-right">
+                            <span class="text-success">
+                              <i class="fas fa-arrow-up"></i> <?= round($persentase_bak_to_cleanlist, 2) . "%" ?>
+                            </span>
+                            <span class="text-muted">By Cleanlist ( % )</span>
+                          </p>
+                        </div>
+                        <!-- /.d-flex -->
+
+                        <div class="position-relative mb-4">
+                          <canvas id="fiberstar_chart_bar_atp" height="200"></canvas>
                         </div>
 
                         <div class="d-flex flex-row justify-content-end">
@@ -1008,7 +1046,7 @@ $total_hp_closed_regional = 0;
                       <a class="dropdown-item">Print</a>
                     </div>
                   </div>
-                  <a href="#" class="btn btn-success float-right text-bold mr-2">Tambah Data &nbsp;<i
+                  <a href="#" class="btn btn-success float-right text-bold mr-2">Tambah Cluster &nbsp;<i
                       class="fas fa-plus"></i> </a>
                 </div>
               </div>
@@ -1245,34 +1283,6 @@ $total_hp_closed_regional = 0;
             </div>
           </form>
 
-          <div class="modal fade" id="modal-lg-tambah-file">
-            <div class="modal-dialog modal-lg">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h4 class="modal-title">Tambah Purcase Order</h4>
-                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                  </button>
-                </div>
-                <div class="modal-body">
-                  <div class="form-group">
-                    <label for="exampleInputFile">File input</label>
-                    <div class="input-group">
-                      <div class="custom-file">
-                        <input type="file" class="custom-file-input" id="exampleInputFile">
-                        <label class="custom-file-label" for="exampleInputFile">Choose file</label>
-                      </div>
-                      <div class="input-group-append">
-                        <span class="input-group-text">Upload</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- /.modal-content -->
-            </div>
-            <!-- /.modal-dialog -->
-          </div>
 
           <!-- modal untuk edit data -->
           <?php $tgl = date('Y-m-d'); ?>
@@ -1411,31 +1421,70 @@ $total_hp_closed_regional = 0;
     var ticksStyle = {
       fontColor: '#495057',
       fontStyle: 'bold'
+    };
+
+    var mode = 'index';
+    var intersect = true;
+
+    var $fiberstarChartBarBak = $('#fiberstar_chart_bar_bak');
+
+    const dataBarBAK = <?php echo json_encode($top_area_bak); ?>;
+    const areaAchievBarBak = dataBarBAK.map(item => item.area_project);
+    const hpAchievBarBak = dataBarBAK.map(item => item.achiev_bak);
+
+    let currentPageBak = 0; // Halaman saat ini
+    const itemsPerPageBak = 5; // Batas data per halaman
+
+    // Fungsi untuk memperbarui data berdasarkan halaman
+    function updateChartBAK() {
+      let startBak = currentPageBak * itemsPerPageBak;
+      let endBak = startBak + itemsPerPageBak;
+
+      let paginatedLabelsBak = areaAchievBarBak.slice(startBak, endBak);
+      let paginatedDataBak = hpAchievBarBak.slice(startBak, endBak);
+
+      fiberstarChartBarBak.data.labels = paginatedLabelsBak;
+      fiberstarChartBarBak.data.datasets[0].data = paginatedDataBak;
+      fiberstarChartBarBak.update();
+
+      // Perbarui tombol pagination
+      updatePaginationControlsBAK();
     }
 
-    var mode = 'index'
-    var intersect = true
+    // Fungsi untuk memperbarui tampilan tombol pagination
+    function updatePaginationControlsBAK() {
+      $("#paginationControlsbak").html(`
+    <button id="prevPageBak" class="btn btn-secondary btn-sm" ${currentPageBak === 0 ? 'disabled' : ''}>Previous</button>
+    <span class="mx-2">Page ${currentPageBak + 1} of ${Math.ceil(areaAchievBarBak.length / itemsPerPageBak)}</span>
+    <button id="nextPageBak" class="btn btn-secondary btn-sm" ${currentPageBak >= Math.ceil(areaAchievBarBak.length / itemsPerPageBak) - 1 ? 'disabled' : ''}>Next</button>
+  `);
 
-    var $fiberstarChartBarBak = $('#fiberstar_chart_bar_bak')
+      // Event listener untuk tombol prev & next
+      $("#prevPageBak").on("click", function () {
+        if (currentPageBak > 0) {
+          currentPageBak--;
+          updateChartBAK();
+        }
+      });
 
-    const dataBar = <?php echo json_encode($top_area_bak); ?>;
-    const areaAchievBar = dataBar.map(item => item.area_project);
-    const hpAchievBar = dataBar.map(item => item.achiev_bak);
+      $("#nextPageBak").on("click", function () {
+        if (currentPageBak < Math.ceil(areaAchievBarBak.length / itemsPerPageBak) - 1) {
+          currentPageBak++;
+          updateChartBAK();
+        }
+      });
+    }
 
-
-    // eslint-disable-next-line no-unused-vars
+    // Inisialisasi Chart.js
     let fiberstarChartBarBak = new Chart($fiberstarChartBarBak, {
       type: 'bar',
-
       data: {
-        labels: areaAchievBar,
-        datasets: [
-          {
-            backgroundColor: '#007bff',
-            borderColor: '#007bff',
-            data: hpAchievBar
-          }
-        ]
+        labels: [],
+        datasets: [{
+          backgroundColor: '#007bff',
+          borderColor: '#007bff',
+          data: []
+        }]
       },
       options: {
         maintainAspectRatio: false,
@@ -1476,18 +1525,20 @@ $total_hp_closed_regional = 0;
         // Tambahkan event onClick untuk menangkap klik pada bar chart
         onClick: function (event, elements) {
           if (elements.length > 0) {
-            var datasetIndex = elements[0]._datasetIndex; // Ambil index dataset
-            var dataIndex = elements[0]._index; // Ambil index data dalam dataset
+            var datasetIndex = elements[0]._datasetIndex;
+            var dataIndex = elements[0]._index;
 
-            var label = this.data.labels[dataIndex]; // Ambil label pada sumbu X
-            var value = this.data.datasets[datasetIndex].data[dataIndex]; // Ambil nilai data yang diklik
+            var label = this.data.labels[dataIndex];
+            var value = this.data.datasets[datasetIndex].data[dataIndex];
 
-            // Tampilkan alert dengan informasi
             alert(`Anda mengklik bar:\nLabel: ${label}\nNilai: ${value.toLocaleString('id-ID')} Hp`);
           }
         }
       }
-    })
+    });
+
+    // Tampilkan halaman pertama dan pagination
+    updateChartBAK();
 
     $("#test-ajax").click(function () {
       var dateRange = $('#date-range').val();
@@ -1515,6 +1566,133 @@ $total_hp_closed_regional = 0;
         }
       });
     });
+  });
+</script>
+
+<script>
+  $(document).ready(function () {
+
+    var ticksStyle = {
+      fontColor: '#495057',
+      fontStyle: 'bold'
+    };
+
+    var mode = 'index';
+    var intersect = true;
+
+    var $fiberstarChartBarSpk = $('#fiberstar_chart_bar_spk');
+
+    const dataBarSPK = <?php echo json_encode($gettopAreaSPK); ?>;
+    const areaAchievBarSpk = dataBarSPK.map(item => item.area_project);
+    const hpAchievBarSpk = dataBarSPK.map(item => item.achiev_spk);
+
+    let currentPageSpk = 0; // Halaman saat ini
+    const itemsPerPageSpk = 5; // Batas data per halaman
+
+    // Fungsi untuk memperbarui data berdasarkan halaman
+    function updateChartSPK() {
+      let startSpk = currentPageSpk * itemsPerPageSpk;
+      let endSpk = startSpk + itemsPerPageSpk;
+
+      let paginatedLabelsSpk = areaAchievBarSpk.slice(startSpk, endSpk);
+      let paginatedDataSpk = hpAchievBarSpk.slice(startSpk, endSpk);
+
+      fiberstarChartBarSpk.data.labels = paginatedLabelsSpk;
+      fiberstarChartBarSpk.data.datasets[0].data = paginatedDataSpk;
+      fiberstarChartBarSpk.update();
+
+      // Perbarui tombol pagination
+      updatePaginationControlsSPK();
+    }
+
+    // Fungsi untuk memperbarui tampilan tombol pagination
+    function updatePaginationControlsSPK() {
+      $("#paginationControlsspk").html(`
+    <button id="prevPageSpk" class="btn btn-secondary btn-sm" ${currentPageSpk === 0 ? 'disabled' : ''}>Previous</button>
+    <span class="mx-2">Page ${currentPageSpk + 1} of ${Math.ceil(areaAchievBarSpk.length / itemsPerPageSpk)}</span>
+    <button id="nextPageSpk" class="btn btn-secondary btn-sm" ${currentPageSpk >= Math.ceil(areaAchievBarSpk.length / itemsPerPageSpk) - 1 ? 'disabled' : ''}>Next</button>
+  `);
+
+      // Event listener untuk tombol prev & next
+      $("#prevPageSpk").on("click", function () {
+        if (currentPageSpk > 0) {
+          currentPageSpk--;
+          updateChartSPK();
+        }
+      });
+
+      $("#nextPageSpk").on("click", function () {
+        if (currentPageSpk < Math.ceil(areaAchievBarSpk.length / itemsPerPageSpk) - 1) {
+          currentPageSpk++;
+          updateChartSPK();
+        }
+      });
+    }
+
+    // Inisialisasi Chart.js
+    let fiberstarChartBarSpk = new Chart($fiberstarChartBarSpk, {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{
+          backgroundColor: '#007bff',
+          borderColor: '#007bff',
+          data: []
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        tooltips: {
+          mode: mode,
+          intersect: intersect
+        },
+        hover: {
+          mode: mode,
+          intersect: intersect
+        },
+        legend: {
+          display: false
+        },
+        scales: {
+          yAxes: [{
+            gridLines: {
+              display: true,
+              lineWidth: '4px',
+              color: 'rgba(0, 0, 0, .2)',
+              zeroLineColor: 'transparent'
+            },
+            ticks: $.extend({
+              beginAtZero: true,
+              callback: function (value) {
+                return `${value.toLocaleString('id-ID')} Hp`;
+              }
+            }, ticksStyle)
+          }],
+          xAxes: [{
+            display: true,
+            gridLines: {
+              display: false
+            },
+            ticks: ticksStyle
+          }]
+        },
+        // Tambahkan event onClick untuk menangkap klik pada bar chart
+        onClick: function (event, elements) {
+          if (elements.length > 0) {
+            var datasetIndex = elements[0]._datasetIndex;
+            var dataIndex = elements[0]._index;
+
+            var label = this.data.labels[dataIndex];
+            var value = this.data.datasets[datasetIndex].data[dataIndex];
+
+            alert(`Anda mengklik bar:\nLabel: ${label}\nNilai: ${value.toLocaleString('id-ID')} Hp`);
+          }
+        }
+      }
+    });
+
+    // Tampilkan halaman pertama dan pagination
+    updateChartSPK();
   });
 </script>
 <script type="text/javascript">
@@ -1811,67 +1989,6 @@ $total_hp_closed_regional = 0;
     var mode = 'index'
     var intersect = true
 
-    var $fiberstarChartBarCleanlist = $('#fiberstar_chart_bar_cleanlist')
-
-    const dataBarCleanlist = <?php echo json_encode($top_area_cleanlist); ?>;
-    const areaAchievBarCleanlist = dataBarCleanlist.map(item => item.area_project);
-    const hpAchievBarCleanlist = dataBarCleanlist.map(item => item.achiev_cleanlist);
-
-
-    var fiberstarChartBarCleanlist = new Chart($fiberstarChartBarCleanlist, {
-      type: 'bar',
-      data: {
-        labels: areaAchievBarCleanlist,
-        datasets: [
-          {
-            backgroundColor: '#007bff',
-            borderColor: '#007bff',
-            data: hpAchievBarCleanlist
-          }
-        ]
-      },
-      options: {
-        maintainAspectRatio: false,
-        tooltips: {
-          mode: mode,
-          intersect: intersect
-        },
-        hover: {
-          mode: mode,
-          intersect: intersect
-        },
-        legend: {
-          display: false
-        },
-        scales: {
-          yAxes: [{
-            // display: false,
-            gridLines: {
-              display: true,
-              lineWidth: '4px',
-              color: 'rgba(0, 0, 0, .2)',
-              zeroLineColor: 'transparent'
-            },
-            ticks: $.extend({
-              beginAtZero: true,
-
-              // Include a dollar sign in the ticks
-              callback: function (value) {
-                return `${value.toLocaleString('id-ID')} Hp`;
-              }
-            }, ticksStyle)
-          }],
-          xAxes: [{
-            display: true,
-            gridLines: {
-              display: false
-            },
-            ticks: ticksStyle
-          }]
-        }
-      }
-    })
-
     var $fiberstarChartBarRfs = $('#fiberstar_chart_bar_rfs')
 
     const dataBarRfs = <?php echo json_encode($top_area_rfs); ?>;
@@ -1936,6 +2053,7 @@ $total_hp_closed_regional = 0;
   })
 
 
+  // JAVA SCRIPT UNTUK MENUTUP SEMUA COLLAPSE CARD
   // document.addEventListener("DOMContentLoaded", function () {
   //   const cards = document.querySelectorAll('[data-card-widget="collapse"]');
   //   cards.forEach(card => {
@@ -1945,6 +2063,20 @@ $total_hp_closed_regional = 0;
   //     }
   //   });
   // });
+  // ENDING UNTUK MENUTUP COLLAPSE CARD BY ID
+
+  // JAVA SCRIPT UNTUK MENUTUP SEMUA COLLAPSE CARD
+  document.addEventListener("DOMContentLoaded", function () {
+    let cardfilter = document.getElementById("cardfiltercollapse").closest(".card");
+    let cardpo = document.getElementById("cardpocollapse").closest(".card");
+    let cardstagging = document.getElementById("cardstaggingcollapse").closest(".card");
+    let cardsummary = document.getElementById("cardsummarycollapse").closest(".card");
+    // cardfilter.classList.add("collapsed-card");
+    cardpo.classList.add("collapsed-card");
+    cardstagging.classList.add("collapsed-card");
+    cardsummary.classList.add("collapsed-card");
+  });
+  // ENDING UNTUK MENUTUP COLLAPSE CARD BY ID
 
   $(document).ready(function () {
     $.fn.dataTable.ext.errMode = 'none';

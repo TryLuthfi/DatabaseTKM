@@ -25,8 +25,8 @@ class Fiberstar_Project extends CI_Controller
             $data['unique_pic'] = $this->MFiberstar_Project->getUniquePic();
             $data['unique_area'] = $this->MFiberstar_Project->getUniqueArea();
             $data['unique_stagging'] = $this->MFiberstar_Project->getUniqueStagging();
-            $data['top_area_cleanlist'] = $this->MFiberstar_Project->gettopAreaCleanlist();
             $data['top_area_bak'] = $this->MFiberstar_Project->gettopAreaBAK();
+            $data['gettopAreaSPK'] = $this->MFiberstar_Project->gettopAreaSPK();
             $data['top_area_rfs'] = $this->MFiberstar_Project->gettopAreaRFS();
             $data['stagging_regional'] = $this->MFiberstar_Project->getStaggingRegional();
             $data['stagging_area'] = $this->MFiberstar_Project->getStaggingArea();

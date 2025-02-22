@@ -16,8 +16,8 @@ class Dashboard_Logistik_Stok extends CI_Controller
     {
         if (!empty($this->session->userdata('id_user'))) {
 
-            $data['title'] = 'Dashboard Logistik';
-            $data['judul'] = 'Dashboard Logistik';
+            $data['title'] = 'DASHBOARD LOGISTIK';
+            $data['judul'] = 'DASHBOARD LOGISTIK';
             $data['getAllStokLogistik'] = $this->MDashboard_Logistik_Stok->getAllStokLogistik();
             $data['getAllStokByKategory'] = $this->MDashboard_Logistik_Stok->getAllStokByKategory();
             $data['getAllStokByKategoryFilterCity'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterCity();

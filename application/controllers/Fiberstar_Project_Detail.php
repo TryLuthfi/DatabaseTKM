@@ -20,6 +20,7 @@ class Fiberstar_Project_Detail extends CI_Controller
             $data['title'] = 'LIST PO';
             $data['judul'] = 'PT. Fiberstar';
             $data['progress_implementasi'] = $this->MFiberstar_Project_Detail->getProgressImplementasi();
+            $data['getMasterUser'] = $this->MFiberstar_Project_Detail->getMasterUser();
             $data['detail_progress_implementasi'] = $this->MFiberstar_Project_Detail->getDetailProgressImplementasi();
             $data['master_data_dokument'] = $this->MFiberstar_Project_Detail->getMasterDataDokument();
             $data['master_data_stagging'] = array_unique(array_column($data['master_data_dokument'], 'stagging_document_support'));
