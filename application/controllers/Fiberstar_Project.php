@@ -58,18 +58,31 @@ class Fiberstar_Project extends CI_Controller
         $startDate = date("Y-m-d", strtotime($startDate));
         $endDate = date("Y-m-d", strtotime($endDate));
     
-        $data = $this->MFiberstar_Project->gettopAreaCleanlistFilterTanggalBeda($startDate, $endDate);
+        $data1 = $this->MFiberstar_Project->getFilterTanggalTopAreaAchievBAK($startDate, $endDate);
+        $data2 = $this->MFiberstar_Project->getFilterTanggalTopAreaAchievSPK($startDate, $endDate);
     
         // Cegah NULL sebelum di-encode
-        array_walk_recursive($data, function (&$item) {
+        array_walk_recursive($data1, function (&$item) {
+            $item = $item ?? ""; // Ubah NULL jadi string kosong
+        });
+
+        array_walk_recursive($data2, function (&$item) {
             $item = $item ?? ""; // Ubah NULL jadi string kosong
         });
     
         header('Content-Type: application/json'); // Pastikan response JSON murni
         echo json_encode([
             "status" => "success",
-            "labels" => array_column($data, 'area_project'),
-            "data" => array_column($data, 'achiev_bak')
+            "bak" => [
+                "labels" => array_column($data1, 'area_project'),
+                "data" => array_column($data1, 'achiev_bak'),
+                "total_cluster_bak" => array_column($data1, 'total_cluster_bak')
+            ],
+            "spk" => [
+                "labels" => array_column($data2, 'area_project'),
+                "data" => array_column($data2, 'achiev_spk'),
+                "total_cluster_spk" => array_column($data2, 'total_cluster_spk')
+            ]
         ]);
         exit();
     }

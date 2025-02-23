@@ -15,8 +15,18 @@ $persentase_plan = 0;
 $persentase_achiev = 0;
 $persentase_total = 0;
 
-$persentase_cleanlist_to_total = 0;
-$persentase_bak_to_cleanlist = 0;
+$total_cluster_bak = 0;
+$total_cluster_spk = 0;
+
+foreach ($top_area_bak as $data):
+  $total_cluster_bak += $data['total_cluster_bak'];
+endforeach;
+
+foreach ($gettopAreaSPK as $data):
+  $total_cluster_spk += $data['total_cluster_spk'];
+endforeach;
+
+
 
 $total_hp_plan_regional = 0;
 $total_hp_canvasing_regional = 0;
@@ -566,8 +576,10 @@ $total_hp_closed_regional = 0;
                               <tfoot>
                                 <tr>
                                   <th colspan="2">Total</th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_plan_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_canvasing_regional), 0, ",", ".") ?>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_plan_regional), 0, ",", ".") ?>
+                                  </th>
+                                  <th colspan="1">
+                                    <?= number_format(floatval($total_hp_canvasing_regional), 0, ",", ".") ?>
                                   </th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_bak_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_spk_regional), 0, ",", ".") ?></th>
@@ -577,7 +589,8 @@ $total_hp_closed_regional = 0;
                                   <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?>
+                                  </th>
                                 </tr>
                               </tfoot>
                             </table>
@@ -752,8 +765,10 @@ $total_hp_closed_regional = 0;
                               <tfoot>
                                 <tr>
                                   <th colspan="3">Total</th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_plan_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_canvasing_regional), 0, ",", ".") ?>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_plan_regional), 0, ",", ".") ?>
+                                  </th>
+                                  <th colspan="1">
+                                    <?= number_format(floatval($total_hp_canvasing_regional), 0, ",", ".") ?>
                                   </th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_bak_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_spk_regional), 0, ",", ".") ?></th>
@@ -763,7 +778,8 @@ $total_hp_closed_regional = 0;
                                   <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?>
+                                  </th>
                                 </tr>
                               </tfoot>
                             </table>
@@ -800,13 +816,6 @@ $total_hp_closed_regional = 0;
         </div>
       </div>
     </div>
-
-    <?php
-
-    // $persentase_cleanlist_to_total = ($total_hp_plan_regional / $target_cleanlist_rkap) * 100;
-    // $persentase_bak_to_cleanlist = ($total_hp_bak_regional / $total_hp_plan_regional) * 100;
-    
-    ?>
 
     <section class="content">
       <div class="container-fluid">
@@ -872,14 +881,13 @@ $total_hp_closed_regional = 0;
                         <div class="d-flex">
                           <p class="d-flex flex-column">
                             <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                              <span class="text-bold text-lg"
-                                id="jumlah_chart_done_bak"><?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ",", ".") . " HP" ?></span>
+                              <span class="text-bold text-lg" id="jumlah_hp_done_bak"></span>
                             <?php endforeach ?>
                             <span>TOP AREA</span>
                           </p>
                           <p class="ml-auto d-flex flex-column text-right">
                             <span class="text-success">
-                              <i class="fas fa-arrow-up"></i> <?= round($persentase_bak_to_cleanlist, 2) . "%" ?>
+                              <i class="text-bold text-lg" id="jumlah_cl_done_bak"><?php echo $total_cluster_bak ." Cluster"?></i>
                             </span>
                             <span class="text-muted">By Cleanlist ( % )</span>
                           </p>
@@ -911,14 +919,13 @@ $total_hp_closed_regional = 0;
                         <div class="d-flex">
                           <p class="d-flex flex-column">
                             <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                              <span
-                                class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_spk']), 0, ",", ".") . " HP" ?></span>
+                              <span class="text-bold text-lg" id="jumlah_hp_done_spk"></span>
                             <?php endforeach ?>
                             <span>TOP AREA</span>
                           </p>
                           <p class="ml-auto d-flex flex-column text-right">
                             <span class="text-success">
-                              <i class="fas fa-arrow-up"></i> <?= round($persentase_bak_to_cleanlist, 2) . "%" ?>
+                              <i class="text-bold text-lg" id="jumlah_cl_done_spk"><?php echo $total_cluster_spk ." Cluster"?></i>
                             </span>
                             <span class="text-muted">By Cleanlist ( % )</span>
                           </p>
@@ -957,7 +964,7 @@ $total_hp_closed_regional = 0;
                           </p>
                           <p class="ml-auto d-flex flex-column text-right">
                             <span class="text-success">
-                              <i class="fas fa-arrow-up"></i> <?= round($persentase_bak_to_cleanlist, 2) . "%" ?>
+                              <i class="fas fa-arrow-up"></i>
                             </span>
                             <span class="text-muted">By Cleanlist ( % )</span>
                           </p>
@@ -995,7 +1002,7 @@ $total_hp_closed_regional = 0;
                           </p>
                           <p class="ml-auto d-flex flex-column text-right">
                             <span class="text-success">
-                              <i class="fas fa-arrow-up"></i> <?= round($persentase_bak_to_cleanlist, 2) . "%" ?>
+                              <i class="fas fa-arrow-up"></i>
                             </span>
                             <span class="text-muted">By Cleanlist ( % )</span>
                           </p>
@@ -1130,7 +1137,8 @@ $total_hp_closed_regional = 0;
                       <td class="align-middle"><?= $data['pic_project'] ?></td>
                       <td class="align-middle"><?= $data['access_id_project'] ?></td>
                       <td class="align-middle"><?= $data['access_name_project'] ?></td>
-                      <td class="align-middle text-center"><?= number_format(floatval($data['hpplan_project']), 0, ",", ".") ?>
+                      <td class="align-middle text-center">
+                        <?= number_format(floatval($data['hpplan_project']), 0, ",", ".") ?>
                       </td>
                       <td class="align-middle text-center"><?= $data['number_po'] ?></td>
                       <td class="align-middle text-center"><?= $data['tanggal_po'] ?></td>
@@ -1166,7 +1174,8 @@ $total_hp_closed_regional = 0;
                       </td>
                       <td class="align-middle text-center"><?= $data['main_status'] ?></td>
                       <td class="align-middle"><?= number_format(floatval($data['total_invoice']), 0, ",", ".") ?></td>
-                      <td class="align-middle"><?= number_format(floatval($data['total_sisa_invoice']), 0, ",", ".") ?></td>
+                      <td class="align-middle"><?= number_format(floatval($data['total_sisa_invoice']), 0, ",", ".") ?>
+                      </td>
                       <td class="align-middle">
                         <div class="progress progress-xs">
                           <?php if ($persentase_total < '25') { ?>
@@ -1442,7 +1451,6 @@ $total_hp_closed_regional = 0;
     var $fiberstarChartBarBak = $('#fiberstar_chart_bar_bak');
     var $fiberstarChartBarSpk = $('#fiberstar_chart_bar_spk');
 
-    // Data dari PHP (pastikan `json_encode($top_area_bak);` sudah benar di controller)
     const dataBarBAK = <?php echo json_encode($top_area_bak); ?>;
     const areaAchievBarBak = dataBarBAK.map(item => item.area_project);
     const hpAchievBarBak = dataBarBAK.map(item => parseInt(item.achiev_bak)); // Pastikan dalam bentuk angka
@@ -1455,6 +1463,8 @@ $total_hp_closed_regional = 0;
     const itemsPerPageBak = 5; // Batas data per halaman
     let currentPageSpk = 0; // Halaman saat ini
     const itemsPerPageSpk = 5; // Batas data per halaman
+
+    console.log("isi data : ", dataBarBAK);
 
     // Fungsi untuk memperbarui chart berdasarkan halaman
     function updateChartBAK() {
@@ -1469,10 +1479,10 @@ $total_hp_closed_regional = 0;
       fiberstarChartBarBak.update();
 
       // 🔥 Hitung total semua data (tidak terpengaruh pagination)
-      let totalAchievAll = hpAchievBarBak.reduce((total, num) => total + num, 0);
+      let totalAchievBAK = hpAchievBarBak.reduce((total, num) => total + num, 0);
 
       // 🔥 Tampilkan alert dengan total keseluruhan data
-      document.getElementById('jumlah_chart_done_bak').innerText = totalAchievAll.toLocaleString('id-ID') + ' HP';
+      document.getElementById('jumlah_hp_done_bak').innerText = totalAchievBAK.toLocaleString('id-ID') + ' HP';
 
       // Perbarui tombol pagination
       updatePaginationControlsBAK();
@@ -1488,6 +1498,11 @@ $total_hp_closed_regional = 0;
       fiberstarChartBarSpk.data.labels = paginatedLabelsSpk;
       fiberstarChartBarSpk.data.datasets[0].data = paginatedDataSpk;
       fiberstarChartBarSpk.update();
+
+      let totalAchievSPK = hpAchievBarSpk.reduce((total, num) => total + num, 0);
+
+      // 🔥 Tampilkan alert dengan total keseluruhan data
+      document.getElementById('jumlah_hp_done_spk').innerText = totalAchievSPK.toLocaleString('id-ID') + ' HP';
 
       // Perbarui tombol pagination
       updatePaginationControlsSPK();
@@ -1664,6 +1679,9 @@ $total_hp_closed_regional = 0;
     });
 
     // Tampilkan halaman pertama dan pagination
+    let totalClusterBAK = 0;
+    let totalClusterSPK = 0;
+
     updateChartBAK();
     updateChartSPK();
 
@@ -1679,21 +1697,44 @@ $total_hp_closed_regional = 0;
         dataType: "json",
         success: function (response) {
           if (response.status === "success") {
-            console.log(response.status);
+            console.log("Data berhasil diterima", response);
 
-            // Perbarui data
+            // Update data chart BAK
             areaAchievBarBak.length = 0;
             hpAchievBarBak.length = 0;
 
-            response.labels.forEach((label, index) => {
+            totalClusterBAK = response.bak.total_cluster_bak
+              .map(Number)  // Konversi string ke number
+              .reduce((total, num) => total + num, 0);
+
+
+            document.getElementById('jumlah_cl_done_bak').innerText = totalClusterBAK.toLocaleString('id-ID') + ' Cluster';
+
+            response.bak.labels.forEach((label, index) => {
               areaAchievBarBak.push(label);
-              hpAchievBarBak.push(parseInt(response.data[index]));
+              hpAchievBarBak.push(parseInt(response.bak.data[index]));
+            });
+
+            totalClusterSPK = response.spk.total_cluster_spk
+              .map(Number)  // Konversi string ke number
+              .reduce((total, num) => total + num, 0);
+
+            document.getElementById('jumlah_cl_done_spk').innerText = totalClusterSPK.toLocaleString('id-ID') + ' Cluster';
+
+            // Update data chart SPK
+            areaAchievBarSpk.length = 0;
+            hpAchievBarSpk.length = 0;
+            response.spk.labels.forEach((label, index) => {
+              areaAchievBarSpk.push(label);
+              hpAchievBarSpk.push(parseInt(response.spk.data[index]));
             });
 
             // Reset halaman ke awal setelah filter
             currentPageBak = 0;
+            currentPageSpk = 0;
 
-            updateChartBAK(); // Update chart dengan data baru
+            updateChartBAK(); // Update chart BAK dengan data baru
+            updateChartSPK(); // Update chart SPK dengan data baru
           } else {
             alert("Data tidak ditemukan!");
           }

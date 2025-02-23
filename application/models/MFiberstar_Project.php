@@ -148,14 +148,40 @@ LIMIT 5;')
 
     public function gettopAreaBAK(): mixed
     {
-        $data = $this->db->query('SELECT *, COALESCE(SUM(hp_bak)) as achiev_bak from tb_project_progress_fiberstar GROUP BY area_project HAVING achiev_bak != "0" ORDER BY achiev_bak DESC;')
+        $data = $this->db->query('SELECT 
+    *, 
+    COUNT(*) AS total_cluster_bak,
+    COALESCE(SUM(hp_bak), 0) AS achiev_bak 
+FROM 
+    tb_project_progress_fiberstar 
+WHERE 
+    hp_bak IS NOT NULL AND hp_bak > "0"
+GROUP BY 
+    area_project 
+HAVING 
+    achiev_bak != 0 
+ORDER BY 
+    achiev_bak DESC;')
             ->result_array();
         return $data;
     }
 
     public function gettopAreaSPK(): mixed
     {
-        $data = $this->db->query('SELECT *, COALESCE(SUM(spk_hp)) as achiev_spk from tb_project_progress_fiberstar GROUP BY area_project HAVING achiev_spk != "0" ORDER BY achiev_spk DESC;')
+        $data = $this->db->query('SELECT
+	*,
+	COUNT(*) AS total_cluster_spk,
+	COALESCE(SUM(spk_hp)) AS achiev_spk
+FROM
+	tb_project_progress_fiberstar
+WHERE
+	spk_hp IS NOT NULL AND spk_hp > "0" AND spk_tanggal IS NOT NULL
+GROUP BY
+	area_project
+HAVING
+	achiev_spk > "0"
+ORDER BY
+	achiev_spk DESC;')
             ->result_array();
         return $data;
     }
@@ -238,17 +264,43 @@ LIMIT 5;')
         return $data;
     }
 
-    public function gettopAreaCleanlistFilterTanggalSama($tanggal_sama){
-        $data = $this->db->query('SELECT * FROM tb_project_progress_fiberstar WHERE tanggal_bak = "' . $tanggal_sama . '";')
+    public function getFilterTanggalTopAreaAchievBAK($filterTanggalAwal, $filterTanggalAkhir)
+    {
+        $data = $this->db->query('SELECT
+	*,
+	COALESCE(SUM(CASE WHEN tanggal_bak >= "' . $filterTanggalAwal . '" && tanggal_bak <= "' . $filterTanggalAkhir . '" && tanggal_bak IS NOT NULL THEN hp_bak ELSE 0 END), 0) AS achiev_bak,
+	SUM(CASE WHEN tanggal_bak >= "' . $filterTanggalAwal . '" && tanggal_bak <= "' . $filterTanggalAkhir . '" && tanggal_bak IS NOT NULL THEN 1 ELSE 0 END) AS total_cluster_bak
+FROM
+	tb_project_progress_fiberstar
+GROUP BY
+	area_project
+HAVING
+	achiev_bak != "0"
+ORDER BY
+	achiev_bak DESC;')
             ->result_array();
+
+        log_message('error', 'query filter tanggal yang dijalankan : ' . $this->db->last_query());
         return $data;
     }
 
-    public function gettopAreaCleanlistFilterTanggalBeda($filterTanggalAwal, $filterTanggalAkhir){
-        $data = $this->db->query('SELECT *, COALESCE(SUM(CASE WHEN tanggal_bak >= "' . $filterTanggalAwal . '" && tanggal_bak <= "' . $filterTanggalAkhir . '" && tanggal_bak IS NOT NULL THEN hp_bak ELSE 0 END),0) AS achiev_bak FROM tb_project_progress_fiberstar GROUP BY area_project HAVING achiev_bak != "0" ORDER BY achiev_bak DESC;')
+    public function getFilterTanggalTopAreaAchievSPK($filterTanggalAwal, $filterTanggalAkhir)
+    {
+        $data = $this->db->query('SELECT
+	*,
+	COALESCE(SUM(CASE WHEN spk_tanggal >= "' . $filterTanggalAwal . '" && spk_tanggal <= "' . $filterTanggalAkhir . '" && spk_tanggal IS NOT NULL THEN spk_hp ELSE 0 END), 0) AS achiev_spk,
+	SUM(CASE WHEN spk_tanggal >= "' . $filterTanggalAwal . '" && spk_tanggal <= "' . $filterTanggalAkhir . '" && spk_tanggal IS NOT NULL THEN 1 ELSE 0 END) AS total_cluster_spk
+FROM
+	tb_project_progress_fiberstar
+GROUP BY
+	area_project
+HAVING
+	achiev_spk != "0"
+ORDER BY
+	achiev_spk DESC;')
             ->result_array();
 
-            log_message('error', 'query filter tanggal yang dijalankan : ' . $this->db->last_query());
+        log_message('error', 'query filter tanggal yang dijalankan : ' . $this->db->last_query());
         return $data;
     }
 }
