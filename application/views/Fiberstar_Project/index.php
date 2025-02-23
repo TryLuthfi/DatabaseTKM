@@ -466,6 +466,7 @@ $total_hp_closed_regional = 0;
                                   <th>DONE RFS</th>
                                   <th>DONE</th>
                                   <th>CLOSED</th>
+                                  <th>DETAIL</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -568,6 +569,10 @@ $total_hp_closed_regional = 0;
                                       echo number_format(floatval($data['total_hp_closed']), 0, ",", ".");
                                     }
                                     ?></td>
+                                    <td>
+                                    <a href="<?= site_url('Fiberstar_Project/Detail/' . $data['regional_project']); ?>"
+                                    class="btn btn-primary"><i class="fas fa-eye"></i></a>
+                                    </td>
                                   </tr>
 
                                 <?php endforeach; ?>
@@ -589,8 +594,8 @@ $total_hp_closed_regional = 0;
                                   <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?>
-                                  </th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"></th>
                                 </tr>
                               </tfoot>
                             </table>
@@ -642,6 +647,7 @@ $total_hp_closed_regional = 0;
                                   <th>DONE RFS</th>
                                   <th>DONE</th>
                                   <th>CLOSED</th>
+                                  <th>DETAIL</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -757,6 +763,10 @@ $total_hp_closed_regional = 0;
                                       echo number_format(floatval($data['total_hp_closed']), 0, ",", ".");
                                     }
                                     ?></td>
+                                    <td>
+                                    <a href="<?= site_url('Fiberstar_Project/Detail/' . encrypt_id($data['area_project'])); ?>"
+                                    class="btn btn-primary"><i class="fas fa-eye"></i></a>
+                                    </td>
                                   </tr>
 
                                 <?php endforeach; ?>
@@ -778,8 +788,8 @@ $total_hp_closed_regional = 0;
                                   <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?>
-                                  </th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"></th>
                                 </tr>
                               </tfoot>
                             </table>

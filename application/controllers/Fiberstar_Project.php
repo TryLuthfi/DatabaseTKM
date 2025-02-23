@@ -17,7 +17,7 @@ class Fiberstar_Project extends CI_Controller
             $now = date('Y-m-d');
 
             $data['title'] = 'Monitoring Project PT. Fiberstar';
-            $data['judul'] = 'MONIROTING PROJECT PT. FIBERSTAR';
+            $data['judul'] = 'MONITORING PROJECT PT. FIBERSTAR';
             $data['rincian'] = $this->MFiberstar_Project->getData();
             $data['main_data'] = $this->MFiberstar_Project->getMainData();
             $data['data_invoice'] = $this->MFiberstar_Project->getInvoice();
@@ -159,5 +159,10 @@ class Fiberstar_Project extends CI_Controller
             redirect('Auth');
         }
 
+    }
+
+    public function Detail($encoded_id){
+        $primary_access_id_project = decrypt_id($encoded_id);
+        echo "ID Asli: " . $primary_access_id_project;
     }
 }

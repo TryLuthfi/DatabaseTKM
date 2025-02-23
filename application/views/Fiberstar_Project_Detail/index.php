@@ -156,7 +156,7 @@ function formatTanggalIndonesia($date)
                                     <?php if ($data['hp_hld'] == '') { ?>
                                         0
                                     <?php } else { ?>
-                                        <?= number_format(floatval($data['hp_hld']), 0, ".") ?>
+                                        <?= number_format(floatval($data['hp_hld']), 0, ",",".") ?>
                                     <?php } ?>
 
                                 </dd>
@@ -230,7 +230,7 @@ function formatTanggalIndonesia($date)
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
-                            <div class="modal-body">
+                            <div class="modal-body" style="background-color:rgb(247, 243, 243);">
                                 <section class="content">
                                     <div class="card">
                                         <div class="card-body">
@@ -254,7 +254,7 @@ function formatTanggalIndonesia($date)
                                                         <label class="col-form-label">HP Plan</label>
                                                         <input type="text" class="form-control" name="hpplan_project"
                                                             autocomplete="off"
-                                                            value="<?= number_format($data['hpplan_project'], 0, ".", ".") ?>"
+                                                            value="<?= number_format($data['hpplan_project'], 0, ",", ".") ?>"
                                                             oninput="formatAngka(event)">
                                                     </div>
                                                 </div>
@@ -275,9 +275,9 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
-                                                <h5 class="mx-3">Lokasi Project</h5>
+                                                <h5 class="mx-3">LOKASI PROJECT</h5>
                                                 <div class="flex-grow-1 border-top"></div>
                                             </div>
 
@@ -314,9 +314,9 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
-                                                <h5 class="mx-3">Purcase Order</h5>
+                                                <h5 class="mx-3">PURCASE ORDER</h5>
                                                 <div class="flex-grow-1 border-top"></div>
                                             </div>
 
@@ -339,7 +339,7 @@ function formatTanggalIndonesia($date)
                                                     <div class="form-group">
                                                         <label class="col-form-label">Nilai PO</label>
                                                         <input type="text" class="form-control" name="nilai_awal_po"
-                                                            autocomplete="off" value="<?= "Rp. ".number_format($data['nilai_awal_po'], 0, ".", ".") ?>"
+                                                            autocomplete="off" value="<?= "Rp. ".number_format($data['nilai_awal_po'], 0, ",", ".") ?>"
                                                             oninput="formatAngka(event)">
                                                     </div>
                                                 </div>
@@ -347,7 +347,7 @@ function formatTanggalIndonesia($date)
                                                     <div class="form-group">
                                                         <label class="col-form-label">HP PO</label>
                                                         <input type="text" class="form-control" name="hp_po"
-                                                            autocomplete="off" value="<?= number_format($data['hp_po'], 0, ".", ".") ?>"
+                                                            autocomplete="off" value="<?= number_format($data['hp_po'], 0, ",", ".") ?>"
                                                             oninput="formatAngka(event)">
                                                     </div>
                                                 </div>
@@ -357,9 +357,9 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
-                                                <h5 class="mx-3">Canvasing & BAK</h5>
+                                                <h5 class="mx-3">CANVASING & BAK</h5>
                                                 <div class="flex-grow-1 border-top"></div>
                                             </div>
 
@@ -400,9 +400,9 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
-                                                <h5 class="mx-3">Approval CBN</h5>
+                                                <h5 class="mx-3">APPROVAL CBN</h5>
                                                 <div class="flex-grow-1 border-top"></div>
                                             </div>
 
@@ -436,7 +436,7 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
                                                 <h5 class="mx-3">SPK</h5>
                                                 <div class="flex-grow-1 border-top"></div>
@@ -472,9 +472,9 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
-                                                <h5 class="mx-3">High Level Design ( HLD )</h5>
+                                                <h5 class="mx-3">HIGH LEVEL DESIGN ( HLD )</h5>
                                                 <div class="flex-grow-1 border-top"></div>
                                             </div>
 
@@ -515,9 +515,9 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
-                                                <h5 class="mx-3">Low Level Design ( LLD )</h5>
+                                                <h5 class="mx-3">LOW LEVEL DESIGN ( LLD )</h5>
                                                 <div class="flex-grow-1 border-top"></div>
                                             </div>
 
@@ -558,7 +558,7 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
                                                 <h5 class="mx-3">KOM & PKS</h5>
                                                 <div class="flex-grow-1 border-top"></div>
@@ -585,9 +585,9 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
-                                                <h5 class="mx-3">Status Implementasi</h5>
+                                                <h5 class="mx-3">IMPLEMENTASI</h5>
                                                 <div class="flex-grow-1 border-top"></div>
                                             </div>
 
@@ -640,7 +640,7 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
                                                 <h5 class="mx-3">RFS</h5>
                                                 <div class="flex-grow-1 border-top"></div>
@@ -667,7 +667,7 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
                                                 <h5 class="mx-3">ATP</h5>
                                                 <div class="flex-grow-1 border-top"></div>
@@ -694,7 +694,7 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
                                                 <h5 class="mx-3">BAST</h5>
                                                 <div class="flex-grow-1 border-top"></div>
@@ -714,7 +714,7 @@ function formatTanggalIndonesia($date)
 
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
                                                 <h5 class="mx-3">STAGGING</h5>
                                                 <div class="flex-grow-1 border-top"></div>
@@ -822,7 +822,7 @@ function formatTanggalIndonesia($date)
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['tanggal_po'] ?></td>
-                                                <td><?= number_format(floatval($data['nilai_awal_po']), 0, ".") ?></td>
+                                                <td><?= number_format(floatval($data['nilai_awal_po']), 0, ",",".") ?></td>
                                                 <td><?= $data['tgl_canvasing'] ?></td>
                                                 <td><?= $data['status_bak'] ?></td>
                                                 <td><?= $data['status_cbn'] ?></td>
@@ -833,8 +833,8 @@ function formatTanggalIndonesia($date)
                                                 <td><?= $data['tanggal_rfs'] ?></td>
                                                 <td><?= $data['tanggal_atp'] ?></td>
                                                 <td><?= $data['main_status'] ?></td>
-                                                <td><?= number_format(floatval($data['total_invoice']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['total_sisa_invoice']), 0, ".") ?></td>
+                                                <td><?= number_format(floatval($data['total_invoice']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['total_sisa_invoice']), 0, ",",".") ?></td>
 
                                             </tr>
 
@@ -891,17 +891,17 @@ function formatTanggalIndonesia($date)
                                                     style="background-color: lightblue;" <?php } else if (str_contains($data['keterangan_progress'], "Done") || str_contains($data['keterangan_progress'], "DONE")) { ?>
                                                         style="background-color: yellow;" <?php } else { ?>     <?php } ?>>
                                                 <td><?= $total++ ?></td>
-                                                <td><?= number_format(floatval($data['hp_hld']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_tiang']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_tiang']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_kabel_24']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_kabel_24']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_kabel_48']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_kabel_48']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_fat']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_fat']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_closure']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_closure']), 0, ".") ?></td>
+                                                <td><?= number_format(floatval($data['hp_hld']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_tiang']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_tiang']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_kabel_24']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_kabel_24']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_kabel_48']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_kabel_48']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_fat']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_fat']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_closure']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_closure']), 0, ",",".") ?></td>
                                                 <td><?= $data['data_created'] ?></td>
                                                 <td><?= $data['keterangan_progress'] ?></td>
                                             </tr>
@@ -913,48 +913,48 @@ function formatTanggalIndonesia($date)
                                     <tfoot>
                                         <tr>
                                             <th colspan="2">Total</th>
-                                            <th colspan="1"><?= number_format(floatval($total_plan_tiang), 0, ".") ?>
+                                            <th colspan="1"><?= number_format(floatval($total_plan_tiang), 0, ",",".") ?>
                                             </th>
-                                            <th colspan="1"><?= number_format(floatval($total_achiev_tiang), 0, ".") ?>
-                                            </th>
-                                            <th colspan="1">
-                                                <?= number_format(floatval($total_plan_kabel_24C), 0, ".") ?>
+                                            <th colspan="1"><?= number_format(floatval($total_achiev_tiang), 0, ",",".") ?>
                                             </th>
                                             <th colspan="1">
-                                                <?= number_format(floatval($total_achiev_kabel_24C), 0, ".") ?>
+                                                <?= number_format(floatval($total_plan_kabel_24C), 0, ",",".") ?>
                                             </th>
                                             <th colspan="1">
-                                                <?= number_format(floatval($total_plan_kabel_48C), 0, ".") ?>
+                                                <?= number_format(floatval($total_achiev_kabel_24C), 0, ",",".") ?>
                                             </th>
                                             <th colspan="1">
-                                                <?= number_format(floatval($total_achiev_kabel_48C), 0, ".") ?>
-                                            </th>
-                                            <th colspan="1"><?= number_format(floatval($total_plan_fat), 0, ".") ?></th>
-                                            <th colspan="1"><?= number_format(floatval($total_achiev_fat), 0, ".") ?>
-                                            </th>
-                                            <th colspan="1"><?= number_format(floatval($total_plan_closure), 0, ".") ?>
+                                                <?= number_format(floatval($total_plan_kabel_48C), 0, ",",".") ?>
                                             </th>
                                             <th colspan="1">
-                                                <?= number_format(floatval($total_achiev_closure), 0, ".") ?>
+                                                <?= number_format(floatval($total_achiev_kabel_48C), 0, ",",".") ?>
+                                            </th>
+                                            <th colspan="1"><?= number_format(floatval($total_plan_fat), 0, ",",".") ?></th>
+                                            <th colspan="1"><?= number_format(floatval($total_achiev_fat), 0, ",",".") ?>
+                                            </th>
+                                            <th colspan="1"><?= number_format(floatval($total_plan_closure), 0, ",",".") ?>
+                                            </th>
+                                            <th colspan="1">
+                                                <?= number_format(floatval($total_achiev_closure), 0, ",",".") ?>
                                             </th>
                                             <th colspan="2"></th>
                                         </tr>
                                         <tr>
                                             <th colspan="2">Selisih</th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_tiang - $total_achiev_tiang), 0, ".") ?>
+                                                <?= number_format(floatval($total_plan_tiang - $total_achiev_tiang), 0, ",",".") ?>
                                             </th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_kabel_24C - $total_achiev_kabel_24C), 0, ".") ?>
+                                                <?= number_format(floatval($total_plan_kabel_24C - $total_achiev_kabel_24C), 0, ",",".") ?>
                                             </th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_kabel_48C - $total_achiev_kabel_48C), 0, ".") ?>
+                                                <?= number_format(floatval($total_plan_kabel_48C - $total_achiev_kabel_48C), 0, ",",".") ?>
                                             </th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_fat - $total_achiev_fat), 0, ".") ?>
+                                                <?= number_format(floatval($total_plan_fat - $total_achiev_fat), 0, ",",".") ?>
                                             </th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_closure - $total_achiev_closure), 0, ".") ?>
+                                                <?= number_format(floatval($total_plan_closure - $total_achiev_closure), 0, ",",".") ?>
                                             </th>
                                             <th colspan="2"></th>
                                         </tr>
