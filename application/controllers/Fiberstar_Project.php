@@ -16,8 +16,8 @@ class Fiberstar_Project extends CI_Controller
         if (!empty($this->session->userdata('id_user'))) {
             $now = date('Y-m-d');
 
-            $data['title'] = 'LIST PO';
-            $data['judul'] = 'PT. Fiberstar';
+            $data['title'] = 'Monitoring Project PT. Fiberstar';
+            $data['judul'] = 'MONIROTING PROJECT PT. FIBERSTAR';
             $data['rincian'] = $this->MFiberstar_Project->getData();
             $data['main_data'] = $this->MFiberstar_Project->getMainData();
             $data['data_invoice'] = $this->MFiberstar_Project->getInvoice();
@@ -52,25 +52,26 @@ class Fiberstar_Project extends CI_Controller
         }
     }
 
-    public function filterTanggalChart(){
-
+    public function filterTanggalChart() {
         $dateRange = $this->input->post('date_range');
         list($startDate, $endDate) = explode(" - ", $dateRange);
         $startDate = date("Y-m-d", strtotime($startDate));
         $endDate = date("Y-m-d", strtotime($endDate));
-
+    
         $data = $this->MFiberstar_Project->gettopAreaCleanlistFilterTanggalBeda($startDate, $endDate);
-
-        if (!empty($data)) {
-            echo json_encode([
-                "status" => "success",
-                "labels" => array_column($data, 'area_project'),
-                "data" => array_column($data, 'hp_bak')
-            ]);
-        } else {
-            echo json_encode(["status" => "error"]);
-        }
-
+    
+        // Cegah NULL sebelum di-encode
+        array_walk_recursive($data, function (&$item) {
+            $item = $item ?? ""; // Ubah NULL jadi string kosong
+        });
+    
+        header('Content-Type: application/json'); // Pastikan response JSON murni
+        echo json_encode([
+            "status" => "success",
+            "labels" => array_column($data, 'area_project'),
+            "data" => array_column($data, 'achiev_bak')
+        ]);
+        exit();
     }
 
     public function edit()

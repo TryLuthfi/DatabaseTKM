@@ -18,7 +18,7 @@ class MFiberstar_Project extends CI_Model
 
     public function getInvoice()
     {
-        $data = $this->db->query('SELECT primary_access_id_project, SUM(nilai_awal_po) as nilai_awal_po, SUM(total_invoice) as total_invoice, SUM(total_sisa_invoice) as total_sisa_invoice from tb_project_progress_fiberstar;')->result_array();
+        $data = $this->db->query('SELECT primary_access_id_project,SUM(po_estimasi) as po_estimasi, SUM(nilai_awal_po) as nilai_awal_po, SUM(total_invoice) as total_invoice, SUM(total_sisa_invoice) as total_sisa_invoice from tb_project_progress_fiberstar;')->result_array();
         return $data;
     }
 
@@ -148,14 +148,14 @@ LIMIT 5;')
 
     public function gettopAreaBAK(): mixed
     {
-        $data = $this->db->query('SELECT *, SUM(hp_bak) as achiev_bak from tb_project_progress_fiberstar GROUP BY area_project HAVING achiev_bak != "0" ORDER BY achiev_bak DESC;')
+        $data = $this->db->query('SELECT *, COALESCE(SUM(hp_bak)) as achiev_bak from tb_project_progress_fiberstar GROUP BY area_project HAVING achiev_bak != "0" ORDER BY achiev_bak DESC;')
             ->result_array();
         return $data;
     }
 
     public function gettopAreaSPK(): mixed
     {
-        $data = $this->db->query('SELECT *, SUM(spk_hp) as achiev_spk from tb_project_progress_fiberstar GROUP BY area_project HAVING achiev_spk != "0" ORDER BY achiev_spk DESC;')
+        $data = $this->db->query('SELECT *, COALESCE(SUM(spk_hp)) as achiev_spk from tb_project_progress_fiberstar GROUP BY area_project HAVING achiev_spk != "0" ORDER BY achiev_spk DESC;')
             ->result_array();
         return $data;
     }
@@ -245,8 +245,10 @@ LIMIT 5;')
     }
 
     public function gettopAreaCleanlistFilterTanggalBeda($filterTanggalAwal, $filterTanggalAkhir){
-        $data = $this->db->query('SELECT * FROM tb_project_progress_fiberstar WHERE tanggal_bak >= "' . $filterTanggalAwal . '" && tanggal_bak <= "' . $filterTanggalAkhir . '";')
+        $data = $this->db->query('SELECT *, COALESCE(SUM(CASE WHEN tanggal_bak >= "' . $filterTanggalAwal . '" && tanggal_bak <= "' . $filterTanggalAkhir . '" && tanggal_bak IS NOT NULL THEN hp_bak ELSE 0 END),0) AS achiev_bak FROM tb_project_progress_fiberstar GROUP BY area_project HAVING achiev_bak != "0" ORDER BY achiev_bak DESC;')
             ->result_array();
+
+            log_message('error', 'query filter tanggal yang dijalankan : ' . $this->db->last_query());
         return $data;
     }
 }
