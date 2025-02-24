@@ -115,7 +115,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
                     'no_haspel_stok' => $this->input->post('no_haspel_item')[$key],
                     'no_ref_stok' => $this->input->post('no_ref_item')[$key],
                     'keterangan_stok' => $this->input->post('keterangan_stok'),
-                    'tanggal_upload_stok' => date('Y-m-d'),
+                    'tanggal_upload_stok' => date('Y-m-d H:i:s'),
                     'evidence_stok' => $file_path,
                     'id_user' => $this->session->userdata('id_user')
                 ];

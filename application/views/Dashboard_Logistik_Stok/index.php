@@ -658,9 +658,9 @@ $total_stok_dashboard = [];
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="col-form-label">Input Date</label>
-                                        <input type="date" class="form-control" name="tanggal_upload_stok"
-                                            autocomplete="off"
-                                            value="<?php echo (new \DateTime())->format('Y-m-d'); ?>">
+                                        <input type="datetime-local" class="form-control" name="tanggal_upload_stok"
+                                            autocomplete="off" disabled
+                                            value="<?php echo (new \DateTime())->format('Y-m-d H:i:s'); ?>">
                                     </div>
                                 </div>
                                 <div class="col-md-6">

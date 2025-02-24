@@ -854,7 +854,7 @@ $total_hp_closed_regional = 0;
                   <div class="container-fluid">
                     <div class="row mb-2">
                       <div class="col-sm-12">
-                        <h1 class="m-0 text-dark" style="text-align: center;">FILTER RANGE TANGGAL</h1>
+                        <h1 class="m-0 text-dark mb-3" style="text-align: center;">FILTER RANGE TANGGAL</h1>
                       </div>
                     </div>
                     <div class="col-12">

@@ -11,6 +11,8 @@ class MDashboard_Logistik_Stok extends CI_Model
                                         JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
                                         JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
                                         JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user
+                                        WHERE no_surat_jalan != ""
+                                        GROUP BY no_surat_jalan
                                         ORDER BY id_logistik_stok DESC')
                                         ->result_array();
         return $data;

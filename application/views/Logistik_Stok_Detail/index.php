@@ -84,6 +84,7 @@ $total_tiang = 0;
                                         <th>Project Item</th>
                                         <th>Stok</th>
                                         <th>Satuan Item</th>
+                                        <th>Pemilik Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -99,6 +100,7 @@ $total_tiang = 0;
                                                 <td><?= $data['project_item'] ?></td>
                                                 <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
+                                                <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -109,6 +111,7 @@ $total_tiang = 0;
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_aksesories, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
                             </table>
@@ -152,6 +155,7 @@ $total_tiang = 0;
                                         <th>Project Item</th>
                                         <th>Stok</th>
                                         <th>Satuan Item</th>
+                                        <th>Pemilik Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -167,6 +171,7 @@ $total_tiang = 0;
                                                 <td><?= $data['project_item'] ?></td>
                                                 <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
+                                                <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -177,6 +182,7 @@ $total_tiang = 0;
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_closure, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
                             </table>
@@ -220,6 +226,7 @@ $total_tiang = 0;
                                         <th>Project Item</th>
                                         <th>Stok</th>
                                         <th>Satuan Item</th>
+                                        <th>Pemilik Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -235,6 +242,7 @@ $total_tiang = 0;
                                                 <td><?= $data['project_item'] ?></td>
                                                 <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
+                                                <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -245,6 +253,7 @@ $total_tiang = 0;
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_fat, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
                             </table>
@@ -288,6 +297,7 @@ $total_tiang = 0;
                                         <th>Project Item</th>
                                         <th>Stok</th>
                                         <th>Satuan Item</th>
+                                        <th>Pemilik Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -303,6 +313,7 @@ $total_tiang = 0;
                                                 <td><?= $data['project_item'] ?></td>
                                                 <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
+                                                <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -313,6 +324,7 @@ $total_tiang = 0;
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_fdt, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
                             </table>
@@ -356,6 +368,7 @@ $total_tiang = 0;
                                         <th>Project Item</th>
                                         <th>Stok</th>
                                         <th>Satuan Item</th>
+                                        <th>Pemilik Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -371,6 +384,7 @@ $total_tiang = 0;
                                                 <td><?= $data['project_item'] ?></td>
                                                 <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
+                                                <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -381,6 +395,7 @@ $total_tiang = 0;
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_hdpe, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
                             </table>
@@ -424,6 +439,7 @@ $total_tiang = 0;
                                         <th>Project Item</th>
                                         <th>Stok</th>
                                         <th>Satuan Item</th>
+                                        <th>Pemilik Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -439,6 +455,7 @@ $total_tiang = 0;
                                                 <td><?= $data['project_item'] ?></td>
                                                 <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
+                                                <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -449,6 +466,7 @@ $total_tiang = 0;
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_kabel, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
                             </table>
@@ -492,6 +510,7 @@ $total_tiang = 0;
                                         <th>Project Item</th>
                                         <th>Stok</th>
                                         <th>Satuan Item</th>
+                                        <th>Pemilik Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -507,6 +526,7 @@ $total_tiang = 0;
                                                 <td><?= $data['project_item'] ?></td>
                                                 <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
+                                                <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -517,6 +537,7 @@ $total_tiang = 0;
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_otb, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
                             </table>
@@ -560,6 +581,7 @@ $total_tiang = 0;
                                         <th>Project Item</th>
                                         <th>Stok</th>
                                         <th>Satuan Item</th>
+                                        <th>Pemilik Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -575,6 +597,7 @@ $total_tiang = 0;
                                                 <td><?= $data['project_item'] ?></td>
                                                 <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
+                                                <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
                                             <?php
                                         endif;
@@ -585,6 +608,7 @@ $total_tiang = 0;
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_tiang, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
                             </table>
@@ -640,7 +664,6 @@ $total_tiang = 0;
                                             <th>Status</th>
                                             <th>QTY</th>
                                             <th>PIC</th>
-                                            <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -659,11 +682,6 @@ $total_tiang = 0;
                                                 <td><?= $data['nama_sumber_material'] ?></td>
                                                 <td><?= $data['jumlah_stok'] ?></td>
                                                 <td><?= $data['nama_user'] ?></td>
-                                                <td>
-                                                    <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . $data['id_logistik_stok']); ?>"
-                                                        id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                            class=" fas fa-trash"></i></a>
-                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>

@@ -46,6 +46,7 @@ $total_item_inner = 0;
                                         <th>Project Item</th>
                                         <th>Stok</th>
                                         <th>Satuan Item</th>
+                                        <th>Pemilik Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -62,6 +63,7 @@ $total_item_inner = 0;
                                                 <td><?= $data['project_item'] ?></td>
                                                 <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
+                                                <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
                                             <?php
                                     endforeach; ?>
@@ -73,6 +75,7 @@ $total_item_inner = 0;
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_item_inner, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
                             </table>
@@ -116,6 +119,7 @@ $total_item_inner = 0;
                                         <th>Project Item</th>
                                         <th>Stok</th>
                                         <th>Satuan item</th>
+                                        <th>Pemilik Item</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -130,6 +134,7 @@ $total_item_inner = 0;
                                                 <td><?= $data['project_item'] ?></td>
                                                 <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
+                                                <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
                                             <?php
                                     endforeach; ?>
@@ -139,6 +144,7 @@ $total_item_inner = 0;
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
                                         <th colspan="1"><?= number_format($total_item, 0, '.', ',') ?></th>
+                                        <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
                             </table>

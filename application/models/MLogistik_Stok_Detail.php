@@ -24,6 +24,7 @@ class MLogistik_Stok_Detail extends CI_Model
     ki.kategori_item, 
     ki.nama_item, 
     ki.project_item,
+    tmb.nama_bowheer,
     COALESCE(SUM(
         CASE 
             WHEN sm.status_sumber_material = "IN" THEN ls.jumlah_stok 
@@ -34,13 +35,15 @@ class MLogistik_Stok_Detail extends CI_Model
     ki.satuan_item
 FROM tb_master_logistik_lokasi_gudang lg
 CROSS JOIN tb_master_logistik_kode_item ki
+LEFT JOIN tb_master_bowheer tmb 
+	ON ki.id_bowheer_pemilik_item = tmb.id_bowheer
 LEFT JOIN tb_logistik_stok ls 
     ON lg.id_lokasi_gudang = ls.id_lokasi_gudang 
     AND ki.id_kode_item = ls.id_kode_item
 LEFT JOIN tb_master_logistik_sumber_material sm 
     ON ls.id_sumber_material = sm.id_sumber_material
     WHERE ' . $filter_area . ' = "' . $decoded_url_area . '" && jumlah_stok != "0"
-GROUP BY ki.nama_item')
+GROUP BY ki.nama_item, ki.project_item')
             ->result_array();
         echo "<script>console.log('" . json_encode($data) . "');</script>";
         return $data;
@@ -57,6 +60,7 @@ GROUP BY ki.nama_item')
     ki.kategori_item, 
     ki.nama_item, 
     ki.project_item,
+    tmb.nama_bowheer,
     COALESCE(SUM(
         CASE 
             WHEN sm.status_sumber_material = "IN" THEN ls.jumlah_stok 
@@ -67,6 +71,8 @@ GROUP BY ki.nama_item')
     ki.satuan_item
 FROM tb_master_logistik_lokasi_gudang lg
 CROSS JOIN tb_master_logistik_kode_item ki
+LEFT JOIN tb_master_bowheer tmb 
+	ON ki.id_bowheer_pemilik_item = tmb.id_bowheer
 LEFT JOIN tb_logistik_stok ls 
     ON lg.id_lokasi_gudang = ls.id_lokasi_gudang 
     AND ki.id_kode_item = ls.id_kode_item
@@ -93,6 +99,7 @@ ORDER BY ki.kategori_item;')
     ki.kategori_item, 
     ki.nama_item, 
     ki.project_item,
+    tmb.nama_bowheer,
     COALESCE(SUM(
         CASE 
             WHEN sm.status_sumber_material = "IN" THEN ls.jumlah_stok 
@@ -103,6 +110,8 @@ ORDER BY ki.kategori_item;')
     ki.satuan_item
 FROM tb_master_logistik_lokasi_gudang lg
 CROSS JOIN tb_master_logistik_kode_item ki
+LEFT JOIN tb_master_bowheer tmb 
+	ON ki.id_bowheer_pemilik_item = tmb.id_bowheer
 LEFT JOIN tb_logistik_stok ls 
     ON lg.id_lokasi_gudang = ls.id_lokasi_gudang 
     AND ki.id_kode_item = ls.id_kode_item
