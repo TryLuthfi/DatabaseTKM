@@ -65,7 +65,7 @@ $id_menu = $this->uri->segment('1');
                     data-accordion="false">
                     <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
-                    <li class="nav-item">
+                    <li class="nav-item" style="pointer-events: none">
                         <a href="<?= base_url('Dashboard') ?>" class="nav-link <?php if ($id_menu == 'Dashboard') {
                               echo "active";
                           } ?>">
