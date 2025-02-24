@@ -612,9 +612,11 @@ $total_stok_dashboard = [];
                                                 <td><?= $data['nama_user'] ?></td>
                                                 <td><?= $data['tanggal_upload_stok'] ?></td>
                                                 <td>
-                                                    <!-- <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . $data['id_logistik_stok']); ?>"
+                                                    <?php if( $this->session->userdata('nama_level') == "Super Admin"){?>
+                                                    <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . $data['no_surat_jalan']); ?>"
                                                         id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                            class=" fas fa-trash"></i></a> -->
+                                                            class=" fas fa-trash"></i></a>
+                                                    <?php } ?>
 
                                                     <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>"
                                                         data-target="#form_detail_surat_jalan" data-toggle="modal"

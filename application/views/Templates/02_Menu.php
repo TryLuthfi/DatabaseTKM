@@ -9,14 +9,17 @@ $id_menu = $this->uri->segment('1');
             <li class="nav-item">
                 <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
             </li>
-            <li class="nav-item d-none d-sm-inline-block">
+            <li class="nav-item d-none d-sm-inline-block" style="pointer-events: none">
                 <a href="<?= base_url('Dashboard') ?>" class="nav-link">Dashboard</a>
             </li>
-            <li class="nav-item d-none d-sm-inline-block">
+            <li class="nav-item d-none d-sm-inline-block" style="pointer-events: none">
                 <a href="<?= base_url('Fiberstar_Project') ?>" class="nav-link">Fiberstars</a>
             </li>
-            <li class="nav-item d-none d-sm-inline-block">
+            <li class="nav-item d-none d-sm-inline-block" style="pointer-events: none">
                 <a href="<?= base_url('MyRepublik_Project') ?>" class="nav-link">My Republik</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link">Logistik</a>
             </li>
         </ul>
         <ul class="navbar-nav ml-auto">
@@ -62,7 +65,7 @@ $id_menu = $this->uri->segment('1');
                     data-accordion="false">
                     <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
-                    <li class="nav-item" style="pointer-events: none">
+                    <li class="nav-item">
                         <a href="<?= base_url('Dashboard') ?>" class="nav-link <?php if ($id_menu == 'Dashboard') {
                               echo "active";
                           } ?>">

@@ -134,10 +134,10 @@ class Dashboard_Logistik_Stok extends CI_Controller
         }
     }
 
-    public function hapusReportStokLogistik($id_logistik_stok)
+    public function hapusReportStokLogistik($no_surat_jalan)
     {
-        $id_logistik_stok = array('id_logistik_stok' => $id_logistik_stok);
-        $res = $this->MDashboard_Logistik_Stok->hapusReportStokLogistik($id_logistik_stok);
+        $no_surat_jalan = array('no_surat_jalan' => $no_surat_jalan);
+        $res = $this->MDashboard_Logistik_Stok->hapusReportStokLogistik($no_surat_jalan);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_hapus');

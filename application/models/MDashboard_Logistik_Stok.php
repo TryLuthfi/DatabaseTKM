@@ -255,9 +255,9 @@ ORDER BY
         return $res;
     }
 
-    public function hapusReportStokLogistik($id_logistik_stok)
+    public function hapusReportStokLogistik($no_surat_jalan)
     {
-        $res = $this->db->delete("tb_logistik_stok", $id_logistik_stok);
+        $res = $this->db->delete("tb_logistik_stok", $no_surat_jalan);
         return $res;
     }
 
