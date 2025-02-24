@@ -199,6 +199,53 @@ ORDER BY
         return $data;
     }
 
+    public function gettopAreaBAKDetail(): mixed
+    {
+        $data = $this->db->query('SELECT 
+    *
+FROM 
+    tb_project_progress_fiberstar 
+WHERE 
+    hp_bak IS NOT NULL AND hp_bak > "0"
+ORDER BY hp_bak ASC')
+            ->result_array();
+        return $data;
+    }
+
+    public function gettopAreaBAKFilter($filterTanggalAwal, $filterTanggalAkhir): mixed
+    {
+        $data = $this->db->query('SELECT 
+    *, 
+    COUNT(*) AS total_cluster_bak,
+    COALESCE(SUM(hp_bak), 0) AS achiev_bak 
+FROM 
+    tb_project_progress_fiberstar 
+WHERE 
+    hp_bak IS NOT NULL AND hp_bak > "0" AND tanggal_bak >= "' . $filterTanggalAwal . '" && tanggal_bak <= "' . $filterTanggalAkhir . '"
+GROUP BY 
+    area_project 
+HAVING 
+    achiev_bak != 0 
+ORDER BY 
+    achiev_bak DESC;')
+            ->result_array();
+        return $data;
+    }
+
+    public function gettopAreaBAKFilterDetail($filterTanggalAwal, $filterTanggalAkhir): mixed
+    {
+        $data = $this->db->query('SELECT 
+    *
+FROM 
+    tb_project_progress_fiberstar 
+WHERE 
+    hp_bak IS NOT NULL AND hp_bak > "0" AND tanggal_bak >= "' . $filterTanggalAwal . '" && tanggal_bak <= "' . $filterTanggalAkhir . '"
+ORDER BY hp_bak ASC')
+            ->result_array();
+        return $data;
+    }
+
+
     public function gettopAreaSPK(): mixed
     {
         $data = $this->db->query('SELECT

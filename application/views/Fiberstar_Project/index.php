@@ -570,8 +570,8 @@ $total_hp_closed_regional = 0;
                                     }
                                     ?></td>
                                     <td>
-                                    <a href="<?= site_url('Fiberstar_Project/Detail/' . $data['regional_project']); ?>"
-                                    class="btn btn-primary"><i class="fas fa-eye"></i></a>
+                                      <a href="<?= site_url('Fiberstar_Project/Detail/' . $data['regional_project']); ?>"
+                                        class="btn btn-primary"><i class="fas fa-eye"></i></a>
                                     </td>
                                   </tr>
 
@@ -594,7 +594,8 @@ $total_hp_closed_regional = 0;
                                   <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?>
+                                  </th>
                                   <th colspan="1"></th>
                                 </tr>
                               </tfoot>
@@ -764,8 +765,8 @@ $total_hp_closed_regional = 0;
                                     }
                                     ?></td>
                                     <td>
-                                    <a href="<?= site_url('Fiberstar_Project/Detail/' . $data['area_project']); ?>"
-                                    class="btn btn-primary"><i class="fas fa-eye"></i></a>
+                                      <a href="<?= site_url('Fiberstar_Project/Detail/' . $data['area_project']); ?>"
+                                        class="btn btn-primary"><i class="fas fa-eye"></i></a>
                                     </td>
                                   </tr>
 
@@ -788,7 +789,8 @@ $total_hp_closed_regional = 0;
                                   <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ",", ".") ?></th>
                                   <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?>
+                                  </th>
                                   <th colspan="1"></th>
                                 </tr>
                               </tfoot>
@@ -883,8 +885,9 @@ $total_hp_closed_regional = 0;
                   <div class="col-lg-6">
                     <div class="card">
                       <div class="card-header border-0">
-                        <div class="d-flex justify-content-center">
+                        <div class="d-flex justify-content-between">
                           <h3 class="card-title">TOP AREA DONE BAK</h3>
+                          <a href="javascript:void(0);" id="lihatDetailBAK">Lihat Detail</a>
                         </div>
                       </div>
                       <div class="card-body">
@@ -897,7 +900,8 @@ $total_hp_closed_regional = 0;
                           </p>
                           <p class="ml-auto d-flex flex-column text-right">
                             <span class="text-success">
-                              <i class="text-bold text-lg" id="jumlah_cl_done_bak"><?php echo $total_cluster_bak ." Cluster"?></i>
+                              <i class="text-bold text-lg"
+                                id="jumlah_cl_done_bak"><?php echo $total_cluster_bak . " Cluster" ?></i>
                             </span>
                             <span class="text-muted">By Cleanlist ( % )</span>
                           </p>
@@ -921,8 +925,9 @@ $total_hp_closed_regional = 0;
                   <div class="col-lg-6">
                     <div class="card">
                       <div class="card-header border-0">
-                        <div class="d-flex justify-content-center">
+                        <div class="d-flex justify-content-between">
                           <h3 class="card-title">TOP AREA DONE SPK</h3>
+                          <a href="javascript:void(0);">Lihat Detail</a>
                         </div>
                       </div>
                       <div class="card-body">
@@ -935,7 +940,8 @@ $total_hp_closed_regional = 0;
                           </p>
                           <p class="ml-auto d-flex flex-column text-right">
                             <span class="text-success">
-                              <i class="text-bold text-lg" id="jumlah_cl_done_spk"><?php echo $total_cluster_spk ." Cluster"?></i>
+                              <i class="text-bold text-lg"
+                                id="jumlah_cl_done_spk"><?php echo $total_cluster_spk . " Cluster" ?></i>
                             </span>
                             <span class="text-muted">By Cleanlist ( % )</span>
                           </p>
@@ -959,8 +965,9 @@ $total_hp_closed_regional = 0;
                   <div class="col-lg-6">
                     <div class="card">
                       <div class="card-header border-0">
-                        <div class="d-flex justify-content-center">
+                        <div class="d-flex justify-content-between">
                           <h3 class="card-title">TOP AREA DONE RFS</h3>
+                          <a href="javascript:void(0);">Lihat Detail</a>
                         </div>
                       </div>
                       <div class="card-body">
@@ -997,8 +1004,9 @@ $total_hp_closed_regional = 0;
                   <div class="col-lg-6">
                     <div class="card">
                       <div class="card-header border-0">
-                        <div class="d-flex justify-content-center">
+                        <div class="d-flex justify-content-between">
                           <h3 class="card-title">TOP AREA DONE ATP</h3>
+                          <a href="javascript:void(0);">Lihat Detail</a>
                         </div>
                       </div>
                       <div class="card-body">
@@ -1474,7 +1482,9 @@ $total_hp_closed_regional = 0;
     let currentPageSpk = 0; // Halaman saat ini
     const itemsPerPageSpk = 5; // Batas data per halaman
 
-    console.log("isi data : ", dataBarBAK);
+    let gettopAreaBAKDetail = <?php echo json_encode($gettopAreaBAKDetail); ?>;
+
+    console.log("isi data : ", gettopAreaBAKDetail);
 
     // Fungsi untuk memperbarui chart berdasarkan halaman
     function updateChartBAK() {
@@ -1691,6 +1701,7 @@ $total_hp_closed_regional = 0;
     // Tampilkan halaman pertama dan pagination
     let totalClusterBAK = 0;
     let totalClusterSPK = 0;
+    let periode_tanggal = 0;
 
     updateChartBAK();
     updateChartSPK();
@@ -1700,6 +1711,8 @@ $total_hp_closed_regional = 0;
       var dateRange = $('#date-range').val();
       console.log($("#date-range").val());
 
+      periode_tanggal = $("#date-range").val();
+
       $.ajax({
         url: "<?= base_url('Fiberstar_Project/filterTanggalChart') ?>",
         type: "POST",
@@ -1708,6 +1721,10 @@ $total_hp_closed_regional = 0;
         success: function (response) {
           if (response.status === "success") {
             console.log("Data berhasil diterima", response);
+
+            gettopAreaBAKDetail = response.gettopAreaBAKFilterDetail
+
+            console.log("isi data filter", gettopAreaBAKDetail);
 
             // Update data chart BAK
             areaAchievBarBak.length = 0;
@@ -1755,6 +1772,28 @@ $total_hp_closed_regional = 0;
         }
       });
     });
+
+    $("#lihatDetailBAK").click(function () {
+      $.ajax({
+        url: "<?= base_url('Fiberstar_Project/saveDetailToSession') ?>",
+        type: "POST",
+        data: { 
+          data: JSON.stringify(gettopAreaBAKDetail),
+          judul: "BAK",
+          periode_tanggal: periode_tanggal
+
+         }, // Kirim data ke session
+        success: function () {
+          // Redirect setelah data tersimpan di session
+          window.open("<?= base_url('Fiberstar_Project/FilterDetail') ?>", "_blank");
+        },
+        error: function (xhr, status, error) {
+          console.error("Error:", xhr.responseText);
+          alert("Terjadi kesalahan saat menyimpan data ke session!");
+        }
+      });
+    });
+
   });
 
 </script>
@@ -2149,14 +2188,14 @@ $total_hp_closed_regional = 0;
   });
 
   $(document).ready(function () {
-            $('#table_detail_area').DataTable({
-                "paging": true,          // Tetap gunakan pagination
-                "pageLength": 10,        // Menampilkan 10 data per halaman
-                "info": false,           // Menghilangkan "Showing 1 to X of X entries"
-                "searching": true,      // Menghilangkan search bar
-                "lengthChange": false    // Menghilangkan dropdown "Show entries"
-            });
-        });
+    $('#table_detail_area').DataTable({
+      "paging": true,          // Tetap gunakan pagination
+      "pageLength": 10,        // Menampilkan 10 data per halaman
+      "info": false,           // Menghilangkan "Showing 1 to X of X entries"
+      "searching": true,      // Menghilangkan search bar
+      "lengthChange": false    // Menghilangkan dropdown "Show entries"
+    });
+  });
 
 
   $(document).ready(function () {
