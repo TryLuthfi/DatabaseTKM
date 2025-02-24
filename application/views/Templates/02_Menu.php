@@ -54,7 +54,7 @@ $id_menu = $this->uri->segment('1');
                     <a href="#" class="d-block"><?= $this->session->userdata('nama_user') ?></a>
                 </div>
             </div>
-            
+
 
             <!-- Sidebar Menu -->
             <nav class="mt-2">
@@ -64,8 +64,8 @@ $id_menu = $this->uri->segment('1');
                with font-awesome or any other icon font library -->
                     <li class="nav-item">
                         <a href="<?= base_url('Dashboard') ?>" class="nav-link <?php if ($id_menu == 'Dashboard') {
-                              echo "active";
-                          } ?>">
+                                                                                    echo "active";
+                                                                                } ?>">
                             <i class="nav-icon fas fa-tachometer-alt"></i>
                             <p>
                                 Dashboard
@@ -75,11 +75,11 @@ $id_menu = $this->uri->segment('1');
 
                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                         <li class="nav-item has-treeview <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea') {
-                            echo "menu-open";
-                        } ?>">
+                                                                echo "menu-open";
+                                                            } ?>">
                             <a href="#" class="nav-link <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea') {
-                                echo "active";
-                            } ?>">
+                                                            echo "active";
+                                                        } ?>">
                                 <i class="nav-icon fas fa-money-check-alt"></i>
                                 <p>
                                     Super Admin
@@ -94,8 +94,8 @@ $id_menu = $this->uri->segment('1');
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="<?= base_url('ListArea') ?>" class="nav-link <?php if ($id_menu == 'ListArea') {
-                                          echo "active";
-                                      } ?>">
+                                                                                                echo "active";
+                                                                                            } ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>List Area</p>
                                     </a>
@@ -104,8 +104,8 @@ $id_menu = $this->uri->segment('1');
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="<?= base_url('ListUser') ?>" class="nav-link <?php if ($id_menu == 'ListUser') {
-                                          echo "active";
-                                      } ?>">
+                                                                                                echo "active";
+                                                                                            } ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>List User</p>
                                     </a>
@@ -114,8 +114,8 @@ $id_menu = $this->uri->segment('1');
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="<?= base_url('ListBowheer') ?>" class="nav-link <?php if ($id_menu == 'ListBowheer') {
-                                          echo "active";
-                                      } ?>">
+                                                                                                    echo "active";
+                                                                                                } ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>List Bowheer</p>
                                     </a>
@@ -128,11 +128,11 @@ $id_menu = $this->uri->segment('1');
 
                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                         <li class="nav-item has-treeview <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang' || $id_menu == 'Master_Logistik_Kode_Item' || $id_menu == 'Master_Logistik_Sumber_Material' || $id_menu == 'Master_Logistik_Pabrik') {
-                            echo "menu-open";
-                        } ?>">
+                                                                echo "menu-open";
+                                                            } ?>">
                             <a href="#" class="nav-link <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang' || $id_menu == 'Master_Logistik_Kode_Item' || $id_menu == 'Master_Logistik_Sumber_Material' || $id_menu == 'Master_Logistik_Pabrik') {
-                                echo "active";
-                            } ?>">
+                                                            echo "active";
+                                                        } ?>">
                                 <i class="nav-icon fas fa-money-check-alt"></i>
                                 <p>
                                     Master Logistik
@@ -147,8 +147,8 @@ $id_menu = $this->uri->segment('1');
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="<?= base_url('Master_Logistik_Lokasi_Gudang') ?>" class="nav-link <?php if ($id_menu == 'Master_Logistik_Lokasi_Gudang') {
-                                          echo "active";
-                                      } ?>">
+                                                                                                                    echo "active";
+                                                                                                                } ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Lokasi Gudang</p>
                                     </a>
@@ -157,8 +157,8 @@ $id_menu = $this->uri->segment('1');
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="<?= base_url('Master_Logistik_Kode_Item') ?>" class="nav-link <?php if ($id_menu == 'Master_Logistik_Kode_Item') {
-                                          echo "active";
-                                      } ?>">
+                                                                                                                echo "active";
+                                                                                                            } ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Kode Item</p>
                                     </a>
@@ -167,8 +167,8 @@ $id_menu = $this->uri->segment('1');
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="<?= base_url('Master_Logistik_Sumber_Material') ?>" class="nav-link <?php if ($id_menu == 'Master_Logistik_Sumber_Material') {
-                                          echo "active";
-                                      } ?>">
+                                                                                                                        echo "active";
+                                                                                                                    } ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Sumber Material</p>
                                     </a>
@@ -177,8 +177,8 @@ $id_menu = $this->uri->segment('1');
                             <ul class="nav nav-treeview">
                                 <li class="nav-item">
                                     <a href="<?= base_url('Master_Logistik_Pabrik') ?>" class="nav-link <?php if ($id_menu == 'Master_Logistik_Pabrik') {
-                                          echo "active";
-                                      } ?>">
+                                                                                                            echo "active";
+                                                                                                        } ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>Pabrik</p>
                                     </a>
@@ -188,9 +188,20 @@ $id_menu = $this->uri->segment('1');
                     <?php } ?>
 
                     <li class="nav-item">
-                        <a href="<?= base_url('Logistik_Pesanan_Pabrikny') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Pesanan_Pabrik') {
-                              echo "active";
-                          } ?>">
+                        <a href="<?= base_url('Logistik_Purchase_Request') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Purchase_Request') {
+                                                                                                    echo "active";
+                                                                                                } ?>">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Purchase Request
+                            </p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="<?= base_url('Logistik_Pesanan_Pabrik') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Pesanan_Pabrik') {
+                                                                                                    echo "active";
+                                                                                                } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
                                 Pesanan Pabrik
@@ -200,8 +211,8 @@ $id_menu = $this->uri->segment('1');
 
                     <li class="nav-item">
                         <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok') {
-                              echo "active";
-                          } ?>">
+                                                                                                    echo "active";
+                                                                                                } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
                                 Dashboard Logistik
@@ -212,11 +223,11 @@ $id_menu = $this->uri->segment('1');
                     <li class="nav-header">Project</li>
 
                     <li class="nav-item has-treeview <?php if ($id_menu == 'Fiberstar_PO' || $id_menu == 'Fiberstar_Project' || $id_menu == 'Fiberstar_Project_Detail') {
-                        echo "menu-open";
-                    } ?>">
+                                                            echo "menu-open";
+                                                        } ?>">
                         <a href="#" class="nav-link <?php if ($id_menu == 'Fiberstar_PO' || $id_menu == 'Fiberstar_Project' || $id_menu == 'Fiberstar_Project_Detail') {
-                            echo "active";
-                        } ?>">
+                                                        echo "active";
+                                                    } ?>">
                             <i class="nav-icon fas fa-money-check-alt"></i>
                             <p>
                                 Fiberstar
@@ -232,8 +243,8 @@ $id_menu = $this->uri->segment('1');
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
                                 <a href="<?= base_url('Fiberstar_Project') ?>" class="nav-link <?php if ($id_menu == 'Fiberstar_Project' || $id_menu == 'Fiberstar_Project_Detail') {
-                                      echo "active";
-                                  } ?>">
+                                                                                                    echo "active";
+                                                                                                } ?>">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>List Project</p>
                                 </a>
@@ -242,8 +253,8 @@ $id_menu = $this->uri->segment('1');
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
                                 <a href="<?= base_url('Fiberstar_PO') ?>" class="nav-link <?php if ($id_menu == 'Fiberstar_PO') {
-                                      echo "active";
-                                  } ?>">
+                                                                                                echo "active";
+                                                                                            } ?>">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>PO & Invoice</p>
                                 </a>
@@ -252,11 +263,11 @@ $id_menu = $this->uri->segment('1');
                     </li>
 
                     <li class="nav-item has-treeview <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
-                        echo "menu-open";
-                    } ?>">
+                                                            echo "menu-open";
+                                                        } ?>">
                         <a href="#" class="nav-link <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
-                            echo "active";
-                        } ?>">
+                                                        echo "active";
+                                                    } ?>">
                             <i class="nav-icon fas fa-money-check-alt"></i>
                             <p>
                                 My Republik
@@ -271,8 +282,8 @@ $id_menu = $this->uri->segment('1');
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
                                 <a href="<?= base_url('MyRepublik_Project') ?>" class="nav-link <?php if ($id_menu == 'MyRepublik_Project') {
-                                      echo "active";
-                                  } ?>">
+                                                                                                    echo "active";
+                                                                                                } ?>">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>List Project</p>
                                 </a>
@@ -281,8 +292,8 @@ $id_menu = $this->uri->segment('1');
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
                                 <a class="nav-link <?php if ($id_menu == 'MyRepublik_PO') {
-                                    echo "active";
-                                } ?>">
+                                                        echo "active";
+                                                    } ?>">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>PO & Invoice</p>
                                 </a>
@@ -292,8 +303,8 @@ $id_menu = $this->uri->segment('1');
                     <li class="nav-header">Report</li>
                     <li class="nav-item">
                         <a href="<?= base_url('forbidden') ?>" class="nav-link <?php if ($id_menu == 'forbidden') {
-                              echo "active";
-                          } ?>">
+                                                                                    echo "active";
+                                                                                } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
                                 Pendapatan
@@ -302,8 +313,8 @@ $id_menu = $this->uri->segment('1');
                     </li>
                     <li class="nav-item">
                         <a href="<?= base_url('forbidden') ?>" class="nav-link <?php if ($id_menu == 'forbidden') {
-                              echo "active";
-                          } ?>">
+                                                                                    echo "active";
+                                                                                } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
                                 Rincian Pendapatan

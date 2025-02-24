@@ -3,7 +3,7 @@ $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
 $total = 1;
-$satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aksesoris'];
+$satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB', 'FAT', 'FDT', 'Aksesoris'];
 ?>
 
 <div class="content-wrapper">
@@ -60,7 +60,7 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
                                     <tbody>
                                         <?php
                                         foreach ($getOustandingPesananPabrik as $data):
-                                            ?>
+                                        ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nomor_po_pabrik'] ?></td>
@@ -103,93 +103,93 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
                 </div>
         </section>
 
-        <?php $tgl = date('Y-m-d'); ?>  
+        <?php $tgl = date('Y-m-d'); ?>
         <form action=" <?php echo base_url('Rincian/add') ?>" method="post">
-                <div class="modal fade" id="modal-lg-tambah">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h4 class="modal-title">Tambah Rincian Harian</h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
+            <div class="modal fade" id="modal-lg-tambah">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Tambah Rincian Harian</h4>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label class="col-form-label">Tanggal :</label>
+                                <input type="date" value="<?php echo  $tgl ?>" class="form-control text-dark" name="tanggal" id="tgl1">
                             </div>
-                            <div class="modal-body">
-                                <div class="form-group">
-                                    <label class="col-form-label">Tanggal :</label>
-                                    <input type="date" value="<?php echo  $tgl ?>" class="form-control text-dark" name="tanggal" id="tgl1">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Keterangan</label>
-                                    <input type="text" class="form-control" name="keterangan_1" autocomplete="off" placeholder="Keterangan...">
-                                </div>
-                                <div id="keterangan">
+                            <div class="form-group">
+                                <label class="col-form-label">Keterangan</label>
+                                <input type="text" class="form-control" name="keterangan_1" autocomplete="off" placeholder="Keterangan...">
+                            </div>
+                            <div id="keterangan">
 
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Kode Akun (D)</label>
-                                    <select name="debit" id="debit" class="form-control">
-                                        <option name="kode_kredit">Pilih Kode</option>
-                                        <?php foreach ($kode_akun as $data) : ?>
-                                            <option value="<?= $data['kode_akun'] ?>"><?= $data['nama_kode'] ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="form-group" id="kredit_r">
-                                    <label class="col-form-label">Kode Akun (K)</label>
-                                    <select name="kredit_1" id="kredit" class="form-control">
-                                        <option name="kode_kredit">Pilih Kode</option>
-                                        <?php foreach ($kode_akun as $data) : ?>
-                                            <option value="<?= $data['kode_akun'] ?>"><?= $data['nama_kode'] ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Nominal</label>
-                                    <input type="text" class="form-control" name="nominal_d1" data-inputmask="'alias': 'currency' " data-mask>
-                                </div>
-                                <div id="kredit_t">
+                            </div>
+                            <div class="form-group">
+                                <label class="col-form-label">Kode Akun (D)</label>
+                                <select name="debit" id="debit" class="form-control">
+                                    <option name="kode_kredit">Pilih Kode</option>
+                                    <?php foreach ($kode_akun as $data) : ?>
+                                        <option value="<?= $data['kode_akun'] ?>"><?= $data['nama_kode'] ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group" id="kredit_r">
+                                <label class="col-form-label">Kode Akun (K)</label>
+                                <select name="kredit_1" id="kredit" class="form-control">
+                                    <option name="kode_kredit">Pilih Kode</option>
+                                    <?php foreach ($kode_akun as $data) : ?>
+                                        <option value="<?= $data['kode_akun'] ?>"><?= $data['nama_kode'] ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-form-label">Nominal</label>
+                                <input type="text" class="form-control" name="nominal_d1" data-inputmask="'alias': 'currency' " data-mask>
+                            </div>
+                            <div id="kredit_t">
 
-                                </div>
-                                <div id="nominal_k">
+                            </div>
+                            <div id="nominal_k">
 
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
 
-                                    <button type="submit" name="btnSubmit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i> Simpan</button>
-                                    <? $asu = 0; ?>
-                                    <button id="tambah" type="button" onclick="addNominal(this.value)" value="2">Form Nominal</button>
-                                    <script>
-                                        function addNominal(val) {
-                                            document.getElementById('nominal_k').innerHTML +=
-                                                `<div class="form-group">
+                                <button type="submit" name="btnSubmit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i> Simpan</button>
+                                <? $asu = 0; ?>
+                                <button id="tambah" type="button" onclick="addNominal(this.value)" value="2">Form Nominal</button>
+                                <script>
+                                    function addNominal(val) {
+                                        document.getElementById('nominal_k').innerHTML +=
+                                            `<div class="form-group">
                                                 <label class="col-form-label">Nominal (K) ${val}</label>
                                                 <input type="text" class="form-control" name="nominal_d${val}" data-inputmask="'alias': 'currency' " data-mask>
                                                 </div>`;
-                                            const newEl = document.getElementById('kredit_r')
-                                            document.getElementById('kredit_t').appendChild(newEl.cloneNode(true))
-                                            const el = document.getElementsByName('kredit_1')
-                                            el[el.length - 1].setAttribute('name', 'kredit_' + val)
-                                            const result = document.getElementById('tambah');
-                                            result.value = result.value ? parseInt(result.value) + 1 : parseInt(val)
-                                            $(function() {
-                                                // format angka rupiah
-                                                $('[data-mask]').inputmask("currency", {
-                                                    prefix: " Rp. ",
-                                                    digitsOptional: true
-                                                })
-                                            });
-                                        }
-                                    </script>
-                                </div>
+                                        const newEl = document.getElementById('kredit_r')
+                                        document.getElementById('kredit_t').appendChild(newEl.cloneNode(true))
+                                        const el = document.getElementsByName('kredit_1')
+                                        el[el.length - 1].setAttribute('name', 'kredit_' + val)
+                                        const result = document.getElementById('tambah');
+                                        result.value = result.value ? parseInt(result.value) + 1 : parseInt(val)
+                                        $(function() {
+                                            // format angka rupiah
+                                            $('[data-mask]').inputmask("currency", {
+                                                prefix: " Rp. ",
+                                                digitsOptional: true
+                                            })
+                                        });
+                                    }
+                                </script>
                             </div>
                         </div>
-                        <!-- /.modal-content -->
                     </div>
-                    <!-- /.modal-dialog -->
+                    <!-- /.modal-content -->
                 </div>
-            </form>
+                <!-- /.modal-dialog -->
+            </div>
+        </form>
 
     </section>
 </div>
@@ -203,58 +203,63 @@ $satuan_options = ['Kabel', 'Tiang', 'HDPE', 'Closure', 'OTB','FAT', 'FDT', 'Aks
 </aside>
 
 <script>
-    $(function () {
+    $(function() {
 
         // notifikasi allert sukses atau tidak
         <?php if ($status == 'sukses_tambah') { ?>
             swal("Success!", "Berhasil Ditambah!", "success");
         <?php } else if ($status == 'sukses_hapus') { ?>
-                swal("Success!", "Berhasil Dihapus!", "success");
+            swal("Success!", "Berhasil Dihapus!", "success");
         <?php } else if ($status == 'sukses_edit') { ?>
-                    swal("Success!", "Berhasil Edit Data!", "success");
+            swal("Success!", "Berhasil Edit Data!", "success");
         <?php } else if ($status == 'gagal_tambah') { ?>
-                        swal("Gagal!", "Gagal Menambah Data!", "warning");
+            swal("Gagal!", "Gagal Menambah Data!", "warning");
         <?php } else if ($status == 'gagal_edit') { ?>
-                            swal("Gagal!", "Gagal Mengedit Data!", "warning");
+            swal("Gagal!", "Gagal Mengedit Data!", "warning");
         <?php } else if ($status == 'gagal_hapus') { ?>
-                                swal("Gagal!", "Gagal Menghapus Data!", "warning");
+            swal("Gagal!", "Gagal Menghapus Data!", "warning");
         <?php } else { ?>
         <?php } ?>
     })
 
-    $(document).ready(function () {
-    setTimeout(function () {
-        const table = $('#tabel_pesanan_pabrik').DataTable();
+    $(document).ready(function() {
+        setTimeout(function() {
+            const table = $('#tabel_pesanan_pabrik').DataTable();
 
-        function updateTotal() {
-            let totalQTYPesanan = 0;
-            let totalQTYPengiriman = 0;
-            let totalQTYSisa = 0;
-            let totalQTYHargaPO = 0;
+            function updateTotal() {
+                let totalQTYPesanan = 0;
+                let totalQTYPengiriman = 0;
+                let totalQTYSisa = 0;
+                let totalQTYHargaPO = 0;
 
-            table.rows({ search: 'applied' }).data().each(function (row) {
+                table.rows({
+                    search: 'applied'
+                }).data().each(function(row) {
 
-                if (row['4'] != 0) {
-                    totalQTYPesanan += parseFloat(row[4].replace(/,/g, ''))
-                } if (row['5'] != 0) {
-                    totalQTYPengiriman += parseFloat(row[5].replace(/,/g, ''))
-                } if (row['6'] != 0) {
-                    totalQTYSisa += parseFloat(row[6].replace(/,/g, ''))
-                } if (row['7'] != 0) {
-                    totalQTYHargaPO += parseFloat(row[7].replace(/,/g, ''))
-                }
+                    if (row['4'] != 0) {
+                        totalQTYPesanan += parseFloat(row[4].replace(/,/g, ''))
+                    }
+                    if (row['5'] != 0) {
+                        totalQTYPengiriman += parseFloat(row[5].replace(/,/g, ''))
+                    }
+                    if (row['6'] != 0) {
+                        totalQTYSisa += parseFloat(row[6].replace(/,/g, ''))
+                    }
+                    if (row['7'] != 0) {
+                        totalQTYHargaPO += parseFloat(row[7].replace(/,/g, ''))
+                    }
 
-            });
-            $('#totalQTYPesanan').text(totalQTYPesanan.toLocaleString('id-ID'));
-            $('#totalQTYPengiriman').text(totalQTYPengiriman.toLocaleString('id-ID'));
-            $('#totalQTYSisa').text(totalQTYSisa.toLocaleString('id-ID'));
-            $('#totalQTYHargaPO').text(totalQTYHargaPO.toLocaleString('id-ID'));
-        }
+                });
+                $('#totalQTYPesanan').text(totalQTYPesanan.toLocaleString('id-ID'));
+                $('#totalQTYPengiriman').text(totalQTYPengiriman.toLocaleString('id-ID'));
+                $('#totalQTYSisa').text(totalQTYSisa.toLocaleString('id-ID'));
+                $('#totalQTYHargaPO').text(totalQTYHargaPO.toLocaleString('id-ID'));
+            }
 
-        table.on('search.dt draw.dt', updateTotal);
-        updateTotal();
-    }, 1);
-});
+            table.on('search.dt draw.dt', updateTotal);
+            updateTotal();
+        }, 1);
+    });
 </script>
 
 

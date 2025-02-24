@@ -10,21 +10,21 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         $this->load->library('form_validation');
         $this->load->model('MLogistik_Pesanan_Pabrik');
     }
-    
+
     public function index()
     {
         if (!empty($this->session->userdata('id_user'))) {
 
-        $data['title'] = 'List PO Pabrik';
-        $data['judul'] = 'List PO Pabrik';
-        // $data['getMasterLogistikPesananPabrik'] = $this->MLogistik_Pesanan_Pabrik->getMasterLogistikPesananPabrik();
-        // $data['getOustandingPesananPabrik'] = $this->MLogistik_Pesanan_Pabrik->getOustandingPesananPabrik();
+            $data['title'] = 'List PO Pabrik';
+            $data['judul'] = 'List PO Pabrik';
+            $data['getMasterLogistikPesananPabrik'] = $this->MLogistik_Pesanan_Pabrik->getMasterLogistikPesananPabrik();
+            $data['getOustandingPesananPabrik'] = $this->MLogistik_Pesanan_Pabrik->getOustandingPesananPabrik();
 
-        $this->load->view('Templates/01_Header', $data);
-        $this->load->view('Templates/02_Menu');
-        $this->load->view('Logistik_Pesanan_Pabrik/index', $data);
-        $this->load->view('Templates/03_Footer');
-        $this->load->view('Templates/99_JS');
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('Logistik_Pesanan_Pabrik/index', $data);
+            $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
         } else {
             redirect('Auth');
         }
