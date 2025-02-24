@@ -19,6 +19,7 @@ class MAuth extends CI_Model
 	a.*,
 	tl.*,
 	tj.*,
+    tmuc.*,
 	COALESCE(b.nama_user, a.nama_user) as under_sm,
 	COALESCE(c.nama_user, a.nama_user) as under_pm
 from
@@ -29,20 +30,26 @@ left join tb_master_user c on
 	a.under_pm  = c.id_user
 left join tb_level tl  ON a.id_level = tl.id_level
 LEFT JOIN tb_jabatan tj ON a.id_jabatan = tj.id_jabatan
-WHERE a.username_user = '".$username."'")->row_array();
-        if ($akun) {
-            if ($akun['password_user'] == $pass) {
+LEFT JOIN tb_master_user_child tmuc ON a.id_user = tmuc.id_master_user
+WHERE a.username_user = '".$username."'")->result_array();
+        if ($akun[0]) {
+            if ($akun[0]['password_user'] == $pass) {
                 $data =
                     [
-                        'id_user' => $akun['id_user'],
-                        'nama_user' => $akun['nama_user'],
-                        'username_user' => $akun['username_user'],
-                        'password_user' => $akun['password_user'],
-                        'lokasi_user' => $akun['lokasi_user'],
-                        'nama_level' => $akun['nama_level']
+                        'id_user' => $akun[0]['id_user'],
+                        'nama_user' => $akun[0]['nama_user'],
+                        'username_user' => $akun[0]['username_user'],
+                        'password_user' => $akun[0]['password_user'],
+                        'lokasi_user' => $akun[0]['lokasi_user'],
+                        'nama_level' => $akun[0]['nama_level']
                     ];
                 $this->session->set_userdata($data);
-                redirect('Dashboard');
+
+                $dataSessionUser = array_column($akun, "validation_user");
+                $validation_user = implode(", ", $dataSessionUser);
+                $this->session->set_userdata('validation_user', $validation_user);
+                
+                redirect('Dashboard_Logistik_Stok');
             } else {
                 $this->session->set_flashdata('error_log', 'salah');
                 redirect('Auth');
