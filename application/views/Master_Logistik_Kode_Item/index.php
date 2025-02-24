@@ -3,6 +3,7 @@ $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
 $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
+$kategori_item = ['Tiang', 'OTB ', 'Kabel ', 'HDPE ', 'FDT', 'FAT', 'Closure', 'Aksesories '];
 
 $total = 1;
 ?>
@@ -45,6 +46,7 @@ $total = 1;
                                         <tr>
                                             <th>No</th>
                                             <th>Nama Item</th>
+                                            <th>Kategori Item</th>
                                             <th>Satuan</th>
                                             <th>Project</th>
                                             <th>Kepemilikan</th>
@@ -58,6 +60,7 @@ $total = 1;
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
+                                                <td><?= $data['kategori_item'] ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
@@ -76,7 +79,7 @@ $total = 1;
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <th colspan="1">Total</th>
+                                            <th colspan="2">Total</th>
                                             <th colspan="2"><?= number_format($total - 1, 0, ',', '.') ?></th>
                                             <th colspan="3"></th>
                                         </tr>
@@ -105,6 +108,16 @@ $total = 1;
                                 <label class="col-form-label">Nama Item</label>
                                 <input type="text" class="form-control" name="nama_item" autocomplete="off"
                                     placeholder="Nama Item">
+                            </div>
+                            <div class="form-group">
+                                <label class="col-form-label">Kategori Item</label>
+                                <select name="kategori_item" class="form-control">
+                                    <?php foreach ($kategori_item as $option): ?>
+                                        <option value="<?= $option ?>" <?= isset($data['satuan_item']) && $data['satuan_item'] == $option ? 'selected' : '' ?>>
+                                            <?= $option ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label class="col-form-label">Jumlah Satuan</label>
@@ -174,6 +187,16 @@ $total = 1;
                                     <label class="col-form-label">Nama Item</label>
                                     <input type="text" class="form-control" name="nama_item" autocomplete="off"
                                         placeholder="Nama Item" value="<?= $data['nama_item'] ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label class="col-form-label">Kategori Item</label>
+                                    <select name="kategori_item" class="form-control">
+                                        <?php foreach ($kategori_item as $option): ?>
+                                            <option value="<?= $option ?>" <?= isset($data['kategori_item']) && $data['kategori_item'] == $option ? 'selected' : '' ?>>
+                                                <?= $option ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label class="col-form-label">Jumlah Satuan</label>

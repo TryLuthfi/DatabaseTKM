@@ -134,4 +134,9 @@ class MFiberstar_Project_Detail extends CI_Model
         $res = $this->db->insert('tb_ds_approval_cbn', $data);
         return $res;
     }
+
+    public function getMasterUser(){
+        $data = $this->db->query('SELECT * FROM tb_master_user')->result_array();
+        return $data;
+    }
 }

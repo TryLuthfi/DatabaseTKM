@@ -45,6 +45,7 @@ class Master_Logistik_Kode_Item extends CI_Controller
 
         $hasil_data = array(
             'nama_item' => $_POST['nama_item'],
+            'kategori_item' => $_POST['kategori_item'],
             'satuan_item' => $_POST['satuan_item'],
             'id_bowheer_pemilik_item' => $_POST['id_bowheer_pemilik_item'],
             'project_item' => $kota_string
@@ -77,6 +78,7 @@ class Master_Logistik_Kode_Item extends CI_Controller
         $data_array = array(
             'nama_item' => $_POST['nama_item'],
             'satuan_item' => $_POST['satuan_item'],
+            'kategori_item' => $_POST['kategori_item'],
             'project_item' => $kota_string,
             'id_bowheer_pemilik_item' => $_POST['id_bowheer_pemilik_item']
         );
