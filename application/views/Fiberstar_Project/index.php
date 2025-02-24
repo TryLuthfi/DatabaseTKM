@@ -630,7 +630,7 @@ $total_hp_closed_regional = 0;
                         <div class="card">
                           <!-- /.card-header -->
                           <div class="card-body table-responsive text-nowrap ">
-                            <table id="table_detail" class="table table-bordered table-hover">
+                            <table id="table_detail_area" class="table table-bordered table-hover">
                               <thead class="bg-info">
                                 <tr>
                                   <th>No</th>
@@ -764,7 +764,7 @@ $total_hp_closed_regional = 0;
                                     }
                                     ?></td>
                                     <td>
-                                    <a href="<?= site_url('Fiberstar_Project/Detail/' . encrypt_id($data['area_project'])); ?>"
+                                    <a href="<?= site_url('Fiberstar_Project/Detail/' . $data['area_project']); ?>"
                                     class="btn btn-primary"><i class="fas fa-eye"></i></a>
                                     </td>
                                   </tr>
@@ -2147,6 +2147,17 @@ $total_hp_closed_regional = 0;
       responsive: false // Matikan fitur Responsive
     });
   });
+
+  $(document).ready(function () {
+            $('#table_detail_area').DataTable({
+                "paging": true,          // Tetap gunakan pagination
+                "pageLength": 10,        // Menampilkan 10 data per halaman
+                "info": false,           // Menghilangkan "Showing 1 to X of X entries"
+                "searching": true,      // Menghilangkan search bar
+                "lengthChange": false    // Menghilangkan dropdown "Show entries"
+            });
+        });
+
 
   $(document).ready(function () {
     const table = $('#table_data').DataTable({

@@ -52,15 +52,16 @@ class Fiberstar_Project extends CI_Controller
         }
     }
 
-    public function filterTanggalChart() {
+    public function filterTanggalChart()
+    {
         $dateRange = $this->input->post('date_range');
         list($startDate, $endDate) = explode(" - ", $dateRange);
         $startDate = date("Y-m-d", strtotime($startDate));
         $endDate = date("Y-m-d", strtotime($endDate));
-    
+
         $data1 = $this->MFiberstar_Project->getFilterTanggalTopAreaAchievBAK($startDate, $endDate);
         $data2 = $this->MFiberstar_Project->getFilterTanggalTopAreaAchievSPK($startDate, $endDate);
-    
+
         // Cegah NULL sebelum di-encode
         array_walk_recursive($data1, function (&$item) {
             $item = $item ?? ""; // Ubah NULL jadi string kosong
@@ -69,7 +70,7 @@ class Fiberstar_Project extends CI_Controller
         array_walk_recursive($data2, function (&$item) {
             $item = $item ?? ""; // Ubah NULL jadi string kosong
         });
-    
+
         header('Content-Type: application/json'); // Pastikan response JSON murni
         echo json_encode([
             "status" => "success",
@@ -129,40 +130,26 @@ class Fiberstar_Project extends CI_Controller
         }
     }
 
-    public function detailImplementasi($primary_access_id_project)
+
+    public function Detail($primary_access_id_project)
     {
+
+    $decoded_url_area = urldecode($primary_access_id_project);
+    
         if (!empty($this->session->userdata('id_user'))) {
-            $primary_access_id_project = array('primary_access_id_project' => $primary_access_id_project);
+            $data['title'] = 'Monitoring Project PT. Fiberstar';
+            $data['judul'] = 'DETAIL PROJECT ' . strtoupper($decoded_url_area);
 
-            $now = date('Y-m-d');
-
-            $data['title'] = 'LIST PO';
-            $data['judul'] = 'PT. Fiberstar';
-            $data['rincian'] = $this->MFiberstar_Project->getData();
-            $data['main_data'] = $this->MFiberstar_Project->getMainData();
-            $data['data_invoice'] = $this->MFiberstar_Project->getInvoice();
-            $data['total_hp_plan'] = $this->MFiberstar_Project->getTotalHpPlan();
-            $data['unique_regional'] = $this->MFiberstar_Project->getUniqueRegional();
-            $data['unique_pic'] = $this->MFiberstar_Project->getUniquePic();
-            $data['unique_area'] = $this->MFiberstar_Project->getUniqueArea();
-            $data['unique_stagging'] = $this->MFiberstar_Project->getUniqueStagging();
-            $data['top_area_bak'] = $this->MFiberstar_Project->gettopAreaBAK();
-            $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasi();
-            $data['kode_akun'] = $this->db->get('tb_project_fiberstar')->result_array();
+            $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasiFilter();
+            $data['total_hp_plan'] = $this->MFiberstar_Project->getTotalHpPlanFilter();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
-            $this->load->view('Fiberstar_Project/index', $data);
+            $this->load->view('Fiberstar_Project/indexarea', $data);
             $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
         } else {
             redirect('Auth');
         }
-
-    }
-
-    public function Detail($encoded_id){
-        $primary_access_id_project = decrypt_id($encoded_id);
-        echo "ID Asli: " . $primary_access_id_project;
     }
 }

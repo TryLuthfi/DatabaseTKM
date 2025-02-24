@@ -40,6 +40,39 @@ class MFiberstar_Project extends CI_Model
         return $data;
     }
 
+    public function getTotalHpPlanFilter()
+    {
+
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $filter_area = "lg.kota_lokasi_gudang";
+        $decoded_url_area = urldecode($last_segment);
+
+        if (stripos($decoded_url_area, "REGIONAL") !== false) {
+            $filter_area = "regional_project";
+        } else {
+            $filter_area = "area_project";
+        }
+
+        $data = $this->db->query('SELECT SUM(hpplan_project) as total_hp_plan, 
+        SUM(CASE WHEN tgl_canvasing IS NOT NULL AND tgl_canvasing != "" THEN hpplan_project ELSE 0 END) as total_hp_canvasing, 
+        SUM(CASE WHEN status_bak IS NOT NULL AND status_bak = "OK" THEN hp_bak ELSE 0 END) as total_hp_bak, 
+        SUM(CASE WHEN spk_nomor IS NOT NULL AND spk_nomor != "" THEN spk_hp ELSE 0 END) as total_hp_spk, 
+        SUM(CASE WHEN status_hld IS NOT NULL AND status_hld = "OK" THEN hp_hld ELSE 0 END) as total_hp_hld,
+        SUM(CASE WHEN status_lld IS NOT NULL AND status_lld = "OK" THEN hp_lld ELSE 0 END) as total_hp_lld,
+        SUM(CASE WHEN tgl_kom IS NOT NULL AND tgl_kom != "" THEN hp_lld ELSE 0 END) as total_hp_kom,
+        SUM(CASE WHEN tgl_pks IS NOT NULL AND tgl_pks != "" THEN hp_lld ELSE 0 END) as total_hp_pks,
+        SUM(CASE WHEN status_implementasi IS NOT NULL AND status_implementasi = "OK" THEN hp_rfs ELSE 0 END) as total_hp_rfs,
+        SUM(CASE WHEN tanggal_atp IS NOT NULL AND tanggal_atp != "" THEN hp_atp ELSE 0 END) as total_hp_atp,
+        SUM(CASE WHEN main_status IS NOT NULL AND main_status = "CLOSED" THEN hp_atp ELSE 0 END) as total_hp_closed
+        FROM tb_project_progress_fiberstar
+        WHERE ' . $filter_area . ' = "' . $decoded_url_area . '";')
+            ->result_array();
+        return $data;
+    }
+
     public function getStaggingRegional()
     {
         $data = $this->db->query('SELECT regional_project,
@@ -233,6 +266,47 @@ ORDER BY
                                     LIKE "%DROP%" OR tb_project_progress_fiberstar.main_status 
                                     LIKE "%HOLD%" THEN 1 ELSE 0 END, tb_project_progress_fiberstar.main_status DESC;')
             ->result_array();
+        return $data;
+    }
+
+    public function getProgressImplementasiFilter(): mixed
+    {
+
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $filter_area = "lg.kota_lokasi_gudang";
+        $decoded_url_area = urldecode($last_segment);
+
+        if (stripos($decoded_url_area, "REGIONAL") !== false) {
+            $filter_area = "regional_project";
+        } else {
+            $filter_area = "area_project";
+        }
+
+        $data = $this->db->query("SELECT tb_project_progress_fiberstar.*, 
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.plan_tiang), 0) as plan_tiang, 
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_tiang), 0) as achiev_tiang, 
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.plan_kabel_24), 0) as plan_kabel_24,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_kabel_24), 0) as achiev_kabel_24,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.plan_kabel_48), 0) as plan_kabel_48,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_kabel_48), 0) as achiev_kabel_48,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.plan_fat), 0) as plan_fat,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_fat), 0) as achiev_fat,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.plan_closure), 0) as plan_closure,
+                                    COALESCE(SUM(tb_project_implementasi_fiberstar.achiev_closure), 0) as achiev_closure
+                                    FROM tb_project_progress_fiberstar 
+                                    LEFT JOIN tb_project_implementasi_fiberstar 
+                                    ON tb_project_implementasi_fiberstar.access_id_project = tb_project_progress_fiberstar.access_id_project
+                                    WHERE " . $filter_area . " = '" . $decoded_url_area . "'
+                                    GROUP BY tb_project_progress_fiberstar.primary_access_id_project 
+                                    ORDER BY CASE WHEN tb_project_progress_fiberstar.main_status 
+                                    LIKE '%DROP%' OR tb_project_progress_fiberstar.main_status 
+                                    LIKE '%HOLD%' THEN 1 ELSE 0 END, tb_project_progress_fiberstar.main_status DESC;")
+            ->result_array();
+
+        log_message('error', 'query filter implementasi yang dijalankan : ' . $this->db->last_query());
         return $data;
     }
 
