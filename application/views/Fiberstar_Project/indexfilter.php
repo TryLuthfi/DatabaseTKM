@@ -16,7 +16,7 @@ $total_item_inner = 0;
       <div class="row mb-2">
         <div class="col-sm-12">
           <h1 class="m-0 text-dark" style="text-align: center;"><?php echo $judul ?></h1>
-          <?php if ($periode_tanggal != ""){?>
+          <?php if ($periode_tanggal != "KOSONG"){?>
           <h1 class="m-0 text-dark" style="text-align: center;">PERIODE ( <?php echo $periode_tanggal ?> )</h1>
           <?php } else {}?>
         </div><!-- /.col -->
