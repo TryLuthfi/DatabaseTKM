@@ -1477,7 +1477,8 @@ $total_stok_dashboard = [];
             showCancelButton: true,
             confirmButtonColor: '#e74c3c',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'DELETE'
+            confirmButtonText: 'DELETE',
+            cancelButtonText: 'CANCEL'
         }).then((result) => {
             if (result.value) {
                 document.location.href = href;
