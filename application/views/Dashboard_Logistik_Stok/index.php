@@ -799,8 +799,7 @@ $total_stok_dashboard = [];
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label class="col-form-label">Input Date</label>
-                                    <input type="date" class="form-control" name="tanggal_upload_stok"
-                                        autocomplete="off" value="<?php echo (new \DateTime())->format('Y-m-d'); ?>"
+                                    <input type="date" class="form-control" name="tanggal_upload_stok" id="tanggal_upload_stok"
                                         disabled>
                                 </div>
                             </div>
@@ -1143,10 +1142,10 @@ $total_stok_dashboard = [];
             let errorMessage = [];
 
             // Cek input tanggal harus valid
-            // let tanggalUpload = $("input[name='tanggal_upload_stok']").val();
-            // if (!tanggalUpload) {
-            //     errorMessage.push("Tanggal upload stok harus diisi.");
-            // }
+            let tanggalUpload = $("input[name='tanggal_upload_stok']").val();
+            if (!tanggalUpload) {
+                errorMessage.push("Tanggal upload stok harus diisi.");
+            }
 
             // Cek setiap input yang harus memiliki nilai
             let requiredFields = {
@@ -1220,11 +1219,15 @@ $total_stok_dashboard = [];
 
 
                         });
+
+                        let tanggalFormatted = response.getDetailAreaBySJ[0].tanggal_upload_stok.split(" ")[0];
+
                         document.getElementById("detail_no_surat_jalan").value = response.getDetailAreaBySJ[0].no_surat_jalan;
                         document.getElementById("detail_area_gudang").value = response.getDetailAreaBySJ[0].kota_lokasi_gudang;
                         document.getElementById("detail_nama_project").value = response.getDetailAreaBySJ[0].project_item;
                         document.getElementById("detail_sumber_material").value = response.getDetailAreaBySJ[0].nama_sumber_material;
                         document.getElementById("detail_keterangan_stok_item").value = response.getDetailAreaBySJ[0].keterangan_stok;
+                        document.getElementById("tanggal_upload_stok").value = tanggalFormatted;
                         var filePath = response.getDetailAreaBySJ[0].evidence_stok;
                         var fileName = filePath.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
 
