@@ -274,7 +274,7 @@ ORDER BY
         return $data;
     }
 
-    public function getDashboardFiltered($lokasiArray, $bowheerArray, $itemArray, $statusArray)
+    public function getDashboardFiltered($lokasiArray, $bowheerArray, $itemArray)
     {
         $sql = "SELECT 
                 lg.regional_lokasi_gudang,
@@ -372,7 +372,7 @@ ORDER BY
 
     }
 
-    public function getRincianDashboardFiltered($lokasiArray, $bowheerArray, $itemArray,)
+    public function getRincianDashboardFiltered($lokasiArray, $bowheerArray, $itemArray)
     {
 
         $sql = "SELECT 
@@ -426,7 +426,7 @@ ORDER BY lg.regional_lokasi_gudang, lg.kota_lokasi_gudang";
 
     }
 
-    public function getRincianDashboardFileteredBowheer($lokasiArray, $bowheerArray, $itemArray,)
+    public function getRincianDashboardFileteredBowheer($lokasiArray, $bowheerArray, $itemArray)
     {
 
         $sql = "SELECT 

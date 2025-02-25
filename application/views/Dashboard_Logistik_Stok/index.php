@@ -1350,12 +1350,18 @@ $total_stok_dashboard = [];
                     document.getElementById("total_dashboard_Kabel ").innerText = totalStokDashboard['Kabel '];
                     document.getElementById("total_dashboard_OTB ").innerText = totalStokDashboard['OTB '];
                     document.getElementById("total_dashboard_Tiang").innerText = totalStokDashboard['Tiang'];
+                    table
+                        .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
+                        .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
+                        .column(5).search(itemFilter, true, false) // Filter kategori (regex search)
+                        .column(6).search(statusFilter, true, false) // Filter kategori (regex search)
+                        .draw();
                 } else {
                     table
                         .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
                         .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
-                        .column(4).search(itemFilter, true, false) // Filter kategori (regex search)
-                        .column(5).search(statusFilter, true, false) // Filter kategori (regex search)
+                        .column(5).search(itemFilter, true, false) // Filter kategori (regex search)
+                        .column(6).search(statusFilter, true, false) // Filter kategori (regex search)
                         .draw(); // Render ulang tabel
 
                     $.ajax({
@@ -1364,8 +1370,7 @@ $total_stok_dashboard = [];
                         data: {
                             lokasi: JSON.stringify(lokasiFilter2), // Kirim sebagai JSON string
                             bowheer: JSON.stringify(bowheerFilter2),
-                            item: JSON.stringify(itemFilter2),
-                            status: JSON.stringify(statusFilter2)
+                            item: JSON.stringify(itemFilter2)
                         },
                         dataType: "json",
                         success: function (response) {
