@@ -112,7 +112,7 @@ LEFT JOIN
 GROUP BY 
     lg.kota_lokasi_gudang
 ORDER BY 
-    lg.regional_lokasi_gudang;')
+    lg.regional_lokasi_gudang, lg.kota_lokasi_gudang;')
             ->result_array();
         return $data;
     }

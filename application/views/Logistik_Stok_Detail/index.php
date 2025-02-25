@@ -644,9 +644,9 @@ $total_tiang = 0;
                                         <h3 class="card-title">List Stok Logistik </h3>
                                     </div>
                                     <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
+                                        <!-- <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
                                             data-target="#modal-xl-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
+                                                class="fas fa-plus"></i> </a> -->
                                     </div>
                                 </div>
                             </div>

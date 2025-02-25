@@ -32,7 +32,7 @@ class Logistik_Stok_Detail extends CI_Controller
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
             $this->load->view('Logistik_Stok_Detail/index', $data);
-            $this->load->view('Templates/03_Footer');
+            // $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
         } else {
             redirect('Auth');
@@ -59,7 +59,7 @@ class Logistik_Stok_Detail extends CI_Controller
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
             $this->load->view('Logistik_Stok_Detail/indexkategori', $data);
-            $this->load->view('Templates/03_Footer');
+            // $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
 
         } else {
