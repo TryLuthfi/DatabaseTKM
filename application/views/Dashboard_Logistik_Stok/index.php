@@ -1,3 +1,5 @@
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <?php
 $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
@@ -614,7 +616,7 @@ $total_stok_dashboard = [];
                                                 <td>
                                                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                                                         <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . $data['no_surat_jalan']); ?>"
-                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                            id="tombol_hapus_rincian" class="btn btn-danger tombol_hapus"><i
                                                                 class=" fas fa-trash"></i></a>
                                                     <?php } ?>
 
@@ -984,39 +986,40 @@ $total_stok_dashboard = [];
 
     </div>
     <!-- /.content-wrapper -->
+</div>
 
-    <?php $this->session->set_flashdata('status', 'kosong'); ?>
+<?php $this->session->set_flashdata('status', 'kosong'); ?>
 
-    <!-- Control Sidebar -->
-    <aside class="control-sidebar control-sidebar-dark">
-        <!-- Control sidebar content goes here -->
-    </aside>
+<!-- Control Sidebar -->
+<aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content goes here -->
+</aside>
 
-    <script type="text/javascript">
-        // START LOGIC TAMBAH STOK ITEM
+<script type="text/javascript">
+    // START LOGIC TAMBAH STOK ITEM
 
-        // AJAX SELECT 2 JENIS MATERIAL
+    // AJAX SELECT 2 JENIS MATERIAL
 
-        $(document).ready(function () {
-            $('#id_kode_item').select2({
-                placeholder: "Pilih Jenis Material",
-                allowClear: true
-            });
+    $(document).ready(function () {
+        $('#id_kode_item').select2({
+            placeholder: "Pilih Jenis Material",
+            allowClear: true
+        });
 
-            $('#id_kode_item').on('change', function () {
-                if ($(this).val() === "") {
-                    return;
-                }
-                var selectedValue = $('#id_kode_item').val();
-                var selectedText = $('#id_kode_item option:selected').text();
-                var selectedSatuan = $('#id_kode_item option:selected').data('satuan-item');
+        $('#id_kode_item').on('change', function () {
+            if ($(this).val() === "") {
+                return;
+            }
+            var selectedValue = $('#id_kode_item').val();
+            var selectedText = $('#id_kode_item option:selected').text();
+            var selectedSatuan = $('#id_kode_item option:selected').data('satuan-item');
 
-                if (selectedValue === "") {
-                    alert("Pilih item terlebih dahulu!");
-                    return;
-                }
+            if (selectedValue === "") {
+                alert("Pilih item terlebih dahulu!");
+                return;
+            }
 
-                $('#table_item_stok tbody').append(`
+            $('#table_item_stok tbody').append(`
                 <tr>
                     <td>${counter}</td>
                     <td hidden><input type="hidden" name="id_kode_item[${counter}]" value="${selectedValue}">${selectedValue}</td>
@@ -1029,458 +1032,476 @@ $total_stok_dashboard = [];
                     <td><button class="btn btn-danger hapus-item"><i class="fa fa-trash"></i></button></td>
                 </tr>
             `);
-                counter++;
+            counter++;
 
-                $('#id_kode_item').val("").trigger('change');
+            $('#id_kode_item').val("").trigger('change');
+        });
+
+        $('#id_project').change(function () {
+            $('#table_item_stok tbody').empty();
+            counter = 1;
+            let idBowheer = $(this).find(':selected').data('id-bowheer');
+
+            if (idBowheer === "") {
+                $('#id_kode_item').empty().append('<option value="">Pilih Jenis Material</option>').trigger('change');
+                return;
+            }
+
+            $.ajax({
+                url: "<?= base_url() . 'Dashboard_Logistik_Stok/getProjectByBowheer' ?>",
+                type: "GET",
+                data: {
+                    id_bowheer: idBowheer.toString()
+                },
+                dataType: "json",
+                success: function (response) {
+
+                    $('#id_kode_item').empty().append('<option value="">Pilih Jenis Material</option>');
+
+                    $.each(response, function (index, project) {
+                        $('#id_kode_item').append(
+                            `<option value="${project.id_kode_item}" data-satuan-item="${project.satuan_item}">${project.nama_item}</option>`
+                        );
+                    });
+
+                    $('#id_kode_item').trigger('change');
+                },
+                error: function (xhr, status, error) {
+                    console.error(error);
+                }
+            });
+        });
+
+        var counter = 1;
+
+        $(document).on('click', '.hapus-item', function () {
+            $(this).closest('tr').remove();
+
+            $('#table_item_stok tbody tr').each(function (index) {
+                $(this).find('td:first').text(index + 1);
             });
 
-            $('#id_project').change(function () {
-                $('#table_item_stok tbody').empty();
-                counter = 1;
-                let idBowheer = $(this).find(':selected').data('id-bowheer');
+            counter--;
+        });
 
-                if (idBowheer === "") {
-                    $('#id_kode_item').empty().append('<option value="">Pilih Jenis Material</option>').trigger('change');
+        $('#modal-xl-tambah').on('hidden.bs.modal', function () {
+            $('#table_item_stok tbody').empty();
+            $('#nomor_surat_jalan').val('');
+            $('#id_project').val('').trigger('change');
+            $('#id_lokasi_gudang').val('').trigger('change');
+            $('#id_sumber_material').val('').trigger('change');
+            counter = 1;
+        });
+
+        $('.btn-tambah-data-item').on('click', function () {
+            $('#file-sj').val('');
+            $('.custom-file-label').text('Choose file');
+            $('#keterangan_stok_item').val('');
+        })
+
+        $('#file-sj').on('change', function (e) {
+            var fileName = e.target.files.length > 0 ? e.target.files[0].name : "Choose file";
+            $(this).siblings('.custom-file-label').text(fileName);
+        });
+
+        $("#file-sj").change(function () {
+            let file = this.files[0];
+            let allowedExtensions = /(\.pdf|\.docx|\.xlsx)$/i;
+            let maxSize = 5120 * 1024;
+
+            if (file) {
+                if (!allowedExtensions.test(file.name)) {
+                    alert("File harus berupa PDF, DOCX, atau XLSX!");
+                    $(this).val("");
+                    $('.custom-file-label').text('Choose file');
                     return;
                 }
 
+                if (file.size > maxSize) {
+                    alert("Ukuran file tidak boleh lebih dari 5MB!");
+                    $(this).val("");
+                    $('.custom-file-label').text('Choose file');
+                    return;
+                }
+            }
+        });
+
+        $("#form_tambah_stok").submit(function (event) {
+            let isValid = true;
+            let errorMessage = [];
+
+            // Cek input tanggal harus valid
+            let tanggalUpload = $("input[name='tanggal_upload_stok']").val();
+            if (!tanggalUpload) {
+                errorMessage.push("Tanggal upload stok harus diisi.");
+            }
+
+            // Cek setiap input yang harus memiliki nilai
+            let requiredFields = {
+                "#id_lokasi_gudang": "Lokasi gudang",
+                "#id_project": "Proyek",
+                "#id_sumber_material": "Sumber material"
+            };
+
+            $.each(requiredFields, function (selector, fieldName) {
+                if ($(selector).val() === "") {
+                    errorMessage.push(fieldName + " harus dipilih.");
+                }
+            });
+
+            // Cek apakah tabel memiliki minimal 1 row
+            if ($("#table_item_stok tbody tr").length === 0) {
+                errorMessage.push("Minimal harus ada satu item stok dalam tabel.");
+            }
+
+            // Jika ada error, tampilkan alert sekaligus
+            if (errorMessage.length > 0) {
+                alert(errorMessage.join("\n"));
+                event.preventDefault();
+            }
+        });
+    });
+    // END LOGIC OF MODAL TAMBAH STOK 
+
+    // STAR CALL NEW QUERY FOR DETAIL SURAT JALAN
+    $(document).ready(function () {
+        $(".tombol_detail").click(function () {
+            var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
+            console.log(selectedSJ);
+
+            if (!selectedSJ || selectedSJ === "") {
+                var tbody = $("#hasilDetailDataSJ");
+                tbody.empty();
+                document.getElementById("detail_no_surat_jalan").value = "";
+                document.getElementById("detail_area_gudang").value = "";
+                document.getElementById("detail_nama_project").value = "";
+                document.getElementById("detail_sumber_material").value = "";
+                document.getElementById("detail_keterangan_stok_item").value = "";
+                document.getElementById("detail_nama_file").innerText = "No File Uploaded";
+                document.getElementById("view_detail_surat_jalan").style.display = "none";
+
+            } else {
                 $.ajax({
-                    url: "<?= base_url() . 'Dashboard_Logistik_Stok/getProjectByBowheer' ?>",
-                    type: "GET",
+                    url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>",  // Arahkan ke file PHP yang menangani filtering
+                    method: "POST",
+                    data: { no_surat_jalan: selectedSJ },
+                    dataType: "json",
+                    success: function (response) {
+                        var tbody = $("#hasilDetailDataSJ");
+                        tbody.empty();
+
+                        var nomor = 1;
+                        let baseUrl = "<?= base_url() ?>"
+                        let lokasiUrl = response.getDetailAreaBySJ[0].evidence_stok;
+
+                        $.each(response.getDetailAreaBySJ, function (index, getDetailAreaBySJ) {
+                            var row = "<tr>" +
+                                "<td>" + nomor++ + "</td>" +
+                                "<td>" + getDetailAreaBySJ.nama_item + "</td>" +
+                                "<td>" + getDetailAreaBySJ.jumlah_stok + "</td>" +
+                                "<td>" + getDetailAreaBySJ.satuan_item + "</td>" +
+                                "<td>" + getDetailAreaBySJ.merk_stok + "</td>" +
+                                "<td>" + getDetailAreaBySJ.no_haspel_stok + "</td>" +
+                                "<td>" + getDetailAreaBySJ.no_ref_stok + "</td>" +
+                                "</tr>";
+                            tbody.append(row);
+
+
+                        });
+                        document.getElementById("detail_no_surat_jalan").value = response.getDetailAreaBySJ[0].no_surat_jalan;
+                        document.getElementById("detail_area_gudang").value = response.getDetailAreaBySJ[0].kota_lokasi_gudang;
+                        document.getElementById("detail_nama_project").value = response.getDetailAreaBySJ[0].project_item;
+                        document.getElementById("detail_sumber_material").value = response.getDetailAreaBySJ[0].nama_sumber_material;
+                        document.getElementById("detail_keterangan_stok_item").value = response.getDetailAreaBySJ[0].keterangan_stok;
+                        var filePath = response.getDetailAreaBySJ[0].evidence_stok;
+                        var fileName = filePath.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
+
+                        document.getElementById("detail_nama_file").innerText = fileName;
+                        document.getElementById("view_detail_surat_jalan").style.display = "block";
+                        document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl;
+                        console.log("Response:", response);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error:", error);
+                        console.error("Response Text:", xhr.responseText);
+                    }
+                });
+            }
+        });
+    });
+
+    // END LOGIC OF MODAL DETAIL SURAT JALAN
+
+    // GET DETAIL SUMMARY KATEGORI ITEM
+
+
+    // END GET DETAIL SUMMARY KATEGORI ITEM
+
+    $(function () {
+
+        // notifikasi allert sukses atau tidak
+        <?php if ($status == 'sukses_tambah') { ?>
+            swal("Success!", "Berhasil Ditambah!", "success");
+        <?php } else if ($status == 'sukses_hapus') { ?>
+                swal("Success!", "Berhasil Dihapus!", "success");
+        <?php } else if ($status == 'sukses_edit') { ?>
+                    swal("Success!", "Berhasil Edit Data!", "success");
+        <?php } else if ($status == 'gagal_tambah') { ?>
+                        swal("Gagal!", "Gagal Menambah Data!", "warning");
+        <?php } else if ($status == 'gagal_edit') { ?>
+                            swal("Gagal!", "Gagal Mengedit Data!", "warning");
+        <?php } else if ($status == 'gagal_hapus') { ?>
+                                swal("Gagal!", "Gagal Menghapus Data!", "warning");
+        <?php } else { ?>
+        <?php } ?>
+
+        $('.select2').select2()
+
+        //Initialize Select2 Elements
+        $('.select2bs4').select2({
+            theme: 'bootstrap4'
+        })
+    })
+
+    $(document).ready(function () {
+        $('#table_detail_kota').DataTable({
+            "paging": true,          // Tetap gunakan pagination
+            "pageLength": 10,        // Menampilkan 10 data per halaman
+            "info": false,           // Menghilangkan "Showing 1 to X of X entries"
+            "searching": true,      // Menghilangkan search bar
+            "lengthChange": false    // Menghilangkan dropdown "Show entries"
+        });
+    });
+
+
+    // HAPUS FILTER DATA SELECT2
+    document.getElementById('reset_filter').addEventListener('click', function () {
+        const selectLokasi = document.getElementById('filter_lokasi');
+        const selectBowheer = document.getElementById('filter_bowheer');
+        const selectItem = document.getElementById('filter_item');
+        const selectStatus = document.getElementById('filter_status');
+
+        const optionsLokasi = selectLokasi.options;
+        const optionsBowheer = selectBowheer.options;
+        const optionsItem = selectItem.options;
+        const optionsStatus = selectStatus.options;
+
+        // Hapus semua pilihan
+        for (let i = 0; i < optionsLokasi.length; i++) {
+            optionsLokasi[i].selected = false; // Hilangkan pilihan
+        }
+
+        for (let i = 0; i < optionsBowheer.length; i++) {
+            optionsBowheer[i].selected = false; // Hilangkan pilihan
+        }
+
+        for (let i = 0; i < optionsItem.length; i++) {
+            optionsItem[i].selected = false; // Hilangkan pilihan
+        }
+
+        for (let i = 0; i < optionsStatus.length; i++) {
+            optionsStatus[i].selected = false; // Hilangkan pilihan
+        }
+
+        // Pilih opsi default (indeks 0)
+        selectLokasi.dispatchEvent(new Event('change'));
+        selectBowheer.dispatchEvent(new Event('change'));
+        selectItem.dispatchEvent(new Event('change'));
+        selectStatus.dispatchEvent(new Event('change'));
+    });
+
+    var lokasiFilter2 = "";
+    var bowheerFilter2 = "";
+    var itemFilter2 = "";
+    var statusFilter2 = "";
+
+    var kirimData = "";
+    var kirimData2 = "";
+
+    // FUNCTION UPDATE DATA TABLE MENGGUNAKAN FILTER DATA
+    $(document).ready(function () {
+        $('#btnFilterDataProject').on('click', function () {
+            var table = $('#table_data').DataTable();
+            // Ambil nilai dari multiple select filter kategori
+            var selectLokasi = $('#filter_lokasi').val() || []; // Array of selected values
+            var selectBowheer = $('#filter_bowheer').val() || []; // Array of selected values
+            var selectItem = $('#filter_item').val() || []; // Array of selected values
+            var selectStatus = $('#filter_status').val() || []; // Array of selected values
+
+
+            // Gabungkan nilai ke dalam regex untuk pencarian DataTable
+            var lokasiFilter = selectLokasi.length > 0 ? selectLokasi.join('|') : '';
+            var bowheerFilter = selectBowheer.length > 0 ? selectBowheer.join('|') : '';
+            var itemFilter = selectItem.length > 0 ? selectItem.join('|') : '';
+            var statusFilter = selectStatus.length > 0 ? selectStatus.join('|') : '';
+
+            lokasiFilter2 = selectLokasi.length > 0 ? '"' + selectLokasi.join('", "') + '"' : '';
+            bowheerFilter2 = selectBowheer.length > 0 ? '"' + selectBowheer.join('", "') + '"' : '';
+            itemFilter2 = selectItem.length > 0 ? '"' + selectItem.join('", "') + '"' : '';
+            statusFilter2 = selectStatus.length > 0 ? '"' + selectStatus.join('", "') + '"' : '';
+
+            if (selectLokasi.length === 0 && selectBowheer.length === 0 && selectItem.length === 0 && selectStatus.length === 0) {
+
+                var totalStokDashboard = <?= json_encode($total_stok_dashboard); ?>;
+                console.log(totalStokDashboard)
+
+                document.getElementById("total_dashboard_Aksesories ").innerText = totalStokDashboard['Aksesories '];
+                document.getElementById("total_dashboard_Closure").innerText = totalStokDashboard['Closure'];
+                document.getElementById("total_dashboard_FAT").innerText = totalStokDashboard['FAT'];
+                document.getElementById("total_dashboard_FDT").innerText = totalStokDashboard['FDT'];
+                document.getElementById("total_dashboard_HDPE ").innerText = totalStokDashboard['HDPE '];
+                document.getElementById("total_dashboard_Kabel ").innerText = totalStokDashboard['Kabel '];
+                document.getElementById("total_dashboard_OTB ").innerText = totalStokDashboard['OTB '];
+                document.getElementById("total_dashboard_Tiang").innerText = totalStokDashboard['Tiang'];
+                table
+                    .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
+                    .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
+                    .column(5).search(itemFilter, true, false) // Filter kategori (regex search)
+                    .column(6).search(statusFilter, true, false) // Filter kategori (regex search)
+                    .draw();
+            } else {
+                table
+                    .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
+                    .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
+                    .column(5).search(itemFilter, true, false) // Filter kategori (regex search)
+                    .column(6).search(statusFilter, true, false) // Filter kategori (regex search)
+                    .draw(); // Render ulang tabel
+
+                $.ajax({
+                    url: "<?= base_url('Dashboard_Logistik_Stok/filterDashboardLogistik') ?>",
+                    method: "POST",
                     data: {
-                        id_bowheer: idBowheer.toString()
+                        lokasi: JSON.stringify(lokasiFilter2), // Kirim sebagai JSON string
+                        bowheer: JSON.stringify(bowheerFilter2),
+                        item: JSON.stringify(itemFilter2)
                     },
                     dataType: "json",
                     success: function (response) {
+                        console.log("Filtered Data:", response);
 
-                        $('#id_kode_item').empty().append('<option value="">Pilih Jenis Material</option>');
+                        kirimData = response.getRincianDashboardFiltered;
+                        kirimData2 = response.getRincianDashboardFileteredBowheer;
 
-                        $.each(response, function (index, project) {
-                            $('#id_kode_item').append(
-                                `<option value="${project.id_kode_item}" data-satuan-item="${project.satuan_item}">${project.nama_item}</option>`
-                            );
+                        let totalAksesories = 0;
+                        let totalClosure = 0;
+                        let totalFAT = 0;
+                        let totalFDT = 0;
+                        let totalHDPE = 0;
+                        let totalKabel = 0;
+                        let totalOTB = 0;
+                        let totalTiang = 0;
+
+
+                        $.each(response.getDashboardFiltered, function (index, getDashboardFiltered) {
+                            totalAksesories += Number(getDashboardFiltered.jumlah_Aksesories);
+                            totalClosure += Number(getDashboardFiltered.jumlah_Closure);
+                            totalFAT += Number(getDashboardFiltered.jumlah_FAT);
+                            totalFDT += Number(getDashboardFiltered.jumlah_FDT);
+                            totalHDPE += Number(getDashboardFiltered.jumlah_HDPE);
+                            totalKabel += Number(getDashboardFiltered.jumlah_Kabel);
+                            totalOTB += Number(getDashboardFiltered.jumlah_OTB);
+                            totalTiang += Number(getDashboardFiltered.jumlah_Tiang);
                         });
 
-                        $('#id_kode_item').trigger('change');
+                        document.getElementById("total_dashboard_Aksesories ").innerText = totalAksesories.toLocaleString('id-ID').replace(/,/g, '.') + ' Pc(s)';
+                        document.getElementById("total_dashboard_Closure").innerText = totalClosure.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
+                        document.getElementById("total_dashboard_FAT").innerText = totalFAT.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
+                        document.getElementById("total_dashboard_FDT").innerText = totalFDT.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
+                        document.getElementById("total_dashboard_HDPE ").innerText = totalHDPE.toLocaleString('id-ID').replace(/,/g, '.') + ' Meter';
+                        document.getElementById("total_dashboard_Kabel ").innerText = totalKabel.toLocaleString('id-ID').replace(/,/g, '.') + ' Meter';
+                        document.getElementById("total_dashboard_OTB ").innerText = totalOTB.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
+                        document.getElementById("total_dashboard_Tiang").innerText = totalTiang.toLocaleString('id-ID').replace(/,/g, '.') + ' Batang';
+
+                        console.log(Number(response.getDashboardFiltered[0].jumlah_Aksesories.toLocaleString('id-ID').replace(/,/g, '.')));
                     },
                     error: function (xhr, status, error) {
-                        console.error(error);
-                    }
-                });
-            });
-
-            var counter = 1;
-
-            $(document).on('click', '.hapus-item', function () {
-                $(this).closest('tr').remove();
-
-                $('#table_item_stok tbody tr').each(function (index) {
-                    $(this).find('td:first').text(index + 1);
-                });
-
-                counter--;
-            });
-
-            $('#modal-xl-tambah').on('hidden.bs.modal', function () {
-                $('#table_item_stok tbody').empty();
-                $('#nomor_surat_jalan').val('');
-                $('#id_project').val('').trigger('change');
-                $('#id_lokasi_gudang').val('').trigger('change');
-                $('#id_sumber_material').val('').trigger('change');
-                counter = 1;
-            });
-
-            $('.btn-tambah-data-item').on('click', function () {
-                $('#file-sj').val('');
-                $('.custom-file-label').text('Choose file');
-                $('#keterangan_stok_item').val('');
-            })
-
-            $('#file-sj').on('change', function (e) {
-                var fileName = e.target.files.length > 0 ? e.target.files[0].name : "Choose file";
-                $(this).siblings('.custom-file-label').text(fileName);
-            });
-
-            $("#file-sj").change(function () {
-                let file = this.files[0];
-                let allowedExtensions = /(\.pdf|\.docx|\.xlsx)$/i;
-                let maxSize = 5120 * 1024;
-
-                if (file) {
-                    if (!allowedExtensions.test(file.name)) {
-                        alert("File harus berupa PDF, DOCX, atau XLSX!");
-                        $(this).val("");
-                        $('.custom-file-label').text('Choose file');
-                        return;
-                    }
-
-                    if (file.size > maxSize) {
-                        alert("Ukuran file tidak boleh lebih dari 5MB!");
-                        $(this).val("");
-                        $('.custom-file-label').text('Choose file');
-                        return;
-                    }
-                }
-            });
-
-            $("#form_tambah_stok").submit(function (event) {
-                let isValid = true;
-                let errorMessage = [];
-
-                // Cek input tanggal harus valid
-                let tanggalUpload = $("input[name='tanggal_upload_stok']").val();
-                if (!tanggalUpload) {
-                    errorMessage.push("Tanggal upload stok harus diisi.");
-                }
-
-                // Cek setiap input yang harus memiliki nilai
-                let requiredFields = {
-                    "#id_lokasi_gudang": "Lokasi gudang",
-                    "#id_project": "Proyek",
-                    "#id_sumber_material": "Sumber material"
-                };
-
-                $.each(requiredFields, function (selector, fieldName) {
-                    if ($(selector).val() === "") {
-                        errorMessage.push(fieldName + " harus dipilih.");
+                        console.error("Error:", error);
+                        console.log("Server Response:", xhr.responseText);
                     }
                 });
 
-                // Cek apakah tabel memiliki minimal 1 row
-                if ($("#table_item_stok tbody tr").length === 0) {
-                    errorMessage.push("Minimal harus ada satu item stok dalam tabel.");
-                }
+            }
 
-                // Jika ada error, tampilkan alert sekaligus
-                if (errorMessage.length > 0) {
-                    alert(errorMessage.join("\n"));
-                    event.preventDefault();
-                }
-            });
+            // Terapkan filter ke DataTable
+
         });
-        // END LOGIC OF MODAL TAMBAH STOK 
-
-        // STAR CALL NEW QUERY FOR DETAIL SURAT JALAN
-        $(document).ready(function () {
-            $(".tombol_detail").click(function () {
-                var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
-                console.log(selectedSJ);
-
-                if (!selectedSJ || selectedSJ === "") {
-                    var tbody = $("#hasilDetailDataSJ");
-                    tbody.empty();
-                    document.getElementById("detail_no_surat_jalan").value = "";
-                    document.getElementById("detail_area_gudang").value = "";
-                    document.getElementById("detail_nama_project").value = "";
-                    document.getElementById("detail_sumber_material").value = "";
-                    document.getElementById("detail_keterangan_stok_item").value = "";
-                    document.getElementById("detail_nama_file").innerText = "No File Uploaded";
-                    document.getElementById("view_detail_surat_jalan").style.display = "none";
-
-                } else {
-                    $.ajax({
-                        url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>",  // Arahkan ke file PHP yang menangani filtering
-                        method: "POST",
-                        data: { no_surat_jalan: selectedSJ },
-                        dataType: "json",
-                        success: function (response) {
-                            var tbody = $("#hasilDetailDataSJ");
-                            tbody.empty();
-
-                            var nomor = 1;
-                            let baseUrl = "<?= base_url() ?>"
-                            let lokasiUrl = response.getDetailAreaBySJ[0].evidence_stok;
-
-                            $.each(response.getDetailAreaBySJ, function (index, getDetailAreaBySJ) {
-                                var row = "<tr>" +
-                                    "<td>" + nomor++ + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.nama_item + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.jumlah_stok + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.satuan_item + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.merk_stok + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.no_haspel_stok + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.no_ref_stok + "</td>" +
-                                    "</tr>";
-                                tbody.append(row);
+    });
 
 
-                            });
-                            document.getElementById("detail_no_surat_jalan").value = response.getDetailAreaBySJ[0].no_surat_jalan;
-                            document.getElementById("detail_area_gudang").value = response.getDetailAreaBySJ[0].kota_lokasi_gudang;
-                            document.getElementById("detail_nama_project").value = response.getDetailAreaBySJ[0].project_item;
-                            document.getElementById("detail_sumber_material").value = response.getDetailAreaBySJ[0].nama_sumber_material;
-                            document.getElementById("detail_keterangan_stok_item").value = response.getDetailAreaBySJ[0].keterangan_stok;
-                            var filePath = response.getDetailAreaBySJ[0].evidence_stok;
-                            var fileName = filePath.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
 
-                            document.getElementById("detail_nama_file").innerText = fileName;
-                            document.getElementById("view_detail_surat_jalan").style.display = "block";
-                            document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl;
-                            console.log("Response:", response);
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error:", error);
-                            console.error("Response Text:", xhr.responseText);
-                        }
-                    });
-                }
-            });
+    document.addEventListener("DOMContentLoaded", function () {
+        <?php foreach ($getAllStokByKategory as $stokKategory): ?>
+            var boxElement = document.getElementById("box_detai_kategori_item_<?= $stokKategory['kategori_item'] ?>");
+
+            if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
+                boxElement.addEventListener("click", function () {
+                    console.log("<?= $stokKategory['kategori_item'] ?>");
+                    console.log("", lokasiFilter2);
+
+                    if (lokasiFilter2 === "" && bowheerFilter2 === "" && itemFilter2 === "" && statusFilter2 === "") {
+                        window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_kategori/" . $stokKategory['kategori_item']) ?>";
+                    } else {
+                        let rincianData = JSON.stringify(kirimData);
+                        let rincianData2 = JSON.stringify(kirimData2);
+                        let kategoriItem = "<?= $stokKategory['kategori_item'] ?>"
+
+                        $.post("<?= base_url('Logistik_Stok_Detail/filter_kategori') ?>",
+                            { rincianData: rincianData, rincianData2: rincianData2, kategori_item: kategoriItem },
+                            function () {
+                                window.location.href = "<?= base_url('Logistik_Stok_Detail/filter_kategori_rdr') ?>?kategori=" + encodeURIComponent(kategoriItem);
+                            }
+                        );
+                    }
+
+                });
+            }
+        <?php endforeach; ?>
+    });
+
+    $(document).ready(function () {
+        $.fn.dataTable.ext.errMode = 'none';
+        $('#table_data').DataTable({
+            responsive: false // Matikan fitur Responsive
         });
+    });
 
-        // END LOGIC OF MODAL DETAIL SURAT JALAN
-
-        // GET DETAIL SUMMARY KATEGORI ITEM
-
-
-        // END GET DETAIL SUMMARY KATEGORI ITEM
-
-        $(function () {
-
-            // notifikasi allert sukses atau tidak
-            <?php if ($status == 'sukses_tambah') { ?>
-                swal("Success!", "Berhasil Ditambah!", "success");
-            <?php } else if ($status == 'sukses_hapus') { ?>
-                    swal("Success!", "Berhasil Dihapus!", "success");
-            <?php } else if ($status == 'sukses_edit') { ?>
-                        swal("Success!", "Berhasil Edit Data!", "success");
-            <?php } else if ($status == 'gagal_tambah') { ?>
-                            swal("Gagal!", "Gagal Menambah Data!", "warning");
-            <?php } else if ($status == 'gagal_edit') { ?>
-                                swal("Gagal!", "Gagal Mengedit Data!", "warning");
-            <?php } else if ($status == 'gagal_hapus') { ?>
-                                    swal("Gagal!", "Gagal Menghapus Data!", "warning");
-            <?php } else { ?>
-            <?php } ?>
-
-            $('.select2').select2()
-
-            //Initialize Select2 Elements
-            $('.select2bs4').select2({
-                theme: 'bootstrap4'
-            })
+</script>
+<script>
+    $('.tombol_hapus').on('click', function (e) {
+        e.preventDefault();
+        const href = $(this).attr('href');
+        swal({
+            title: 'Apakah anda yakin',
+            text: "data akan dihapus!",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'DELETE'
+        }).then((result) => {
+            if (result.value) {
+                document.location.href = href;
+            }
         })
 
-        $(document).ready(function () {
-            $('#table_detail_kota').DataTable({
-                "paging": true,          // Tetap gunakan pagination
-                "pageLength": 10,        // Menampilkan 10 data per halaman
-                "info": false,           // Menghilangkan "Showing 1 to X of X entries"
-                "searching": true,      // Menghilangkan search bar
-                "lengthChange": false    // Menghilangkan dropdown "Show entries"
-            });
-        });
+    });
+</script>
 
-
-        // HAPUS FILTER DATA SELECT2
-        document.getElementById('reset_filter').addEventListener('click', function () {
-            const selectLokasi = document.getElementById('filter_lokasi');
-            const selectBowheer = document.getElementById('filter_bowheer');
-            const selectItem = document.getElementById('filter_item');
-            const selectStatus = document.getElementById('filter_status');
-
-            const optionsLokasi = selectLokasi.options;
-            const optionsBowheer = selectBowheer.options;
-            const optionsItem = selectItem.options;
-            const optionsStatus = selectStatus.options;
-
-            // Hapus semua pilihan
-            for (let i = 0; i < optionsLokasi.length; i++) {
-                optionsLokasi[i].selected = false; // Hilangkan pilihan
-            }
-
-            for (let i = 0; i < optionsBowheer.length; i++) {
-                optionsBowheer[i].selected = false; // Hilangkan pilihan
-            }
-
-            for (let i = 0; i < optionsItem.length; i++) {
-                optionsItem[i].selected = false; // Hilangkan pilihan
-            }
-
-            for (let i = 0; i < optionsStatus.length; i++) {
-                optionsStatus[i].selected = false; // Hilangkan pilihan
-            }
-
-            // Pilih opsi default (indeks 0)
-            selectLokasi.dispatchEvent(new Event('change'));
-            selectBowheer.dispatchEvent(new Event('change'));
-            selectItem.dispatchEvent(new Event('change'));
-            selectStatus.dispatchEvent(new Event('change'));
-        });
-
-        var lokasiFilter2 = "";
-        var bowheerFilter2 = "";
-        var itemFilter2 = "";
-        var statusFilter2 = "";
-
-        var kirimData = "";
-        var kirimData2 = "";
-
-        // FUNCTION UPDATE DATA TABLE MENGGUNAKAN FILTER DATA
-        $(document).ready(function () {
-            $('#btnFilterDataProject').on('click', function () {
-                var table = $('#table_data').DataTable();
-                // Ambil nilai dari multiple select filter kategori
-                var selectLokasi = $('#filter_lokasi').val() || []; // Array of selected values
-                var selectBowheer = $('#filter_bowheer').val() || []; // Array of selected values
-                var selectItem = $('#filter_item').val() || []; // Array of selected values
-                var selectStatus = $('#filter_status').val() || []; // Array of selected values
-
-
-                // Gabungkan nilai ke dalam regex untuk pencarian DataTable
-                var lokasiFilter = selectLokasi.length > 0 ? selectLokasi.join('|') : '';
-                var bowheerFilter = selectBowheer.length > 0 ? selectBowheer.join('|') : '';
-                var itemFilter = selectItem.length > 0 ? selectItem.join('|') : '';
-                var statusFilter = selectStatus.length > 0 ? selectStatus.join('|') : '';
-
-                lokasiFilter2 = selectLokasi.length > 0 ? '"' + selectLokasi.join('", "') + '"' : '';
-                bowheerFilter2 = selectBowheer.length > 0 ? '"' + selectBowheer.join('", "') + '"' : '';
-                itemFilter2 = selectItem.length > 0 ? '"' + selectItem.join('", "') + '"' : '';
-                statusFilter2 = selectStatus.length > 0 ? '"' + selectStatus.join('", "') + '"' : '';
-
-                if (selectLokasi.length === 0 && selectBowheer.length === 0 && selectItem.length === 0 && selectStatus.length === 0) {
-
-                    var totalStokDashboard = <?= json_encode($total_stok_dashboard); ?>;
-                    console.log(totalStokDashboard)
-
-                    document.getElementById("total_dashboard_Aksesories ").innerText = totalStokDashboard['Aksesories '];
-                    document.getElementById("total_dashboard_Closure").innerText = totalStokDashboard['Closure'];
-                    document.getElementById("total_dashboard_FAT").innerText = totalStokDashboard['FAT'];
-                    document.getElementById("total_dashboard_FDT").innerText = totalStokDashboard['FDT'];
-                    document.getElementById("total_dashboard_HDPE ").innerText = totalStokDashboard['HDPE '];
-                    document.getElementById("total_dashboard_Kabel ").innerText = totalStokDashboard['Kabel '];
-                    document.getElementById("total_dashboard_OTB ").innerText = totalStokDashboard['OTB '];
-                    document.getElementById("total_dashboard_Tiang").innerText = totalStokDashboard['Tiang'];
-                    table
-                        .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
-                        .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
-                        .column(5).search(itemFilter, true, false) // Filter kategori (regex search)
-                        .column(6).search(statusFilter, true, false) // Filter kategori (regex search)
-                        .draw();
-                } else {
-                    table
-                        .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
-                        .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
-                        .column(5).search(itemFilter, true, false) // Filter kategori (regex search)
-                        .column(6).search(statusFilter, true, false) // Filter kategori (regex search)
-                        .draw(); // Render ulang tabel
-
-                    $.ajax({
-                        url: "<?= base_url('Dashboard_Logistik_Stok/filterDashboardLogistik') ?>",
-                        method: "POST",
-                        data: {
-                            lokasi: JSON.stringify(lokasiFilter2), // Kirim sebagai JSON string
-                            bowheer: JSON.stringify(bowheerFilter2),
-                            item: JSON.stringify(itemFilter2)
-                        },
-                        dataType: "json",
-                        success: function (response) {
-                            console.log("Filtered Data:", response);
-
-                            kirimData = response.getRincianDashboardFiltered;
-                            kirimData2 = response.getRincianDashboardFileteredBowheer;
-
-                            let totalAksesories = 0;
-                            let totalClosure = 0;
-                            let totalFAT = 0;
-                            let totalFDT = 0;
-                            let totalHDPE = 0;
-                            let totalKabel = 0;
-                            let totalOTB = 0;
-                            let totalTiang = 0;
-
-
-                            $.each(response.getDashboardFiltered, function (index, getDashboardFiltered) {
-                                totalAksesories += Number(getDashboardFiltered.jumlah_Aksesories);
-                                totalClosure += Number(getDashboardFiltered.jumlah_Closure);
-                                totalFAT += Number(getDashboardFiltered.jumlah_FAT);
-                                totalFDT += Number(getDashboardFiltered.jumlah_FDT);
-                                totalHDPE += Number(getDashboardFiltered.jumlah_HDPE);
-                                totalKabel += Number(getDashboardFiltered.jumlah_Kabel);
-                                totalOTB += Number(getDashboardFiltered.jumlah_OTB);
-                                totalTiang += Number(getDashboardFiltered.jumlah_Tiang);
-                            });
-
-                            document.getElementById("total_dashboard_Aksesories ").innerText = totalAksesories.toLocaleString('id-ID').replace(/,/g, '.') + ' Pc(s)';
-                            document.getElementById("total_dashboard_Closure").innerText = totalClosure.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
-                            document.getElementById("total_dashboard_FAT").innerText = totalFAT.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
-                            document.getElementById("total_dashboard_FDT").innerText = totalFDT.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
-                            document.getElementById("total_dashboard_HDPE ").innerText = totalHDPE.toLocaleString('id-ID').replace(/,/g, '.') + ' Meter';
-                            document.getElementById("total_dashboard_Kabel ").innerText = totalKabel.toLocaleString('id-ID').replace(/,/g, '.') + ' Meter';
-                            document.getElementById("total_dashboard_OTB ").innerText = totalOTB.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
-                            document.getElementById("total_dashboard_Tiang").innerText = totalTiang.toLocaleString('id-ID').replace(/,/g, '.') + ' Batang';
-
-                            console.log(Number(response.getDashboardFiltered[0].jumlah_Aksesories.toLocaleString('id-ID').replace(/,/g, '.')));
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error:", error);
-                            console.log("Server Response:", xhr.responseText);
-                        }
-                    });
-
-                }
-
-                // Terapkan filter ke DataTable
-
-            });
-        });
-
-
-
-        document.addEventListener("DOMContentLoaded", function () {
-            <?php foreach ($getAllStokByKategory as $stokKategory): ?>
-                var boxElement = document.getElementById("box_detai_kategori_item_<?= $stokKategory['kategori_item'] ?>");
-
-                if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
-                    boxElement.addEventListener("click", function () {
-                        console.log("<?= $stokKategory['kategori_item'] ?>");
-                        console.log("", lokasiFilter2);
-
-                        if (lokasiFilter2 === "" && bowheerFilter2 === "" && itemFilter2 === "" && statusFilter2 === "") {
-                            window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_kategori/" . $stokKategory['kategori_item']) ?>";
-                        } else {
-                            let rincianData = JSON.stringify(kirimData);
-                            let rincianData2 = JSON.stringify(kirimData2);
-                            let kategoriItem = "<?= $stokKategory['kategori_item'] ?>"
-
-                            $.post("<?= base_url('Logistik_Stok_Detail/filter_kategori') ?>",
-                                { rincianData: rincianData, rincianData2: rincianData2, kategori_item: kategoriItem },
-                                function () {
-                                    window.location.href = "<?= base_url('Logistik_Stok_Detail/filter_kategori_rdr') ?>?kategori=" + encodeURIComponent(kategoriItem);
-                                }
-                            );
-                        }
-
-                    });
-                }
-            <?php endforeach; ?>
-        });
-
-        $(document).ready(function () {
-            $.fn.dataTable.ext.errMode = 'none';
-            $('#table_data').DataTable({
-                responsive: false // Matikan fitur Responsive
-            });
-        });
-
-    </script>
-
-
-    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/progressbar.js@1.1.0/dist/progressbar.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
-    <script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
-    <script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
-    <script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
-    <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardlistarea.js"></script>
-    <script src="<?= base_url('assets') ?>/js/pages/file-manager.init.js"></script>
-    <script src="<?= base_url('assets') ?>/js/app.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/progressbar.js@1.1.0/dist/progressbar.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
+<script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
+<script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
+<script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
+<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardlistarea.js"></script>
+<script src="<?= base_url('assets') ?>/js/pages/file-manager.init.js"></script>
+<script src="<?= base_url('assets') ?>/js/app.js"></script>

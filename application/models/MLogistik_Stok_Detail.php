@@ -146,7 +146,7 @@ ORDER BY lg.regional_lokasi_gudang, ki.project_item;')
                                         JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
                                         JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
                                         JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user
-                                        WHERE ' . $filter_area . ' = "' . $decoded_url_area . '";')
+                                        WHERE ' . $filter_area . ' = "' . $decoded_url_area . '" ORDER by tanggal_upload_stok DESC;')
             ->result_array();
         return $data;
     }
@@ -163,7 +163,7 @@ ORDER BY lg.regional_lokasi_gudang, ki.project_item;')
                                         JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
                                         JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
                                         JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user
-                                        WHERE kategori_item = "' . $last_segment . '";')
+                                        WHERE kategori_item = "' . $last_segment . '" ORDER by tanggal_upload_stok DESC;')
             ->result_array();
         return $data;
     }
