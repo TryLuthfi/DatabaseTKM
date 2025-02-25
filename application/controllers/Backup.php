@@ -17,8 +17,8 @@ class Backup extends CI_Controller
         // Ambil data backup dari database
         $this->db->order_by('backup_date', 'DESC');
         $data['backups'] = $this->db->get('backup_history')->result();
-        $data['title'] = 'Backup Database MySql';
-        $data['judul'] = 'Backup Database MySql';
+        $data['title'] = 'BACKUP DATABASE MYSQL';
+        $data['judul'] = 'BACKUP DATABASE MYSQL';
 
         // Load view
         $this->load->view('Templates/01_Header', $data);
