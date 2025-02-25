@@ -115,7 +115,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
                     'no_haspel_stok' => $this->input->post('no_haspel_item')[$key],
                     'no_ref_stok' => $this->input->post('no_ref_item')[$key],
                     'keterangan_stok' => $this->input->post('keterangan_stok'),
-                    'tanggal_upload_stok' => date('Y-m-d H:i:s'),
+                    'tanggal_upload_stok' => $this->input->post('tanggal_upload_stok'),
                     'evidence_stok' => $file_path,
                     'id_user' => $this->session->userdata('id_user')
                 ];
@@ -136,16 +136,16 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
     public function hapusReportStokLogistik($no_surat_jalan)
     {
-        $no_surat_jalan = array('no_surat_jalan' => $no_surat_jalan);
-        $res = $this->MDashboard_Logistik_Stok->hapusReportStokLogistik($no_surat_jalan);
+        $no_surat_jalan = urldecode($no_surat_jalan); // Decode dari URL
+        $this->db->where(['no_surat_jalan' => $no_surat_jalan]);
+        $res = $this->db->delete("tb_logistik_stok");
 
-        if ($res >= 1) {
+        if ($res) {
             $this->session->set_flashdata('status', 'sukses_hapus');
-            redirect("Dashboard_Logistik_Stok");
         } else {
             $this->session->set_flashdata('status', 'gagal_hapus');
-            redirect("Dashboard_Logistik_Stok");
         }
+        redirect("Dashboard_Logistik_Stok");
     }
 
     public function filterDetailSuratJalan()

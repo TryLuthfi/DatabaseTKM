@@ -255,12 +255,6 @@ ORDER BY
         return $res;
     }
 
-    public function hapusReportStokLogistik($no_surat_jalan)
-    {
-        $res = $this->db->delete("tb_logistik_stok", $no_surat_jalan);
-        return $res;
-    }
-
     public function getDetailAreaBySJ($no_surat_jalan)
     {
         $data = $this->db->query('SELECT * FROM `tb_logistik_stok` JOIN tb_master_logistik_lokasi_gudang ON tb_logistik_stok.id_lokasi_gudang = tb_master_logistik_lokasi_gudang.id_lokasi_gudang

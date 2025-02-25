@@ -1,4 +1,16 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    window.addEventListener("beforeunload", function () {
+        localStorage.setItem("lastPage", window.location.href);
+    });
+
+    window.addEventListener("load", function () {
+        let lastPage = localStorage.getItem("lastPage");
+        if (lastPage && document.referrer !== lastPage) {
+            window.history.replaceState({}, '', lastPage);
+        }
+    });
+</script>
 
 <?php
 $status = $this->session->flashdata('status');
@@ -615,9 +627,10 @@ $total_stok_dashboard = [];
                                                 <td><?= $data['tanggal_upload_stok'] ?></td>
                                                 <td>
                                                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
-                                                        <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . $data['no_surat_jalan']); ?>"
-                                                            id="tombol_hapus_rincian" class="btn btn-danger tombol_hapus"><i
-                                                                class=" fas fa-trash"></i></a>
+                                                        <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . urlencode($data['no_surat_jalan'])); ?>"
+                                                            id="tombol_hapus_rincian" class="btn btn-danger tombol_hapus_rincian">
+                                                            <i class="fas fa-trash"></i>
+                                                        </a>
                                                     <?php } ?>
 
                                                     <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>"
@@ -663,7 +676,7 @@ $total_stok_dashboard = [];
                                     <div class="form-group">
                                         <label class="col-form-label">Input Date</label>
                                         <input type="datetime-local" class="form-control" name="tanggal_upload_stok"
-                                            autocomplete="off" disabled
+                                            autocomplete="off" step="1"
                                             value="<?php echo (new \DateTime())->format('Y-m-d H:i:s'); ?>">
                                     </div>
                                 </div>
@@ -996,7 +1009,6 @@ $total_stok_dashboard = [];
 </aside>
 
 <script type="text/javascript">
-    // START LOGIC TAMBAH STOK ITEM
 
     // AJAX SELECT 2 JENIS MATERIAL
 
@@ -1131,10 +1143,10 @@ $total_stok_dashboard = [];
             let errorMessage = [];
 
             // Cek input tanggal harus valid
-            let tanggalUpload = $("input[name='tanggal_upload_stok']").val();
-            if (!tanggalUpload) {
-                errorMessage.push("Tanggal upload stok harus diisi.");
-            }
+            // let tanggalUpload = $("input[name='tanggal_upload_stok']").val();
+            // if (!tanggalUpload) {
+            //     errorMessage.push("Tanggal upload stok harus diisi.");
+            // }
 
             // Cek setiap input yang harus memiliki nilai
             let requiredFields = {
@@ -1467,7 +1479,7 @@ $total_stok_dashboard = [];
 
 </script>
 <script>
-    $('.tombol_hapus').on('click', function (e) {
+    $('.tombol_hapus_rincian').on('click', function (e) {
         e.preventDefault();
         const href = $(this).attr('href');
         swal({
