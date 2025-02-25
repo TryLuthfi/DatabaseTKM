@@ -628,7 +628,8 @@ $total_stok_dashboard = [];
                                                 <td>
                                                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                                                         <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . urlencode($data['no_surat_jalan'])); ?>"
-                                                            id="tombol_hapus_rincian" class="btn btn-danger tombol_hapus_rincian">
+                                                            id="tombol_hapus_rincian"
+                                                            class="btn btn-danger tombol_hapus_rincian">
                                                             <i class="fas fa-trash"></i>
                                                         </a>
                                                     <?php } ?>
@@ -675,9 +676,8 @@ $total_stok_dashboard = [];
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="col-form-label">Input Date</label>
-                                        <input type="datetime-local" class="form-control" name="tanggal_upload_stok"
-                                            autocomplete="off" step="1"
-                                            value="<?php echo (new \DateTime())->format('Y-m-d H:i:s'); ?>">
+                                        <input type="date" class="form-control" name="tanggal_upload_stok"
+                                            value="<?php echo date('Y-m-d'); ?>">
                                     </div>
                                 </div>
                                 <div class="col-md-6">

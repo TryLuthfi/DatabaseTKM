@@ -103,6 +103,13 @@ class Dashboard_Logistik_Stok extends CI_Controller
             $data_insert = [];
 
             foreach ($this->input->post('jumlah_stok') as $key => $value) {
+
+                $tanggal = $this->input->post('tanggal_upload_stok'); // Format: YYYY-MM-DD
+                $jamSekarang = date('H:i:s'); // Ambil jam saat ini
+
+                // Gabungkan tanggal dengan jam sekarang
+                $tanggalFormatted = $tanggal . ' ' . $jamSekarang;
+
                 $data_insert[] = [
                     'no_surat_jalan' => $this->input->post('nomor_surat_jalan'),
                     'id_lokasi_gudang' => $this->input->post('id_lokasi_gudang'),
@@ -115,7 +122,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
                     'no_haspel_stok' => $this->input->post('no_haspel_item')[$key],
                     'no_ref_stok' => $this->input->post('no_ref_item')[$key],
                     'keterangan_stok' => $this->input->post('keterangan_stok'),
-                    'tanggal_upload_stok' => $this->input->post('tanggal_upload_stok'),
+                    'tanggal_upload_stok' => $tanggalFormatted,
                     'evidence_stok' => $file_path,
                     'id_user' => $this->session->userdata('id_user')
                 ];
