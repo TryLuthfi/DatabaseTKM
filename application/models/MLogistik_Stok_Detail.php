@@ -187,5 +187,4 @@ ORDER BY tmlki.kategori_item;')
             ->result_array();
         return $data;
     }
-
 }

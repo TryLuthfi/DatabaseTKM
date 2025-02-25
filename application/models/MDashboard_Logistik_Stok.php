@@ -14,7 +14,7 @@ class MDashboard_Logistik_Stok extends CI_Model
                                         WHERE no_surat_jalan != ""
                                         GROUP BY no_surat_jalan
                                         ORDER BY id_logistik_stok DESC')
-                                        ->result_array();
+            ->result_array();
         return $data;
     }
 
@@ -268,7 +268,7 @@ ORDER BY
                                         JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
                                         JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
                                         JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user
-                                        WHERE no_surat_jalan = "'.$no_surat_jalan.'"
+                                        WHERE no_surat_jalan = "' . $no_surat_jalan . '"
                                         ORDER BY id_logistik_stok DESC
                                         ')->result_array();
         return $data;
@@ -347,24 +347,136 @@ ORDER BY
                 tb_master_logistik_sumber_material sm ON ls.id_sumber_material = sm.id_sumber_material
             WHERE 1=1"; // Awal WHERE agar bisa ditambahkan kondisi
 
-    // Tambahkan filter lokasi
-    if (!empty($lokasiArray)) {
-        $sql .= " AND lg.kota_lokasi_gudang IN ($lokasiArray)";
+        // Tambahkan filter lokasi
+        if (!empty($lokasiArray)) {
+            $sql .= " AND lg.kota_lokasi_gudang IN ($lokasiArray)";
+        }
+
+        if (!empty($bowheerArray)) {
+            $sql .= " AND ki.project_item IN ($bowheerArray)";
+        }
+
+        if (!empty($itemArray)) {
+            $sql .= " AND ki.nama_item IN ($itemArray)";
+        }
+
+        // Tambahkan GROUP BY & ORDER BY
+        $sql .= " GROUP BY lg.kota_lokasi_gudang";
+
+        $data = $this->db->query($sql)->result_array();
+
+        log_message('error', 'query dashboard logistik filter yang dijalankan : ' . $this->db->last_query());
+
+        // Jalankan query
+        return $data;
+
     }
 
-    if (!empty($bowheerArray)) {
-        $sql .= " AND ki.project_item IN ($bowheerArray)";
+    public function getRincianDashboardFiltered($lokasiArray, $bowheerArray, $itemArray,)
+    {
+
+        $sql = "SELECT 
+    ROW_NUMBER() OVER () AS nomor,
+    lg.regional_lokasi_gudang,
+    lg.kota_lokasi_gudang,
+    ki.kategori_item, 
+    ki.nama_item, 
+    ki.project_item,
+    tmb.nama_bowheer,
+    COALESCE(SUM(
+        CASE 
+            WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+            WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+            ELSE 0 
+        END
+    ), '-') AS jumlah_stok,
+    ki.satuan_item
+FROM tb_master_logistik_lokasi_gudang lg
+CROSS JOIN tb_master_logistik_kode_item ki
+LEFT JOIN tb_master_bowheer tmb 
+	ON ki.id_bowheer_pemilik_item = tmb.id_bowheer
+LEFT JOIN tb_logistik_stok ls 
+    ON lg.id_lokasi_gudang = ls.id_lokasi_gudang 
+    AND ki.id_kode_item = ls.id_kode_item
+LEFT JOIN tb_master_logistik_sumber_material sm 
+    ON ls.id_sumber_material = sm.id_sumber_material
+    WHERE 1=1 && jumlah_stok != '0'";
+
+        if (!empty($lokasiArray)) {
+            $sql .= " AND lg.kota_lokasi_gudang IN ($lokasiArray)";
+        }
+
+        if (!empty($bowheerArray)) {
+            $sql .= " AND ki.project_item IN ($bowheerArray)";
+        }
+
+        if (!empty($itemArray)) {
+            $sql .= " AND ki.nama_item IN ($itemArray)";
+        }
+
+        $sql .= " GROUP BY ki.nama_item, ki.project_item, lg.kota_lokasi_gudang
+ORDER BY lg.regional_lokasi_gudang, lg.kota_lokasi_gudang";
+
+        $data = $this->db->query($sql)->result_array();
+
+        log_message('error', 'query rincian dashboard logistik filter yang dijalankan : ' . $this->db->last_query());
+
+        // Jalankan query
+        return $data;
+
     }
 
-    if (!empty($itemArray)) {
-        $sql .= " AND ki.nama_item IN ($itemArray)";
-    }
-    
-    // Tambahkan GROUP BY & ORDER BY
-    $sql .= " GROUP BY lg.kota_lokasi_gudang";
+    public function getRincianDashboardFileteredBowheer($lokasiArray, $bowheerArray, $itemArray,)
+    {
 
-    // Jalankan query
-    return $this->db->query($sql)->result_array();
+        $sql = "SELECT 
+    ROW_NUMBER() OVER () AS nomor,
+    ki.kategori_item, 
+    ki.nama_item, 
+    ki.project_item,
+    tmb.nama_bowheer,
+    COALESCE(SUM(
+        CASE 
+            WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+            WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+            ELSE 0 
+        END
+    ), '-') AS jumlah_stok,
+    ki.satuan_item
+FROM tb_master_logistik_lokasi_gudang lg
+CROSS JOIN tb_master_logistik_kode_item ki
+LEFT JOIN tb_master_bowheer tmb 
+	ON ki.id_bowheer_pemilik_item = tmb.id_bowheer
+LEFT JOIN tb_logistik_stok ls 
+    ON lg.id_lokasi_gudang = ls.id_lokasi_gudang 
+    AND ki.id_kode_item = ls.id_kode_item
+LEFT JOIN tb_master_logistik_sumber_material sm 
+    ON ls.id_sumber_material = sm.id_sumber_material
+    WHERE 1=1 && jumlah_stok != '0'";
+
+        if (!empty($lokasiArray)) {
+            $sql .= " AND lg.kota_lokasi_gudang IN ($lokasiArray)";
+        }
+
+        if (!empty($bowheerArray)) {
+            $sql .= " AND ki.project_item IN ($bowheerArray)";
+        }
+
+        if (!empty($itemArray)) {
+            $sql .= " AND ki.nama_item IN ($itemArray)";
+        }
+
+        $sql .= " GROUP BY ki.kategori_item, ki.project_item
+ORDER BY ki.kategori_item;";
+
+        $data = $this->db->query($sql)->result_array();
+
+        log_message('error', 'query rincian2 dashboard logistik filter yang dijalankan : ' . $this->db->last_query());
+
+        // Jalankan query
+        return $data;
+
     }
+
 }
 

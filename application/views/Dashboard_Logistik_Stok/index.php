@@ -612,10 +612,10 @@ $total_stok_dashboard = [];
                                                 <td><?= $data['nama_user'] ?></td>
                                                 <td><?= $data['tanggal_upload_stok'] ?></td>
                                                 <td>
-                                                    <?php if( $this->session->userdata('nama_level') == "Super Admin"){?>
-                                                    <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . $data['no_surat_jalan']); ?>"
-                                                        id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                            class=" fas fa-trash"></i></a>
+                                                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                        <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . $data['no_surat_jalan']); ?>"
+                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                class=" fas fa-trash"></i></a>
                                                     <?php } ?>
 
                                                     <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>"
@@ -1231,20 +1231,6 @@ $total_stok_dashboard = [];
 
         // GET DETAIL SUMMARY KATEGORI ITEM
 
-        document.addEventListener("DOMContentLoaded", function () {
-            <?php foreach ($getAllStokByKategory as $stokKategory): ?>
-                var boxElement = document.getElementById("box_detai_kategori_item_<?= $stokKategory['kategori_item'] ?>");
-
-                if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
-                    boxElement.addEventListener("click", function () {
-                        console.log("<?= $stokKategory['kategori_item'] ?>");
-
-                        window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_kategori/" . $stokKategory['kategori_item']) ?>"
-
-                    });
-                }
-            <?php endforeach; ?>
-        });
 
         // END GET DETAIL SUMMARY KATEGORI ITEM
 
@@ -1321,6 +1307,14 @@ $total_stok_dashboard = [];
             selectStatus.dispatchEvent(new Event('change'));
         });
 
+        var lokasiFilter2 = "";
+        var bowheerFilter2 = "";
+        var itemFilter2 = "";
+        var statusFilter2 = "";
+
+        var kirimData = "";
+        var kirimData2 = "";
+
         // FUNCTION UPDATE DATA TABLE MENGGUNAKAN FILTER DATA
         $(document).ready(function () {
             $('#btnFilterDataProject').on('click', function () {
@@ -1338,10 +1332,10 @@ $total_stok_dashboard = [];
                 var itemFilter = selectItem.length > 0 ? selectItem.join('|') : '';
                 var statusFilter = selectStatus.length > 0 ? selectStatus.join('|') : '';
 
-                var lokasiFilter2 = selectLokasi.length > 0 ? '"' + selectLokasi.join('", "') + '"' : '';
-                var bowheerFilter2 = selectBowheer.length > 0 ? '"' + selectBowheer.join('", "') + '"' : '';
-                var itemFilter2 = selectItem.length > 0 ? '"' + selectItem.join('", "') + '"' : '';
-                var statusFilter2 = selectStatus.length > 0 ? '"' + selectStatus.join('", "') + '"' : '';
+                lokasiFilter2 = selectLokasi.length > 0 ? '"' + selectLokasi.join('", "') + '"' : '';
+                bowheerFilter2 = selectBowheer.length > 0 ? '"' + selectBowheer.join('", "') + '"' : '';
+                itemFilter2 = selectItem.length > 0 ? '"' + selectItem.join('", "') + '"' : '';
+                statusFilter2 = selectStatus.length > 0 ? '"' + selectStatus.join('", "') + '"' : '';
 
                 if (selectLokasi.length === 0 && selectBowheer.length === 0 && selectItem.length === 0 && selectStatus.length === 0) {
 
@@ -1376,6 +1370,9 @@ $total_stok_dashboard = [];
                         dataType: "json",
                         success: function (response) {
                             console.log("Filtered Data:", response);
+
+                            kirimData = response.getRincianDashboardFiltered;
+                            kirimData2 = response.getRincianDashboardFileteredBowheer;
 
                             let totalAksesories = 0;
                             let totalClosure = 0;
@@ -1422,12 +1419,44 @@ $total_stok_dashboard = [];
             });
         });
 
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+            <?php foreach ($getAllStokByKategory as $stokKategory): ?>
+                var boxElement = document.getElementById("box_detai_kategori_item_<?= $stokKategory['kategori_item'] ?>");
+
+                if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
+                    boxElement.addEventListener("click", function () {
+                        console.log("<?= $stokKategory['kategori_item'] ?>");
+                        console.log("", lokasiFilter2);
+
+                        if (lokasiFilter2 === "" && bowheerFilter2 === "" && itemFilter2 === "" && statusFilter2 === "") {
+                            window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_kategori/" . $stokKategory['kategori_item']) ?>";
+                        } else {
+                            let rincianData = JSON.stringify(kirimData);
+                            let rincianData2 = JSON.stringify(kirimData2);
+                            let kategoriItem = "<?= $stokKategory['kategori_item'] ?>"
+
+                            $.post("<?= base_url('Logistik_Stok_Detail/filter_kategori') ?>",
+                                { rincianData: rincianData, rincianData2: rincianData2, kategori_item: kategoriItem },
+                                function () {
+                                    window.location.href = "<?= base_url('Logistik_Stok_Detail/filter_kategori_rdr') ?>?kategori=" + encodeURIComponent(kategoriItem);
+                                }
+                            );
+                        }
+
+                    });
+                }
+            <?php endforeach; ?>
+        });
+
         $(document).ready(function () {
             $.fn.dataTable.ext.errMode = 'none';
             $('#table_data').DataTable({
                 responsive: false // Matikan fitur Responsive
             });
         });
+
     </script>
 
 

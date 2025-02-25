@@ -232,4 +232,6 @@ class Fiberstar_Project extends CI_Controller
             echo json_encode(["status" => "error", "message" => "Data kosong!"]);
         }
     }
+
+    
 }
