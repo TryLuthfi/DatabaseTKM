@@ -31,7 +31,7 @@ class Backup extends CI_Controller
     public function create_backup()
     {
         // Nama file backup
-        $db_name = 'backup_' . date('Y-m-d_H-i-s') . '.sql';
+        $db_name = 'databasetkm_' . date('Y-m-d_H-i-s') . '.sql';
         $save_path = FCPATH . 'backups/' . $db_name;
 
         // Konfigurasi backup
@@ -56,7 +56,7 @@ class Backup extends CI_Controller
         $this->db->insert('backup_history', ['filename' => $db_name]);
 
         // Redirect kembali ke halaman backup
-        redirect('backup');
+        redirect('Backup');
     }
 
     public function download_backup($filename)
@@ -68,5 +68,11 @@ class Backup extends CI_Controller
         } else {
             show_404();
         }
+    }
+
+    public function delete_backup($id)
+    {
+        $this->db->delete('backup_history', ['id' => $id]);
+        redirect('Backup');
     }
 }

@@ -23,14 +23,15 @@
                                     <h3 class="card-title">List Data</h3>
                                 </div>
                                 <div class="col-6">
-                                        <a href="<?= base_url('backup/create_backup') ?>" class="btn btn-primary float-right text-bold btn-tambah-data-item">Backup DB &nbsp;<i
-                                                class="fas fa-download"></i> </a>
-                                    </div>
+                                    <a href="<?= base_url('backup/create_backup') ?>"
+                                        class="btn btn-primary float-right text-bold btn-tambah-data-item">Backup DB
+                                        &nbsp;<i class="fas fa-download"></i> </a>
+                                </div>
                             </div>
                         </div>
                         <div class="card-body table-scrollable">
                             <table id="tabel_histori_backup" class="table table-bordered table-striped">
-                            <thead>
+                                <thead>
                                     <tr>
                                         <th>No</th>
                                         <th>File name</th>
@@ -46,10 +47,13 @@
                                             <td><?= $backup->filename ?></td>
                                             <td><?= $backup->backup_date ?></td>
                                             <td>
-                                                <a href="<?= base_url('backup/download_backup/' . $backup->filename) ?>"
+                                                <a href="<?= base_url('Backup/download_backup/' . $backup->filename) ?>"
                                                     class="btn btn-success btn-sm">
-                                                    Download &nbsp;<i
-                                                    class="fas fa-download"></i>
+                                                    Download &nbsp;<i class="fas fa-download"></i>
+                                                </a>
+                                                <a href="<?= base_url('Backup/delete_backup/' . $backup->id) ?>"
+                                                    class="btn btn-danger btn-sm">
+                                                    Delete &nbsp;<i class="fas fa-trash"></i>
                                                 </a>
                                             </td>
                                         </tr>
