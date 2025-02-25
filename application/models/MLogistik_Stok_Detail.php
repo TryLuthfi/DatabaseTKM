@@ -173,7 +173,7 @@ ORDER BY lg.regional_lokasi_gudang, ki.project_item;')
     COALESCE(SUM(
         CASE 
             WHEN tmlsm.status_sumber_material = "IN" THEN tls.jumlah_stok
-            WHEN tmlsm.status_sumber_material = "   OUT" THEN -tls.jumlah_stok
+            WHEN tmlsm.status_sumber_material = "OUT" THEN -tls.jumlah_stok
             ELSE 0 
         END
     ), 0) AS total_jumlah_stok
