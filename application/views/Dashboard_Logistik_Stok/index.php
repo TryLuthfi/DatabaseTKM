@@ -654,7 +654,7 @@ $total_stok_dashboard = [];
                                         <label class="col-form-label">Nomor Surat Jalan</label>
                                         <input type="text" class="form-control" name="nomor_surat_jalan"
                                             id="nomor_surat_jalan" autocomplete="off" value=""
-                                            placeholder="TEC.005/TKM-04/PO/II/2025" required>
+                                            placeholder="TEC.005/TKM-04/SJ/II/2025" required>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
