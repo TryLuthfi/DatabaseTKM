@@ -670,7 +670,7 @@ $total_tiang = 0;
                                         <?php
 
                                         $total = 1;
-                                        foreach ($getHistoriInOUtLogistik as $data):
+                                        foreach ($getHistoriInOUtLogistikArea as $data):
                                         ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>

@@ -27,7 +27,7 @@ class Logistik_Stok_Detail extends CI_Controller
             $data['lokasi'] = strtoupper($decoded_url_area);
             $data['getStokDetailArea'] = $this->MLogistik_Stok_Detail->getStokDetailArea();
             $data['getSummaryDetailArea'] = $this->MLogistik_Stok_Detail->getSummaryDetailArea();
-            $data['getHistoriInOUtLogistik'] = $this->MLogistik_Stok_Detail->getHistoriInOUtLogistik();
+            $data['getHistoriInOUtLogistikArea'] = $this->MLogistik_Stok_Detail->getHistoriInOUtLogistikArea();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -55,6 +55,7 @@ class Logistik_Stok_Detail extends CI_Controller
             $data['kategori_item'] = strtoupper($decoded_url_area);
             $data['getStokPerBowheer'] = $this->MLogistik_Stok_Detail->getStokPerBowheer();
             $data['getDistribusiPerBowheer'] = $this->MLogistik_Stok_Detail->getDistribusiPerBowheer();
+            $data['getHistoriInOUtLogistikKategori'] = $this->MLogistik_Stok_Detail->getHistoriInOUtLogistikKategori();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
