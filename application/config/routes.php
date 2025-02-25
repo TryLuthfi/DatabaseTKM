@@ -60,3 +60,6 @@ defined('BASEPATH') or exit('No direct script access allowed');
 $route['default_controller'] = 'Auth';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;
+$route['backup'] = 'backup/index';
+$route['backup/create_backup'] = 'backup/create_backup';
+$route['backup/download_backup/(:any)'] = 'backup/download_backup/$1';

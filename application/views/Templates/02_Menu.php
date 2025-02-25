@@ -324,6 +324,19 @@ $id_menu = $this->uri->segment('1');
                             </p>
                         </a>
                     </li>
+
+                    <li class="nav-header">Development</li>
+                    <li class="nav-item" style="pointer-events: none">
+                        <a href="<?= base_url('Backup') ?>" class="nav-link <?php if ($id_menu == 'forbidden') {
+                              echo "active";
+                          } ?>">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Database
+                            </p>
+                        </a>
+                    </li>
+
                 </ul>
             </nav>
             <!-- /.sidebar-menu -->
