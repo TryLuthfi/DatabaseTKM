@@ -8,9 +8,11 @@ class Fiberstar_Project extends CI_Controller
     {
         parent::__construct();
         $this->load->library('form_validation');
+        $this->load->library('upload');
         $this->load->model('MFiberstar_Project');
     }
 
+    // function index awal load halaman
     public function index()
     {
         if (!empty($this->session->userdata('id_user'))) {
@@ -18,21 +20,32 @@ class Fiberstar_Project extends CI_Controller
 
             $data['title'] = 'Monitoring Project PT. Fiberstar';
             $data['judul'] = 'MONITORING PROJECT PT. FIBERSTAR';
-            $data['rincian'] = $this->MFiberstar_Project->getData();
-            $data['main_data'] = $this->MFiberstar_Project->getMainData();
+
+            // nilai po
             $data['data_invoice'] = $this->MFiberstar_Project->getInvoice();
+
+            // uniq data untuk filter
             $data['unique_regional'] = $this->MFiberstar_Project->getUniqueRegional();
             $data['unique_pic'] = $this->MFiberstar_Project->getUniquePic();
             $data['unique_area'] = $this->MFiberstar_Project->getUniqueArea();
             $data['unique_stagging'] = $this->MFiberstar_Project->getUniqueStagging();
+
+            // chart awal group by kota
             $data['top_area_bak'] = $this->MFiberstar_Project->gettopAreaBAK();
             $data['gettopAreaSPK'] = $this->MFiberstar_Project->gettopAreaSPK();
             $data['top_area_rfs'] = $this->MFiberstar_Project->gettopAreaRFS();
+
+            // chart awal group by kota ( detail chart )
+            $data['gettopAreaBAKDetail'] = $this->MFiberstar_Project->gettopAreaBAKDetail();
+            $data['gettopAreaSPKDetail'] = $this->MFiberstar_Project->gettopAreaSPKDetail();
+            $data['gettopAreaRFSDetail'] = $this->MFiberstar_Project->gettopAreaRFSDetail();
+            $data['gettopAreaATPDetail'] = $this->MFiberstar_Project->gettopAreaATPDetail();
+
+            // view tabel group by
             $data['stagging_regional'] = $this->MFiberstar_Project->getStaggingRegional();
             $data['stagging_area'] = $this->MFiberstar_Project->getStaggingArea();
-            $data['grafik_by_kota'] = $this->MFiberstar_Project->getGrafikByKota();
-            $data['gettopAreaBAKDetail'] = $this->MFiberstar_Project->gettopAreaBAKDetail();
 
+            // dashboard dan view tabel
             if ($this->session->userdata('lokasi_user') == "HO") {
                 $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasiAll();
                 $data['total_hp_plan'] = $this->MFiberstar_Project->getTotalHpPlanAll();
@@ -40,8 +53,6 @@ class Fiberstar_Project extends CI_Controller
                 $data['progress_implementasi'] = $this->MFiberstar_Project->getProgressImplementasiArea();
                 $data['total_hp_plan'] = $this->MFiberstar_Project->getTotalHpPlanArea();
             }
-
-            $data['kode_akun'] = $this->db->get('tb_project_fiberstar')->result_array();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -53,6 +64,7 @@ class Fiberstar_Project extends CI_Controller
         }
     }
 
+    // function load data saat filter tanggal
     public function filterTanggalChart()
     {
         $dateRange = $this->input->post('date_range');
@@ -62,8 +74,8 @@ class Fiberstar_Project extends CI_Controller
 
         $data1 = $this->MFiberstar_Project->getFilterTanggalTopAreaAchievBAK($startDate, $endDate);
         $data2 = $this->MFiberstar_Project->getFilterTanggalTopAreaAchievSPK($startDate, $endDate);
-        $gettopAreaBAK = $this->MFiberstar_Project->gettopAreaBAKFilter($startDate, $endDate);
         $gettopAreaBAKFilterDetail = $this->MFiberstar_Project->gettopAreaBAKFilterDetail($startDate, $endDate);
+        $gettopAreaSPKFilterDetail = $this->MFiberstar_Project->gettopAreaSPKFilterDetail($startDate, $endDate);
 
         // Cegah NULL sebelum di-encode
         array_walk_recursive($data1, function (&$item) {
@@ -87,55 +99,14 @@ class Fiberstar_Project extends CI_Controller
                 "data" => array_column($data2, 'achiev_spk'),
                 "total_cluster_spk" => array_column($data2, 'total_cluster_spk')
             ],
-            "gettopAreaBAK" => $gettopAreaBAK,
-            "gettopAreaBAKFilterDetail" => $gettopAreaBAKFilterDetail
+            "gettopAreaBAKFilterDetail" => $gettopAreaBAKFilterDetail,
+            "gettopAreaSPKFilterDetail" => $gettopAreaSPKFilterDetail
         ]);
         exit();
     }
 
-    public function edit()
-    {
 
-        $data_array = array(
-            'kode_provider' => 1,
-            'nomor_po' => $_POST['nomor_po'],
-            'nilai_po' => $_POST['nilai_po'],
-            'tanggal_po' => $_POST['tanggal_po'],
-            'versi_po' => $_POST['versi_po'],
-            'kode_po' => $_POST['kode_po'],
-            'status_po' => $_POST['status_po']
-        );
-
-        $where = array('kode_akun' => $_POST['kode_akun']);
-
-        $res = $this->MFiberstar_Project->updateData($data_array, $where);
-
-        if ($res >= 1) {
-            $this->session->set_flashdata('status', 'sukses_edit');
-            redirect("Fiberstar_Project");
-            $status = $this->session->flashdata('destroy');
-        } else {
-            $this->session->set_flashdata('status', 'gagal_edit');
-            redirect("Fiberstar_Project");
-            $status = $this->session->flashdata('destroy');
-        }
-    }
-
-    public function delete($id)
-    {
-        $id_kode = array('id_kode' => $id);
-        $res = $this->MFiberstar_Project->deleteData($id_kode);
-
-        if ($res >= 1) {
-            $this->session->set_flashdata('status', 'sukses_hapus');
-            redirect("Fiberstar_Project");
-        } else {
-            $this->session->set_flashdata('status', 'gagal_hapus');
-            redirect("Fiberstar_Project");
-        }
-    }
-
-
+    // function index detail list cluster per kota / regional
     public function Detail($primary_access_id_project)
     {
 
@@ -158,28 +129,7 @@ class Fiberstar_Project extends CI_Controller
         }
     }
 
-    public function FilterDetail()
-    {
-        $data['title'] = 'DETAIL FILTER ' . $this->session->userdata('judul_filter_fs');
-        $data['judul'] = 'DETAIL FILTER ' . $this->session->userdata('judul_filter_fs');
-        $data['periode_tanggal'] = $this->session->userdata('periode_tanggal');
-
-        echo ("<script>console.log('PHP: " . $data['periode_tanggal'] . "');</script>");
-
-        $data['gettopAreaBAKDetail'] = $this->session->userdata('gettopAreaBAKDetail'); // Ambil dari session
-
-        if (empty($data['gettopAreaBAKDetail'])) {
-            show_error("Data tidak ditemukan!", 404);
-        }
-
-
-        $this->load->view('Templates/01_Header', $data);
-        $this->load->view('Templates/02_Menu');
-        $this->load->view('Fiberstar_Project/indexfilter', $data);
-        $this->load->view('Templates/03_Footer');
-        $this->load->view('Templates/99_JS');
-    }
-
+    // function ajax untuk menyimpan session list detail chart
     public function saveDetailToSession()
     {
         $data = $this->input->post('data');
@@ -224,12 +174,118 @@ class Fiberstar_Project extends CI_Controller
 
 
         if (!empty($data)) {
-            $this->session->set_userdata('gettopAreaBAKDetail', json_decode($data, true)); // Simpan ke session
+            $this->session->set_userdata('listDetailCluster', json_decode($data, true)); // Simpan ke session
             $this->session->set_userdata('judul_filter_fs', $judul);
             $this->session->set_userdata('periode_tanggal', $periode_tanggal_indonesia);
             echo json_encode(["status" => "success"]);
         } else {
             echo json_encode(["status" => "error", "message" => "Data kosong!"]);
+        }
+    }
+
+    // function index detail list cluster by chart
+    public function FilterDetail()
+    {
+        $data['title'] = 'DETAIL FILTER ' . $this->session->userdata('judul_filter_fs');
+        $data['judul'] = 'DETAIL FILTER ' . $this->session->userdata('judul_filter_fs');
+        $data['periode_tanggal'] = $this->session->userdata('periode_tanggal');
+
+        echo ("<script>console.log('PHP: " . $data['periode_tanggal'] . "');</script>");
+
+        $data['listDetailCluster'] = $this->session->userdata('listDetailCluster'); // Ambil dari session
+
+        if (empty($data['listDetailCluster'])) {
+            show_error("Data tidak ditemukan!", 404);
+        }
+
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('Fiberstar_Project/indexfilter', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
+    }
+
+    // fitur upload batch adding cluster
+    public function importExcel() {
+        $config['upload_path']   = './uploads/';
+        $config['allowed_types'] = 'xls|xlsx';
+        $config['max_size']      = 2048;
+        $this->upload->initialize($config);
+
+        if (!$this->upload->do_upload('file_excel')) {
+            $this->session->set_flashdata('error', $this->upload->display_errors());
+        } else {
+            $file_data = $this->upload->data();
+            $file_path = $file_data['full_path'];
+
+            include APPPATH . 'third_party/PHPExcel/PHPExcel.php';
+            $objPHPExcel = PHPExcel_IOFactory::load($file_path);
+            $sheetData   = $objPHPExcel->getActiveSheet()->toArray(null, true, true, true);
+
+            $data_insert = [];
+            foreach ($sheetData as $key => $row) {
+                if ($key == 1) continue; // Skip header
+
+                $data_insert[] = [
+                    'id_logistik'   => $row['A'],
+                    'kota_logistik' => $row['B'],
+                    'qty_logistik'  => $row['C'],
+                ];
+            }
+
+            if (!empty($data_insert)) {
+                $this->MFiberstar_Project->insertBatch($data_insert);
+                $this->session->set_flashdata('success', 'Data berhasil diimport!');
+            } else {
+                $this->session->set_flashdata('error', 'Format file tidak sesuai!');
+            }
+
+            unlink($file_path);
+        }
+
+        redirect('logistik');
+    }
+
+    public function edit()
+    {
+
+        $data_array = array(
+            'kode_provider' => 1,
+            'nomor_po' => $_POST['nomor_po'],
+            'nilai_po' => $_POST['nilai_po'],
+            'tanggal_po' => $_POST['tanggal_po'],
+            'versi_po' => $_POST['versi_po'],
+            'kode_po' => $_POST['kode_po'],
+            'status_po' => $_POST['status_po']
+        );
+
+        $where = array('kode_akun' => $_POST['kode_akun']);
+
+        $res = $this->MFiberstar_Project->updateData($data_array, $where);
+
+        if ($res >= 1) {
+            $this->session->set_flashdata('status', 'sukses_edit');
+            redirect("Fiberstar_Project");
+            $status = $this->session->flashdata('destroy');
+        } else {
+            $this->session->set_flashdata('status', 'gagal_edit');
+            redirect("Fiberstar_Project");
+            $status = $this->session->flashdata('destroy');
+        }
+    }
+
+    public function delete($id)
+    {
+        $id_kode = array('id_kode' => $id);
+        $res = $this->MFiberstar_Project->deleteData($id_kode);
+
+        if ($res >= 1) {
+            $this->session->set_flashdata('status', 'sukses_hapus');
+            redirect("Fiberstar_Project");
+        } else {
+            $this->session->set_flashdata('status', 'gagal_hapus');
+            redirect("Fiberstar_Project");
         }
     }
 

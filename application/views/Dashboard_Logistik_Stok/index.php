@@ -590,7 +590,7 @@ $total_stok_dashboard = [];
                                 </div>
                             </div>
                             <!-- /.card-header -->
-                            <div class="card-body table-scrollable">
+                            <div class="card-body table-responsive text-nowrap">
                                 <table id="table_data" class="table table-bordered table-striped">
                                     <thead>
                                         <tr>
@@ -625,7 +625,7 @@ $total_stok_dashboard = [];
                                                 <td><?= number_format(floatval($data['jumlah_stok']), 0, ",", "."); ?></td>
                                                 <td><?= $data['nama_user'] ?></td>
                                                 <td><?= $data['tanggal_upload_stok'] ?></td>
-                                                <td>
+                                                <td class="d-flex">
                                                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                                                         <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . urlencode($data['no_surat_jalan'])); ?>"
                                                             id="tombol_hapus_rincian"
@@ -636,7 +636,7 @@ $total_stok_dashboard = [];
 
                                                     <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>"
                                                         data-target="#form_detail_surat_jalan" data-toggle="modal"
-                                                        class="btn btn-primary tombol_detail"><i
+                                                        class="btn btn-primary tombol_detail ml-1"><i
                                                             class=" fas fa-eye"></i></a>
                                                 </td>
                                             </tr>
@@ -799,8 +799,8 @@ $total_stok_dashboard = [];
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label class="col-form-label">Input Date</label>
-                                    <input type="date" class="form-control" name="tanggal_upload_stok" id="tanggal_upload_stok"
-                                        disabled>
+                                    <input type="date" class="form-control" name="tanggal_upload_stok"
+                                        id="tanggal_upload_stok" disabled>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -1473,10 +1473,20 @@ $total_stok_dashboard = [];
         <?php endforeach; ?>
     });
 
+        // $(document).ready(function () {
+        //     $.fn.dataTable.ext.errMode = 'none';
+        //     $('#table_data').DataTable({
+        //         responsive: false // Matikan fitur Responsive
+        //     });
+        // });
+
     $(document).ready(function () {
-        $.fn.dataTable.ext.errMode = 'none';
         $('#table_data').DataTable({
-            responsive: false // Matikan fitur Responsive
+            responsive: false,
+            fixedHeader: {
+                header: true,
+                footer: true
+            }
         });
     });
 

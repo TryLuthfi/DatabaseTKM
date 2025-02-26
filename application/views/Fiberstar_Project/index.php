@@ -850,38 +850,34 @@ $total_hp_closed_regional = 0;
               </div>
 
               <div class="card-body">
-                <div class="content-header">
-                  <div class="container-fluid">
-                    <div class="row mb-2">
-                      <div class="col-sm-12">
-                        <h1 class="m-0 text-dark mb-3" style="text-align: center;">FILTER RANGE TANGGAL</h1>
-                      </div>
-                    </div>
-                    <div class="col-12">
-                      <div class="row">
-                        <div class="col-6">
-                          <div class="form-group">
-                            <div class="input-group">
-                              <div class="input-group-prepend">
-                                <span class="input-group-text">
-                                  <i class="far fa-calendar-alt"></i>
-                                </span>
-                              </div>
-                              <input type="text" class="form-control float-right" id="date-range" name="date"
-                                value="<?= date('m/d/Y') ?> - <?= date('m/d/Y') ?>">
-                            </div>
-                          </div>
-                        </div>
-                        <div class="col-6">
-                          <button type="button" class="btn btn-info" id="filter_range_tanggal">Cari</button>
-                        </div>
-                        </form>
-                      </div>
-                    </div>
+                <div class="row mb-2">
+                  <div class="col-sm-12">
+                    <h1 class="m-0 text-dark mb-3" style="text-align: center;">FILTER RANGE TANGGAL</h1>
                   </div>
                 </div>
-                <div class="row">
+                <div class="col-12">
+                  <div class="row">
+                    <div class="col-6">
+                      <div class="form-group">
+                        <div class="input-group">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text">
+                              <i class="far fa-calendar-alt"></i>
+                            </span>
+                          </div>
+                          <input type="text" class="form-control float-right" id="date-range" name="date"
+                            value="<?= date('m/d/Y') ?> - <?= date('m/d/Y') ?>">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <button type="button" class="btn btn-info" id="filter_range_tanggal">Cari</button>
+                    </div>
+                    </form>
+                  </div>
+                </div>
 
+                <div class="row">
                   <div class="col-lg-6">
                     <div class="card">
                       <div class="card-header border-0">
@@ -927,7 +923,7 @@ $total_hp_closed_regional = 0;
                       <div class="card-header border-0">
                         <div class="d-flex justify-content-between">
                           <h3 class="card-title">TOP AREA DONE SPK</h3>
-                          <a href="javascript:void(0);">Lihat Detail</a>
+                          <a href="javascript:void(0);" id="lihatDetailSPK">Lihat Detail</a>
                         </div>
                       </div>
                       <div class="card-body">
@@ -1069,12 +1065,12 @@ $total_hp_closed_regional = 0;
         <div class="col-12">
           <div class="card">
             <div class="card-header">
-              <div class="row">
-                <div class="col-6">
+              <div class="row align-items-center">
+                <div class="col-md-6 col-12 mb-2">
                   <h3 class="card-title">List Cleanlist Cluster</h3>
                 </div>
-                <div class="col-6">
-                  <div class="input-group-prepend float-right mr-2">
+                <div class="col-md-6 col-12 d-flex flex-wrap justify-content-end">
+                  <div class="dropdown mr-2">
                     <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
                       Download Report &nbsp; <i class="fas fa-print"></i>
                     </button>
@@ -1085,11 +1081,10 @@ $total_hp_closed_regional = 0;
                       <a class="dropdown-item">Print</a>
                     </div>
                   </div>
-                  <a href="#" class="btn btn-success float-right text-bold mr-2">Tambah Cluster &nbsp;<i
-                      class="fas fa-plus"></i> </a>
+                  <a href="#" class="btn btn-success text-bold" data-toggle="modal"
+                    data-target="#modal_tambah_cluster">Tambah Cluster &nbsp;<i class="fas fa-plus"></i></a>
                 </div>
               </div>
-
             </div>
             <!-- /.card-header -->
             <div class="card-body table-responsive text-nowrap ">
@@ -1226,7 +1221,7 @@ $total_hp_closed_regional = 0;
                       <?php } ?>
 
                       <td>
-                        <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['access_id_project']); ?>"
+                        <a href="<?php echo site_url('Fiberstar_Project_Detail/detailImplementasi/' . $data['primary_access_id_project']); ?>"
                           id="tombol_detail" class="btn btn-primary tombol_detail"><i class=" fas fa-share"></i></a>
 
                       </td>
@@ -1420,6 +1415,43 @@ $total_hp_closed_regional = 0;
             </form>
           <?php endforeach; ?>
 
+          <!-- modal untuk upload batch list cluster -->
+          <div class="modal fade" id="modal_tambah_cluster" tabindex="-1" aria-labelledby="modalTitle"
+            aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="modalTitle">Tambah Data Logistik</h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <div class="d-flex justify-content-between">
+                    <button class="btn btn-secondary" id="inputManual">📋 Input Manual</button>
+                    <button class="btn btn-warning" id="inputBatch">📂 Input Batch</button>
+                    <a href="uploads/formatuploadbatchclusterfiberstar.xlsx" class="btn btn-info">📥 Download Format</a>
+                  </div>
+
+                  <!-- Form Input Batch (Hidden by Default) -->
+                  <div id="uploadSection" class="mt-3 d-none">
+                    <form action="<?= base_url('Logistik/uploadExcel') ?>" class="dropzone" id="batchUpload">
+                      <div class="dz-message">
+                        <h6>Drag & Drop File Excel di sini</h6>
+                        <p>Atau klik untuk memilih file</p>
+                      </div>
+                      <div id="filename-preview"></div>
+                    </form>
+                    <button id="submitUpload" class="btn btn-primary mt-2">🚀 Upload Sekarang</button>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- COBA PANGGIL DATA MSQL -->
           <div class="row">
             <!-- ISI -->
@@ -1483,8 +1515,9 @@ $total_hp_closed_regional = 0;
     const itemsPerPageSpk = 5; // Batas data per halaman
 
     let gettopAreaBAKDetail = <?php echo json_encode($gettopAreaBAKDetail); ?>;
-
-    console.log("isi data : ", gettopAreaBAKDetail);
+    let gettopAreaSPKDetail = <?php echo json_encode($gettopAreaSPKDetail); ?>;
+    let gettopAreaRFSDetail = <?php echo json_encode($gettopAreaSPKDetail); ?>;
+    let gettopAreaATPDetail = <?php echo json_encode($gettopAreaSPKDetail); ?>;
 
     // Fungsi untuk memperbarui chart berdasarkan halaman
     function updateChartBAK() {
@@ -1723,6 +1756,7 @@ $total_hp_closed_regional = 0;
             console.log("Data berhasil diterima", response);
 
             gettopAreaBAKDetail = response.gettopAreaBAKFilterDetail
+            gettopAreaSPKDetail = response.gettopAreaSPKFilterDetail
 
             console.log("isi data filter", gettopAreaBAKDetail);
 
@@ -1777,12 +1811,33 @@ $total_hp_closed_regional = 0;
       $.ajax({
         url: "<?= base_url('Fiberstar_Project/saveDetailToSession') ?>",
         type: "POST",
-        data: { 
+        data: {
           data: JSON.stringify(gettopAreaBAKDetail),
           judul: "BAK",
           periode_tanggal: periode_tanggal
 
-         }, // Kirim data ke session
+        }, // Kirim data ke session
+        success: function () {
+          // Redirect setelah data tersimpan di session
+          window.open("<?= base_url('Fiberstar_Project/FilterDetail') ?>", "_blank");
+        },
+        error: function (xhr, status, error) {
+          console.error("Error:", xhr.responseText);
+          alert("Terjadi kesalahan saat menyimpan data ke session!");
+        }
+      });
+    });
+
+    $("#lihatDetailSPK").click(function () {
+      $.ajax({
+        url: "<?= base_url('Fiberstar_Project/saveDetailToSession') ?>",
+        type: "POST",
+        data: {
+          data: JSON.stringify(gettopAreaSPKDetail),
+          judul: "SPK",
+          periode_tanggal: periode_tanggal
+
+        }, // Kirim data ke session
         success: function () {
           // Redirect setelah data tersimpan di session
           window.open("<?= base_url('Fiberstar_Project/FilterDetail') ?>", "_blank");
@@ -2314,6 +2369,48 @@ $total_hp_closed_regional = 0;
     });
   });
 
+  document.getElementById("inputBatch").addEventListener("click", function () {
+    document.getElementById("uploadSection").classList.remove("d-none");
+});
+
+Dropzone.options.batchUpload = {
+    maxFilesize: 5, // Maksimal 5MB
+    acceptedFiles: ".xls,.xlsx",
+    previewsContainer: "#filename-preview", // Menentukan tempat tampilan nama file
+    clickable: true,
+    autoProcessQueue: false, // Hindari auto-upload sebelum submit
+    init: function () {
+        let myDropzone = this;
+
+        this.on("addedfile", function (file) {
+            // Hapus preview bawaan Dropzone
+            setTimeout(() => {
+                if (file.previewElement) {
+                    file.previewElement.remove();
+                }
+            }, 100);
+
+            // Tampilkan nama file yang dipilih
+            document.getElementById("filename-preview").innerHTML =
+                "<p class='text-success font-weight-bold'>File diunggah: " + file.name + "</p>";
+        });
+
+        this.on("success", function (file, response) {
+            alert("Upload Berhasil! " + response);
+            location.reload();
+        });
+
+        this.on("error", function (file, errorMessage) {
+            alert("Upload Gagal: " + errorMessage);
+        });
+
+        // Tombol Submit untuk Proses Upload
+        document.getElementById("submitUpload").addEventListener("click", function () {
+            myDropzone.processQueue();
+        });
+    }
+};
+
 </script>
 
 <script>
@@ -2351,129 +2448,7 @@ $total_hp_closed_regional = 0;
     $('.select2bs4').select2({
       theme: 'bootstrap4'
     })
-
-    //Datemask dd/mm/yyyy
-    $('#datemask').inputmask('dd/mm/yyyy', { 'placeholder': 'dd/mm/yyyy' })
-    //Datemask2 mm/dd/yyyy
-    $('#datemask2').inputmask('mm/dd/yyyy', { 'placeholder': 'mm/dd/yyyy' })
-    //Money Euro
-    $('[data-mask]').inputmask()
-
-    //Date picker
-    $('#reservationdate').datetimepicker({
-      format: 'L'
-    });
-
-    //Date and time picker
-    $('#reservationdatetime').datetimepicker({ icons: { time: 'far fa-clock' } });
-
-    //Date range picker
-    $('#reservation').daterangepicker()
-    //Date range picker with time picker
-    $('#reservationtime').daterangepicker({
-      timePicker: true,
-      timePickerIncrement: 30,
-      locale: {
-        format: 'MM/DD/YYYY hh:mm A'
-      }
-    })
-    //Date range as a button
-    $('#daterange-btn').daterangepicker(
-      {
-        ranges: {
-          'Today': [moment(), moment()],
-          'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-          'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-          'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-          'This Month': [moment().startOf('month'), moment().endOf('month')],
-          'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-        },
-        startDate: moment().subtract(29, 'days'),
-        endDate: moment()
-      },
-      function (start, end) {
-        $('#reportrange span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'))
-      }
-    )
-
-    //Timepicker
-    $('#timepicker').datetimepicker({
-      format: 'LT'
-    })
-
-    //Bootstrap Duallistbox
-    $('.duallistbox').bootstrapDualListbox()
-
-    //Colorpicker
-    $('.my-colorpicker1').colorpicker()
-    //color picker with addon
-    $('.my-colorpicker2').colorpicker()
-
-    $('.my-colorpicker2').on('colorpickerChange', function (event) {
-      $('.my-colorpicker2 .fa-square').css('color', event.color.toString());
-    })
-
-    $("input[data-bootstrap-switch]").each(function () {
-      $(this).bootstrapSwitch('state', $(this).prop('checked'));
-    })
-
   })
-  // BS-Stepper Init
-  document.addEventListener('DOMContentLoaded', function () {
-    window.stepper = new Stepper(document.querySelector('.bs-stepper'))
-  })
-
-  // DropzoneJS Demo Code Start
-  Dropzone.autoDiscover = false
-
-  // Get the template HTML and remove it from the doumenthe template HTML and remove it from the doument
-  var previewNode = document.querySelector("#template")
-  previewNode.id = ""
-  var previewTemplate = previewNode.parentNode.innerHTML
-  previewNode.parentNode.removeChild(previewNode)
-
-  var myDropzone = new Dropzone(document.body, { // Make the whole body a dropzone
-    url: "/target-url", // Set the url
-    thumbnailWidth: 80,
-    thumbnailHeight: 80,
-    parallelUploads: 20,
-    previewTemplate: previewTemplate,
-    autoQueue: false, // Make sure the files aren't queued until manually added
-    previewsContainer: "#previews", // Define the container to display the previews
-    clickable: ".fileinput-button" // Define the element that should be used as click trigger to select files.
-  })
-
-  myDropzone.on("addedfile", function (file) {
-    // Hookup the start button
-    file.previewElement.querySelector(".start").onclick = function () { myDropzone.enqueueFile(file) }
-  })
-
-  // Update the total progress bar
-  myDropzone.on("totaluploadprogress", function (progress) {
-    document.querySelector("#total-progress .progress-bar").style.width = progress + "%"
-  })
-
-  myDropzone.on("sending", function (file) {
-    // Show the total progress bar when upload starts
-    document.querySelector("#total-progress").style.opacity = "1"
-    // And disable the start button
-    file.previewElement.querySelector(".start").setAttribute("disabled", "disabled")
-  })
-
-  // Hide the total progress bar when nothing's uploading anymore
-  myDropzone.on("queuecomplete", function (progress) {
-    document.querySelector("#total-progress").style.opacity = "0"
-  })
-
-  // Setup the buttons for all transfers
-  // The "add files" button doesn't need to be setup because the config
-  // `clickable` has already been specified.
-  document.querySelector("#actions .start").onclick = function () {
-    myDropzone.enqueueFiles(myDropzone.getFilesWithStatus(Dropzone.ADDED))
-  }
-  document.querySelector("#actions .cancel").onclick = function () {
-    myDropzone.removeAllFiles(true)
-  }
   // DropzoneJS Demo Code End
 </script>
 <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
@@ -2481,6 +2456,9 @@ $total_hp_closed_regional = 0;
 <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/TableExport/5.2.0/js/tableexport.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
+
 
 
 <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/fontawesome-free/css/all.min.css">
