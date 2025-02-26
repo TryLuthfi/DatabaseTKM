@@ -175,7 +175,8 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
         $data['getDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getDashboardFiltered($lokasi, $bowheer, $item);
         $data['getRincianDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFiltered($lokasi, $bowheer, $item);
-        $data['getRincianDashboardFileteredBowheer'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFileteredBowheer($lokasi, $bowheer, $item);
+        $data['getRincianDashboardFilteredBowheer'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFilteredBowheer($lokasi, $bowheer, $item);
+        $data['getInOutHistoryFiltered'] = $this->MDashboard_Logistik_Stok->getInOutHistoryFiltered($lokasi, $bowheer, $item);
 
         echo json_encode($data, JSON_PRETTY_PRINT);
         exit;

@@ -15,7 +15,79 @@ $total_item_inner = 0;
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12">
-                    <h1 class="m-0 text-dark" style="text-align: center;">DISTRIBUSI STOK <?= "" . $kategori_item ?></h1>
+                    <h1 class="m-0 text-dark" style="text-align: center;">SUMMARY STOK <?= "" . $kategori_item."" ?> BOWHEER FILTERED</h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="clearfix hidden-md-up"></div>
+
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="card-title">Stok <?= "" . $kategori_item ?></h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body table-scrollable">
+                            <table id="tabel_summary_stok" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Kategori Item</th>
+                                        <th>Project Item</th>
+                                        <th>Stok</th>
+                                        <th>Satuan item</th>
+                                        <th>Pemilik Item</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $total = 1;
+                                    foreach ($getRincianDashboardFilteredBowheer as $data):
+                                        if ($data['kategori_item'] == $kategori_item) {
+                                            $total_item += $data['jumlah_stok'];
+                                            ?>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['kategori_item'] ?></td>
+                                                <td><?= $data['project_item'] ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, ',', '.') ?></td>
+                                                <td><?= $data['satuan_item'] ?></td>
+                                                <td><?= $data['nama_bowheer'] ?></td>
+                                            </tr>
+                                            <?php
+                                        }
+                                    endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">TOTAL</th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"><?= number_format($total_item, 0, ',', '.') ?></th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"></th>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                </div>
+            </div>
+    </section>
+
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">RINCIAN DETAIL STOK <?= "" . $kategori_item."" ?> FILTERED
+                    </h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
@@ -51,12 +123,12 @@ $total_item_inner = 0;
                                 </thead>
                                 <tbody>
                                     <?php
-                                    echo("<script>console.log('PHP: " . $kategori_item . "');</script>");
+                                    echo ("<script>console.log('PHP: " . $kategori_item . "');</script>");
 
                                     $total = 1;
                                     foreach ($rincianFilterDashboardLogistik as $data):
-                                        if($data['kategori_item'] == $kategori_item){
-                                                $total_item_inner += $data['jumlah_stok'];
+                                        if ($data['kategori_item'] == $kategori_item) {
+                                            $total_item_inner += $data['jumlah_stok'];
                                             ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
@@ -64,12 +136,12 @@ $total_item_inner = 0;
                                                 <td><?= $data['kota_lokasi_gudang'] ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, ',', '.') ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
                                             <?php
-                                            }
+                                        }
                                     endforeach; ?>
                                 </tbody>
                                 <tfoot>
@@ -78,7 +150,7 @@ $total_item_inner = 0;
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_item_inner, 0, '.', ',') ?></th>
+                                        <th colspan="1"><?= number_format($total_item_inner, 0, ',', '.') ?></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
@@ -94,7 +166,8 @@ $total_item_inner = 0;
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12">
-                    <h1 class="m-0 text-dark" style="text-align: center;">SUMMARY STOK <?= "" . $kategori_item ?></h1>
+                    <h1 class="m-0 text-dark" style="text-align: center;">HISTORY IN OUT MATERIAL
+                        <?= "" . $kategori_item."" ?> FILTERED</h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
@@ -102,7 +175,9 @@ $total_item_inner = 0;
 
     <section class="content">
         <div class="container-fluid">
+            <!-- Info boxes -->
             <div class="row">
+                <!-- fix for small devices only -->
                 <div class="clearfix hidden-md-up"></div>
 
                 <div class="col-12">
@@ -110,49 +185,56 @@ $total_item_inner = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok <?= "" . $kategori_item ?></h3>
+                                    <h3 class="card-title">List Stok Logistik </h3>
+                                </div>
+                                <div class="col-6">
+                                    <!-- <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
+                                            data-target="#modal-xl-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                                class="fas fa-plus"></i> </a> -->
                                 </div>
                             </div>
                         </div>
+                        <!-- /.card-header -->
                         <div class="card-body table-scrollable">
-                            <table id="tabel_summary_stok" class="table table-bordered table-striped">
+                            <table id="tabel_inout_material" class="table table-bordered table-striped">
                                 <thead>
                                     <tr>
                                         <th>No</th>
-                                        <th>Kategori Item</th>
-                                        <th>Project Item</th>
-                                        <th>Stok</th>
-                                        <th>Satuan item</th>
-                                        <th>Pemilik Item</th>
+                                        <th>Regional</th>
+                                        <th>Lokasi</th>
+                                        <th>Project</th>
+                                        <th>Kategori</th>
+                                        <th>Item</th>
+                                        <th>Status</th>
+                                        <th>Tipe</th>
+                                        <th>QTY</th>
+                                        <th>PIC</th>
+                                        <th>Tanggal</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php
+
                                     $total = 1;
-                                    foreach ($getRincianDashboardFileteredBowheer as $data):
-                                        if($data['kategori_item'] == $kategori_item){
-                                            $total_item += $data['jumlah_stok'];
-                                            ?>
-                                            <tr>
-                                                <td><?= $total++ ?></td>
-                                                <td><?= $data['kategori_item'] ?></td>
-                                                <td><?= $data['project_item'] ?></td>
-                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
-                                                <td><?= $data['satuan_item'] ?></td>
-                                                <td><?= $data['nama_bowheer'] ?></td>
-                                            </tr>
-                                            <?php
-                                        }
-                                    endforeach; ?>
+                                    foreach ($getInOutHistoryFiltered as $data):
+                                        if ($data['kategori_item'] == $kategori_item) {
+                                        ?>
+                                        <tr>
+                                            <td><?= $total++ ?></td>
+                                            <td><?= $data['regional_lokasi_gudang'] ?></td>
+                                            <td><?= $data['kota_lokasi_gudang'] ?></td>
+                                            <td><?= $data['nama_bowheer'] ?></td>
+                                            <td><?= $data['kategori_item'] ?></td>
+                                            <td><?= $data['nama_item'] ?></td>
+                                            <td><?= $data['nama_sumber_material'] ?></td>
+                                            <td><?= $data['status_sumber_material'] ?></td>
+                                            <td><?= number_format($data['jumlah_stok'], 0, ',', '.') ?></td>
+                                            <td><?= $data['nama_user'] ?></td>
+                                            <td><?= $data['tanggal_upload_stok'] ?></td>
+                                        </tr>
+                                    <?php }
+                                endforeach; ?>
                                 </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="2">TOTAL</th>
-                                        <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_item, 0, '.', ',') ?></th>
-                                        <th colspan="1"></th>
-                                        <th colspan="1"></th>
-                                </tfoot>
                             </table>
                         </div>
                         <!-- /.card-body -->
@@ -180,6 +262,9 @@ $total_item_inner = 0;
             "responsive": true,
         });
         $("#tabel_distribusi_stok").DataTable({
+            "responsive": true,
+        });
+        $("#tabel_inout_material").DataTable({
             "responsive": true,
         });
         // notifikasi allert sukses atau tidak

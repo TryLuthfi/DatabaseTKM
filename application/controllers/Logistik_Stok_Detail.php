@@ -73,11 +73,13 @@ class Logistik_Stok_Detail extends CI_Controller
         if (!empty($this->session->userdata('id_user'))) {
             $rincianData = json_decode($this->input->post('rincianData'), true);
             $rincianData2 = json_decode($this->input->post('rincianData2'), true);
+            $rincianData3 = json_decode($this->input->post('rincianData3'), true);
             $kategoriItem = $this->input->post('kategori_item');
 
             if (!empty($rincianData)) {
                 $this->session->set_userdata('rincianFilterDashboardLogistik', $rincianData);
-                $this->session->set_userdata('getRincianDashboardFileteredBowheer', $rincianData2);
+                $this->session->set_userdata('getRincianDashboardFilteredBowheer', $rincianData2);
+                $this->session->set_userdata('getInOutHistoryFiltered', $rincianData3);
                 $this->session->set_userdata('kategori_item', $kategoriItem);
             }
 
@@ -92,7 +94,8 @@ class Logistik_Stok_Detail extends CI_Controller
 
         if (!empty($this->session->userdata('id_user'))) {
             $data['rincianFilterDashboardLogistik'] = $this->session->userdata('rincianFilterDashboardLogistik');
-            $data['getRincianDashboardFileteredBowheer'] = $this->session->userdata('getRincianDashboardFileteredBowheer');
+            $data['getRincianDashboardFilteredBowheer'] = $this->session->userdata('getRincianDashboardFilteredBowheer');
+            $data['getInOutHistoryFiltered'] = $this->session->userdata('getInOutHistoryFiltered');
             $data['kategori_item'] = $this->input->get('kategori'); // Ambil kategori dari query string
     
             $data['title'] = 'Detail Stok Filter' . strtoupper($data['kategori_item']);

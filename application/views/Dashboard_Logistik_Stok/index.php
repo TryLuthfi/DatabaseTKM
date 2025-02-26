@@ -1332,6 +1332,7 @@ $total_stok_dashboard = [];
 
     var kirimData = "";
     var kirimData2 = "";
+    var kirimData3 = "";
 
     // FUNCTION UPDATE DATA TABLE MENGGUNAKAN FILTER DATA
     $(document).ready(function () {
@@ -1395,7 +1396,8 @@ $total_stok_dashboard = [];
                         console.log("Filtered Data:", response);
 
                         kirimData = response.getRincianDashboardFiltered;
-                        kirimData2 = response.getRincianDashboardFileteredBowheer;
+                        kirimData2 = response.getRincianDashboardFilteredBowheer;
+                        kirimData3 = response.getInOutHistoryFiltered;
 
                         let totalAksesories = 0;
                         let totalClosure = 0;
@@ -1458,10 +1460,11 @@ $total_stok_dashboard = [];
                     } else {
                         let rincianData = JSON.stringify(kirimData);
                         let rincianData2 = JSON.stringify(kirimData2);
+                        let rincianData3 = JSON.stringify(kirimData3);
                         let kategoriItem = "<?= $stokKategory['kategori_item'] ?>"
 
                         $.post("<?= base_url('Logistik_Stok_Detail/filter_kategori') ?>",
-                            { rincianData: rincianData, rincianData2: rincianData2, kategori_item: kategoriItem },
+                            { rincianData: rincianData, rincianData2: rincianData2, rincianData3: rincianData3, kategori_item: kategoriItem },
                             function () {
                                 window.location.href = "<?= base_url('Logistik_Stok_Detail/filter_kategori_rdr') ?>?kategori=" + encodeURIComponent(kategoriItem);
                             }

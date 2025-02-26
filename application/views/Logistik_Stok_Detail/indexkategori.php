@@ -15,7 +15,76 @@ $total_item_inner = 0;
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12">
-                    <h1 class="m-0 text-dark" style="text-align: center;">DISTRIBUSI STOK <?= "" . $kategori_item ?>
+                    <h1 class="m-0 text-dark" style="text-align: center;">SUMMARY STOK <?= "" . $kategori_item."" ?> BOWHEER</h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="clearfix hidden-md-up"></div>
+
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="card-title">Stok <?= "" . $kategori_item ?></h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body table-scrollable">
+                            <table id="tabel_summary_stok" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Kategori Item</th>
+                                        <th>Project Item</th>
+                                        <th>Stok</th>
+                                        <th>Satuan item</th>
+                                        <th>Pemilik Item</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    $total = 1;
+                                    foreach ($getStokPerBowheer as $data):
+                                        $total_item += $data['jumlah_stok'];
+                                        ?>
+                                        <tr>
+                                            <td><?= $total++ ?></td>
+                                            <td><?= $data['kategori_item'] ?></td>
+                                            <td><?= $data['project_item'] ?></td>
+                                            <td><?= number_format($data['jumlah_stok'], 0, ',', '.') ?></td>
+                                            <td><?= $data['satuan_item'] ?></td>
+                                            <td><?= $data['nama_bowheer'] ?></td>
+                                        </tr>
+                                        <?php
+                                    endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">TOTAL</th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"><?= number_format($total_item, 0, ',', '.') ?></th>
+                                        <th colspan="1"></th>
+                                        <th colspan="1"></th>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                </div>
+            </div>
+    </section>
+
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">RINCIAN DETAIL STOK <?= "" . $kategori_item ?>
                     </h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -62,7 +131,7 @@ $total_item_inner = 0;
                                             <td><?= $data['kota_lokasi_gudang'] ?></td>
                                             <td><?= $data['nama_item'] ?></td>
                                             <td><?= $data['project_item'] ?></td>
-                                            <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                            <td><?= number_format($data['jumlah_stok'], 0, ',', '.') ?></td>
                                             <td><?= $data['satuan_item'] ?></td>
                                             <td><?= $data['nama_bowheer'] ?></td>
                                         </tr>
@@ -75,76 +144,7 @@ $total_item_inner = 0;
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_item_inner, 0, '.', ',') ?></th>
-                                        <th colspan="1"></th>
-                                        <th colspan="1"></th>
-                                </tfoot>
-                            </table>
-                        </div>
-                        <!-- /.card-body -->
-                    </div>
-                </div>
-            </div>
-    </section>
-
-    <div class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-12">
-                    <h1 class="m-0 text-dark" style="text-align: center;">SUMMARY STOK <?= "" . $kategori_item ?></h1>
-                </div><!-- /.col -->
-            </div><!-- /.row -->
-        </div><!-- /.container-fluid -->
-    </div>
-
-    <section class="content">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="clearfix hidden-md-up"></div>
-
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="row">
-                                <div class="col-6">
-                                    <h3 class="card-title">Stok <?= "" . $kategori_item ?></h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body table-scrollable">
-                            <table id="tabel_summary_stok" class="table table-bordered table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>No</th>
-                                        <th>Kategori Item</th>
-                                        <th>Project Item</th>
-                                        <th>Stok</th>
-                                        <th>Satuan item</th>
-                                        <th>Pemilik Item</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php
-                                    $total = 1;
-                                    foreach ($getStokPerBowheer as $data):
-                                        $total_item += $data['jumlah_stok'];
-                                        ?>
-                                        <tr>
-                                            <td><?= $total++ ?></td>
-                                            <td><?= $data['kategori_item'] ?></td>
-                                            <td><?= $data['project_item'] ?></td>
-                                            <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
-                                            <td><?= $data['satuan_item'] ?></td>
-                                            <td><?= $data['nama_bowheer'] ?></td>
-                                        </tr>
-                                        <?php
-                                    endforeach; ?>
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="2">TOTAL</th>
-                                        <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_item, 0, '.', ',') ?></th>
+                                        <th colspan="1"><?= number_format($total_item_inner, 0, ',', '.') ?></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
@@ -202,6 +202,7 @@ $total_item_inner = 0;
                                         <th>Tipe</th>
                                         <th>QTY</th>
                                         <th>PIC</th>
+                                        <th>Tanggal</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -219,8 +220,9 @@ $total_item_inner = 0;
                                             <td><?= $data['nama_item'] ?></td>
                                             <td><?= $data['nama_sumber_material'] ?></td>
                                             <td><?= $data['status_sumber_material'] ?></td>
-                                            <td><?= $data['jumlah_stok'] ?></td>
+                                            <td><?= number_format($data['jumlah_stok'], 0, ',', '.') ?></td>
                                             <td><?= $data['nama_user'] ?></td>
+                                            <td><?= $data['tanggal_upload_stok'] ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
