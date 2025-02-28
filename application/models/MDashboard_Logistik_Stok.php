@@ -11,6 +11,8 @@ class MDashboard_Logistik_Stok extends CI_Model
                                         JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
                                         JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
                                         JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user
+                                        WHERE no_surat_jalan != ""
+                                        GROUP BY no_surat_jalan
                                         ORDER BY id_logistik_stok DESC')
                                         ->result_array();
         return $data;
@@ -41,6 +43,7 @@ class MDashboard_Logistik_Stok extends CI_Model
     public function getAllStokByKategoryFilterCity()
     {
         $data = $this->db->query('SELECT 
+    lg.regional_lokasi_gudang,
     lg.kota_lokasi_gudang,
     COALESCE(SUM(CASE 
                     WHEN ki.kategori_item = "Aksesories" 
@@ -109,7 +112,7 @@ LEFT JOIN
 GROUP BY 
     lg.kota_lokasi_gudang
 ORDER BY 
-    lg.kota_lokasi_gudang;')
+    lg.regional_lokasi_gudang;')
             ->result_array();
         return $data;
     }
@@ -269,6 +272,99 @@ ORDER BY
                                         ORDER BY id_logistik_stok DESC
                                         ')->result_array();
         return $data;
+    }
+
+    public function getDashboardFiltered($lokasiArray, $bowheerArray, $itemArray, $statusArray)
+    {
+        $sql = "SELECT 
+                lg.regional_lokasi_gudang,
+                lg.kota_lokasi_gudang,
+                ki.nama_item,
+    ki.project_item,
+                COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'Aksesories' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_Aksesories,
+                COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'Closure'
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_Closure,
+                COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'FAT' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_FAT,
+                COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'FDT' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_FDT,
+                COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'HDPE' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_HDPE,
+                COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'Kabel' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_Kabel,
+                COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'OTB' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_OTB,
+                COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'Tiang' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_Tiang
+            FROM 
+                tb_master_logistik_lokasi_gudang lg
+            LEFT JOIN 
+                tb_logistik_stok ls ON lg.id_lokasi_gudang = ls.id_lokasi_gudang
+            LEFT JOIN 
+                tb_master_logistik_kode_item ki ON ls.id_kode_item = ki.id_kode_item
+            LEFT JOIN 
+                tb_master_logistik_sumber_material sm ON ls.id_sumber_material = sm.id_sumber_material
+            WHERE 1=1"; // Awal WHERE agar bisa ditambahkan kondisi
+
+    // Tambahkan filter lokasi
+    if (!empty($lokasiArray)) {
+        $sql .= " AND lg.kota_lokasi_gudang IN ($lokasiArray)";
+    }
+
+    if (!empty($bowheerArray)) {
+        $sql .= " AND ki.project_item IN ($bowheerArray)";
+    }
+
+    if (!empty($itemArray)) {
+        $sql .= " AND ki.nama_item IN ($itemArray)";
+    }
+    
+    // Tambahkan GROUP BY & ORDER BY
+    $sql .= " GROUP BY lg.kota_lokasi_gudang";
+
+    // Jalankan query
+    return $this->db->query($sql)->result_array();
     }
 }
 

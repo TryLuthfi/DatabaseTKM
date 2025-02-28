@@ -2,6 +2,9 @@
 $status = $this->session->flashdata('status');
 $status == 'sukses_tambah';
 $error_log = $this->session->flashdata('error_log');
+
+$option_regional = ['REGIONAL 1', 'REGIONAL 2', 'REGIONAL 3', 'REGIONAL 4', 'REGIONAL 5'];
+
 $total = 1;
 $total_hp = 0;
 $total_plan_tiang = 0;
@@ -98,6 +101,9 @@ function formatTanggalIndonesia($date)
                         <h3 class="card-title">
                             Cleanlist Deskripsi
                         </h3>
+                        <a href="#" data-toggle="modal" data-target="#modal-edit-data-cluster"
+                            class="btn btn-success float-right text-bold mr-2">Edit Data &nbsp;<i
+                                class="fas fa-plus"></i> </a>
                     </div>
 
                     <!-- /.card-header -->
@@ -121,16 +127,17 @@ function formatTanggalIndonesia($date)
                                 $hasil30hari = "-";
                                 $data['tgl_kom'] = "-";
                             } else {
-                                $tanggal = $data['tgl_kom'];
-                                $parts = explode('/', $tanggal);
-                                $newFormat = $parts[1] . '/' . $parts[0] . '/' . $parts[2];
-                                $newTimestamp = strtotime($newFormat . ' +30 days');
-                                $hasil30hari = date('d/m/Y', $newTimestamp);
+                                $hasil30hari = "-";
+                                // $tanggal = $data['tgl_kom'];
+                                // $parts = explode('/', $tanggal);
+                                // $newFormat = $parts[1] . '/' . $parts[0] . '/' . $parts[2];
+                                // $newTimestamp = strtotime($newFormat . ' +30 days');
+                                // $hasil30hari = date('d/m/Y', $newTimestamp);
                             }
 
 
 
-                        ?>
+                            ?>
 
 
                             <dl>
@@ -149,7 +156,7 @@ function formatTanggalIndonesia($date)
                                     <?php if ($data['hp_hld'] == '') { ?>
                                         0
                                     <?php } else { ?>
-                                        <?= number_format(floatval($data['hp_hld']), 0, ".") ?>
+                                        <?= number_format(floatval($data['hp_hld']), 0, ",",".") ?>
                                     <?php } ?>
 
                                 </dd>
@@ -164,34 +171,39 @@ function formatTanggalIndonesia($date)
                                     <?php if ($persentase_total < '25') { ?>
                                         <div class="row" style="margin-top:0.5%">
                                             <div class="col-1 progress progress-xs" style="margin-top: 5px;">
-                                                <div class="progress-bar bg-danger" style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
+                                                <div class="progress-bar bg-danger"
+                                                    style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
                                             </div>
-                                            <span class="badge bg-danger" style="margin-left: 2%;"><?= round($persentase_total, 1) . "%" ?></span>
+                                            <span class="badge bg-danger"
+                                                style="margin-left: 2%;"><?= round($persentase_total, 1) . "%" ?></span>
                                         </div>
                                     <?php } else if ($persentase_total >= '25' && $persentase_total < '70') { ?>
-                                        <div class="row" style="margin-top:0.5%">
-                                            <div class="col-1 progress progress-xs" style="margin-top: 5px;">
-                                                <div class="progress-bar bg-warning" style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
+                                            <div class="row" style="margin-top:0.5%">
+                                                <div class="col-1 progress progress-xs" style="margin-top: 5px;">
+                                                    <div class="progress-bar bg-warning"
+                                                        style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
+                                                </div>
+                                                <span class="badge bg-warning"
+                                                    style="margin-left: 2%;"><?= round($persentase_total, 1) . "%" ?></span>
                                             </div>
-                                            <span class="badge bg-warning"
-                                                style="margin-left: 2%;"><?= round($persentase_total, 1) . "%" ?></span>
-                                        </div>
                                     <?php } else if ($persentase_total >= '70' && $persentase_total < '100') { ?>
-                                        <div class="row" style="margin-top:0.5%">
-                                            <div class="col-1 progress progress-xs" style="margin-top: 5px;">
-                                                <div class="progress-bar bg-primary" style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
-                                            </div>
-                                            <span class="badge bg-primary"
-                                                style="margin-left: 2%;"><?= round($persentase_total, 1) . "%" ?></span>
-                                        </div>
+                                                <div class="row" style="margin-top:0.5%">
+                                                    <div class="col-1 progress progress-xs" style="margin-top: 5px;">
+                                                        <div class="progress-bar bg-primary"
+                                                            style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
+                                                    </div>
+                                                    <span class="badge bg-primary"
+                                                        style="margin-left: 2%;"><?= round($persentase_total, 1) . "%" ?></span>
+                                                </div>
                                     <?php } else { ?>
-                                        <div class="row" style="margin-top:0.5%">
-                                            <div class="col-1 progress progress-xs" style="margin-top: 5px;">
-                                                <div class="progress-bar bg-success" style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
-                                            </div>
-                                            <span class="badge bg-success"
-                                                style="margin-left: 2%;"><?= round($persentase_total, 1) . "%" ?></span>
-                                        </div>
+                                                <div class="row" style="margin-top:0.5%">
+                                                    <div class="col-1 progress progress-xs" style="margin-top: 5px;">
+                                                        <div class="progress-bar bg-success"
+                                                            style="width: <?= round($persentase_total, 1) . "%" ?>"></div>
+                                                    </div>
+                                                    <span class="badge bg-success"
+                                                        style="margin-left: 2%;"><?= round($persentase_total, 1) . "%" ?></span>
+                                                </div>
                                     <?php } ?>
 
                                     </dd>
@@ -203,6 +215,547 @@ function formatTanggalIndonesia($date)
                 <!-- /.card -->
             </div>
         </section>
+
+        <!-- modal untuk edit data -->
+        <?php $tgl = date(format: 'Y-m-d'); ?>
+        <?php foreach ($progress_implementasi as $data):
+            ?>
+            <form action="<?php echo site_url('Fiberstar_Project/add'); ?>" method="post">
+                <div class="modal fade" id="modal-edit-data-cluster">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">EDIT DATA CLUSTER</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body" style="background-color:rgb(247, 243, 243);">
+                                <section class="content">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Access ID Project</label>
+                                                        <input type="text" class="form-control" name="access_id_project"
+                                                            autocomplete="off" value="<?= $data['access_id_project'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Access Name Project</label>
+                                                        <input type="text" class="form-control" name="access_name_project"
+                                                            autocomplete="off" value="<?= $data['access_name_project'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">HP Plan</label>
+                                                        <input type="text" class="form-control" name="hpplan_project"
+                                                            autocomplete="off"
+                                                            value="<?= number_format($data['hpplan_project'], 0, ",", ".") ?>"
+                                                            oninput="formatAngka(event)">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Person In Control</label>
+                                                        <select name="pic_project" class="form-control select2" tabindex="0">
+                                                            <?php foreach ($getMasterUser as $data2): ?>
+                                                                <option value="<?php echo $data2['nama_user'] ?>" <?php if ($data2['nama_user'] == $data['pic_project']) { ?>selected
+                                                                    <?php } ?>> <?php echo $data2['nama_user'] ?></option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">LOKASI PROJECT</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Regional</label>
+                                                        <select name="regional_project" class="form-control">
+                                                        <?php foreach ($option_regional as $option): ?>
+                                                            <option value="<?= $option ?>" <?= isset($data['regional_project']) && $data['regional_project'] == $option ? 'selected' : '' ?>>
+                                                                <?= $option ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Provinsi</label>
+                                                        <input type="text" class="form-control" name="provinsi_project"
+                                                            autocomplete="off" value="<?= $data['provinsi_project'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Kota</label>
+                                                        <input type="text" class="form-control" name="area_project"
+                                                            autocomplete="off" value="<?= $data['area_project'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">PURCASE ORDER</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Nomor PO</label>
+                                                        <input type="text" class="form-control" name="number_po"
+                                                            autocomplete="off" value="<?= $data['number_po'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal PO</label>
+                                                        <input type="text" class="form-control" name="tanggal_po"
+                                                            autocomplete="off" value="<?= $data['tanggal_po'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Nilai PO</label>
+                                                        <input type="text" class="form-control" name="nilai_awal_po"
+                                                            autocomplete="off" value="<?= "Rp. ".number_format($data['nilai_awal_po'], 0, ",", ".") ?>"
+                                                            oninput="formatAngka(event)">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">HP PO</label>
+                                                        <input type="text" class="form-control" name="hp_po"
+                                                            autocomplete="off" value="<?= number_format($data['hp_po'], 0, ",", ".") ?>"
+                                                            oninput="formatAngka(event)">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">CANVASING & BAK</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal Canvasing</label>
+                                                        <input type="text" class="form-control" name="tgl_canvasing"
+                                                            autocomplete="off" value="<?= $data['tgl_canvasing'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Status BAK</label>
+                                                        <input type="text" class="form-control" name="status_bak"
+                                                            autocomplete="off" value="<?= $data['status_bak'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal BAK</label>
+                                                        <input type="text" class="form-control" name="tanggal_bak"
+                                                            autocomplete="off" value="<?= $data['tanggal_bak'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">HP BAK</label>
+                                                        <input type="text" class="form-control" name="hp_bak"
+                                                            autocomplete="off" value="<?= $data['hp_bak'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">APPROVAL CBN</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Status CBN</label>
+                                                        <input type="text" class="form-control" name="status_cbn"
+                                                            autocomplete="off" value="<?= $data['status_cbn'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal Submit CBN</label>
+                                                        <input type="text" class="form-control" name="tgl_submite_cbn"
+                                                            autocomplete="off" value="<?= $data['tgl_submite_cbn'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal Approved CBN</label>
+                                                        <input type="text" class="form-control" name="tgl_approve_cbn"
+                                                            autocomplete="off" value="<?= $data['tgl_approve_cbn'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">SPK</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Nomor SPK</label>
+                                                        <input type="text" class="form-control" name="spk_nomor"
+                                                            autocomplete="off" value="<?= $data['spk_nomor'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal SPK</label>
+                                                        <input type="text" class="form-control" name="spk_tanggal"
+                                                            autocomplete="off" value="<?= $data['spk_tanggal'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">HP SPK</label>
+                                                        <input type="text" class="form-control" name="spk_hp"
+                                                            autocomplete="off" value="<?= $data['spk_hp'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">HIGH LEVEL DESIGN ( HLD )</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Status HLD</label>
+                                                        <input type="text" class="form-control" name="status_hld"
+                                                            autocomplete="off" value="<?= $data['status_hld'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">HP HLD</label>
+                                                        <input type="text" class="form-control" name="hp_hld"
+                                                            autocomplete="off" value="<?= $data['hp_hld'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal Submit HLD</label>
+                                                        <input type="text" class="form-control" name="tgl_submit_hld"
+                                                            autocomplete="off" value="<?= $data['tgl_submit_hld'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal Approved HLD</label>
+                                                        <input type="text" class="form-control" name="tgl_approve_hld"
+                                                            autocomplete="off" value="<?= $data['tgl_approve_hld'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">LOW LEVEL DESIGN ( LLD )</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Status LLD</label>
+                                                        <input type="text" class="form-control" name="status_lld"
+                                                            autocomplete="off" value="<?= $data['status_lld'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">HP LLD</label>
+                                                        <input type="text" class="form-control" name="hp_lld"
+                                                            autocomplete="off" value="<?= $data['hp_lld'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal Submit LLD</label>
+                                                        <input type="text" class="form-control" name="tgl_submite_lld"
+                                                            autocomplete="off" value="<?= $data['tgl_submite_lld'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal Approved LLD</label>
+                                                        <input type="text" class="form-control" name="tgl_approve_lld"
+                                                            autocomplete="off" value="<?= $data['tgl_approve_lld'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">KOM & PKS</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal KOM</label>
+                                                        <input type="text" class="form-control" name="tgl_kom"
+                                                            autocomplete="off" value="<?= $data['tgl_kom'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal PKS</label>
+                                                        <input type="text" class="form-control" name="tgl_pks"
+                                                            autocomplete="off" value="<?= $data['tgl_pks'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">IMPLEMENTASI</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Pasang Tiang</label>
+                                                        <input type="text" class="form-control" name="tiang_implementasi"
+                                                            autocomplete="off" value="<?= $data['tiang_implementasi'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tarik Kabel</label>
+                                                        <input type="text" class="form-control" name="kabel_implementasi"
+                                                            autocomplete="off" value="<?= $data['kabel_implementasi'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Installasi DPFO</label>
+                                                        <input type="text" class="form-control" name="dpfo_implementasi"
+                                                            autocomplete="off" value="<?= $data['dpfo_implementasi'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Cor Tiang</label>
+                                                        <input type="text" class="form-control" name="cortiang_implementasi"
+                                                            autocomplete="off" value="<?= $data['cortiang_implementasi'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Implementasi ATP</label>
+                                                        <input type="text" class="form-control" name="atp_implementasi"
+                                                            autocomplete="off" value="<?= $data['atp_implementasi'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Status Implementasi</label>
+                                                        <input type="text" class="form-control" name="status_implementasi"
+                                                            autocomplete="off" value="<?= $data['status_implementasi'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">RFS</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal RFS</label>
+                                                        <input type="text" class="form-control" name="tanggal_rfs"
+                                                            autocomplete="off" value="<?= $data['tanggal_rfs'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">HP RFS</label>
+                                                        <input type="text" class="form-control" name="hp_rfs"
+                                                            autocomplete="off" value="<?= $data['hp_rfs'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">ATP</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal ATP</label>
+                                                        <input type="text" class="form-control" name="tanggal_atp"
+                                                            autocomplete="off" value="<?= $data['tanggal_atp'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">HP ATP</label>
+                                                        <input type="text" class="form-control" name="hp_atp"
+                                                            autocomplete="off" value="<?= $data['hp_atp'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">BAST</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Tanggal BAST</label>
+                                                        <input type="text" class="form-control" name="tanggal_bast"
+                                                            autocomplete="off" value="<?= $data['tanggal_bast'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">STAGGING</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Stagging Project</label>
+                                                        <input type="text" class="form-control" name="main_status"
+                                                            autocomplete="off" value="<?= $data['main_status'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Remark Project</label>
+                                                        <input type="text" class="form-control" name="remarks_status"
+                                                            autocomplete="off" value="<?= $data['remarks_status'] ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </section>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                                <button type="submit" name="btnEdit" class="btn btn-primary"><i
+                                        class="fa fa-spinner fa-spin loading" style="display:none"></i>
+                                    Simpan</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </form>
+        <?php endforeach; ?>
 
         <section class="content">
             <div class="col-12 col-sm-12">
@@ -219,8 +772,8 @@ function formatTanggalIndonesia($date)
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
-                                    href="#custom-tabs-two-implementasi" role="tab" aria-controls="custom-tabs-two-profile"
-                                    aria-selected="false">Implementasi</a>
+                                    href="#custom-tabs-two-implementasi" role="tab"
+                                    aria-controls="custom-tabs-two-profile" aria-selected="false">Implementasi</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" id="custom-tabs-two-messages-tab" data-toggle="pill"
@@ -264,12 +817,12 @@ function formatTanggalIndonesia($date)
                                         <?php
 
                                         foreach ($progress_implementasi as $data):
-                                        ?>
+                                            ?>
 
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['tanggal_po'] ?></td>
-                                                <td><?= number_format(floatval($data['nilai_awal_po']), 0, ".") ?></td>
+                                                <td><?= number_format(floatval($data['nilai_awal_po']), 0, ",",".") ?></td>
                                                 <td><?= $data['tgl_canvasing'] ?></td>
                                                 <td><?= $data['status_bak'] ?></td>
                                                 <td><?= $data['status_cbn'] ?></td>
@@ -280,8 +833,8 @@ function formatTanggalIndonesia($date)
                                                 <td><?= $data['tanggal_rfs'] ?></td>
                                                 <td><?= $data['tanggal_atp'] ?></td>
                                                 <td><?= $data['main_status'] ?></td>
-                                                <td><?= number_format(floatval($data['total_invoice']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['total_sisa_invoice']), 0, ".") ?></td>
+                                                <td><?= number_format(floatval($data['total_invoice']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['total_sisa_invoice']), 0, ",",".") ?></td>
 
                                             </tr>
 
@@ -333,22 +886,22 @@ function formatTanggalIndonesia($date)
                                             $total_plan_closure += $data['achiev_closure'];
                                             $total_achiev_closure += $data['achiev_closure'];
 
-                                        ?>
+                                            ?>
                                             <tr <?php if (str_contains($data['keterangan_progress'], "RAB") || str_contains($data['keterangan_progress'], "BOQ")) { ?>
-                                                style="background-color: lightblue;" <?php } else if (str_contains($data['keterangan_progress'], "Done") || str_contains($data['keterangan_progress'], "DONE")) { ?>
-                                                style="background-color: yellow;" <?php } else { ?> <?php } ?>>
+                                                    style="background-color: lightblue;" <?php } else if (str_contains($data['keterangan_progress'], "Done") || str_contains($data['keterangan_progress'], "DONE")) { ?>
+                                                        style="background-color: yellow;" <?php } else { ?>     <?php } ?>>
                                                 <td><?= $total++ ?></td>
-                                                <td><?= number_format(floatval($data['hp_hld']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_tiang']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_tiang']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_kabel_24']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_kabel_24']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_kabel_48']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_kabel_48']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_fat']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_fat']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_closure']), 0, ".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_closure']), 0, ".") ?></td>
+                                                <td><?= number_format(floatval($data['hp_hld']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_tiang']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_tiang']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_kabel_24']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_kabel_24']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_kabel_48']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_kabel_48']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_fat']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_fat']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_closure']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_closure']), 0, ",",".") ?></td>
                                                 <td><?= $data['data_created'] ?></td>
                                                 <td><?= $data['keterangan_progress'] ?></td>
                                             </tr>
@@ -360,29 +913,49 @@ function formatTanggalIndonesia($date)
                                     <tfoot>
                                         <tr>
                                             <th colspan="2">Total</th>
-                                            <th colspan="1"><?= number_format(floatval($total_plan_tiang), 0, ".") ?></th>
-                                            <th colspan="1"><?= number_format(floatval($total_achiev_tiang), 0, ".") ?></th>
-                                            <th colspan="1"><?= number_format(floatval($total_plan_kabel_24C), 0, ".") ?></th>
-                                            <th colspan="1"><?= number_format(floatval($total_achiev_kabel_24C), 0, ".") ?></th>
-                                            <th colspan="1"><?= number_format(floatval($total_plan_kabel_48C), 0, ".") ?></th>
-                                            <th colspan="1"><?= number_format(floatval($total_achiev_kabel_48C), 0, ".") ?></th>
-                                            <th colspan="1"><?= number_format(floatval($total_plan_fat), 0, ".") ?></th>
-                                            <th colspan="1"><?= number_format(floatval($total_achiev_fat), 0, ".") ?></th>
-                                            <th colspan="1"><?= number_format(floatval($total_plan_closure), 0, ".") ?></th>
-                                            <th colspan="1"><?= number_format(floatval($total_achiev_closure), 0, ".") ?></th>
+                                            <th colspan="1"><?= number_format(floatval($total_plan_tiang), 0, ",",".") ?>
+                                            </th>
+                                            <th colspan="1"><?= number_format(floatval($total_achiev_tiang), 0, ",",".") ?>
+                                            </th>
+                                            <th colspan="1">
+                                                <?= number_format(floatval($total_plan_kabel_24C), 0, ",",".") ?>
+                                            </th>
+                                            <th colspan="1">
+                                                <?= number_format(floatval($total_achiev_kabel_24C), 0, ",",".") ?>
+                                            </th>
+                                            <th colspan="1">
+                                                <?= number_format(floatval($total_plan_kabel_48C), 0, ",",".") ?>
+                                            </th>
+                                            <th colspan="1">
+                                                <?= number_format(floatval($total_achiev_kabel_48C), 0, ",",".") ?>
+                                            </th>
+                                            <th colspan="1"><?= number_format(floatval($total_plan_fat), 0, ",",".") ?></th>
+                                            <th colspan="1"><?= number_format(floatval($total_achiev_fat), 0, ",",".") ?>
+                                            </th>
+                                            <th colspan="1"><?= number_format(floatval($total_plan_closure), 0, ",",".") ?>
+                                            </th>
+                                            <th colspan="1">
+                                                <?= number_format(floatval($total_achiev_closure), 0, ",",".") ?>
+                                            </th>
                                             <th colspan="2"></th>
                                         </tr>
                                         <tr>
                                             <th colspan="2">Selisih</th>
-                                            <th colspan="2"><?= number_format(floatval($total_plan_tiang - $total_achiev_tiang), 0, ".") ?>
+                                            <th colspan="2">
+                                                <?= number_format(floatval($total_plan_tiang - $total_achiev_tiang), 0, ",",".") ?>
                                             </th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_kabel_24C - $total_achiev_kabel_24C), 0, ".") ?></th>
+                                                <?= number_format(floatval($total_plan_kabel_24C - $total_achiev_kabel_24C), 0, ",",".") ?>
+                                            </th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_kabel_48C - $total_achiev_kabel_48C), 0, ".") ?></th>
-                                            <th colspan="2"><?= number_format(floatval($total_plan_fat - $total_achiev_fat), 0, ".") ?></th>
+                                                <?= number_format(floatval($total_plan_kabel_48C - $total_achiev_kabel_48C), 0, ",",".") ?>
+                                            </th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_closure - $total_achiev_closure), 0, ".") ?></th>
+                                                <?= number_format(floatval($total_plan_fat - $total_achiev_fat), 0, ",",".") ?>
+                                            </th>
+                                            <th colspan="2">
+                                                <?= number_format(floatval($total_plan_closure - $total_achiev_closure), 0, ",",".") ?>
+                                            </th>
                                             <th colspan="2"></th>
                                         </tr>
                                     </tfoot>
@@ -390,19 +963,23 @@ function formatTanggalIndonesia($date)
                                 <div class="modal-footer">
                                     <?php if ($this->session->userdata('lokasi_user') == "HO") { ?>
                                         <?php if ($row_status_implementasi == "OK") { ?>
-                                            <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasiBack/' . $row_primary_access_id_project); ?>" class="btn btn-success float-right text-bold">Tambah Implementasi</a>
+                                            <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasiBack/' . $row_primary_access_id_project); ?>"
+                                                class="btn btn-success float-right text-bold">Tambah Implementasi</a>
                                         <?php } else { ?>
-                                            <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasi/' . $row_primary_access_id_project); ?>" class="btn btn-secondary float-right text-bold">Close Implementasi</a>
-                                            <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah_boq"
-                                                data-toggle="modal">Tambah BOQ &nbsp;</a>
+                                            <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasi/' . $row_primary_access_id_project); ?>"
+                                                class="btn btn-secondary float-right text-bold">Close Implementasi</a>
+                                            <a href="#" class="btn btn-success float-right text-bold"
+                                                data-target="#modal-lg-tambah_boq" data-toggle="modal">Tambah BOQ &nbsp;</a>
                                         <?php } ?>
                                     <?php } else { ?>
                                         <?php if ($row_status_implementasi == "OK") { ?>
 
                                         <?php } else { ?>
-                                            <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasi/' . $row_primary_access_id_project); ?>" class="btn btn-secondary float-right text-bold">Close Implementasi</i> </a>
-                                            <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah_implementasi"
-                                                data-toggle="modal">Tambah Progess &nbsp;</a>
+                                            <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasi/' . $row_primary_access_id_project); ?>"
+                                                class="btn btn-secondary float-right text-bold">Close Implementasi</i> </a>
+                                            <a href="#" class="btn btn-success float-right text-bold"
+                                                data-target="#modal-lg-tambah_implementasi" data-toggle="modal">Tambah Progess
+                                                &nbsp;</a>
                                         <?php } ?>
 
                                     <?php } ?>
@@ -437,8 +1014,10 @@ function formatTanggalIndonesia($date)
                                                 ?>
                                                 <td><?= $keys++ ?></td>
                                                 <td><?= $value ?></td>
-                                                <td><?= isset($filtered[0]['total']) ? $filtered[0]['total'] : 0 ?>/<?= $total_count ?></td>
-                                                <td><?= isset($filtered[0]['last_update']) ? $formatted_date = date('d-m-Y', strtotime($filtered[0]['last_update'])) : "Belum Ada Berkas" ?></td>
+                                                <td><?= isset($filtered[0]['total']) ? $filtered[0]['total'] : 0 ?>/<?= $total_count ?>
+                                                </td>
+                                                <td><?= isset($filtered[0]['last_update']) ? $formatted_date = date('d-m-Y', strtotime($filtered[0]['last_update'])) : "Belum Ada Berkas" ?>
+                                                </td>
                                             </tr>
                                             <tr class="expandable-body">
                                                 <td colspan="5">
@@ -503,24 +1082,42 @@ function formatTanggalIndonesia($date)
                                                                                 ?>
                                                                             </td>
                                                                             <td>
-                                                                                <a href="#" data-toggle="modal" data-target="#modal-upload-document" class="btn btn-success btn-upload-document <?= (in_array($first['status_document_support'] ?? null, [1, 2])) ? 'disabled' : '' ?>" data-id-ds-approval="<?= isset($first['id_document_support_approval']) ? $first['id_document_support_approval'] : '' ?>" data-id-document="<?= $values['id_document_support'] ?>" data-nama-document="<?= $values['nama_document_support'] ?>"><i class="fas fa-plus"></i></a>
-                                                                                <a href="<?= base_url(isset($first['document_support_location']) ? $first['document_support_location'] : '') ?>" target="_blank" class="btn btn-warning <?= empty($first['document_support_location']) ? 'disabled' : '' ?>">
+                                                                                <a href="#" data-toggle="modal"
+                                                                                    data-target="#modal-upload-document"
+                                                                                    class="btn btn-success btn-upload-document <?= (in_array($first['status_document_support'] ?? null, [1, 2])) ? 'disabled' : '' ?>"
+                                                                                    data-id-ds-approval="<?= isset($first['id_document_support_approval']) ? $first['id_document_support_approval'] : '' ?>"
+                                                                                    data-id-document="<?= $values['id_document_support'] ?>"
+                                                                                    data-nama-document="<?= $values['nama_document_support'] ?>"><i
+                                                                                        class="fas fa-plus"></i></a>
+                                                                                <a href="<?= base_url(isset($first['document_support_location']) ? $first['document_support_location'] : '') ?>"
+                                                                                    target="_blank"
+                                                                                    class="btn btn-warning <?= empty($first['document_support_location']) ? 'disabled' : '' ?>">
                                                                                     <i class="fas fa-solid fa-eye"></i>
                                                                                 </a>
                                                                                 <?php if ($this->session->userdata('lokasi_user') === 'HO') { ?>
-                                                                                    <a href="<?= base_url('Fiberstar_Project_Detail/approve_dokumen/' . ($first['id_document_support_approval'] ?? '') . '/' . $data['access_id_project']) ?>" class="btn btn-success <?= empty($first['document_support_location']) ? 'disabled' : '' ?>"><i class="fas fa-check"></i></a>
-                                                                                    <a href="#" data-toggle="modal" data-target="#modal-reject-document" class="btn btn-danger btn-reject-document <?= empty($first['document_support_location']) ? 'disabled' : '' ?>" data-id-ds-approval-reject="<?= isset($first['id_document_support_approval']) ? $first['id_document_support_approval'] : '' ?>" data-nama-document-reject="<?= $values['nama_document_support'] ?>"><i class="fas fa-times"></i></a>
+                                                                                    <a href="<?= base_url('Fiberstar_Project_Detail/approve_dokumen/' . ($first['id_document_support_approval'] ?? '') . '/' . $data['access_id_project']) ?>"
+                                                                                        class="btn btn-success <?= empty($first['document_support_location']) ? 'disabled' : '' ?>"><i
+                                                                                            class="fas fa-check"></i></a>
+                                                                                    <a href="#" data-toggle="modal"
+                                                                                        data-target="#modal-reject-document"
+                                                                                        class="btn btn-danger btn-reject-document <?= empty($first['document_support_location']) ? 'disabled' : '' ?>"
+                                                                                        data-id-ds-approval-reject="<?= isset($first['id_document_support_approval']) ? $first['id_document_support_approval'] : '' ?>"
+                                                                                        data-nama-document-reject="<?= $values['nama_document_support'] ?>"><i
+                                                                                            class="fas fa-times"></i></a>
                                                                                 <?php } ?>
                                                                             </td>
                                                                         </tr>
-                                                                    <?php }; ?>
-                                                                <?php }; ?>
+                                                                    <?php }
+                                                                    ; ?>
+                                                                <?php }
+                                                                ; ?>
                                                             </tbody>
                                                         </table>
                                                     </div>
                                                 </td>
                                             </tr>
-                                        <?php }; ?>
+                                        <?php }
+                                        ; ?>
                                     </tbody>
                                 </table>
                                 <br>
@@ -531,37 +1128,54 @@ function formatTanggalIndonesia($date)
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h4 class="modal-title">UPLOAD <span id="name_document_support"></span></h4>
-                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <h4 class="modal-title">UPLOAD <span id="name_document_support"></span>
+                                                </h4>
+                                                <button type="button" class="close" data-dismiss="modal"
+                                                    aria-label="Close">
                                                     <span aria-hidden="true">&times;</span>
                                                 </button>
                                             </div>
                                             <div class="modal-body">
 
-                                                <form method="post" action="<?= base_url('Fiberstar_Project_Detail/upload_document') ?>" enctype="multipart/form-data">
-                                                    <input type="hidden" name="id_document_support_approval" id="id_document_support_approval" value="">
-                                                    <input type="hidden" name="id_document_support" id="id_document_support_input" value="">
-                                                    <input type="hidden" name="name_document_support" id="name_document_support_input" value="">
-                                                    <input type="hidden" name="primary_access_id_project" value="<?= $data['primary_access_id_project'] ?>">
-                                                    <input type="hidden" name="id_user" value="<?= $this->session->userdata('id_user') ?>">
+                                                <form method="post"
+                                                    action="<?= base_url('Fiberstar_Project_Detail/upload_document') ?>"
+                                                    enctype="multipart/form-data">
+                                                    <input type="hidden" name="id_document_support_approval"
+                                                        id="id_document_support_approval" value="">
+                                                    <input type="hidden" name="id_document_support"
+                                                        id="id_document_support_input" value="">
+                                                    <input type="hidden" name="name_document_support"
+                                                        id="name_document_support_input" value="">
+                                                    <input type="hidden" name="primary_access_id_project"
+                                                        value="<?= $data['primary_access_id_project'] ?>">
+                                                    <input type="hidden" name="id_user"
+                                                        value="<?= $this->session->userdata('id_user') ?>">
 
                                                     <div class="form-group">
                                                         <label class="col-form-label">Access ID Project</label>
-                                                        <input readonly type="text" class="form-control" name="access_id_project" autocomplete="off" value="<?= $data['access_id_project'] ?>">
+                                                        <input readonly type="text" class="form-control"
+                                                            name="access_id_project" autocomplete="off"
+                                                            value="<?= $data['access_id_project'] ?>">
                                                     </div>
 
                                                     <div class="form-group">
                                                         <label>Upload Dokument</label>
                                                         <div class="input-group">
                                                             <div class="custom-file">
-                                                                <label class="custom-file-label" for="file-ds">Choose file</label>
-                                                                <input type="file" name="file" id="file-ds" class="custom-file-input" required>
+                                                                <label class="custom-file-label" for="file-ds">Choose
+                                                                    file</label>
+                                                                <input type="file" name="file" id="file-ds"
+                                                                    class="custom-file-input" required>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer">
-                                                        <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-                                                        <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i>Upload</button>
+                                                        <button type="button" class="btn btn-danger"
+                                                            data-dismiss="modal">Batal</button>
+                                                        <button type="submit" name="btnSubmitPOFiberstar"
+                                                            class="btn btn-primary"><i
+                                                                class="fa fa-spinner fa-spin loading"
+                                                                style="display:none"></i>Upload</button>
                                                     </div>
                                                 </form>
                                             </div>
@@ -577,20 +1191,29 @@ function formatTanggalIndonesia($date)
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h4 class="modal-title">REJECT <span id="name_document_support_reject"></span></h4>
-                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <h4 class="modal-title">REJECT <span
+                                                        id="name_document_support_reject"></span>
+                                                </h4>
+                                                <button type="button" class="close" data-dismiss="modal"
+                                                    aria-label="Close">
                                                     <span aria-hidden="true">&times;</span>
                                                 </button>
                                             </div>
                                             <div class="modal-body">
 
-                                                <form method="post" action="<?= base_url('Fiberstar_Project_Detail/reject_dokumen') ?>" enctype="multipart/form-data">
-                                                    <input type="hidden" name="id_document_support_approval_reject" id="id_document_support_approval_reject" value="">
-                                                    <input type="hidden" name="id_user" value="<?= $this->session->userdata('id_user') ?>">
+                                                <form method="post"
+                                                    action="<?= base_url('Fiberstar_Project_Detail/reject_dokumen') ?>"
+                                                    enctype="multipart/form-data">
+                                                    <input type="hidden" name="id_document_support_approval_reject"
+                                                        id="id_document_support_approval_reject" value="">
+                                                    <input type="hidden" name="id_user"
+                                                        value="<?= $this->session->userdata('id_user') ?>">
 
                                                     <div class="form-group">
                                                         <label class="col-form-label">Access ID Project</label>
-                                                        <input readonly type="text" class="form-control" name="access_id_project" autocomplete="off" value="<?= $data['access_id_project'] ?>">
+                                                        <input readonly type="text" class="form-control"
+                                                            name="access_id_project" autocomplete="off"
+                                                            value="<?= $data['access_id_project'] ?>">
                                                     </div>
 
                                                     <div class="form-group">
@@ -598,13 +1221,18 @@ function formatTanggalIndonesia($date)
                                                         <div class="input-group">
                                                             <div class="custom-file">
                                                                 <label for="remark-comment"></label>
-                                                                <textarea class="form-control" name="remark" id="remark-comment"></textarea>
+                                                                <textarea class="form-control" name="remark"
+                                                                    id="remark-comment"></textarea>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer">
-                                                        <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-                                                        <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i>Reject</button>
+                                                        <button type="button" class="btn btn-danger"
+                                                            data-dismiss="modal">Batal</button>
+                                                        <button type="submit" name="btnSubmitPOFiberstar"
+                                                            class="btn btn-primary"><i
+                                                                class="fa fa-spinner fa-spin loading"
+                                                                style="display:none"></i>Reject</button>
                                                     </div>
                                                 </form>
                                             </div>
@@ -635,17 +1263,24 @@ function formatTanggalIndonesia($date)
                                             <td>John Doe</td>
                                             <td>11-7-2014</td>
                                             <td>Approved</td>
-                                            <td>Bacon ipsum dolor sit amet salami venison chicken flank fatback doner.</td>
+                                            <td>Bacon ipsum dolor sit amet salami venison chicken flank fatback doner.
+                                            </td>
                                         </tr>
                                         <tr class="expandable-body">
                                             <td colspan="5">
                                                 <p>
-                                                    Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has
-                                                    been the industry's standard dummy text ever since the 1500s, when an unknown printer took a
-                                                    galley of type and scrambled it to make a type specimen book. It has survived not only five
-                                                    centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It
-                                                    was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum
-                                                    passages, and more recently with desktop publishing software like Aldus PageMaker including
+                                                    Lorem Ipsum is simply dummy text of the printing and typesetting
+                                                    industry. Lorem Ipsum has
+                                                    been the industry's standard dummy text ever since the 1500s, when
+                                                    an unknown printer took a
+                                                    galley of type and scrambled it to make a type specimen book. It has
+                                                    survived not only five
+                                                    centuries, but also the leap into electronic typesetting, remaining
+                                                    essentially unchanged. It
+                                                    was popularised in the 1960s with the release of Letraset sheets
+                                                    containing Lorem Ipsum
+                                                    passages, and more recently with desktop publishing software like
+                                                    Aldus PageMaker including
                                                     versions of Lorem Ipsum.
                                                 </p>
                                             </td>
@@ -655,17 +1290,24 @@ function formatTanggalIndonesia($date)
                                             <td>Alexander Pierce</td>
                                             <td>11-7-2014</td>
                                             <td>Pending</td>
-                                            <td>Bacon ipsum dolor sit amet salami venison chicken flank fatback doner.</td>
+                                            <td>Bacon ipsum dolor sit amet salami venison chicken flank fatback doner.
+                                            </td>
                                         </tr>
                                         <tr class="expandable-body">
                                             <td colspan="5">
                                                 <p>
-                                                    Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has
-                                                    been the industry's standard dummy text ever since the 1500s, when an unknown printer took a
-                                                    galley of type and scrambled it to make a type specimen book. It has survived not only five
-                                                    centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It
-                                                    was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum
-                                                    passages, and more recently with desktop publishing software like Aldus PageMaker including
+                                                    Lorem Ipsum is simply dummy text of the printing and typesetting
+                                                    industry. Lorem Ipsum has
+                                                    been the industry's standard dummy text ever since the 1500s, when
+                                                    an unknown printer took a
+                                                    galley of type and scrambled it to make a type specimen book. It has
+                                                    survived not only five
+                                                    centuries, but also the leap into electronic typesetting, remaining
+                                                    essentially unchanged. It
+                                                    was popularised in the 1960s with the release of Letraset sheets
+                                                    containing Lorem Ipsum
+                                                    passages, and more recently with desktop publishing software like
+                                                    Aldus PageMaker including
                                                     versions of Lorem Ipsum.
                                                 </p>
                                             </td>
@@ -691,8 +1333,9 @@ function formatTanggalIndonesia($date)
 
                         <?php $tgl = date(format: 'Y-m-d'); ?>
                         <?php foreach ($progress_implementasi as $data):
-                        ?>
-                            <form action="<?php echo site_url('Fiberstar_Project_Detail/addImplementasi'); ?>" method="post">
+                            ?>
+                            <form action="<?php echo site_url('Fiberstar_Project_Detail/addImplementasi'); ?>"
+                                method="post">
                                 <div class="modal fade" id="modal-lg-tambah_implementasi">
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
@@ -705,80 +1348,97 @@ function formatTanggalIndonesia($date)
                                             <div class="modal-body">
                                                 <input type="hidden" name="access_id_project"
                                                     value="<?= $data['access_id_project'] ?>">
-                                                <input type="hidden" name="id_user" value="<?= $this->session->userdata('id_akun') ?>">
+                                                <input type="hidden" name="id_user"
+                                                    value="<?= $this->session->userdata('id_akun') ?>">
                                                 <div class="form-group">
                                                     <label class="col-form-label">Access ID Project</label>
-                                                    <input readonly type="text" class="form-control" name="access_id_project" autocomplete="off"
+                                                    <input readonly type="text" class="form-control"
+                                                        name="access_id_project" autocomplete="off"
                                                         value="<?= $data['access_id_project'] ?>">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Access Name Project</label>
-                                                    <input readonly type="text" class="form-control" name="access_name_project" autocomplete="off"
+                                                    <input readonly type="text" class="form-control"
+                                                        name="access_name_project" autocomplete="off"
                                                         value="<?= $data['access_name_project'] ?>">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Input Date</label>
-                                                    <input type="date" class="form-control" name="data_created" autocomplete="off"
+                                                    <input type="date" class="form-control" name="data_created"
+                                                        autocomplete="off"
                                                         value="<?php echo (new \DateTime())->format('Y-m-d'); ?>">
                                                 </div>
                                                 <div class="form-group">
-                                                    <label class="col-form-label">Plan Tiang / Achiev Tiang / Deviasi</label>
-                                                    <input readonly type="text" class="form-control" name="plan_tiang" autocomplete="off"
+                                                    <label class="col-form-label">Plan Tiang / Achiev Tiang /
+                                                        Deviasi</label>
+                                                    <input readonly type="text" class="form-control" name="plan_tiang"
+                                                        autocomplete="off"
                                                         value="<?php echo $data['plan_tiang'] . " / " . $data['achiev_tiang'] . " / " . ($data['plan_tiang'] - $data['achiev_tiang']) ?>">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Daily Progress Tiang</label>
-                                                    <input type="text" class="form-control" name="achiev_tiang" autocomplete="off" placeholder="0">
+                                                    <input type="text" class="form-control" name="achiev_tiang"
+                                                        autocomplete="off" placeholder="0">
                                                 </div>
                                                 <div class="form-group">
-                                                    <label class="col-form-label">Plan Kabel 24C / Achiev Kabel 24C / Deviasi</label>
-                                                    <input readonly type="text" class="form-control" name="plan_kabel_24" autocomplete="off"
+                                                    <label class="col-form-label">Plan Kabel 24C / Achiev Kabel 24C /
+                                                        Deviasi</label>
+                                                    <input readonly type="text" class="form-control" name="plan_kabel_24"
+                                                        autocomplete="off"
                                                         value="<?= $data['plan_kabel_24'] . " / " . $data['achiev_kabel_24'] . " / " . ($data['plan_kabel_24'] - $data['achiev_kabel_24']) ?>">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Daily Progress Kabel 24C</label>
-                                                    <input type="text" class="form-control" name="achiev_kabel_24" autocomplete="off"
-                                                        placeholder="0">
+                                                    <input type="text" class="form-control" name="achiev_kabel_24"
+                                                        autocomplete="off" placeholder="0">
                                                 </div>
                                                 <div class="form-group">
-                                                    <label class="col-form-label">Plan Kabel 48C / Achiev Kabel 48C / Deviasi</label>
-                                                    <input readonly type="text" class="form-control" name="plan_kabel_48" autocomplete="off"
+                                                    <label class="col-form-label">Plan Kabel 48C / Achiev Kabel 48C /
+                                                        Deviasi</label>
+                                                    <input readonly type="text" class="form-control" name="plan_kabel_48"
+                                                        autocomplete="off"
                                                         value="<?= $data['plan_kabel_48'] . " / " . $data['achiev_kabel_48'] . " / " . ($data['plan_kabel_48'] - $data['achiev_kabel_48']) ?>">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Daily Progress Kabel 48C</label>
-                                                    <input type="text" class="form-control" name="achiev_kabel_48" autocomplete="off"
-                                                        placeholder="0">
+                                                    <input type="text" class="form-control" name="achiev_kabel_48"
+                                                        autocomplete="off" placeholder="0">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Plan FAT / Achiev FAT / Deviasi</label>
-                                                    <input readonly type="text" class="form-control" name="plan_fat" autocomplete="off"
+                                                    <input readonly type="text" class="form-control" name="plan_fat"
+                                                        autocomplete="off"
                                                         value="<?= $data['plan_fat'] . " / " . $data['achiev_fat'] . " / " . ($data['plan_fat'] - $data['achiev_fat']) ?>">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Daily Progress FAT</label>
-                                                    <input type="text" class="form-control" name="achiev_fat" autocomplete="off" placeholder="0">
+                                                    <input type="text" class="form-control" name="achiev_fat"
+                                                        autocomplete="off" placeholder="0">
                                                 </div>
                                                 <div class="form-group">
-                                                    <label class="col-form-label">Plan Closure / Achiev Closure / Deviasi</label>
-                                                    <input readonly type="text" class="form-control" name="plan_closure" autocomplete="off"
+                                                    <label class="col-form-label">Plan Closure / Achiev Closure /
+                                                        Deviasi</label>
+                                                    <input readonly type="text" class="form-control" name="plan_closure"
+                                                        autocomplete="off"
                                                         value="<?= $data['plan_closure'] . " / " . $data['achiev_closure'] . " / " . ($data['plan_closure'] - $data['achiev_closure']) ?>">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Daily Progress Closure</label>
-                                                    <input type="text" class="form-control" name="achiev_closure" autocomplete="off"
-                                                        placeholder="0">
+                                                    <input type="text" class="form-control" name="achiev_closure"
+                                                        autocomplete="off" placeholder="0">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Catatan</label>
-                                                    <input type="text" class="form-control" name="keterangan_progress" autocomplete="off"
-                                                        placeholder="0">
+                                                    <input type="text" class="form-control" name="keterangan_progress"
+                                                        autocomplete="off" placeholder="0">
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                                                    <button type="button" class="btn btn-danger"
+                                                        data-dismiss="modal">Batal</button>
 
                                                     <button type="submit" name="btnEdit" class="btn btn-primary"><i
-                                                            class="fa fa-spinner fa-spin loading" style="display:none"></i> Simpan</button>
+                                                            class="fa fa-spinner fa-spin loading" style="display:none"></i>
+                                                        Simpan</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -789,7 +1449,7 @@ function formatTanggalIndonesia($date)
 
                         <?php $tgl = date(format: 'Y-m-d'); ?>
                         <?php foreach ($progress_implementasi as $data):
-                        ?>
+                            ?>
                             <form action="<?php echo site_url('Fiberstar_Project_Detail/addBOQ'); ?>" method="post">
                                 <div class="modal fade" id="modal-lg-tambah_boq">
                                     <div class="modal-dialog modal-lg">
@@ -803,57 +1463,68 @@ function formatTanggalIndonesia($date)
                                             <div class="modal-body">
                                                 <input type="hidden" name="access_id_project"
                                                     value="<?= $data['access_id_project'] ?>">
-                                                <input type="hidden" name="id_user" value="<?= $this->session->userdata('id_user') ?>">
+                                                <input type="hidden" name="id_user"
+                                                    value="<?= $this->session->userdata('id_user') ?>">
                                                 <div class="form-group">
                                                     <label class="col-form-label">Access ID Project</label>
-                                                    <input readonly type="text" class="form-control" name="access_id_project" autocomplete="off"
+                                                    <input readonly type="text" class="form-control"
+                                                        name="access_id_project" autocomplete="off"
                                                         value="<?= $data['access_id_project'] ?>">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Access Name Project</label>
-                                                    <input readonly type="text" class="form-control" name="access_name_project" autocomplete="off"
+                                                    <input readonly type="text" class="form-control"
+                                                        name="access_name_project" autocomplete="off"
                                                         value="<?= $data['access_name_project'] ?>">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Input Date</label>
-                                                    <input type="date" class="form-control" name="data_created" autocomplete="off"
+                                                    <input type="date" class="form-control" name="data_created"
+                                                        autocomplete="off"
                                                         value="<?php echo (new \DateTime())->format('Y-m-d'); ?>">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Homepass HLD</label>
-                                                    <input readonly type="text" class="form-control" name="hp_hld" autocomplete="off"
-                                                        value="<?= $data['hp_hld'] ?>">
+                                                    <input readonly type="text" class="form-control" name="hp_hld"
+                                                        autocomplete="off" value="<?= $data['hp_hld'] ?>">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Plan Tiang</label>
-                                                    <input type="text" class="form-control" name="plan_tiang" autocomplete="off" placeholder="0">
+                                                    <input type="text" class="form-control" name="plan_tiang"
+                                                        autocomplete="off" placeholder="0">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Plan Kabel 24C</label>
-                                                    <input type="text" class="form-control" name="plan_kabel_24" autocomplete="off" placeholder="0">
+                                                    <input type="text" class="form-control" name="plan_kabel_24"
+                                                        autocomplete="off" placeholder="0">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Plan Kabel 48C</label>
-                                                    <input type="text" class="form-control" name="plan_kabel_48" autocomplete="off" placeholder="0">
+                                                    <input type="text" class="form-control" name="plan_kabel_48"
+                                                        autocomplete="off" placeholder="0">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Plan FAT</label>
-                                                    <input type="text" class="form-control" name="plan_fat" autocomplete="off" placeholder="0">
+                                                    <input type="text" class="form-control" name="plan_fat"
+                                                        autocomplete="off" placeholder="0">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Plan Closure</label>
-                                                    <input type="text" class="form-control" name="plan_closure" autocomplete="off" placeholder="0">
+                                                    <input type="text" class="form-control" name="plan_closure"
+                                                        autocomplete="off" placeholder="0">
                                                 </div>
                                                 <div class="form-group">
                                                     <label class="col-form-label">Catatan</label>
-                                                    <input type="text" class="form-control" name="keterangan_progress" autocomplete="off"
-                                                        value="BOQ Awal">
+                                                    <input type="text" class="form-control" name="keterangan_progress"
+                                                        autocomplete="off" value="BOQ Awal">
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                                                    <button type="button" class="btn btn-danger"
+                                                        data-dismiss="modal">Batal</button>
 
                                                     <button type="submit" name="btnEdit" class="btn btn-primary"><i
-                                                            class="fa fa-spinner fa-spin loading" style="display:none"></i> Simpan</button>
+                                                            class="fa fa-spinner fa-spin loading" style="display:none"></i>
+                                                        Simpan</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -864,8 +1535,8 @@ function formatTanggalIndonesia($date)
 
                         <!-- modal untuk tambah data -->
                         <?php foreach ($progress_implementasi as $data): ?>
-                            <form id="uploadForm" action="<?php echo base_url('Fiberstar_Project_Detail/upload_file'); ?>" method="post"
-                                enctype="multipart/form-data">
+                            <form id="uploadForm" action="<?php echo base_url('Fiberstar_Project_Detail/upload_file'); ?>"
+                                method="post" enctype="multipart/form-data">
                                 <div class="modal fade" id="modal-approval-cbn-suratijinsurvey">
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
@@ -878,10 +1549,12 @@ function formatTanggalIndonesia($date)
                                             <div class="modal-body">
                                                 <input type="hidden" name="primary_access_id_project"
                                                     value="<?= $data['primary_access_id_project'] ?>">
-                                                <input type="hidden" name="id_user" value="<?= $this->session->userdata('id_user') ?>">
+                                                <input type="hidden" name="id_user"
+                                                    value="<?= $this->session->userdata('id_user') ?>">
                                                 <div class="form-group">
                                                     <label class="col-form-label">Access ID Project</label>
-                                                    <input readonly type="text" class="form-control" name="access_id_project" autocomplete="off"
+                                                    <input readonly type="text" class="form-control"
+                                                        name="access_id_project" autocomplete="off"
                                                         value="<?= $data['access_id_project'] ?> || <?= $data['access_name_project'] ?>">
                                                 </div>
                                                 <div class="form-group">
@@ -889,15 +1562,19 @@ function formatTanggalIndonesia($date)
                                                     <div class="input-group">
                                                         <div class="custom-file">
                                                             <label class="custom-file-label" for="file">Choose file</label>
-                                                            <input type="file" name="file" id="file-lama" class="custom-file-input" required>
+                                                            <input type="file" name="file" id="file-lama"
+                                                                class="custom-file-input" required>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                                                    <button type="button" class="btn btn-danger"
+                                                        data-dismiss="modal">Batal</button>
 
-                                                    <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i
-                                                            class="fa fa-spinner fa-spin loading" style="display:none"></i> Tambah</button>
+                                                    <button type="submit" name="btnSubmitPOFiberstar"
+                                                        class="btn btn-primary"><i class="fa fa-spinner fa-spin loading"
+                                                            style="display:none"></i>
+                                                        Tambah</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -936,13 +1613,13 @@ function formatTanggalIndonesia($date)
 
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
         const table = document.getElementById("table_data_dokument");
         let selectedRows = []; // Array untuk menyimpan baris yang dipilih
         let lastSelectedIndex = null; // Index baris terakhir yang dipilih
 
         // Event listener untuk menangani klik pada tabel
-        table.addEventListener("click", function(event) {
+        table.addEventListener("click", function (event) {
             const row = event.target.closest("tr");
 
             // Pastikan hanya baris di <tbody> yang bisa dipilih
@@ -968,7 +1645,7 @@ function formatTanggalIndonesia($date)
     });
 
     // PASSING DATA DARI ROW KE MODAL
-    $('.btn-upload-document').on('click', function() {
+    $('.btn-upload-document').on('click', function () {
         var id_document_support = $(this).data('id-document');
         var name_document_support = $(this).data('nama-document');
         var id_document_support_approval = $(this).data('id-ds-approval');
@@ -981,7 +1658,7 @@ function formatTanggalIndonesia($date)
         $('#id_document_support_approval').val(id_document_support_approval);
     });
 
-    $('.btn-reject-document').on('click', function() {
+    $('.btn-reject-document').on('click', function () {
         var id_document_support_approval = $(this).data('id-ds-approval-reject');
         var name_document_support = $(this).data('nama-document-reject');
         $('#remark-comment').val('');
@@ -990,8 +1667,8 @@ function formatTanggalIndonesia($date)
         $('#id_document_support_approval_reject').val(id_document_support_approval);
     });
 
-    $(document).ready(function() {
-        $('#file-ds').on('change', function(e) {
+    $(document).ready(function () {
+        $('#file-ds').on('change', function (e) {
             var fileName = e.target.files.length > 0 ? e.target.files[0].name : "Choose file";
             $(this).siblings('.custom-file-label').text(fileName);
         });
@@ -1011,7 +1688,7 @@ function formatTanggalIndonesia($date)
     })
 </script>
 <script type="text/javascript">
-    $(function() {
+    $(function () {
 
         // format angka rupiah
         $('[data-mask]').inputmask("currency", {
@@ -1023,25 +1700,37 @@ function formatTanggalIndonesia($date)
         <?php if ($status == 'sukses_tambah') { ?>
             swal("Success!", "Berhasil Ditambah!", "success");
         <?php } else if ($status == 'sukses_hapus') { ?>
-            swal("Success!", "Berhasil Dihapus!", "success");
+                swal("Success!", "Berhasil Dihapus!", "success");
         <?php } else if ($status == 'sukses_edit') { ?>
-            swal("Success!", "Berhasil Edit Data!", "success");
+                    swal("Success!", "Berhasil Edit Data!", "success");
         <?php } else if ($status == 'gagal_tambah') { ?>
-            swal("Gagal!", "Gagal Menambah Data!", "warning");
+                        swal("Gagal!", "Gagal Menambah Data!", "warning");
         <?php } else if ($status == 'gagal_edit') { ?>
-            swal("Gagal!", "Gagal Mengedit Data!", "warning");
+                            swal("Gagal!", "Gagal Mengedit Data!", "warning");
         <?php } else if ($status == 'gagal_hapus') { ?>
-            swal("Gagal!", "Gagal Menghapus Data!", "warning");
+                                swal("Gagal!", "Gagal Menghapus Data!", "warning");
         <?php } else { ?>
         <?php } ?>
 
+        if ($('.select2').data('select2')) {
+            $('.select2').select2('destroy');
+        }
+
+        // Inisialisasi Select2
+        $('.select2').select2({
+            width: '100%',
+            theme: 'bootstrap4', // Jika pakai AdminLTE
+            placeholder: "Pilih User",
+            allowClear: true
+        });
+
     });
 
-    $('.swalDefaultError').click(function() {
+    $('.swalDefaultError').click(function () {
         swal("Gagal!", "Dokument Belum Di Upload!", "warning");
     });
 
-    $('.tombol_hapus').on('click', function(e) {
+    $('.tombol_hapus').on('click', function (e) {
         e.preventDefault();
         const href = $(this).attr('href');
         swal({
@@ -1079,19 +1768,19 @@ function formatTanggalIndonesia($date)
         clickable: ".custom-file-input" // Define the element that should be used as click trigger to select files.
     })
 
-    myDropzone.on("addedfile", function(file) {
+    myDropzone.on("addedfile", function (file) {
         // Hookup the start button
-        file.previewElement.querySelector(".start").onclick = function() {
+        file.previewElement.querySelector(".start").onclick = function () {
             myDropzone.enqueueFile(file)
         }
     })
 
     // Update the total progress bar
-    myDropzone.on("totaluploadprogress", function(progress) {
+    myDropzone.on("totaluploadprogress", function (progress) {
         document.querySelector("#total-progress .progress-bar").style.width = progress + "%"
     })
 
-    myDropzone.on("sending", function(file) {
+    myDropzone.on("sending", function (file) {
         // Show the total progress bar when upload starts
         document.querySelector("#total-progress").style.opacity = "1"
         // And disable the start button
@@ -1099,22 +1788,22 @@ function formatTanggalIndonesia($date)
     })
 
     // Hide the total progress bar when nothing's uploading anymore
-    myDropzone.on("queuecomplete", function(progress) {
+    myDropzone.on("queuecomplete", function (progress) {
         document.querySelector("#total-progress").style.opacity = "0"
     })
 
     // Setup the buttons for all transfers
     // The "add files" button doesn't need to be setup because the config
     // `clickable` has already been specified.
-    document.querySelector("#actions .start").onclick = function() {
+    document.querySelector("#actions .start").onclick = function () {
         myDropzone.enqueueFiles(myDropzone.getFilesWithStatus(Dropzone.ADDED))
     }
-    document.querySelector("#actions .cancel").onclick = function() {
+    document.querySelector("#actions .cancel").onclick = function () {
         myDropzone.removeAllFiles(true)
     }
 </script>
 <script type="text/javascript">
-    $(document).ready(function() {
+    $(document).ready(function () {
 
         // Format mata uang.
         $('.nilai_po2').mask('000.000.000', {
@@ -1125,7 +1814,7 @@ function formatTanggalIndonesia($date)
 </script>
 
 <script>
-    $(function() {
+    $(function () {
         bsCustomFileInput.init();
     });
 
@@ -1144,7 +1833,7 @@ function formatTanggalIndonesia($date)
             color: '#FF5733',
             width: 10
         },
-        step: function(state, circle) {
+        step: function (state, circle) {
             circle.path.setAttribute('stroke', state.color);
             circle.path.setAttribute('stroke-width', state.width);
             var value = Math.round(circle.value() * 100);
@@ -1155,6 +1844,28 @@ function formatTanggalIndonesia($date)
     // Mengatur nilai progress bar
     bar.animate(<?= $persentase_po ?>); // Nilai antara 0.0 hingga 1.0 (70% dalam contoh ini)
 </script>
+<script>
+    // Fungsi untuk format Rupiah
+    function formatAngka(event) {
+        var input = event.target;
+        var value = input.value.replace(/[^\d]/g, '');  // Menghapus karakter non-numeric
+        var formattedValue = '';
+
+        // Format angka untuk ribuan
+        for (var i = value.length - 1; i >= 0; i--) {
+            formattedValue = value.charAt(i) + formattedValue;
+            if ((value.length - i) % 3 === 0 && i !== 0) {
+                formattedValue = '.' + formattedValue;
+            }
+        }
+
+        // Menambahkan simbol "Rp"
+        input.value = formattedValue;
+    }
+</script>
+
+
+
 <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
