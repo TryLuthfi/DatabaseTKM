@@ -42,10 +42,10 @@ class Fiberstar_Project_Detail extends CI_Controller
         $this->load->helper('date');
         $config['upload_path'] = "./uploads/";
         $config['allowed_types'] = 'pdf|docx|xlsx|';
-        $config['max_size']      = 5120;
+        $config['max_size'] = 5120;
         $file_ext = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
         $original_name = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
-        $new_filename = str_replace(" ", "_", $this->input->post('name_document_support')) . "_"  . $this->input->post('primary_access_id_project') . "_" . date('Y-m-d') . "." . $file_ext;
+        $new_filename = str_replace(" ", "_", $this->input->post('name_document_support')) . "_" . $this->input->post('primary_access_id_project') . "_" . date('Y-m-d') . "." . $file_ext;
         $config['file_name'] = $new_filename;
         $file_path = $config['upload_path'] . $new_filename;
 
@@ -86,17 +86,17 @@ class Fiberstar_Project_Detail extends CI_Controller
             }
 
             $this->session->set_flashdata('success', 'Dokumen berhasil diupload!');
-            redirect('Fiberstar_Project_Detail/detailImplementasi/' . $this->input->post('access_id_project'));
+            redirect('Fiberstar_Project_Detail/detailImplementasi/' . $this->input->post('primary_access_id_project'));
         }
     }
 
-    public function approve_dokumen($id_document_support_approval = null, $access_id_project = null)
+    public function approve_dokumen($id_document_support_approval = null, $primary_access_id_project = null)
     {
         $this->db->where('id_document_support_approval', $id_document_support_approval)
             ->update('tb_ds_approval_cbn', ['status_document_support' => '2', 'remark' => '']);
         $this->session->set_flashdata('success', 'Dokumen berhasil di approve!');
 
-        redirect('Fiberstar_Project_Detail/detailImplementasi/' . $access_id_project);
+        redirect('Fiberstar_Project_Detail/detailImplementasi/' . $primary_access_id_project);
     }
 
     public function reject_dokumen()
@@ -105,7 +105,7 @@ class Fiberstar_Project_Detail extends CI_Controller
             ->update('tb_ds_approval_cbn', ['status_document_support' => '3', 'remark' => $this->input->post('remark')]);
         $this->session->set_flashdata('success', 'Dokumen berhasil di reject!');
 
-        redirect('Fiberstar_Project_Detail/detailImplementasi/' . $this->input->post('access_id_project'));
+        redirect('Fiberstar_Project_Detail/detailImplementasi/' . $this->input->post('primary_access_id_project'));
     }
 
     public function addBoq()
@@ -115,6 +115,7 @@ class Fiberstar_Project_Detail extends CI_Controller
         // echo ("</pre>");
 
         $post_progress_implementasi = array(
+            'primary_access_id_project' => $_POST['primary_access_id_project'],
             'access_id_project' => $_POST['access_id_project'],
             'id_user' => $_POST['id_user'],
             'plan_tiang' => $_POST['plan_tiang'],
@@ -145,6 +146,7 @@ class Fiberstar_Project_Detail extends CI_Controller
         // echo ("</pre>");
 
         $post_progress_implementasi = array(
+            'primary_access_id_project' => $_POST['primary_access_id_project'],
             'access_id_project' => $_POST['access_id_project'],
             'id_user' => $_POST['id_user'],
             'achiev_tiang' => $_POST['achiev_tiang'],
@@ -247,5 +249,76 @@ class Fiberstar_Project_Detail extends CI_Controller
             echo $file_path;
             echo "File tidak ditemukan.";
         }
+    }
+
+    public function editDataCluster()
+    {
+
+        // echo ("<pre>");
+        // print_r($_POST);
+        // echo ("</pre>");
+
+        $data_array = array(
+            'access_id_project' => $_POST['access_id_project'],
+            'access_name_project' => $_POST['access_name_project'],
+            'hpplan_project' => preg_replace('/[^0-9]/', '', $_POST['hpplan_project']),
+            'pic_project' => $_POST['pic_project'],
+            'regional_project' => $_POST['regional_project'],
+            'provinsi_project' => $_POST['provinsi_project'],
+            'area_project' => $_POST['area_project'],
+            'number_po' => $_POST['number_po'],
+            'tanggal_po' => $_POST['tanggal_po'],
+            'nilai_awal_po' => preg_replace('/[^0-9]/', '', $_POST['nilai_awal_po']), // hanya angka
+            'hp_po' => preg_replace('/[^0-9]/', '', $_POST['hp_po']), // hanya angka
+            'tgl_canvasing' => $_POST['tgl_canvasing'],
+            'status_bak' => $_POST['status_bak'],
+            'tanggal_bak' => $_POST['tanggal_bak'],
+            'hp_bak' => preg_replace('/[^0-9]/', '', $_POST['hp_bak']), // hanya angka
+            'status_cbn' => $_POST['status_cbn'],
+            'tgl_submite_cbn' => $_POST['tgl_submite_cbn'],
+            'tgl_approve_cbn' => $_POST['tgl_approve_cbn'],
+            'spk_nomor' => $_POST['spk_nomor'],
+            'spk_tanggal' => $_POST['spk_tanggal'],
+            'spk_hp' => preg_replace('/[^0-9]/', '', $_POST['spk_hp']), // hanya angka
+            'status_hld' => $_POST['status_hld'],
+            'hp_hld' => preg_replace('/[^0-9]/', '', $_POST['hp_hld']), // hanya angka
+            'tgl_submit_hld' => $_POST['tgl_submit_hld'],
+            'tgl_approve_hld' => $_POST['tgl_approve_hld'],
+            'status_lld' => $_POST['status_lld'],
+            'hp_lld' => preg_replace('/[^0-9]/', '', $_POST['hp_lld']), // hanya angka
+            'tgl_submite_lld' => $_POST['tgl_submite_lld'],
+            'tgl_approve_lld' => $_POST['tgl_approve_lld'],
+            'tgl_kom' => $_POST['tgl_kom'],
+            'tgl_pks' => $_POST['tgl_pks'],
+            'tiang_implementasi' => $_POST['tiang_implementasi'],
+            'kabel_implementasi' => $_POST['kabel_implementasi'],
+            'dpfo_implementasi' => $_POST['dpfo_implementasi'],
+            'cortiang_implementasi' => $_POST['cortiang_implementasi'],
+            'atp_implementasi' => $_POST['atp_implementasi'],
+            'status_implementasi' => $_POST['status_implementasi'],
+            'tanggal_rfs' => $_POST['tanggal_rfs'],
+            'hp_rfs' => preg_replace('/[^0-9]/', '', $_POST['hp_rfs']), // hanya angka
+            'tanggal_atp' => $_POST['tanggal_atp'],
+            'hp_atp' => preg_replace('/[^0-9]/', '', $_POST['hp_atp']), // hanya angka
+            'tanggal_bast' => $_POST['tanggal_bast'],
+            'main_status' => $_POST['main_status'],
+            'remarks_status' => $_POST['remarks_status']
+        );
+
+        $where = array('primary_access_id_project' => $_POST['primary_access_id_project']);
+
+        $res = $this->MFiberstar_Project_Detail->editDataCluster($data_array, $where);
+        $previousUrl = $this->input->server('HTTP_REFERER');
+
+        if ($res >= 1) {
+            $this->session->set_flashdata('status', 'sukses_edit');
+            redirect($previousUrl);
+            $status = $this->session->flashdata('destroy');
+        } else {
+            $this->session->set_flashdata('status', 'gagal_edit');
+            redirect($previousUrl);
+            $status = $this->session->flashdata('destroy');
+        }
+
     }
 }

@@ -94,7 +94,7 @@ $total_item_inner = 0;
                   <?php
 
                   $total = 1;
-                  foreach ($gettopAreaBAKDetail as $data):
+                  foreach ($listDetailCluster as $data):
 
                     ?>
 

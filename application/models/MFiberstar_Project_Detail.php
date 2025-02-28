@@ -62,7 +62,7 @@ class MFiberstar_Project_Detail extends CI_Model
                                     FROM tb_project_progress_fiberstar 
                                     LEFT JOIN tb_project_implementasi_fiberstar 
                                     ON tb_project_implementasi_fiberstar.access_id_project = tb_project_progress_fiberstar.access_id_project  
-                                    WHERE tb_project_progress_fiberstar.access_id_project = "' . $last_segment . '"
+                                    WHERE tb_project_progress_fiberstar.primary_access_id_project = "' . $last_segment . '"
                                     GROUP BY tb_project_progress_fiberstar.primary_access_id_project')
             ->result_array();
         return $data;
@@ -80,7 +80,7 @@ class MFiberstar_Project_Detail extends CI_Model
                                   ON tb_project_implementasi_fiberstar.access_id_project = tb_project_progress_fiberstar.access_id_project 
                                   LEFT JOIN tb_master_user 
                                   ON tb_project_implementasi_fiberstar.id_user = tb_master_user.id_user
-                                  WHERE tb_project_implementasi_fiberstar.access_id_project = "' . $last_segment . '"
+                                  WHERE tb_project_implementasi_fiberstar.primary_access_id_project = "' . $last_segment . '"
                                   ')
             ->result_array();
         return $data;
@@ -99,7 +99,7 @@ class MFiberstar_Project_Detail extends CI_Model
                                     FROM tb_project_progress_fiberstar 
                                     LEFT JOIN tb_ds_approval_cbn 
                                     ON tb_project_progress_fiberstar.primary_access_id_project = tb_ds_approval_cbn.primary_access_id_project 
-                                    WHERE tb_project_progress_fiberstar.access_id_project = "' . $number . '";
+                                    WHERE tb_project_progress_fiberstar.primary_access_id_project = "' . $number . '";
                                   ')
             ->result_array();
         return $data;
@@ -126,6 +126,12 @@ class MFiberstar_Project_Detail extends CI_Model
     public function editStatusImplementasiBack($data)
     {
         $res = $this->db->query('UPDATE tb_project_progress_fiberstar SET status_implementasi = "NOT OK" WHERE primary_access_id_project ="' . $data . '"');
+        return $res;
+    }
+
+    public function editDataCluster($data_array, $primary_access_id_project)
+    {
+        $res = $this->db->update("tb_project_progress_fiberstar", $data_array, $primary_access_id_project);
         return $res;
     }
 

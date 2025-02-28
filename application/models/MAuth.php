@@ -45,9 +45,15 @@ class MAuth extends CI_Model
                         'lokasi_user' => $akun['lokasi_user'],
                         'nama_level' => $akun['nama_level'],
                         'validation' => $akun['validation_user'] ?? 'non',
+                        'nama_jabatan' => $akun[0]['nama_jabatan']
                     ];
                 $this->session->set_userdata($data);
-                redirect('Dashboard');
+
+                $dataSessionUser = array_column($akun, "validation_user");
+                $validation_user = implode(", ", $dataSessionUser);
+                $this->session->set_userdata('validation_user', $validation_user);
+                
+                redirect('Dashboard_Logistik_Stok');
             } else {
                 $this->session->set_flashdata('error_log', 'salah');
                 redirect('Auth');
