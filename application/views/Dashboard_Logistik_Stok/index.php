@@ -580,7 +580,25 @@ $total_stok_dashboard = [];
                             <div class="card-header">
                                 <div class="row">
                                     <div class="col-6">
-                                        <h3 class="card-title">LIST HISTORY IN OUT MATERIAL</h3>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <div class="input-group">
+                                                        <div class="input-group-prepend">
+                                                            <span class="input-group-text">
+                                                                <i class="far fa-calendar-alt"></i>
+                                                            </span>
+                                                        </div>
+                                                        <input type="text" class="form-control float-right"
+                                                            id="date-range" name="date"
+                                                            value="<?= date('m/d/Y') ?> - <?= date('m/d/Y') ?>">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <button type="submit" class="btn btn-info">Cari</button>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="col-6">
                                         <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
@@ -751,7 +769,8 @@ $total_stok_dashboard = [];
                                     <div class="form-group">
                                         <label class="col-form-label">Keterangan</label>
                                         <textarea type="text" class="form-control" name="keterangan_stok"
-                                            id="keterangan_stok_item" autocomplete="Keterangan" rows="4" style="height: 100px;"></textarea>
+                                            id="keterangan_stok_item" autocomplete="Keterangan" rows="4"
+                                            style="height: 100px;"></textarea>
                                     </div>
                                 </div>
                                 <div class="col-md-12">
@@ -845,7 +864,8 @@ $total_stok_dashboard = [];
                                 <div class="form-group">
                                     <label class="col-form-label">Keterangan</label>
                                     <textarea type="text" class="form-control" name="keterangan_stok"
-                                        id="detail_keterangan_stok_item" disabled rows="4" style="height: 100px;"></textarea>
+                                        id="detail_keterangan_stok_item" disabled rows="4"
+                                        style="height: 100px;"></textarea>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -1476,12 +1496,12 @@ $total_stok_dashboard = [];
         <?php endforeach; ?>
     });
 
-        // $(document).ready(function () {
-        //     $.fn.dataTable.ext.errMode = 'none';
-        //     $('#table_data').DataTable({
-        //         responsive: false // Matikan fitur Responsive
-        //     });
-        // });
+    // $(document).ready(function () {
+    //     $.fn.dataTable.ext.errMode = 'none';
+    //     $('#table_data').DataTable({
+    //         responsive: false // Matikan fitur Responsive
+    //     });
+    // });
 
     $(document).ready(function () {
         $('#table_data').DataTable({

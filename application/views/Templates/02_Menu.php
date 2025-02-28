@@ -227,7 +227,7 @@ $id_menu = $this->uri->segment('1');
 
                     <li class="nav-item has-treeview <?php if ($id_menu == 'Fiberstar_PO' || $id_menu == 'Fiberstar_Project' || $id_menu == 'Fiberstar_Project_Detail') {
                         echo "menu-open";
-                    } ?>" style="pointer-events: none">
+                    } ?>">
                         <a href="#" class="nav-link <?php if ($id_menu == 'Fiberstar_PO' || $id_menu == 'Fiberstar_Project' || $id_menu == 'Fiberstar_Project_Detail') {
                             echo "active";
                         } ?>">

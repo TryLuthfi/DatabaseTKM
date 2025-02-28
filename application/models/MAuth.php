@@ -41,7 +41,8 @@ WHERE a.username_user = '".$username."'")->result_array();
                         'username_user' => $akun[0]['username_user'],
                         'password_user' => $akun[0]['password_user'],
                         'lokasi_user' => $akun[0]['lokasi_user'],
-                        'nama_level' => $akun[0]['nama_level']
+                        'nama_level' => $akun[0]['nama_level'],
+                        'nama_jabatan' => $akun[0]['nama_jabatan']
                     ];
                 $this->session->set_userdata($data);
 
