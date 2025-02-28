@@ -98,8 +98,7 @@ class Logistik_Stok_Detail extends CI_Controller
             $data['getInOutHistoryFiltered'] = $this->session->userdata('getInOutHistoryFiltered');
             $data['kategori_item'] = $this->input->get('kategori'); // Ambil kategori dari query string
     
-            $data['title'] = 'Detail Stok Filter' . strtoupper($data['kategori_item']);
-            $data['judul'] = 'Detail Stok Filter' . $data['kategori_item'];
+            $data['title'] = strtoupper($data['kategori_item']);
     
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');

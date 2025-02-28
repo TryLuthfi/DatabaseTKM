@@ -31,7 +31,7 @@ $total_item_inner = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok <?= "" . $kategori_item ?></h3>
+                                    <h3 class="card-title">LIST STOK <?= "" . $kategori_item ?></h3>
                                 </div>
                             </div>
                         </div>
@@ -101,7 +101,7 @@ $total_item_inner = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok <?= "" . $kategori_item ?></h3>
+                                    <h3 class="card-title">LIST STOK <?= "" . $kategori_item ?></h3>
                                 </div>
                             </div>
                         </div>
@@ -178,7 +178,7 @@ $total_item_inner = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">List Stok Logistik </h3>
+                                    <h3 class="card-title">LIST HISTORY IN OUT MATERIAL</h3>
                                 </div>
                                 <div class="col-6">
                                     <!-- <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"

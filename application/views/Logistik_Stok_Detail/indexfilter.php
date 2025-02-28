@@ -15,7 +15,7 @@ $total_item_inner = 0;
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12">
-                    <h1 class="m-0 text-dark" style="text-align: center;">SUMMARY STOK <?= "" . $kategori_item."" ?> BOWHEER FILTERED</h1>
+                    <h1 class="m-0 text-dark" style="text-align: center;">SUMMARY STOK <?= "" . $title."" ?> BOWHEER FILTERED</h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
@@ -31,7 +31,7 @@ $total_item_inner = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok <?= "" . $kategori_item ?></h3>
+                                    <h3 class="card-title">LIST STOK <?= "" . $title ?></h3>
                                 </div>
                             </div>
                         </div>
@@ -86,13 +86,13 @@ $total_item_inner = 0;
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12">
-                    <h1 class="m-0 text-dark" style="text-align: center;">RINCIAN DETAIL STOK <?= "" . $kategori_item."" ?> FILTERED
+                    <h1 class="m-0 text-dark" style="text-align: center;">RINCIAN DETAIL STOK <?= "" . $title."" ?> FILTERED
                     </h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
     </div>
-
+    
     <section class="content">
         <div class="container-fluid">
             <div class="row">
@@ -103,7 +103,7 @@ $total_item_inner = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok <?= "" . $kategori_item ?></h3>
+                                    <h3 class="card-title">LIST STOK <?= "" . $title ?></h3>
                                 </div>
                             </div>
                         </div>
@@ -167,7 +167,7 @@ $total_item_inner = 0;
             <div class="row mb-2">
                 <div class="col-sm-12">
                     <h1 class="m-0 text-dark" style="text-align: center;">HISTORY IN OUT MATERIAL
-                        <?= "" . $kategori_item."" ?> FILTERED</h1>
+                        <?= "" . $title."" ?> FILTERED</h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
@@ -185,7 +185,7 @@ $total_item_inner = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">List Stok Logistik </h3>
+                                    <h3 class="card-title">LIST HISTORY IN OUT MATERIAL</h3>
                                 </div>
                                 <div class="col-6">
                                     <!-- <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
@@ -242,9 +242,6 @@ $total_item_inner = 0;
                 </div>
             </div>
     </section>
-
-
-
 
 </div>
 

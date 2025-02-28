@@ -580,7 +580,7 @@ $total_stok_dashboard = [];
                             <div class="card-header">
                                 <div class="row">
                                     <div class="col-6">
-                                        <h3 class="card-title">List Stok Logistik </h3>
+                                        <h3 class="card-title">LIST HISTORY IN OUT MATERIAL</h3>
                                     </div>
                                     <div class="col-6">
                                         <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
@@ -751,7 +751,7 @@ $total_stok_dashboard = [];
                                     <div class="form-group">
                                         <label class="col-form-label">Keterangan</label>
                                         <textarea type="text" class="form-control" name="keterangan_stok"
-                                            id="keterangan_stok_item" autocomplete="Keterangan"></textarea>
+                                            id="keterangan_stok_item" autocomplete="Keterangan" rows="4" style="height: 100px;"></textarea>
                                     </div>
                                 </div>
                                 <div class="col-md-12">
@@ -845,7 +845,7 @@ $total_stok_dashboard = [];
                                 <div class="form-group">
                                     <label class="col-form-label">Keterangan</label>
                                     <textarea type="text" class="form-control" name="keterangan_stok"
-                                        id="detail_keterangan_stok_item" disabled></textarea>
+                                        id="detail_keterangan_stok_item" disabled rows="4" style="height: 100px;"></textarea>
                                 </div>
                             </div>
                             <div class="col-md-6">
