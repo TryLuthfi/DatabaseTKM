@@ -103,7 +103,7 @@ function formatTanggalIndonesia($date)
                         <h3 class="card-title">
                             Cleanlist Deskripsi
                         </h3>
-                        <?php if ($this->session->userdata('validation_user') == 'Fiberstar' && $this->session->userdata('lokasi_user') == 'HO')  { ?>
+                        <?php if ($this->session->userdata('validation_user') == 'Fiberstar' && $this->session->userdata('lokasi_user') == 'HO') { ?>
                             <a href="#" data-toggle="modal" data-target="#modal-edit-data-cluster"
                                 class="btn btn-success float-right text-bold mr-2">Edit Data &nbsp;<i
                                     class="fas fa-plus"></i> </a>
@@ -354,7 +354,7 @@ function formatTanggalIndonesia($date)
                                                         <label class="col-form-label">Nilai PO</label>
                                                         <input type="text" class="form-control" name="nilai_awal_po"
                                                             autocomplete="off"
-                                                            value="<?= "Rp. " . number_format($data['nilai_awal_po'], 0, ",", ".") ?>"
+                                                            value="<?= "Rp. " . number_format((float)($data['nilai_awal_po'] ?? 0), 0, ",", ".") ?>"
                                                             oninput="formatRupiah(event)">
                                                     </div>
                                                 </div>
@@ -363,7 +363,7 @@ function formatTanggalIndonesia($date)
                                                         <label class="col-form-label">Homepass PO</label>
                                                         <input type="text" class="form-control" name="hp_po"
                                                             autocomplete="off"
-                                                            value="<?= number_format($data['hp_po'], 0, ",", ".") ?>"
+                                                            value="<?= number_format((float)($data['hp_po'] ?? 0), 0, ",", ".") ?>"
                                                             oninput="formatAngka(event)">
                                                     </div>
                                                 </div>
@@ -813,12 +813,17 @@ function formatTanggalIndonesia($date)
                     <div class="card-header p-0 pt-1">
                         <ul class="nav nav-tabs" id="custom-tabs-two-tab" role="tablist">
                             <li class="pt-2 px-3">
-                                <h3 class="card-title">Detail Progress</h3>
+                                <h3 class="card-title">DETAIL</h3>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link active" id="custom-tabs-two-home-tab" data-toggle="pill"
                                     href="#custom-tabs-two-poinvoice" role="tab" aria-controls="custom-tabs-two-home"
                                     aria-selected="true">PO & Invoice</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
+                                    href="#custom-tabs-two-kompensasi" role="tab"
+                                    aria-controls="custom-tabs-two-profile" aria-selected="false">Kompensasi</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
@@ -837,6 +842,7 @@ function formatTanggalIndonesia($date)
                             </li>
                         </ul>
                     </div>
+
                     <div class="card-body">
                         <div class="tab-content" id="custom-tabs-two-tabContent">
 
@@ -898,6 +904,64 @@ function formatTanggalIndonesia($date)
                             </div>
 
                             <!-- TAB NAV KEDUA -->
+                            <div class="tab-pane fade" id="custom-tabs-two-kompensasi" role="tabpanel"
+                                aria-labelledby="custom-tabs-two-home-tab">
+                                <table id="table_detail" class="table table-bordered table-hover">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Nomor Pengajuan</th>
+                                            <th>Term</th>
+                                            <th>HP BAK</th>
+                                            <th>Harga @HP</th>
+                                            <th>Subtotal</th>
+                                            <th>Status</th>
+                                            <th>Last Update</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                            <tr>
+                                                <td>1</td>
+                                                <td>TEC.001/KOM/TKM-03/II/2024</td>
+                                                <td>50%</td>
+                                                <td>100</td>
+                                                <td>Rp. 20.000</td>
+                                                <td>Rp. 1.000.000</td>
+                                                <td><span class="badge badge-success">Approved</span></td>
+                                                <td>20/08/2025</td>
+                                                <td><a href="#" id="tombol_detail" class="btn btn-primary tombol_detail"><i class=" fas fa-info"></i></a></td>
+                                            </tr>
+                                            <tr>
+                                                <td>2</td>
+                                                <td>TEC.002/KOM/TKM-03/II/2024</td>
+                                                <td>50%</td>
+                                                <td>100</td>
+                                                <td>Rp. 20.000</td>
+                                                <td>Rp. 1.000.000</td>
+                                                <td><span class="badge badge-warning">Waiting Approval Finance</span></td>
+                                                <td>28/02/2025</td>
+                                                <td><a href="#" id="tombol_detail" class="btn btn-primary tombol_detail"><i class=" fas fa-info"></i></a></td>
+                                            </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="2">Total Kompensasi</th>
+                                            <th colspan="1">100%</th>
+                                            <th colspan="1">100</th>
+                                            <th colspan="1"></th>
+                                            <th colspan="1">Rp. 2.000.000</th>
+                                            <th colspan="3"></th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                                <div class="modal-footer">
+                                    <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasiBack/' . $row_primary_access_id_project); ?>"
+                                                class="btn btn-success float-right text-bold">Tambah Kompensasi</a>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV KETIGA -->
                             <div class="tab-pane fade" id="custom-tabs-two-implementasi" role="tabpanel"
                                 aria-labelledby="custom-tabs-two-home-tab">
                                 <table id="table_detail" class="table table-bordered table-hover">
@@ -1045,7 +1109,7 @@ function formatTanggalIndonesia($date)
                                 </div>
                             </div>
 
-                            <!-- TAB NAV KETIGA -->
+                            <!-- TAB NAV KEEMPAT -->
                             <div class="tab-pane fade" id="custom-tabs-two-messages" role="tabpanel"
                                 aria-labelledby="custom-tabs-two-messages-tab">
 

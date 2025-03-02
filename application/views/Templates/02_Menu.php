@@ -190,7 +190,7 @@ $id_menu = $this->uri->segment('1');
                         </li>
                     <?php } ?>
 
-                    <li class="nav-item" style="pointer-events: none">
+                    <li class="nav-item">
                         <a href="<?= base_url('Logistik_Purchase_Request') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Purchase_Request') {
                                                                                                     echo "active";
                                                                                                 } ?>">
