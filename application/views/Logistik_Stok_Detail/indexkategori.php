@@ -68,7 +68,7 @@ $total_item_inner = 0;
                                     <tr>
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_item, 0, ',', '.') ?></th>
+                                        <th colspan="1"><span id="totalSummaryStok">0</span></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
@@ -144,7 +144,7 @@ $total_item_inner = 0;
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_item_inner, 0, ',', '.') ?></th>
+                                        <th colspan="1"><span id="totalDistribusiStok">0</span></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
@@ -274,6 +274,37 @@ $total_item_inner = 0;
         <?php } else { ?>
         <?php } ?>
     })
+
+    $(document).ready(function () {
+        $.fn.dataTable.ext.errMode = 'none';
+
+        const tabelSummaryStok = $('#tabel_summary_stok').DataTable();
+        const tabelDistribusiStok = $('#tabel_distribusi_stok').DataTable();
+
+        function updateTotalTabel() {
+            let totalSummaryStok = 0, totalDistribusiStok = 0;
+
+            tabelSummaryStok.rows({ search: 'applied' }).data().each(row => {
+                totalSummaryStok += parseFloat(row[3].replace(/\./g, '')) || 0;
+            });
+            tabelDistribusiStok.rows({ search: 'applied' }).data().each(row => {
+                totalDistribusiStok += parseFloat(row[5].replace(/\./g, '')) || 0;
+            });
+
+            document.getElementById('totalSummaryStok').innerText = totalSummaryStok.toLocaleString('id-ID');
+            document.getElementById('totalDistribusiStok').innerText = totalDistribusiStok.toLocaleString('id-ID');
+        }
+
+        // Tunggu sebentar agar DataTables siap sebelum memanggil updateTotalTabel()
+        setTimeout(() => {
+            updateTotalTabel();
+        }, 500); // Tunggu 0.5 detik agar DataTables selesai inisialisasi
+
+        // Update total saat tabel di-refresh (misalnya setelah search, filter, atau navigasi halaman)
+        $('.dataTable').on('draw.dt', function () {
+            updateTotalTabel();
+        });
+    });
 
 
 </script>

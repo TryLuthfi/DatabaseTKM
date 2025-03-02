@@ -263,6 +263,16 @@ $id_menu = $this->uri->segment('1');
                                 </a>
                             </li>
                         </ul>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="<?= base_url('Fiberstar_Kompensasi') ?>" class="nav-link <?php if ($id_menu == 'Fiberstar_Kompensasi') {
+                                      echo "active";
+                                  } ?>">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Kompensasi</p>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
 
                     <li class="nav-item has-treeview <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {

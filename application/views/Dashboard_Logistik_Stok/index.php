@@ -524,29 +524,21 @@ $total_stok_dashboard = [];
                                                         <tfoot>
                                                             <tr>
                                                                 <th colspan="3">TOTAL</th>
-                                                                <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_Aksesories), 0, ",", ".") ?>
+                                                                <th colspan="1"><span
+                                                                        id="totalTabelKotaAksesories">0</span></th>
+                                                                <th colspan="1"><span
+                                                                        id="totalTabelKotaClosure">0</span></th>
+                                                                <th colspan="1"><span id="totalTabelKotaFat">0</span>
                                                                 </th>
-                                                                <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_Closure), 0, ",", ".") ?>
+                                                                <th colspan="1"><span id="totalTabelKotaFdt">0</span>
                                                                 </th>
-                                                                <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_FAT), 0, ",", ".") ?>
+                                                                <th colspan="1"><span id="totalTabelKotaHdpe">0</span>
                                                                 </th>
-                                                                <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_FDT), 0, ",", ".") ?>
+                                                                <th colspan="1"><span id="totalTabelKotaKabel">0</span>
                                                                 </th>
-                                                                <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_HDPE), 0, ",", ".") ?>
+                                                                <th colspan="1"><span id="totalTabelKotaOtb">0</span>
                                                                 </th>
-                                                                <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_Kabel), 0, ",", ".") ?>
-                                                                </th>
-                                                                <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_OTB), 0, ",", ".") ?>
-                                                                </th>
-                                                                <th colspan="1">
-                                                                    <?= number_format(floatval($jumlah_Tiang), 0, ",", ".") ?>
+                                                                <th colspan="1"><span id="totalTabelKotaTiang">0</span>
                                                                 </th>
                                                                 <th colspan="1"></th>
                                                             </tr>
@@ -1464,7 +1456,59 @@ $total_stok_dashboard = [];
         });
     });
 
+    $(document).ready(function () {
+        $.fn.dataTable.ext.errMode = 'none';
+        const table = $('#table_detail_kota').DataTable({
+            footerCallback: function () {
+                updateTotal();
+            }
+        });
 
+        // Fungsi untuk menghitung total dari data yang tampil
+        function updateTotal() {
+            // Ambil semua data yang terlihat
+
+            const data = table.rows({ search: 'applied' }).data();
+
+            // Hitung total dari kolom Value (index 2)
+            let totalTabelKotaAksesories = 0;
+            let totalTabelKotaClosure = 0;
+            let totalTabelKotaFat = 0;
+            let totalTabelKotaFdt = 0;
+            let totalTabelKotaHdpe = 0;
+            let totalTabelKotaKabel = 0;
+            let totalTabelKotaOtb = 0;
+            let totalTabelKotaTiang = 0;
+
+            data.each(function (row) {
+                totalTabelKotaAksesories += parseFloat(row[3].replace(/\./g, '')) || 0;
+                totalTabelKotaClosure += parseFloat(row[4].replace(/\./g, '')) || 0;
+                totalTabelKotaFat += parseFloat(row[5].replace(/\./g, '')) || 0;
+                totalTabelKotaFdt += parseFloat(row[6].replace(/\./g, '')) || 0;
+                totalTabelKotaHdpe += parseFloat(row[7].replace(/\./g, '')) || 0;
+                totalTabelKotaKabel += parseFloat(row[8].replace(/\./g, '')) || 0;
+                totalTabelKotaOtb += parseFloat(row[9].replace(/\./g, '')) || 0;
+                totalTabelKotaTiang += parseFloat(row[10].replace(/\./g, '')) || 0;
+            });
+
+            document.getElementById('totalTabelKotaAksesories').innerText = totalTabelKotaAksesories.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaClosure').innerText = totalTabelKotaClosure.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaFat').innerText = totalTabelKotaFat.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaFdt').innerText = totalTabelKotaFdt.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaHdpe').innerText = totalTabelKotaHdpe.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaKabel').innerText = totalTabelKotaKabel.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaOtb').innerText = totalTabelKotaOtb.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaTiang').innerText = totalTabelKotaTiang.toLocaleString('id-ID');
+        }
+
+        // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+        table.on('draw', function () {
+            updateTotal();
+        });
+
+        // Hitung total pertama kali saat tabel dimuat
+        updateTotal();
+    });
 
     document.addEventListener("DOMContentLoaded", function () {
         <?php foreach ($getAllStokByKategory as $stokKategory): ?>
