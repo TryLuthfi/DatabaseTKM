@@ -6,7 +6,7 @@ class MDashboard_Logistik_Stok extends CI_Model
 
     public function getAllStokLogistik()
     {
-        $data = $this->db->query('SELECT * FROM tb_logistik_stok 
+        $data = $this->db->query('SELECT *, SUM(tb_logistik_stok.jumlah_stok) AS total_jumlah_stok FROM tb_logistik_stok 
 JOIN tb_master_logistik_lokasi_gudang 
     ON tb_logistik_stok.id_lokasi_gudang = tb_master_logistik_lokasi_gudang.id_lokasi_gudang
 JOIN tb_master_bowheer 
