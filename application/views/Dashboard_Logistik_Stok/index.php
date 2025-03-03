@@ -1253,94 +1253,97 @@ $total_stok_dashboard = [];
                 }
             });
         });
-    });
-    // END LOGIC OF MODAL TAMBAH STOK 
+        // END LOGIC OF MODAL TAMBAH STOK 
 
-    // STAR CALL NEW QUERY FOR DETAIL SURAT JALAN
-    $(document).ready(function () {
-        $(".tombol_detail").click(function () {
-            var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
-            console.log(selectedSJ);
+        // STAR CALL NEW QUERY FOR DETAIL SURAT JALAN
+        $(document).ready(function() {
+            $(".tombol_detail").click(function() {
+                var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
+                console.log(selectedSJ);
 
-            if (!selectedSJ || selectedSJ === "") {
-                var tbody = $("#hasilDetailDataSJ");
-                tbody.empty();
-                document.getElementById("detail_no_surat_jalan").value = "";
-                document.getElementById("detail_total_qty").innerText = "";
-                document.getElementById("detail_area_gudang").value = "";
-                document.getElementById("detail_nama_project").value = "";
-                document.getElementById("detail_sumber_material").value = "";
-                document.getElementById("detail_keterangan_stok_item").value = "";
-                document.getElementById("detail_nama_file").innerText = "No File Uploaded";
-                document.getElementById("view_detail_surat_jalan").style.display = "none";
+                if (!selectedSJ || selectedSJ === "") {
+                    var tbody = $("#hasilDetailDataSJ");
+                    tbody.empty();
+                    document.getElementById("detail_no_surat_jalan").value = "";
+                    document.getElementById("detail_total_qty").innerText = "";
+                    document.getElementById("detail_area_gudang").value = "";
+                    document.getElementById("detail_nama_project").value = "";
+                    document.getElementById("detail_sumber_material").value = "";
+                    document.getElementById("detail_keterangan_stok_item").value = "";
+                    document.getElementById("detail_nama_file").innerText = "No File Uploaded";
+                    document.getElementById("view_detail_surat_jalan").style.display = "none";
 
-            } else {
-                $.ajax({
-                    url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>",  // Arahkan ke file PHP yang menangani filtering
-                    method: "POST",
-                    data: { no_surat_jalan: selectedSJ },
-                    dataType: "json",
-                    success: function (response) {
-                        var tbody = $("#hasilDetailDataSJ");
-                        tbody.empty();
+                } else {
+                    $.ajax({
+                        url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>", // Arahkan ke file PHP yang menangani filtering
+                        method: "POST",
+                        data: {
+                            no_surat_jalan: selectedSJ
+                        },
+                        dataType: "json",
+                        success: function(response) {
+                            var tbody = $("#hasilDetailDataSJ");
+                            tbody.empty();
 
-                        var nomor = 1;
-                        let baseUrl = "<?= base_url() ?>"
-                        let lokasiUrl = response.getDetailAreaBySJ[0].evidence_stok;
-                        var totalStok = 0;
+                            var nomor = 1;
+                            let baseUrl = "<?= base_url() ?>"
+                            let lokasiUrl = response.getDetailAreaBySJ[0].evidence_stok;
+                            var totalStok = 0;
 
-                        $.each(response.getDetailAreaBySJ, function (index, getDetailAreaBySJ) {
-                            var jumlahStok = parseFloat(getDetailAreaBySJ.jumlah_stok) || 0; // Pastikan jumlahStok berupa angka
-                            totalStok += jumlahStok;
+                            $.each(response.getDetailAreaBySJ, function(index, getDetailAreaBySJ) {
+                                var jumlahStok = parseFloat(getDetailAreaBySJ.jumlah_stok) || 0; // Pastikan jumlahStok berupa angka
+                                totalStok += jumlahStok;
 
-                            var row = "<tr>" +
-                                "<td>" + nomor++ + "</td>" +
-                                "<td>" + getDetailAreaBySJ.nama_item + "</td>" +
-                                "<td>" + parseFloat(getDetailAreaBySJ.jumlah_stok).toLocaleString('id-ID') + "</td>" +  // Format angka
-                                "<td>" + getDetailAreaBySJ.satuan_item + "</td>" +
-                                "<td>" + getDetailAreaBySJ.merk_stok + "</td>" +
-                                "<td>" + getDetailAreaBySJ.no_haspel_stok + "</td>" +
-                                "<td>" + getDetailAreaBySJ.no_ref_stok + "</td>" +
-                                "</tr>";
-                            tbody.append(row);
-                        });
+                                var row = "<tr>" +
+                                    "<td>" + nomor++ + "</td>" +
+                                    "<td>" + getDetailAreaBySJ.nama_item + "</td>" +
+                                    "<td>" + parseFloat(getDetailAreaBySJ.jumlah_stok).toLocaleString('id-ID') + "</td>" + // Format angka
+                                    "<td>" + getDetailAreaBySJ.satuan_item + "</td>" +
+                                    "<td>" + getDetailAreaBySJ.merk_stok + "</td>" +
+                                    "<td>" + getDetailAreaBySJ.no_haspel_stok + "</td>" +
+                                    "<td>" + getDetailAreaBySJ.no_ref_stok + "</td>" +
+                                    "</tr>";
+                                tbody.append(row);
+                            });
 
-                        let tanggalFormatted = response.getDetailAreaBySJ[0].tanggal_upload_stok.split(" ")[0];
+                            let tanggalFormatted = response.getDetailAreaBySJ[0].tanggal_upload_stok.split(" ")[0];
 
-                        document.getElementById("detail_total_qty").innerText = totalStok.toLocaleString('id-ID');
-                        document.getElementById("detail_no_surat_jalan").value = response.getDetailAreaBySJ[0].no_surat_jalan;
-                        document.getElementById("detail_area_gudang").value = response.getDetailAreaBySJ[0].kota_lokasi_gudang;
-                        document.getElementById("detail_nama_project").value = response.getDetailAreaBySJ[0].project_item;
-                        document.getElementById("detail_sumber_material").value = response.getDetailAreaBySJ[0].nama_sumber_material;
-                        document.getElementById("detail_keterangan_stok_item").value = response.getDetailAreaBySJ[0].keterangan_stok;
-                        document.getElementById("tanggal_upload_stok").value = tanggalFormatted;
-                        var filePath = response.getDetailAreaBySJ[0].evidence_stok;
-                        var fileName = filePath.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
+                            document.getElementById("detail_total_qty").innerText = totalStok.toLocaleString('id-ID');
+                            document.getElementById("detail_no_surat_jalan").value = response.getDetailAreaBySJ[0].no_surat_jalan;
+                            document.getElementById("detail_area_gudang").value = response.getDetailAreaBySJ[0].kota_lokasi_gudang;
+                            document.getElementById("detail_nama_project").value = response.getDetailAreaBySJ[0].project_item;
+                            document.getElementById("detail_sumber_material").value = response.getDetailAreaBySJ[0].nama_sumber_material;
+                            document.getElementById("detail_keterangan_stok_item").value = response.getDetailAreaBySJ[0].keterangan_stok;
+                            document.getElementById("tanggal_upload_stok").value = tanggalFormatted;
+                            var filePath = response.getDetailAreaBySJ[0].evidence_stok;
+                            var fileName = filePath.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
 
-                        document.getElementById("detail_nama_file").innerText = fileName;
-                        document.getElementById("view_detail_surat_jalan").style.display = "block";
-                        document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl;
-                        console.log("Response:", response);
-                    },
-                    error: function (xhr, status, error) {
-                        console.error("Error:", error);
-                        console.error("Response Text:", xhr.responseText);
-                    }
-                });
-            }
-        });
-    });
-
-                if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
-                    boxElement.addEventListener("click", function() {
-                        console.log("<?= $stokKategory['kategori_item'] ?>");
-
-                        window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_kategori/" . $stokKategory['kategori_item']) ?>"
-
+                            document.getElementById("detail_nama_file").innerText = fileName;
+                            document.getElementById("view_detail_surat_jalan").style.display = "block";
+                            document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl;
+                            console.log("Response:", response);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error:", error);
+                            console.error("Response Text:", xhr.responseText);
+                        }
                     });
                 }
-            <?php endforeach; ?>
+            });
         });
+
+        //         if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
+        //             boxElement.addEventListener("click", function() {
+        //                 console.log("<?= $stokKategory['kategori_item'] ?>");
+
+        //                 window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_kategori/" . $stokKategory['kategori_item']) ?>"
+
+        //             });
+        //         }
+        //     <?php
+                // endforeach; 
+                ?>
+        // });
 
         // END GET DETAIL SUMMARY KATEGORI ITEM
 
@@ -1402,59 +1405,61 @@ $total_stok_dashboard = [];
                 optionsBowheer[i].selected = false; // Hilangkan pilihan
             }
 
-    $(document).ready(function () {
-        $.fn.dataTable.ext.errMode = 'none';
-        const table = $('#table_detail_kota').DataTable({
-            footerCallback: function () {
+            $(document).ready(function() {
+                $.fn.dataTable.ext.errMode = 'none';
+                const table = $('#table_detail_kota').DataTable({
+                    footerCallback: function() {
+                        updateTotal();
+                    }
+                });
+
+                // Fungsi untuk menghitung total dari data yang tampil
+                function updateTotal() {
+                    // Ambil semua data yang terlihat
+
+                    const data = table.rows({
+                        search: 'applied'
+                    }).data();
+
+                    // Hitung total dari kolom Value (index 2)
+                    let totalTabelKotaAksesories = 0;
+                    let totalTabelKotaClosure = 0;
+                    let totalTabelKotaFat = 0;
+                    let totalTabelKotaFdt = 0;
+                    let totalTabelKotaHdpe = 0;
+                    let totalTabelKotaKabel = 0;
+                    let totalTabelKotaOtb = 0;
+                    let totalTabelKotaTiang = 0;
+
+                    data.each(function(row) {
+                        totalTabelKotaAksesories += parseFloat(row[3].replace(/\./g, '')) || 0;
+                        totalTabelKotaClosure += parseFloat(row[4].replace(/\./g, '')) || 0;
+                        totalTabelKotaFat += parseFloat(row[5].replace(/\./g, '')) || 0;
+                        totalTabelKotaFdt += parseFloat(row[6].replace(/\./g, '')) || 0;
+                        totalTabelKotaHdpe += parseFloat(row[7].replace(/\./g, '')) || 0;
+                        totalTabelKotaKabel += parseFloat(row[8].replace(/\./g, '')) || 0;
+                        totalTabelKotaOtb += parseFloat(row[9].replace(/\./g, '')) || 0;
+                        totalTabelKotaTiang += parseFloat(row[10].replace(/\./g, '')) || 0;
+                    });
+
+                    document.getElementById('totalTabelKotaAksesories').innerText = totalTabelKotaAksesories.toLocaleString('id-ID');
+                    document.getElementById('totalTabelKotaClosure').innerText = totalTabelKotaClosure.toLocaleString('id-ID');
+                    document.getElementById('totalTabelKotaFat').innerText = totalTabelKotaFat.toLocaleString('id-ID');
+                    document.getElementById('totalTabelKotaFdt').innerText = totalTabelKotaFdt.toLocaleString('id-ID');
+                    document.getElementById('totalTabelKotaHdpe').innerText = totalTabelKotaHdpe.toLocaleString('id-ID');
+                    document.getElementById('totalTabelKotaKabel').innerText = totalTabelKotaKabel.toLocaleString('id-ID');
+                    document.getElementById('totalTabelKotaOtb').innerText = totalTabelKotaOtb.toLocaleString('id-ID');
+                    document.getElementById('totalTabelKotaTiang').innerText = totalTabelKotaTiang.toLocaleString('id-ID');
+                }
+
+                // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+                table.on('draw', function() {
+                    updateTotal();
+                });
+
+                // Hitung total pertama kali saat tabel dimuat
                 updateTotal();
-            }
-        });
-
-        // Fungsi untuk menghitung total dari data yang tampil
-        function updateTotal() {
-            // Ambil semua data yang terlihat
-
-            const data = table.rows({ search: 'applied' }).data();
-
-            // Hitung total dari kolom Value (index 2)
-            let totalTabelKotaAksesories = 0;
-            let totalTabelKotaClosure = 0;
-            let totalTabelKotaFat = 0;
-            let totalTabelKotaFdt = 0;
-            let totalTabelKotaHdpe = 0;
-            let totalTabelKotaKabel = 0;
-            let totalTabelKotaOtb = 0;
-            let totalTabelKotaTiang = 0;
-
-            data.each(function (row) {
-                totalTabelKotaAksesories += parseFloat(row[3].replace(/\./g, '')) || 0;
-                totalTabelKotaClosure += parseFloat(row[4].replace(/\./g, '')) || 0;
-                totalTabelKotaFat += parseFloat(row[5].replace(/\./g, '')) || 0;
-                totalTabelKotaFdt += parseFloat(row[6].replace(/\./g, '')) || 0;
-                totalTabelKotaHdpe += parseFloat(row[7].replace(/\./g, '')) || 0;
-                totalTabelKotaKabel += parseFloat(row[8].replace(/\./g, '')) || 0;
-                totalTabelKotaOtb += parseFloat(row[9].replace(/\./g, '')) || 0;
-                totalTabelKotaTiang += parseFloat(row[10].replace(/\./g, '')) || 0;
             });
-
-            document.getElementById('totalTabelKotaAksesories').innerText = totalTabelKotaAksesories.toLocaleString('id-ID');
-            document.getElementById('totalTabelKotaClosure').innerText = totalTabelKotaClosure.toLocaleString('id-ID');
-            document.getElementById('totalTabelKotaFat').innerText = totalTabelKotaFat.toLocaleString('id-ID');
-            document.getElementById('totalTabelKotaFdt').innerText = totalTabelKotaFdt.toLocaleString('id-ID');
-            document.getElementById('totalTabelKotaHdpe').innerText = totalTabelKotaHdpe.toLocaleString('id-ID');
-            document.getElementById('totalTabelKotaKabel').innerText = totalTabelKotaKabel.toLocaleString('id-ID');
-            document.getElementById('totalTabelKotaOtb').innerText = totalTabelKotaOtb.toLocaleString('id-ID');
-            document.getElementById('totalTabelKotaTiang').innerText = totalTabelKotaTiang.toLocaleString('id-ID');
-        }
-
-        // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
-        table.on('draw', function () {
-            updateTotal();
-        });
-
-        // Hitung total pertama kali saat tabel dimuat
-        updateTotal();
-    });
 
             // Pilih opsi default (indeks 0)
             selectLokasi.dispatchEvent(new Event('change'));
@@ -1561,73 +1566,71 @@ $total_stok_dashboard = [];
 
                 // Terapkan filter ke DataTable
 
-                });
-            }
-        <?php endforeach; ?>
-    });
-
-    $(document).ready(function () {
-        let table = $('#table_data').DataTable();
-
-        // Fungsi filter berdasarkan date range di kolom ke-11 (index 10)
-        function filterByDate(settings, data, dataIndex) {
-            let minDate = $('#date-range').data('daterangepicker').startDate;
-            let maxDate = $('#date-range').data('daterangepicker').endDate;
-            let dateColumn = moment(data[10], "YYYY-MM-DD HH:mm:ss"); // Kolom ke-11 (Index 10)
-
-            if (!minDate || !maxDate) return true; // Jika tidak ada filter, tampilkan semua
-
-            return dateColumn.isBetween(minDate, maxDate, undefined, '[]'); // Filter antara range
-        }
-
-        // Tambahkan filter pertama kali
-        // $.fn.dataTable.ext.search.push(filterByDate);
-
-        // Inisialisasi Date Range Picker
-        // $('#date-range').daterangepicker({
-        //     autoUpdateInput: false,
-        //     locale: { format: 'MM/DD/YYYY' }
-        // });
-
-        // Event saat date range dipilih
-        // $('#date-range').on('apply.daterangepicker', function (ev, picker) {
-        //     $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
-        // });
-
-        // ✅ Tombol "Cari" untuk memfilter tabel
-        $('#filtertanggal').on('click', function (e) {
-            e.preventDefault();
-            $.fn.dataTable.ext.search.pop(); // Hapus filter lama
-            $.fn.dataTable.ext.search.push(filterByDate); // Tambahkan filter baru
-            table.draw(); // Terapkan filter
-        });
-
-        // ✅ Tombol "Hapus" untuk mereset filter
-        $('#resetTanggal').on('click', function () {
-            $('#date-range').val(''); // Kosongkan input
-            $('#date-range').data('daterangepicker').setStartDate(moment());
-            $('#date-range').data('daterangepicker').setEndDate(moment());
-
-            $.fn.dataTable.ext.search = []; // Hapus semua filter
-            table.search('').draw(); // Reset tabel sepenuhnya
-        });
-    });
-
-    $(document).ready(function () {
-        $('#table_data').DataTable({
-            responsive: false,
-            fixedHeader: {
-                header: true,
-                footer: true
-            }
+            });
         });
 
         $(document).ready(function() {
-            $.fn.dataTable.ext.errMode = 'none';
-            $('#table_data').DataTable({
-                responsive: false // Matikan fitur Responsive
+            let table = $('#table_data').DataTable();
+
+            // Fungsi filter berdasarkan date range di kolom ke-11 (index 10)
+            function filterByDate(settings, data, dataIndex) {
+                let minDate = $('#date-range').data('daterangepicker').startDate;
+                let maxDate = $('#date-range').data('daterangepicker').endDate;
+                let dateColumn = moment(data[10], "YYYY-MM-DD HH:mm:ss"); // Kolom ke-11 (Index 10)
+
+                if (!minDate || !maxDate) return true; // Jika tidak ada filter, tampilkan semua
+
+                return dateColumn.isBetween(minDate, maxDate, undefined, '[]'); // Filter antara range
+            }
+
+            // Tambahkan filter pertama kali
+            // $.fn.dataTable.ext.search.push(filterByDate);
+
+            // Inisialisasi Date Range Picker
+            // $('#date-range').daterangepicker({
+            //     autoUpdateInput: false,
+            //     locale: { format: 'MM/DD/YYYY' }
+            // });
+
+            // Event saat date range dipilih
+            // $('#date-range').on('apply.daterangepicker', function (ev, picker) {
+            //     $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+            // });
+
+            // ✅ Tombol "Cari" untuk memfilter tabel
+            $('#filtertanggal').on('click', function(e) {
+                e.preventDefault();
+                $.fn.dataTable.ext.search.pop(); // Hapus filter lama
+                $.fn.dataTable.ext.search.push(filterByDate); // Tambahkan filter baru
+                table.draw(); // Terapkan filter
+            });
+
+            // ✅ Tombol "Hapus" untuk mereset filter
+            $('#resetTanggal').on('click', function() {
+                $('#date-range').val(''); // Kosongkan input
+                $('#date-range').data('daterangepicker').setStartDate(moment());
+                $('#date-range').data('daterangepicker').setEndDate(moment());
+
+                $.fn.dataTable.ext.search = []; // Hapus semua filter
+                table.search('').draw(); // Reset tabel sepenuhnya
             });
         });
+
+        $(document).ready(function() {
+                    $('#table_data').DataTable({
+                        responsive: false,
+                        fixedHeader: {
+                            header: true,
+                            footer: true
+                        }
+                    });
+
+                    $(document).ready(function() {
+                        $.fn.dataTable.ext.errMode = 'none';
+                        $('#table_data').DataTable({
+                            responsive: false // Matikan fitur Responsive
+                        });
+                    });
     </script>
 
 
