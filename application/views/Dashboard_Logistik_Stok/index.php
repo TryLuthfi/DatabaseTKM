@@ -1,3 +1,17 @@
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    window.addEventListener("beforeunload", function () {
+        localStorage.setItem("lastPage", window.location.href);
+    });
+
+    window.addEventListener("load", function () {
+        let lastPage = localStorage.getItem("lastPage");
+        if (lastPage && document.referrer !== lastPage) {
+            window.history.replaceState({}, '', lastPage);
+        }
+    });
+</script>
+
 <?php
 $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
@@ -177,7 +191,7 @@ $total_stok_dashboard = [];
                                     foreach ($getAllStokByKategory as $stokKategory):
 
                                         $total_stok_dashboard[$stokKategory['kategori_item']] = number_format(floatval($stokKategory['total_jumlah_stok']), 0, ",", ".") . " " . $stokKategory['satuan_item'];
-                                    ?>
+                                        ?>
                                         <div class="col-lg-3 col-6">
                                             <div class="small-box bg-info">
                                                 <div class="inner">
@@ -257,67 +271,67 @@ $total_stok_dashboard = [];
                                                                 $jumlah_OTB += $data['jumlah_OTB'];
                                                                 $jumlah_Tiang += $data['jumlah_Tiang'];
 
-                                                            ?>
+                                                                ?>
 
                                                                 <tr>
                                                                     <td><?= $total++ ?></td>
                                                                     <td><?= $data['regional_lokasi_gudang'] ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_Aksesories'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_Aksesories']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_Aksesories'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Aksesories']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_Closure'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_Closure']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_Closure'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Closure']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_FAT'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_FAT']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_FAT'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_FAT']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_FDT'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_FDT']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_FDT'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_FDT']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_HDPE'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_HDPE']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_HDPE'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_HDPE']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_Kabel'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_Kabel']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_Kabel'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Kabel']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_OTB'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_OTB']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_OTB'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_OTB']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_Tiang'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_Tiang']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_Tiang'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Tiang']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td>
                                                                         <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['regional_lokasi_gudang']); ?>"
                                                                             id="tombol_hapus"
@@ -434,68 +448,68 @@ $total_stok_dashboard = [];
                                                                 $jumlah_OTB += $data['jumlah_OTB'];
                                                                 $jumlah_Tiang += $data['jumlah_Tiang'];
 
-                                                            ?>
+                                                                ?>
 
                                                                 <tr>
                                                                     <td><?= $total++ ?></td>
                                                                     <td><?= $data['regional_lokasi_gudang'] ?></td>
                                                                     <td><?= $data['kota_lokasi_gudang'] ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_Aksesories'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_Aksesories']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_Aksesories'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Aksesories']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_Closure'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_Closure']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_Closure'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Closure']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_FAT'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_FAT']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_FAT'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_FAT']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_FDT'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_FDT']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_FDT'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_FDT']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_HDPE'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_HDPE']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_HDPE'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_HDPE']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_Kabel'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_Kabel']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_Kabel'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Kabel']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_OTB'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_OTB']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_OTB'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_OTB']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td><?php
-                                                                        if ($data['jumlah_Tiang'] == "0") {
-                                                                            echo "-";
-                                                                        } else {
-                                                                            echo number_format(floatval($data['jumlah_Tiang']), 0, ",", ".");
-                                                                        }
-                                                                        ?></td>
+                                                                    if ($data['jumlah_Tiang'] == "0") {
+                                                                        echo "-";
+                                                                    } else {
+                                                                        echo number_format(floatval($data['jumlah_Tiang']), 0, ",", ".");
+                                                                    }
+                                                                    ?></td>
                                                                     <td>
                                                                         <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['kota_lokasi_gudang']); ?>"
                                                                             id="tombol_hapus"
@@ -558,7 +572,6 @@ $total_stok_dashboard = [];
                             <div class="card-header">
                                 <div class="row">
                                     <div class="col-6">
-
                                         <div class="row">
                                             <div class="col-6">
                                                 <div class="form-group">
@@ -590,7 +603,7 @@ $total_stok_dashboard = [];
                                 </div>
                             </div>
                             <!-- /.card-header -->
-                            <div class="card-body table-scrollable">
+                            <div class="card-body table-responsive text-nowrap">
                                 <table id="table_data" class="table table-bordered table-striped">
                                     <thead>
                                         <tr>
@@ -612,7 +625,7 @@ $total_stok_dashboard = [];
                                         <?php
                                         $total = 1;
                                         foreach ($getAllStokLogistik as $data):
-                                        ?>
+                                            ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['regional_lokasi_gudang'] ?></td>
@@ -626,14 +639,18 @@ $total_stok_dashboard = [];
                                                 </td>
                                                 <td><?= $data['nama_user'] ?></td>
                                                 <td><?= $data['tanggal_upload_stok'] ?></td>
-                                                <td>
-                                                    <!-- <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . $data['id_logistik_stok']); ?>"
-                                                        id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                            class=" fas fa-trash"></i></a> -->
+                                                <td class="d-flex">
+                                                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                        <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . urlencode($data['no_surat_jalan'])); ?>"
+                                                            id="tombol_hapus_rincian"
+                                                            class="btn btn-danger tombol_hapus_rincian">
+                                                            <i class="fas fa-trash"></i>
+                                                        </a>
+                                                    <?php } ?>
 
                                                     <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>"
                                                         data-target="#form_detail_surat_jalan" data-toggle="modal"
-                                                        class="btn btn-primary tombol_detail"><i
+                                                        class="btn btn-primary tombol_detail ml-1"><i
                                                             class=" fas fa-eye"></i></a>
                                                 </td>
                                             </tr>
@@ -667,15 +684,14 @@ $total_stok_dashboard = [];
                                         <label class="col-form-label">Nomor Surat Jalan</label>
                                         <input type="text" class="form-control" name="nomor_surat_jalan"
                                             id="nomor_surat_jalan" autocomplete="off" value=""
-                                            placeholder="TEC.005/TKM-04/PO/II/2025" required>
+                                            placeholder="TEC.005/TKM-04/SJ/II/2025" required>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="col-form-label">Input Date</label>
-                                        <input type="datetime-local" class="form-control" name="tanggal_upload_stok"
-                                            autocomplete="off" disabled
-                                            value="<?php echo (new \DateTime())->format('Y-m-d H:i:s'); ?>">
+                                        <input type="date" class="form-control" name="tanggal_upload_stok"
+                                            value="<?php echo date('Y-m-d'); ?>">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -749,7 +765,8 @@ $total_stok_dashboard = [];
                                     <div class="form-group">
                                         <label class="col-form-label">Keterangan</label>
                                         <textarea type="text" class="form-control" name="keterangan_stok"
-                                            id="keterangan_stok_item" autocomplete="Keterangan"></textarea>
+                                            id="keterangan_stok_item" autocomplete="Keterangan" rows="4"
+                                            style="height: 100px;"></textarea>
                                     </div>
                                 </div>
                                 <div class="col-md-12">
@@ -798,8 +815,7 @@ $total_stok_dashboard = [];
                                 <div class="form-group">
                                     <label class="col-form-label">Input Date</label>
                                     <input type="date" class="form-control" name="tanggal_upload_stok"
-                                        autocomplete="off" value="<?php echo (new \DateTime())->format('Y-m-d'); ?>"
-                                        disabled>
+                                        id="tanggal_upload_stok" disabled>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -850,7 +866,8 @@ $total_stok_dashboard = [];
                                 <div class="form-group">
                                     <label class="col-form-label">Keterangan</label>
                                     <textarea type="text" class="form-control" name="keterangan_stok"
-                                        id="detail_keterangan_stok_item" disabled></textarea>
+                                        id="detail_keterangan_stok_item" disabled rows="4"
+                                        style="height: 100px;"></textarea>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -1003,41 +1020,39 @@ $total_stok_dashboard = [];
 
     </div>
     <!-- /.content-wrapper -->
+</div>
 
-    <?php $this->session->set_flashdata('status', 'kosong'); ?>
+<?php $this->session->set_flashdata('status', 'kosong'); ?>
 
-    <!-- Control Sidebar -->
-    <aside class="control-sidebar control-sidebar-dark">
-        <!-- Control sidebar content goes here -->
-    </aside>
+<!-- Control Sidebar -->
+<aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content goes here -->
+</aside>
 
-    <script type="text/javascript">
-        // START LOGIC TAMBAH STOK ITEM
+<script type="text/javascript">
 
-        // AJAX SELECT 2 JENIS MATERIAL
+    // AJAX SELECT 2 JENIS MATERIAL
 
-        $(document).ready(function() {
-            $('#id_kode_item').select2({
-                placeholder: "Pilih Jenis Material",
-                allowClear: true,
-                dropdownParent: $('#modal-xl-tambah')
-            });
+    $(document).ready(function () {
+        $('#id_kode_item').select2({
+            placeholder: "Pilih Jenis Material",
+            allowClear: true
+        });
 
-            $('#id_kode_item').on('change', function() {
-                var selectedValue = $('#id_kode_item').val();
-                if ($(this).val() === "") {
-                    return;
-                }
-                var selectedValue = $('#id_kode_item').val();
-                var selectedText = $('#id_kode_item option:selected').text();
-                var selectedSatuan = $('#id_kode_item option:selected').data('satuan-item');
+        $('#id_kode_item').on('change', function () {
+            if ($(this).val() === "") {
+                return;
+            }
+            var selectedValue = $('#id_kode_item').val();
+            var selectedText = $('#id_kode_item option:selected').text();
+            var selectedSatuan = $('#id_kode_item option:selected').data('satuan-item');
 
-                if (selectedValue === "") {
-                    alert("Pilih item terlebih dahulu!");
-                    return;
-                }
+            if (selectedValue === "") {
+                alert("Pilih item terlebih dahulu!");
+                return;
+            }
 
-                $('#table_item_stok tbody').append(`
+            $('#table_item_stok tbody').append(`
                 <tr>
                     <td>${counter}</td>
                     <td hidden><input type="hidden" name="id_kode_item[${counter}]" value="${selectedValue}">${selectedValue}</td>
@@ -1047,612 +1062,593 @@ $total_stok_dashboard = [];
                     <td><input type="text" class="form-control" name="merk_item[${counter}]" autocomplete="off" placeholder="' Furukawa ' / ' ZTT ' / ' CCSI '"></td>
                     <td><input type="text" class="form-control" name="no_haspel_item[${counter}]" autocomplete="off" placeholder="' D11-11*** '"></td>
                     <td><input type="text" class="form-control" name="no_ref_item[${counter}]" autocomplete="off" placeholder="' 1***/EMR/NRO-GDR/02/2025 '"></td>
-                    <td><a href="javascript:void(0);" class="btn btn-danger hapus-item"><i class="fa fa-trash"></i></a></td>
+                    <td><button class="btn btn-danger hapus-item"><i class="fa fa-trash"></i></button></td>
                 </tr>
             `);
-                counter++;
+            counter++;
 
-                $('#id_kode_item').val("").trigger('change');
-                $('#id_kode_item').select2({
-                    placeholder: "Pilih Jenis Material",
-                    allowClear: true,
-                    dropdownParent: $('#modal-xl-tambah')
-                });
+            $('#id_kode_item').val("").trigger('change');
+        });
+
+        $('#id_project').change(function () {
+            $('#table_item_stok tbody').empty();
+            counter = 1;
+            let idBowheer = $(this).find(':selected').data('id-bowheer');
+
+            if (idBowheer === "") {
+                $('#id_kode_item').empty().append('<option value="">Pilih Jenis Material</option>').trigger('change');
+                return;
+            }
+
+            $.ajax({
+                url: "<?= base_url() . 'Dashboard_Logistik_Stok/getProjectByBowheer' ?>",
+                type: "GET",
+                data: {
+                    id_bowheer: idBowheer.toString()
+                },
+                dataType: "json",
+                success: function (response) {
+
+                    $('#id_kode_item').empty().append('<option value="">Pilih Jenis Material</option>');
+
+                    $.each(response, function (index, project) {
+                        $('#id_kode_item').append(
+                            `<option value="${project.id_kode_item}" data-satuan-item="${project.satuan_item}">${project.nama_item}</option>`
+                        );
+                    });
+
+                    $('#id_kode_item').trigger('change');
+                },
+                error: function (xhr, status, error) {
+                    console.error(error);
+                }
+            });
+        });
+
+        var counter = 1;
+
+        $(document).on('click', '.hapus-item', function () {
+            $(this).closest('tr').remove();
+
+            $('#table_item_stok tbody tr').each(function (index) {
+                $(this).find('td:first').text(index + 1);
             });
 
+            counter--;
+        });
 
-            $('#id_project').change(function() {
-                $('#table_item_stok tbody').empty();
-                counter = 1;
-                let idBowheer = $(this).find(':selected').data('id-bowheer');
+        $('#modal-xl-tambah').on('hidden.bs.modal', function () {
+            $('#table_item_stok tbody').empty();
+            $('#nomor_surat_jalan').val('');
+            $('#id_project').val('').trigger('change');
+            $('#id_lokasi_gudang').val('').trigger('change');
+            $('#id_sumber_material').val('').trigger('change');
+            counter = 1;
+        });
 
-                if (idBowheer === "") {
-                    $('#id_kode_item').empty().append('<option value="">Pilih Jenis Material</option>').trigger('change');
+        $('.btn-tambah-data-item').on('click', function () {
+            $('#file-sj').val('');
+            $('.custom-file-label').text('Choose file');
+            $('#keterangan_stok_item').val('');
+        })
+
+        $('#file-sj').on('change', function (e) {
+            var fileName = e.target.files.length > 0 ? e.target.files[0].name : "Choose file";
+            $(this).siblings('.custom-file-label').text(fileName);
+        });
+
+        $("#file-sj").change(function () {
+            let file = this.files[0];
+            let allowedExtensions = /(\.pdf|\.docx|\.xlsx)$/i;
+            let maxSize = 5120 * 1024;
+
+            if (file) {
+                if (!allowedExtensions.test(file.name)) {
+                    alert("File harus berupa PDF, DOCX, atau XLSX!");
+                    $(this).val("");
+                    $('.custom-file-label').text('Choose file');
                     return;
                 }
 
+                if (file.size > maxSize) {
+                    alert("Ukuran file tidak boleh lebih dari 5MB!");
+                    $(this).val("");
+                    $('.custom-file-label').text('Choose file');
+                    return;
+                }
+            }
+        });
+
+        $("#form_tambah_stok").submit(function (event) {
+            let isValid = true;
+            let errorMessage = [];
+
+            // Cek input tanggal harus valid
+            let tanggalUpload = $("input[name='tanggal_upload_stok']").val();
+            if (!tanggalUpload) {
+                errorMessage.push("Tanggal upload stok harus diisi.");
+            }
+
+            // Cek setiap input yang harus memiliki nilai
+            let requiredFields = {
+                "#id_lokasi_gudang": "Lokasi gudang",
+                "#id_project": "Proyek",
+                "#id_sumber_material": "Sumber material"
+            };
+
+            $.each(requiredFields, function (selector, fieldName) {
+                if ($(selector).val() === "") {
+                    errorMessage.push(fieldName + " harus dipilih.");
+                }
+            });
+
+            // Cek apakah tabel memiliki minimal 1 row
+            if ($("#table_item_stok tbody tr").length === 0) {
+                errorMessage.push("Minimal harus ada satu item stok dalam tabel.");
+            }
+
+            // Jika ada error, tampilkan alert sekaligus
+            if (errorMessage.length > 0) {
+                alert(errorMessage.join("\n"));
+                event.preventDefault();
+            }
+        });
+    });
+    // END LOGIC OF MODAL TAMBAH STOK 
+
+    // STAR CALL NEW QUERY FOR DETAIL SURAT JALAN
+    $(document).ready(function () {
+        $(".tombol_detail").click(function () {
+            var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
+            console.log(selectedSJ);
+
+            if (!selectedSJ || selectedSJ === "") {
+                var tbody = $("#hasilDetailDataSJ");
+                tbody.empty();
+                document.getElementById("detail_no_surat_jalan").value = "";
+                document.getElementById("detail_total_qty").innerText = "";
+                document.getElementById("detail_area_gudang").value = "";
+                document.getElementById("detail_nama_project").value = "";
+                document.getElementById("detail_sumber_material").value = "";
+                document.getElementById("detail_keterangan_stok_item").value = "";
+                document.getElementById("detail_nama_file").innerText = "No File Uploaded";
+                document.getElementById("view_detail_surat_jalan").style.display = "none";
+
+            } else {
                 $.ajax({
-                    url: "<?= base_url() . 'Dashboard_Logistik_Stok/getProjectByBowheer' ?>",
-                    type: "GET",
-                    data: {
-                        id_bowheer: idBowheer.toString()
-                    },
+                    url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>",  // Arahkan ke file PHP yang menangani filtering
+                    method: "POST",
+                    data: { no_surat_jalan: selectedSJ },
                     dataType: "json",
-                    success: function(response) {
+                    success: function (response) {
+                        var tbody = $("#hasilDetailDataSJ");
+                        tbody.empty();
 
-                        $('#id_kode_item').empty().append('<option value="">Pilih Jenis Material</option>');
+                        var nomor = 1;
+                        let baseUrl = "<?= base_url() ?>"
+                        let lokasiUrl = response.getDetailAreaBySJ[0].evidence_stok;
+                        var totalStok = 0;
 
-                        $.each(response, function(index, project) {
-                            $('#id_kode_item').append(
-                                `<option value="${project.id_kode_item}" data-satuan-item="${project.satuan_item}">${project.nama_item}</option>`
-                            );
+                        $.each(response.getDetailAreaBySJ, function (index, getDetailAreaBySJ) {
+                            var jumlahStok = parseFloat(getDetailAreaBySJ.jumlah_stok) || 0; // Pastikan jumlahStok berupa angka
+                            totalStok += jumlahStok;
+
+                            var row = "<tr>" +
+                                "<td>" + nomor++ + "</td>" +
+                                "<td>" + getDetailAreaBySJ.nama_item + "</td>" +
+                                "<td>" + parseFloat(getDetailAreaBySJ.jumlah_stok).toLocaleString('id-ID') + "</td>" +  // Format angka
+                                "<td>" + getDetailAreaBySJ.satuan_item + "</td>" +
+                                "<td>" + getDetailAreaBySJ.merk_stok + "</td>" +
+                                "<td>" + getDetailAreaBySJ.no_haspel_stok + "</td>" +
+                                "<td>" + getDetailAreaBySJ.no_ref_stok + "</td>" +
+                                "</tr>";
+                            tbody.append(row);
                         });
 
-                        $('#id_kode_item').trigger('change');
+                        let tanggalFormatted = response.getDetailAreaBySJ[0].tanggal_upload_stok.split(" ")[0];
+
+                        document.getElementById("detail_total_qty").innerText = totalStok.toLocaleString('id-ID');
+                        document.getElementById("detail_no_surat_jalan").value = response.getDetailAreaBySJ[0].no_surat_jalan;
+                        document.getElementById("detail_area_gudang").value = response.getDetailAreaBySJ[0].kota_lokasi_gudang;
+                        document.getElementById("detail_nama_project").value = response.getDetailAreaBySJ[0].project_item;
+                        document.getElementById("detail_sumber_material").value = response.getDetailAreaBySJ[0].nama_sumber_material;
+                        document.getElementById("detail_keterangan_stok_item").value = response.getDetailAreaBySJ[0].keterangan_stok;
+                        document.getElementById("tanggal_upload_stok").value = tanggalFormatted;
+                        var filePath = response.getDetailAreaBySJ[0].evidence_stok;
+                        var fileName = filePath.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
+
+                        document.getElementById("detail_nama_file").innerText = fileName;
+                        document.getElementById("view_detail_surat_jalan").style.display = "block";
+                        document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl;
+                        console.log("Response:", response);
                     },
-                    error: function(xhr, status, error) {
-                        console.error(error);
+                    error: function (xhr, status, error) {
+                        console.error("Error:", error);
+                        console.error("Response Text:", xhr.responseText);
                     }
                 });
-            });
+            }
+        });
+    });
 
-            var counter = 1;
+    // END LOGIC OF MODAL DETAIL SURAT JALAN
 
-            $(document).on('click', '.hapus-item', function() {
-                $(this).closest('tr').remove();
+    // GET DETAIL SUMMARY KATEGORI ITEM
 
-                $('#table_item_stok tbody tr').each(function(index) {
-                    $(this).find('td:first').text(index + 1);
+
+    // END GET DETAIL SUMMARY KATEGORI ITEM
+
+    $(function () {
+
+        // notifikasi allert sukses atau tidak
+        <?php if ($status == 'sukses_tambah') { ?>
+            swal("Success!", "Berhasil Ditambah!", "success");
+        <?php } else if ($status == 'sukses_hapus') { ?>
+                swal("Success!", "Berhasil Dihapus!", "success");
+        <?php } else if ($status == 'sukses_edit') { ?>
+                    swal("Success!", "Berhasil Edit Data!", "success");
+        <?php } else if ($status == 'gagal_tambah') { ?>
+                        swal("Gagal!", "Gagal Menambah Data!", "warning");
+        <?php } else if ($status == 'gagal_edit') { ?>
+                            swal("Gagal!", "Gagal Mengedit Data!", "warning");
+        <?php } else if ($status == 'gagal_hapus') { ?>
+                                swal("Gagal!", "Gagal Menghapus Data!", "warning");
+        <?php } else { ?>
+        <?php } ?>
+
+        $('.select2').select2()
+
+        //Initialize Select2 Elements
+        $('.select2bs4').select2({
+            theme: 'bootstrap4'
+        })
+    })
+
+    $(document).ready(function () {
+        $('#table_detail_kota').DataTable({
+            "paging": true,          // Tetap gunakan pagination
+            "pageLength": 10,        // Menampilkan 10 data per halaman
+            "info": false,           // Menghilangkan "Showing 1 to X of X entries"
+            "searching": true,      // Menghilangkan search bar
+            "lengthChange": false    // Menghilangkan dropdown "Show entries"
+        });
+    });
+
+
+    // HAPUS FILTER DATA SELECT2
+    document.getElementById('reset_filter').addEventListener('click', function () {
+        const selectLokasi = document.getElementById('filter_lokasi');
+        const selectBowheer = document.getElementById('filter_bowheer');
+        const selectItem = document.getElementById('filter_item');
+        const selectStatus = document.getElementById('filter_status');
+
+        const optionsLokasi = selectLokasi.options;
+        const optionsBowheer = selectBowheer.options;
+        const optionsItem = selectItem.options;
+        const optionsStatus = selectStatus.options;
+
+        // Hapus semua pilihan
+        for (let i = 0; i < optionsLokasi.length; i++) {
+            optionsLokasi[i].selected = false; // Hilangkan pilihan
+        }
+
+        for (let i = 0; i < optionsBowheer.length; i++) {
+            optionsBowheer[i].selected = false; // Hilangkan pilihan
+        }
+
+        for (let i = 0; i < optionsItem.length; i++) {
+            optionsItem[i].selected = false; // Hilangkan pilihan
+        }
+
+        for (let i = 0; i < optionsStatus.length; i++) {
+            optionsStatus[i].selected = false; // Hilangkan pilihan
+        }
+
+        // Pilih opsi default (indeks 0)
+        selectLokasi.dispatchEvent(new Event('change'));
+        selectBowheer.dispatchEvent(new Event('change'));
+        selectItem.dispatchEvent(new Event('change'));
+        selectStatus.dispatchEvent(new Event('change'));
+    });
+
+    var lokasiFilter2 = "";
+    var bowheerFilter2 = "";
+    var itemFilter2 = "";
+    var statusFilter2 = "";
+
+    var kirimData = "";
+    var kirimData2 = "";
+    var kirimData3 = "";
+
+    // FUNCTION UPDATE DATA TABLE MENGGUNAKAN FILTER DATA
+    $(document).ready(function () {
+        $('#btnFilterDataProject').on('click', function () {
+            var table = $('#table_data').DataTable();
+            // Ambil nilai dari multiple select filter kategori
+            var selectLokasi = $('#filter_lokasi').val() || []; // Array of selected values
+            var selectBowheer = $('#filter_bowheer').val() || []; // Array of selected values
+            var selectItem = $('#filter_item').val() || []; // Array of selected values
+            var selectStatus = $('#filter_status').val() || []; // Array of selected values
+
+
+            // Gabungkan nilai ke dalam regex untuk pencarian DataTable
+            var lokasiFilter = selectLokasi.length > 0 ? selectLokasi.join('|') : '';
+            var bowheerFilter = selectBowheer.length > 0 ? selectBowheer.join('|') : '';
+            var itemFilter = selectItem.length > 0 ? selectItem.join('|') : '';
+            var statusFilter = selectStatus.length > 0 ? selectStatus.join('|') : '';
+
+            lokasiFilter2 = selectLokasi.length > 0 ? '"' + selectLokasi.join('", "') + '"' : '';
+            bowheerFilter2 = selectBowheer.length > 0 ? '"' + selectBowheer.join('", "') + '"' : '';
+            itemFilter2 = selectItem.length > 0 ? '"' + selectItem.join('", "') + '"' : '';
+            statusFilter2 = selectStatus.length > 0 ? '"' + selectStatus.join('", "') + '"' : '';
+
+            if (selectLokasi.length === 0 && selectBowheer.length === 0 && selectItem.length === 0 && selectStatus.length === 0) {
+
+                var totalStokDashboard = <?= json_encode($total_stok_dashboard); ?>;
+                console.log(totalStokDashboard)
+
+                document.getElementById("total_dashboard_Aksesories ").innerText = totalStokDashboard['Aksesories '];
+                document.getElementById("total_dashboard_Closure").innerText = totalStokDashboard['Closure'];
+                document.getElementById("total_dashboard_FAT").innerText = totalStokDashboard['FAT'];
+                document.getElementById("total_dashboard_FDT").innerText = totalStokDashboard['FDT'];
+                document.getElementById("total_dashboard_HDPE ").innerText = totalStokDashboard['HDPE '];
+                document.getElementById("total_dashboard_Kabel ").innerText = totalStokDashboard['Kabel '];
+                document.getElementById("total_dashboard_OTB ").innerText = totalStokDashboard['OTB '];
+                document.getElementById("total_dashboard_Tiang").innerText = totalStokDashboard['Tiang'];
+                table
+                    .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
+                    .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
+                    .column(5).search(itemFilter, true, false) // Filter kategori (regex search)
+                    .column(6).search(statusFilter, true, false) // Filter kategori (regex search)
+                    .draw();
+            } else {
+                table
+                    .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
+                    .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
+                    .column(5).search(itemFilter, true, false) // Filter kategori (regex search)
+                    .column(6).search(statusFilter, true, false) // Filter kategori (regex search)
+                    .draw(); // Render ulang tabel
+
+                $.ajax({
+                    url: "<?= base_url('Dashboard_Logistik_Stok/filterDashboardLogistik') ?>",
+                    method: "POST",
+                    data: {
+                        lokasi: JSON.stringify(lokasiFilter2), // Kirim sebagai JSON string
+                        bowheer: JSON.stringify(bowheerFilter2),
+                        item: JSON.stringify(itemFilter2)
+                    },
+                    dataType: "json",
+                    success: function (response) {
+                        console.log("Filtered Data:", response);
+
+                        kirimData = response.getRincianDashboardFiltered;
+                        kirimData2 = response.getRincianDashboardFilteredBowheer;
+                        kirimData3 = response.getInOutHistoryFiltered;
+
+                        let totalAksesories = 0;
+                        let totalClosure = 0;
+                        let totalFAT = 0;
+                        let totalFDT = 0;
+                        let totalHDPE = 0;
+                        let totalKabel = 0;
+                        let totalOTB = 0;
+                        let totalTiang = 0;
+
+
+                        $.each(response.getDashboardFiltered, function (index, getDashboardFiltered) {
+                            totalAksesories += Number(getDashboardFiltered.jumlah_Aksesories);
+                            totalClosure += Number(getDashboardFiltered.jumlah_Closure);
+                            totalFAT += Number(getDashboardFiltered.jumlah_FAT);
+                            totalFDT += Number(getDashboardFiltered.jumlah_FDT);
+                            totalHDPE += Number(getDashboardFiltered.jumlah_HDPE);
+                            totalKabel += Number(getDashboardFiltered.jumlah_Kabel);
+                            totalOTB += Number(getDashboardFiltered.jumlah_OTB);
+                            totalTiang += Number(getDashboardFiltered.jumlah_Tiang);
+                        });
+
+                        document.getElementById("total_dashboard_Aksesories ").innerText = totalAksesories.toLocaleString('id-ID').replace(/,/g, '.') + ' Pc(s)';
+                        document.getElementById("total_dashboard_Closure").innerText = totalClosure.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
+                        document.getElementById("total_dashboard_FAT").innerText = totalFAT.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
+                        document.getElementById("total_dashboard_FDT").innerText = totalFDT.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
+                        document.getElementById("total_dashboard_HDPE ").innerText = totalHDPE.toLocaleString('id-ID').replace(/,/g, '.') + ' Meter';
+                        document.getElementById("total_dashboard_Kabel ").innerText = totalKabel.toLocaleString('id-ID').replace(/,/g, '.') + ' Meter';
+                        document.getElementById("total_dashboard_OTB ").innerText = totalOTB.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
+                        document.getElementById("total_dashboard_Tiang").innerText = totalTiang.toLocaleString('id-ID').replace(/,/g, '.') + ' Batang';
+
+                        console.log(Number(response.getDashboardFiltered[0].jumlah_Aksesories.toLocaleString('id-ID').replace(/,/g, '.')));
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error:", error);
+                        console.log("Server Response:", xhr.responseText);
+                    }
                 });
 
-                counter--;
+            }
+
+            // Terapkan filter ke DataTable
+
+        });
+    });
+
+    $(document).ready(function () {
+        $.fn.dataTable.ext.errMode = 'none';
+        const table = $('#table_detail_kota').DataTable({
+            footerCallback: function () {
+                updateTotal();
+            }
+        });
+
+        // Fungsi untuk menghitung total dari data yang tampil
+        function updateTotal() {
+            // Ambil semua data yang terlihat
+
+            const data = table.rows({ search: 'applied' }).data();
+
+            // Hitung total dari kolom Value (index 2)
+            let totalTabelKotaAksesories = 0;
+            let totalTabelKotaClosure = 0;
+            let totalTabelKotaFat = 0;
+            let totalTabelKotaFdt = 0;
+            let totalTabelKotaHdpe = 0;
+            let totalTabelKotaKabel = 0;
+            let totalTabelKotaOtb = 0;
+            let totalTabelKotaTiang = 0;
+
+            data.each(function (row) {
+                totalTabelKotaAksesories += parseFloat(row[3].replace(/\./g, '')) || 0;
+                totalTabelKotaClosure += parseFloat(row[4].replace(/\./g, '')) || 0;
+                totalTabelKotaFat += parseFloat(row[5].replace(/\./g, '')) || 0;
+                totalTabelKotaFdt += parseFloat(row[6].replace(/\./g, '')) || 0;
+                totalTabelKotaHdpe += parseFloat(row[7].replace(/\./g, '')) || 0;
+                totalTabelKotaKabel += parseFloat(row[8].replace(/\./g, '')) || 0;
+                totalTabelKotaOtb += parseFloat(row[9].replace(/\./g, '')) || 0;
+                totalTabelKotaTiang += parseFloat(row[10].replace(/\./g, '')) || 0;
             });
 
-            $('#modal-xl-tambah').on('hidden.bs.modal', function() {
-                $('#table_item_stok tbody').empty();
-                $('#nomor_surat_jalan').val('');
-                $('#id_project').val('').trigger('change');
-                $('#id_lokasi_gudang').val('').trigger('change');
-                $('#id_sumber_material').val('').trigger('change');
-                counter = 1;
-            });
+            document.getElementById('totalTabelKotaAksesories').innerText = totalTabelKotaAksesories.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaClosure').innerText = totalTabelKotaClosure.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaFat').innerText = totalTabelKotaFat.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaFdt').innerText = totalTabelKotaFdt.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaHdpe').innerText = totalTabelKotaHdpe.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaKabel').innerText = totalTabelKotaKabel.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaOtb').innerText = totalTabelKotaOtb.toLocaleString('id-ID');
+            document.getElementById('totalTabelKotaTiang').innerText = totalTabelKotaTiang.toLocaleString('id-ID');
+        }
 
-            $('.btn-tambah-data-item').on('click', function() {
-                $('#file-sj').val('');
-                $('.custom-file-label').text('Choose file');
-                $('#keterangan_stok_item').val('');
-            })
+        // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+        table.on('draw', function () {
+            updateTotal();
+        });
 
-            $('#file-sj').on('change', function(e) {
-                var fileName = e.target.files.length > 0 ? e.target.files[0].name : "Choose file";
-                $(this).siblings('.custom-file-label').text(fileName);
-            });
+        // Hitung total pertama kali saat tabel dimuat
+        updateTotal();
+    });
 
-            $("#file-sj").change(function() {
-                let file = this.files[0];
-                let allowedExtensions = /(\.pdf|\.docx|\.xlsx)$/i;
-                let maxSize = 5120 * 1024;
+    document.addEventListener("DOMContentLoaded", function () {
+        <?php foreach ($getAllStokByKategory as $stokKategory): ?>
+            var boxElement = document.getElementById("box_detai_kategori_item_<?= $stokKategory['kategori_item'] ?>");
 
-                if (file) {
-                    if (!allowedExtensions.test(file.name)) {
-                        alert("File harus berupa PDF, DOCX, atau XLSX!");
-                        $(this).val("");
-                        $('.custom-file-label').text('Choose file');
-                        return;
+            if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
+                boxElement.addEventListener("click", function () {
+                    console.log("<?= $stokKategory['kategori_item'] ?>");
+                    console.log("", lokasiFilter2);
+
+                    if (lokasiFilter2 === "" && bowheerFilter2 === "" && itemFilter2 === "" && statusFilter2 === "") {
+                        window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_kategori/" . $stokKategory['kategori_item']) ?>";
+                    } else {
+                        let rincianData = JSON.stringify(kirimData);
+                        let rincianData2 = JSON.stringify(kirimData2);
+                        let rincianData3 = JSON.stringify(kirimData3);
+                        let kategoriItem = "<?= $stokKategory['kategori_item'] ?>"
+
+                        $.post("<?= base_url('Logistik_Stok_Detail/filter_kategori') ?>",
+                            { rincianData: rincianData, rincianData2: rincianData2, rincianData3: rincianData3, kategori_item: kategoriItem },
+                            function () {
+                                window.location.href = "<?= base_url('Logistik_Stok_Detail/filter_kategori_rdr') ?>?kategori=" + encodeURIComponent(kategoriItem);
+                            }
+                        );
                     }
 
-                    if (file.size > maxSize) {
-                        alert("Ukuran file tidak boleh lebih dari 5MB!");
-                        $(this).val("");
-                        $('.custom-file-label').text('Choose file');
-                        return;
-                    }
-                }
-            });
-
-            $("#form_tambah_stok").submit(function(event) {
-                let isValid = true;
-                let errorMessage = [];
-
-                // Cek input tanggal harus valid
-                let tanggalUpload = $("input[name='tanggal_upload_stok']").val();
-                if (!tanggalUpload) {
-                    errorMessage.push("Tanggal upload stok harus diisi.");
-                }
-
-                // Cek setiap input yang harus memiliki nilai
-                let requiredFields = {
-                    "#id_lokasi_gudang": "Lokasi gudang",
-                    "#id_project": "Proyek",
-                    "#id_sumber_material": "Sumber material"
-                };
-
-                $.each(requiredFields, function(selector, fieldName) {
-                    if ($(selector).val() === "") {
-                        errorMessage.push(fieldName + " harus dipilih.");
-                    }
                 });
+            }
+        <?php endforeach; ?>
+    });
 
-                // Cek apakah tabel memiliki minimal 1 row
-                if ($("#table_item_stok tbody tr").length === 0) {
-                    errorMessage.push("Minimal harus ada satu item stok dalam tabel.");
-                }
+    $(document).ready(function () {
+        let table = $('#table_data').DataTable();
 
-                // Jika ada error, tampilkan alert sekaligus
-                if (errorMessage.length > 0) {
-                    alert(errorMessage.join("\n"));
-                    event.preventDefault();
-                }
-            });
-        });
-        // END LOGIC OF MODAL TAMBAH STOK 
+        // Fungsi filter berdasarkan date range di kolom ke-11 (index 10)
+        function filterByDate(settings, data, dataIndex) {
+            let minDate = $('#date-range').data('daterangepicker').startDate;
+            let maxDate = $('#date-range').data('daterangepicker').endDate;
+            let dateColumn = moment(data[10], "YYYY-MM-DD HH:mm:ss"); // Kolom ke-11 (Index 10)
 
-        // STAR CALL NEW QUERY FOR DETAIL SURAT JALAN
-        $(document).ready(function() {
-            $(".tombol_detail").click(function() {
-                var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
-                console.log(selectedSJ);
+            if (!minDate || !maxDate) return true; // Jika tidak ada filter, tampilkan semua
 
-                if (!selectedSJ || selectedSJ === "") {
-                    var tbody = $("#hasilDetailDataSJ");
-                    tbody.empty();
-                    document.getElementById("detail_no_surat_jalan").value = "";
-                    document.getElementById("detail_area_gudang").value = "";
-                    document.getElementById("detail_nama_project").value = "";
-                    document.getElementById("detail_sumber_material").value = "";
-                    document.getElementById("detail_keterangan_stok_item").value = "";
-                    document.getElementById("detail_nama_file").innerText = "No File Uploaded";
-                    document.getElementById("view_detail_surat_jalan").style.display = "none";
+            return dateColumn.isBetween(minDate, maxDate, undefined, '[]'); // Filter antara range
+        }
 
-                } else {
-                    $.ajax({
-                        url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>", // Arahkan ke file PHP yang menangani filtering
-                        method: "POST",
-                        data: {
-                            no_surat_jalan: selectedSJ
-                        },
-                        dataType: "json",
-                        success: function(response) {
-                            var tbody = $("#hasilDetailDataSJ");
-                            tbody.empty();
+        // Tambahkan filter pertama kali
+        // $.fn.dataTable.ext.search.push(filterByDate);
 
-                            var nomor = 1;
-                            let baseUrl = "<?= base_url() ?>"
-                            let lokasiUrl = response.getDetailAreaBySJ[0].evidence_stok;
-
-                            $.each(response.getDetailAreaBySJ, function(index, getDetailAreaBySJ) {
-                                var row = "<tr>" +
-                                    "<td>" + nomor++ + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.nama_item + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.jumlah_stok + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.satuan_item + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.merk_stok + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.no_haspel_stok + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.no_ref_stok + "</td>" +
-                                    "</tr>";
-                                tbody.append(row);
-
-
-                            });
-                            document.getElementById("detail_no_surat_jalan").value = response.getDetailAreaBySJ[0].no_surat_jalan;
-                            document.getElementById("detail_area_gudang").value = response.getDetailAreaBySJ[0].kota_lokasi_gudang;
-                            document.getElementById("detail_nama_project").value = response.getDetailAreaBySJ[0].project_item;
-                            document.getElementById("detail_sumber_material").value = response.getDetailAreaBySJ[0].nama_sumber_material;
-                            document.getElementById("detail_keterangan_stok_item").value = response.getDetailAreaBySJ[0].keterangan_stok;
-                            var filePath = response.getDetailAreaBySJ[0].evidence_stok;
-                            var fileName = filePath.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
-
-                            document.getElementById("detail_nama_file").innerText = fileName;
-                            document.getElementById("view_detail_surat_jalan").style.display = "block";
-                            document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl;
-                            console.log("Response:", response);
-                        },
-                        error: function(xhr, status, error) {
-                            console.error("Error:", error);
-                            console.error("Response Text:", xhr.responseText);
-                        }
-                    });
-                }
-            });
-        });
-        // END LOGIC OF MODAL TAMBAH STOK 
-
-        // STAR CALL NEW QUERY FOR DETAIL SURAT JALAN
-        $(document).ready(function() {
-            $(".tombol_detail").click(function() {
-                var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
-                console.log(selectedSJ);
-
-                if (!selectedSJ || selectedSJ === "") {
-                    var tbody = $("#hasilDetailDataSJ");
-                    tbody.empty();
-                    document.getElementById("detail_no_surat_jalan").value = "";
-                    document.getElementById("detail_total_qty").innerText = "";
-                    document.getElementById("detail_area_gudang").value = "";
-                    document.getElementById("detail_nama_project").value = "";
-                    document.getElementById("detail_sumber_material").value = "";
-                    document.getElementById("detail_keterangan_stok_item").value = "";
-                    document.getElementById("detail_nama_file").innerText = "No File Uploaded";
-                    document.getElementById("view_detail_surat_jalan").style.display = "none";
-
-                } else {
-                    $.ajax({
-                        url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>", // Arahkan ke file PHP yang menangani filtering
-                        method: "POST",
-                        data: {
-                            no_surat_jalan: selectedSJ
-                        },
-                        dataType: "json",
-                        success: function(response) {
-                            var tbody = $("#hasilDetailDataSJ");
-                            tbody.empty();
-
-                            var nomor = 1;
-                            let baseUrl = "<?= base_url() ?>"
-                            let lokasiUrl = response.getDetailAreaBySJ[0].evidence_stok;
-                            var totalStok = 0;
-
-                            $.each(response.getDetailAreaBySJ, function(index, getDetailAreaBySJ) {
-                                var jumlahStok = parseFloat(getDetailAreaBySJ.jumlah_stok) || 0; // Pastikan jumlahStok berupa angka
-                                totalStok += jumlahStok;
-
-                                var row = "<tr>" +
-                                    "<td>" + nomor++ + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.nama_item + "</td>" +
-                                    "<td>" + parseFloat(getDetailAreaBySJ.jumlah_stok).toLocaleString('id-ID') + "</td>" + // Format angka
-                                    "<td>" + getDetailAreaBySJ.satuan_item + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.merk_stok + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.no_haspel_stok + "</td>" +
-                                    "<td>" + getDetailAreaBySJ.no_ref_stok + "</td>" +
-                                    "</tr>";
-                                tbody.append(row);
-                            });
-
-                            let tanggalFormatted = response.getDetailAreaBySJ[0].tanggal_upload_stok.split(" ")[0];
-
-                            document.getElementById("detail_total_qty").innerText = totalStok.toLocaleString('id-ID');
-                            document.getElementById("detail_no_surat_jalan").value = response.getDetailAreaBySJ[0].no_surat_jalan;
-                            document.getElementById("detail_area_gudang").value = response.getDetailAreaBySJ[0].kota_lokasi_gudang;
-                            document.getElementById("detail_nama_project").value = response.getDetailAreaBySJ[0].project_item;
-                            document.getElementById("detail_sumber_material").value = response.getDetailAreaBySJ[0].nama_sumber_material;
-                            document.getElementById("detail_keterangan_stok_item").value = response.getDetailAreaBySJ[0].keterangan_stok;
-                            document.getElementById("tanggal_upload_stok").value = tanggalFormatted;
-                            var filePath = response.getDetailAreaBySJ[0].evidence_stok;
-                            var fileName = filePath.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
-
-                            document.getElementById("detail_nama_file").innerText = fileName;
-                            document.getElementById("view_detail_surat_jalan").style.display = "block";
-                            document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl;
-                            console.log("Response:", response);
-                        },
-                        error: function(xhr, status, error) {
-                            console.error("Error:", error);
-                            console.error("Response Text:", xhr.responseText);
-                        }
-                    });
-                }
-            });
-        });
-
-        //         if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
-        //             boxElement.addEventListener("click", function() {
-        //                 console.log("<?= $stokKategory['kategori_item'] ?>");
-
-        //                 window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_kategori/" . $stokKategory['kategori_item']) ?>"
-
-        //             });
-        //         }
-        //     <?php
-                // endforeach; 
-                ?>
+        // Inisialisasi Date Range Picker
+        // $('#date-range').daterangepicker({
+        //     autoUpdateInput: false,
+        //     locale: { format: 'MM/DD/YYYY' }
         // });
 
-        // END GET DETAIL SUMMARY KATEGORI ITEM
+        // Event saat date range dipilih
+        // $('#date-range').on('apply.daterangepicker', function (ev, picker) {
+        //     $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+        // });
 
-        $(function() {
+        // ✅ Tombol "Cari" untuk memfilter tabel
+        $('#filtertanggal').on('click', function (e) {
+            e.preventDefault();
+            $.fn.dataTable.ext.search.pop(); // Hapus filter lama
+            $.fn.dataTable.ext.search.push(filterByDate); // Tambahkan filter baru
+            table.draw(); // Terapkan filter
+        });
 
-            // notifikasi allert sukses atau tidak
-            <?php if ($status == 'sukses_tambah') { ?>
-                swal("Success!", "Berhasil Ditambah!", "success");
-            <?php } else if ($status == 'sukses_hapus') { ?>
-                swal("Success!", "Berhasil Dihapus!", "success");
-            <?php } else if ($status == 'sukses_edit') { ?>
-                swal("Success!", "Berhasil Edit Data!", "success");
-            <?php } else if ($status == 'gagal_tambah') { ?>
-                swal("Gagal!", "Gagal Menambah Data!", "warning");
-            <?php } else if ($status == 'gagal_edit') { ?>
-                swal("Gagal!", "Gagal Mengedit Data!", "warning");
-            <?php } else if ($status == 'gagal_hapus') { ?>
-                swal("Gagal!", "Gagal Menghapus Data!", "warning");
-            <?php } else { ?>
-            <?php } ?>
+        // ✅ Tombol "Hapus" untuk mereset filter
+        $('#resetTanggal').on('click', function () {
+            $('#date-range').val(''); // Kosongkan input
+            $('#date-range').data('daterangepicker').setStartDate(moment());
+            $('#date-range').data('daterangepicker').setEndDate(moment());
 
-            $('.select2').select2()
+            $.fn.dataTable.ext.search = []; // Hapus semua filter
+            table.search('').draw(); // Reset tabel sepenuhnya
+        });
+    });
 
-            //Initialize Select2 Elements
-            $('.select2bs4').select2({
-                theme: 'bootstrap4'
-            })
+    $(document).ready(function () {
+        $('#table_data').DataTable({
+            responsive: false,
+            fixedHeader: {
+                header: true,
+                footer: true
+            }
+        });
+    });
+
+</script>
+<script>
+    $('.tombol_hapus_rincian').on('click', function (e) {
+        e.preventDefault();
+        const href = $(this).attr('href');
+        swal({
+            title: 'Apakah anda yakin',
+            text: "data akan dihapus!",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'DELETE',
+            cancelButtonText: 'CANCEL'
+        }).then((result) => {
+            if (result.value) {
+                document.location.href = href;
+            }
         })
 
-        $(document).ready(function() {
-            $('#table_detail_kota').DataTable({
-                "paging": true, // Tetap gunakan pagination
-                "pageLength": 10, // Menampilkan 10 data per halaman
-                "info": false, // Menghilangkan "Showing 1 to X of X entries"
-                "searching": true, // Menghilangkan search bar
-                "lengthChange": false // Menghilangkan dropdown "Show entries"
-            });
-        });
+    });
+</script>
 
-
-        // HAPUS FILTER DATA SELECT2
-        document.getElementById('reset_filter').addEventListener('click', function() {
-            const selectLokasi = document.getElementById('filter_lokasi');
-            const selectBowheer = document.getElementById('filter_bowheer');
-            const selectItem = document.getElementById('filter_item');
-            const selectStatus = document.getElementById('filter_status');
-
-            const optionsLokasi = selectLokasi.options;
-            const optionsBowheer = selectBowheer.options;
-            const optionsItem = selectItem.options;
-            const optionsStatus = selectStatus.options;
-
-            // Hapus semua pilihan
-            for (let i = 0; i < optionsLokasi.length; i++) {
-                optionsLokasi[i].selected = false; // Hilangkan pilihan
-            }
-
-            for (let i = 0; i < optionsBowheer.length; i++) {
-                optionsBowheer[i].selected = false; // Hilangkan pilihan
-            }
-
-            $(document).ready(function() {
-                $.fn.dataTable.ext.errMode = 'none';
-                const table = $('#table_detail_kota').DataTable({
-                    footerCallback: function() {
-                        updateTotal();
-                    }
-                });
-
-                // Fungsi untuk menghitung total dari data yang tampil
-                function updateTotal() {
-                    // Ambil semua data yang terlihat
-
-                    const data = table.rows({
-                        search: 'applied'
-                    }).data();
-
-                    // Hitung total dari kolom Value (index 2)
-                    let totalTabelKotaAksesories = 0;
-                    let totalTabelKotaClosure = 0;
-                    let totalTabelKotaFat = 0;
-                    let totalTabelKotaFdt = 0;
-                    let totalTabelKotaHdpe = 0;
-                    let totalTabelKotaKabel = 0;
-                    let totalTabelKotaOtb = 0;
-                    let totalTabelKotaTiang = 0;
-
-                    data.each(function(row) {
-                        totalTabelKotaAksesories += parseFloat(row[3].replace(/\./g, '')) || 0;
-                        totalTabelKotaClosure += parseFloat(row[4].replace(/\./g, '')) || 0;
-                        totalTabelKotaFat += parseFloat(row[5].replace(/\./g, '')) || 0;
-                        totalTabelKotaFdt += parseFloat(row[6].replace(/\./g, '')) || 0;
-                        totalTabelKotaHdpe += parseFloat(row[7].replace(/\./g, '')) || 0;
-                        totalTabelKotaKabel += parseFloat(row[8].replace(/\./g, '')) || 0;
-                        totalTabelKotaOtb += parseFloat(row[9].replace(/\./g, '')) || 0;
-                        totalTabelKotaTiang += parseFloat(row[10].replace(/\./g, '')) || 0;
-                    });
-
-                    document.getElementById('totalTabelKotaAksesories').innerText = totalTabelKotaAksesories.toLocaleString('id-ID');
-                    document.getElementById('totalTabelKotaClosure').innerText = totalTabelKotaClosure.toLocaleString('id-ID');
-                    document.getElementById('totalTabelKotaFat').innerText = totalTabelKotaFat.toLocaleString('id-ID');
-                    document.getElementById('totalTabelKotaFdt').innerText = totalTabelKotaFdt.toLocaleString('id-ID');
-                    document.getElementById('totalTabelKotaHdpe').innerText = totalTabelKotaHdpe.toLocaleString('id-ID');
-                    document.getElementById('totalTabelKotaKabel').innerText = totalTabelKotaKabel.toLocaleString('id-ID');
-                    document.getElementById('totalTabelKotaOtb').innerText = totalTabelKotaOtb.toLocaleString('id-ID');
-                    document.getElementById('totalTabelKotaTiang').innerText = totalTabelKotaTiang.toLocaleString('id-ID');
-                }
-
-                // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
-                table.on('draw', function() {
-                    updateTotal();
-                });
-
-                // Hitung total pertama kali saat tabel dimuat
-                updateTotal();
-            });
-
-            // Pilih opsi default (indeks 0)
-            selectLokasi.dispatchEvent(new Event('change'));
-            selectBowheer.dispatchEvent(new Event('change'));
-            selectItem.dispatchEvent(new Event('change'));
-            selectStatus.dispatchEvent(new Event('change'));
-        });
-
-        // FUNCTION UPDATE DATA TABLE MENGGUNAKAN FILTER DATA
-        $(document).ready(function() {
-            $('#btnFilterDataProject').on('click', function() {
-                var table = $('#table_data').DataTable();
-                // Ambil nilai dari multiple select filter kategori
-                var selectLokasi = $('#filter_lokasi').val() || []; // Array of selected values
-                var selectBowheer = $('#filter_bowheer').val() || []; // Array of selected values
-                var selectItem = $('#filter_item').val() || []; // Array of selected values
-                var selectStatus = $('#filter_status').val() || []; // Array of selected values
-
-
-                // Gabungkan nilai ke dalam regex untuk pencarian DataTable
-                var lokasiFilter = selectLokasi.length > 0 ? selectLokasi.join('|') : '';
-                var bowheerFilter = selectBowheer.length > 0 ? selectBowheer.join('|') : '';
-                var itemFilter = selectItem.length > 0 ? selectItem.join('|') : '';
-                var statusFilter = selectStatus.length > 0 ? selectStatus.join('|') : '';
-
-                var lokasiFilter2 = selectLokasi.length > 0 ? '"' + selectLokasi.join('", "') + '"' : '';
-                var bowheerFilter2 = selectBowheer.length > 0 ? '"' + selectBowheer.join('", "') + '"' : '';
-                var itemFilter2 = selectItem.length > 0 ? '"' + selectItem.join('", "') + '"' : '';
-                var statusFilter2 = selectStatus.length > 0 ? '"' + selectStatus.join('", "') + '"' : '';
-
-                if (selectLokasi.length === 0 && selectBowheer.length === 0 && selectItem.length === 0 && selectStatus.length === 0) {
-
-                    var totalStokDashboard = <?= json_encode($total_stok_dashboard); ?>;
-                    console.log(totalStokDashboard)
-
-                    document.getElementById("total_dashboard_Aksesories ").innerText = totalStokDashboard['Aksesories '];
-                    document.getElementById("total_dashboard_Closure").innerText = totalStokDashboard['Closure'];
-                    document.getElementById("total_dashboard_FAT").innerText = totalStokDashboard['FAT'];
-                    document.getElementById("total_dashboard_FDT").innerText = totalStokDashboard['FDT'];
-                    document.getElementById("total_dashboard_HDPE ").innerText = totalStokDashboard['HDPE '];
-                    document.getElementById("total_dashboard_Kabel ").innerText = totalStokDashboard['Kabel '];
-                    document.getElementById("total_dashboard_OTB ").innerText = totalStokDashboard['OTB '];
-                    document.getElementById("total_dashboard_Tiang").innerText = totalStokDashboard['Tiang'];
-                } else {
-                    table
-                        .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
-                        .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
-                        .column(4).search(itemFilter, true, false) // Filter kategori (regex search)
-                        .column(5).search(statusFilter, true, false) // Filter kategori (regex search)
-                        .draw(); // Render ulang tabel
-
-                    $.ajax({
-                        url: "<?= base_url('Dashboard_Logistik_Stok/filterDashboardLogistik') ?>",
-                        method: "POST",
-                        data: {
-                            lokasi: JSON.stringify(lokasiFilter2), // Kirim sebagai JSON string
-                            bowheer: JSON.stringify(bowheerFilter2),
-                            item: JSON.stringify(itemFilter2),
-                            status: JSON.stringify(statusFilter2)
-                        },
-                        dataType: "json",
-                        success: function(response) {
-                            console.log("Filtered Data:", response);
-
-                            let totalAksesories = 0;
-                            let totalClosure = 0;
-                            let totalFAT = 0;
-                            let totalFDT = 0;
-                            let totalHDPE = 0;
-                            let totalKabel = 0;
-                            let totalOTB = 0;
-                            let totalTiang = 0;
-
-
-                            $.each(response.getDashboardFiltered, function(index, getDashboardFiltered) {
-                                totalAksesories += Number(getDashboardFiltered.jumlah_Aksesories);
-                                totalClosure += Number(getDashboardFiltered.jumlah_Closure);
-                                totalFAT += Number(getDashboardFiltered.jumlah_FAT);
-                                totalFDT += Number(getDashboardFiltered.jumlah_FDT);
-                                totalHDPE += Number(getDashboardFiltered.jumlah_HDPE);
-                                totalKabel += Number(getDashboardFiltered.jumlah_Kabel);
-                                totalOTB += Number(getDashboardFiltered.jumlah_OTB);
-                                totalTiang += Number(getDashboardFiltered.jumlah_Tiang);
-                            });
-
-                            document.getElementById("total_dashboard_Aksesories ").innerText = totalAksesories.toLocaleString('id-ID').replace(/,/g, '.') + ' Pc(s)';
-                            document.getElementById("total_dashboard_Closure").innerText = totalClosure.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
-                            document.getElementById("total_dashboard_FAT").innerText = totalFAT.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
-                            document.getElementById("total_dashboard_FDT").innerText = totalFDT.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
-                            document.getElementById("total_dashboard_HDPE ").innerText = totalHDPE.toLocaleString('id-ID').replace(/,/g, '.') + ' Meter';
-                            document.getElementById("total_dashboard_Kabel ").innerText = totalKabel.toLocaleString('id-ID').replace(/,/g, '.') + ' Meter';
-                            document.getElementById("total_dashboard_OTB ").innerText = totalOTB.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
-                            document.getElementById("total_dashboard_Tiang").innerText = totalTiang.toLocaleString('id-ID').replace(/,/g, '.') + ' Batang';
-
-                            console.log(Number(response.getDashboardFiltered[0].jumlah_Aksesories.toLocaleString('id-ID').replace(/,/g, '.')));
-                        },
-                        error: function(xhr, status, error) {
-                            console.error("Error:", error);
-                            console.log("Server Response:", xhr.responseText);
-                        }
-                    });
-
-                }
-
-                // Terapkan filter ke DataTable
-
-            });
-        });
-
-        $(document).ready(function() {
-            let table = $('#table_data').DataTable();
-
-            // Fungsi filter berdasarkan date range di kolom ke-11 (index 10)
-            function filterByDate(settings, data, dataIndex) {
-                let minDate = $('#date-range').data('daterangepicker').startDate;
-                let maxDate = $('#date-range').data('daterangepicker').endDate;
-                let dateColumn = moment(data[10], "YYYY-MM-DD HH:mm:ss"); // Kolom ke-11 (Index 10)
-
-                if (!minDate || !maxDate) return true; // Jika tidak ada filter, tampilkan semua
-
-                return dateColumn.isBetween(minDate, maxDate, undefined, '[]'); // Filter antara range
-            }
-
-            // Tambahkan filter pertama kali
-            // $.fn.dataTable.ext.search.push(filterByDate);
-
-            // Inisialisasi Date Range Picker
-            // $('#date-range').daterangepicker({
-            //     autoUpdateInput: false,
-            //     locale: { format: 'MM/DD/YYYY' }
-            // });
-
-            // Event saat date range dipilih
-            // $('#date-range').on('apply.daterangepicker', function (ev, picker) {
-            //     $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
-            // });
-
-            // ✅ Tombol "Cari" untuk memfilter tabel
-            $('#filtertanggal').on('click', function(e) {
-                e.preventDefault();
-                $.fn.dataTable.ext.search.pop(); // Hapus filter lama
-                $.fn.dataTable.ext.search.push(filterByDate); // Tambahkan filter baru
-                table.draw(); // Terapkan filter
-            });
-
-            // ✅ Tombol "Hapus" untuk mereset filter
-            $('#resetTanggal').on('click', function() {
-                $('#date-range').val(''); // Kosongkan input
-                $('#date-range').data('daterangepicker').setStartDate(moment());
-                $('#date-range').data('daterangepicker').setEndDate(moment());
-
-                $.fn.dataTable.ext.search = []; // Hapus semua filter
-                table.search('').draw(); // Reset tabel sepenuhnya
-            });
-        });
-
-        $(document).ready(function() {
-            $('#table_data').DataTable({
-                responsive: false,
-                fixedHeader: {
-                    header: true,
-                    footer: true
-                }
-            });
-
-            $(document).ready(function() {
-                $.fn.dataTable.ext.errMode = 'none';
-                $('#table_data').DataTable({
-                    responsive: false // Matikan fitur Responsive
-                });
-            });
-        });
-    </script>
-
-
-    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/progressbar.js@1.1.0/dist/progressbar.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
-    <script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
-    <script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
-    <script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
-    <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardlistarea.js"></script>
-    <script src="<?= base_url('assets') ?>/js/pages/file-manager.init.js"></script>
-    <script src="<?= base_url('assets') ?>/js/app.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/progressbar.js@1.1.0/dist/progressbar.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
+<script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
+<script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
+<script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
+<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardlistarea.js"></script>
+<script src="<?= base_url('assets') ?>/js/pages/file-manager.init.js"></script>
+<script src="<?= base_url('assets') ?>/js/app.js"></script>
