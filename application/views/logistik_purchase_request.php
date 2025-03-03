@@ -4,7 +4,7 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-12">
-                        <h1 class="m-0 text-dark" style="text-align: center;">PURCASE REQUEST AREA</h1>
+                        <h1 class="m-0 text-dark" style="text-align: center;">PURCHASE REQUEST AREA</h1>
                     </div>
                 </div>
             </div>
@@ -250,7 +250,7 @@
                         <div class="container-fluid">
                             <div class="row mb-2">
                                 <div class="col-sm-12">
-                                    <h1 class="m-0 text-dark" style="text-align: center;">PURCASE REQUEST HO</h1>
+                                    <h1 class="m-0 text-dark" style="text-align: center;">PURCHASE REQUEST HO</h1>
                                 </div><!-- /.col -->
                             </div><!-- /.row -->
                         </div><!-- /.container-fluid -->

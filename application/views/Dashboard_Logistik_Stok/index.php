@@ -588,7 +588,10 @@ $total_stok_dashboard = [];
                                                 </div>
                                             </div>
                                             <div class="col-6">
-                                                <button type="submit" class="btn btn-info">Cari</button>
+                                                <button type="button" id="resetTanggal"
+                                                    class="btn btn-danger">Hapus</button>
+                                                <button type="submit" id="filtertanggal"
+                                                    class="btn btn-info">Cari</button>
                                             </div>
                                         </div>
                                     </div>
@@ -1540,12 +1543,52 @@ $total_stok_dashboard = [];
         <?php endforeach; ?>
     });
 
-    // $(document).ready(function () {
-    //     $.fn.dataTable.ext.errMode = 'none';
-    //     $('#table_data').DataTable({
-    //         responsive: false // Matikan fitur Responsive
-    //     });
-    // });
+    $(document).ready(function () {
+        let table = $('#table_data').DataTable();
+
+        // Fungsi filter berdasarkan date range di kolom ke-11 (index 10)
+        function filterByDate(settings, data, dataIndex) {
+            let minDate = $('#date-range').data('daterangepicker').startDate;
+            let maxDate = $('#date-range').data('daterangepicker').endDate;
+            let dateColumn = moment(data[10], "YYYY-MM-DD HH:mm:ss"); // Kolom ke-11 (Index 10)
+
+            if (!minDate || !maxDate) return true; // Jika tidak ada filter, tampilkan semua
+
+            return dateColumn.isBetween(minDate, maxDate, undefined, '[]'); // Filter antara range
+        }
+
+        // Tambahkan filter pertama kali
+        $.fn.dataTable.ext.search.push(filterByDate);
+
+        // Inisialisasi Date Range Picker
+        $('#date-range').daterangepicker({
+            autoUpdateInput: false,
+            locale: { format: 'MM/DD/YYYY' }
+        });
+
+        // Event saat date range dipilih
+        $('#date-range').on('apply.daterangepicker', function (ev, picker) {
+            $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+        });
+
+        // ✅ Tombol "Cari" untuk memfilter tabel
+        $('#filtertanggal').on('click', function (e) {
+            e.preventDefault();
+            $.fn.dataTable.ext.search.pop(); // Hapus filter lama
+            $.fn.dataTable.ext.search.push(filterByDate); // Tambahkan filter baru
+            table.draw(); // Terapkan filter
+        });
+
+        // ✅ Tombol "Hapus" untuk mereset filter
+        $('#resetTanggal').on('click', function () {
+            $('#date-range').val(''); // Kosongkan input
+            $('#date-range').data('daterangepicker').setStartDate(moment());
+            $('#date-range').data('daterangepicker').setEndDate(moment());
+
+            $.fn.dataTable.ext.search = []; // Hapus semua filter
+            table.search('').draw(); // Reset tabel sepenuhnya
+        });
+    });
 
     $(document).ready(function () {
         $('#table_data').DataTable({
