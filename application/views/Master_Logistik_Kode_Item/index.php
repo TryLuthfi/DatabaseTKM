@@ -131,7 +131,7 @@ $total = 1;
                             </div>
                             <div class="form-group">
                                 <label class="col-form-label">Penggunaan Project</label>
-                                <select name="project_item[]" class="select2" multiple="multiple"
+                                <select name="project_item" class="form-control"
                                     data-placeholder="Pilih Bowheer" style="width: 100%;">
                                     <?php foreach ($getMasterBowheer as $data): ?>
                                         <option value="<?php echo $data['nama_bowheer'] ?>">
@@ -143,12 +143,17 @@ $total = 1;
                             <div class="form-group">
                                 <label class="col-form-label">Kepemilikan Item</label>
                                 <select name="id_bowheer_pemilik_item" class="form-control">
-                                    <?php foreach ($getMasterKepemilikan as $data): ?>
+                                <?php foreach ($getMasterBowheer as $data): ?>
                                         <option value="<?php echo $data['id_bowheer'] ?>">
                                             <?php echo $data['nama_bowheer'] ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-form-label">Harga Penjualan</label>
+                                <input type="text" class="form-control" name="harga_penjualan" autocomplete="off"
+                                    placeholder="Harga">
                             </div>
 
                             <div class="modal-footer">
