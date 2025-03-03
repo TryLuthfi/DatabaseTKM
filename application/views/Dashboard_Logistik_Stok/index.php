@@ -1024,6 +1024,7 @@ $total_stok_dashboard = [];
             });
 
             $('#id_kode_item').on('change', function() {
+                var selectedValue = $('#id_kode_item').val();
                 if ($(this).val() === "") {
                     return;
                 }
@@ -1058,6 +1059,7 @@ $total_stok_dashboard = [];
                     dropdownParent: $('#modal-xl-tambah')
                 });
             });
+
 
             $('#id_project').change(function() {
                 $('#table_item_stok tbody').empty();
@@ -1617,20 +1619,21 @@ $total_stok_dashboard = [];
         });
 
         $(document).ready(function() {
-                    $('#table_data').DataTable({
-                        responsive: false,
-                        fixedHeader: {
-                            header: true,
-                            footer: true
-                        }
-                    });
+            $('#table_data').DataTable({
+                responsive: false,
+                fixedHeader: {
+                    header: true,
+                    footer: true
+                }
+            });
 
-                    $(document).ready(function() {
-                        $.fn.dataTable.ext.errMode = 'none';
-                        $('#table_data').DataTable({
-                            responsive: false // Matikan fitur Responsive
-                        });
-                    });
+            $(document).ready(function() {
+                $.fn.dataTable.ext.errMode = 'none';
+                $('#table_data').DataTable({
+                    responsive: false // Matikan fitur Responsive
+                });
+            });
+        });
     </script>
 
 
