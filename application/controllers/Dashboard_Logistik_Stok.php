@@ -103,6 +103,13 @@ class Dashboard_Logistik_Stok extends CI_Controller
             $data_insert = [];
 
             foreach ($this->input->post('jumlah_stok') as $key => $value) {
+
+                $tanggal = $this->input->post('tanggal_upload_stok'); // Format: YYYY-MM-DD
+                $jamSekarang = date('H:i:s'); // Ambil jam saat ini
+
+                // Gabungkan tanggal dengan jam sekarang
+                $tanggalFormatted = $tanggal . ' ' . $jamSekarang;
+
                 $data_insert[] = [
                     'no_surat_jalan' => $this->input->post('nomor_surat_jalan'),
                     'id_lokasi_gudang' => $this->input->post('id_lokasi_gudang'),
@@ -115,7 +122,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
                     'no_haspel_stok' => $this->input->post('no_haspel_item')[$key],
                     'no_ref_stok' => $this->input->post('no_ref_item')[$key],
                     'keterangan_stok' => $this->input->post('keterangan_stok'),
-                    'tanggal_upload_stok' => date('Y-m-d H:i:s'),
+                    'tanggal_upload_stok' => $tanggalFormatted,
                     'evidence_stok' => $file_path,
                     'id_user' => $this->session->userdata('id_user')
                 ];
@@ -134,18 +141,18 @@ class Dashboard_Logistik_Stok extends CI_Controller
         }
     }
 
-    public function hapusReportStokLogistik($id_logistik_stok)
+    public function hapusReportStokLogistik($no_surat_jalan)
     {
-        $id_logistik_stok = array('id_logistik_stok' => $id_logistik_stok);
-        $res = $this->MDashboard_Logistik_Stok->hapusReportStokLogistik($id_logistik_stok);
+        $no_surat_jalan = urldecode($no_surat_jalan); // Decode dari URL
+        $this->db->where(['no_surat_jalan' => $no_surat_jalan]);
+        $res = $this->db->delete("tb_logistik_stok");
 
-        if ($res >= 1) {
+        if ($res) {
             $this->session->set_flashdata('status', 'sukses_hapus');
-            redirect("Dashboard_Logistik_Stok");
         } else {
             $this->session->set_flashdata('status', 'gagal_hapus');
-            redirect("Dashboard_Logistik_Stok");
         }
+        redirect("Dashboard_Logistik_Stok");
     }
 
     public function filterDetailSuratJalan()
@@ -162,16 +169,17 @@ class Dashboard_Logistik_Stok extends CI_Controller
     {
         header('Content-Type: application/json'); // Pastikan respons dalam JSON
 
-    $lokasi = json_decode($this->input->post('lokasi'), true);
-    $bowheer = json_decode($this->input->post('bowheer'), true);
-    $item = json_decode($this->input->post('item'), true);
-    $status = json_decode($this->input->post('status'), true);
+        $lokasi = json_decode($this->input->post('lokasi'), true);
+        $bowheer = json_decode($this->input->post('bowheer'), true);
+        $item = json_decode($this->input->post('item'), true);
 
-    $data['getDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getDashboardFiltered($lokasi, $bowheer, $item, $status);
+        $data['getDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getDashboardFiltered($lokasi, $bowheer, $item);
+        $data['getRincianDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFiltered($lokasi, $bowheer, $item);
+        $data['getRincianDashboardFilteredBowheer'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFilteredBowheer($lokasi, $bowheer, $item);
+        $data['getInOutHistoryFiltered'] = $this->MDashboard_Logistik_Stok->getInOutHistoryFiltered($lokasi, $bowheer, $item);
 
-    echo json_encode($data, JSON_PRETTY_PRINT);
-    exit;
-
-
+        echo json_encode($data, JSON_PRETTY_PRINT);
+        exit;
     }
+
 }

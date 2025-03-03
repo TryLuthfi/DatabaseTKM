@@ -4,6 +4,8 @@ $status == 'sukses_tambah';
 $error_log = $this->session->flashdata('error_log');
 
 $option_regional = ['REGIONAL 1', 'REGIONAL 2', 'REGIONAL 3', 'REGIONAL 4', 'REGIONAL 5'];
+$option_stagging = ['01. CLEANLIST', '02. CANVASING', '03. BAK', '04. HLD', '05. SPK', '06. LLD', '07. KOM & PKS', '08. RFS', '09. ATP', '10. BAST', '11. RETENSI', '12. CLOSED', '13. HOLD', '14. DROP'];
+$option_status = ['OK', 'NOT OK'];
 
 $total = 1;
 $total_hp = 0;
@@ -101,9 +103,11 @@ function formatTanggalIndonesia($date)
                         <h3 class="card-title">
                             Cleanlist Deskripsi
                         </h3>
-                        <a href="#" data-toggle="modal" data-target="#modal-edit-data-cluster"
-                            class="btn btn-success float-right text-bold mr-2">Edit Data &nbsp;<i
-                                class="fas fa-plus"></i> </a>
+                        <?php if ($this->session->userdata('validation_user') == 'Fiberstar' && $this->session->userdata('lokasi_user') == 'HO')  { ?>
+                            <a href="#" data-toggle="modal" data-target="#modal-edit-data-cluster"
+                                class="btn btn-success float-right text-bold mr-2">Edit Data &nbsp;<i
+                                    class="fas fa-plus"></i> </a>
+                        <?php } ?>
                     </div>
 
                     <!-- /.card-header -->
@@ -156,7 +160,7 @@ function formatTanggalIndonesia($date)
                                     <?php if ($data['hp_hld'] == '') { ?>
                                         0
                                     <?php } else { ?>
-                                        <?= number_format(floatval($data['hp_hld']), 0, ",",".") ?>
+                                        <?= number_format(floatval($data['hp_hld']), 0, ",", ".") ?>
                                     <?php } ?>
 
                                 </dd>
@@ -220,7 +224,7 @@ function formatTanggalIndonesia($date)
         <?php $tgl = date(format: 'Y-m-d'); ?>
         <?php foreach ($progress_implementasi as $data):
             ?>
-            <form action="<?php echo site_url('Fiberstar_Project/add'); ?>" method="post">
+            <form action="<?php echo site_url('Fiberstar_Project_Detail/editDataCluster'); ?>" method="post">
                 <div class="modal fade" id="modal-edit-data-cluster">
                     <div class="modal-dialog modal-xl">
                         <div class="modal-content">
@@ -232,8 +236,16 @@ function formatTanggalIndonesia($date)
                             </div>
                             <div class="modal-body" style="background-color:rgb(247, 243, 243);">
                                 <section class="content">
+
                                     <div class="card">
                                         <div class="card-body">
+                                            <input type="hidden" name="primary_access_id_project"
+                                                value="<?= $data['primary_access_id_project'] ?>">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">DATA PROJECT</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
                                             <div class="row">
                                                 <div class="col-md-6">
                                                     <div class="form-group">
@@ -251,7 +263,7 @@ function formatTanggalIndonesia($date)
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label class="col-form-label">HP Plan</label>
+                                                        <label class="col-form-label">Homepass Plan</label>
                                                         <input type="text" class="form-control" name="hpplan_project"
                                                             autocomplete="off"
                                                             value="<?= number_format($data['hpplan_project'], 0, ",", ".") ?>"
@@ -260,8 +272,9 @@ function formatTanggalIndonesia($date)
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label class="col-form-label">Person In Control</label>
-                                                        <select name="pic_project" class="form-control select2" tabindex="0">
+                                                        <label class="col-form-label">Person In Control ( PIC )</label>
+                                                        <select name="pic_project" class="form-control select2"
+                                                            tabindex="0">
                                                             <?php foreach ($getMasterUser as $data2): ?>
                                                                 <option value="<?php echo $data2['nama_user'] ?>" <?php if ($data2['nama_user'] == $data['pic_project']) { ?>selected
                                                                     <?php } ?>> <?php echo $data2['nama_user'] ?></option>
@@ -286,11 +299,12 @@ function formatTanggalIndonesia($date)
                                                     <div class="form-group">
                                                         <label class="col-form-label">Regional</label>
                                                         <select name="regional_project" class="form-control">
-                                                        <?php foreach ($option_regional as $option): ?>
-                                                            <option value="<?= $option ?>" <?= isset($data['regional_project']) && $data['regional_project'] == $option ? 'selected' : '' ?>>
-                                                                <?= $option ?>
-                                                            </option>
-                                                        <?php endforeach; ?>
+                                                            <?php foreach ($option_regional as $option): ?>
+                                                                <option value="<?= $option ?>"
+                                                                    <?= isset($data['regional_project']) && $data['regional_project'] == $option ? 'selected' : '' ?>>
+                                                                    <?= $option ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -331,7 +345,7 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal PO</label>
-                                                        <input type="text" class="form-control" name="tanggal_po"
+                                                        <input type="date" class="form-control" name="tanggal_po"
                                                             autocomplete="off" value="<?= $data['tanggal_po'] ?>">
                                                     </div>
                                                 </div>
@@ -339,15 +353,17 @@ function formatTanggalIndonesia($date)
                                                     <div class="form-group">
                                                         <label class="col-form-label">Nilai PO</label>
                                                         <input type="text" class="form-control" name="nilai_awal_po"
-                                                            autocomplete="off" value="<?= "Rp. ".number_format($data['nilai_awal_po'], 0, ",", ".") ?>"
-                                                            oninput="formatAngka(event)">
+                                                            autocomplete="off"
+                                                            value="<?= "Rp. " . number_format($data['nilai_awal_po'], 0, ",", ".") ?>"
+                                                            oninput="formatRupiah(event)">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label class="col-form-label">HP PO</label>
+                                                        <label class="col-form-label">Homepass PO</label>
                                                         <input type="text" class="form-control" name="hp_po"
-                                                            autocomplete="off" value="<?= number_format($data['hp_po'], 0, ",", ".") ?>"
+                                                            autocomplete="off"
+                                                            value="<?= number_format($data['hp_po'], 0, ",", ".") ?>"
                                                             oninput="formatAngka(event)">
                                                     </div>
                                                 </div>
@@ -359,7 +375,7 @@ function formatTanggalIndonesia($date)
                                         <div class="card-body">
                                             <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
-                                                <h5 class="mx-3">CANVASING & BAK</h5>
+                                                <h5 class="mx-3">CANVASING</h5>
                                                 <div class="flex-grow-1 border-top"></div>
                                             </div>
 
@@ -367,29 +383,41 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal Canvasing</label>
-                                                        <input type="text" class="form-control" name="tgl_canvasing"
+                                                        <input type="date" class="form-control" name="tgl_canvasing"
                                                             autocomplete="off" value="<?= $data['tgl_canvasing'] ?>">
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            <div class="d-flex align-items-center mt-2 mb-2">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">BERITA ACARA KESEPAKATAN ( BAK )</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+
                                             <div class="row">
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Status BAK</label>
-                                                        <input type="text" class="form-control" name="status_bak"
-                                                            autocomplete="off" value="<?= $data['status_bak'] ?>">
+                                                        <select name="status_bak" class="form-control">
+                                                            <?php foreach ($option_status as $option): ?>
+                                                                <option value="<?= $option ?>" <?= isset($data['status_bak']) && $data['status_bak'] == $option ? 'selected' : '' ?>>
+                                                                    <?= $option ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal BAK</label>
-                                                        <input type="text" class="form-control" name="tanggal_bak"
+                                                        <input type="date" class="form-control" name="tanggal_bak"
                                                             autocomplete="off" value="<?= $data['tanggal_bak'] ?>">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label class="col-form-label">HP BAK</label>
+                                                        <label class="col-form-label">Homepass BAK</label>
                                                         <input type="text" class="form-control" name="hp_bak"
                                                             autocomplete="off" value="<?= $data['hp_bak'] ?>">
                                                     </div>
@@ -410,8 +438,13 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Status CBN</label>
-                                                        <input type="text" class="form-control" name="status_cbn"
-                                                            autocomplete="off" value="<?= $data['status_cbn'] ?>">
+                                                        <select name="status_cbn" class="form-control">
+                                                            <?php foreach ($option_status as $option): ?>
+                                                                <option value="<?= $option ?>" <?= isset($data['status_cbn']) && $data['status_cbn'] == $option ? 'selected' : '' ?>>
+                                                                    <?= $option ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
                                                     </div>
                                                 </div>
                                             </div>
@@ -419,14 +452,14 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal Submit CBN</label>
-                                                        <input type="text" class="form-control" name="tgl_submite_cbn"
+                                                        <input type="date" class="form-control" name="tgl_submite_cbn"
                                                             autocomplete="off" value="<?= $data['tgl_submite_cbn'] ?>">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal Approved CBN</label>
-                                                        <input type="text" class="form-control" name="tgl_approve_cbn"
+                                                        <input type="date" class="form-control" name="tgl_approve_cbn"
                                                             autocomplete="off" value="<?= $data['tgl_approve_cbn'] ?>">
                                                     </div>
                                                 </div>
@@ -461,7 +494,7 @@ function formatTanggalIndonesia($date)
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label class="col-form-label">HP SPK</label>
+                                                        <label class="col-form-label">Homepass SPK</label>
                                                         <input type="text" class="form-control" name="spk_hp"
                                                             autocomplete="off" value="<?= $data['spk_hp'] ?>">
                                                     </div>
@@ -482,13 +515,18 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Status HLD</label>
-                                                        <input type="text" class="form-control" name="status_hld"
-                                                            autocomplete="off" value="<?= $data['status_hld'] ?>">
+                                                        <select name="status_hld" class="form-control">
+                                                            <?php foreach ($option_status as $option): ?>
+                                                                <option value="<?= $option ?>" <?= isset($data['status_hld']) && $data['status_hld'] == $option ? 'selected' : '' ?>>
+                                                                    <?= $option ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label class="col-form-label">HP HLD</label>
+                                                        <label class="col-form-label">Homepass HLD</label>
                                                         <input type="text" class="form-control" name="hp_hld"
                                                             autocomplete="off" value="<?= $data['hp_hld'] ?>">
                                                     </div>
@@ -498,14 +536,14 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal Submit HLD</label>
-                                                        <input type="text" class="form-control" name="tgl_submit_hld"
+                                                        <input type="date" class="form-control" name="tgl_submit_hld"
                                                             autocomplete="off" value="<?= $data['tgl_submit_hld'] ?>">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal Approved HLD</label>
-                                                        <input type="text" class="form-control" name="tgl_approve_hld"
+                                                        <input type="date" class="form-control" name="tgl_approve_hld"
                                                             autocomplete="off" value="<?= $data['tgl_approve_hld'] ?>">
                                                     </div>
                                                 </div>
@@ -525,13 +563,18 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Status LLD</label>
-                                                        <input type="text" class="form-control" name="status_lld"
-                                                            autocomplete="off" value="<?= $data['status_lld'] ?>">
+                                                        <select name="status_lld" class="form-control">
+                                                            <?php foreach ($option_status as $option): ?>
+                                                                <option value="<?= $option ?>" <?= isset($data['status_lld']) && $data['status_lld'] == $option ? 'selected' : '' ?>>
+                                                                    <?= $option ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label class="col-form-label">HP LLD</label>
+                                                        <label class="col-form-label">Homepass LLD</label>
                                                         <input type="text" class="form-control" name="hp_lld"
                                                             autocomplete="off" value="<?= $data['hp_lld'] ?>">
                                                     </div>
@@ -541,14 +584,14 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal Submit LLD</label>
-                                                        <input type="text" class="form-control" name="tgl_submite_lld"
+                                                        <input type="date" class="form-control" name="tgl_submite_lld"
                                                             autocomplete="off" value="<?= $data['tgl_submite_lld'] ?>">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal Approved LLD</label>
-                                                        <input type="text" class="form-control" name="tgl_approve_lld"
+                                                        <input type="date" class="form-control" name="tgl_approve_lld"
                                                             autocomplete="off" value="<?= $data['tgl_approve_lld'] ?>">
                                                     </div>
                                                 </div>
@@ -568,14 +611,14 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal KOM</label>
-                                                        <input type="text" class="form-control" name="tgl_kom"
+                                                        <input type="date" class="form-control" name="tgl_kom"
                                                             autocomplete="off" value="<?= $data['tgl_kom'] ?>">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal PKS</label>
-                                                        <input type="text" class="form-control" name="tgl_pks"
+                                                        <input type="date" class="form-control" name="tgl_pks"
                                                             autocomplete="off" value="<?= $data['tgl_pks'] ?>">
                                                     </div>
                                                 </div>
@@ -617,7 +660,8 @@ function formatTanggalIndonesia($date)
                                                     <div class="form-group">
                                                         <label class="col-form-label">Cor Tiang</label>
                                                         <input type="text" class="form-control" name="cortiang_implementasi"
-                                                            autocomplete="off" value="<?= $data['cortiang_implementasi'] ?>">
+                                                            autocomplete="off"
+                                                            value="<?= $data['cortiang_implementasi'] ?>">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
@@ -650,13 +694,13 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal RFS</label>
-                                                        <input type="text" class="form-control" name="tanggal_rfs"
+                                                        <input type="date" class="form-control" name="tanggal_rfs"
                                                             autocomplete="off" value="<?= $data['tanggal_rfs'] ?>">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label class="col-form-label">HP RFS</label>
+                                                        <label class="col-form-label">Homepass RFS</label>
                                                         <input type="text" class="form-control" name="hp_rfs"
                                                             autocomplete="off" value="<?= $data['hp_rfs'] ?>">
                                                     </div>
@@ -677,13 +721,13 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal ATP</label>
-                                                        <input type="text" class="form-control" name="tanggal_atp"
+                                                        <input type="date" class="form-control" name="tanggal_atp"
                                                             autocomplete="off" value="<?= $data['tanggal_atp'] ?>">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label class="col-form-label">HP ATP</label>
+                                                        <label class="col-form-label">Homepass ATP</label>
                                                         <input type="text" class="form-control" name="hp_atp"
                                                             autocomplete="off" value="<?= $data['hp_atp'] ?>">
                                                     </div>
@@ -704,7 +748,7 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-12">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Tanggal BAST</label>
-                                                        <input type="text" class="form-control" name="tanggal_bast"
+                                                        <input type="date" class="form-control" name="tanggal_bast"
                                                             autocomplete="off" value="<?= $data['tanggal_bast'] ?>">
                                                     </div>
                                                 </div>
@@ -724,8 +768,13 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-12">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Stagging Project</label>
-                                                        <input type="text" class="form-control" name="main_status"
-                                                            autocomplete="off" value="<?= $data['main_status'] ?>">
+                                                        <select name="main_status" class="form-control">
+                                                            <?php foreach ($option_stagging as $option): ?>
+                                                                <option value="<?= $option ?>" <?= isset($data['main_status']) && $data['main_status'] == $option ? 'selected' : '' ?>>
+                                                                    <?= $option ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
                                                     </div>
                                                 </div>
                                             </div>
@@ -733,8 +782,9 @@ function formatTanggalIndonesia($date)
                                                 <div class="col-md-12">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Remark Project</label>
-                                                        <input type="text" class="form-control" name="remarks_status"
-                                                            autocomplete="off" value="<?= $data['remarks_status'] ?>">
+                                                        <textarea class="form-control"
+                                                            name="remarks_status"><?= $data['remarks_status'] ?></textarea>
+
                                                     </div>
                                                 </div>
                                             </div>
@@ -822,7 +872,7 @@ function formatTanggalIndonesia($date)
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['tanggal_po'] ?></td>
-                                                <td><?= number_format(floatval($data['nilai_awal_po']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['nilai_awal_po']), 0, ",", ".") ?></td>
                                                 <td><?= $data['tgl_canvasing'] ?></td>
                                                 <td><?= $data['status_bak'] ?></td>
                                                 <td><?= $data['status_cbn'] ?></td>
@@ -833,8 +883,9 @@ function formatTanggalIndonesia($date)
                                                 <td><?= $data['tanggal_rfs'] ?></td>
                                                 <td><?= $data['tanggal_atp'] ?></td>
                                                 <td><?= $data['main_status'] ?></td>
-                                                <td><?= number_format(floatval($data['total_invoice']), 0, ",",".") ?></td>
-                                                <td><?= number_format(floatval($data['total_sisa_invoice']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['total_invoice']), 0, ",", ".") ?></td>
+                                                <td><?= number_format(floatval($data['total_sisa_invoice']), 0, ",", ".") ?>
+                                                </td>
 
                                             </tr>
 
@@ -891,17 +942,20 @@ function formatTanggalIndonesia($date)
                                                     style="background-color: lightblue;" <?php } else if (str_contains($data['keterangan_progress'], "Done") || str_contains($data['keterangan_progress'], "DONE")) { ?>
                                                         style="background-color: yellow;" <?php } else { ?>     <?php } ?>>
                                                 <td><?= $total++ ?></td>
-                                                <td><?= number_format(floatval($data['hp_hld']), 0, ",",".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_tiang']), 0, ",",".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_tiang']), 0, ",",".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_kabel_24']), 0, ",",".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_kabel_24']), 0, ",",".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_kabel_48']), 0, ",",".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_kabel_48']), 0, ",",".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_fat']), 0, ",",".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_fat']), 0, ",",".") ?></td>
-                                                <td><?= number_format(floatval($data['plan_closure']), 0, ",",".") ?></td>
-                                                <td><?= number_format(floatval($data['achiev_closure']), 0, ",",".") ?></td>
+                                                <td><?= number_format(floatval($data['hp_hld']), 0, ",", ".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_tiang']), 0, ",", ".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_tiang']), 0, ",", ".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_kabel_24']), 0, ",", ".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_kabel_24']), 0, ",", ".") ?>
+                                                </td>
+                                                <td><?= number_format(floatval($data['plan_kabel_48']), 0, ",", ".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_kabel_48']), 0, ",", ".") ?>
+                                                </td>
+                                                <td><?= number_format(floatval($data['plan_fat']), 0, ",", ".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_fat']), 0, ",", ".") ?></td>
+                                                <td><?= number_format(floatval($data['plan_closure']), 0, ",", ".") ?></td>
+                                                <td><?= number_format(floatval($data['achiev_closure']), 0, ",", ".") ?>
+                                                </td>
                                                 <td><?= $data['data_created'] ?></td>
                                                 <td><?= $data['keterangan_progress'] ?></td>
                                             </tr>
@@ -913,48 +967,53 @@ function formatTanggalIndonesia($date)
                                     <tfoot>
                                         <tr>
                                             <th colspan="2">Total</th>
-                                            <th colspan="1"><?= number_format(floatval($total_plan_tiang), 0, ",",".") ?>
-                                            </th>
-                                            <th colspan="1"><?= number_format(floatval($total_achiev_tiang), 0, ",",".") ?>
+                                            <th colspan="1">
+                                                <?= number_format(floatval($total_plan_tiang), 0, ",", ".") ?>
                                             </th>
                                             <th colspan="1">
-                                                <?= number_format(floatval($total_plan_kabel_24C), 0, ",",".") ?>
+                                                <?= number_format(floatval($total_achiev_tiang), 0, ",", ".") ?>
                                             </th>
                                             <th colspan="1">
-                                                <?= number_format(floatval($total_achiev_kabel_24C), 0, ",",".") ?>
+                                                <?= number_format(floatval($total_plan_kabel_24C), 0, ",", ".") ?>
                                             </th>
                                             <th colspan="1">
-                                                <?= number_format(floatval($total_plan_kabel_48C), 0, ",",".") ?>
+                                                <?= number_format(floatval($total_achiev_kabel_24C), 0, ",", ".") ?>
                                             </th>
                                             <th colspan="1">
-                                                <?= number_format(floatval($total_achiev_kabel_48C), 0, ",",".") ?>
-                                            </th>
-                                            <th colspan="1"><?= number_format(floatval($total_plan_fat), 0, ",",".") ?></th>
-                                            <th colspan="1"><?= number_format(floatval($total_achiev_fat), 0, ",",".") ?>
-                                            </th>
-                                            <th colspan="1"><?= number_format(floatval($total_plan_closure), 0, ",",".") ?>
+                                                <?= number_format(floatval($total_plan_kabel_48C), 0, ",", ".") ?>
                                             </th>
                                             <th colspan="1">
-                                                <?= number_format(floatval($total_achiev_closure), 0, ",",".") ?>
+                                                <?= number_format(floatval($total_achiev_kabel_48C), 0, ",", ".") ?>
+                                            </th>
+                                            <th colspan="1"><?= number_format(floatval($total_plan_fat), 0, ",", ".") ?>
+                                            </th>
+                                            <th colspan="1">
+                                                <?= number_format(floatval($total_achiev_fat), 0, ",", ".") ?>
+                                            </th>
+                                            <th colspan="1">
+                                                <?= number_format(floatval($total_plan_closure), 0, ",", ".") ?>
+                                            </th>
+                                            <th colspan="1">
+                                                <?= number_format(floatval($total_achiev_closure), 0, ",", ".") ?>
                                             </th>
                                             <th colspan="2"></th>
                                         </tr>
                                         <tr>
                                             <th colspan="2">Selisih</th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_tiang - $total_achiev_tiang), 0, ",",".") ?>
+                                                <?= number_format(floatval($total_plan_tiang - $total_achiev_tiang), 0, ",", ".") ?>
                                             </th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_kabel_24C - $total_achiev_kabel_24C), 0, ",",".") ?>
+                                                <?= number_format(floatval($total_plan_kabel_24C - $total_achiev_kabel_24C), 0, ",", ".") ?>
                                             </th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_kabel_48C - $total_achiev_kabel_48C), 0, ",",".") ?>
+                                                <?= number_format(floatval($total_plan_kabel_48C - $total_achiev_kabel_48C), 0, ",", ".") ?>
                                             </th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_fat - $total_achiev_fat), 0, ",",".") ?>
+                                                <?= number_format(floatval($total_plan_fat - $total_achiev_fat), 0, ",", ".") ?>
                                             </th>
                                             <th colspan="2">
-                                                <?= number_format(floatval($total_plan_closure - $total_achiev_closure), 0, ",",".") ?>
+                                                <?= number_format(floatval($total_plan_closure - $total_achiev_closure), 0, ",", ".") ?>
                                             </th>
                                             <th colspan="2"></th>
                                         </tr>
@@ -964,7 +1023,7 @@ function formatTanggalIndonesia($date)
                                     <?php if ($this->session->userdata('lokasi_user') == "HO") { ?>
                                         <?php if ($row_status_implementasi == "OK") { ?>
                                             <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasiBack/' . $row_primary_access_id_project); ?>"
-                                                class="btn btn-success float-right text-bold">Tambah Implementasi</a>
+                                                class="btn btn-primary float-right text-bold">Tambah Implementasi</a>
                                         <?php } else { ?>
                                             <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasi/' . $row_primary_access_id_project); ?>"
                                                 class="btn btn-secondary float-right text-bold">Close Implementasi</a>
@@ -1095,7 +1154,7 @@ function formatTanggalIndonesia($date)
                                                                                     <i class="fas fa-solid fa-eye"></i>
                                                                                 </a>
                                                                                 <?php if ($this->session->userdata('lokasi_user') === 'HO') { ?>
-                                                                                    <a href="<?= base_url('Fiberstar_Project_Detail/approve_dokumen/' . ($first['id_document_support_approval'] ?? '') . '/' . $data['access_id_project']) ?>"
+                                                                                    <a href="<?= base_url('Fiberstar_Project_Detail/approve_dokumen/' . ($first['id_document_support_approval'] ?? '') . '/' . $data['primary_access_id_project']) ?>"
                                                                                         class="btn btn-success <?= empty($first['document_support_location']) ? 'disabled' : '' ?>"><i
                                                                                             class="fas fa-check"></i></a>
                                                                                     <a href="#" data-toggle="modal"
@@ -1204,6 +1263,8 @@ function formatTanggalIndonesia($date)
                                                 <form method="post"
                                                     action="<?= base_url('Fiberstar_Project_Detail/reject_dokumen') ?>"
                                                     enctype="multipart/form-data">
+                                                    <input type="hidden" name="primary_access_id_project"
+                                                        value="<?= $data['primary_access_id_project'] ?>">
                                                     <input type="hidden" name="id_document_support_approval_reject"
                                                         id="id_document_support_approval_reject" value="">
                                                     <input type="hidden" name="id_user"
@@ -1346,6 +1407,8 @@ function formatTanggalIndonesia($date)
                                                 </button>
                                             </div>
                                             <div class="modal-body">
+                                                <input type="hidden" name="primary_access_id_project"
+                                                    value="<?= $data['primary_access_id_project'] ?>">
                                                 <input type="hidden" name="access_id_project"
                                                     value="<?= $data['access_id_project'] ?>">
                                                 <input type="hidden" name="id_user"
@@ -1461,6 +1524,8 @@ function formatTanggalIndonesia($date)
                                                 </button>
                                             </div>
                                             <div class="modal-body">
+                                                <input type="hidden" name="primary_access_id_project"
+                                                    value="<?= $data['primary_access_id_project'] ?>">
                                                 <input type="hidden" name="access_id_project"
                                                     value="<?= $data['access_id_project'] ?>">
                                                 <input type="hidden" name="id_user"
@@ -1861,6 +1926,23 @@ function formatTanggalIndonesia($date)
 
         // Menambahkan simbol "Rp"
         input.value = formattedValue;
+    }
+
+    function formatRupiah(event) {
+        var input = event.target;
+        var value = input.value.replace(/[^\d]/g, '');  // Menghapus karakter non-numeric
+        var formattedValue = '';
+
+        // Format angka untuk ribuan
+        for (var i = value.length - 1; i >= 0; i--) {
+            formattedValue = value.charAt(i) + formattedValue;
+            if ((value.length - i) % 3 === 0 && i !== 0) {
+                formattedValue = '.' + formattedValue;
+            }
+        }
+
+        // Menambahkan simbol "Rp"
+        input.value = "Rp. " + formattedValue;
     }
 </script>
 

@@ -125,7 +125,7 @@ ORDER BY lg.regional_lokasi_gudang, ki.project_item;')
         return $data;
     }
 
-    public function getHistoriInOUtLogistik()
+    public function getHistoriInOUtLogistikArea()
     {
 
         $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
@@ -146,7 +146,24 @@ ORDER BY lg.regional_lokasi_gudang, ki.project_item;')
                                         JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
                                         JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
                                         JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user
-                                        WHERE ' . $filter_area . ' = "' . $decoded_url_area . '";')
+                                        WHERE ' . $filter_area . ' = "' . $decoded_url_area . '" ORDER by tanggal_upload_stok DESC;')
+            ->result_array();
+        return $data;
+    }
+
+    public function getHistoriInOUtLogistikKategori()
+    {
+
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $data = $this->db->query('SELECT * FROM `tb_logistik_stok` JOIN tb_master_logistik_lokasi_gudang ON tb_logistik_stok.id_lokasi_gudang = tb_master_logistik_lokasi_gudang.id_lokasi_gudang
+	                                    JOIN tb_master_bowheer ON tb_logistik_stok.id_bowheer = tb_master_bowheer.id_bowheer
+                                        JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
+                                        JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
+                                        JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user
+                                        WHERE kategori_item = "' . $last_segment . '" ORDER by tanggal_upload_stok DESC;')
             ->result_array();
         return $data;
     }
@@ -173,7 +190,7 @@ ORDER BY lg.regional_lokasi_gudang, ki.project_item;')
     COALESCE(SUM(
         CASE 
             WHEN tmlsm.status_sumber_material = "IN" THEN tls.jumlah_stok
-            WHEN tmlsm.status_sumber_material = "   OUT" THEN -tls.jumlah_stok
+            WHEN tmlsm.status_sumber_material = "OUT" THEN -tls.jumlah_stok
             ELSE 0 
         END
     ), 0) AS total_jumlah_stok
@@ -187,5 +204,4 @@ ORDER BY tmlki.kategori_item;')
             ->result_array();
         return $data;
     }
-
 }

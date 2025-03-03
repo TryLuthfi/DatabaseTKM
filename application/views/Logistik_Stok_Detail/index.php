@@ -71,7 +71,7 @@ $total_tiang = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok Aksesories</h3>
+                                    <h3 class="card-title">LIST STOK AKSESORIES</h3>
                                 </div>
                             </div>
                         </div>
@@ -142,7 +142,7 @@ $total_tiang = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok Closure</h3>
+                                    <h3 class="card-title">LIST STOK CLOSURE</h3>
                                 </div>
                             </div>
                         </div>
@@ -213,7 +213,7 @@ $total_tiang = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok FAT</h3>
+                                    <h3 class="card-title">LIST STOK FAT</h3>
                                 </div>
                             </div>
                         </div>
@@ -284,7 +284,7 @@ $total_tiang = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok FDT</h3>
+                                    <h3 class="card-title">LIST STOK FDT</h3>
                                 </div>
                             </div>
                         </div>
@@ -355,7 +355,7 @@ $total_tiang = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok HDPE</h3>
+                                    <h3 class="card-title">LIST STOK HDPE</h3>
                                 </div>
                             </div>
                         </div>
@@ -426,7 +426,7 @@ $total_tiang = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok Kabel</h3>
+                                    <h3 class="card-title">LIST STOK KABEL</h3>
                                 </div>
                             </div>
                         </div>
@@ -497,7 +497,7 @@ $total_tiang = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok OTB</h3>
+                                    <h3 class="card-title">LIST STOK OTB</h3>
                                 </div>
                             </div>
                         </div>
@@ -568,7 +568,7 @@ $total_tiang = 0;
                         <div class="card-header">
                             <div class="row">
                                 <div class="col-6">
-                                    <h3 class="card-title">Stok Tiang</h3>
+                                    <h3 class="card-title">LIST STOK TIANG</h3>
                                 </div>
                             </div>
                         </div>
@@ -641,12 +641,12 @@ $total_tiang = 0;
                             <div class="card-header">
                                 <div class="row">
                                     <div class="col-6">
-                                        <h3 class="card-title">List Stok Logistik </h3>
+                                        <h3 class="card-title">LIST HISTORY IN OUT MATERIAL</h3>
                                     </div>
                                     <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
+                                        <!-- <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
                                             data-target="#modal-xl-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
+                                                class="fas fa-plus"></i> </a> -->
                                     </div>
                                 </div>
                             </div>
@@ -670,7 +670,7 @@ $total_tiang = 0;
                                         <?php
 
                                         $total = 1;
-                                        foreach ($getHistoriInOUtLogistik as $data):
+                                        foreach ($getHistoriInOUtLogistikArea as $data):
                                         ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
