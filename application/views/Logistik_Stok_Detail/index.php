@@ -36,7 +36,7 @@ $total_tiang = 0;
                         <div class="inner">
 
                             <h3 id="idtotal_hp_plan">
-                                <?= number_format(floatval($stokKategory['total_jumlah_stok']), 0, ".") . " " . $stokKategory['satuan_item'] ?>
+                                <?= number_format(floatval($stokKategory['total_jumlah_stok']), 0, ",", ".") . " " . $stokKategory['satuan_item'] ?>
                             </h3>
 
 
@@ -98,7 +98,7 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, ",", ".") ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
@@ -110,7 +110,7 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_aksesories, 0, '.', ',') ?></th>
+                                        <th colspan="1"><span id="totalTabelAksesories">0</span></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
@@ -169,7 +169,7 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, ",", ".") ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
@@ -181,7 +181,7 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_closure, 0, '.', ',') ?></th>
+                                        <th colspan="1"><span id="totalTabelClosure">0</span></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
@@ -240,7 +240,7 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, ",", ".") ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
@@ -252,7 +252,7 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_fat, 0, '.', ',') ?></th>
+                                        <th colspan="1"><span id="totalTabelFat">0</span></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
@@ -311,7 +311,7 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, ",", ".") ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
@@ -323,7 +323,7 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_fdt, 0, '.', ',') ?></th>
+                                        <th colspan="1"><span id="totalTabelFdt">0</span></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
@@ -382,7 +382,7 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, ",", ".") ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
@@ -394,7 +394,7 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_hdpe, 0, '.', ',') ?></th>
+                                        <th colspan="1"><span id="totalTabelHdpe">0</span></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
@@ -453,7 +453,7 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, ",", ".") ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
@@ -465,7 +465,7 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_kabel, 0, '.', ',') ?></th>
+                                        <th colspan="1"><span id="totalTabelKabel">0</span></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
@@ -524,7 +524,7 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, ",", ".") ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
@@ -536,7 +536,7 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_otb, 0, '.', ',') ?></th>
+                                        <th colspan="1"><span id="totalTabelOtb">0</span></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
@@ -595,7 +595,7 @@ $total_tiang = 0;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['project_item'] ?></td>
-                                                <td><?= number_format($data['jumlah_stok'], 0, '.', ',') ?></td>
+                                                <td><?= number_format($data['jumlah_stok'], 0, ",", ".") ?></td>
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
@@ -607,7 +607,7 @@ $total_tiang = 0;
                                     <tr>
                                         <th colspan="2">TOTAL</th>
                                         <th colspan="1"></th>
-                                        <th colspan="1"><?= number_format($total_tiang, 0, '.', ',') ?></th>
+                                        <th colspan="1"><span id="totalTabelTiang">0</span></th>
                                         <th colspan="1"></th>
                                         <th colspan="1"></th>
                                 </tfoot>
@@ -623,75 +623,76 @@ $total_tiang = 0;
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12">
-                    <h1 class="m-0 text-dark" style="text-align: center;">HISTORY IN OUT MATERIAL <?= "" . $lokasi ?></h1>
+                    <h1 class="m-0 text-dark" style="text-align: center;">HISTORY IN OUT MATERIAL <?= "" . $lokasi ?>
+                    </h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
     </div>
 
     <section class="content">
-            <div class="container-fluid">
-                <!-- Info boxes -->
-                <div class="row">
-                    <!-- fix for small devices only -->
-                    <div class="clearfix hidden-md-up"></div>
+        <div class="container-fluid">
+            <!-- Info boxes -->
+            <div class="row">
+                <!-- fix for small devices only -->
+                <div class="clearfix hidden-md-up"></div>
 
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <h3 class="card-title">LIST HISTORY IN OUT MATERIAL</h3>
-                                    </div>
-                                    <div class="col-6">
-                                        <!-- <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="card-title">LIST HISTORY IN OUT MATERIAL</h3>
+                                </div>
+                                <div class="col-6">
+                                    <!-- <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
                                             data-target="#modal-xl-tambah" data-toggle="modal">Tambah &nbsp;<i
                                                 class="fas fa-plus"></i> </a> -->
-                                    </div>
                                 </div>
                             </div>
-                            <!-- /.card-header -->
-                            <div class="card-body table-scrollable">
-                                <table id="table_data" class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>No</th>
-                                            <th>Regional</th>
-                                            <th>Lokasi</th>
-                                            <th>Project</th>
-                                            <th>Kategori</th>
-                                            <th>Item</th>
-                                            <th>Status</th>
-                                            <th>QTY</th>
-                                            <th>PIC</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php
-
-                                        $total = 1;
-                                        foreach ($getHistoriInOUtLogistikArea as $data):
-                                        ?>
-                                            <tr>
-                                                <td><?= $total++ ?></td>
-                                                <td><?= $data['regional_lokasi_gudang'] ?></td>
-                                                <td><?= $data['kota_lokasi_gudang'] ?></td>
-                                                <td><?= $data['nama_bowheer'] ?></td>
-                                                <td><?= $data['kategori_item'] ?></td>
-                                                <td><?= $data['nama_item'] ?></td>
-                                                <td><?= $data['nama_sumber_material'] ?></td>
-                                                <td><?= $data['jumlah_stok'] ?></td>
-                                                <td><?= $data['nama_user'] ?></td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <!-- /.card-body -->
                         </div>
+                        <!-- /.card-header -->
+                        <div class="card-body table-scrollable">
+                            <table id="table_data" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Regional</th>
+                                        <th>Lokasi</th>
+                                        <th>Project</th>
+                                        <th>Kategori</th>
+                                        <th>Item</th>
+                                        <th>Status</th>
+                                        <th>QTY</th>
+                                        <th>PIC</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+
+                                    $total = 1;
+                                    foreach ($getHistoriInOUtLogistikArea as $data):
+                                        ?>
+                                        <tr>
+                                            <td><?= $total++ ?></td>
+                                            <td><?= $data['regional_lokasi_gudang'] ?></td>
+                                            <td><?= $data['kota_lokasi_gudang'] ?></td>
+                                            <td><?= $data['nama_bowheer'] ?></td>
+                                            <td><?= $data['kategori_item'] ?></td>
+                                            <td><?= $data['nama_item'] ?></td>
+                                            <td><?= $data['nama_sumber_material'] ?></td>
+                                            <td><?= $data['jumlah_stok'] ?></td>
+                                            <td><?= $data['nama_user'] ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
                     </div>
                 </div>
-        </section>
+            </div>
+    </section>
 
 
 
@@ -750,6 +751,69 @@ $total_tiang = 0;
         <?php } else { ?>
         <?php } ?>
     })
+
+    $(document).ready(function () {
+        $.fn.dataTable.ext.errMode = 'none';
+
+        const tableAksesories = $('#tabel_aksesories').DataTable();
+        const tableClosure = $('#tabel_stok_closure').DataTable();
+        const tableFat = $('#tabel_stok_fat').DataTable();
+        const tableFdt = $('#tabel_stok_fdt').DataTable();
+        const tableHdpe = $('#tabel_stok_hdpe').DataTable();
+        const tableKabel = $('#tabel_stok_kabel').DataTable();
+        const tableOtb = $('#tabel_stok_otb').DataTable();
+        const tableTiang = $('#tabel_stok_tiang').DataTable();
+
+        function updateTotalTabel() {
+            let totalTabelAksesories = 0, totalTabelClosure = 0, totalTabelFat = 0;
+            let totalTabelFdt = 0, totalTabelHdpe = 0, totalTabelKabel = 0;
+            let totalTabelOtb = 0, totalTabelTiang = 0;
+
+            tableAksesories.rows({ search: 'applied' }).data().each(row => {
+                totalTabelAksesories += parseFloat(row[3].replace(/\./g, '')) || 0;
+            });
+            tableClosure.rows({ search: 'applied' }).data().each(row => {
+                totalTabelClosure += parseFloat(row[3].replace(/\./g, '')) || 0;
+            });
+            tableFat.rows({ search: 'applied' }).data().each(row => {
+                totalTabelFat += parseFloat(row[3].replace(/\./g, '')) || 0;
+            });
+            tableFdt.rows({ search: 'applied' }).data().each(row => {
+                totalTabelFdt += parseFloat(row[3].replace(/\./g, '')) || 0;
+            });
+            tableHdpe.rows({ search: 'applied' }).data().each(row => {
+                totalTabelHdpe += parseFloat(row[3].replace(/\./g, '')) || 0;
+            });
+            tableKabel.rows({ search: 'applied' }).data().each(row => {
+                totalTabelKabel += parseFloat(row[3].replace(/\./g, '')) || 0;
+            });
+            tableOtb.rows({ search: 'applied' }).data().each(row => {
+                totalTabelOtb += parseFloat(row[3].replace(/\./g, '')) || 0;
+            });
+            tableTiang.rows({ search: 'applied' }).data().each(row => {
+                totalTabelTiang += parseFloat(row[3].replace(/\./g, '')) || 0;
+            });
+
+            document.getElementById('totalTabelAksesories').innerText = totalTabelAksesories.toLocaleString('id-ID');
+            document.getElementById('totalTabelClosure').innerText = totalTabelClosure.toLocaleString('id-ID');
+            document.getElementById('totalTabelFat').innerText = totalTabelFat.toLocaleString('id-ID');
+            document.getElementById('totalTabelFdt').innerText = totalTabelFdt.toLocaleString('id-ID');
+            document.getElementById('totalTabelHdpe').innerText = totalTabelHdpe.toLocaleString('id-ID');
+            document.getElementById('totalTabelKabel').innerText = totalTabelKabel.toLocaleString('id-ID');
+            document.getElementById('totalTabelOtb').innerText = totalTabelOtb.toLocaleString('id-ID');
+            document.getElementById('totalTabelTiang').innerText = totalTabelTiang.toLocaleString('id-ID');
+        }
+
+        // Tunggu sebentar agar DataTables siap sebelum memanggil updateTotalTabel()
+        setTimeout(() => {
+            updateTotalTabel();
+        }, 500); // Tunggu 0.5 detik agar DataTables selesai inisialisasi
+
+        // Update total saat tabel di-refresh (misalnya setelah search, filter, atau navigasi halaman)
+        $('.dataTable').on('draw.dt', function () {
+            updateTotalTabel();
+        });
+    });
 
     document.addEventListener("DOMContentLoaded", function () {
         <?php foreach ($getSummaryDetailArea as $stokKategory): ?>

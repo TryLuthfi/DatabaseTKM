@@ -190,7 +190,7 @@ $id_menu = $this->uri->segment('1');
                         </li>
                     <?php } ?>
 
-                    <li class="nav-item" style="pointer-events: none">
+                    <li class="nav-item">
                         <a href="<?= base_url('Logistik_Purchase_Request') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Purchase_Request') {
                                                                                                     echo "active";
                                                                                                 } ?>">
@@ -260,6 +260,16 @@ $id_menu = $this->uri->segment('1');
                                   } ?>">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>PO & Invoice</p>
+                                </a>
+                            </li>
+                        </ul>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="<?= base_url('Fiberstar_Kompensasi') ?>" class="nav-link <?php if ($id_menu == 'Fiberstar_Kompensasi') {
+                                      echo "active";
+                                  } ?>">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Kompensasi</p>
                                 </a>
                             </li>
                         </ul>

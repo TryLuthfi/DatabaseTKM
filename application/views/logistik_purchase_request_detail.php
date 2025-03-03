@@ -45,7 +45,7 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label class="col-form-label">Nomor PO</label>
+                                            <label class="col-form-label">Nomor PR</label>
                                             <?php if ($type == 'view') : ?>
                                                 <h5><?= $detail_purchase_request[0]['nomor_purchase_request'] ?></h5>
                                             <?php else : ?>
@@ -59,7 +59,7 @@
                                             <?php if ($type == 'view') : ?>
                                                 <h5><?= $detail_purchase_request[0]['tanggal_pembuatan'] ?></h5>
                                             <?php else : ?>
-                                                <input type="date" class="form-control" name="tanggal_upload_po" autocomplete="off" value="<?= date('Y-m-d', strtotime($detail_purchase_request[0]['tanggal_pembuatan'])); ?>" disabled>
+                                                <input type="date" class="form-control" name="tanggal_upload_pr" autocomplete="off" value="<?= date('Y-m-d', strtotime($detail_purchase_request[0]['tanggal_pembuatan'])); ?>" disabled>
                                             <?php endif ?>
                                         </div>
                                     </div>

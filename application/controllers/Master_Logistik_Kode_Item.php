@@ -37,18 +37,13 @@ class Master_Logistik_Kode_Item extends CI_Controller
         // print_r($_POST);
         // echo ("</pre>");
 
-        if (!empty($_POST['project_item'])) {
-            $kota_string = implode(", ", $_POST['project_item']);
-        } else {
-            $kota_string = "";
-        }
-
         $hasil_data = array(
             'nama_item' => $_POST['nama_item'],
             'kategori_item' => $_POST['kategori_item'],
             'satuan_item' => $_POST['satuan_item'],
             'id_bowheer_pemilik_item' => $_POST['id_bowheer_pemilik_item'],
-            'project_item' => $kota_string
+            'harga_penjualan' => $_POST['harga_penjualan'],
+            'project_item' => $_POST['project_item']
         );
 
         $res = $this->MMaster_Logistik_Kode_Item->tambahKodeItem($hasil_data);
