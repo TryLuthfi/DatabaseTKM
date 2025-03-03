@@ -1569,18 +1569,18 @@ $total_stok_dashboard = [];
         }
 
         // Tambahkan filter pertama kali
-        $.fn.dataTable.ext.search.push(filterByDate);
+        // $.fn.dataTable.ext.search.push(filterByDate);
 
         // Inisialisasi Date Range Picker
-        $('#date-range').daterangepicker({
-            autoUpdateInput: false,
-            locale: { format: 'MM/DD/YYYY' }
-        });
+        // $('#date-range').daterangepicker({
+        //     autoUpdateInput: false,
+        //     locale: { format: 'MM/DD/YYYY' }
+        // });
 
         // Event saat date range dipilih
-        $('#date-range').on('apply.daterangepicker', function (ev, picker) {
-            $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
-        });
+        // $('#date-range').on('apply.daterangepicker', function (ev, picker) {
+        //     $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+        // });
 
         // ✅ Tombol "Cari" untuk memfilter tabel
         $('#filtertanggal').on('click', function (e) {
