@@ -635,7 +635,8 @@ $total_stok_dashboard = [];
                                                 <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['nama_sumber_material'] ?></td>
                                                 <td><?= $data['no_surat_jalan'] ?></td>
-                                                <td><?= number_format(floatval($data['total_jumlah_stok']), 0, ",", "."); ?></td>
+                                                <td><?= number_format(floatval($data['total_jumlah_stok']), 0, ",", "."); ?>
+                                                </td>
                                                 <td><?= $data['nama_user'] ?></td>
                                                 <td><?= $data['tanggal_upload_stok'] ?></td>
                                                 <td class="d-flex">
@@ -853,6 +854,12 @@ $total_stok_dashboard = [];
                                     </thead>
                                     <tbody id="hasilDetailDataSJ">
                                     </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="2">Total</th>
+                                            <th colspan="1"><span id="detail_total_qty">0</span></th>
+                                            <th colspan="4"></th>
+                                    </tfoot>
                                 </table>
                             </div>
                             <div class="col-md-12">
@@ -1199,6 +1206,7 @@ $total_stok_dashboard = [];
                 var tbody = $("#hasilDetailDataSJ");
                 tbody.empty();
                 document.getElementById("detail_no_surat_jalan").value = "";
+                document.getElementById("detail_total_qty").innerText = "";
                 document.getElementById("detail_area_gudang").value = "";
                 document.getElementById("detail_nama_project").value = "";
                 document.getElementById("detail_sumber_material").value = "";
@@ -1219,24 +1227,27 @@ $total_stok_dashboard = [];
                         var nomor = 1;
                         let baseUrl = "<?= base_url() ?>"
                         let lokasiUrl = response.getDetailAreaBySJ[0].evidence_stok;
+                        var totalStok = 0;
 
                         $.each(response.getDetailAreaBySJ, function (index, getDetailAreaBySJ) {
+                            var jumlahStok = parseFloat(getDetailAreaBySJ.jumlah_stok) || 0; // Pastikan jumlahStok berupa angka
+                            totalStok += jumlahStok;
+
                             var row = "<tr>" +
                                 "<td>" + nomor++ + "</td>" +
                                 "<td>" + getDetailAreaBySJ.nama_item + "</td>" +
-                                "<td>" + getDetailAreaBySJ.jumlah_stok + "</td>" +
+                                "<td>" + parseFloat(getDetailAreaBySJ.jumlah_stok).toLocaleString('id-ID') + "</td>" +  // Format angka
                                 "<td>" + getDetailAreaBySJ.satuan_item + "</td>" +
                                 "<td>" + getDetailAreaBySJ.merk_stok + "</td>" +
                                 "<td>" + getDetailAreaBySJ.no_haspel_stok + "</td>" +
                                 "<td>" + getDetailAreaBySJ.no_ref_stok + "</td>" +
                                 "</tr>";
                             tbody.append(row);
-
-
                         });
 
                         let tanggalFormatted = response.getDetailAreaBySJ[0].tanggal_upload_stok.split(" ")[0];
 
+                        document.getElementById("detail_total_qty").innerText = totalStok.toLocaleString('id-ID');
                         document.getElementById("detail_no_surat_jalan").value = response.getDetailAreaBySJ[0].no_surat_jalan;
                         document.getElementById("detail_area_gudang").value = response.getDetailAreaBySJ[0].kota_lokasi_gudang;
                         document.getElementById("detail_nama_project").value = response.getDetailAreaBySJ[0].project_item;
