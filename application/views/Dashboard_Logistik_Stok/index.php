@@ -1663,7 +1663,7 @@ $total_stok_dashboard = [];
         function filterByDate(settings, data, dataIndex) {
             let minDate = $('#date-range').data('daterangepicker').startDate;
             let maxDate = $('#date-range').data('daterangepicker').endDate;
-            let dateColumn = moment(data[10], "YYYY-MM-DD HH:mm:ss"); // Kolom ke-11 (Index 10)
+            let dateColumn = moment(data[9], "YYYY-MM-DD HH:mm:ss"); // Kolom ke-11 (Index 10)
 
             if (!minDate || !maxDate) return true; // Jika tidak ada filter, tampilkan semua
 
@@ -1674,15 +1674,15 @@ $total_stok_dashboard = [];
         // $.fn.dataTable.ext.search.push(filterByDate);
 
         // Inisialisasi Date Range Picker
-        // $('#date-range').daterangepicker({
-        //     autoUpdateInput: false,
-        //     locale: { format: 'MM/DD/YYYY' }
-        // });
+        $('#date-range').daterangepicker({
+            autoUpdateInput: false,
+            locale: { format: 'MM/DD/YYYY' }
+        });
 
         // Event saat date range dipilih
-        // $('#date-range').on('apply.daterangepicker', function (ev, picker) {
-        //     $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
-        // });
+        $('#date-range').on('apply.daterangepicker', function (ev, picker) {
+            $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+        });
 
         // ✅ Tombol "Cari" untuk memfilter tabel
         $('#filtertanggal').on('click', function (e) {
