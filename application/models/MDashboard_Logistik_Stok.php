@@ -279,7 +279,98 @@ ORDER BY
         return $data;
     }
 
-    public function getDashboardFiltered($lokasiArray, $bowheerArray, $itemArray)
+    public function getAllStokByKategoryFilterCityFiltered($tanggal)
+    {
+        $sql = "SELECT 
+    lg.regional_lokasi_gudang,
+    lg.kota_lokasi_gudang,
+    COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'Aksesories' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_Aksesories,
+    COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'Closure'
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_Closure,
+    COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'FAT' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_FAT,
+    COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'FDT' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_FDT,
+    COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'HDPE' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_HDPE,
+    COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'Kabel' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_Kabel,
+    COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'OTB' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_OTB,
+    COALESCE(SUM(CASE 
+                    WHEN ki.kategori_item = 'Tiang' 
+                    THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
+                              WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
+                              ELSE 0 
+                         END 
+                 END), 0) AS jumlah_Tiang
+FROM 
+    tb_master_logistik_lokasi_gudang lg
+LEFT JOIN 
+    tb_logistik_stok ls ON lg.id_lokasi_gudang = ls.id_lokasi_gudang
+LEFT JOIN 
+    tb_master_logistik_kode_item ki ON ls.id_kode_item = ki.id_kode_item
+LEFT JOIN 
+    tb_master_logistik_sumber_material sm ON ls.id_sumber_material = sm.id_sumber_material
+            WHERE 1=1"; // Awal WHERE agar bisa ditambahkan kondisi
+
+        // Tambahkan filter lokasi
+        if (!empty($tanggal)) {
+            $sql .= " AND ls.tanggal_upload_stok <= '$tanggal 23:59:59'";
+        }
+
+        // Tambahkan GROUP BY & ORDER BY
+        $sql .= " GROUP BY 
+    lg.kota_lokasi_gudang
+ORDER BY 
+    lg.regional_lokasi_gudang, lg.kota_lokasi_gudang;";
+
+        $data = $this->db->query($sql)->result_array();
+
+        log_message('error', 'query filter city dashboard logistik filter yang dijalankan : ' . $this->db->last_query());
+
+        // Jalankan query
+        return $data;
+
+    }
+
+    public function getDashboardFiltered($lokasiArray, $bowheerArray, $itemArray, $tanggal)
     {
         $sql = "SELECT 
                 lg.regional_lokasi_gudang,
@@ -365,6 +456,10 @@ ORDER BY
             $sql .= " AND ki.nama_item IN ($itemArray)";
         }
 
+        if (!empty($tanggal)) {
+            $sql .= " AND ls.tanggal_upload_stok <= '$tanggal 23:59:59'";
+        }
+
         // Tambahkan GROUP BY & ORDER BY
         $sql .= " GROUP BY lg.kota_lokasi_gudang";
 
@@ -377,7 +472,7 @@ ORDER BY
 
     }
 
-    public function getRincianDashboardFiltered($lokasiArray, $bowheerArray, $itemArray)
+    public function getRincianDashboardFiltered($lokasiArray, $bowheerArray, $itemArray, $tanggal)
     {
 
         $sql = "SELECT 
@@ -419,6 +514,10 @@ LEFT JOIN tb_master_logistik_sumber_material sm
             $sql .= " AND ki.nama_item IN ($itemArray)";
         }
 
+        if (!empty($tanggal)) {
+            $sql .= " AND ls.tanggal_upload_stok <= '$tanggal 23:59:59'";
+        }
+
         $sql .= " GROUP BY ki.nama_item, ki.project_item, lg.kota_lokasi_gudang
 ORDER BY lg.regional_lokasi_gudang, lg.kota_lokasi_gudang";
 
@@ -431,7 +530,7 @@ ORDER BY lg.regional_lokasi_gudang, lg.kota_lokasi_gudang";
 
     }
 
-    public function getRincianDashboardFilteredBowheer($lokasiArray, $bowheerArray, $itemArray)
+    public function getRincianDashboardFilteredBowheer($lokasiArray, $bowheerArray, $itemArray, $tanggal)
     {
 
         $sql = "SELECT 
@@ -471,6 +570,10 @@ LEFT JOIN tb_master_logistik_sumber_material sm
             $sql .= " AND ki.nama_item IN ($itemArray)";
         }
 
+        if (!empty($tanggal)) {
+            $sql .= " AND ls.tanggal_upload_stok <= '$tanggal 23:59:59'";
+        }
+
         $sql .= " GROUP BY ki.kategori_item, ki.project_item
 ORDER BY ki.kategori_item;";
 
@@ -483,7 +586,7 @@ ORDER BY ki.kategori_item;";
 
     }
 
-    public function getInOutHistoryFiltered($lokasiArray, $bowheerArray, $itemArray)
+    public function getInOutHistoryFiltered($lokasiArray, $bowheerArray, $itemArray, $tanggal)
     {
 
         $sql = "SELECT * FROM `tb_logistik_stok` JOIN tb_master_logistik_lokasi_gudang ON tb_logistik_stok.id_lokasi_gudang = tb_master_logistik_lokasi_gudang.id_lokasi_gudang
@@ -502,6 +605,10 @@ ORDER BY ki.kategori_item;";
 
         if (!empty($itemArray)) {
             $sql .= " AND nama_item IN ($itemArray)";
+        }
+
+        if (!empty($tanggal)) {
+            $sql .= " AND tanggal_upload_stok <= '$tanggal 23:59:59'";
         }
 
         $sql .= " ORDER by tanggal_upload_stok DESC";

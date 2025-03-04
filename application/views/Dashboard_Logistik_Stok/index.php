@@ -149,6 +149,17 @@ $total_stok_dashboard = [];
                                         </div>
                                     </div>
 
+                                    <div class="col-sm-3">
+                                        <div class="form-group">
+                                            <label
+                                                style="display: flex; justify-content: center; align-items: center;">TANGGAL
+                                                STOK</label>
+                                            <input type="date" class="form-control float-right" id="filter_tanggal">
+
+                                        </div>
+                                    </div>
+
+
                                     <div class="modal-footer col-sm-12">
                                         <button type="button" id="reset_filter" class="btn btn-danger"
                                             data-dismiss="modal">Hapus</button>
@@ -427,26 +438,7 @@ $total_stok_dashboard = [];
                                                             <?php
                                                             $total = 1;
 
-                                                            $jumlah_Aksesories = 0;
-                                                            $jumlah_Closure = 0;
-                                                            $jumlah_FAT = 0;
-                                                            $jumlah_FDT = 0;
-                                                            $jumlah_HDPE = 0;
-                                                            $jumlah_Kabel = 0;
-                                                            $jumlah_OTB = 0;
-                                                            $jumlah_Tiang = 0;
-
                                                             foreach ($getAllStokByKategoryFilterCity as $data):
-
-
-                                                                $jumlah_Aksesories += $data['jumlah_Aksesories'];
-                                                                $jumlah_Closure += $data['jumlah_Closure'];
-                                                                $jumlah_FAT += $data['jumlah_FAT'];
-                                                                $jumlah_FDT += $data['jumlah_FDT'];
-                                                                $jumlah_HDPE += $data['jumlah_HDPE'];
-                                                                $jumlah_Kabel += $data['jumlah_Kabel'];
-                                                                $jumlah_OTB += $data['jumlah_OTB'];
-                                                                $jumlah_Tiang += $data['jumlah_Tiang'];
 
                                                                 ?>
 
@@ -612,7 +604,6 @@ $total_stok_dashboard = [];
                                             <th>Lokasi</th>
                                             <th>Project</th>
                                             <th>Kategori</th>
-                                            <th>Item</th>
                                             <th>Status</th>
                                             <th>No SJ</th>
                                             <th>QTY</th>
@@ -632,7 +623,6 @@ $total_stok_dashboard = [];
                                                 <td><?= $data['kota_lokasi_gudang'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                                 <td><?= $data['kategori_item'] ?></td>
-                                                <td><?= $data['nama_item'] ?></td>
                                                 <td><?= $data['nama_sumber_material'] ?></td>
                                                 <td><?= $data['no_surat_jalan'] ?></td>
                                                 <td><?= number_format(floatval($data['total_jumlah_stok']), 0, ",", "."); ?>
@@ -1036,14 +1026,15 @@ $total_stok_dashboard = [];
     $(document).ready(function () {
         $('#id_kode_item').select2({
             placeholder: "Pilih Jenis Material",
-            allowClear: true
+            allowClear: true,
+            dropdownParent: $('#modal-xl-tambah')
         });
 
         $('#id_kode_item').on('change', function () {
+            var selectedValue = $('#id_kode_item').val();
             if ($(this).val() === "") {
                 return;
             }
-            var selectedValue = $('#id_kode_item').val();
             var selectedText = $('#id_kode_item option:selected').text();
             var selectedSatuan = $('#id_kode_item option:selected').data('satuan-item');
 
@@ -1062,12 +1053,17 @@ $total_stok_dashboard = [];
                     <td><input type="text" class="form-control" name="merk_item[${counter}]" autocomplete="off" placeholder="' Furukawa ' / ' ZTT ' / ' CCSI '"></td>
                     <td><input type="text" class="form-control" name="no_haspel_item[${counter}]" autocomplete="off" placeholder="' D11-11*** '"></td>
                     <td><input type="text" class="form-control" name="no_ref_item[${counter}]" autocomplete="off" placeholder="' 1***/EMR/NRO-GDR/02/2025 '"></td>
-                    <td><button class="btn btn-danger hapus-item"><i class="fa fa-trash"></i></button></td>
+                    <td><button type="button" class="btn btn-danger hapus-item"><i class="fa fa-trash"></i></button></td>
                 </tr>
             `);
             counter++;
 
             $('#id_kode_item').val("").trigger('change');
+            $('#id_kode_item').select2({
+                placeholder: "Pilih Jenis Material",
+                allowClear: true,
+                dropdownParent: $('#modal-xl-tambah')
+            });
         });
 
         $('#id_project').change(function () {
@@ -1321,6 +1317,7 @@ $total_stok_dashboard = [];
         const selectBowheer = document.getElementById('filter_bowheer');
         const selectItem = document.getElementById('filter_item');
         const selectStatus = document.getElementById('filter_status');
+        const selectTanggal = document.getElementById('filter_tanggal');
 
         const optionsLokasi = selectLokasi.options;
         const optionsBowheer = selectBowheer.options;
@@ -1344,6 +1341,8 @@ $total_stok_dashboard = [];
             optionsStatus[i].selected = false; // Hilangkan pilihan
         }
 
+        selectTanggal.value = '';
+
         // Pilih opsi default (indeks 0)
         selectLokasi.dispatchEvent(new Event('change'));
         selectBowheer.dispatchEvent(new Event('change'));
@@ -1355,10 +1354,24 @@ $total_stok_dashboard = [];
     var bowheerFilter2 = "";
     var itemFilter2 = "";
     var statusFilter2 = "";
+    var selectTanggal2 = "";
+
+    var originalData = [];
 
     var kirimData = "";
     var kirimData2 = "";
     var kirimData3 = "";
+
+    $(document).ready(function () {
+        // Simpan data awal tabel saat halaman pertama kali dimuat
+        $("#table_detail_kota tbody tr").each(function () {
+            var row = [];
+            $(this).find("td").each(function () {
+                row.push($(this).html());
+            });
+            originalData.push(row);
+        });
+    });
 
     // FUNCTION UPDATE DATA TABLE MENGGUNAKAN FILTER DATA
     $(document).ready(function () {
@@ -1369,6 +1382,7 @@ $total_stok_dashboard = [];
             var selectBowheer = $('#filter_bowheer').val() || []; // Array of selected values
             var selectItem = $('#filter_item').val() || []; // Array of selected values
             var selectStatus = $('#filter_status').val() || []; // Array of selected values
+            var selectTanggal = $('#filter_tanggal').val();
 
 
             // Gabungkan nilai ke dalam regex untuk pencarian DataTable
@@ -1381,11 +1395,11 @@ $total_stok_dashboard = [];
             bowheerFilter2 = selectBowheer.length > 0 ? '"' + selectBowheer.join('", "') + '"' : '';
             itemFilter2 = selectItem.length > 0 ? '"' + selectItem.join('", "') + '"' : '';
             statusFilter2 = selectStatus.length > 0 ? '"' + selectStatus.join('", "') + '"' : '';
+            selectTanggal2 = selectTanggal;
 
-            if (selectLokasi.length === 0 && selectBowheer.length === 0 && selectItem.length === 0 && selectStatus.length === 0) {
+            if (selectLokasi.length === 0 && selectBowheer.length === 0 && selectItem.length === 0 && selectStatus.length === 0 && selectTanggal === "") {
 
                 var totalStokDashboard = <?= json_encode($total_stok_dashboard); ?>;
-                console.log(totalStokDashboard)
 
                 document.getElementById("total_dashboard_Aksesories ").innerText = totalStokDashboard['Aksesories '];
                 document.getElementById("total_dashboard_Closure").innerText = totalStokDashboard['Closure'];
@@ -1401,6 +1415,8 @@ $total_stok_dashboard = [];
                     .column(5).search(itemFilter, true, false) // Filter kategori (regex search)
                     .column(6).search(statusFilter, true, false) // Filter kategori (regex search)
                     .draw();
+
+                resetTableFilterCity();
             } else {
                 table
                     .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
@@ -1415,7 +1431,8 @@ $total_stok_dashboard = [];
                     data: {
                         lokasi: JSON.stringify(lokasiFilter2), // Kirim sebagai JSON string
                         bowheer: JSON.stringify(bowheerFilter2),
-                        item: JSON.stringify(itemFilter2)
+                        item: JSON.stringify(itemFilter2),
+                        tanggal: selectTanggal
                     },
                     dataType: "json",
                     success: function (response) {
@@ -1446,6 +1463,7 @@ $total_stok_dashboard = [];
                             totalTiang += Number(getDashboardFiltered.jumlah_Tiang);
                         });
 
+
                         document.getElementById("total_dashboard_Aksesories ").innerText = totalAksesories.toLocaleString('id-ID').replace(/,/g, '.') + ' Pc(s)';
                         document.getElementById("total_dashboard_Closure").innerText = totalClosure.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
                         document.getElementById("total_dashboard_FAT").innerText = totalFAT.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
@@ -1455,6 +1473,7 @@ $total_stok_dashboard = [];
                         document.getElementById("total_dashboard_OTB ").innerText = totalOTB.toLocaleString('id-ID').replace(/,/g, '.') + ' Unit';
                         document.getElementById("total_dashboard_Tiang").innerText = totalTiang.toLocaleString('id-ID').replace(/,/g, '.') + ' Batang';
 
+                        updateTableFilterCity(response.getAllStokByKategoryFilterCityFiltered);
                         console.log(Number(response.getDashboardFiltered[0].jumlah_Aksesories.toLocaleString('id-ID').replace(/,/g, '.')));
                     },
                     error: function (xhr, status, error) {
@@ -1465,10 +1484,82 @@ $total_stok_dashboard = [];
 
             }
 
-            // Terapkan filter ke DataTable
-
         });
     });
+
+
+    function updateTableFilterCity(data) {
+        var table = $("#table_detail_kota").DataTable(); // Ambil instance DataTable
+        table.clear().destroy(); // Hapus DataTable sebelum update
+
+        var tbody = $("#table_detail_kota tbody");
+        tbody.empty(); // Kosongkan tabel sebelum menambahkan data baru
+
+        if (data.length === 0) {
+            tbody.append('<tr><td colspan="12" class="text-center">Tidak ada data</td></tr>');
+        } else {
+            $.each(data, function (index, item) {
+                var row = `<tr>
+                <td>${index + 1}</td>
+                <td>${item.regional_lokasi_gudang}</td>
+                <td>${item.kota_lokasi_gudang}</td>
+                <td>${item.jumlah_Aksesories == 0 ? '-' : formatNumber(item.jumlah_Aksesories)}</td>
+                <td>${item.jumlah_Closure == 0 ? '-' : formatNumber(item.jumlah_Closure)}</td>
+                <td>${item.jumlah_FAT == 0 ? '-' : formatNumber(item.jumlah_FAT)}</td>
+                <td>${item.jumlah_FDT == 0 ? '-' : formatNumber(item.jumlah_FDT)}</td>
+                <td>${item.jumlah_HDPE == 0 ? '-' : formatNumber(item.jumlah_HDPE)}</td>
+                <td>${item.jumlah_Kabel == 0 ? '-' : formatNumber(item.jumlah_Kabel)}</td>
+                <td>${item.jumlah_OTB == 0 ? '-' : formatNumber(item.jumlah_OTB)}</td>
+                <td>${item.jumlah_Tiang == 0 ? '-' : formatNumber(item.jumlah_Tiang)}</td>
+                <td>
+                    <a href="<?= site_url('Logistik_Stok_Detail/detail/') ?>${item.kota_lokasi_gudang}" 
+                       class="btn btn-primary"><i class="fas fa-eye"></i></a>
+                </td>
+            </tr>`;
+
+                tbody.append(row);
+            });
+        }
+
+        // Reinitialize DataTables
+        var newTable = $("#table_detail_kota").DataTable({
+            "paging": true,
+            "pageLength": 10,
+            "info": false,
+            "searching": true,
+            "lengthChange": false
+        });
+
+        // Tambahkan event listener ulang setelah AJAX update
+        newTable.on('draw', function () {
+            updateTotal();
+        });
+
+        // Panggil updateTotal() setelah data baru ditambahkan
+        updateTotal();
+    }
+
+
+
+    function resetTableFilterCity() {
+        var tbody = $("#table_detail_kota tbody");
+        tbody.empty(); // Kosongkan isi tabel
+
+        $.each(originalData, function (index, row) {
+            var tr = "<tr>";
+            $.each(row, function (i, cell) {
+                tr += "<td>" + cell + "</td>";
+            });
+            tr += "</tr>";
+            tbody.append(tr);
+        });
+
+        console.log("Tabel dikembalikan ke data awal.");
+    }
+
+    function formatNumber(number) {
+        return new Intl.NumberFormat("id-ID").format(number);
+    }
 
     $(document).ready(function () {
         $.fn.dataTable.ext.errMode = 'none';
@@ -1481,6 +1572,11 @@ $total_stok_dashboard = [];
         // Fungsi untuk menghitung total dari data yang tampil
         function updateTotal() {
             // Ambil semua data yang terlihat
+            const table = $('#table_detail_kota').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                }
+            });
 
             const data = table.rows({ search: 'applied' }).data();
 
@@ -1494,7 +1590,11 @@ $total_stok_dashboard = [];
             let totalTabelKotaOtb = 0;
             let totalTabelKotaTiang = 0;
 
+            console.log("Data yang akan dihitung:", data.toArray());
+
             data.each(function (row) {
+                console.log("Row:", row);
+
                 totalTabelKotaAksesories += parseFloat(row[3].replace(/\./g, '')) || 0;
                 totalTabelKotaClosure += parseFloat(row[4].replace(/\./g, '')) || 0;
                 totalTabelKotaFat += parseFloat(row[5].replace(/\./g, '')) || 0;
@@ -1533,7 +1633,9 @@ $total_stok_dashboard = [];
                     console.log("<?= $stokKategory['kategori_item'] ?>");
                     console.log("", lokasiFilter2);
 
-                    if (lokasiFilter2 === "" && bowheerFilter2 === "" && itemFilter2 === "" && statusFilter2 === "") {
+                    // alert(selectTanggal2);
+
+                    if (lokasiFilter2 === "" && bowheerFilter2 === "" && itemFilter2 === "" && statusFilter2 === "" && selectTanggal2 === "") {
                         window.location.href = "<?= base_url("Logistik_Stok_Detail/detail_kategori/" . $stokKategory['kategori_item']) ?>";
                     } else {
                         let rincianData = JSON.stringify(kirimData);

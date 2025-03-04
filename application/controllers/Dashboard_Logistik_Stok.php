@@ -172,11 +172,13 @@ class Dashboard_Logistik_Stok extends CI_Controller
         $lokasi = json_decode($this->input->post('lokasi'), true);
         $bowheer = json_decode($this->input->post('bowheer'), true);
         $item = json_decode($this->input->post('item'), true);
+        $tanggal = $this->input->post('tanggal');
 
-        $data['getDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getDashboardFiltered($lokasi, $bowheer, $item);
-        $data['getRincianDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFiltered($lokasi, $bowheer, $item);
-        $data['getRincianDashboardFilteredBowheer'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFilteredBowheer($lokasi, $bowheer, $item);
-        $data['getInOutHistoryFiltered'] = $this->MDashboard_Logistik_Stok->getInOutHistoryFiltered($lokasi, $bowheer, $item);
+        $data['getDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getDashboardFiltered($lokasi, $bowheer, $item, $tanggal);
+        $data['getRincianDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFiltered($lokasi, $bowheer, $item, $tanggal);
+        $data['getRincianDashboardFilteredBowheer'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFilteredBowheer($lokasi, $bowheer, $item, $tanggal);
+        $data['getInOutHistoryFiltered'] = $this->MDashboard_Logistik_Stok->getInOutHistoryFiltered($lokasi, $bowheer, $item, $tanggal);
+        $data['getAllStokByKategoryFilterCityFiltered'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterCityFiltered($tanggal);
 
         echo json_encode($data, JSON_PRETTY_PRINT);
         exit;
