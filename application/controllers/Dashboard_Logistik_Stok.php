@@ -144,15 +144,28 @@ class Dashboard_Logistik_Stok extends CI_Controller
     public function hapusReportStokLogistik($no_surat_jalan)
     {
         $no_surat_jalan = urldecode($no_surat_jalan); // Decode dari URL
-        $this->db->where(['no_surat_jalan' => $no_surat_jalan]);
-        $res = $this->db->delete("tb_logistik_stok");
+        $id_lokasi_gudang = $this->input->get('id_lokasi_gudang'); // Ambil ID dari URL (GET)
 
-        if ($res) {
-            $this->session->set_flashdata('status', 'sukses_hapus');
+        // Pastikan parameter tidak kosong
+        if (!empty($no_surat_jalan) && !empty($id_lokasi_gudang)) {
+            $this->db->where([
+                'no_surat_jalan' => $no_surat_jalan,
+                'id_lokasi_gudang' => $id_lokasi_gudang
+            ]);
+
+            $res = $this->db->delete("tb_logistik_stok");
+
+            if ($res) {
+                $this->session->set_flashdata('success', 'Data berhasil dihapus.');
+            } else {
+                $this->session->set_flashdata('error', 'Gagal menghapus data.');
+            }
         } else {
-            $this->session->set_flashdata('status', 'gagal_hapus');
+            $this->session->set_flashdata('error', 'Parameter tidak lengkap.');
         }
-        redirect("Dashboard_Logistik_Stok");
+
+        redirect('Dashboard_Logistik_Stok');
+
     }
 
     public function filterDetailSuratJalan()

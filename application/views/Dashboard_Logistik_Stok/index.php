@@ -631,7 +631,7 @@ $total_stok_dashboard = [];
                                                 <td><?= $data['tanggal_upload_stok'] ?></td>
                                                 <td class="d-flex">
                                                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
-                                                        <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . urlencode($data['no_surat_jalan'])); ?>"
+                                                        <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . urlencode($data['no_surat_jalan']) . '?id_lokasi_gudang=' . urlencode($data['id_lokasi_gudang'])); ?>"
                                                             id="tombol_hapus_rincian"
                                                             class="btn btn-danger tombol_hapus_rincian">
                                                             <i class="fas fa-trash"></i>
@@ -659,7 +659,7 @@ $total_stok_dashboard = [];
             action="<?php echo site_url('Dashboard_Logistik_Stok/tambahReportStokLogistik'); ?>"
             enctype="multipart/form-data">
             <div class="modal fade" id="modal-xl-tambah" data-backdrop="static">
-                <div class="modal-dialog modal-xl">
+                <div class="modal-dialog modal-xl modal-dialog-scrollable">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h4 class="modal-title">Tambah Report Stok Logistik</h4>
@@ -1590,10 +1590,8 @@ $total_stok_dashboard = [];
             let totalTabelKotaOtb = 0;
             let totalTabelKotaTiang = 0;
 
-            console.log("Data yang akan dihitung:", data.toArray());
 
             data.each(function (row) {
-                console.log("Row:", row);
 
                 totalTabelKotaAksesories += parseFloat(row[3].replace(/\./g, '')) || 0;
                 totalTabelKotaClosure += parseFloat(row[4].replace(/\./g, '')) || 0;
