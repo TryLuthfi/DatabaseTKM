@@ -105,7 +105,7 @@ $total_stok_dashboard = [];
                                                 style="display: flex; justify-content: center; align-items: center;">LOKASI
                                                 GUDANG</label>
                                             <select id="filter_lokasi" class="select2" multiple="multiple"
-                                                data-placeholder="Pilih Gudang" style="width: 100%;">
+                                                data-placeholder="Pilih Gudang" style="width: 100%;" style="z-index: 0;">
                                                 <?php foreach ($getUniqueKotaGudang as $data): ?>
                                                     <option value="<?php echo $data['kota_lokasi_gudang'] ?>">
                                                         <?php echo $data['kota_lokasi_gudang'] ?>
@@ -667,10 +667,6 @@ $total_stok_dashboard = [];
         <form method="post" id="form_tambah_stok"
             action="<?php echo site_url('Dashboard_Logistik_Stok/tambahReportStokLogistik'); ?>"
             enctype="multipart/form-data">
-            <!-- <div class="modal fade" id="modal-xl-tambah" data-backdrop="static">
-                <div class="modal-dialog modal-xl modal-dialog-scrollable">
-                    <div class="modal-content">
-                        <div class="modal-header"> -->
             <div class="modal fade" id="modal-xl-tambah" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
                 <div class="modal-dialog modal-xl" role="document">
                     <div class="modal-content">
@@ -772,13 +768,25 @@ $total_stok_dashboard = [];
                                             style="height: 100px;"></textarea>
                                     </div>
                                 </div>
-                                <div class="col-md-12">
+                                <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Upload Surat Jalan</label>
                                         <div class="input-group">
                                             <div class="custom-file">
                                                 <label class="custom-file-label" for="file-sj">Choose file</label>
-                                                <input type="file" name="file" id="file-sj" class="custom-file-input"
+                                                <input type="file" name="file-sj" id="file-sj" class="custom-file-input"
+                                                    required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Upload Evidence</label>
+                                        <div class="input-group">
+                                            <div class="custom-file">
+                                                <label class="custom-file-label" for="file-evidence">Choose file</label>
+                                                <input type="file" name="file-evidence" id="file-evidence" class="custom-file-input"
                                                     required>
                                             </div>
                                         </div>
@@ -1120,7 +1128,6 @@ $total_stok_dashboard = [];
             $('#nomor_surat_jalan').val('');
             $('#id_project').val('').trigger('change');
             $('#id_lokasi_gudang').val('').trigger('change');
-            $('#id_sumber_material').val('').trigger('change');
             counter = 1;
         });
 
@@ -1130,41 +1137,44 @@ $total_stok_dashboard = [];
                 allowClear: true,
                 dropdownParent: $(this) // Merujuk ke modal yang terbuka
             });
+            $('#id_lokasi_gudang').val('').trigger('change');
+            $('#id_sumber_material').val('').trigger('change');
         });
 
 
         $('.btn-tambah-data-item').on('click', function() {
             $('#file-sj').val('');
+            $('#file-evidence').val('');
             $('.custom-file-label').text('Choose file');
             $('#keterangan_stok_item').val('');
         })
 
-        $('#file-sj').on('change', function(e) {
-            var fileName = e.target.files.length > 0 ? e.target.files[0].name : "Choose file";
-            $(this).siblings('.custom-file-label').text(fileName);
-        });
-
-        $("#file-sj").change(function() {
+        $('.custom-file-input').on('change', function(e) {
             let file = this.files[0];
-            let allowedExtensions = /(\.pdf|\.docx|\.xlsx)$/i;
-            let maxSize = 5120 * 1024;
+            let allowedExtensions = /\.pdf$/i; // Hanya PDF
+            let maxSize = 5120 * 1024; // 5MB
+            let fileName = file ? file.name : "Choose file";
 
-            if (file) {
-                if (!allowedExtensions.test(file.name)) {
-                    alert("File harus berupa PDF, DOCX, atau XLSX!");
-                    $(this).val("");
-                    $('.custom-file-label').text('Choose file');
-                    return;
-                }
+            // Update label
+            $(this).siblings('.custom-file-label').text(fileName);
 
-                if (file.size > maxSize) {
-                    alert("Ukuran file tidak boleh lebih dari 5MB!");
-                    $(this).val("");
-                    $('.custom-file-label').text('Choose file');
-                    return;
-                }
+            // Validasi ekstensi
+            if (file && !allowedExtensions.test(file.name)) {
+                alert("File harus berupa PDF!");
+                $(this).val("");
+                $(this).siblings('.custom-file-label').text("Choose file");
+                return;
+            }
+
+            // Validasi ukuran file
+            if (file && file.size > maxSize) {
+                alert("Ukuran file tidak boleh lebih dari 5MB!");
+                $(this).val("");
+                $(this).siblings('.custom-file-label').text("Choose file");
+                return;
             }
         });
+
 
         $("#form_tambah_stok").submit(function(event) {
             let isValid = true;
@@ -1306,7 +1316,7 @@ $total_stok_dashboard = [];
         <?php } ?>
 
         $('.select2').select2()
-        $('.select2-container').css('z-index', 99999);
+        $('.select2-container').attr("style", "z-index: 1 !important;");
 
         //Initialize Select2 Elements
         $('.select2bs4').select2({
