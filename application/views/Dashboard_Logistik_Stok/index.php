@@ -11,6 +11,17 @@
         }
     });
 </script>
+<style>
+    .modal-dialog-scrollable .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Pastikan Select2 bisa tampil di atas modal */
+.select2-container {
+    z-index: 99999 !important;
+}
+</style>
 
 <?php
 $status = $this->session->flashdata('status');
@@ -345,8 +356,7 @@ $total_stok_dashboard = [];
                                                                     ?></td>
                                                                     <td>
                                                                         <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['regional_lokasi_gudang']); ?>"
-                                                                            id="tombol_hapus"
-                                                                            class="btn btn-primary tombol_hapus"><i
+                                                                            class="btn btn-primary"><i
                                                                                 class=" fas fa-eye"></i></a>
                                                                     </td>
                                                                 </tr>
@@ -504,8 +514,7 @@ $total_stok_dashboard = [];
                                                                     ?></td>
                                                                     <td>
                                                                         <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['kota_lokasi_gudang']); ?>"
-                                                                            id="tombol_hapus"
-                                                                            class="btn btn-primary tombol_hapus"><i
+                                                                            class="btn btn-primary"><i
                                                                                 class=" fas fa-eye"></i></a>
                                                                     </td>
                                                                 </tr>
@@ -1293,6 +1302,7 @@ $total_stok_dashboard = [];
         <?php } ?>
 
         $('.select2').select2()
+        $('.select2-container').css('z-index', 99999);
 
         //Initialize Select2 Elements
         $('.select2bs4').select2({
