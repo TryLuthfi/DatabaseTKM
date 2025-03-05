@@ -52,7 +52,6 @@ class Dashboard_Logistik_Stok extends CI_Controller
         $this->load->view('Dashboard_Logistik_Stok/indexkategori', $kategori_item);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
-
     }
 
     public function getProjectByBowheer()
@@ -79,66 +78,83 @@ class Dashboard_Logistik_Stok extends CI_Controller
     {
 
         $this->load->helper('date');
-        $config['upload_path'] = "./uploads/";
-        $config['allowed_types'] = 'pdf|docx|xlsx|';
-        $config['max_size'] = 5120;
-        $file_ext = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
-        $new_filename = "SURAT_JALAN" . "_" . $this->input->post('id_lokasi_gudang') . "_" . $this->input->post('id_bowheer') . "_" . $this->input->post('id_sumber_material') . "_TIME_" . date('d_m_Y_h_i_s') . "." . $file_ext;
-        $config['file_name'] = $new_filename;
-        $file_path = $config['upload_path'] . $new_filename;
-
-        $this->load->library('upload', $config);
-        $this->upload->initialize($config);
-
-        if (!is_dir('./uploads/')) {
-            mkdir('./uploads/', 0777, true);
+        $this->load->library('upload');
+        $upload_path = "./uploads/";
+        if (!is_dir($upload_path)) {
+            mkdir($upload_path, 0777, true);
         }
+        $id_lokasi_gudang = $this->input->post('id_lokasi_gudang');
+        $id_bowheer = $this->input->post('id_bowheer');
+        $id_sumber_material = $this->input->post('id_sumber_material');
+        $tanggal_upload_stok = $this->input->post('tanggal_upload_stok');
+        $timestamp = date('_h_i_s');
+        $uploaded_files = [];
+        $files = [
+            'file-sj' => "SURAT_JALAN_{$id_lokasi_gudang}_{$id_bowheer}_{$id_sumber_material}_TIME_{$tanggal_upload_stok}{$timestamp}",
+            'file-evidence' => "EVIDENCE_{$id_lokasi_gudang}_{$id_bowheer}_{$id_sumber_material}_TIME_{$tanggal_upload_stok}{$timestamp}"
+        ];
 
-        if (!$this->upload->do_upload('file')) {
-            $error = $this->upload->display_errors(); //TAMPILKAN ERROR
-            $this->session->set_flashdata('error', 'Format file tidak sesuai! atau File terlalu besar! ');
-            redirect('Dashboard_Logistik_Stok/index/');
-        } else {
-            $fileData = $this->upload->data();
-            $data_insert = [];
-
-            foreach ($this->input->post('jumlah_stok') as $key => $value) {
-
-                $tanggal = $this->input->post('tanggal_upload_stok'); // Format: YYYY-MM-DD
-                $jamSekarang = date('H:i:s'); // Ambil jam saat ini
-
-                // Gabungkan tanggal dengan jam sekarang
-                $tanggalFormatted = $tanggal . ' ' . $jamSekarang;
-
-                $data_insert[] = [
-                    'no_surat_jalan' => $this->input->post('nomor_surat_jalan'),
-                    'id_lokasi_gudang' => $this->input->post('id_lokasi_gudang'),
-                    'id_bowheer' => $this->input->post('id_bowheer'),
-                    'id_sumber_material' => $this->input->post('id_sumber_material'),
-                    'id_kode_item' => $this->input->post('id_kode_item')[$key],
-                    'jumlah_stok' => $this->input->post('jumlah_stok')[$key],
-                    'satuan_stok' => $this->input->post('satuan_stok')[$key],
-                    'merk_stok' => $this->input->post('merk_item')[$key],
-                    'no_haspel_stok' => $this->input->post('no_haspel_item')[$key],
-                    'no_ref_stok' => $this->input->post('no_ref_item')[$key],
-                    'keterangan_stok' => $this->input->post('keterangan_stok'),
-                    'tanggal_upload_stok' => $tanggalFormatted,
-                    'evidence_stok' => $file_path,
-                    'id_user' => $this->session->userdata('id_user')
+        foreach ($files as $field_name => $new_filename) {
+            if (!empty($_FILES[$field_name]['name'])) {
+                $file_ext = pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
+                $config = [
+                    'upload_path'   => $upload_path,
+                    'allowed_types' => 'pdf',
+                    'max_size'      => 5120,
+                    'file_name'     => "{$new_filename}.{$file_ext}"
                 ];
+
+                $this->upload->initialize($config);
+
+                if (!$this->upload->do_upload($field_name)) {
+                    $this->session->set_flashdata('error', 'Format file tidak sesuai atau file terlalu besar!');
+                    redirect('Dashboard_Logistik_Stok/index/');
+                } else {
+                    $uploaded_files[$field_name] = $this->upload->data('file_name');
+                }
             }
+        }
 
-            $is_success = $this->db->insert_batch('tb_logistik_stok', $data_insert);
-
-            if ($is_success) {
-                $this->session->set_flashdata('success', 'Data stok berhasil disimpan.');
-            } else {
-                $this->session->set_flashdata('error', 'Gagal menyimpan data stok. Silakan coba lagi.');
-            }
-
-            $this->session->set_flashdata('success', 'Dokumen berhasil diupload!');
+        if (empty($uploaded_files)) {
+            $this->session->set_flashdata('error', 'Gagal mengupload dokumen.');
             redirect('Dashboard_Logistik_Stok/index/');
         }
+
+        $data_insert = [];
+        $jumlah_stok = $this->input->post('jumlah_stok');
+
+        foreach ($jumlah_stok as $key => $value) {
+            $tanggalFormatted = "{$tanggal_upload_stok} " . date('H:i:s');
+
+            $data_insert[] = [
+                'no_surat_jalan'     => $this->input->post('nomor_surat_jalan'),
+                'id_lokasi_gudang'   => $id_lokasi_gudang,
+                'id_bowheer'         => $id_bowheer,
+                'id_sumber_material' => $id_sumber_material,
+                'id_kode_item'       => $this->input->post('id_kode_item')[$key],
+                'jumlah_stok'        => $jumlah_stok[$key],
+                'satuan_stok'        => $this->input->post('satuan_stok')[$key],
+                'merk_stok'          => $this->input->post('merk_item')[$key],
+                'no_haspel_stok'     => $this->input->post('no_haspel_item')[$key],
+                'no_ref_stok'        => $this->input->post('no_ref_item')[$key],
+                'keterangan_stok'    => $this->input->post('keterangan_stok'),
+                'tanggal_upload_stok'=> $tanggalFormatted,
+                'evidence_stok'      => $upload_path . $uploaded_files['file-evidence'],
+                'surat_jalan_stok'   => $upload_path . $uploaded_files['file-sj'],
+                'id_user'            => $this->session->userdata('id_user')
+            ];
+        }
+
+        $is_success = $this->db->insert_batch('tb_logistik_stok', $data_insert);
+
+        if ($is_success) {
+            $this->session->set_flashdata('success', 'Data stok berhasil disimpan.');
+        } else {
+            $this->session->set_flashdata('error', 'Gagal menyimpan data stok. Silakan coba lagi.');
+        }
+
+        $this->session->set_flashdata('success', 'Dokumen berhasil diupload!');
+        redirect('Dashboard_Logistik_Stok/index/');
     }
 
     public function hapusReportStokLogistik($no_surat_jalan)
@@ -165,7 +181,6 @@ class Dashboard_Logistik_Stok extends CI_Controller
         }
 
         redirect('Dashboard_Logistik_Stok');
-
     }
 
     public function filterDetailSuratJalan()
@@ -175,7 +190,6 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
         echo json_encode($data);
         die();
-
     }
 
     public function filterDashboardLogistik()
@@ -196,5 +210,4 @@ class Dashboard_Logistik_Stok extends CI_Controller
         echo json_encode($data, JSON_PRETTY_PRINT);
         exit;
     }
-
 }
