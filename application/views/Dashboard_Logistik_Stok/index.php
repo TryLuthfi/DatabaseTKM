@@ -647,7 +647,7 @@ $total_stok_dashboard = [];
                                                         </a>
                                                     <?php } ?>
 
-                                                    <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>"
+                                                    <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>" data-id-logistik-stok-unique="<?= $data['evidence_stok']?>"
                                                         data-target="#form_detail_surat_jalan" data-toggle="modal"
                                                         class="btn btn-primary tombol_detail ml-1"><i
                                                             class=" fas fa-eye"></i></a>
@@ -1217,7 +1217,9 @@ $total_stok_dashboard = [];
     $(document).ready(function() {
         $(".tombol_detail").click(function() {
             var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
-            console.log(selectedSJ);
+            var selectedunique = $(this).data("id-logistik-stok-unique"); // Ambil ID dari tombol yang ditekan
+            console.log(selectedunique);
+            
 
             if (!selectedSJ || selectedSJ === "") {
                 var tbody = $("#hasilDetailDataSJ");
@@ -1236,7 +1238,7 @@ $total_stok_dashboard = [];
                     url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>", // Arahkan ke file PHP yang menangani filtering
                     method: "POST",
                     data: {
-                        no_surat_jalan: selectedSJ
+                        no_surat_jalan: selectedunique  
                     },
                     dataType: "json",
                     success: function(response) {
