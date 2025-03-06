@@ -136,17 +136,31 @@
                                             <label class="col-form-label">Status Approval</label>
                                             <h5>
                                                 <?php echo ($detail_purchase_request[0]['approved_planning'] == 0)
-                                                    ? '<span class="badge badge-warning">Belum Diapprove Manager Planning</span>'
-                                                    : '<span class="badge badge-success">Sudah Diapprove Manager Planning</span>'; ?>
+                                                    ? '<span class="badge badge-warning" style="font-size:1rem!important">Belum Diapprove Manager Planning</span>'
+                                                    : '<span class="badge badge-success" style="font-size:1rem!important">Sudah Diapprove Manager Planning</span>'; ?>
 
                                                 <?php echo ($detail_purchase_request[0]['approved_finance'] == 0)
-                                                    ? '<span class="badge badge-warning">Belum Diapprove Finance</span>'
-                                                    : '<span class="badge badge-success">Sudah Diapprove Finance</span>'; ?>
+                                                    ? '<span class="badge badge-warning" style="font-size:1rem!important">Belum Diapprove Finance</span>'
+                                                    : '<span class="badge badge-success" style="font-size:1rem!important">Sudah Diapprove Finance</span>'; ?>
 
                                                 <?php echo ($detail_purchase_request[0]['approved_direktur'] == 0)
-                                                    ? '<span class="badge badge-warning">Belum Diapprove Direktur</span>'
-                                                    : '<span class="badge badge-success">Sudah Diapprove Direktur</span>'; ?>
+                                                    ? '<span class="badge badge-warning" style="font-size:1rem!important">Belum Diapprove Direktur</span>'
+                                                    : '<span class="badge badge-success" style="font-size:1rem!important">Sudah Diapprove Direktur</span>'; ?>
                                             </h5>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="col-form-label">Dokumen Hardcopy PR</label>
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <?php if ($detail_purchase_request[0]['hardcopy_file'] == null) : ?>
+                                                        <span class="badge badge-warning">Belum Upload</span>
+                                                    <?php else : ?>
+                                                        <span class="badge badge-success">Sudah Upload</span>&nbsp; <a href="<?= base_url() ?>./uploads/<?= $detail_purchase_request[0]['hardcopy_file'] ?>" class="font-size-14 text-muted text-truncate" id="view_detail_surat_jalan" target="_blank"><u>View Document</u></a>
+                                                    <?php endif ?>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <?php if ($type != 'view') : ?>
@@ -238,10 +252,11 @@
                             </div>
                             <div class="card-footer text-body-secondary">
                                 <a href="#" class="btn btn-primary"><i class="fa fa-print mr-1"></i> Print</a>
-                                <?php  if ($type == 'view') { ?>
-                                    <a href="#" class="btn btn-success btn-approve <?= $this->session->userdata('validation') != 'Finance' ? 'disabled' : '' ?>" data-id="<?= $detail_purchase_request[0]['id_purchase_request'] ?>" data-tipe="Finance"><i class="fa fa-check mr-1"></i> Approve By Finance</a>
-                                    <a href="#" class="btn btn-success btn-approve <?= $this->session->userdata('validation') != 'Direktur' ? 'disabled' : '' ?>" data-id="<?= $detail_purchase_request[0]['id_purchase_request'] ?>" data-tipe="Direktur"><i class="fa fa-check mr-1"></i> Approve By Direktur</a>
+                                <?php if ($type == 'view') { ?>
+                                    <a href="#" class="btn btn-success btn-approve  <?= ($this->session->userdata('validation') != 'Finance' || $detail_purchase_request[0]['approved_planning'] == 0) ? 'disabled' : '' ?>" data-id="<?= $detail_purchase_request[0]['id_purchase_request'] ?>" data-tipe="Finance"> <i class="fa fa-check mr-1"></i> Approve By Finance</a>
+                                    <a href="#" class="btn btn-success btn-approve  <?= ($this->session->userdata('validation') != 'Direktur' || $detail_purchase_request[0]['approved_finance'] == 0) ? 'disabled' : '' ?>" data-id="<?= $detail_purchase_request[0]['id_purchase_request'] ?>" data-tipe="Direktur"> <i class="fa fa-check mr-1"></i> Approve By Direktur</a>
                                 <?php } ?>
+                                <a href="#" class="btn btn-primary btn-upload-hardcopy" data-target="#modal-upload-hardcopy" data-toggle="modal"><i class="fas fa-upload"></i>&nbsp; Upload Hardcopy</a>
                                 <a href="#" class="btn btn-success btn-save-planning <?= $this->session->userdata('validation') != 'Planning' ? 'disabled' : '' ?>" <?= ($type == 'view') ? 'hidden' : '' ?>><i class="fa fa-envelope mr-1"></i> Simpan</a>
                             </div>
                         </form>
@@ -250,6 +265,41 @@
             </div>
         </div>
     </section>
+</div>
+
+<div class="modal fade" id="modal-upload-hardcopy" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form action="<?= base_url('Logistik_Purchase_Request/upload_hardcopy') ?>" method="post" id="form-upload-hardcopy" enctype="multipart/form-data">
+            <div class="modal-header">
+                <h4 class="modal-title">Upload Hardcopy</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label>Upload Document</label>
+                            <div class="input-group">
+                                <div class="custom-file">
+                                    <label class="custom-file-label" for="file-hardcopy">Choose file</label>
+                                    <input type="file" name="file-hardcopy" id="file-hardcopy" class="custom-file-input" required>
+                                    <input type="hidden" name="id_purchase_request" value="<?= $detail_purchase_request[0]['id_purchase_request'] ?>" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan</button>
+            </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -303,8 +353,8 @@
                 }
             });
         });
-        
-        $(".btn-approve").click(function (e) {
+
+        $(".btn-approve").click(function(e) {
             e.preventDefault(); // Mencegah default action dari <a> href
 
             let id = $(this).data("id"); // Ambil ID purchase request
@@ -325,12 +375,15 @@
                     $.ajax({
                         url: "<?= base_url('Logistik_Purchase_Request/approve_purchase_request') ?>",
                         type: "POST",
-                        data: { id_purchase_request: id, tipe: tipe },
-                        success: function (response) {
+                        data: {
+                            id_purchase_request: id,
+                            tipe: tipe
+                        },
+                        success: function(response) {
                             Swal.fire("Berhasil!", "Purchase Request telah disetujui.", "success")
                                 .then(() => location.reload()); // Reload halaman setelah sukses
                         },
-                        error: function () {
+                        error: function() {
                             Swal.fire("Gagal!", "Terjadi kesalahan, coba lagi.", "error");
                         }
                     });
@@ -338,6 +391,31 @@
             });
         });
 
+        $('.custom-file-input').on('change', function(e) {
+            let file = this.files[0];
+            let allowedExtensions = /\.pdf$/i; // Hanya PDF
+            let maxSize = 5120 * 1024; // 5MB
+            let fileName = file ? file.name : "Choose file";
+
+            // Update label
+            $(this).siblings('.custom-file-label').text(fileName);
+
+            // Validasi ekstensi
+            if (file && !allowedExtensions.test(file.name)) {
+                alert("File harus berupa PDF!");
+                $(this).val("");
+                $(this).siblings('.custom-file-label').text("Choose file");
+                return;
+            }
+
+            // Validasi ukuran file
+            if (file && file.size > maxSize) {
+                alert("Ukuran file tidak boleh lebih dari 5MB!");
+                $(this).val("");
+                $(this).siblings('.custom-file-label').text("Choose file");
+                return;
+            }
+        });
 
     });
-</script> 
+</script>

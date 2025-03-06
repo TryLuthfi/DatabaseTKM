@@ -170,7 +170,64 @@ class Logistik_Purchase_Request extends CI_Controller
         }
     }
 
-    public function approve_purchase_request(){
+    public function upload_hardcopy()
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+            $this->load->helper('date');
+            $this->load->library('upload');
+
+            $upload_path = "./uploads/";
+            if (!is_dir($upload_path)) {
+                mkdir($upload_path, 0777, true);
+            }
+
+            $id_purchase_request = $this->input->post('id_purchase_request');
+            $timestamp = date('Y-m-d_H-i-s');
+            $field_name = 'file-hardcopy';
+
+            // Pastikan file ada sebelum lanjut
+            if (!isset($_FILES[$field_name]) || $_FILES[$field_name]['error'] !== UPLOAD_ERR_OK) {
+                $this->session->set_flashdata('error', 'Tidak ada file yang diunggah atau terjadi kesalahan!');
+                redirect('Logistik_Purchase_Request/view_purchase_request/' . $id_purchase_request);
+            }
+
+            $file_ext = pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
+            $Name_files = "PURCHASE_REQUEST_{$timestamp}_{$id_purchase_request}.{$file_ext}";
+
+            $config = [
+                'upload_path'   => $upload_path,
+                'allowed_types' => 'pdf',
+                'max_size'      => 5120,
+                'file_name'     => $Name_files
+            ];
+
+            $this->upload->initialize($config);
+
+            if (!$this->upload->do_upload($field_name)) {
+                $this->session->set_flashdata('error', $this->upload->display_errors('', ''));
+                redirect('Logistik_Purchase_Request/view_purchase_request/' . $id_purchase_request);
+            }
+
+            $uploaded_file = $this->upload->data('file_name');
+
+            // Pastikan file berhasil diunggah sebelum update database
+            if (!empty($uploaded_file)) {
+                $this->db->where('id_purchase_request', $id_purchase_request);
+                $this->db->update('tb_logistik_purchase_request', ['hardcopy_file' => $uploaded_file]);
+
+                $this->session->set_flashdata('success', 'Dokumen berhasil diupload!');
+            } else {
+                $this->session->set_flashdata('error', 'Gagal mengupload dokumen.');
+            }
+
+            redirect('Logistik_Purchase_Request/view_purchase_request/' . $id_purchase_request);
+        } else {
+            redirect('Auth');
+        }
+    }
+
+    public function approve_purchase_request()
+    {
         if (!empty($this->session->userdata('id_user'))) {
             $id_purchase_request = $this->input->post('id_purchase_request');
             $tipe = strtolower($this->input->post('tipe')); // Konversi tipe ke lowercase
@@ -191,7 +248,29 @@ class Logistik_Purchase_Request extends CI_Controller
                 $this->session->set_flashdata('error', 'Tipe approval tidak valid.');
             }
             return true;
-        }else{
+        } else {
+            redirect('Auth');
+        }
+    }
+
+    public function print_purchase_request()
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+            // $data['title'] = 'Purchase Request';
+            // $this->load->view('format_purchase_request_print', $data);
+            $this->load->library('Mpdf_lib');
+            $mpdf = $this->mpdf_lib->load();
+
+            // Load view ke dalam variabel
+            $data['title'] = "Laporan Data";
+            $html = $this->load->view('laporan', $data, TRUE);
+
+            // Tambahkan HTML ke PDF
+            $mpdf->WriteHTML('<h1>tes</h1>');
+
+            // Download PDF langsung
+            $mpdf->Output("Laporan.pdf", "D");
+        } else {
             redirect('Auth');
         }
     }
