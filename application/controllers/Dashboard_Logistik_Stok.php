@@ -139,8 +139,8 @@ class Dashboard_Logistik_Stok extends CI_Controller
                 'no_ref_stok'        => $this->input->post('no_ref_item')[$key],
                 'keterangan_stok'    => $this->input->post('keterangan_stok'),
                 'tanggal_upload_stok'=> $tanggalFormatted,
-                'evidence_stok'      => $upload_path . $uploaded_files['file-evidence'],
-                'surat_jalan_stok'   => $upload_path . $uploaded_files['file-sj'],
+                'surat_jalan'      => $upload_path . $uploaded_files['file-sj'],
+                'evidence'   => $upload_path . $uploaded_files['file-evidence'],
                 'id_user'            => $this->session->userdata('id_user')
             ];
         }

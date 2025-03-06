@@ -647,7 +647,7 @@ $total_stok_dashboard = [];
                                                         </a>
                                                     <?php } ?>
 
-                                                    <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>" data-id-logistik-stok-unique="<?= $data['evidence_stok']?>"
+                                                    <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>" data-id-logistik-stok-unique="<?= $data['surat_jalan'] ?>"
                                                         data-target="#form_detail_surat_jalan" data-toggle="modal"
                                                         class="btn btn-primary tombol_detail ml-1"><i
                                                             class=" fas fa-eye"></i></a>
@@ -774,8 +774,7 @@ $total_stok_dashboard = [];
                                         <div class="input-group">
                                             <div class="custom-file">
                                                 <label class="custom-file-label" for="file-sj">Choose file</label>
-                                                <input type="file" name="file-sj" id="file-sj" class="custom-file-input"
-                                                    required>
+                                                <input type="file" name="file-sj" id="file-sj" class="custom-file-input" required>
                                             </div>
                                         </div>
                                     </div>
@@ -786,8 +785,7 @@ $total_stok_dashboard = [];
                                         <div class="input-group">
                                             <div class="custom-file">
                                                 <label class="custom-file-label" for="file-evidence">Choose file</label>
-                                                <input type="file" name="file-evidence" id="file-evidence" class="custom-file-input"
-                                                    required>
+                                                <input type="file" name="file-evidence" id="file-evidence" class="custom-file-input">
                                             </div>
                                         </div>
                                     </div>
@@ -891,9 +889,29 @@ $total_stok_dashboard = [];
 
                                                     <div class="flex-grow-1">
                                                         <h5 class="font-size-15 mb-1 text-truncate"
-                                                            id="detail_nama_file"></h5>
+                                                            id="detail_nama_file_sj"></h5>
                                                         <a href="" class="font-size-14 text-muted text-truncate"
                                                             id="view_detail_surat_jalan" target="_blank"><u>View
+                                                                Folder</u></a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="container-detail-evidence">
+                                <div class="form-group">
+                                    <label>Lihat Bukti Evidence</label>
+                                    <div class="card">
+                                        <div class="card-body p-6">
+                                            <div class="">
+                                                <div class="d-flex align-items-center overflow-hidden">
+                                                    <div class="flex-grow-1">
+                                                        <h5 class="font-size-15 mb-1 text-truncate"
+                                                            id="detail_nama_file_evidence"></h5>
+                                                        <a href="" class="font-size-14 text-muted text-truncate"
+                                                            id="view_detail_evidence" target="_blank"><u>View
                                                                 Folder</u></a>
                                                     </div>
                                                 </div>
@@ -1175,18 +1193,15 @@ $total_stok_dashboard = [];
             }
         });
 
-
         $("#form_tambah_stok").submit(function(event) {
             let isValid = true;
             let errorMessage = [];
 
-            // Cek input tanggal harus valid
             let tanggalUpload = $("input[name='tanggal_upload_stok']").val();
             if (!tanggalUpload) {
                 errorMessage.push("Tanggal upload stok harus diisi.");
             }
 
-            // Cek setiap input yang harus memiliki nilai
             let requiredFields = {
                 "#id_lokasi_gudang": "Lokasi gudang",
                 "#id_project": "Proyek",
@@ -1199,12 +1214,21 @@ $total_stok_dashboard = [];
                 }
             });
 
-            // Cek apakah tabel memiliki minimal 1 row
             if ($("#table_item_stok tbody tr").length === 0) {
                 errorMessage.push("Minimal harus ada satu item stok dalam tabel.");
             }
 
-            // Jika ada error, tampilkan alert sekaligus
+            let fileSj = $("input[name='file-sj']").val();
+            if (!fileSj) {
+                errorMessage.push("File Surat Jalan (file-sj) wajib diunggah.");
+            }
+
+            let fileEvidence = $("input[name='file-evidence']").val();
+            let isFileEvidenceRequired = false;
+            if (isFileEvidenceRequired && !fileEvidence) {
+                errorMessage.push("File Evidence (file-evidence) wajib diunggah.");
+            }
+
             if (errorMessage.length > 0) {
                 alert(errorMessage.join("\n"));
                 event.preventDefault();
@@ -1219,7 +1243,7 @@ $total_stok_dashboard = [];
             var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
             var selectedunique = $(this).data("id-logistik-stok-unique"); // Ambil ID dari tombol yang ditekan
             console.log(selectedunique);
-            
+
 
             if (!selectedSJ || selectedSJ === "") {
                 var tbody = $("#hasilDetailDataSJ");
@@ -1230,15 +1254,17 @@ $total_stok_dashboard = [];
                 document.getElementById("detail_nama_project").value = "";
                 document.getElementById("detail_sumber_material").value = "";
                 document.getElementById("detail_keterangan_stok_item").value = "";
-                document.getElementById("detail_nama_file").innerText = "No File Uploaded";
+                document.getElementById("detail_nama_file_sj").innerText = "No File Uploaded";
+                document.getElementById("detail_nama_file_evidence").innerText = "No File Uploaded";
                 document.getElementById("view_detail_surat_jalan").style.display = "none";
+                document.getElementById("view_detail_evidence").style.display = "none";
 
             } else {
                 $.ajax({
                     url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>", // Arahkan ke file PHP yang menangani filtering
                     method: "POST",
                     data: {
-                        no_surat_jalan: selectedunique  
+                        no_surat_jalan: selectedunique
                     },
                     dataType: "json",
                     success: function(response) {
@@ -1247,7 +1273,8 @@ $total_stok_dashboard = [];
 
                         var nomor = 1;
                         let baseUrl = "<?= base_url() ?>"
-                        let lokasiUrl = response.getDetailAreaBySJ[0].evidence_stok;
+                        let lokasiUrl_sj = response.getDetailAreaBySJ[0].surat_jalan;
+                        let lokasiUrl_evidence = response.getDetailAreaBySJ[0].evidence;
                         var totalStok = 0;
 
                         $.each(response.getDetailAreaBySJ, function(index, getDetailAreaBySJ) {
@@ -1275,12 +1302,22 @@ $total_stok_dashboard = [];
                         document.getElementById("detail_sumber_material").value = response.getDetailAreaBySJ[0].nama_sumber_material;
                         document.getElementById("detail_keterangan_stok_item").value = response.getDetailAreaBySJ[0].keterangan_stok;
                         document.getElementById("tanggal_upload_stok").value = tanggalFormatted;
-                        var filePath = response.getDetailAreaBySJ[0].evidence_stok;
-                        var fileName = filePath.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
+                        var filePath_sj = response.getDetailAreaBySJ[0].surat_jalan;
+                        var filePath_evidence = response.getDetailAreaBySJ[0].evidence;
+                        var fileName_sj = filePath_sj.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
+                        var fileName_evidence = filePath_evidence.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
 
-                        document.getElementById("detail_nama_file").innerText = fileName;
+                        document.getElementById("detail_nama_file_sj").innerText = fileName_sj;
+                        document.getElementById("detail_nama_file_evidence").innerText = fileName_evidence;
                         document.getElementById("view_detail_surat_jalan").style.display = "block";
-                        document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl;
+                        document.getElementById("view_detail_evidence").style.display = "block";
+                        document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl_sj;
+                        
+                        if(lokasiUrl_evidence == "./uploads/"){
+                            $('#container-detail-evidence').attr('hidden', true);
+                        }else{
+                            document.getElementById("view_detail_evidence").href = lokasiUrl_evidence != "./uploads/" ? baseUrl + lokasiUrl_evidence : "#";
+                        }
                         console.log("Response:", response);
                     },
                     error: function(xhr, status, error) {
