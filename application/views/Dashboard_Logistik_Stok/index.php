@@ -21,6 +21,41 @@
     .select2-container {
         z-index: 99999 !important;
     }
+
+    .fade-in {
+        opacity: 0;
+        transform: translateY(-10px);
+        animation: fadeIn 0.3s ease-in-out forwards;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .active-tab {
+        position: relative;
+    }
+
+    .active-tab::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: -5px;
+        width: 100%;
+        height: 4px;
+        background: rgb(12, 127, 180);
+        /* Warna hijau neon */
+        box-shadow: 0 0 10px rgb(12, 127, 180), 0 0 20px rgb(12, 127, 180);
+        border-radius: 2px;
+    }
 </style>
 
 <?php
@@ -964,7 +999,16 @@ $total_stok_dashboard = [];
                                         OUT</button>
                                 </div>
                             </div>
+
+                            <div class="col-md-12 mt-3" id="report_judul">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="flex-grow-1 border-top"></div>
+                                    <h5 class="mx-3">PILIH MENU EXPORT</h5>
+                                    <div class="flex-grow-1 border-top"></div>
+                                </div>
+                            </div>
                         </div>
+
 
                         <!-- Form Input Batch (Hidden by Default) -->
                         <div id="isi_report_in_out_logistik" class="mt-3 d-none">
@@ -1030,7 +1074,7 @@ $total_stok_dashboard = [];
                             <div class="col-md-12 mt-3 d-flex justify-content-end">
                                 <div class="form-group">
                                     <button id="downloadReportInOutLogistik" class="btn btn-primary mt-2">Download
-                                        Report 🚀</button>
+                                        Excel 🚀</button>
                                 </div>
                             </div>
                         </div>
@@ -1186,18 +1230,42 @@ $total_stok_dashboard = [];
 </aside>
 
 <script type="text/javascript">
-    // AJAX SELECT 2 JENIS MATERIAL
 
     document.getElementById("report_in_out_logistik").addEventListener("click", function () {
-        document.getElementById("isi_report_in_out_logistik").classList.remove("d-none");
-        document.getElementById("isi_report_stok_logistik").classList.add("d-none");
+        let inOutDiv = document.getElementById("isi_report_in_out_logistik");
+        let stokDiv = document.getElementById("isi_report_stok_logistik");
+        let inOutBtn = document.getElementById("report_in_out_logistik");
+        let stokBtn = document.getElementById("report_stok_logistik");
+        let judulDiv = document.getElementById("report_judul");
+
+        stokDiv.classList.add("d-none");
+        judulDiv.classList.add("d-none");
+        inOutDiv.classList.remove("d-none", "fade-in");
+        void inOutDiv.offsetWidth;
+        inOutDiv.classList.add("fade-in");
+
+        // Tambahkan efek neon pada tombol aktif
+        stokBtn.classList.remove("active-tab");
+        inOutBtn.classList.add("active-tab");
     });
 
     document.getElementById("report_stok_logistik").addEventListener("click", function () {
-        document.getElementById("isi_report_in_out_logistik").classList.add("d-none");
-        document.getElementById("isi_report_stok_logistik").classList.remove("d-none");
-    });
+        let inOutDiv = document.getElementById("isi_report_in_out_logistik");
+        let stokDiv = document.getElementById("isi_report_stok_logistik");
+        let inOutBtn = document.getElementById("report_in_out_logistik");
+        let stokBtn = document.getElementById("report_stok_logistik");
+        let judulDiv = document.getElementById("report_judul");
 
+        inOutDiv.classList.add("d-none");
+        judulDiv.classList.add("d-none");
+        stokDiv.classList.remove("d-none", "fade-in");
+        void stokDiv.offsetWidth;
+        stokDiv.classList.add("fade-in");
+
+        // Tambahkan efek neon pada tombol aktif
+        inOutBtn.classList.remove("active-tab");
+        stokBtn.classList.add("active-tab");
+    });
 
     $(document).ready(function () {
 
@@ -2094,17 +2162,17 @@ $total_stok_dashboard = [];
             let dateStart = document.getElementById("report_date_start")?.value || "";
             let dateEnd = document.getElementById("report_date_end")?.value || "";
 
-            
+
             return stokLogistik.filter(data => {
-            let uploadDate = data.tanggal_upload_stok.split(" ")[0];
+                let uploadDate = data.tanggal_upload_stok.split(" ")[0];
                 return (
                     (selectedRegional === "" || data.regional_lokasi_gudang === selectedRegional) &&
-            (selectedKota === "" || data.kota_lokasi_gudang === selectedKota) &&
-            (selectedBowheer === "" || data.nama_bowheer === selectedBowheer) &&
-            (selectedKategori === "" || data.kategori_item === selectedKategori) &&
-            (selectedItem === "" || data.nama_item === selectedItem) &&
-            (dateStart === "" || uploadDate >= dateStart) &&
-            (dateEnd === "" || uploadDate <= dateEnd)
+                    (selectedKota === "" || data.kota_lokasi_gudang === selectedKota) &&
+                    (selectedBowheer === "" || data.nama_bowheer === selectedBowheer) &&
+                    (selectedKategori === "" || data.kategori_item === selectedKategori) &&
+                    (selectedItem === "" || data.nama_item === selectedItem) &&
+                    (dateStart === "" || uploadDate >= dateStart) &&
+                    (dateEnd === "" || uploadDate <= dateEnd)
                 );
             });
         }
