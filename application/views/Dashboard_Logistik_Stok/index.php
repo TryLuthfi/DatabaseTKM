@@ -785,7 +785,7 @@ $total_stok_dashboard = [];
                                         <div class="input-group">
                                             <div class="custom-file">
                                                 <label class="custom-file-label" for="file-evidence">Choose file</label>
-                                                <input type="file" name="file-evidence" id="file-evidence" class="custom-file-input">
+                                                <input type="file" name="file-evidence" id="file-evidence" class="custom-file-input" required>
                                             </div>
                                         </div>
                                     </div>
