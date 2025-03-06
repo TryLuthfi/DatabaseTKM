@@ -1261,6 +1261,14 @@ $total_stok_dashboard = [];
                 document.getElementById("view_detail_evidence").style.display = "none";
 
             } else {
+                Swal.fire({
+                    title: 'Loading...',
+                    text: 'Mohon tunggu, data sedang diambil...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
                 $.ajax({
                     url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>", // Arahkan ke file PHP yang menangani filtering
                     method: "POST",
@@ -1269,6 +1277,7 @@ $total_stok_dashboard = [];
                     },
                     dataType: "json",
                     success: function(response) {
+                        Swal.close();
                         var tbody = $("#hasilDetailDataSJ");
                         tbody.empty();
 
@@ -1328,6 +1337,14 @@ $total_stok_dashboard = [];
                         // console.log("Response:", response);
                     },
                     error: function(xhr, status, error) {
+
+                        Swal.close();
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: 'Terjadi kesalahan saat mengambil data!',
+                        });
                         console.error("Error:", error);
                         console.error("Response Text:", xhr.responseText);
                     }
