@@ -121,7 +121,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
         }
 
         $data_insert = [];
-        $jumlah_stok = $this->input->post('jumlah_stok');
+        $jumlah_stok = preg_replace('/\D/', '', $this->input->post('jumlah_stok'));
 
         foreach ($jumlah_stok as $key => $value) {
             $tanggalFormatted = "{$tanggal_upload_stok} " . date('H:i:s');
