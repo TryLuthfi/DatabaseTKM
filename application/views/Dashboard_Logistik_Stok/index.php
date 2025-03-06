@@ -1224,7 +1224,7 @@ $total_stok_dashboard = [];
             }
 
             let fileEvidence = $("input[name='file-evidence']").val();
-            let isFileEvidenceRequired = false;
+            let isFileEvidenceRequired = true;
             if (isFileEvidenceRequired && !fileEvidence) {
                 errorMessage.push("File Evidence (file-evidence) wajib diunggah.");
             }
