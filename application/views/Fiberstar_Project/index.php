@@ -2371,45 +2371,45 @@ $total_hp_closed_regional = 0;
 
   document.getElementById("inputBatch").addEventListener("click", function () {
     document.getElementById("uploadSection").classList.remove("d-none");
-});
+  });
 
-Dropzone.options.batchUpload = {
+  Dropzone.options.batchUpload = {
     maxFilesize: 5, // Maksimal 5MB
     acceptedFiles: ".xls,.xlsx",
     previewsContainer: "#filename-preview", // Menentukan tempat tampilan nama file
     clickable: true,
     autoProcessQueue: false, // Hindari auto-upload sebelum submit
     init: function () {
-        let myDropzone = this;
+      let myDropzone = this;
 
-        this.on("addedfile", function (file) {
-            // Hapus preview bawaan Dropzone
-            setTimeout(() => {
-                if (file.previewElement) {
-                    file.previewElement.remove();
-                }
-            }, 100);
+      this.on("addedfile", function (file) {
+        // Hapus preview bawaan Dropzone
+        setTimeout(() => {
+          if (file.previewElement) {
+            file.previewElement.remove();
+          }
+        }, 100);
 
-            // Tampilkan nama file yang dipilih
-            document.getElementById("filename-preview").innerHTML =
-                "<p class='text-success font-weight-bold'>File diunggah: " + file.name + "</p>";
-        });
+        // Tampilkan nama file yang dipilih
+        document.getElementById("filename-preview").innerHTML =
+          "<p class='text-success font-weight-bold'>File diunggah: " + file.name + "</p>";
+      });
 
-        this.on("success", function (file, response) {
-            alert("Upload Berhasil! " + response);
-            location.reload();
-        });
+      this.on("success", function (file, response) {
+        alert("Upload Berhasil! " + response);
+        location.reload();
+      });
 
-        this.on("error", function (file, errorMessage) {
-            alert("Upload Gagal: " + errorMessage);
-        });
+      this.on("error", function (file, errorMessage) {
+        alert("Upload Gagal: " + errorMessage);
+      });
 
-        // Tombol Submit untuk Proses Upload
-        document.getElementById("submitUpload").addEventListener("click", function () {
-            myDropzone.processQueue();
-        });
+      // Tombol Submit untuk Proses Upload
+      document.getElementById("submitUpload").addEventListener("click", function () {
+        myDropzone.processQueue();
+      });
     }
-};
+  };
 
 </script>
 

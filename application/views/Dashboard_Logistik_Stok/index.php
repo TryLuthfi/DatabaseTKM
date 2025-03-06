@@ -178,6 +178,10 @@ $total_stok_dashboard = [];
                                         <button id="btnFilterDataProject" class="btn btn-primary"><i
                                                 class="fa fa-spinner fa-spin loading" style="display:none"></i> Cari
                                         </button>
+                                        <button type="button" class="btn btn-success"
+                                            data-target="#modal-download-report" data-toggle="modal">
+                                            Download Report &nbsp; <i class="fas fa-print"></i>
+                                        </button>
                                     </div>
                                 </div>
 
@@ -935,6 +939,123 @@ $total_stok_dashboard = [];
             </div>
         </div>
 
+        <!-- MODAL DOWNLOAD REPORT DATA -->
+        <div class="modal fade" id="modal-download-report" data-backdrop="static" tabindex="-1" role="dialog"
+            aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalTitle">Download Report Logistik</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <button class="btn btn-secondary btn-block" id="report_stok_logistik">📋 REPORT
+                                        STOK</button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <button class="btn btn-warning btn-block" id="report_in_out_logistik">📂 REPORT IN
+                                        OUT</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Input Batch (Hidden by Default) -->
+                        <div id="isi_report_in_out_logistik" class="mt-3 d-none">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Regional Gudang</label>
+                                        <select id="report_regional_gudang" class="form-control">
+                                            <option value="">Pilih Regional</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Lokasi Gudang (Kota)</label>
+                                        <select id="report_lokasi_gudang" class="form-control">
+                                            <option value="">Pilih Kota</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Bowheer</label>
+                                        <select id="report_nama_bowheer" class="form-control">
+                                            <option value="">Pilih Bowheer</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Kategori Item</label>
+                                        <select id="report_kategori_item" class="form-control">
+                                            <option value="">Pilih Kategori</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Nama Item</label>
+                                        <select id="report_nama_item" class="form-control">
+                                            <option value="">Pilih Item</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Submitted Date Start</label>
+                                        <input type="date" class="form-control float-right" id="report_date_start">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Submitted Date End</label>
+                                        <input type="date" class="form-control float-right" id="report_data_end">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mt-3 d-flex justify-content-end">
+                                <div class="form-group">
+                                    <button id="downloadReportInOutLogistik" class="btn btn-primary mt-2">Download
+                                        Report 🚀</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="isi_report_stok_logistik" class="mt-3 d-none">
+                            <div class="row">
+                                <div class="col-md-12"></div>
+                            </div>
+                            <div class="col-md-12 mt-3 d-flex justify-content-end">
+                                <div class="form-group">
+                                    <button id="downloadReportStokLogistik" class="btn btn-primary mt-2">Download Report
+                                        🚀</button>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- MODAL TAMBAH LOKASI GUDANG LOGISTIK -->
         <form action=" <?php echo base_url('Dashboard_Logistik_Stok/tambahReportStokLogistik') ?>" method="post">
             <div class="modal fade" id="modal-lg-tambah-old">
@@ -1066,6 +1187,17 @@ $total_stok_dashboard = [];
 
 <script type="text/javascript">
     // AJAX SELECT 2 JENIS MATERIAL
+
+    document.getElementById("report_in_out_logistik").addEventListener("click", function () {
+        document.getElementById("isi_report_in_out_logistik").classList.remove("d-none");
+        document.getElementById("isi_report_stok_logistik").classList.add("d-none");
+    });
+
+    document.getElementById("report_stok_logistik").addEventListener("click", function () {
+        document.getElementById("isi_report_in_out_logistik").classList.add("d-none");
+        document.getElementById("isi_report_stok_logistik").classList.remove("d-none");
+    });
+
 
     $(document).ready(function () {
 
@@ -1359,11 +1491,6 @@ $total_stok_dashboard = [];
             }
         });
     });
-
-    // END LOGIC OF MODAL DETAIL SURAT JALAN
-
-    // GET DETAIL SUMMARY KATEGORI ITEM
-
 
     // END GET DETAIL SUMMARY KATEGORI ITEM
 
@@ -1863,6 +1990,147 @@ $total_stok_dashboard = [];
     });
 </script>
 
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Ambil data dari PHP dalam bentuk JSON
+        var stokLogistik = <?= json_encode($getAllStokLogistik, JSON_PRETTY_PRINT); ?>;
+
+        // Ambil elemen dropdown
+        let selectRegional = document.getElementById("report_regional_gudang");
+        let selectKota = document.getElementById("report_lokasi_gudang");
+        let selectBowheer = document.getElementById("report_nama_bowheer");
+        let selectKategori = document.getElementById("report_kategori_item");
+        let selectItem = document.getElementById("report_nama_item");
+
+        // Fungsi untuk mendapatkan nilai unik dari array objek
+        function getUniqueValues(array, key) {
+            return [...new Set(array.map(item => item[key]))];
+        }
+
+        // Ambil data unik untuk setiap select
+        let uniqueRegional = getUniqueValues(stokLogistik, "regional_lokasi_gudang");
+        let uniqueKota = getUniqueValues(stokLogistik, "kota_lokasi_gudang");
+        let uniqueBowheer = getUniqueValues(stokLogistik, "nama_bowheer");
+        let uniqueKategori = getUniqueValues(stokLogistik, "kategori_item");
+        let uniqueItem = getUniqueValues(stokLogistik, "nama_item");
+
+        // Fungsi untuk mengisi dropdown
+        function populateDropdown(selectElement, data) {
+            selectElement.innerHTML = '<option value="">Pilih</option>';
+            data.forEach(value => {
+                let option = document.createElement("option");
+                option.value = value;
+                option.textContent = value;
+                selectElement.appendChild(option);
+            });
+        }
+
+        // Isi dropdown awal
+        populateDropdown(selectRegional, uniqueRegional);
+        populateDropdown(selectKota, uniqueKota);
+        populateDropdown(selectBowheer, uniqueBowheer);
+        populateDropdown(selectKategori, uniqueKategori);
+        populateDropdown(selectItem, uniqueItem);
+
+        // Event Listener: Filter Kota berdasarkan Regional
+        selectRegional.addEventListener("change", function () {
+            let selectedRegional = this.value;
+            let filteredKota = stokLogistik
+                .filter(data => data.regional_lokasi_gudang === selectedRegional || selectedRegional === "")
+                .map(data => data.kota_lokasi_gudang);
+
+            populateDropdown(selectKota, getUniqueValues(filteredKota.map(kota => ({ kota })), "kota"));
+
+            // Filter Bowheer juga berdasarkan Regional
+            let filteredBowheer = stokLogistik
+                .filter(data => data.regional_lokasi_gudang === selectedRegional || selectedRegional === "")
+                .map(data => data.nama_bowheer);
+            populateDropdown(selectBowheer, getUniqueValues(filteredBowheer.map(bowheer => ({ bowheer })), "bowheer"));
+        });
+
+        // Event Listener: Filter Bowheer berdasarkan Kota
+        selectKota.addEventListener("change", function () {
+            let selectedKota = this.value;
+            let selectedRegional = selectRegional.value;
+
+            let filteredBowheer = stokLogistik
+                .filter(data =>
+                    (data.kota_lokasi_gudang === selectedKota || selectedKota === "") &&
+                    (data.regional_lokasi_gudang === selectedRegional || selectedRegional === "")
+                )
+                .map(data => data.nama_bowheer);
+
+            populateDropdown(selectBowheer, getUniqueValues(filteredBowheer.map(bowheer => ({ bowheer })), "bowheer"));
+        });
+
+        // Event Listener: Filter Kategori berdasarkan Bowheer
+        selectBowheer.addEventListener("change", function () {
+            let selectedBowheer = this.value;
+
+            let filteredKategori = stokLogistik
+                .filter(data => data.nama_bowheer === selectedBowheer || selectedBowheer === "")
+                .map(data => data.kategori_item);
+
+            populateDropdown(selectKategori, getUniqueValues(filteredKategori.map(kategori => ({ kategori })), "kategori"));
+        });
+
+        // Event Listener: Filter Item berdasarkan Kategori
+        selectKategori.addEventListener("change", function () {
+            let selectedKategori = this.value;
+
+            let filteredItem = stokLogistik
+                .filter(data => data.kategori_item === selectedKategori || selectedKategori === "")
+                .map(data => data.nama_item);
+
+            populateDropdown(selectItem, getUniqueValues(filteredItem.map(item => ({ item })), "item"));
+        });
+
+        function filterData() {
+            let selectedRegional = document.getElementById("report_regional_gudang")?.value || "";
+            let selectedKota = document.getElementById("report_lokasi_gudang")?.value || "";
+            let selectedBowheer = document.getElementById("report_nama_bowheer")?.value || "";
+            let selectedKategori = document.getElementById("report_kategori_item")?.value || "";
+            let selectedItem = document.getElementById("report_nama_item")?.value || "";
+            let dateStart = document.getElementById("report_date_start")?.value || "";
+            let dateEnd = document.getElementById("report_date_end")?.value || "";
+
+            
+            return stokLogistik.filter(data => {
+            let uploadDate = data.tanggal_upload_stok.split(" ")[0];
+                return (
+                    (selectedRegional === "" || data.regional_lokasi_gudang === selectedRegional) &&
+            (selectedKota === "" || data.kota_lokasi_gudang === selectedKota) &&
+            (selectedBowheer === "" || data.nama_bowheer === selectedBowheer) &&
+            (selectedKategori === "" || data.kategori_item === selectedKategori) &&
+            (selectedItem === "" || data.nama_item === selectedItem) &&
+            (dateStart === "" || uploadDate >= dateStart) &&
+            (dateEnd === "" || uploadDate <= dateEnd)
+                );
+            });
+        }
+
+        // Fungsi untuk mengunduh file Excel
+        function downloadExcel() {
+            let filteredData = filterData();
+
+            if (filteredData.length === 0) {
+                alert("Tidak ada data yang sesuai dengan filter.");
+                return;
+            }
+
+            let worksheet = XLSX.utils.json_to_sheet(filteredData);
+            let workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Report Logistik");
+
+            XLSX.writeFile(workbook, "Report_Logistik.xlsx");
+        }
+
+        // Event listener untuk tombol download
+        document.getElementById("downloadReportInOutLogistik").addEventListener("click", downloadExcel);
+    });
+
+</script>
+
 <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
@@ -1874,6 +2142,7 @@ $total_stok_dashboard = [];
 <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
 <script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
