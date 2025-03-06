@@ -1242,8 +1242,7 @@ $total_stok_dashboard = [];
         $(".tombol_detail").click(function() {
             var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
             var selectedunique = $(this).data("id-logistik-stok-unique"); // Ambil ID dari tombol yang ditekan
-            console.log(selectedunique);
-
+            // console.log(selectedunique);
 
             if (!selectedSJ || selectedSJ === "") {
                 var tbody = $("#hasilDetailDataSJ");
@@ -1256,7 +1255,9 @@ $total_stok_dashboard = [];
                 document.getElementById("detail_keterangan_stok_item").value = "";
                 document.getElementById("detail_nama_file_sj").innerText = "No File Uploaded";
                 document.getElementById("detail_nama_file_evidence").innerText = "No File Uploaded";
+                document.getElementById("view_detail_surat_jalan").href = "#";
                 document.getElementById("view_detail_surat_jalan").style.display = "none";
+                document.getElementById("view_detail_evidence").href = "#";
                 document.getElementById("view_detail_evidence").style.display = "none";
 
             } else {
@@ -1304,21 +1305,26 @@ $total_stok_dashboard = [];
                         document.getElementById("tanggal_upload_stok").value = tanggalFormatted;
                         var filePath_sj = response.getDetailAreaBySJ[0].surat_jalan;
                         var filePath_evidence = response.getDetailAreaBySJ[0].evidence;
-                        var fileName_sj = filePath_sj.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
-                        var fileName_evidence = filePath_evidence.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
 
-                        document.getElementById("detail_nama_file_sj").innerText = fileName_sj;
-                        document.getElementById("detail_nama_file_evidence").innerText = fileName_evidence;
-                        document.getElementById("view_detail_surat_jalan").style.display = "block";
-                        document.getElementById("view_detail_evidence").style.display = "block";
-                        document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl_sj;
-                        
-                        if(lokasiUrl_evidence == "./uploads/"){
+                        console.log('file sj', filePath_sj);
+                        console.log('file evidence', filePath_evidence);
+
+                        var fileName_sj = filePath_sj.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
+
+                        if (filePath_evidence == "" || filePath_evidence == null) {
                             $('#container-detail-evidence').attr('hidden', true);
-                        }else{
+                        } else {
+                            var fileName_evidence = filePath_evidence.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
+                            document.getElementById("view_detail_evidence").style.display = "block";
+                            document.getElementById("detail_nama_file_evidence").innerText = fileName_evidence;
                             document.getElementById("view_detail_evidence").href = lokasiUrl_evidence != "./uploads/" ? baseUrl + lokasiUrl_evidence : "#";
                         }
-                        console.log("Response:", response);
+
+                        document.getElementById("detail_nama_file_sj").innerText = fileName_sj;
+                        document.getElementById("view_detail_surat_jalan").style.display = "block";
+                        document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl_sj;
+
+                        // console.log("Response:", response);
                     },
                     error: function(xhr, status, error) {
                         console.error("Error:", error);
