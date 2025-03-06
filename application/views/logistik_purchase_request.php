@@ -45,13 +45,13 @@
                                 <thead>
                                     <tr>
                                         <th>No</th>
-                                        <th>Nomor PR</th>
+                                        <th style="width: 15;">Nomor PR</th>
                                         <th>Tanggal</th>
                                         <th>Nama Bowheer</th>
                                         <th>Lokasi Project</th>
                                         <th>Nama Project</th>
                                         <th>Pembuat</th>
-                                        <th>Status</th>
+                                        <th style="width: 20%;">Status</th>
                                         <!-- <th>Document</th> -->
                                         <th>Detail</th>
                                     </tr>
@@ -269,13 +269,13 @@
                                         <thead>
                                             <tr>
                                                 <th>No</th>
-                                                <th>Nomor PR</th>
+                                                <th style="width: 15;">Nomor PR</th>
                                                 <th>Tanggal</th>
                                                 <th>Nama Bowheer</th>
                                                 <th>Lokasi Project</th>
                                                 <th>Nama Project</th>
                                                 <th>Pembuat</th>
-                                                <th>Status</th>
+                                                <th style="width: 20%;">Status</th>
                                                 <!-- <th>Document</th> -->
                                                 <th>Detail</th>
                                             </tr>
