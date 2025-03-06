@@ -1314,6 +1314,7 @@ $total_stok_dashboard = [];
                         if (filePath_evidence == "" || filePath_evidence == null) {
                             $('#container-detail-evidence').attr('hidden', true);
                         } else {
+                            $('#container-detail-evidence').attr('hidden', false);
                             var fileName_evidence = filePath_evidence.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
                             document.getElementById("view_detail_evidence").style.display = "block";
                             document.getElementById("detail_nama_file_evidence").innerText = fileName_evidence;
