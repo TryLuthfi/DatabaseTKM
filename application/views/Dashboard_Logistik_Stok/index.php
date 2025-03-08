@@ -725,7 +725,8 @@ $total_stok_dashboard = [];
                                         <label class="col-form-label">Nomor Surat Jalan</label>
                                         <input type="text" class="form-control" name="nomor_surat_jalan"
                                             id="nomor_surat_jalan" autocomplete="off" value=""
-                                            placeholder="TEC.005/TKM-04/SJ/II/2025" data-toggle="tooltip" data-placement="right" title="" required>
+                                            placeholder="TEC.005/TKM-04/SJ/II/2025" data-toggle="tooltip"
+                                            data-placement="right" title="" required>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -2057,19 +2058,19 @@ $total_stok_dashboard = [];
                         if (response.status === "exists") {
                             let errorMsg = "Nomor Surat Jalan sudah ada di lokasi gudang ini!";
                             $("#nomor_surat_jalan")
-                            .addClass("is-invalid")
-                            .attr("title", errorMsg)
-                            .tooltip("dispose") // Hapus tooltip lama
-                            .tooltip({ trigger: "click" }) // Aktifkan klik tooltip
-                            .tooltip("show"); // Tampilkan tooltip
+                                .addClass("is-invalid")
+                                .attr("title", errorMsg)
+                                .tooltip("dispose") // Hapus tooltip lama
+                                .tooltip({ trigger: "click" }) // Aktifkan klik tooltip
+                                .tooltip("show"); // Tampilkan tooltip
 
                             $("#btn-submit-stok").prop("disabled", true);
                         } else {
                             $("#nomor_surat_jalan")
-                            .removeClass("is-invalid")
-                            .attr("title", "")
-                            .tooltip("dispose");
-                            
+                                .removeClass("is-invalid")
+                                .attr("title", "")
+                                .tooltip("dispose");
+
                             $("#btn-submit-stok").prop("disabled", false);
                         }
                     },
@@ -2108,7 +2109,7 @@ $total_stok_dashboard = [];
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         // Ambil data dari PHP dalam bentuk JSON
-        var stokLogistik = <?= json_encode($getAllStokLogistik, JSON_PRETTY_PRINT); ?>;
+        var stokLogistik = <?= json_encode($getReportInOutMaterial, JSON_PRETTY_PRINT); ?>;
 
         // Ambil elemen dropdown
         let selectRegional = document.getElementById("report_regional_gudang");
@@ -2224,6 +2225,21 @@ $total_stok_dashboard = [];
             });
         }
 
+
+        function getFormattedDate() {
+            let now = new Date();
+            let year = now.getFullYear();
+            let month = String(now.getMonth() + 1).padStart(2, '0'); // Tambah 0 jika bulan < 10
+            let day = String(now.getDate()).padStart(2, '0'); // Tambah 0 jika tanggal < 10
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatHeader(header) {
+            return header
+                .replace(/_/g, " ") // Menghilangkan underscore
+                .replace(/\b\w/g, char => char.toUpperCase()); // Uppercase tiap awal kata
+        }
+
         // Fungsi untuk mengunduh file Excel
         function downloadExcel() {
             let filteredData = filterData();
@@ -2233,11 +2249,23 @@ $total_stok_dashboard = [];
                 return;
             }
 
-            let worksheet = XLSX.utils.json_to_sheet(filteredData);
+            // Ubah header agar lebih rapi
+            let formattedData = filteredData.map(row => {
+                let newRow = {};
+                Object.keys(row).forEach(key => {
+                    newRow[formatHeader(key)] = row[key]; // Ganti header dengan format baru
+                });
+                return newRow;
+            });
+
+            let worksheet = XLSX.utils.json_to_sheet(formattedData);
             let workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Report Logistik");
 
-            XLSX.writeFile(workbook, "Report_Logistik.xlsx");
+            // Buat nama file dengan format "Report Logistik YYYY-MM-DD.xlsx"
+            let fileName = `Report Logistik ${getFormattedDate()}.xlsx`;
+
+            XLSX.writeFile(workbook, fileName);
         }
 
         // Event listener untuk tombol download

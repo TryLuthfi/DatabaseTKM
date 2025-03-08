@@ -35,6 +35,9 @@ class Dashboard_Logistik_Stok extends CI_Controller
             $data['getUniqueItemLogistik'] = $this->MDashboard_Logistik_Stok->getUniqueItemLogistik();
             $data['getUniqueSumberMaterial'] = $this->MDashboard_Logistik_Stok->getUniqueSumberMaterial();
 
+            // Download Report Excel Without Filter
+            $data['getReportInOutMaterial'] = $this->MDashboard_Logistik_Stok->getReportInOutMaterial();
+
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
             $this->load->view('Dashboard_Logistik_Stok/index', $data);
