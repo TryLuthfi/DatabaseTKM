@@ -725,7 +725,7 @@ $total_stok_dashboard = [];
                                         <label class="col-form-label">Nomor Surat Jalan</label>
                                         <input type="text" class="form-control" name="nomor_surat_jalan"
                                             id="nomor_surat_jalan" autocomplete="off" value=""
-                                            placeholder="TEC.005/TKM-04/SJ/II/2025" required>
+                                            placeholder="TEC.005/TKM-04/SJ/II/2025" data-toggle="tooltip" data-placement="right" title="" required>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -838,7 +838,7 @@ $total_stok_dashboard = [];
                         </div>
                         <div class="modal-footer justify-content-between">
                             <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-                            <button type="submit" class="btn btn-primary">Simpan</button>
+                            <button type="submit" class="btn btn-primary" id="btn-submit-stok">Simpan</button>
                         </div>
                     </div>
                 </div>
@@ -2035,6 +2035,53 @@ $total_stok_dashboard = [];
             }
         });
     });
+
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+
+        $("#nomor_surat_jalan, #id_lokasi_gudang").on("blur change", function () {
+            let nomor_surat = $("#nomor_surat_jalan").val();
+            let id_gudang = $("#id_lokasi_gudang").val();
+
+            if (nomor_surat !== "" && id_gudang !== "") {
+                $.ajax({
+                    url: "<?php echo site_url('Dashboard_Logistik_Stok/cekNomorSuratJalan'); ?>",
+                    type: "POST",
+                    data: {
+                        nomor_surat_jalan: nomor_surat,
+                        id_lokasi_gudang: id_gudang
+                    },
+                    dataType: "json",
+                    success: function (response) {
+                        console.log("AJAX Cuccess : ", response);
+                        if (response.status === "exists") {
+                            let errorMsg = "Nomor Surat Jalan sudah ada di lokasi gudang ini!";
+                            $("#nomor_surat_jalan")
+                            .addClass("is-invalid")
+                            .attr("title", errorMsg)
+                            .tooltip("dispose") // Hapus tooltip lama
+                            .tooltip({ trigger: "click" }) // Aktifkan klik tooltip
+                            .tooltip("show"); // Tampilkan tooltip
+
+                            $("#btn-submit-stok").prop("disabled", true);
+                        } else {
+                            $("#nomor_surat_jalan")
+                            .removeClass("is-invalid")
+                            .attr("title", "")
+                            .tooltip("dispose");
+                            
+                            $("#btn-submit-stok").prop("disabled", false);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.log("AJAX Error:", status, error);
+                        alert("Terjadi kesalahan saat mengecek data. Coba lagi.");
+                    }
+                });
+            }
+        });
+    });
+
 </script>
 <script>
     $('.tombol_hapus_rincian').on('click', function (e) {

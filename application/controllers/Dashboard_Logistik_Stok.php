@@ -98,10 +98,10 @@ class Dashboard_Logistik_Stok extends CI_Controller
             if (!empty($_FILES[$field_name]['name'])) {
                 $file_ext = pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
                 $config = [
-                    'upload_path'   => $upload_path,
+                    'upload_path' => $upload_path,
                     'allowed_types' => 'pdf',
-                    'max_size'      => 5120,
-                    'file_name'     => "{$new_filename}.{$file_ext}"
+                    'max_size' => 5120,
+                    'file_name' => "{$new_filename}.{$file_ext}"
                 ];
 
                 $this->upload->initialize($config);
@@ -127,21 +127,21 @@ class Dashboard_Logistik_Stok extends CI_Controller
             $tanggalFormatted = "{$tanggal_upload_stok} " . date('H:i:s');
 
             $data_insert[] = [
-                'no_surat_jalan'     => $this->input->post('nomor_surat_jalan'),
-                'id_lokasi_gudang'   => $id_lokasi_gudang,
-                'id_bowheer'         => $id_bowheer,
+                'no_surat_jalan' => $this->input->post('nomor_surat_jalan'),
+                'id_lokasi_gudang' => $id_lokasi_gudang,
+                'id_bowheer' => $id_bowheer,
                 'id_sumber_material' => $id_sumber_material,
-                'id_kode_item'       => $this->input->post('id_kode_item')[$key],
-                'jumlah_stok'        => $jumlah_stok[$key],
-                'satuan_stok'        => $this->input->post('satuan_stok')[$key],
-                'merk_stok'          => $this->input->post('merk_item')[$key],
-                'no_haspel_stok'     => $this->input->post('no_haspel_item')[$key],
-                'no_ref_stok'        => $this->input->post('no_ref_item')[$key],
-                'keterangan_stok'    => $this->input->post('keterangan_stok'),
-                'tanggal_upload_stok'=> $tanggalFormatted,
-                'surat_jalan'      => $upload_path . $uploaded_files['file-sj'],
-                'evidence'   => $upload_path . $uploaded_files['file-evidence'],
-                'id_user'            => $this->session->userdata('id_user')
+                'id_kode_item' => $this->input->post('id_kode_item')[$key],
+                'jumlah_stok' => $jumlah_stok[$key],
+                'satuan_stok' => $this->input->post('satuan_stok')[$key],
+                'merk_stok' => $this->input->post('merk_item')[$key],
+                'no_haspel_stok' => $this->input->post('no_haspel_item')[$key],
+                'no_ref_stok' => $this->input->post('no_ref_item')[$key],
+                'keterangan_stok' => $this->input->post('keterangan_stok'),
+                'tanggal_upload_stok' => $tanggalFormatted,
+                'surat_jalan' => $upload_path . $uploaded_files['file-sj'],
+                'evidence' => $upload_path . $uploaded_files['file-evidence'],
+                'id_user' => $this->session->userdata('id_user')
             ];
         }
 
@@ -155,6 +155,36 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
         $this->session->set_flashdata('success', 'Dokumen berhasil diupload!');
         redirect('Dashboard_Logistik_Stok/index/');
+    }
+
+    public function cekNomorSuratJalan()
+    {
+        header('Content-Type: application/json'); // Tambahkan ini
+
+        $nomor_surat_jalan = $this->input->post('nomor_surat_jalan');
+        $id_lokasi_gudang = $this->input->post('id_lokasi_gudang');
+
+        // Debugging: Log input yang masuk
+        log_message('error', 'Cek Nomor Surat Jalan - Input: ' . json_encode($_POST));
+
+        if (!$nomor_surat_jalan || !$id_lokasi_gudang) {
+            echo json_encode(['status' => 'error', 'message' => 'Data tidak lengkap!']);
+            return;
+        }
+
+        $cek = $this->db->get_where('tb_logistik_stok', [
+            'no_surat_jalan' => $nomor_surat_jalan,
+            'id_lokasi_gudang' => $id_lokasi_gudang
+        ])->row_array();
+
+        // Debugging: Log hasil query
+        log_message('error', 'Query Cek: ' . $this->db->last_query());
+
+        if ($cek) {
+            die(json_encode(['status' => 'exists']));
+        } else {
+            die(json_encode(['status' => 'available']));
+        }
     }
 
     public function hapusReportStokLogistik($no_surat_jalan)
