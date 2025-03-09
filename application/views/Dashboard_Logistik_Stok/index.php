@@ -1062,7 +1062,8 @@ $total_stok_dashboard = [];
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="col-form-label">Submitted Date Start</label>
-                                        <input type="date" class="form-control float-right" id="report_in_out_date_start">
+                                        <input type="date" class="form-control float-right"
+                                            id="report_in_out_date_start">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -1081,7 +1082,7 @@ $total_stok_dashboard = [];
                         </div>
 
                         <div id="isi_report_stok_logistik" class="mt-3 d-none">
-                        <div class="row">
+                            <div class="row">
                                 <div class="col-md-12">
                                     <div class="form-group">
                                         <label class="col-form-label">Regional Gudang</label>
@@ -1765,6 +1766,14 @@ $total_stok_dashboard = [];
                     .column(6).search(statusFilter, true, false) // Filter kategori (regex search)
                     .draw(); // Render ulang tabel
 
+                Swal.fire({
+                    title: 'Loading...',
+                    text: 'Mohon tunggu, data sedang diambil...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
                 $.ajax({
                     url: "<?= base_url('Dashboard_Logistik_Stok/filterDashboardLogistik') ?>",
                     method: "POST",
@@ -1776,6 +1785,7 @@ $total_stok_dashboard = [];
                     },
                     dataType: "json",
                     success: function (response) {
+                        Swal.close();
                         console.log("Filtered Data:", response);
 
                         kirimData = response.getRincianDashboardFiltered;
@@ -1817,6 +1827,13 @@ $total_stok_dashboard = [];
                         console.log(Number(response.getDashboardFiltered[0].jumlah_Aksesories.toLocaleString('id-ID').replace(/,/g, '.')));
                     },
                     error: function (xhr, status, error) {
+                        Swal.close();
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: 'Terjadi kesalahan saat mengambil data!',
+                        });
                         console.error("Error:", error);
                         console.log("Server Response:", xhr.responseText);
                     }
@@ -2331,7 +2348,7 @@ $total_stok_dashboard = [];
         // Ambil data dari PHP dalam bentuk JSON
         var stokLogistik = <?= json_encode($getReportStokMaterial, JSON_PRETTY_PRINT); ?>;
 
-        console.log("total report stok : ",stokLogistik);
+        console.log("total report stok : ", stokLogistik);
 
         // Ambil elemen dropdown
         let selectRegional = document.getElementById("report_stok_regional_gudang");
