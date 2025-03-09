@@ -2295,12 +2295,16 @@ $total_stok_dashboard = [];
 
 
         function getFormattedDate() {
-            let now = new Date();
-            let year = now.getFullYear();
-            let month = String(now.getMonth() + 1).padStart(2, '0'); // Tambah 0 jika bulan < 10
-            let day = String(now.getDate()).padStart(2, '0'); // Tambah 0 jika tanggal < 10
-            return `${year}-${month}-${day}`;
-        }
+    let now = new Date();
+    let year = now.getFullYear();
+    let month = String(now.getMonth() + 1).padStart(2, '0'); // Tambah 0 jika bulan < 10
+    let day = String(now.getDate()).padStart(2, '0'); // Tambah 0 jika tanggal < 10
+    let hours = String(now.getHours()).padStart(2, '0'); // Tambah 0 jika jam < 10
+    let minutes = String(now.getMinutes()).padStart(2, '0'); // Tambah 0 jika menit < 10
+    let seconds = String(now.getSeconds()).padStart(2, '0'); // Tambah 0 jika detik < 10
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
 
         function formatHeader(header) {
             return header
@@ -2468,7 +2472,11 @@ $total_stok_dashboard = [];
             let year = now.getFullYear();
             let month = String(now.getMonth() + 1).padStart(2, '0'); // Tambah 0 jika bulan < 10
             let day = String(now.getDate()).padStart(2, '0'); // Tambah 0 jika tanggal < 10
-            return `${year}-${month}-${day}`;
+            let hours = String(now.getHours()).padStart(2, '0'); // Tambah 0 jika jam < 10
+            let minutes = String(now.getMinutes()).padStart(2, '0'); // Tambah 0 jika menit < 10
+            let seconds = String(now.getSeconds()).padStart(2, '0'); // Tambah 0 jika detik < 10
+
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
         }
 
         function formatHeader(header) {
