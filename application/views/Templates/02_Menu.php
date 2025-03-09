@@ -207,7 +207,7 @@ $id_menu = $this->uri->segment('1');
                                                                                                 } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
-                                Pesanan Pabrik
+                                Purchase Order
                             </p>
                         </a>
                     </li>
@@ -218,7 +218,7 @@ $id_menu = $this->uri->segment('1');
                           } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
-                                Dashboard Logistik
+                                Stok Material
                             </p>
                         </a>
                     </li>
@@ -264,7 +264,7 @@ $id_menu = $this->uri->segment('1');
                             </li>
                         </ul>
                         <ul class="nav nav-treeview">
-                            <li class="nav-item">
+                            <li class="nav-item" style="pointer-events: none">
                                 <a href="<?= base_url('Fiberstar_Kompensasi') ?>" class="nav-link <?php if ($id_menu == 'Fiberstar_Kompensasi') {
                                       echo "active";
                                   } ?>">
@@ -277,7 +277,7 @@ $id_menu = $this->uri->segment('1');
 
                     <li class="nav-item has-treeview <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
                         echo "menu-open";
-                    } ?>" style="pointer-events: none">
+                    } ?>">
                         <a href="#" class="nav-link <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
                             echo "active";
                         } ?>">
@@ -293,7 +293,7 @@ $id_menu = $this->uri->segment('1');
                             </li>
                         </ul>
                         <ul class="nav nav-treeview">
-                            <li class="nav-item">
+                            <li class="nav-item" style="pointer-events: none">
                                 <a href="<?= base_url('MyRepublik_Project') ?>" class="nav-link <?php if ($id_menu == 'MyRepublik_Project') {
                                       echo "active";
                                   } ?>">
@@ -303,7 +303,7 @@ $id_menu = $this->uri->segment('1');
                             </li>
                         </ul>
                         <ul class="nav nav-treeview">
-                            <li class="nav-item">
+                            <li class="nav-item" style="pointer-events: none">
                                 <a class="nav-link <?php if ($id_menu == 'MyRepublik_PO') {
                                     echo "active";
                                 } ?>">
