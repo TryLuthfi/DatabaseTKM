@@ -45,6 +45,7 @@ $total_tiang = 0;
                         <div class="icon">
                             <i class="ion ion-bag"></i>
                         </div>
+                        <a class="small-box-footer" style="cursor: default;">Lihat Detail <i class="fas fa-arrow-circle-right"></i></a>
                     </div>
                 </div>
             <?php endforeach ?>

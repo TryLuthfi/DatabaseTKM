@@ -981,7 +981,7 @@ $total_stok_dashboard = [];
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="modalTitle">Download Report Logistik</h5>
+                        <h5 class="modal-title" id="modalTitle">DOWNLOAD REPORT LOGISTIK</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
@@ -991,13 +991,13 @@ $total_stok_dashboard = [];
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <button class="btn btn-secondary btn-block" id="report_stok_logistik">📋 REPORT
-                                        STOK</button>
+                                        STOK MATERIAL</button>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <button class="btn btn-warning btn-block" id="report_in_out_logistik">📂 REPORT IN
-                                        OUT</button>
+                                        OUT MATERIAL</button>
                                 </div>
                             </div>
 
