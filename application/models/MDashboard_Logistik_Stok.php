@@ -624,52 +624,48 @@ ORDER BY ki.kategori_item;";
 
     public function getReportInOutMaterial()
     {
-        $data = $this->db->query("SELECT
-	tls.id_logistik_stok,
-	tmllg.regional_lokasi_gudang,
-	tmllg.kota_lokasi_gudang,
-	tls.no_surat_jalan,
-	tls.jumlah_stok,
-	tmlki.kategori_item,
-	tmlki.nama_item,
-	tmlki.satuan_item,
-	tmb.nama_bowheer,
-	tls.merk_stok,
-	tls.no_haspel_stok,
-	tls.no_ref_stok,
-	tls.keterangan_stok,
-	tmlsm.nama_sumber_material,
-	tmlsm.status_sumber_material,
-	tls.tanggal_upload_stok,
-	tmu.nama_user
-FROM
-	tb_logistik_stok tls
-LEFT JOIN tb_master_logistik_lokasi_gudang tmllg ON
-	tls.id_lokasi_gudang = tmllg.id_lokasi_gudang
-LEFT JOIN tb_master_bowheer tmb ON
-	tls.id_bowheer = tmb.id_bowheer
-LEFT JOIN tb_master_logistik_sumber_material tmlsm ON
-	tls.id_sumber_material = tmlsm.id_sumber_material
-LEFT JOIN tb_master_logistik_kode_item tmlki ON
-	tls.id_kode_item = tmlki.id_kode_item
-LEFT JOIN tb_master_user tmu ON
-	tls.id_user = tmu.id_user
-ORDER BY
-	id_logistik_stok DESC;")->result_array();
+        $data = $this->db->query("SELECT 
+    ROW_NUMBER() OVER (ORDER BY tls.id_logistik_stok DESC) AS nomor_urut,
+    tls.id_logistik_stok,
+    tmllg.regional_lokasi_gudang,
+    tmllg.kota_lokasi_gudang,
+    tls.no_surat_jalan,
+    tls.jumlah_stok,
+    tmlki.kategori_item,
+    tmlki.nama_item,
+    tmlki.satuan_item,
+    tmb.nama_bowheer,
+    tls.merk_stok,
+    tls.no_haspel_stok,
+    tls.no_ref_stok,
+    tls.keterangan_stok,
+    tmlsm.nama_sumber_material,
+    tmlsm.status_sumber_material,
+    tls.tanggal_upload_stok,
+    tmu.nama_user
+FROM tb_logistik_stok tls
+LEFT JOIN tb_master_logistik_lokasi_gudang tmllg ON tls.id_lokasi_gudang = tmllg.id_lokasi_gudang
+LEFT JOIN tb_master_bowheer tmb ON tls.id_bowheer = tmb.id_bowheer
+LEFT JOIN tb_master_logistik_sumber_material tmlsm ON tls.id_sumber_material = tmlsm.id_sumber_material
+LEFT JOIN tb_master_logistik_kode_item tmlki ON tls.id_kode_item = tmlki.id_kode_item
+LEFT JOIN tb_master_user tmu ON tls.id_user = tmu.id_user
+ORDER BY tls.id_logistik_stok DESC;")->result_array();
 
         return $data;
     }
 
     public function getReportStokMaterial()
     {
-        $data = $this->db->query("SELECT tls.id_logistik_stok,
-	tmllg.regional_lokasi_gudang,
-	tmllg.kota_lokasi_gudang,
-	tmlki.kategori_item,
-	tmlki.nama_item,
-	tmlki.satuan_item,
-	tmb.nama_bowheer,
-	tls.tanggal_upload_stok, SUM(
+        $data = $this->db->query("SELECT 
+    ROW_NUMBER() OVER (ORDER BY tmllg.kota_lokasi_gudang ASC) AS nomor,
+    tls.id_logistik_stok,
+    tmllg.regional_lokasi_gudang,
+    tmllg.kota_lokasi_gudang,
+    tmlki.kategori_item,
+    tmlki.nama_item,
+    tmlki.satuan_item,
+    tmb.nama_bowheer,
+    SUM(
         CASE 
             WHEN tmlsm.status_sumber_material LIKE 'IN' THEN tls.jumlah_stok
             WHEN tmlsm.status_sumber_material LIKE 'OUT' THEN -tls.jumlah_stok
@@ -682,7 +678,7 @@ LEFT JOIN tb_master_logistik_kode_item tmlki USING(id_kode_item)
 RIGHT JOIN tb_master_bowheer tmb USING(id_bowheer)
 RIGHT JOIN tb_master_logistik_lokasi_gudang tmllg USING(id_lokasi_gudang)
 GROUP BY tmlki.id_kode_item, tmllg.kota_lokasi_gudang
-HAVING total_jumlah_stok <> 0  -- Hanya tampilkan stok yang bukan 0
+HAVING total_jumlah_stok <> 0
 ORDER BY tmllg.kota_lokasi_gudang ASC;")->result_array();
 
         return $data;
