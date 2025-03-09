@@ -660,5 +660,33 @@ ORDER BY
         return $data;
     }
 
+    public function getReportStokMaterial()
+    {
+        $data = $this->db->query("SELECT tls.id_logistik_stok,
+	tmllg.regional_lokasi_gudang,
+	tmllg.kota_lokasi_gudang,
+	tmlki.kategori_item,
+	tmlki.nama_item,
+	tmlki.satuan_item,
+	tmb.nama_bowheer,
+	tls.tanggal_upload_stok, SUM(
+        CASE 
+            WHEN tmlsm.status_sumber_material LIKE 'IN' THEN tls.jumlah_stok
+            WHEN tmlsm.status_sumber_material LIKE 'OUT' THEN -tls.jumlah_stok
+            ELSE 0 
+        END
+    ) AS total_jumlah_stok
+FROM tb_logistik_stok tls 
+LEFT JOIN tb_master_logistik_sumber_material tmlsm USING(id_sumber_material)
+LEFT JOIN tb_master_logistik_kode_item tmlki USING(id_kode_item)
+RIGHT JOIN tb_master_bowheer tmb USING(id_bowheer)
+RIGHT JOIN tb_master_logistik_lokasi_gudang tmllg USING(id_lokasi_gudang)
+GROUP BY tmlki.id_kode_item, tmllg.kota_lokasi_gudang
+HAVING total_jumlah_stok <> 0  -- Hanya tampilkan stok yang bukan 0
+ORDER BY tmllg.kota_lokasi_gudang ASC;")->result_array();
+
+        return $data;
+    }
+
 }
 

@@ -1017,7 +1017,7 @@ $total_stok_dashboard = [];
                                 <div class="col-md-12">
                                     <div class="form-group">
                                         <label class="col-form-label">Regional Gudang</label>
-                                        <select id="report_regional_gudang" class="form-control">
+                                        <select id="report_in_out_regional_gudang" class="form-control">
                                             <option value="">Pilih Regional</option>
                                         </select>
                                     </div>
@@ -1026,7 +1026,7 @@ $total_stok_dashboard = [];
                                 <div class="col-md-12">
                                     <div class="form-group">
                                         <label class="col-form-label">Lokasi Gudang (Kota)</label>
-                                        <select id="report_lokasi_gudang" class="form-control">
+                                        <select id="report_in_out_lokasi_gudang" class="form-control">
                                             <option value="">Pilih Kota</option>
                                         </select>
                                     </div>
@@ -1035,7 +1035,7 @@ $total_stok_dashboard = [];
                                 <div class="col-md-12">
                                     <div class="form-group">
                                         <label class="col-form-label">Bowheer</label>
-                                        <select id="report_nama_bowheer" class="form-control">
+                                        <select id="report_in_out_nama_bowheer" class="form-control">
                                             <option value="">Pilih Bowheer</option>
                                         </select>
                                     </div>
@@ -1044,7 +1044,7 @@ $total_stok_dashboard = [];
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="col-form-label">Kategori Item</label>
-                                        <select id="report_kategori_item" class="form-control">
+                                        <select id="report_in_out_kategori_item" class="form-control">
                                             <option value="">Pilih Kategori</option>
                                         </select>
                                     </div>
@@ -1053,7 +1053,7 @@ $total_stok_dashboard = [];
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="col-form-label">Nama Item</label>
-                                        <select id="report_nama_item" class="form-control">
+                                        <select id="report_in_out_nama_item" class="form-control">
                                             <option value="">Pilih Item</option>
                                         </select>
                                     </div>
@@ -1062,13 +1062,13 @@ $total_stok_dashboard = [];
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="col-form-label">Submitted Date Start</label>
-                                        <input type="date" class="form-control float-right" id="report_date_start">
+                                        <input type="date" class="form-control float-right" id="report_in_out_date_start">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="col-form-label">Submitted Date End</label>
-                                        <input type="date" class="form-control float-right" id="report_data_end">
+                                        <input type="date" class="form-control float-right" id="report_in_out_data_end">
                                     </div>
                                 </div>
                             </div>
@@ -1081,8 +1081,58 @@ $total_stok_dashboard = [];
                         </div>
 
                         <div id="isi_report_stok_logistik" class="mt-3 d-none">
-                            <div class="row">
-                                <div class="col-md-12"></div>
+                        <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Regional Gudang</label>
+                                        <select id="report_stok_regional_gudang" class="form-control">
+                                            <option value="">Pilih Regional</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Lokasi Gudang (Kota)</label>
+                                        <select id="report_stok_lokasi_gudang" class="form-control">
+                                            <option value="">Pilih Kota</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Bowheer</label>
+                                        <select id="report_stok_nama_bowheer" class="form-control">
+                                            <option value="">Pilih Bowheer</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Kategori Item</label>
+                                        <select id="report_stok_kategori_item" class="form-control">
+                                            <option value="">Pilih Kategori</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Nama Item</label>
+                                        <select id="report_stok_nama_item" class="form-control">
+                                            <option value="">Pilih Item</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Tanggal Stok</label>
+                                        <input type="date" class="form-control float-right" id="report_stok_date">
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-12 mt-3 d-flex justify-content-end">
                                 <div class="form-group">
@@ -2106,17 +2156,18 @@ $total_stok_dashboard = [];
     });
 </script>
 
+<!-- FUNCTION FILTER UNTUK DOWNLOAD EXCEL LAPORAN IN OUT LOGISTIK -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         // Ambil data dari PHP dalam bentuk JSON
         var stokLogistik = <?= json_encode($getReportInOutMaterial, JSON_PRETTY_PRINT); ?>;
 
         // Ambil elemen dropdown
-        let selectRegional = document.getElementById("report_regional_gudang");
-        let selectKota = document.getElementById("report_lokasi_gudang");
-        let selectBowheer = document.getElementById("report_nama_bowheer");
-        let selectKategori = document.getElementById("report_kategori_item");
-        let selectItem = document.getElementById("report_nama_item");
+        let selectRegional = document.getElementById("report_in_out_regional_gudang");
+        let selectKota = document.getElementById("report_in_out_lokasi_gudang");
+        let selectBowheer = document.getElementById("report_in_out_nama_bowheer");
+        let selectKategori = document.getElementById("report_in_out_kategori_item");
+        let selectItem = document.getElementById("report_in_out_nama_item");
 
         // Fungsi untuk mendapatkan nilai unik dari array objek
         function getUniqueValues(array, key) {
@@ -2202,13 +2253,13 @@ $total_stok_dashboard = [];
         });
 
         function filterData() {
-            let selectedRegional = document.getElementById("report_regional_gudang")?.value || "";
-            let selectedKota = document.getElementById("report_lokasi_gudang")?.value || "";
-            let selectedBowheer = document.getElementById("report_nama_bowheer")?.value || "";
-            let selectedKategori = document.getElementById("report_kategori_item")?.value || "";
-            let selectedItem = document.getElementById("report_nama_item")?.value || "";
-            let dateStart = document.getElementById("report_date_start")?.value || "";
-            let dateEnd = document.getElementById("report_date_end")?.value || "";
+            let selectedRegional = document.getElementById("report_in_out_regional_gudang")?.value || "";
+            let selectedKota = document.getElementById("report_in_out_lokasi_gudang")?.value || "";
+            let selectedBowheer = document.getElementById("report_in_out_nama_bowheer")?.value || "";
+            let selectedKategori = document.getElementById("report_in_out_kategori_item")?.value || "";
+            let selectedItem = document.getElementById("report_in_out_nama_item")?.value || "";
+            let dateStart = document.getElementById("report_in_out_date_start")?.value || "";
+            let dateEnd = document.getElementById("report_in_out_date_end")?.value || "";
 
 
             return stokLogistik.filter(data => {
@@ -2263,13 +2314,182 @@ $total_stok_dashboard = [];
             XLSX.utils.book_append_sheet(workbook, worksheet, "Report Logistik");
 
             // Buat nama file dengan format "Report Logistik YYYY-MM-DD.xlsx"
-            let fileName = `Report Logistik ${getFormattedDate()}.xlsx`;
+            let fileName = `Report IN OUT Logistik ${getFormattedDate()}.xlsx`;
 
             XLSX.writeFile(workbook, fileName);
         }
 
         // Event listener untuk tombol download
         document.getElementById("downloadReportInOutLogistik").addEventListener("click", downloadExcel);
+    });
+
+</script>
+
+<!-- FUNCTION FILTER UNTUK DOWNLOAD EXCEL LAPORAN STOK LOGISTIK -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Ambil data dari PHP dalam bentuk JSON
+        var stokLogistik = <?= json_encode($getReportStokMaterial, JSON_PRETTY_PRINT); ?>;
+
+        console.log("total report stok : ",stokLogistik);
+
+        // Ambil elemen dropdown
+        let selectRegional = document.getElementById("report_stok_regional_gudang");
+        let selectKota = document.getElementById("report_stok_lokasi_gudang");
+        let selectBowheer = document.getElementById("report_stok_nama_bowheer");
+        let selectKategori = document.getElementById("report_stok_kategori_item");
+        let selectItem = document.getElementById("report_stok_nama_item");
+
+        // Fungsi untuk mendapatkan nilai unik dari array objek
+        function getUniqueValues(array, key) {
+            return [...new Set(array.map(item => item[key]))];
+        }
+
+        // Ambil data unik untuk setiap select
+        let uniqueRegional = getUniqueValues(stokLogistik, "regional_lokasi_gudang");
+        let uniqueKota = getUniqueValues(stokLogistik, "kota_lokasi_gudang");
+        let uniqueBowheer = getUniqueValues(stokLogistik, "nama_bowheer");
+        let uniqueKategori = getUniqueValues(stokLogistik, "kategori_item");
+        let uniqueItem = getUniqueValues(stokLogistik, "nama_item");
+
+        // Fungsi untuk mengisi dropdown
+        function populateDropdown(selectElement, data) {
+            selectElement.innerHTML = '<option value="">Pilih</option>';
+            data.forEach(value => {
+                let option = document.createElement("option");
+                option.value = value;
+                option.textContent = value;
+                selectElement.appendChild(option);
+            });
+        }
+
+        // Isi dropdown awal
+        populateDropdown(selectRegional, uniqueRegional);
+        populateDropdown(selectKota, uniqueKota);
+        populateDropdown(selectBowheer, uniqueBowheer);
+        populateDropdown(selectKategori, uniqueKategori);
+        populateDropdown(selectItem, uniqueItem);
+
+        // Event Listener: Filter Kota berdasarkan Regional
+        selectRegional.addEventListener("change", function () {
+            let selectedRegional = this.value;
+            let filteredKota = stokLogistik
+                .filter(data => data.regional_lokasi_gudang === selectedRegional || selectedRegional === "")
+                .map(data => data.kota_lokasi_gudang);
+
+            populateDropdown(selectKota, getUniqueValues(filteredKota.map(kota => ({ kota })), "kota"));
+
+            // Filter Bowheer juga berdasarkan Regional
+            let filteredBowheer = stokLogistik
+                .filter(data => data.regional_lokasi_gudang === selectedRegional || selectedRegional === "")
+                .map(data => data.nama_bowheer);
+            populateDropdown(selectBowheer, getUniqueValues(filteredBowheer.map(bowheer => ({ bowheer })), "bowheer"));
+        });
+
+        // Event Listener: Filter Bowheer berdasarkan Kota
+        selectKota.addEventListener("change", function () {
+            let selectedKota = this.value;
+            let selectedRegional = selectRegional.value;
+
+            let filteredBowheer = stokLogistik
+                .filter(data =>
+                    (data.kota_lokasi_gudang === selectedKota || selectedKota === "") &&
+                    (data.regional_lokasi_gudang === selectedRegional || selectedRegional === "")
+                )
+                .map(data => data.nama_bowheer);
+
+            populateDropdown(selectBowheer, getUniqueValues(filteredBowheer.map(bowheer => ({ bowheer })), "bowheer"));
+        });
+
+        // Event Listener: Filter Kategori berdasarkan Bowheer
+        selectBowheer.addEventListener("change", function () {
+            let selectedBowheer = this.value;
+
+            let filteredKategori = stokLogistik
+                .filter(data => data.nama_bowheer === selectedBowheer || selectedBowheer === "")
+                .map(data => data.kategori_item);
+
+            populateDropdown(selectKategori, getUniqueValues(filteredKategori.map(kategori => ({ kategori })), "kategori"));
+        });
+
+        // Event Listener: Filter Item berdasarkan Kategori
+        selectKategori.addEventListener("change", function () {
+            let selectedKategori = this.value;
+
+            let filteredItem = stokLogistik
+                .filter(data => data.kategori_item === selectedKategori || selectedKategori === "")
+                .map(data => data.nama_item);
+
+            populateDropdown(selectItem, getUniqueValues(filteredItem.map(item => ({ item })), "item"));
+        });
+
+        function filterData() {
+            let selectedRegional = document.getElementById("report_stok_regional_gudang")?.value || "";
+            let selectedKota = document.getElementById("report_stok_lokasi_gudang")?.value || "";
+            let selectedBowheer = document.getElementById("report_stok_nama_bowheer")?.value || "";
+            let selectedKategori = document.getElementById("report_stok_kategori_item")?.value || "";
+            let selectedItem = document.getElementById("report_stok_nama_item")?.value || "";
+            let dateStart = document.getElementById("report_stok_date")?.value || "";
+
+
+            return stokLogistik.filter(data => {
+                let uploadDate = data.tanggal_upload_stok.split(" ")[0];
+                return (
+                    (selectedRegional === "" || data.regional_lokasi_gudang === selectedRegional) &&
+                    (selectedKota === "" || data.kota_lokasi_gudang === selectedKota) &&
+                    (selectedBowheer === "" || data.nama_bowheer === selectedBowheer) &&
+                    (selectedKategori === "" || data.kategori_item === selectedKategori) &&
+                    (selectedItem === "" || data.nama_item === selectedItem) &&
+                    (dateStart === "" || uploadDate >= dateStart)
+                );
+            });
+        }
+
+
+        function getFormattedDate() {
+            let now = new Date();
+            let year = now.getFullYear();
+            let month = String(now.getMonth() + 1).padStart(2, '0'); // Tambah 0 jika bulan < 10
+            let day = String(now.getDate()).padStart(2, '0'); // Tambah 0 jika tanggal < 10
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatHeader(header) {
+            return header
+                .replace(/_/g, " ") // Menghilangkan underscore
+                .replace(/\b\w/g, char => char.toUpperCase()); // Uppercase tiap awal kata
+        }
+
+        // Fungsi untuk mengunduh file Excel
+        function downloadExcel() {
+            let filteredData = filterData();
+
+            if (filteredData.length === 0) {
+                alert("Tidak ada data yang sesuai dengan filter.");
+                return;
+            }
+
+            // Ubah header agar lebih rapi
+            let formattedData = filteredData.map(row => {
+                let newRow = {};
+                Object.keys(row).forEach(key => {
+                    newRow[formatHeader(key)] = row[key]; // Ganti header dengan format baru
+                });
+                return newRow;
+            });
+
+            let worksheet = XLSX.utils.json_to_sheet(formattedData);
+            let workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Report Logistik");
+
+            // Buat nama file dengan format "Report Logistik YYYY-MM-DD.xlsx"
+            let fileName = `Report STOK Logistik ${getFormattedDate()}.xlsx`;
+
+            XLSX.writeFile(workbook, fileName);
+        }
+
+        // Event listener untuk tombol download
+        document.getElementById("downloadReportStokLogistik").addEventListener("click", downloadExcel);
     });
 
 </script>

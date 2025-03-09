@@ -37,6 +37,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
             // Download Report Excel Without Filter
             $data['getReportInOutMaterial'] = $this->MDashboard_Logistik_Stok->getReportInOutMaterial();
+            $data['getReportStokMaterial'] = $this->MDashboard_Logistik_Stok->getReportStokMaterial();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
