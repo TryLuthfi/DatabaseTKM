@@ -7,7 +7,7 @@ class MMaster_Logistik_Kode_Item extends CI_Model
     public function getMasterLogistikKodeItem()
     {
         $data = $this->db->query('SELECT * FROM tb_master_logistik_kode_item
-                                    JOIN tb_master_bowheer 
+                                    LEFT JOIN tb_master_bowheer 
                                     ON tb_master_logistik_kode_item.id_bowheer_pemilik_item = tb_master_bowheer.id_bowheer;')
                                     ->result_array();
         return $data;
@@ -23,7 +23,7 @@ class MMaster_Logistik_Kode_Item extends CI_Model
     public function getMasterKepemilikan()
     {
         $data = $this->db->query('SELECT * FROM tb_master_bowheer
-                                    WHERE nama_bowheer IN ("PT IFORTE","PT TKM","PT EKA MAS REPUBLIK")
+                                    WHERE nama_bowheer IN ("PT. IFORTE","PT. TKM","PT. EKA MAS REPUBLIK")
                                     ORDER BY id_bowheer DESC;')
                                     ->result_array();
         return $data;
