@@ -638,7 +638,7 @@ $total_stok_dashboard = [];
                                     </div>
                                     <div class="col-6">
                                         <a href="#" class="btn btn-success float-right text-bold btn-tambah-data-item"
-                                            data-target="#modal-xl-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                            data-target="#modal-xl-tambah" data-toggle="modal">Tambah Data &nbsp;<i
                                                 class="fas fa-plus"></i> </a>
                                     </div>
                                 </div>
@@ -811,6 +811,37 @@ $total_stok_dashboard = [];
                                             style="height: 100px;"></textarea>
                                     </div>
                                 </div>
+                                <div class="col-md-6 d-none" id="ho_in_nomor_po">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Nomor PO</label>
+                                        <input type="text" class="form-control" name="nomor_pr" id="nomor_pr"
+                                            autocomplete="off" value="" placeholder="TEC.005/TKM-04/PO/MDN/II/2025"
+                                            data-toggle="tooltip" data-placement="right" title="">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 d-none" id="ho_out_nomor_pr">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Nomor PR</label>
+                                        <input type="text" class="form-control" name="nomor_pr" id="nomor_pr"
+                                            autocomplete="off" value="" placeholder="TEC.005/TKM-04/PR/MDN/II/2025"
+                                            data-toggle="tooltip" data-placement="right" title="">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 d-none" id="ho_out_lokasi_pengiriman">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Lokasi Gudang Pengiriman</label>
+                                        <select name="id_lokasi_pengiriman" id="id_lokasi_pengiriman"
+                                            class="form-control">
+                                            <option value="">Pilih Salah Satu</option>
+                                            <?php foreach ($getListGudangLokasiUser as $data2): ?>
+                                                <option value="<?php echo $data2['id_lokasi_gudang'] ?>">
+                                                    <?php echo $data2['kota_lokasi_gudang'] ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 d-none" id="ho_out_blank"></div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Upload Surat Jalan</label>
@@ -2107,7 +2138,10 @@ $total_stok_dashboard = [];
     $(document).ready(function () {
         $('[data-toggle="tooltip"]').tooltip();
 
-        $("#nomor_surat_jalan, #id_lokasi_gudang").on("blur change", function () {
+        $("#nomor_surat_jalan, #id_lokasi_gudang, #id_sumber_material").on("blur change", function () {
+            var selectedKota = $("#id_lokasi_gudang option:selected").text().trim(); // Ambil teks kota yang dipilih
+            var selectedSumberMaterial = $("#id_sumber_material option:selected").text().trim(); // Ambil teks kota yang dipilih
+
             let nomor_surat = $("#nomor_surat_jalan").val();
             let id_gudang = $("#id_lokasi_gudang").val();
 
@@ -2146,6 +2180,22 @@ $total_stok_dashboard = [];
                         alert("Terjadi kesalahan saat mengecek data. Coba lagi.");
                     }
                 });
+            }
+
+            if (selectedKota === "HO") {
+                if (selectedSumberMaterial.includes("IN")) {
+                    $("#ho_in_nomor_po").removeClass("d-none");  // Tampilkan Nomor PO
+                    $("#ho_out_nomor_pr, #ho_out_lokasi_pengiriman").addClass("d-none");
+                    $("#ho_out_blank").removeClass("d-none")
+
+                } else if (selectedSumberMaterial.includes("OUT")) {
+                    $("#ho_out_blank").addClass("d-none");
+                    $("#ho_out_nomor_pr, #ho_out_lokasi_pengiriman").removeClass("d-none");
+                    $("#ho_in_nomor_po").addClass("d-none");
+                } else {
+                    // Jika bukan IN atau OUT, sembunyikan semuanya
+                    $("#ho_in_nomor_po, #ho_out_nomor_pr, #ho_out_lokasi_pengiriman, #ho_out_blank").addClass("d-none");
+                }
             }
         });
     });
@@ -2295,16 +2345,16 @@ $total_stok_dashboard = [];
 
 
         function getFormattedDate() {
-    let now = new Date();
-    let year = now.getFullYear();
-    let month = String(now.getMonth() + 1).padStart(2, '0'); // Tambah 0 jika bulan < 10
-    let day = String(now.getDate()).padStart(2, '0'); // Tambah 0 jika tanggal < 10
-    let hours = String(now.getHours()).padStart(2, '0'); // Tambah 0 jika jam < 10
-    let minutes = String(now.getMinutes()).padStart(2, '0'); // Tambah 0 jika menit < 10
-    let seconds = String(now.getSeconds()).padStart(2, '0'); // Tambah 0 jika detik < 10
+            let now = new Date();
+            let year = now.getFullYear();
+            let month = String(now.getMonth() + 1).padStart(2, '0'); // Tambah 0 jika bulan < 10
+            let day = String(now.getDate()).padStart(2, '0'); // Tambah 0 jika tanggal < 10
+            let hours = String(now.getHours()).padStart(2, '0'); // Tambah 0 jika jam < 10
+            let minutes = String(now.getMinutes()).padStart(2, '0'); // Tambah 0 jika menit < 10
+            let seconds = String(now.getSeconds()).padStart(2, '0'); // Tambah 0 jika detik < 10
 
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
 
         function formatHeader(header) {
             return header
