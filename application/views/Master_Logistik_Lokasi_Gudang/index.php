@@ -108,11 +108,11 @@ $total = 1;
                             <div class="form-group">
                                 <label class="col-form-label">Regional</label>
                                 <select name="regional_lokasi_gudang" class="form-control">
-                                    <option value="Regional 1">Regional 1</option>
-                                    <option value="Regional 2">Regional 2</option>
-                                    <option value="Regional 3">Regional 3</option>
-                                    <option value="Regional 4">Regional 4</option>
-                                    <option value="Regional 5">Regional 5</option>
+                                    <option value="Regional 1">REGIONAL 1</option>
+                                    <option value="Regional 2">REGIONAL 2</option>
+                                    <option value="Regional 3">REGIONAL 3</option>
+                                    <option value="Regional 4">REGIONAL 4</option>
+                                    <option value="Regional 5">REGIONAL 5</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -173,11 +173,11 @@ $total = 1;
                                 <div class="form-group">
                                     <label class="col-form-label">Level</label>
                                     <select name="regional_lokasi_gudang" class="form-control">
-                                        <option value="Regional 1" <?php if ($data['regional_lokasi_gudang'] == 'Regional 1') { ?>selected <?php } ?>>Regional 1</option>
-                                        <option value="Regional 2" <?php if ($data['regional_lokasi_gudang'] == 'Regional 2') { ?>selected <?php } ?>>Regional 2</option>
-                                        <option value="Regional 3" <?php if ($data['regional_lokasi_gudang'] == 'Regional 3') { ?>selected <?php } ?>>Regional 3</option>
-                                        <option value="Regional 4" <?php if ($data['regional_lokasi_gudang'] == 'Regional 4') { ?>selected <?php } ?>>Regional 4</option>
-                                        <option value="Regional 5" <?php if ($data['regional_lokasi_gudang'] == 'Regional 5') { ?>selected <?php } ?>>Regional 5</option>
+                                        <option value="REGIONAL 1" <?php if ($data['regional_lokasi_gudang'] == 'REGIONAL 1') { ?>selected <?php } ?>>REGIONAL 1</option>
+                                        <option value="REGIONAL 2" <?php if ($data['regional_lokasi_gudang'] == 'REGIONAL 2') { ?>selected <?php } ?>>REGIONAL 2</option>
+                                        <option value="REGIONAL 3" <?php if ($data['regional_lokasi_gudang'] == 'REGIONAL 3') { ?>selected <?php } ?>>REGIONAL 3</option>
+                                        <option value="REGIONAL 4" <?php if ($data['regional_lokasi_gudang'] == 'REGIONAL 4') { ?>selected <?php } ?>>REGIONAL 4</option>
+                                        <option value="REGIONAL 5" <?php if ($data['regional_lokasi_gudang'] == 'REGIONAL 5') { ?>selected <?php } ?>>REGIONAL 5</option>
                                     </select>
                                 </div>
                                 <div class="form-group">

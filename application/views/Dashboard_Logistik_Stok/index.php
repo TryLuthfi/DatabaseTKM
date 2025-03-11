@@ -2133,7 +2133,7 @@ $total_stok_dashboard = [];
         function filterByDate(settings, data, dataIndex) {
             let minDate = $('#date-range').data('daterangepicker').startDate;
             let maxDate = $('#date-range').data('daterangepicker').endDate;
-            let dateColumn = moment(data[9], "YYYY-MM-DD HH:mm:ss"); // Kolom ke-11 (Index 10)
+            let dateColumn = moment(data[8], "YYYY-MM-DD HH:mm:ss"); // Kolom ke-11 (Index 10)
 
             if (!minDate || !maxDate) return true; // Jika tidak ada filter, tampilkan semua
 
