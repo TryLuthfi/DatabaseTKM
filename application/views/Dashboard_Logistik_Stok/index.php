@@ -2182,21 +2182,21 @@ $total_stok_dashboard = [];
                 });
             }
 
-            if (selectedKota === "HO") {
-                if (selectedSumberMaterial.includes("IN")) {
-                    $("#ho_in_nomor_po").removeClass("d-none");  // Tampilkan Nomor PO
-                    $("#ho_out_nomor_pr, #ho_out_lokasi_pengiriman").addClass("d-none");
-                    $("#ho_out_blank").removeClass("d-none")
+            // if (selectedKota === "HO") {
+            //     if (selectedSumberMaterial.includes("IN")) {
+            //         $("#ho_in_nomor_po").removeClass("d-none");  // Tampilkan Nomor PO
+            //         $("#ho_out_nomor_pr, #ho_out_lokasi_pengiriman").addClass("d-none");
+            //         $("#ho_out_blank").removeClass("d-none")
 
-                } else if (selectedSumberMaterial.includes("OUT")) {
-                    $("#ho_out_blank").addClass("d-none");
-                    $("#ho_out_nomor_pr, #ho_out_lokasi_pengiriman").removeClass("d-none");
-                    $("#ho_in_nomor_po").addClass("d-none");
-                } else {
-                    // Jika bukan IN atau OUT, sembunyikan semuanya
-                    $("#ho_in_nomor_po, #ho_out_nomor_pr, #ho_out_lokasi_pengiriman, #ho_out_blank").addClass("d-none");
-                }
-            }
+            //     } else if (selectedSumberMaterial.includes("OUT")) {
+            //         $("#ho_out_blank").addClass("d-none");
+            //         $("#ho_out_nomor_pr, #ho_out_lokasi_pengiriman").removeClass("d-none");
+            //         $("#ho_in_nomor_po").addClass("d-none");
+            //     } else {
+            //         // Jika bukan IN atau OUT, sembunyikan semuanya
+            //         $("#ho_in_nomor_po, #ho_out_nomor_pr, #ho_out_lokasi_pengiriman, #ho_out_blank").addClass("d-none");
+            //     }
+            // }
         });
     });
 
