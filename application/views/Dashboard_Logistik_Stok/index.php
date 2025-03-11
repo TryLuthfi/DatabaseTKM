@@ -652,12 +652,14 @@ $total_stok_dashboard = [];
                                             <th>Regional</th>
                                             <th>Lokasi</th>
                                             <th>Project</th>
-                                            <th>Kategori</th>
                                             <th>Status</th>
                                             <th>No SJ</th>
                                             <th>QTY</th>
                                             <th>PIC</th>
                                             <th>Tanggal</th>
+                                            <th>No PO</th>
+                                            <th>No PR</th>
+                                            <th>Lokasi Pengiriman</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
@@ -671,13 +673,15 @@ $total_stok_dashboard = [];
                                                 <td><?= $data['regional_lokasi_gudang'] ?></td>
                                                 <td><?= $data['kota_lokasi_gudang'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
-                                                <td><?= $data['kategori_item'] ?></td>
                                                 <td><?= $data['nama_sumber_material'] ?></td>
                                                 <td><?= $data['no_surat_jalan'] ?></td>
                                                 <td><?= number_format(floatval($data['total_jumlah_stok']), 0, ",", "."); ?>
                                                 </td>
                                                 <td><?= $data['nama_user'] ?></td>
                                                 <td><?= $data['tanggal_upload_stok'] ?></td>
+                                                <td><?= $data['no_po_logistik'] ?></td>
+                                                <td><?= $data['no_pr_logistik'] ?></td>
+                                                <td><?= $data['kota_lokasi_gudang_pengiriman'] ?></td>
                                                 <td class="d-flex">
                                                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                                                         <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . urlencode($data['no_surat_jalan']) . '?id_lokasi_gudang=' . urlencode($data['id_lokasi_gudang'])); ?>"
@@ -814,23 +818,25 @@ $total_stok_dashboard = [];
                                 <div class="col-md-6 d-none" id="ho_in_nomor_po">
                                     <div class="form-group">
                                         <label class="col-form-label">Nomor PO</label>
-                                        <input type="text" class="form-control" name="nomor_pr" id="nomor_pr"
-                                            autocomplete="off" value="" placeholder="TEC.005/TKM-04/PO/MDN/II/2025"
-                                            data-toggle="tooltip" data-placement="right" title="">
+                                        <input type="text" class="form-control" name="no_po_logistik"
+                                            id="no_po_logistik" autocomplete="off" value=""
+                                            placeholder="TEC.005/TKM-04/PO/MDN/II/2025" data-toggle="tooltip"
+                                            data-placement="right" title="">
                                     </div>
                                 </div>
                                 <div class="col-md-6 d-none" id="ho_out_nomor_pr">
                                     <div class="form-group">
                                         <label class="col-form-label">Nomor PR</label>
-                                        <input type="text" class="form-control" name="nomor_pr" id="nomor_pr"
-                                            autocomplete="off" value="" placeholder="TEC.005/TKM-04/PR/MDN/II/2025"
-                                            data-toggle="tooltip" data-placement="right" title="">
+                                        <input type="text" class="form-control" name="no_pr_logistik"
+                                            id="no_pr_logistik" autocomplete="off" value=""
+                                            placeholder="TEC.005/TKM-04/PR/MDN/II/2025" data-toggle="tooltip"
+                                            data-placement="right" title="">
                                     </div>
                                 </div>
                                 <div class="col-md-6 d-none" id="ho_out_lokasi_pengiriman">
                                     <div class="form-group">
                                         <label class="col-form-label">Lokasi Gudang Pengiriman</label>
-                                        <select name="id_lokasi_pengiriman" id="id_lokasi_pengiriman"
+                                        <select name="id_lokasi_gudang_pengiriman" id="id_lokasi_gudang_pengiriman"
                                             class="form-control">
                                             <option value="">Pilih Salah Satu</option>
                                             <?php foreach ($getListGudangLokasiUser as $data2): ?>
@@ -841,7 +847,9 @@ $total_stok_dashboard = [];
                                         </select>
                                     </div>
                                 </div>
+
                                 <div class="col-md-6 d-none" id="ho_out_blank"></div>
+
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Upload Surat Jalan</label>
@@ -955,7 +963,24 @@ $total_stok_dashboard = [];
                                         id="detail_keterangan_stok_item" disabled rows="4"
                                         style="height: 100px;"></textarea>
                                 </div>
+
                             </div>
+                            <div class="col-md-6 d-none" id="detail_ho_in_nomor_po">
+                                <div class="form-group">
+                                    <label class="col-form-label">Nomor PO</label>
+                                    <input type="text" class="form-control" name="detail_no_po_logistik"
+                                        id="detail_no_po_logistik" disabled>
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-none" id="detail_ho_out_nomor_pr">
+                                <div class="form-group">
+                                    <label class="col-form-label">Nomor PR</label>
+                                    <input type="text" class="form-control" name="detail_no_pr_logistik"
+                                        id="detail_no_pr_logistik" disabled>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 d-none" id="detail_ho_out_blank"></div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Lihat Surat Jalan</label>
@@ -1566,6 +1591,8 @@ $total_stok_dashboard = [];
                     },
                     dataType: "json",
                     success: function (response) {
+                        console.log("Response:", response);
+                        
                         Swal.close();
                         var tbody = $("#hasilDetailDataSJ");
                         tbody.empty();
@@ -1601,9 +1628,32 @@ $total_stok_dashboard = [];
                         document.getElementById("detail_nama_project").value = response.getDetailAreaBySJ[0].project_item;
                         document.getElementById("detail_sumber_material").value = response.getDetailAreaBySJ[0].nama_sumber_material;
                         document.getElementById("detail_keterangan_stok_item").value = response.getDetailAreaBySJ[0].keterangan_stok;
+                        document.getElementById("detail_no_po_logistik").value = response.getDetailAreaBySJ[0].no_po_logistik;
+                        document.getElementById("detail_no_pr_logistik").value = response.getDetailAreaBySJ[0].no_pr_logistik;
                         document.getElementById("tanggal_upload_stok").value = tanggalFormatted;
                         var filePath_sj = response.getDetailAreaBySJ[0].surat_jalan;
                         var filePath_evidence = response.getDetailAreaBySJ[0].evidence;
+
+                        if (response.getDetailAreaBySJ[0].kota_lokasi_gudang === "HO") {
+                            if (response.getDetailAreaBySJ[0].status_sumber_material.includes("IN")) {
+                                $("#detail_ho_in_nomor_po, #detail_ho_out_blank").removeClass("d-none");
+                                $("#detail_ho_out_nomor_pr").addClass("d-none");
+
+                                $("#detail_no_pr_logistik").val("");
+
+                            } else if (response.getDetailAreaBySJ[0].status_sumber_material.includes("OUT")) {
+                                $("#detail_ho_out_nomor_pr, #detail_ho_out_blank").removeClass("d-none");
+                                $("#detail_ho_in_nomor_po").addClass("d-none");
+
+                                $("#no_po_logistik").val("");
+                            } else {
+                                $("#ho_in_nomor_po, #ho_out_nomor_pr, #detail_ho_out_blank").addClass("d-none");
+                                $("#no_po_logistik, #no_pr_logistik").val("");
+                            }
+                        } else {
+                            $("#detail_ho_in_nomor_po, #detail_ho_out_nomor_pr, #detail_ho_out_blank").addClass("d-none");
+                            $("#detail_no_po_logistik, #detail_no_pr_logistik").val("");
+                        }
 
                         console.log('file sj', filePath_sj);
                         console.log('file evidence', filePath_evidence);
@@ -2182,21 +2232,31 @@ $total_stok_dashboard = [];
                 });
             }
 
-            // if (selectedKota === "HO") {
-            //     if (selectedSumberMaterial.includes("IN")) {
-            //         $("#ho_in_nomor_po").removeClass("d-none");  // Tampilkan Nomor PO
-            //         $("#ho_out_nomor_pr, #ho_out_lokasi_pengiriman").addClass("d-none");
-            //         $("#ho_out_blank").removeClass("d-none")
+            if (selectedKota === "HO") {
+                if (selectedSumberMaterial.includes("IN")) {
+                    $("#ho_in_nomor_po, #ho_out_blank").removeClass("d-none");
+                    $("#ho_out_nomor_pr, #ho_out_lokasi_pengiriman").addClass("d-none");
 
-            //     } else if (selectedSumberMaterial.includes("OUT")) {
-            //         $("#ho_out_blank").addClass("d-none");
-            //         $("#ho_out_nomor_pr, #ho_out_lokasi_pengiriman").removeClass("d-none");
-            //         $("#ho_in_nomor_po").addClass("d-none");
-            //     } else {
-            //         // Jika bukan IN atau OUT, sembunyikan semuanya
-            //         $("#ho_in_nomor_po, #ho_out_nomor_pr, #ho_out_lokasi_pengiriman, #ho_out_blank").addClass("d-none");
-            //     }
-            // }
+                    // Kosongkan input saat disembunyikan
+                    $("#no_pr_logistik, #id_lokasi_gudang_pengiriman").val("");
+
+                } else if (selectedSumberMaterial.includes("OUT")) {
+                    $("#ho_out_blank").addClass("d-none");
+                    $("#ho_out_nomor_pr, #ho_out_lokasi_pengiriman").removeClass("d-none");
+                    $("#ho_in_nomor_po").addClass("d-none");
+
+                    // Kosongkan input saat disembunyikan
+                    $("#no_po_logistik").val("");
+                } else {
+                    // Jika bukan IN atau OUT, sembunyikan semuanya dan kosongkan semua input terkait
+                    $("#ho_in_nomor_po, #ho_out_nomor_pr, #ho_out_lokasi_pengiriman, #ho_out_blank").addClass("d-none");
+                    $("#no_po_logistik, #no_pr_logistik, #id_lokasi_gudang_pengiriman").val("");
+                }
+            } else {
+                $("#ho_in_nomor_po, #ho_out_nomor_pr, #ho_out_lokasi_pengiriman, #ho_out_blank").addClass("d-none");
+                $("#no_po_logistik, #no_pr_logistik, #id_lokasi_gudang_pengiriman").val("");
+            }
+
         });
     });
 

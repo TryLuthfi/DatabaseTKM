@@ -145,6 +145,9 @@ class Dashboard_Logistik_Stok extends CI_Controller
                 'tanggal_upload_stok' => $tanggalFormatted,
                 'surat_jalan' => $upload_path . $uploaded_files['file-sj'],
                 'evidence' => $upload_path . $uploaded_files['file-evidence'],
+                'no_po_logistik' => $this->input->post('no_po_logistik'),
+                'no_pr_logistik' => $this->input->post('no_pr_logistik'),
+                'id_lokasi_gudang_pengiriman' => $this->input->post('id_lokasi_gudang_pengiriman'),
                 'id_user' => $this->session->userdata('id_user')
             ];
         }

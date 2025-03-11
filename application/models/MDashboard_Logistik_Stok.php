@@ -6,25 +6,52 @@ class MDashboard_Logistik_Stok extends CI_Model
 
     public function getAllStokLogistik()
     {
-        $data = $this->db->query('SELECT *, SUM(tb_logistik_stok.jumlah_stok) AS total_jumlah_stok FROM tb_logistik_stok 
-JOIN tb_master_logistik_lokasi_gudang 
-    ON tb_logistik_stok.id_lokasi_gudang = tb_master_logistik_lokasi_gudang.id_lokasi_gudang
-JOIN tb_master_bowheer 
-    ON tb_logistik_stok.id_bowheer = tb_master_bowheer.id_bowheer
-JOIN tb_master_logistik_sumber_material 
-    ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
+        $data = $this->db->query('SELECT
+    tls.id_lokasi_gudang,
+    tls.surat_jalan,
+    tls.evidence,
+	tmllg.regional_lokasi_gudang,
+	tmllg.kota_lokasi_gudang,
+	tmb.nama_bowheer,
+	tmlsm.nama_sumber_material,
+	tls.no_surat_jalan,
+	tmu.nama_user,
+	tls.tanggal_upload_stok,
+	tls.no_po_logistik,
+	tls.no_pr_logistik,
+	tmllg2.kota_lokasi_gudang AS kota_lokasi_gudang_pengiriman,
+	SUM(tls.jumlah_stok) AS total_jumlah_stok
+FROM
+	tb_logistik_stok tls
+JOIN tb_master_logistik_lokasi_gudang tmllg
+    ON
+	tls.id_lokasi_gudang = tmllg.id_lokasi_gudang
+LEFT JOIN tb_master_logistik_lokasi_gudang tmllg2
+    ON
+	tls.id_lokasi_gudang_pengiriman = tmllg2.id_lokasi_gudang
+JOIN tb_master_bowheer tmb
+    ON
+	tls.id_bowheer = tmb.id_bowheer
+JOIN tb_master_logistik_sumber_material  tmlsm
+    ON
+	tls.id_sumber_material = tmlsm.id_sumber_material
 JOIN tb_master_logistik_kode_item 
-    ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
-JOIN tb_master_user 
-    ON tb_logistik_stok.id_user = tb_master_user.id_user
-WHERE no_surat_jalan != ""
-GROUP BY no_surat_jalan, kota_lokasi_gudang
-ORDER BY 
-    CASE 
-        WHEN no_surat_jalan LIKE "%stock_opname%" THEN 1  -- Letakkan di bawah
-        ELSE 0 
-    END,
-    id_logistik_stok DESC;')
+    ON
+	tls.id_kode_item = tb_master_logistik_kode_item.id_kode_item
+JOIN tb_master_user tmu
+    ON
+	tls.id_user = tmu.id_user
+WHERE
+	no_surat_jalan != ""
+GROUP BY
+	no_surat_jalan,
+	tmllg.kota_lokasi_gudang
+ORDER BY
+	CASE
+		WHEN no_surat_jalan LIKE "%stock_opname%" THEN 1
+		ELSE 0
+	END,
+	id_logistik_stok DESC;')
             ->result_array();
         return $data;
     }
@@ -276,6 +303,8 @@ ORDER BY
                                         WHERE surat_jalan = "' . $no_surat_jalan . '"
                                         ORDER BY id_logistik_stok DESC
                                         ')->result_array();
+
+                                        log_message('error', 'query asdasdasdasd : ' . $this->db->last_query());
         return $data;
     }
 
