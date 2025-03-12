@@ -131,6 +131,33 @@ $total = 1;
                                                         <?php endforeach; ?>
                                                     <?php endif; ?>
 
+                                                    <?php if ($mode == "edit"): ?>
+                                                        <?php foreach ($getDetailSoItem as $index => $data): ?>
+                                                            <tr>
+                                                                <td><?= $total++ ?></td>
+                                                                <td><?= $data['project_item'] ?></td>
+                                                                <td>
+                                                                    <?= $data['id_kode_item'] ?>
+                                                                    <input type="hidden" name="id_kode_item[<?= $index ?>]"
+                                                                        value="<?= $data['id_kode_item'] ?>">
+                                                                </td>
+                                                                <td><?= $data['kategori_item'] ?></td>
+                                                                <td><?= $data['nama_item'] ?></td>
+                                                                <td><?= $data['satuan_item'] ?></td>
+                                                                <td>
+                                                                    <?= number_format(floatval($data['soi_stok_asli']), 0, ",", "."); ?>
+                                                                </td>
+                                                                <td>
+                                                                    <input  type="number" class="form-control" name="soi_stok_opname[<?= $index ?>]"
+                                                                        value="<?= $data['soi_stok_opname'] ?>">
+                                                                </td>
+                                                                <td><input type="text" class="form-control"
+                                                                        name="keterangan[<?= $index ?>]" value="<?= $data['soi_keterangan'] ?>"
+                                                                        placeholder="Keterangan..."></td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+
                                                 </tbody>
                                                 <tfoot>
                                                     <tr>
@@ -138,13 +165,15 @@ $total = 1;
                                                         <td colspan="1"></td>
                                                         <td colspan="1"></td>
                                                         <?php if ($mode == "view"): ?>
-                                                            <td><b><?= number_format(floatval(array_sum(array_column($getDetailSoItem, 'soi_stok_asli'))), 0, ",", "."); ?></b></td>
-                                                            <td><b><?= number_format(floatval(array_sum(array_column($getDetailSoItem, 'soi_stok_opname'))), 0, ",", "."); ?></b></td>
-                                                            <?php endif; ?>
+                                                            <td><b><?= number_format(floatval(array_sum(array_column($getDetailSoItem, 'soi_stok_asli'))), 0, ",", "."); ?></b>
+                                                            </td>
+                                                            <td><b><?= number_format(floatval(array_sum(array_column($getDetailSoItem, 'soi_stok_opname'))), 0, ",", "."); ?></b>
+                                                            </td>
+                                                        <?php endif; ?>
                                                         <?php if ($mode == "input"): ?>
-                                                        <td><b><?= number_format(floatval(array_sum(array_column($getSOItem, 'total_jumlah_stok'))), 0, ",", "."); ?></b>
-                                                        </td>
-                                                        <td><b id="total_qty_planning">0</b></td>
+                                                            <td><b><?= number_format(floatval(array_sum(array_column($getSOItem, 'total_jumlah_stok'))), 0, ",", "."); ?></b>
+                                                            </td>
+                                                            <td><b id="total_qty_planning">0</b></td>
                                                         <?php endif; ?>
                                                         <td></td>
                                                     </tr>

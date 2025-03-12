@@ -75,9 +75,9 @@ $total = 1;
                                                         <a href="<?php echo site_url('StockOpname/hapusKota/' . $data['id_lokasi_gudang']); ?>"
                                                             class="btn btn-danger btn-sm">
                                                             Delete &nbsp;<i class="fas fa-trash"></i></a>
-                                                        <a href="#" class="btn btn-warning btn-sm"
-                                                            data-target="#modal-lg-edit<?= $data['id_so_kota'] ?>"
-                                                            data-toggle="modal"> Edit &nbsp; <i class="fas fa-edit"></i></a>
+                                                            <a href="<?= base_url('StockOpname/periode/'.$id_sop.'/lokasi/'.$data['id_lokasi_gudang'].'?mode=edit') ?>"
+                                                            class="btn btn-warning btn-sm">
+                                                            Edit &nbsp;<i class="fas fa-edit"></i>
                                                     <?php } else { ?>
                                                         <a href="<?= base_url('StockOpname/periode/'.$id_sop.'/lokasi/'.$data['id_lokasi_gudang'].'?mode=input') ?>"
                                                             class="btn btn-success btn-sm">
