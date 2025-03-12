@@ -11,8 +11,60 @@ class MStockOpname extends CI_Model
         return $data;
     }
 
+    public function getDetailSoPeriode($id_sop){
+        $data = $this->db->query('SELECT * FROM tb_so_periode WHERE id_sop = "'.$id_sop.'"')->result_array();
+        return $data;
+    }
 
-    public function tambahPeriode($data_array){
+    public function getSOKota($id_sop)
+    {
+
+        $data = $this->db->query('SELECT
+    tmllg.*,
+    tsk.*,
+    tsp.*
+FROM
+    tb_master_logistik_lokasi_gudang tmllg
+LEFT JOIN tb_so_kota tsk ON tmllg.id_lokasi_gudang = tsk.id_kota 
+LEFT JOIN tb_so_periode tsp ON tsk.id_so_periode = tsp.id_sop
+WHERE
+    (tsk.id_so_periode = "' . $id_sop . '" OR tsk.id_so_periode IS NULL)')->result_array();
+        return $data;
+    }
+
+    public function getSOItem($id_sop, $id_lokasi_gudang)
+    {
+
+        $data = $this->db->query('SELECT 
+    ROW_NUMBER() OVER (ORDER BY tmllg.kota_lokasi_gudang ASC) AS nomor,
+    tls.*,
+    tmllg.*,
+    tmlki.*,
+    tmb.*,
+    SUM(
+        CASE 
+            WHEN tmlsm.status_sumber_material LIKE "IN" THEN tls.jumlah_stok
+            WHEN tmlsm.status_sumber_material LIKE "OUT" THEN -tls.jumlah_stok
+            ELSE 0 
+        END
+    ) AS total_jumlah_stok
+FROM tb_logistik_stok tls 
+LEFT JOIN tb_master_logistik_sumber_material tmlsm USING(id_sumber_material)
+LEFT JOIN tb_master_logistik_kode_item tmlki USING(id_kode_item)
+RIGHT JOIN tb_master_bowheer tmb USING(id_bowheer)
+RIGHT JOIN tb_master_logistik_lokasi_gudang tmllg USING(id_lokasi_gudang)
+WHERE tls.id_lokasi_gudang = "' . $id_lokasi_gudang . '"
+GROUP BY tmlki.id_kode_item, tmllg.kota_lokasi_gudang
+HAVING total_jumlah_stok <> 0
+ORDER BY tmllg.kota_lokasi_gudang ASC')->result_array();
+
+        log_message('error', 'cek get so item: ' . $this->db->last_query());
+        return $data;
+    }
+
+
+    public function tambahPeriode($data_array)
+    {
         $res = $this->db->insert("tb_so_periode", $data_array);
         return $res;
     }
@@ -22,4 +74,11 @@ class MStockOpname extends CI_Model
         $res = $this->db->delete("tb_so_periode", $id_sop);
         return $res;
     }
+
+    public function hapusKota($id_so_kota)
+    {
+        $res = $this->db->delete("tb_so_kota", $id_so_kota);
+        return $res;
+    }
+
 }

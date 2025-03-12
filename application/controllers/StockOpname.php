@@ -23,9 +23,41 @@ class StockOpname extends CI_Controller
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
-            $this->load->view('StockOpname/index', $data);
+            $this->load->view('StockOpname/soperiode', $data);
             $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
+        } else {
+            redirect('Auth');
+        }
+    }
+
+    public function periode($id_sop, $id_lokasi_gudang = null)
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+
+            $data['title'] = 'DETAIL STOCK OPNAME LOGISTIK';
+            $data['judul'] = 'DETAIL STOCK OPNAME LOGISTIK';
+            $data['id_sop'] = $id_sop;
+
+            if ($id_lokasi_gudang !== null) {
+                $data['id_lokasi_gudang'] = $id_lokasi_gudang;
+                $data['getSOItem'] = $this->MStockOpname->getSOItem($id_sop, $id_lokasi_gudang);
+                $data['getDetailSoPeriode'] = $this->MStockOpname->getDetailSoPeriode($id_sop);
+
+                $this->load->view('Templates/01_Header', $data);
+                $this->load->view('Templates/02_Menu');
+                $this->load->view('StockOpname/soitem', $data);
+                $this->load->view('Templates/03_Footer');
+                $this->load->view('Templates/99_JS');
+            } else {
+                $data['getSOKota'] = $this->MStockOpname->getSOKota($id_sop);
+
+                $this->load->view('Templates/01_Header', $data);
+                $this->load->view('Templates/02_Menu');
+                $this->load->view('StockOpname/sokota', $data);
+                $this->load->view('Templates/03_Footer');
+                $this->load->view('Templates/99_JS');
+            }
         } else {
             redirect('Auth');
         }
@@ -55,6 +87,20 @@ class StockOpname extends CI_Controller
     {
         $id_sop = array('id_sop' => $id_sop);
         $res = $this->MStockOpname->hapusPeriode($id_sop);
+
+        if ($res >= 1) {
+            $this->session->set_flashdata('status', 'sukses_hapus');
+            redirect("StockOpname/periode");
+        } else {
+            $this->session->set_flashdata('status', 'gagal_hapus');
+            redirect("StockOpname/periode");
+        }
+    }
+
+    public function hapusKota($id_so_kota)
+    {
+        $id_so_kota = array('id_so_kota' => $id_so_kota);
+        $res = $this->MStockOpname->hapusKota($id_so_kota);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_hapus');
