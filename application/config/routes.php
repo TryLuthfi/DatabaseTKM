@@ -63,3 +63,6 @@ $route['translate_uri_dashes'] = FALSE;
 $route['backup'] = 'backup/index';
 $route['backup/create_backup'] = 'backup/create_backup';
 $route['backup/download_backup/(:any)'] = 'backup/download_backup/$1';
+
+$route['StockOpname/periode/(:num)'] = 'StockOpname/periode/$1';
+$route['StockOpname/periode/(:num)/lokasi/(:num)'] = 'StockOpname/periode/$1/$2';
