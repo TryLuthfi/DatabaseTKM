@@ -7,7 +7,20 @@ class MStockOpname extends CI_Model
 
     public function getSOPeriode()
     {
-        $data = $this->db->query('SELECT * FROM tb_so_periode')->result_array();
+        $data = $this->db->query('SELECT 
+    sp.id_sop, 
+    sp.sop_bulan, 
+    sp.sop_tahun, 
+    sp.sop_status,
+    CONCAT(
+        COALESCE(COUNT(sk.id_so_kota), 0), 
+        " / ", 
+        (SELECT COUNT(*) FROM tb_master_logistik_lokasi_gudang)
+    ) AS persentasi_so_kota
+FROM tb_so_periode sp
+LEFT JOIN tb_so_kota sk ON sp.id_sop = sk.id_so_periode AND sk.sok_status = "DONE"
+GROUP BY sp.id_sop, sp.sop_bulan, sp.sop_tahun, sp.sop_status;
+')->result_array();
         return $data;
     }
 
@@ -63,7 +76,7 @@ ORDER BY tmllg.kota_lokasi_gudang ASC')->result_array();
         return $data;
     }
 
-    public function getDetailSoItem($id_sop,$id_lokasi_gudang)
+    public function getDetailSoItem($id_sop, $id_lokasi_gudang)
     {
         $data = $this->db->query('SELECT * FROM tb_so_item tsi
 LEFT JOIN tb_so_periode tsp ON tsi.id_sop = tsp.id_sop
@@ -71,7 +84,7 @@ LEFT JOIN tb_master_logistik_lokasi_gudang tmllg ON tsi.id_kota_gudang = tmllg.i
 LEFT JOIN tb_master_logistik_kode_item tmlki ON tsi.id_kode_item = tmlki.id_kode_item
 WHERE tsi.id_sop = "' . $id_sop . '" AND tsi.id_kota_gudang = "' . $id_lokasi_gudang . '"')->result_array();
 
-return $data;
+        return $data;
     }
 
     public function insertBatchSOItem($data)

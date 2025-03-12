@@ -64,6 +64,7 @@ $total = 1;
                                             <th>Tahun</th>
                                             <th>Bulan</th>
                                             <th>Status</th>
+                                            <th>Persentase Kota</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
@@ -76,6 +77,7 @@ $total = 1;
                                                 <td><?= $data['sop_tahun'] ?></td>
                                                 <td><?= $data['sop_bulan'] ?></td>
                                                 <td><?= $data['sop_status'] ?></td>
+                                                <td><?= $data['persentasi_so_kota'] ?></td>
                                                 <td>
                                                     <a href="<?php echo site_url('StockOpname/periode/' . $data['id_sop']); ?>" class="btn btn-success btn-sm">
                                                         Detail &nbsp;<i class="fas fa-share"></i>
@@ -94,8 +96,7 @@ $total = 1;
                                     <tfoot>
                                         <tr>
                                             <th colspan="1">Total</th>
-                                            <th colspan="2"><?= number_format($total - 1, 0, ',', '.') ?></th>
-                                            <th colspan="4"></th>
+                                            <th colspan="5"><?= number_format($total - 1, 0, ',', '.') ?></th>
                                         </tr>
                                     </tfoot>
                                 </table>
