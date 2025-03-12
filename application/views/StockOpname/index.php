@@ -2,6 +2,21 @@
 $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
+$bulan_arr = [
+    "JANUARI",
+    "FEBRUARI",
+    "MARET",
+    "APRIL",
+    "MEI",
+    "JUNI",
+    "JULI",
+    "AGUSTUS",
+    "SEPTEMBER",
+    "OKTOBER",
+    "NOVEMBER",
+    "DESEMBER"
+];
+
 $total = 1;
 ?>
 
@@ -35,8 +50,8 @@ $total = 1;
                                     </div>
                                     <div class="col-6">
                                         <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
+                                            data-target="#modal-lg-tambah-periode" data-toggle="modal">Tambah Periode
+                                            &nbsp;<i class="fas fa-plus"></i> </a>
                                     </div>
                                 </div>
                             </div>
@@ -46,32 +61,30 @@ $total = 1;
                                     <thead>
                                         <tr>
                                             <th>No</th>
-                                            <th>Regional</th>
-                                            <th>Provinsi</th>
-                                            <th>Kota</th>
-                                            <th>Kecamatan</th>
-                                            <th>PIC</th>
+                                            <th>Tahun</th>
+                                            <th>Bulan</th>
+                                            <th>Status</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php
-                                        foreach ($getMasterLogistikLokasiGudang as $data):
+                                        foreach ($getSOPeriode as $data):
                                             ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
-                                                <td><?= $data['regional_lokasi_gudang'] ?></td>
-                                                <td><?= $data['provinsi_lokasi_gudang'] ?></td>
-                                                <td><?= $data['kota_lokasi_gudang'] ?></td>
-                                                <td><?= $data['kecamatan_lokasi_gudang'] ?></td>
-                                                <td><?= $data['nama_user'] ?></td>
+                                                <td><?= $data['sop_tahun'] ?></td>
+                                                <td><?= $data['sop_bulan'] ?></td>
+                                                <td><?= $data['sop_status'] ?></td>
                                                 <td>
-                                                    <a href="<?php echo site_url('Master_Logistik_Lokasi_Gudang/hapusLokasiGudang/' . $data['id_lokasi_gudang']); ?>"
-                                                        id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                            class=" fas fa-trash"></i></a>
-                                                    <a href="#" class="btn btn-warning"
-                                                        data-target="#modal-lg-edit<?= $data['id_lokasi_gudang'] ?>"
-                                                        data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                    <a href="" class="btn btn-success btn-sm">
+                                                        Detail &nbsp;<i class="fas fa-share"></i>
+                                                    </a>
+                                                    <a href="<?php echo site_url('StockOpname/hapusPeriode/' . $data['id_sop']); ?></a>" class="btn btn-danger btn-sm">
+                                                        Delete &nbsp;<i class="fas fa-trash"></i></a>
+                                                    <a href="#" class="btn btn-warning btn-sm"
+                                                        data-target="#modal-lg-edit<?= $data['id_sop'] ?>"
+                                                        data-toggle="modal"> Edit &nbsp; <i class="fas fa-edit"></i></a>
                                                 </td>
                                             </tr>
 
@@ -93,50 +106,44 @@ $total = 1;
                 </div>
         </section>
 
-        <!-- MODAL TAMBAH LOKASI GUDANG LOGISTIK -->
-        <form action=" <?php echo base_url('Master_Logistik_Lokasi_Gudang/tambahLokasiGudang') ?>" method="post">
-            <div class="modal fade" id="modal-lg-tambah">
+        <!-- MODAL TAMBAH PERIODE SO -->
+        <form id="form-tambah-periode" action="<?php echo base_url('StockOpname/tambahPeriode') ?>" method="post">
+            <div class="modal fade" id="modal-lg-tambah-periode">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h4 class="modal-title">Tambah Lokasi Gudang</h4>
+                            <h4 class="modal-title">TAMBAH PERIODE SO</h4>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
                         <div class="modal-body">
                             <div class="form-group">
-                                <label class="col-form-label">Regional</label>
-                                <select name="regional_lokasi_gudang" class="form-control">
-                                    <option value="Regional 1">REGIONAL 1</option>
-                                    <option value="Regional 2">REGIONAL 2</option>
-                                    <option value="Regional 3">REGIONAL 3</option>
-                                    <option value="Regional 4">REGIONAL 4</option>
-                                    <option value="Regional 5">REGIONAL 5</option>
+                                <label class="col-form-label">Pilih Bulan</label>
+                                <select class="form-control" id="so_bulan" name="so_bulan">
+                                    <option value="">Pilih Bulan</option>
+                                    <?php
+                                    $bulan_sekarang = date("n") - 1; // Ambil index bulan sekarang (0-11)
+                                    
+                                    foreach ($bulan_arr as $index => $bulan) {
+                                        $selected = ($index == $bulan_sekarang) ? "selected" : "";
+                                        echo "<option value='$bulan' $selected>$bulan</option>";
+                                    }
+                                    ?>
+                                    ?>
                                 </select>
                             </div>
+
                             <div class="form-group">
-                                <label class="col-form-label">Provinsi</label>
-                                <input type="text" class="form-control" name="provinsi_lokasi_gudang" autocomplete="off"
-                                    placeholder="Nama Provinsi">
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Kota</label>
-                                <input type="text" class="form-control" name="kota_lokasi_gudang" autocomplete="off"
-                                    placeholder="Nama Kota">
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Kecamatan</label>
-                                <input type="text" class="form-control" name="kecamatan_lokasi_gudang"
-                                    autocomplete="off" placeholder="Nama Kecamatan">
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Person In Control</label>
-                                <select name="id_user" class="form-control">
-                                    <?php foreach ($getMasterUser as $data2): ?>
-                                        <option value="<?php echo $data2['id_user'] ?>"> <?php echo $data2['nama_user'] ?>
-                                        </option>
-                                    <?php endforeach; ?>
+                                <label for="tahun">Pilih Tahun</label>
+                                <select class="form-control" id="so_tahun" name="so_tahun">
+                                    <?php
+                                    $tahun_sekarang = date("Y") + 1; // Tahun sekarang +1
+                                    for ($i = $tahun_sekarang; $i >= $tahun_sekarang - 1; $i--) {
+                                        $selected = ($i == $tahun_sekarang - 1) ? "selected" : "";
+                                        echo "<option value='$i' $selected>$i</option>";
+                                    }
+                                    ?>
                                 </select>
                             </div>
 
@@ -144,8 +151,9 @@ $total = 1;
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
 
-                                <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i
-                                        class="fa fa-spinner fa-spin loading" style="display:none"></i> Tambah</button>
+                                <button type="button" name="btnSubmitPeriode"
+                                    class="btn btn-primary btnSubmitPeriode"><i class="fa fa-spinner fa-spin loading"
+                                        style="display:none"></i> Tambah</button>
                             </div>
                         </div>
                     </div>
@@ -156,11 +164,10 @@ $total = 1;
         </form>
 
         <!-- MODAL EDIT LOKASI GUDANG LOGISTIK -->
-        <?php foreach ($getMasterLogistikLokasiGudang as $data): ?>
-            <form
-                action="<?php echo site_url('Master_Logistik_Lokasi_Gudang/editLokasiGudang/' . $data['id_lokasi_gudang']); ?>"
+        <?php foreach ($getSOPeriode as $data): ?>
+            <form action="<?php echo site_url('Master_Logistik_Lokasi_Gudang/editLokasiGudang/' . $data['id_sop']); ?>"
                 method="post">
-                <div class="modal fade" id="modal-lg-edit<?= $data['id_lokasi_gudang'] ?>">
+                <div class="modal fade" id="modal-lg-edit<?= $data['id_sop'] ?>">
                     <div class="modal-dialog modal-lg">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -250,6 +257,51 @@ $total = 1;
         <?php } else { ?>
         <?php } ?>
     })
+
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+
+        var selectedBulan = $("#so_bulan option:selected").text().trim();
+        var selectedTahun = $("#so_tahun option:selected").text().trim();
+
+        $("#so_tahun, #so_bulan").on("blur change", function () {
+            selectedBulan = $("#so_bulan option:selected").text().trim();
+            selectedTahun = $("#so_tahun option:selected").text().trim();
+
+            console.log("Bulan: ", selectedBulan);
+            console.log("Tahun: ", selectedTahun);
+
+        });
+
+        $(".btnSubmitPeriode").click(function () {
+            if (selectedBulan !== "" && selectedTahun !== "") {
+                $.ajax({
+                    url: "<?php echo site_url('StockOpname/cekPeriode'); ?>",
+                    type: "POST",
+                    data: {
+                        selectedBulan: selectedBulan,
+                        selectedTahun: selectedTahun
+                    },
+                    dataType: "json",
+                    success: function (response) {
+                        console.log("AJAX Cuccess : ", response);
+                        if (response.status === "exists") {
+
+                            alert("Periode " + selectedBulan + " " + selectedTahun + " sudah ada, silahkan pilih periode lain.");
+
+                        } else if (response.status === "available") {
+                            console.log("Form akan disubmit...");
+                            $("#form-tambah-periode").submit(); // Submit form dengan ID
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.log("AJAX Error:", status, error);
+                        alert("Terjadi kesalahan saat mengecek data. Coba lagi.");
+                    }
+                });
+            }
+        });
+    });
 </script>
 
 
