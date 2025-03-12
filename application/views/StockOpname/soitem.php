@@ -54,7 +54,7 @@ $total = 1;
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label class="col-form-label">Lokasi Project</label>
+                                                <label class="col-form-label">Lokasi Gudang</label>
                                                 <h5><?= $getSOItem[0]['kota_lokasi_gudang'] ?></h5>
                                             </div>
                                         </div>
@@ -72,12 +72,17 @@ $total = 1;
                                                         <th style="width: 8%;">Satuan Item</th>
                                                         <th style="width: 8%;">Stok Aplikasi</th>
                                                         <th style="width: 8%;">Stok SO</th>
+                                                        <?php if ($mode == "1bda80f2be4d3658e0baa43fbe7ae8c1"): ?>
+                                                            <th style="width: 8%;">Selisih Stok</th>
+                                                        <?php endif; ?>
                                                         <th style="width: 18%;">Keterangan</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     <?php $number = 1; ?>
-                                                    <?php if ($mode == "view"): ?>
+
+                                                    <!-- mode view -->
+                                                    <?php if ($mode == "1bda80f2be4d3658e0baa43fbe7ae8c1"): ?>
                                                         <?php foreach ($getDetailSoItem as $index => $data): ?>
                                                             <tr>
                                                                 <td><?= $total++ ?></td>
@@ -94,12 +99,16 @@ $total = 1;
                                                                 <td>
                                                                     <?= number_format(floatval($data['soi_stok_opname']), 0, ",", "."); ?>
                                                                 </td>
+                                                                <td>
+                                                                    <?= number_format(floatval($data['soi_stok_asli'] - $data['soi_stok_opname']), 0, ",", "."); ?>
+                                                                </td>
                                                                 <td><?= $data['soi_keterangan'] ?></td>
                                                             </tr>
                                                         <?php endforeach; ?>
                                                     <?php endif; ?>
 
-                                                    <?php if ($mode == "input"): ?>
+                                                    <!-- mode input -->
+                                                    <?php if ($mode == "a43c1b0aa53a0c908810c06ab1ff3967"): ?>
                                                         <?php foreach ($getSOItem as $index => $data): ?>
                                                             <tr>
                                                                 <td><?= $total++ ?></td>
@@ -131,7 +140,8 @@ $total = 1;
                                                         <?php endforeach; ?>
                                                     <?php endif; ?>
 
-                                                    <?php if ($mode == "edit"): ?>
+                                                    <!-- mode edit -->
+                                                    <?php if ($mode == "de95b43bceeb4b998aed4aed5cef1ae7"): ?>
                                                         <?php foreach ($getDetailSoItem as $index => $data): ?>
                                                             <tr>
                                                                 <td><?= $total++ ?></td>
@@ -148,11 +158,13 @@ $total = 1;
                                                                     <?= number_format(floatval($data['soi_stok_asli']), 0, ",", "."); ?>
                                                                 </td>
                                                                 <td>
-                                                                    <input  type="number" class="form-control" name="soi_stok_opname[<?= $index ?>]"
+                                                                    <input type="number" class="form-control"
+                                                                        name="soi_stok_opname[<?= $index ?>]"
                                                                         value="<?= $data['soi_stok_opname'] ?>">
                                                                 </td>
                                                                 <td><input type="text" class="form-control"
-                                                                        name="keterangan[<?= $index ?>]" value="<?= $data['soi_keterangan'] ?>"
+                                                                        name="keterangan[<?= $index ?>]"
+                                                                        value="<?= $data['soi_keterangan'] ?>"
                                                                         placeholder="Keterangan..."></td>
                                                             </tr>
                                                         <?php endforeach; ?>
@@ -164,13 +176,16 @@ $total = 1;
                                                         <td colspan="3"><b>TOTAL</b></td>
                                                         <td colspan="1"></td>
                                                         <td colspan="1"></td>
-                                                        <?php if ($mode == "view"): ?>
+                                                        <td colspan="1"></td>
+                                                        <?php if ($mode == "1bda80f2be4d3658e0baa43fbe7ae8c1"): ?>
                                                             <td><b><?= number_format(floatval(array_sum(array_column($getDetailSoItem, 'soi_stok_asli'))), 0, ",", "."); ?></b>
                                                             </td>
                                                             <td><b><?= number_format(floatval(array_sum(array_column($getDetailSoItem, 'soi_stok_opname'))), 0, ",", "."); ?></b>
                                                             </td>
+                                                            <td><b><?= number_format(floatval(array_sum(array_column($getDetailSoItem, 'soi_stok_asli')) - array_sum(array_column($getDetailSoItem, 'soi_stok_opname'))), 0, ",", "."); ?></b>
+                                                            </td>
                                                         <?php endif; ?>
-                                                        <?php if ($mode == "input"): ?>
+                                                        <?php if ($mode == "a43c1b0aa53a0c908810c06ab1ff3967"): ?>
                                                             <td><b><?= number_format(floatval(array_sum(array_column($getSOItem, 'total_jumlah_stok'))), 0, ",", "."); ?></b>
                                                             </td>
                                                             <td><b id="total_qty_planning">0</b></td>
@@ -181,7 +196,7 @@ $total = 1;
                                             </table>
                                         </div>
                                     </div>
-                                    <?php if ($mode == "input"): ?>
+                                    <?php if ($mode == "a43c1b0aa53a0c908810c06ab1ff3967"): ?>
                                         <div class="modal-footer">
                                             <button type="submit" class="btn btn-primary float-right text-bold">Simpan Stock
                                                 Opname</button>

@@ -68,18 +68,18 @@ $total = 1;
                                                 </td>
                                                 <td>
                                                     <?php if ($data['id_so_kota'] != '') { ?>
-                                                        <a href="<?= base_url('StockOpname/periode/'.$id_sop.'/lokasi/'.$data['id_lokasi_gudang'].'?mode=view') ?>"
+                                                        <a href="<?= base_url('StockOpname/periode/'.$id_sop.'/lokasi/'.$data['id_lokasi_gudang'].'?mode=1bda80f2be4d3658e0baa43fbe7ae8c1') ?>"
                                                             class="btn btn-success btn-sm">
                                                             Detail &nbsp;<i class="fas fa-share"></i>
                                                         </a>
                                                         <a href="<?php echo site_url('StockOpname/hapusKota/' . $data['id_lokasi_gudang']); ?>"
                                                             class="btn btn-danger btn-sm">
                                                             Delete &nbsp;<i class="fas fa-trash"></i></a>
-                                                            <a href="<?= base_url('StockOpname/periode/'.$id_sop.'/lokasi/'.$data['id_lokasi_gudang'].'?mode=edit') ?>"
+                                                            <a href="<?= base_url('StockOpname/periode/'.$id_sop.'/lokasi/'.$data['id_lokasi_gudang'].'?mode=de95b43bceeb4b998aed4aed5cef1ae7') ?>"
                                                             class="btn btn-warning btn-sm">
                                                             Edit &nbsp;<i class="fas fa-edit"></i>
                                                     <?php } else { ?>
-                                                        <a href="<?= base_url('StockOpname/periode/'.$id_sop.'/lokasi/'.$data['id_lokasi_gudang'].'?mode=input') ?>"
+                                                        <a href="<?= base_url('StockOpname/periode/'.$id_sop.'/lokasi/'.$data['id_lokasi_gudang'].'?mode=a43c1b0aa53a0c908810c06ab1ff3967') ?>"
                                                             class="btn btn-success btn-sm">
                                                             Tambah SO &nbsp;<i class="fas fa-share"></i>
                                                         </a>
