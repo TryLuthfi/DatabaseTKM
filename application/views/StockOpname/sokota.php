@@ -60,15 +60,15 @@ $total = 1;
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['sop_bulan'] . " - " . $data['sop_tahun'] ?></td>
                                                 <td><?= $data['kota_lokasi_gudang'] ?></td>
-                                                <td><?php if ($data['sop_status'] != '') {
-                                                    echo $data['sop_status'];
+                                                <td><?php if ($data['sok_status'] != '') {
+                                                    echo $data['sok_status'];
                                                 } else {
                                                     echo 'NOT YET';
                                                 } ?>
                                                 </td>
                                                 <td>
                                                     <?php if ($data['id_so_kota'] != '') { ?>
-                                                        <a href="<?php echo site_url('StockOpname/SOPeriode/' . $data['id_lokasi_gudang']); ?>"
+                                                        <a href="<?= base_url('StockOpname/periode/'.$id_sop.'/lokasi/'.$data['id_lokasi_gudang'].'?mode=view') ?>"
                                                             class="btn btn-success btn-sm">
                                                             Detail &nbsp;<i class="fas fa-share"></i>
                                                         </a>
@@ -79,7 +79,7 @@ $total = 1;
                                                             data-target="#modal-lg-edit<?= $data['id_so_kota'] ?>"
                                                             data-toggle="modal"> Edit &nbsp; <i class="fas fa-edit"></i></a>
                                                     <?php } else { ?>
-                                                        <a href="<?= base_url('StockOpname/periode/' . $id_sop . '/lokasi/' . $data['id_lokasi_gudang']); ?>"
+                                                        <a href="<?= base_url('StockOpname/periode/'.$id_sop.'/lokasi/'.$data['id_lokasi_gudang'].'?mode=input') ?>"
                                                             class="btn btn-success btn-sm">
                                                             Tambah SO &nbsp;<i class="fas fa-share"></i>
                                                         </a>
