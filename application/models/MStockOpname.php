@@ -11,8 +11,9 @@ class MStockOpname extends CI_Model
         return $data;
     }
 
-    public function getDetailSoPeriode($id_sop){
-        $data = $this->db->query('SELECT * FROM tb_so_periode WHERE id_sop = "'.$id_sop.'"')->result_array();
+    public function getDetailSoPeriode($id_sop)
+    {
+        $data = $this->db->query('SELECT * FROM tb_so_periode WHERE id_sop = "' . $id_sop . '"')->result_array();
         return $data;
     }
 
@@ -32,7 +33,7 @@ WHERE
         return $data;
     }
 
-    public function getSOItem($id_sop, $id_lokasi_gudang)
+    public function getSOItem($id_lokasi_gudang)
     {
 
         $data = $this->db->query('SELECT 
@@ -60,6 +61,28 @@ ORDER BY tmllg.kota_lokasi_gudang ASC')->result_array();
 
         log_message('error', 'cek get so item: ' . $this->db->last_query());
         return $data;
+    }
+
+    public function getDetailSoItem($id_sop,$id_lokasi_gudang)
+    {
+        $data = $this->db->query('SELECT * FROM tb_so_item tsi
+LEFT JOIN tb_so_periode tsp ON tsi.id_sop = tsp.id_sop
+LEFT JOIN tb_master_logistik_lokasi_gudang tmllg ON tsi.id_kota_gudang = tmllg.id_lokasi_gudang
+LEFT JOIN tb_master_logistik_kode_item tmlki ON tsi.id_kode_item = tmlki.id_kode_item
+WHERE tsi.id_sop = "' . $id_sop . '" AND tsi.id_kota_gudang = "' . $id_lokasi_gudang . '"')->result_array();
+
+return $data;
+    }
+
+    public function insertBatchSOItem($data)
+    {
+        return $this->db->insert_batch('tb_so_item', $data);
+    }
+
+    public function tambahSoKota($data_array)
+    {
+        $res = $this->db->insert("tb_so_kota", $data_array);
+        return $res;
     }
 
 
