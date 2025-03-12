@@ -218,7 +218,18 @@ $id_menu = $this->uri->segment('1');
                           } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
-                                Stok Material
+                                Stock Material
+                            </p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item" style="pointer-events: none">
+                        <a href="<?= base_url('StockOpname') ?>" class="nav-link <?php if ($id_menu == 'StockOpname') {
+                              echo "active";
+                          } ?>">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Stock Opname
                             </p>
                         </a>
                     </li>

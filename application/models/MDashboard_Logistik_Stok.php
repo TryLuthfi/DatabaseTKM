@@ -660,6 +660,7 @@ ORDER BY ki.kategori_item;";
     tmllg.kota_lokasi_gudang,
     tls.no_surat_jalan,
     tls.jumlah_stok,
+    tmllg2.kota_lokasi_gudang as kota_pengiriman,
     tmlki.kategori_item,
     tmlki.nama_item,
     tmlki.satuan_item,
@@ -671,9 +672,12 @@ ORDER BY ki.kategori_item;";
     tmlsm.nama_sumber_material,
     tmlsm.status_sumber_material,
     tls.tanggal_upload_stok,
-    tmu.nama_user
+    tmu.nama_user,
+    tls.no_pr_logistik,
+    tls.no_po_logistik
 FROM tb_logistik_stok tls
 LEFT JOIN tb_master_logistik_lokasi_gudang tmllg ON tls.id_lokasi_gudang = tmllg.id_lokasi_gudang
+LEFT JOIN tb_master_logistik_lokasi_gudang tmllg2 ON tls.id_lokasi_gudang_pengiriman = tmllg2.id_lokasi_gudang
 LEFT JOIN tb_master_bowheer tmb ON tls.id_bowheer = tmb.id_bowheer
 LEFT JOIN tb_master_logistik_sumber_material tmlsm ON tls.id_sumber_material = tmlsm.id_sumber_material
 LEFT JOIN tb_master_logistik_kode_item tmlki ON tls.id_kode_item = tmlki.id_kode_item
