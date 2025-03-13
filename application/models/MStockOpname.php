@@ -24,6 +24,11 @@ GROUP BY sp.id_sop, sp.sop_bulan, sp.sop_tahun, sp.sop_status;
         return $data;
     }
 
+    public function getDataSoKota($id_so_kota)
+    {
+        return $this->db->get_where("tb_so_kota", ['id_so_kota' => $id_so_kota])->row_array();
+    }
+
     public function getDetailSoPeriode($id_sop)
     {
         $data = $this->db->query('SELECT * FROM tb_so_periode WHERE id_sop = "' . $id_sop . '"')->result_array();
@@ -39,10 +44,13 @@ GROUP BY sp.id_sop, sp.sop_bulan, sp.sop_tahun, sp.sop_status;
     tsp.*
 FROM
     tb_master_logistik_lokasi_gudang tmllg
-LEFT JOIN tb_so_kota tsk ON tmllg.id_lokasi_gudang = tsk.id_kota 
-LEFT JOIN tb_so_periode tsp ON tsk.id_so_periode = tsp.id_sop
-WHERE
-    (tsk.id_so_periode = "' . $id_sop . '" OR tsk.id_so_periode IS NULL)')->result_array();
+LEFT JOIN tb_so_kota tsk 
+    ON tmllg.id_lokasi_gudang = tsk.id_kota 
+    AND (tsk.id_so_periode = "'.$id_sop.'" OR tsk.id_so_periode IS NULL)
+LEFT JOIN tb_so_periode tsp 
+    ON tsk.id_so_periode = tsp.id_sop
+GROUP BY 
+    tmllg.id_lokasi_gudang')->result_array();
         return $data;
     }
 
@@ -118,10 +126,16 @@ WHERE tsi.id_sop = "' . $id_sop . '" AND tsi.id_kota_gudang = "' . $id_lokasi_gu
         return $res;
     }
 
-    public function hapusKota($id_so_kota)
+    public function hapusKotaById($id_so_kota)
+{
+    return $this->db->delete("tb_so_kota", ['id_so_kota' => $id_so_kota]);
+}
+
+    public function hapusItemSO($id_sop, $id_lokasi_gudang)
     {
-        $res = $this->db->delete("tb_so_kota", $id_so_kota);
-        return $res;
+        $this->db->where('id_sop', $id_sop);
+        $this->db->where('id_kota_gudang', $id_lokasi_gudang);
+        return $this->db->delete("tb_so_item");
     }
 
 }

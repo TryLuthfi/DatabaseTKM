@@ -31,7 +31,7 @@ class StockOpname extends CI_Controller
         }
     }
 
-    public function periode($id_sop, $id_lokasi_gudang = null)
+    public function periode($id_sop = null, $id_lokasi_gudang = null)
     {
         if (!empty($this->session->userdata('id_user'))) {
 
@@ -204,25 +204,37 @@ class StockOpname extends CI_Controller
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_hapus');
-            redirect("StockOpname/periode");
+            redirect("StockOpname");
         } else {
             $this->session->set_flashdata('status', 'gagal_hapus');
-            redirect("StockOpname/periode");
+            redirect("StockOpname");
         }
     }
 
     public function hapusKota($id_so_kota)
     {
-        $id_so_kota = array('id_so_kota' => $id_so_kota);
-        $res = $this->MStockOpname->hapusKota($id_so_kota);
+        $data_kota = $this->MStockOpname->getDataSoKota($id_so_kota);
 
-        if ($res >= 1) {
-            $this->session->set_flashdata('status', 'sukses_hapus');
-            redirect("StockOpname");
+        if ($data_kota) {
+            $id_sop = $data_kota['id_so_periode'];
+            $id_lokasi_gudang = $data_kota['id_kota'];
+
+            // Hapus item stok opname sebelum hapus kota
+            $this->MStockOpname->hapusItemSO($id_sop, $id_lokasi_gudang);
+
+            // Hapus kota dengan fungsi yang sudah diperbaiki
+            $res = $this->MStockOpname->hapusKotaById($id_so_kota);
+
+            if ($res) {
+                $this->session->set_flashdata('status', 'sukses_hapus');
+            } else {
+                $this->session->set_flashdata('status', 'gagal_hapus');
+            }
         } else {
-            $this->session->set_flashdata('status', 'gagal_hapus');
-            redirect("StockOpname");
+            $this->session->set_flashdata('status', 'data_tidak_ditemukan');
         }
+
+        redirect("StockOpname/periode/" . $id_sop);
     }
 
     public function cekPeriode()
