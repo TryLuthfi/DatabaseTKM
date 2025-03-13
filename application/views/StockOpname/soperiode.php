@@ -48,11 +48,13 @@ $total = 1;
                                     <div class="col-6">
                                         <h3 class="card-title">List Area Dashboard </h3>
                                     </div>
-                                    <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold"
-                                            data-target="#modal-lg-tambah-periode" data-toggle="modal">Tambah Periode
-                                            &nbsp;<i class="fas fa-plus"></i> </a>
-                                    </div>
+                                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                        <div class="col-6">
+                                            <a href="#" class="btn btn-success float-right text-bold"
+                                                data-target="#modal-lg-tambah-periode" data-toggle="modal">Tambah Periode
+                                                &nbsp;<i class="fas fa-plus"></i> </a>
+                                        </div>
+                                    <?php } ?>
                                 </div>
                             </div>
                             <!-- /.card-header -->
@@ -79,14 +81,18 @@ $total = 1;
                                                 <td><?= $data['sop_status'] ?></td>
                                                 <td><?= $data['persentasi_so_kota'] ?></td>
                                                 <td>
-                                                    <a href="<?php echo site_url('StockOpname/periode/' . $data['id_sop']); ?>" class="btn btn-success btn-sm">
+                                                    <a href="<?php echo site_url('StockOpname/periode/' . $data['id_sop']); ?>"
+                                                        class="btn btn-success btn-sm">
                                                         Detail &nbsp;<i class="fas fa-share"></i>
                                                     </a>
-                                                    <a href="<?php echo site_url('StockOpname/hapusPeriode/' . $data['id_sop']); ?>" class="btn btn-danger btn-sm">
-                                                        Delete &nbsp;<i class="fas fa-trash"></i></a>
-                                                    <a href="#" class="btn btn-warning btn-sm"
-                                                        data-target="#modal-lg-edit<?= $data['id_sop'] ?>"
-                                                        data-toggle="modal"> Edit &nbsp; <i class="fas fa-edit"></i></a>
+                                                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                        <a href="<?php echo site_url('StockOpname/hapusPeriode/' . $data['id_sop']); ?>"
+                                                            class="btn btn-danger btn-sm">
+                                                            Delete &nbsp;<i class="fas fa-trash"></i></a>
+                                                        <a href="#" class="btn btn-warning btn-sm"
+                                                            data-target="#modal-lg-edit<?= $data['id_sop'] ?>"
+                                                            data-toggle="modal"> Edit &nbsp; <i class="fas fa-edit"></i></a>
+                                                    <?php } ?>
                                                 </td>
                                             </tr>
 
