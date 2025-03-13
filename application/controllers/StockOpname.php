@@ -34,6 +34,12 @@ class StockOpname extends CI_Controller
     public function periode($id_sop, $id_lokasi_gudang = null)
     {
         if (!empty($this->session->userdata('id_user'))) {
+
+            $bulan_mapping = [
+                'JANUARI' => '01', 'FEBRUARI' => '02', 'MARET' => '03', 'APRIL' => '04',
+                'MEI' => '05', 'JUNI' => '06', 'JULI' => '07', 'AGUSTUS' => '08',
+                'SEPTEMBER' => '09', 'OKTOBER' => '10', 'NOVEMBER' => '11', 'DESEMBER' => '12'
+            ];
             $mode = $this->input->get('mode');
 
             $data['title'] = 'DETAIL STOCK OPNAME LOGISTIK';
@@ -43,9 +49,28 @@ class StockOpname extends CI_Controller
 
             if ($id_lokasi_gudang !== null) {
                 $data['id_lokasi_gudang'] = $id_lokasi_gudang;
-                $data['getSOItem'] = $this->MStockOpname->getSOItem($id_lokasi_gudang);
-                $data['getDetailSoItem'] = $this->MStockOpname->getDetailSoItem($id_sop,$id_lokasi_gudang);
+
                 $data['getDetailSoPeriode'] = $this->MStockOpname->getDetailSoPeriode($id_sop);
+                $bulan = $data['getDetailSoPeriode'][0]['sop_bulan'];
+                $tahun = $data['getDetailSoPeriode'][0]['sop_tahun'];
+
+                $bulan_angka = isset($bulan_mapping[$bulan]) ? $bulan_mapping[$bulan] : '01';
+                $tanggal_input = "{$tahun}-{$bulan_angka}-01";
+                $tanggal_sekarang = date('Y-m-d');
+
+                if ($tanggal_sekarang > $tanggal_input) {
+                    $jam_menit = '23:59:59'; // Jika lebih dari tanggal yang dihasilkan
+                } else {
+                    $jam_menit = date('H:i:s'); // Jika hari ini sama
+                }
+
+                $tanggal_format = "{$tanggal_input} {$jam_menit}";
+
+                echo("<script>console.log('PHP: " . $tanggal_format . "');</script>");
+
+
+                $data['getSOItem'] = $this->MStockOpname->getSOItem($id_lokasi_gudang, $tanggal_format);
+                $data['getDetailSoItem'] = $this->MStockOpname->getDetailSoItem($id_sop,$id_lokasi_gudang);
 
                 $this->load->view('Templates/01_Header', $data);
                 $this->load->view('Templates/02_Menu');

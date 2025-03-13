@@ -46,7 +46,7 @@ WHERE
         return $data;
     }
 
-    public function getSOItem($id_lokasi_gudang)
+    public function getSOItem($id_lokasi_gudang, $tanggal_format)
     {
 
         $data = $this->db->query('SELECT 
@@ -67,7 +67,7 @@ LEFT JOIN tb_master_logistik_sumber_material tmlsm USING(id_sumber_material)
 LEFT JOIN tb_master_logistik_kode_item tmlki USING(id_kode_item)
 RIGHT JOIN tb_master_bowheer tmb USING(id_bowheer)
 RIGHT JOIN tb_master_logistik_lokasi_gudang tmllg USING(id_lokasi_gudang)
-WHERE tls.id_lokasi_gudang = "' . $id_lokasi_gudang . '"
+WHERE tls.id_lokasi_gudang = "' . $id_lokasi_gudang . '" && tanggal_upload_stok <= "' . $tanggal_format . '"
 GROUP BY tmlki.id_kode_item, tmllg.kota_lokasi_gudang
 HAVING total_jumlah_stok <> 0
 ORDER BY tmllg.kota_lokasi_gudang ASC')->result_array();
