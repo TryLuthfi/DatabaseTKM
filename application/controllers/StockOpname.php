@@ -36,9 +36,18 @@ class StockOpname extends CI_Controller
         if (!empty($this->session->userdata('id_user'))) {
 
             $bulan_mapping = [
-                'JANUARI' => '01', 'FEBRUARI' => '02', 'MARET' => '03', 'APRIL' => '04',
-                'MEI' => '05', 'JUNI' => '06', 'JULI' => '07', 'AGUSTUS' => '08',
-                'SEPTEMBER' => '09', 'OKTOBER' => '10', 'NOVEMBER' => '11', 'DESEMBER' => '12'
+                'JANUARI' => '01',
+                'FEBRUARI' => '02',
+                'MARET' => '03',
+                'APRIL' => '04',
+                'MEI' => '05',
+                'JUNI' => '06',
+                'JULI' => '07',
+                'AGUSTUS' => '08',
+                'SEPTEMBER' => '09',
+                'OKTOBER' => '10',
+                'NOVEMBER' => '11',
+                'DESEMBER' => '12'
             ];
             $mode = $this->input->get('mode');
 
@@ -66,11 +75,11 @@ class StockOpname extends CI_Controller
 
                 $tanggal_format = "{$tanggal_input} {$jam_menit}";
 
-                echo("<script>console.log('PHP: " . $tanggal_format . "');</script>");
+                echo ("<script>console.log('PHP: " . $tanggal_format . "');</script>");
 
 
                 $data['getSOItem'] = $this->MStockOpname->getSOItem($id_lokasi_gudang, $tanggal_format);
-                $data['getDetailSoItem'] = $this->MStockOpname->getDetailSoItem($id_sop,$id_lokasi_gudang);
+                $data['getDetailSoItem'] = $this->MStockOpname->getDetailSoItem($id_sop, $id_lokasi_gudang);
 
                 $this->load->view('Templates/01_Header', $data);
                 $this->load->view('Templates/02_Menu');
@@ -134,6 +143,34 @@ class StockOpname extends CI_Controller
                 $this->session->set_flashdata('error', 'Tidak ada data stok opname yang disimpan.');
             }
 
+            redirect('StockOpname/periode/' . $id_sop);
+        } else {
+            redirect('Auth');
+        }
+    }
+
+    public function editSO()
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+            $id_sop = $this->input->post('id_sop');
+            $id_lokasi_gudang = $this->input->post('id_lokasi_gudang');
+
+            $id_kode_item = $this->input->post('id_kode_item');
+            $soi_stok_opname = $this->input->post('soi_stok_opname');
+            $keterangan = $this->input->post('keterangan');
+
+            foreach ($id_kode_item as $index => $kode_item) {
+                $data_update = [
+                    'soi_stok_opname' => $soi_stok_opname[$index] ?? 0,
+                    'soi_keterangan' => $keterangan[$index] ?? ''
+                ];
+
+                $this->MStockOpname->updateSOItem($id_sop, $kode_item, $data_update);
+            }
+
+            $this->session->set_flashdata('success', 'Data stok opname berhasil diperbarui.');
+
+            // Redirect kembali ke halaman periode
             redirect('StockOpname/periode/' . $id_sop);
         } else {
             redirect('Auth');

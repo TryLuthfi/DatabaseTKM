@@ -23,8 +23,12 @@ $total = 1;
                 <div class="row clearfix hidden-md-up">
                     <div class="col-md-12">
                         <div class="card">
-                            <form action="<?= base_url('StockOpname/inputSO') ?>" method="post" id="form-so"
-                                enctype="multipart/form-data">
+                        <?php if ($mode == "a43c1b0aa53a0c908810c06ab1ff3967"): ?>
+                            <form action="<?= base_url('StockOpname/inputSO') ?>" method="post" id="form-so" enctype="multipart/form-data">
+                        <?php endif; ?>
+                        <?php if ($mode == "de95b43bceeb4b998aed4aed5cef1ae7"): ?>
+                            <form action="<?= base_url('StockOpname/editSO') ?>" method="post" id="form-so" enctype="multipart/form-data">
+                        <?php endif; ?>
                                 <div class="card-header">
                                     <h3 class="card-title">INPUT STOK OPNAME</h3>
                                 </div>
@@ -202,6 +206,12 @@ $total = 1;
                                                 Opname</button>
                                         </div>
                                     <?php endif; ?>
+                                    <?php if ($mode == "de95b43bceeb4b998aed4aed5cef1ae7"): ?>
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-primary float-right text-bold">Simpan Edit Stock
+                                                Opname</button>
+                                        </div>
+                                        <?php endif; ?>
                                 </div>
                             </form>
                         </div>

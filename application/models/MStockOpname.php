@@ -98,6 +98,13 @@ WHERE tsi.id_sop = "' . $id_sop . '" AND tsi.id_kota_gudang = "' . $id_lokasi_gu
         return $res;
     }
 
+    public function updateSOItem($id_sop, $id_kode_item, $data)
+    {
+        $this->db->where('id_sop', $id_sop);
+        $this->db->where('id_kode_item', $id_kode_item);
+        return $this->db->update('tb_so_item', $data);
+    }
+
 
     public function tambahPeriode($data_array)
     {
