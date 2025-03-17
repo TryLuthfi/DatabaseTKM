@@ -30,7 +30,7 @@ class MFiberstar_Project_Detail extends CI_Model
                     ON
                     mdsf.id_document_support = tdac.id_document_support_fiberstar
                 WHERE
-                    mdsf.stagging_document_support IN ('APPROVAL CBN', 'ATP', 'RFS', 'BAST')
+                    mdsf.stagging_document_support IN ('DOCUMENT PO', 'DOCUMENT SPK', 'DOCUMENT BAK', 'DOCUMENT HLD', 'DOCUMENT LLD', 'DOCUMENT KOM & PKS', 'DOCUMENT RFS', 'DOCUMENT ATP & BAST')
                     AND tdac.primary_access_id_project = '".$string."'
                 GROUP BY
                     mdsf.stagging_document_support;

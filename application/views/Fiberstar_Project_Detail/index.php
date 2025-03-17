@@ -354,7 +354,7 @@ function formatTanggalIndonesia($date)
                                                         <label class="col-form-label">Nilai PO</label>
                                                         <input type="text" class="form-control" name="nilai_awal_po"
                                                             autocomplete="off"
-                                                            value="<?= "Rp. " . number_format((float)($data['nilai_awal_po'] ?? 0), 0, ",", ".") ?>"
+                                                            value="<?= "Rp. " . number_format((float) ($data['nilai_awal_po'] ?? 0), 0, ",", ".") ?>"
                                                             oninput="formatRupiah(event)">
                                                     </div>
                                                 </div>
@@ -363,7 +363,7 @@ function formatTanggalIndonesia($date)
                                                         <label class="col-form-label">Homepass PO</label>
                                                         <input type="text" class="form-control" name="hp_po"
                                                             autocomplete="off"
-                                                            value="<?= number_format((float)($data['hp_po'] ?? 0), 0, ",", ".") ?>"
+                                                            value="<?= number_format((float) ($data['hp_po'] ?? 0), 0, ",", ".") ?>"
                                                             oninput="formatAngka(event)">
                                                     </div>
                                                 </div>
@@ -921,28 +921,30 @@ function formatTanggalIndonesia($date)
                                         </tr>
                                     </thead>
                                     <tbody>
-                                            <tr>
-                                                <td>1</td>
-                                                <td>TEC.001/KOM/TKM-03/II/2024</td>
-                                                <td>50%</td>
-                                                <td>100</td>
-                                                <td>Rp. 20.000</td>
-                                                <td>Rp. 1.000.000</td>
-                                                <td><span class="badge badge-success">Approved</span></td>
-                                                <td>20/08/2025</td>
-                                                <td><a href="#" id="tombol_detail" class="btn btn-primary tombol_detail"><i class=" fas fa-info"></i></a></td>
-                                            </tr>
-                                            <tr>
-                                                <td>2</td>
-                                                <td>TEC.002/KOM/TKM-03/II/2024</td>
-                                                <td>50%</td>
-                                                <td>100</td>
-                                                <td>Rp. 20.000</td>
-                                                <td>Rp. 1.000.000</td>
-                                                <td><span class="badge badge-warning">Waiting Approval Finance</span></td>
-                                                <td>28/02/2025</td>
-                                                <td><a href="#" id="tombol_detail" class="btn btn-primary tombol_detail"><i class=" fas fa-info"></i></a></td>
-                                            </tr>
+                                        <tr>
+                                            <td>1</td>
+                                            <td>TEC.001/KOM/TKM-03/II/2024</td>
+                                            <td>50%</td>
+                                            <td>100</td>
+                                            <td>Rp. 20.000</td>
+                                            <td>Rp. 1.000.000</td>
+                                            <td><span class="badge badge-success">Approved</span></td>
+                                            <td>20/08/2025</td>
+                                            <td><a href="#" id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                                        class=" fas fa-info"></i></a></td>
+                                        </tr>
+                                        <tr>
+                                            <td>2</td>
+                                            <td>TEC.002/KOM/TKM-03/II/2024</td>
+                                            <td>50%</td>
+                                            <td>100</td>
+                                            <td>Rp. 20.000</td>
+                                            <td>Rp. 1.000.000</td>
+                                            <td><span class="badge badge-warning">Waiting Approval Finance</span></td>
+                                            <td>28/02/2025</td>
+                                            <td><a href="#" id="tombol_detail" class="btn btn-primary tombol_detail"><i
+                                                        class=" fas fa-info"></i></a></td>
+                                        </tr>
                                     </tbody>
                                     <tfoot>
                                         <tr>
@@ -957,7 +959,7 @@ function formatTanggalIndonesia($date)
                                 </table>
                                 <div class="modal-footer">
                                     <a href="<?php echo site_url('Fiberstar_Project_Detail/editStatusImplementasiBack/' . $row_primary_access_id_project); ?>"
-                                                class="btn btn-success float-right text-bold">Tambah Kompensasi</a>
+                                        class="btn btn-success float-right text-bold">Tambah Kompensasi</a>
                                 </div>
                             </div>
 
@@ -1127,12 +1129,11 @@ function formatTanggalIndonesia($date)
                                         <?php foreach ($master_data_stagging as $index => $value) { ?>
                                             <tr data-widget="expandable-table" aria-expanded="false">
                                                 <?php
-                                                $total_count = count(array_filter($master_data_dokument, function ($item) use ($value) {
-                                                    return $item['stagging_document_support'] == $value;
-                                                }));
+                                                $counts = array_count_values(array_column($master_data_dokument, 'stagging_document_support'));
+                                                $total_count = $counts[$value] ?? 0;
 
                                                 $filtered = array_values(array_filter($count_document_support_approval, function ($item) use ($value) {
-                                                    return $item['stagging_document_support'] == $value;
+                                                    return trim(strtolower($item['stagging_document_support'])) == trim(strtolower($value));
                                                 }));
                                                 ?>
                                                 <td><?= $keys++ ?></td>
