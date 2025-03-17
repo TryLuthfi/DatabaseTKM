@@ -994,8 +994,8 @@ function formatTanggalIndonesia($date)
                                             $total_achiev_tiang += $data['achiev_tiang'];
                                             $total_plan_kabel_24C += $data['plan_kabel_24'];
                                             $total_achiev_kabel_24C += $data['achiev_kabel_24'];
-                                            $total_plan_kabel_48C += $data['achiev_kabel_48'];
-                                            $total_achiev_kabel_48C += $data['plan_fat'];
+                                            $total_plan_kabel_48C += $data['plan_kabel_48'];
+                                            $total_achiev_kabel_48C += $data['achiev_kabel_48'];
                                             $total_plan_fat += $data['achiev_fat'];
                                             $total_achiev_fat += $data['plan_closure'];
                                             $total_plan_closure += $data['achiev_closure'];
