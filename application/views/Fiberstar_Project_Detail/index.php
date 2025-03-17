@@ -103,11 +103,9 @@ function formatTanggalIndonesia($date)
                         <h3 class="card-title">
                             Cleanlist Deskripsi
                         </h3>
-                        <?php if ($this->session->userdata('validation_user') == 'Fiberstar' && $this->session->userdata('lokasi_user') == 'HO') { ?>
                             <a href="#" data-toggle="modal" data-target="#modal-edit-data-cluster"
                                 class="btn btn-success float-right text-bold mr-2">Edit Data &nbsp;<i
                                     class="fas fa-plus"></i> </a>
-                        <?php } ?>
                     </div>
 
                     <!-- /.card-header -->
