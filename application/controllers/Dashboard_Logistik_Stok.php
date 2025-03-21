@@ -16,6 +16,9 @@ class Dashboard_Logistik_Stok extends CI_Controller
     {
         if (!empty($this->session->userdata('id_user'))) {
 
+            $dateStart = $this->input->get('dateStart');
+
+
             $data['title'] = 'DASHBOARD LOGISTIK';
             $data['judul'] = 'DASHBOARD LOGISTIK';
             $data['getAllStokLogistik'] = $this->MDashboard_Logistik_Stok->getAllStokLogistik();
@@ -37,7 +40,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
             // Download Report Excel Without Filter
             $data['getReportInOutMaterial'] = $this->MDashboard_Logistik_Stok->getReportInOutMaterial();
-            $data['getReportStokMaterial'] = $this->MDashboard_Logistik_Stok->getReportStokMaterial();
+            $data['getReportStokMaterial'] = $this->MDashboard_Logistik_Stok->getReportStokMaterial($dateStart);
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -48,6 +51,15 @@ class Dashboard_Logistik_Stok extends CI_Controller
             redirect('Auth');
         }
     }
+
+    public function getReportStokByData()
+{
+    $dateStart = $this->input->get('dateStart');
+    $data = $this->MDashboard_Logistik_Stok->getReportStokMaterial($dateStart);
+    header('Content-Type: application/json');
+    echo json_encode($data);
+    die();
+}
 
     public function bowheer($kategori_item)
     {

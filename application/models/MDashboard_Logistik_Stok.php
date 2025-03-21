@@ -304,7 +304,7 @@ ORDER BY
                                         ORDER BY id_logistik_stok DESC
                                         ')->result_array();
 
-                                        log_message('error', 'query asdasdasdasd : ' . $this->db->last_query());
+        log_message('error', 'query asdasdasdasd : ' . $this->db->last_query());
         return $data;
     }
 
@@ -687,35 +687,54 @@ ORDER BY tls.id_logistik_stok DESC;")->result_array();
         return $data;
     }
 
-    public function getReportStokMaterial()
-    {
-        $data = $this->db->query("SELECT 
-    ROW_NUMBER() OVER (ORDER BY tmllg.kota_lokasi_gudang ASC) AS nomor,
-    tls.id_logistik_stok,
-    tmllg.regional_lokasi_gudang,
-    tmllg.kota_lokasi_gudang,
-    tmlki.kategori_item,
-    tmlki.nama_item,
-    tmlki.satuan_item,
-    tmb.nama_bowheer,
-    SUM(
-        CASE 
-            WHEN tmlsm.status_sumber_material LIKE 'IN' THEN tls.jumlah_stok
-            WHEN tmlsm.status_sumber_material LIKE 'OUT' THEN -tls.jumlah_stok
-            ELSE 0 
-        END
-    ) AS total_jumlah_stok
-FROM tb_logistik_stok tls 
-LEFT JOIN tb_master_logistik_sumber_material tmlsm USING(id_sumber_material)
-LEFT JOIN tb_master_logistik_kode_item tmlki USING(id_kode_item)
-RIGHT JOIN tb_master_bowheer tmb USING(id_bowheer)
-RIGHT JOIN tb_master_logistik_lokasi_gudang tmllg USING(id_lokasi_gudang)
-GROUP BY tmlki.id_kode_item, tmllg.kota_lokasi_gudang
-HAVING total_jumlah_stok <> 0
-ORDER BY tmllg.kota_lokasi_gudang ASC;")->result_array();
-
-        return $data;
+    public function getReportStokMaterial($dateStart = null)
+{
+    // Default filter tanggal menggunakan hari ini jika tidak diisi
+    if (empty($dateStart)) {
+        $dateStart = date('Y-m-d');
+    } else {
+        $dateStart = $dateStart;
     }
+
+    $sql = "
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY tmllg.kota_lokasi_gudang ASC) AS nomor,
+            tls.id_logistik_stok,
+            tmllg.regional_lokasi_gudang,
+            tmllg.kota_lokasi_gudang,
+            tmlki.kategori_item,
+            tmlki.nama_item,
+            tmlki.satuan_item,
+            tmb.nama_bowheer,
+            tls.tanggal_upload_stok,
+            SUM(
+                CASE 
+                    WHEN tmlsm.status_sumber_material = 'IN' THEN tls.jumlah_stok
+                    WHEN tmlsm.status_sumber_material = 'OUT' THEN -tls.jumlah_stok
+                    ELSE 0 
+                END
+            ) AS total_jumlah_stok
+        FROM tb_logistik_stok tls 
+        LEFT JOIN tb_master_logistik_sumber_material tmlsm USING(id_sumber_material)
+        LEFT JOIN tb_master_logistik_kode_item tmlki USING(id_kode_item)
+        LEFT JOIN tb_master_bowheer tmb USING(id_bowheer)  -- Perbaikan dari RIGHT JOIN ke LEFT JOIN
+        LEFT JOIN tb_master_logistik_lokasi_gudang tmllg USING(id_lokasi_gudang)  -- Perbaikan dari RIGHT JOIN ke LEFT JOIN
+        WHERE DATE(tls.tanggal_upload_stok) <= ?
+        GROUP BY 
+            tmlki.id_kode_item, 
+            tmllg.kota_lokasi_gudang, 
+            tmb.nama_bowheer, 
+            tmlki.kategori_item
+        HAVING total_jumlah_stok <> 0
+        ORDER BY tmllg.kota_lokasi_gudang ASC
+    ";
+
+    
+    $data = $this->db->query($sql, [$dateStart])->result_array();
+    log_message('error', 'query download stok filter yang dijalankan : ' . $this->db->last_query());
+    return $data;
+
+}
 
 }
 

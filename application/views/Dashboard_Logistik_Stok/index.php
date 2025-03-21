@@ -1592,7 +1592,7 @@ $total_stok_dashboard = [];
                     dataType: "json",
                     success: function (response) {
                         console.log("Response:", response);
-                        
+
                         Swal.close();
                         var tbody = $("#hasilDetailDataSJ");
                         tbody.empty();
@@ -2554,24 +2554,50 @@ $total_stok_dashboard = [];
             populateDropdown(selectItem, getUniqueValues(filteredItem.map(item => ({ item })), "item"));
         });
 
+        let dateInput = document.getElementById("report_stok_date");
+
+        // Fungsi untuk mendapatkan tanggal hari ini (format: YYYY-MM-DD)
+        function getTodayDate() {
+            let today = new Date();
+            let year = today.getFullYear();
+            let month = String(today.getMonth() + 1).padStart(2, "0"); // Tambah 0 jika bulan < 10
+            let day = String(today.getDate()).padStart(2, "0"); // Tambah 0 jika tanggal < 10
+            return `${year}-${month}-${day}`;
+        }
+
+        // Event Listener: Ambil data saat tanggal berubah
+        dateInput.addEventListener("change", function () {
+            let dateStart = this.value || getTodayDate();
+            console.log("Tanggal yang dikirim:", dateStart);
+
+            fetch("<?= site_url('Dashboard_Logistik_Stok/getReportStokByData?dateStart=') ?>" + encodeURIComponent(dateStart))
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Data Stok dengan Filter Tanggal:", data);
+                    stokLogistik = data;
+                })
+                .catch(error => console.error("Error:", error));
+        });
+
         function filterData() {
             let selectedRegional = document.getElementById("report_stok_regional_gudang")?.value || "";
             let selectedKota = document.getElementById("report_stok_lokasi_gudang")?.value || "";
             let selectedBowheer = document.getElementById("report_stok_nama_bowheer")?.value || "";
             let selectedKategori = document.getElementById("report_stok_kategori_item")?.value || "";
             let selectedItem = document.getElementById("report_stok_nama_item")?.value || "";
-            let dateStart = document.getElementById("report_stok_date")?.value || "";
-
 
             return stokLogistik.filter(data => {
-                let uploadDate = data.tanggal_upload_stok.split(" ")[0];
                 return (
                     (selectedRegional === "" || data.regional_lokasi_gudang === selectedRegional) &&
                     (selectedKota === "" || data.kota_lokasi_gudang === selectedKota) &&
                     (selectedBowheer === "" || data.nama_bowheer === selectedBowheer) &&
                     (selectedKategori === "" || data.kategori_item === selectedKategori) &&
-                    (selectedItem === "" || data.nama_item === selectedItem) &&
-                    (dateStart === "" || uploadDate >= dateStart)
+                    (selectedItem === "" || data.nama_item === selectedItem)
                 );
             });
         }
