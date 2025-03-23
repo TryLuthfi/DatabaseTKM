@@ -17,6 +17,7 @@ $persentase_total = 0;
 
 $total_cluster_bak = 0;
 $total_cluster_spk = 0;
+$total_cluster_rfs = 0;
 
 foreach ($top_area_bak as $data):
   $total_cluster_bak += $data['total_cluster_bak'];
@@ -26,19 +27,32 @@ foreach ($gettopAreaSPK as $data):
   $total_cluster_spk += $data['total_cluster_spk'];
 endforeach;
 
+foreach ($top_area_rfs as $data):
+  $total_cluster_rfs += $data['total_cluster_rfs'];
+endforeach;
 
+// Ambil data unik
+$unique_regional = array_unique(array_column($getFilterData, 'regional_project'));
+$unique_pic = array_unique(array_column($getFilterData, 'pic_project'));
+$unique_area = array_unique(array_column($getFilterData, 'area_project'));
+$unique_stagging = array_unique(array_column($getFilterData, 'main_status'));
+
+// Encode ke JSON agar bisa digunakan di JavaScript
+$progressJSON = json_encode($getFilterData);
 
 $total_hp_plan_regional = 0;
-$total_hp_canvasing_regional = 0;
-$total_hp_bak_regional = 0;
-$total_hp_spk_regional = 0;
-$total_hp_hld_regional = 0;
-$total_hp_lld_regional = 0;
-$total_hp_kom_regional = 0;
-$total_hp_pks_regional = 0;
-$total_hp_rfs_regional = 0;
-$total_hp_atp_regional = 0;
-$total_hp_closed_regional = 0;
+$stagging_cleanlist_regional = 0;
+$stagging_canvasing_regional = 0;
+$stagging_bak_regional = 0;
+$stagging_hld_regional = 0;
+$stagging_spk_regional = 0;
+$stagging_lld_regional = 0;
+$stagging_implementasi_regional = 0;
+$stagging_rfs_regional = 0;
+$stagging_atp_regional = 0;
+$stagging_closed_regional = 0;
+$stagging_hold_regional = 0;
+$stagging_drop_regional = 0;
 
 ?>
 
@@ -79,48 +93,47 @@ $total_hp_closed_regional = 0;
                 <div class="row">
                   <div class="col-sm-3">
                     <div class="form-group">
-                      <label style="display: flex; justify-content: center; align-items: center;">REGIONAL</label>
-                      <select id="filter_regional" class="select2" multiple="multiple" data-placeholder="Pilih Regional"
+                      <label>REGIONAL</label>
+                      <select id="filter_regional" class="select2" multiple data-placeholder="Pilih Regional"
                         style="width: 100%;">
-                        <?php foreach ($unique_regional as $data): ?>
-                          <option value="<?php echo $data['regional_project'] ?>"> <?php echo $data['regional_project'] ?>
-                          </option>
+                        <?php foreach ($unique_regional as $regional): ?>
+                          <option value="<?= $regional ?>"><?= $regional ?></option>
                         <?php endforeach; ?>
                       </select>
                     </div>
                   </div>
+
                   <div class="col-sm-3">
                     <div class="form-group">
-                      <label style="display: flex; justify-content: center; align-items: center;">PIC</label>
-                      <select id="filter_pic" class="select2" multiple="multiple" data-placeholder="Pilih PIC"
+                      <label>PIC</label>
+                      <select id="filter_pic" class="select2" multiple data-placeholder="Pilih PIC"
                         style="width: 100%;">
-                        <?php foreach ($unique_pic as $data): ?>
-                          <option value="<?php echo $data['pic_project'] ?>"> <?php echo $data['pic_project'] ?>
-                          </option>
+                        <?php foreach ($unique_pic as $pic): ?>
+                          <option value="<?= $pic ?>"><?= $pic ?></option>
                         <?php endforeach; ?>
                       </select>
                     </div>
                   </div>
+
                   <div class="col-sm-3">
                     <div class="form-group">
-                      <label style="display: flex; justify-content: center; align-items: center;">AREA</label>
-                      <select id="filter_area" class="select2" multiple="multiple" data-placeholder="Pilih Area"
+                      <label>AREA</label>
+                      <select id="filter_area" class="select2" multiple data-placeholder="Pilih Area"
                         style="width: 100%;">
-                        <?php foreach ($unique_area as $data): ?>
-                          <option value="<?php echo $data['area_project'] ?>"> <?php echo $data['area_project'] ?>
-                          </option>
+                        <?php foreach ($unique_area as $area): ?>
+                          <option value="<?= $area ?>"><?= $area ?></option>
                         <?php endforeach; ?>
                       </select>
                     </div>
                   </div>
+
                   <div class="col-sm-3">
                     <div class="form-group">
-                      <label style="display: flex; justify-content: center; align-items: center;">STAGGING</label>
-                      <select id="filter_stagging" class="select2" multiple="multiple" data-placeholder="Pilih Stagging"
+                      <label>STAGGING</label>
+                      <select id="filter_stagging" class="select2" multiple data-placeholder="Pilih Stagging"
                         style="width: 100%;">
-                        <?php foreach ($unique_stagging as $data): ?>
-                          <option value="<?php echo $data['main_status'] ?>"> <?php echo $data['main_status'] ?>
-                          </option>
+                        <?php foreach ($unique_stagging as $stagging): ?>
+                          <option value="<?= $stagging ?>"><?= $stagging ?></option>
                         <?php endforeach; ?>
                       </select>
                     </div>
@@ -284,11 +297,11 @@ $total_hp_closed_regional = 0;
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
                           <h3 id="idtotal_hp_canvasing">
-                            <?= number_format(floatval($totalHpPlan['total_hp_canvasing']), 0, ",", ".") . " HP" ?>
+                            <?= number_format(floatval($totalHpPlan['stagging_cleanlist']), 0, ",", ".") . " HP" ?>
                           </h3>
                         <?php endforeach ?>
 
-                        <p>DONE CANVASING</p>
+                        <p>01. CLEANLIST</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
@@ -300,11 +313,11 @@ $total_hp_closed_regional = 0;
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
                           <h3 id="idtotal_hp_bak">
-                            <?= number_format(floatval($totalHpPlan['total_hp_bak']), 0, ",", ".") . " HP" ?>
+                            <?= number_format(floatval($totalHpPlan['stagging_canvasing']), 0, ",", ".") . " HP" ?>
                           </h3>
                         <?php endforeach ?>
 
-                        <p>DONE BAK</p>
+                        <p>02. CANVASING</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
@@ -316,11 +329,11 @@ $total_hp_closed_regional = 0;
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
                           <h3 id="idtotal_hp_spk">
-                            <?= number_format(floatval($totalHpPlan['total_hp_spk']), 0, ",", ".") . " HP" ?>
+                            <?= number_format(floatval($totalHpPlan['stagging_bak']), 0, ",", ".") . " HP" ?>
                           </h3>
                         <?php endforeach ?>
 
-                        <p>SPK RELEASED</p>
+                        <p>03. BAK</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
@@ -332,11 +345,11 @@ $total_hp_closed_regional = 0;
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
                           <h3 id="idtotal_hp_hld">
-                            <?= number_format(floatval($totalHpPlan['total_hp_hld']), 0, ",", ".") . " HP" ?>
+                            <?= number_format(floatval($totalHpPlan['stagging_hld']), 0, ",", ".") . " HP" ?>
                           </h3>
                         <?php endforeach ?>
 
-                        <p>DONE HLD</p>
+                        <p>04. HLD</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
@@ -348,11 +361,11 @@ $total_hp_closed_regional = 0;
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
                           <h3 id="idtotal_hp_lld">
-                            <?= number_format(floatval($totalHpPlan['total_hp_lld']), 0, ",", ".") . " HP" ?>
+                            <?= number_format(floatval($totalHpPlan['stagging_spk']), 0, ",", ".") . " HP" ?>
                           </h3>
                         <?php endforeach ?>
 
-                        <p>DONE LLD</p>
+                        <p>05. SPK</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
@@ -364,11 +377,11 @@ $total_hp_closed_regional = 0;
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
                           <h3 id="idtotal_hp_kom">
-                            <?= number_format(floatval($totalHpPlan['total_hp_kom']), 0, ",", ".") . " HP" ?>
+                            <?= number_format(floatval($totalHpPlan['stagging_lld']), 0, ",", ".") . " HP" ?>
                           </h3>
                         <?php endforeach ?>
 
-                        <p>ON PROGRESS IMPLEMENTASI</p>
+                        <p>06. LLD</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
@@ -380,11 +393,11 @@ $total_hp_closed_regional = 0;
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
                           <h3 id="idtotal_hp_rfs">
-                            <?= number_format(floatval($totalHpPlan['total_hp_rfs']), 0, ",", ".") . " HP" ?>
+                            <?= number_format(floatval($totalHpPlan['stagging_implementasi']), 0, ",", ".") . " HP" ?>
                           </h3>
                         <?php endforeach ?>
 
-                        <p>DONE RFS</p>
+                        <p>07. IMPLEMENTASI</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
@@ -396,11 +409,11 @@ $total_hp_closed_regional = 0;
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
                           <h3 id="idtotal_hp_atp">
-                            <?= number_format(floatval($totalHpPlan['total_hp_atp']), 0, ",", ".") . " HP" ?>
+                            <?= number_format(floatval($totalHpPlan['stagging_rfs']), 0, ",", ".") . " HP" ?>
                           </h3>
                         <?php endforeach ?>
 
-                        <p>DONE ATP</p>
+                        <p>08. RFS</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
@@ -412,11 +425,75 @@ $total_hp_closed_regional = 0;
                       <div class="inner">
                         <?php foreach ($total_hp_plan as $totalHpPlan): ?>
                           <h3 id="idtotal_hp_closed">
-                            <?= number_format(floatval($totalHpPlan['total_hp_closed']), 0, ",", ".") . " HP" ?>
+                            <?= number_format(floatval($totalHpPlan['stagging_atp']), 0, ",", ".") . " HP" ?>
                           </h3>
                         <?php endforeach ?>
 
-                        <p>CLOSED STAGGING</p>
+                        <p>09. ATP</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3 id="idtotal_hp_closed">
+                            <?= number_format(floatval($totalHpPlan['stagging_bast']), 0, ",", ".") . " HP" ?>
+                          </h3>
+                        <?php endforeach ?>
+
+                        <p>10. BAST</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3 id="idtotal_hp_closed">
+                            <?= number_format(floatval($totalHpPlan['stagging_closed']), 0, ",", ".") . " HP" ?>
+                          </h3>
+                        <?php endforeach ?>
+
+                        <p>11. CLOSED</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3 id="idtotal_hp_closed">
+                            <?= number_format(floatval($totalHpPlan['stagging_hold']), 0, ",", ".") . " HP" ?>
+                          </h3>
+                        <?php endforeach ?>
+
+                        <p>12. HOLD</p>
+                      </div>
+                      <div class="icon">
+                        <i class="ion ion-bag"></i>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-3 col-6">
+                    <div class="small-box bg-info">
+                      <div class="inner">
+                        <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                          <h3 id="idtotal_hp_closed">
+                            <?= number_format(floatval($totalHpPlan['stagging_drop']), 0, ",", ".") . " HP" ?>
+                          </h3>
+                        <?php endforeach ?>
+
+                        <p>13. DROP</p>
                       </div>
                       <div class="icon">
                         <i class="ion ion-bag"></i>
@@ -454,18 +531,21 @@ $total_hp_closed_regional = 0;
                               <thead class="bg-info">
                                 <tr>
                                   <th>No</th>
-                                  <th>Regional Project</th>
-                                  <th>HP Plan</th>
-                                  <th>Canvasing</th>
-                                  <th>DONE BAK</th>
-                                  <th>DONE SPK</th>
-                                  <th>DONE HLD</th>
-                                  <th>DONE LLD</th>
-                                  <th>DONE KOM</th>
-                                  <th>DONE PKS</th>
-                                  <th>DONE RFS</th>
-                                  <th>DONE</th>
+                                  <th>REGIONAL</th>
+                                  <th>HP PLAN</th>
+                                  <th>CLEANLIST</th>
+                                  <th>CANVASING</th>
+                                  <th>BAK</th>
+                                  <th>HLD</th>
+                                  <th>SPK</th>
+                                  <th>LLD</th>
+                                  <th>IMPLEMENTASI</th>
+                                  <th>RFS</th>
+                                  <th>ATP</th>
+                                  <th>BAST</th>
                                   <th>CLOSED</th>
+                                  <th>HOLD</th>
+                                  <th>DROP</th>
                                   <th>DETAIL</th>
                                 </tr>
                               </thead>
@@ -476,16 +556,18 @@ $total_hp_closed_regional = 0;
                                 foreach ($stagging_regional as $data):
 
                                   $total_hp_plan_regional += $data['total_hp_plan'];
-                                  $total_hp_canvasing_regional += $data['total_hp_canvasing'];
-                                  $total_hp_bak_regional += $data['total_hp_bak'];
-                                  $total_hp_spk_regional += $data['total_hp_spk'];
-                                  $total_hp_hld_regional += $data['total_hp_hld'];
-                                  $total_hp_lld_regional += $data['total_hp_lld'];
-                                  $total_hp_kom_regional += $data['total_hp_kom'];
-                                  $total_hp_pks_regional += $data['total_hp_pks'];
-                                  $total_hp_rfs_regional += $data['total_hp_rfs'];
-                                  $total_hp_atp_regional += $data['total_hp_atp'];
-                                  $total_hp_closed_regional += $data['total_hp_closed'];
+                                  $stagging_cleanlist_regional += $data['stagging_cleanlist'];
+                                  $stagging_canvasing_regional += $data['stagging_canvasing'];
+                                  $stagging_bak_regional += $data['stagging_bak'];
+                                  $stagging_hld_regional += $data['stagging_hld'];
+                                  $stagging_spk_regional += $data['stagging_spk'];
+                                  $stagging_lld_regional += $data['stagging_lld'];
+                                  $stagging_implementasi_regional += $data['stagging_implementasi'];
+                                  $stagging_rfs_regional += $data['stagging_rfs'];
+                                  $stagging_atp_regional += $data['stagging_atp'];
+                                  $stagging_closed_regional += $data['stagging_closed'];
+                                  $stagging_hold_regional += $data['stagging_hold'];
+                                  $stagging_drop_regional += $data['stagging_drop'];
 
                                   ?>
 
@@ -500,73 +582,94 @@ $total_hp_closed_regional = 0;
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_canvasing'] == "0") {
+                                    if ($data['stagging_cleanlist'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_canvasing']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_cleanlist']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_bak'] == "0") {
+                                    if ($data['stagging_canvasing'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_bak']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_canvasing']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_spk'] == "0") {
+                                    if ($data['stagging_bak'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_spk']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_bak']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_hld'] == "0") {
+                                    if ($data['stagging_hld'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_hld']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_hld']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_lld'] == "0") {
+                                    if ($data['stagging_spk'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_lld']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_spk']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_kom'] == "0") {
+                                    if ($data['stagging_lld'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_kom']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_lld']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_pks'] == "0") {
+                                    if ($data['stagging_implementasi'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_pks']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_implementasi']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_rfs'] == "0") {
+                                    if ($data['stagging_rfs'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_rfs']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_rfs']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_atp'] == "0") {
+                                    if ($data['stagging_atp'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_atp']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_atp']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_closed'] == "0") {
+                                    if ($data['stagging_bast'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_closed']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_bast']), 0, ",", ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['stagging_closed'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['stagging_closed']), 0, ",", ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['stagging_hold'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['stagging_hold']), 0, ",", ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['stagging_drop'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['stagging_drop']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td>
@@ -584,17 +687,23 @@ $total_hp_closed_regional = 0;
                                   <th colspan="1"><?= number_format(floatval($total_hp_plan_regional), 0, ",", ".") ?>
                                   </th>
                                   <th colspan="1">
-                                    <?= number_format(floatval($total_hp_canvasing_regional), 0, ",", ".") ?>
+                                    <?= number_format(floatval($stagging_cleanlist_regional), 0, ",", ".") ?>
                                   </th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_bak_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_spk_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_hld_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_lld_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_kom_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?>
+                                  <th colspan="1">
+                                    <?= number_format(floatval($stagging_canvasing_regional), 0, ",", ".") ?>
+                                  </th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_bak_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_hld_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_spk_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_lld_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1">
+                                    <?= number_format(floatval($stagging_implementasi_regional), 0, ",", ".") ?>
+                                  </th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_rfs_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_atp_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_closed_regional), 0, ",", ".") ?>
+                                  <th colspan="1"><?= number_format(floatval($stagging_hold_regional), 0, ",", ".") ?>
+                                  <th colspan="1"><?= number_format(floatval($stagging_drop_regional), 0, ",", ".") ?>
                                   </th>
                                   <th colspan="1"></th>
                                 </tr>
@@ -635,19 +744,22 @@ $total_hp_closed_regional = 0;
                               <thead class="bg-info">
                                 <tr>
                                   <th>No</th>
-                                  <th>Regional Project</th>
-                                  <th>Area Project</th>
-                                  <th>HP Plan</th>
-                                  <th>Canvasing</th>
-                                  <th>DONE BAK</th>
-                                  <th>DONE SPK</th>
-                                  <th>DONE HLD</th>
-                                  <th>DONE LLD</th>
-                                  <th>DONE KOM</th>
-                                  <th>DONE PKS</th>
-                                  <th>DONE RFS</th>
-                                  <th>DONE</th>
+                                  <th>REGIONAL</th>
+                                  <th>KOTA</th>
+                                  <th>HP PLAN</th>
+                                  <th>CLEANLIST</th>
+                                  <th>CANVASING</th>
+                                  <th>BAK</th>
+                                  <th>HLD</th>
+                                  <th>SPK</th>
+                                  <th>LLD</th>
+                                  <th>IMPLEMENTASI</th>
+                                  <th>RFS</th>
+                                  <th>ATP</th>
+                                  <th>BAST</th>
                                   <th>CLOSED</th>
+                                  <th>HOLD</th>
+                                  <th>DROP</th>
                                   <th>DETAIL</th>
                                 </tr>
                               </thead>
@@ -656,30 +768,34 @@ $total_hp_closed_regional = 0;
                                 $total = 1;
 
                                 $total_hp_plan_regional = 0;
-                                $total_hp_canvasing_regional = 0;
-                                $total_hp_bak_regional = 0;
-                                $total_hp_spk_regional = 0;
-                                $total_hp_hld_regional = 0;
-                                $total_hp_lld_regional = 0;
-                                $total_hp_kom_regional = 0;
-                                $total_hp_pks_regional = 0;
-                                $total_hp_rfs_regional = 0;
-                                $total_hp_atp_regional = 0;
-                                $total_hp_closed_regional = 0;
+                                $stagging_cleanlist_regional = 0;
+                                $stagging_canvasing_regional = 0;
+                                $stagging_bak_regional = 0;
+                                $stagging_hld_regional = 0;
+                                $stagging_spk_regional = 0;
+                                $stagging_lld_regional = 0;
+                                $stagging_implementasi_regional = 0;
+                                $stagging_rfs_regional = 0;
+                                $stagging_atp_regional = 0;
+                                $stagging_closed_regional = 0;
+                                $stagging_hold_regional = 0;
+                                $stagging_drop_regional = 0;
 
                                 foreach ($stagging_area as $data):
 
                                   $total_hp_plan_regional += $data['total_hp_plan'];
-                                  $total_hp_canvasing_regional += $data['total_hp_canvasing'];
-                                  $total_hp_bak_regional += $data['total_hp_bak'];
-                                  $total_hp_spk_regional += $data['total_hp_spk'];
-                                  $total_hp_hld_regional += $data['total_hp_hld'];
-                                  $total_hp_lld_regional += $data['total_hp_lld'];
-                                  $total_hp_kom_regional += $data['total_hp_kom'];
-                                  $total_hp_pks_regional += $data['total_hp_pks'];
-                                  $total_hp_rfs_regional += $data['total_hp_rfs'];
-                                  $total_hp_atp_regional += $data['total_hp_atp'];
-                                  $total_hp_closed_regional += $data['total_hp_closed'];
+                                  $stagging_cleanlist_regional += $data['stagging_cleanlist'];
+                                  $stagging_canvasing_regional += $data['stagging_canvasing'];
+                                  $stagging_bak_regional += $data['stagging_bak'];
+                                  $stagging_hld_regional += $data['stagging_hld'];
+                                  $stagging_spk_regional += $data['stagging_spk'];
+                                  $stagging_lld_regional += $data['stagging_lld'];
+                                  $stagging_implementasi_regional += $data['stagging_implementasi'];
+                                  $stagging_rfs_regional += $data['stagging_rfs'];
+                                  $stagging_atp_regional += $data['stagging_atp'];
+                                  $stagging_closed_regional += $data['stagging_closed'];
+                                  $stagging_hold_regional += $data['stagging_hold'];
+                                  $stagging_drop_regional += $data['stagging_drop'];
 
                                   ?>
 
@@ -695,73 +811,94 @@ $total_hp_closed_regional = 0;
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_canvasing'] == "0") {
+                                    if ($data['stagging_cleanlist'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_canvasing']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_cleanlist']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_bak'] == "0") {
+                                    if ($data['stagging_canvasing'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_bak']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_canvasing']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_spk'] == "0") {
+                                    if ($data['stagging_bak'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_spk']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_bak']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_hld'] == "0") {
+                                    if ($data['stagging_hld'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_hld']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_hld']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_lld'] == "0") {
+                                    if ($data['stagging_spk'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_lld']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_spk']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_kom'] == "0") {
+                                    if ($data['stagging_lld'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_kom']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_lld']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_pks'] == "0") {
+                                    if ($data['stagging_implementasi'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_pks']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_implementasi']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_rfs'] == "0") {
+                                    if ($data['stagging_rfs'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_rfs']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_rfs']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_atp'] == "0") {
+                                    if ($data['stagging_atp'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_atp']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_atp']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td><?php
-                                    if ($data['total_hp_closed'] == "0") {
+                                    if ($data['stagging_bast'] == "0") {
                                       echo "-";
                                     } else {
-                                      echo number_format(floatval($data['total_hp_closed']), 0, ",", ".");
+                                      echo number_format(floatval($data['stagging_bast']), 0, ",", ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['stagging_closed'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['stagging_closed']), 0, ",", ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['stagging_hold'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['stagging_hold']), 0, ",", ".");
+                                    }
+                                    ?></td>
+                                    <td><?php
+                                    if ($data['stagging_drop'] == "0") {
+                                      echo "-";
+                                    } else {
+                                      echo number_format(floatval($data['stagging_drop']), 0, ",", ".");
                                     }
                                     ?></td>
                                     <td>
@@ -779,17 +916,23 @@ $total_hp_closed_regional = 0;
                                   <th colspan="1"><?= number_format(floatval($total_hp_plan_regional), 0, ",", ".") ?>
                                   </th>
                                   <th colspan="1">
-                                    <?= number_format(floatval($total_hp_canvasing_regional), 0, ",", ".") ?>
+                                    <?= number_format(floatval($stagging_cleanlist_regional), 0, ",", ".") ?>
                                   </th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_bak_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_spk_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_hld_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_lld_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_kom_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_pks_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_rfs_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_atp_regional), 0, ",", ".") ?></th>
-                                  <th colspan="1"><?= number_format(floatval($total_hp_closed_regional), 0, ",", ".") ?>
+                                  <th colspan="1">
+                                    <?= number_format(floatval($stagging_canvasing_regional), 0, ",", ".") ?>
+                                  </th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_bak_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_hld_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_spk_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_lld_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1">
+                                    <?= number_format(floatval($stagging_implementasi_regional), 0, ",", ".") ?>
+                                  </th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_rfs_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_atp_regional), 0, ",", ".") ?></th>
+                                  <th colspan="1"><?= number_format(floatval($stagging_closed_regional), 0, ",", ".") ?>
+                                  <th colspan="1"><?= number_format(floatval($stagging_hold_regional), 0, ",", ".") ?>
+                                  <th colspan="1"><?= number_format(floatval($stagging_drop_regional), 0, ",", ".") ?>
                                   </th>
                                   <th colspan="1"></th>
                                 </tr>
@@ -929,7 +1072,7 @@ $total_hp_closed_regional = 0;
                       <div class="card-body">
                         <div class="d-flex">
                           <p class="d-flex flex-column">
-                            <?php foreach ($total_hp_plan as $totalHpPlan): ?>
+                            <?php foreach ($getTopChartAllStaggingKota as $totalHpPlan): ?>
                               <span class="text-bold text-lg" id="jumlah_hp_done_spk"></span>
                             <?php endforeach ?>
                             <span>TOP AREA</span>
@@ -963,21 +1106,21 @@ $total_hp_closed_regional = 0;
                       <div class="card-header border-0">
                         <div class="d-flex justify-content-between">
                           <h3 class="card-title">TOP AREA DONE RFS</h3>
-                          <a href="javascript:void(0);">Lihat Detail</a>
+                          <a href="javascript:void(0);" id="lihatDetailRFS">Lihat Detail</a>
                         </div>
                       </div>
                       <div class="card-body">
                         <div class="d-flex">
                           <p class="d-flex flex-column">
-                            <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                              <span
-                                class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_rfs']), 0, ",", ".") . " HP" ?></span>
+                            <?php foreach ($getTopChartAllStaggingKota as $totalHpPlan): ?>
+                              <span class="text-bold text-lg" id="jumlah_hp_done_rfs"></span>
                             <?php endforeach ?>
                             <span>TOP AREA</span>
                           </p>
                           <p class="ml-auto d-flex flex-column text-right">
                             <span class="text-success">
-                              <i class="fas fa-arrow-up"></i>
+                              <i class="text-bold text-lg"
+                                id="jumlah_cl_done_rfs"><?php echo $total_cluster_rfs . " Cluster" ?></i>
                             </span>
                             <span class="text-muted">By Cleanlist ( % )</span>
                           </p>
@@ -993,6 +1136,7 @@ $total_hp_closed_regional = 0;
                             <i class="fas fa-square text-primary"></i> Achieved
                           </span>
                         </div>
+                        <div id="paginationControlsRFS" class="mt-3 text-center"></div>
                       </div>
                     </div>
                   </div>
@@ -1008,9 +1152,8 @@ $total_hp_closed_regional = 0;
                       <div class="card-body">
                         <div class="d-flex">
                           <p class="d-flex flex-column">
-                            <?php foreach ($total_hp_plan as $totalHpPlan): ?>
-                              <span
-                                class="text-bold text-lg"><?= number_format(floatval($totalHpPlan['total_hp_atp']), 0, ",", ".") . " HP" ?></span>
+                            <?php foreach ($getTopChartAllStaggingKota as $totalHpPlan): ?>
+                              <span class="text-bold text-lg" id="jumlah_hp_done_atp"></span>
                             <?php endforeach ?>
                             <span>TOP AREA</span>
                           </p>
@@ -1500,6 +1643,7 @@ $total_hp_closed_regional = 0;
 
     var $fiberstarChartBarBak = $('#fiberstar_chart_bar_bak');
     var $fiberstarChartBarSpk = $('#fiberstar_chart_bar_spk');
+    var $fiberstarChartBarRfs = $('#fiberstar_chart_bar_rfs');
 
     const dataBarBAK = <?php echo json_encode($top_area_bak); ?>;
     const areaAchievBarBak = dataBarBAK.map(item => item.area_project);
@@ -1509,14 +1653,20 @@ $total_hp_closed_regional = 0;
     const areaAchievBarSpk = dataBarSPK.map(item => item.area_project);
     const hpAchievBarSpk = dataBarSPK.map(item => parseInt(item.achiev_spk));
 
+    const dataBarRFS = <?php echo json_encode($top_area_rfs); ?>;
+    const areaAchievBarRfs = dataBarRFS.map(item => item.area_project);
+    const hpAchievBarRfs = dataBarRFS.map(item => parseInt(item.achiev_rfs));
+
     let currentPageBak = 0; // Halaman saat ini
     const itemsPerPageBak = 5; // Batas data per halaman
     let currentPageSpk = 0; // Halaman saat ini
     const itemsPerPageSpk = 5; // Batas data per halaman
+    let currentPageRfs = 0; // Halaman saat ini
+    const itemsPerPageRfs = 5; // Batas data per halaman
 
     let gettopAreaBAKDetail = <?php echo json_encode($gettopAreaBAKDetail); ?>;
     let gettopAreaSPKDetail = <?php echo json_encode($gettopAreaSPKDetail); ?>;
-    let gettopAreaRFSDetail = <?php echo json_encode($gettopAreaSPKDetail); ?>;
+    let gettopAreaRFSDetail = <?php echo json_encode($gettopAreaRFSDetail); ?>;
     let gettopAreaATPDetail = <?php echo json_encode($gettopAreaSPKDetail); ?>;
 
     // Fungsi untuk memperbarui chart berdasarkan halaman
@@ -1559,6 +1709,26 @@ $total_hp_closed_regional = 0;
 
       // Perbarui tombol pagination
       updatePaginationControlsSPK();
+    }
+
+    function updateChartRFS() {
+      let startRfs = currentPageRfs * itemsPerPageRfs;
+      let endRfs = startRfs + itemsPerPageRfs;
+
+      let paginatedLabelsRfs = areaAchievBarRfs.slice(startRfs, endRfs);
+      let paginatedDataRfs = hpAchievBarRfs.slice(startRfs, endRfs);
+
+      fiberstarChartBarRfs.data.labels = paginatedLabelsRfs;
+      fiberstarChartBarRfs.data.datasets[0].data = paginatedDataRfs;
+      fiberstarChartBarRfs.update();
+
+      let totalAchievRFS = hpAchievBarRfs.reduce((total, num) => total + num, 0);
+
+      // 🔥 Tampilkan alert dengan total keseluruhan data
+      document.getElementById('jumlah_hp_done_rfs').innerText = totalAchievRFS.toLocaleString('id-ID') + ' HP';
+
+      // Perbarui tombol pagination
+      updatePaginationControlsRFS();
     }
 
     // Fungsi untuk memperbarui tombol pagination
@@ -1604,6 +1774,29 @@ $total_hp_closed_regional = 0;
         if (currentPageSpk < Math.ceil(areaAchievBarSpk.length / itemsPerPageSpk) - 1) {
           currentPageSpk++;
           updateChartSPK();
+        }
+      });
+    }
+
+    function updatePaginationControlsRFS() {
+      $("#paginationControlsrfs").html(`
+    <button id="prevPageRfs" class="btn btn-secondary btn-sm" ${currentPageRfs === 0 ? 'disabled' : ''}>Previous</button>
+    <span class="mx-2">Page ${currentPageRfs + 1} of ${Math.ceil(areaAchievBarRfs.length / itemsPerPageRfs)}</span>
+    <button id="nextPageRfs" class="btn btn-secondary btn-sm" ${currentPageRfs >= Math.ceil(areaAchievBarRfs.length / itemsPerPageRfs) - 1 ? 'disabled' : ''}>Next</button>
+  `);
+
+      // Event listener untuk tombol prev & next
+      $("#prevPageRfs").on("click", function () {
+        if (currentPageRfs > 0) {
+          currentPageRfs--;
+          updateChartRFS();
+        }
+      });
+
+      $("#nextPageRfs").on("click", function () {
+        if (currentPageRfs < Math.ceil(areaAchievBarRfs.length / itemsPerPageRfs) - 1) {
+          currentPageRfs++;
+          updateChartRFS();
         }
       });
     }
@@ -1731,13 +1924,76 @@ $total_hp_closed_regional = 0;
       }
     });
 
+    let fiberstarChartBarRfs = new Chart($fiberstarChartBarRfs, {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{
+          backgroundColor: '#007bff',
+          borderColor: '#007bff',
+          data: []
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        tooltips: {
+          mode: mode,
+          intersect: intersect
+        },
+        hover: {
+          mode: mode,
+          intersect: intersect
+        },
+        legend: {
+          display: false
+        },
+        scales: {
+          yAxes: [{
+            gridLines: {
+              display: true,
+              lineWidth: '4px',
+              color: 'rgba(0, 0, 0, .2)',
+              zeroLineColor: 'transparent'
+            },
+            ticks: $.extend({
+              beginAtZero: true,
+              callback: function (value) {
+                return `${value.toLocaleString('id-ID')} Hp`;
+              }
+            }, ticksStyle)
+          }],
+          xAxes: [{
+            display: true,
+            gridLines: {
+              display: false
+            },
+            ticks: ticksStyle
+          }]
+        },
+        // Tambahkan event onClick untuk menangkap klik pada bar chart
+        onClick: function (event, elements) {
+          if (elements.length > 0) {
+            var datasetIndex = elements[0]._datasetIndex;
+            var dataIndex = elements[0]._index;
+
+            var label = this.data.labels[dataIndex];
+            var value = this.data.datasets[datasetIndex].data[dataIndex];
+
+            alert(`Anda mengklik bar:\nLabel: ${label}\nNilai: ${value.toLocaleString('id-ID')} Hp`);
+          }
+        }
+      }
+    });
+
     // Tampilkan halaman pertama dan pagination
     let totalClusterBAK = 0;
     let totalClusterSPK = 0;
+    let totalClusterRFS = 0;
     let periode_tanggal = 0;
 
     updateChartBAK();
     updateChartSPK();
+    updateChartRFS();
 
     // AJAX Filter Tanggal
     $("#filter_range_tanggal").click(function () {
@@ -1757,13 +2013,13 @@ $total_hp_closed_regional = 0;
 
             gettopAreaBAKDetail = response.gettopAreaBAKFilterDetail
             gettopAreaSPKDetail = response.gettopAreaSPKFilterDetail
+            gettopAreaRFSDetail = response.gettopAreaRFSFilterDetail
 
             console.log("isi data filter", gettopAreaBAKDetail);
 
             // Update data chart BAK
             areaAchievBarBak.length = 0;
             hpAchievBarBak.length = 0;
-
             totalClusterBAK = response.bak.total_cluster_bak
               .map(Number)  // Konversi string ke number
               .reduce((total, num) => total + num, 0);
@@ -1790,12 +2046,28 @@ $total_hp_closed_regional = 0;
               hpAchievBarSpk.push(parseInt(response.spk.data[index]));
             });
 
+            totalClusterRFS = response.rfs.total_cluster_rfs
+              .map(Number)  // Konversi string ke number
+              .reduce((total, num) => total + num, 0);
+
+            document.getElementById('jumlah_cl_done_rfs').innerText = totalClusterRFS.toLocaleString('id-ID') + ' Cluster';
+
+            // Update data chart SPK
+            areaAchievBarRfs.length = 0;
+            hpAchievBarRfs.length = 0;
+            response.rfs.labels.forEach((label, index) => {
+              areaAchievBarRfs.push(label);
+              hpAchievBarRfs.push(parseInt(response.rfs.data[index]));
+            });
+
             // Reset halaman ke awal setelah filter
             currentPageBak = 0;
             currentPageSpk = 0;
+            currentPageRfs = 0;
 
             updateChartBAK(); // Update chart BAK dengan data baru
             updateChartSPK(); // Update chart SPK dengan data baru
+            updateChartRFS(); // Update chart SPK dengan data baru
           } else {
             alert("Data tidak ditemukan!");
           }
@@ -1835,6 +2107,27 @@ $total_hp_closed_regional = 0;
         data: {
           data: JSON.stringify(gettopAreaSPKDetail),
           judul: "SPK",
+          periode_tanggal: periode_tanggal
+
+        }, // Kirim data ke session
+        success: function () {
+          // Redirect setelah data tersimpan di session
+          window.open("<?= base_url('Fiberstar_Project/FilterDetail') ?>", "_blank");
+        },
+        error: function (xhr, status, error) {
+          console.error("Error:", xhr.responseText);
+          alert("Terjadi kesalahan saat menyimpan data ke session!");
+        }
+      });
+    });
+
+    $("#lihatDetailRFS").click(function () {
+      $.ajax({
+        url: "<?= base_url('Fiberstar_Project/saveDetailToSession') ?>",
+        type: "POST",
+        data: {
+          data: JSON.stringify(gettopAreaRFSDetail),
+          judul: "RFS",
           periode_tanggal: periode_tanggal
 
         }, // Kirim data ke session
@@ -1905,44 +2198,44 @@ $total_hp_closed_regional = 0;
 
     const dataBarCleanlist_4 = <?php echo json_encode($stagging_area); ?>;
     const areaAchievBarCleanlist_4 = dataBarCleanlist_4.map(item => item.area_project);
-    const hpAchievBarPlan_4 = dataBarCleanlist_4.map(item => item.total_hp_plan);
-    const hpAchievBarBak_4 = dataBarCleanlist_4.map(item => item.total_hp_bak);
-    const hpAchievBarSnd_4 = dataBarCleanlist_4.map(item => item.total_hp_spk);
-    const hpAchievBarDrm_4 = dataBarCleanlist_4.map(item => item.total_hp_lld);
-    const hpAchievBarRfs_4 = dataBarCleanlist_4.map(item => item.total_hp_rfs);
+    const hpAchievBarBAK_4 = dataBarCleanlist_4.map(item => item.stagging_bak);
+    const hpAchievBarLLD_4 = dataBarCleanlist_4.map(item => item.stagging_lld);
+    const hpAchievBarImplementasi_4 = dataBarCleanlist_4.map(item => item.stagging_implementasi);
+    const hpAchievBarRFS_4 = dataBarCleanlist_4.map(item => item.stagging_rfs);
+    const hpAchievBarATP_4 = dataBarCleanlist_4.map(item => item.stagging_atp);
 
     const originalData = {
       labels: areaAchievBarCleanlist_4, // Semua label asli
       datasets: [
         {
-          label: 'Cleanlist',
+          label: 'BAK',
           backgroundColor: '#007bff',
           borderColor: '#007bff',
-          data: hpAchievBarPlan_4
-        },
-        {
-          label: 'BAK',
-          backgroundColor: '#d2d6de',
-          borderColor: '#d2d6de',
-          data: hpAchievBarBak_4
-        },
-        {
-          label: 'SPK',
-          backgroundColor: '#FD7E14',
-          borderColor: '#FD7E14',
-          data: hpAchievBarDrm_4
+          data: hpAchievBarBAK_4
         },
         {
           label: 'LLD',
-          backgroundColor: '#6610F2',
-          borderColor: '#6610F2',
-          data: hpAchievBarSnd_4
+          backgroundColor: '#d2d6de',
+          borderColor: '#d2d6de',
+          data: hpAchievBarLLD_4
+        },
+        {
+          label: 'IMPLEMENTASI',
+          backgroundColor: '#FD7E14',
+          borderColor: '#FD7E14',
+          data: hpAchievBarImplementasi_4
         },
         {
           label: 'RFS',
+          backgroundColor: '#6610F2',
+          borderColor: '#6610F2',
+          data: hpAchievBarRFS_4
+        },
+        {
+          label: 'ATP',
           backgroundColor: '#28A745',
           borderColor: '#28A745',
-          data: hpAchievBarRfs_4
+          data: hpAchievBarATP_4
         }
       ]
     };
@@ -2134,80 +2427,6 @@ $total_hp_closed_regional = 0;
     selectArea.dispatchEvent(new Event('change'));
     selectStagging.dispatchEvent(new Event('change'));
   });
-
-  $(function () {
-    'use strict'
-
-    var ticksStyle = {
-      fontColor: '#495057',
-      fontStyle: 'bold'
-    }
-
-    var mode = 'index'
-    var intersect = true
-
-    var $fiberstarChartBarRfs = $('#fiberstar_chart_bar_rfs')
-
-    const dataBarRfs = <?php echo json_encode($top_area_rfs); ?>;
-    const areaAchievBarRfs = dataBarRfs.map(item => item.area_project);
-    const hpAchievBarRfs = dataBarRfs.map(item => item.achiev_rfs);
-
-
-    var fiberstarChartBarRfs = new Chart($fiberstarChartBarRfs, {
-      type: 'bar',
-      data: {
-        labels: areaAchievBarRfs,
-        datasets: [
-          {
-            backgroundColor: '#007bff',
-            borderColor: '#007bff',
-            data: hpAchievBarRfs
-          }
-        ]
-      },
-      options: {
-        maintainAspectRatio: false,
-        tooltips: {
-          mode: mode,
-          intersect: intersect
-        },
-        hover: {
-          mode: mode,
-          intersect: intersect
-        },
-        legend: {
-          display: false
-        },
-        scales: {
-          yAxes: [{
-            // display: false,
-            gridLines: {
-              display: true,
-              lineWidth: '4px',
-              color: 'rgba(0, 0, 0, .2)',
-              zeroLineColor: 'transparent'
-            },
-            ticks: $.extend({
-              beginAtZero: true,
-
-              // Include a dollar sign in the ticks
-              callback: function (value) {
-                return `${value.toLocaleString('id-ID')} Hp`;
-              }
-            }, ticksStyle)
-          }],
-          xAxes: [{
-            display: true,
-            gridLines: {
-              display: false
-            },
-            ticks: ticksStyle
-          }]
-        }
-      }
-    })
-
-  })
 
 
   // JAVA SCRIPT UNTUK MENUTUP SEMUA COLLAPSE CARD
@@ -2412,6 +2631,79 @@ $total_hp_closed_regional = 0;
   };
 
 </script>
+
+
+<script>
+$(document).ready(function () {
+    let progressData = <?= $progressJSON ?>; // Data JSON dari PHP
+
+    function populateDropdown(selector, data, selectedValues = []) {
+        let options = `<option value="">Pilih Data</option>`; // Opsi default
+        data.forEach(item => {
+            let isSelected = selectedValues.includes(item) ? "selected" : "";
+            options += `<option value="${item}" ${isSelected}>${item}</option>`;
+        });
+
+        $(selector).select2('destroy').html(options).select2(); // Reset & reinit
+    }
+
+    function filterData(changedFilter) {
+        setTimeout(() => { // Gunakan setTimeout agar tidak freeze
+            let selectedRegional = $('#filter_regional').val() || [];
+            let selectedPIC = $('#filter_pic').val() || [];
+            let selectedArea = $('#filter_area').val() || [];
+            let selectedStagging = $('#filter_stagging').val() || [];
+
+            // Filter berdasarkan pilihan
+            let filteredData = progressData.filter(item =>
+                (selectedRegional.length === 0 || selectedRegional.includes(item.regional_project)) &&
+                (selectedPIC.length === 0 || selectedPIC.includes(item.pic_project)) &&
+                (selectedArea.length === 0 || selectedArea.includes(item.area_project)) &&
+                (selectedStagging.length === 0 || selectedStagging.includes(item.main_status))
+            );
+
+            let uniqueRegional = [...new Set(filteredData.map(item => item.regional_project))];
+            let uniquePIC = [...new Set(filteredData.map(item => item.pic_project))];
+            let uniqueArea = [...new Set(filteredData.map(item => item.area_project))];
+            let uniqueStagging = [...new Set(filteredData.map(item => item.main_status))];
+
+            if (changedFilter !== '#filter_regional') populateDropdown('#filter_regional', uniqueRegional, selectedRegional);
+            if (changedFilter !== '#filter_pic') populateDropdown('#filter_pic', uniquePIC, selectedPIC);
+            if (changedFilter !== '#filter_area') populateDropdown('#filter_area', uniqueArea, selectedArea);
+            if (changedFilter !== '#filter_stagging') populateDropdown('#filter_stagging', uniqueStagging, selectedStagging);
+        }, 50); // Delay kecil untuk mencegah UI freeze
+    }
+
+    // Menggunakan passive: true untuk meningkatkan performa
+    document.addEventListener('scroll', function () {}, { passive: true });
+    document.addEventListener('touchstart', function () {}, { passive: true });
+    document.addEventListener('wheel', function () {}, { passive: true });
+
+    $('#filter_regional, #filter_pic, #filter_area, #filter_stagging').on('change', function () {
+        let changedFilter = `#${$(this).attr('id')}`;
+        filterData(changedFilter);
+    });
+
+    // Inisialisasi dropdown pertama kali
+    let uniqueRegional = [...new Set(progressData.map(item => item.regional_project))];
+    let uniquePIC = [...new Set(progressData.map(item => item.pic_project))];
+    let uniqueArea = [...new Set(progressData.map(item => item.area_project))];
+    let uniqueStagging = [...new Set(progressData.map(item => item.main_status))];
+
+    populateDropdown('#filter_regional', uniqueRegional);
+    populateDropdown('#filter_pic', uniquePIC);
+    populateDropdown('#filter_area', uniqueArea);
+    populateDropdown('#filter_stagging', uniqueStagging);
+
+    $('.select2').select2();
+});
+</script>
+
+
+
+
+
+
 
 <script>
   // Membuat circle progress bar

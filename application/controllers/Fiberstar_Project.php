@@ -44,6 +44,9 @@ class Fiberstar_Project extends CI_Controller
             // view tabel group by
             $data['stagging_regional'] = $this->MFiberstar_Project->getStaggingRegional();
             $data['stagging_area'] = $this->MFiberstar_Project->getStaggingArea();
+            $data['getTopChartAllStaggingKota'] = $this->MFiberstar_Project->getTopChartAllStaggingKota();
+
+            $data['getFilterData'] = $this->MFiberstar_Project->getFilterData();
 
             // dashboard dan view tabel
             if ($this->session->userdata('lokasi_user') == "HO") {
