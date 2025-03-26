@@ -35,7 +35,10 @@ class MAuth extends CI_Model
                                 WHERE a.username_user = '".$username."'
                         ")->row_array();
         if ($akun) {
-            if ($akun['password_user'] == $pass) {
+            if($akun['status_user'] !== 'ACTIVE'){
+                $this->session->set_flashdata('error_log', 'tidak_ada');
+                redirect('Auth');
+            } else if ($akun['password_user'] == $pass) {
                 $data =
                     [
                         'id_user' => $akun['id_user'],
@@ -62,5 +65,6 @@ class MAuth extends CI_Model
             $this->session->set_flashdata('error_log', 'tidak_ada');
             redirect('Auth');
         }
+        
     }
 }
