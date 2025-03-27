@@ -64,16 +64,12 @@ class StockOpname extends CI_Controller
                 $tahun = $data['getDetailSoPeriode'][0]['sop_tahun'];
 
                 $bulan_angka = isset($bulan_mapping[$bulan]) ? $bulan_mapping[$bulan] : '01';
-                $tanggal_input = "{$tahun}-{$bulan_angka}-01";
+                // $tanggal_input = "{$tahun}-{$bulan_angka}-01";
                 $tanggal_sekarang = date('Y-m-d');
 
-                if ($tanggal_sekarang > $tanggal_input) {
-                    $jam_menit = '23:59:59'; // Jika lebih dari tanggal yang dihasilkan
-                } else {
-                    $jam_menit = date('H:i:s'); // Jika hari ini sama
-                }
+                $jam_menit = date('H:i:s');
 
-                $tanggal_format = "{$tanggal_input} {$jam_menit}";
+                $tanggal_format = "{$tanggal_sekarang} {$jam_menit}";
 
                 echo ("<script>console.log('PHP: " . $tanggal_format . "');</script>");
 
