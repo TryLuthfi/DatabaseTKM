@@ -142,7 +142,7 @@ $total_stok_dashboard = [];
                                             <select id="filter_lokasi" class="select2" multiple="multiple"
                                                 data-placeholder="Pilih Gudang" style="width: 100%;"
                                                 style="z-index: 0;">
-                                                <?php foreach ($getUniqueKotaGudang as $data): ?>
+                                                <?php foreach ($getListGudangLokasiUserAll as $data): ?>
                                                     <option value="<?php echo $data['kota_lokasi_gudang'] ?>">
                                                         <?php echo $data['kota_lokasi_gudang'] ?>
                                                     </option>
