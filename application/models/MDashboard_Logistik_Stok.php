@@ -474,7 +474,7 @@ ORDER BY
 
         // Tambahkan filter lokasi
         if (!empty($lokasiArray)) {
-            $sql .= " AND lg.kota_lokasi_gudang IN ($lokasiArray)";
+            $sql .= " AND lg.id_lokasi_gudang IN ($lokasiArray)";
         }
 
         if (!empty($bowheerArray)) {
@@ -532,7 +532,7 @@ LEFT JOIN tb_master_logistik_sumber_material sm
     WHERE 1=1 && jumlah_stok != '0'";
 
         if (!empty($lokasiArray)) {
-            $sql .= " AND lg.kota_lokasi_gudang IN ($lokasiArray)";
+            $sql .= " AND lg.id_lokasi_gudang IN ($lokasiArray)";
         }
 
         if (!empty($bowheerArray)) {
@@ -588,7 +588,7 @@ LEFT JOIN tb_master_logistik_sumber_material sm
     WHERE 1=1 && jumlah_stok != '0'";
 
         if (!empty($lokasiArray)) {
-            $sql .= " AND lg.kota_lokasi_gudang IN ($lokasiArray)";
+            $sql .= " AND lg.id_lokasi_gudang IN ($lokasiArray)";
         }
 
         if (!empty($bowheerArray)) {
@@ -625,7 +625,7 @@ ORDER BY ki.kategori_item;";
                                         JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user WHERE 1=1";
 
         if (!empty($lokasiArray)) {
-            $sql .= " AND kota_lokasi_gudang IN ($lokasiArray)";
+            $sql .= " AND tb_master_logistik_lokasi_gudang.id_lokasi_gudang IN ($lokasiArray)";
         }
 
         if (!empty($bowheerArray)) {
