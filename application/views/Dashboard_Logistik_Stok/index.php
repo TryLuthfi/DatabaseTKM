@@ -1806,14 +1806,19 @@ $total_stok_dashboard = [];
             var selectStatus = $('#filter_status').val() || []; // Array of selected values
             var selectTanggal = $('#filter_tanggal').val();
 
+            var lokasiTexts = $('#filter_lokasi').select2('data').map(function(item) {
+                return item.text.trim();
+            });
 
             // Gabungkan nilai ke dalam regex untuk pencarian DataTable
             var lokasiFilter = selectLokasi.length > 0 ? selectLokasi.join('|') : '';
+            var lokasiFilterText = lokasiTexts.length > 0 ? lokasiTexts.join('|') : '';
             var bowheerFilter = selectBowheer.length > 0 ? selectBowheer.join('|') : '';
             var itemFilter = selectItem.length > 0 ? selectItem.join('|') : '';
             var statusFilter = selectStatus.length > 0 ? selectStatus.join('|') : '';
 
             lokasiFilter2 = selectLokasi.length > 0 ? '"' + selectLokasi.join('", "') + '"' : '';
+            lokasiFilter2Text = lokasiTexts.length > 0 ? '"' + lokasiTexts.join('", "') + '"' : '';
             bowheerFilter2 = selectBowheer.length > 0 ? '"' + selectBowheer.join('", "') + '"' : '';
             itemFilter2 = selectItem.length > 0 ? '"' + selectItem.join('", "') + '"' : '';
             statusFilter2 = selectStatus.length > 0 ? '"' + selectStatus.join('", "') + '"' : '';
@@ -1832,7 +1837,7 @@ $total_stok_dashboard = [];
                 document.getElementById("total_dashboard_OTB ").innerText = totalStokDashboard['OTB '];
                 document.getElementById("total_dashboard_Tiang").innerText = totalStokDashboard['Tiang'];
                 table
-                    .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
+                    .column(2).search(lokasiFilterText, true, false) // Filter kategori (regex search)
                     .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
                     .column(5).search(itemFilter, true, false) // Filter kategori (regex search)
                     .column(6).search(statusFilter, true, false) // Filter kategori (regex search)
@@ -1840,8 +1845,9 @@ $total_stok_dashboard = [];
 
                 resetTableFilterCity();
             } else {
+                
                 table
-                    .column(2).search(lokasiFilter, true, false) // Filter kategori (regex search)
+                    .column(2).search(lokasiFilterText, true, false) // Filter kategori (regex search)
                     .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
                     .column(5).search(itemFilter, true, false) // Filter kategori (regex search)
                     .column(6).search(statusFilter, true, false) // Filter kategori (regex search)

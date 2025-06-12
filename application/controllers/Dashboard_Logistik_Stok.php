@@ -53,13 +53,13 @@ class Dashboard_Logistik_Stok extends CI_Controller
     }
 
     public function getReportStokByData()
-{
-    $dateStart = $this->input->get('dateStart');
-    $data = $this->MDashboard_Logistik_Stok->getReportStokMaterial($dateStart);
-    header('Content-Type: application/json');
-    echo json_encode($data);
-    die();
-}
+    {
+        $dateStart = $this->input->get('dateStart');
+        $data = $this->MDashboard_Logistik_Stok->getReportStokMaterial($dateStart);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        die();
+    }
 
     public function bowheer($kategori_item)
     {
@@ -210,6 +210,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
     {
         $no_surat_jalan = urldecode($no_surat_jalan); // Decode dari URL
         $id_lokasi_gudang = $this->input->get('id_lokasi_gudang'); // Ambil ID dari URL (GET)
+        $lokasi = !empty($this->input->get('lokasi')) ? $this->input->get('lokasi') : null;
 
         // Pastikan parameter tidak kosong
         if (!empty($no_surat_jalan) && !empty($id_lokasi_gudang)) {
@@ -229,7 +230,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
             $this->session->set_flashdata('error', 'Parameter tidak lengkap.');
         }
 
-        redirect('Dashboard_Logistik_Stok');
+        redirect($lokasi == null ? 'Dashboard_Logistik_Stok' : 'Logistik_Stok_Detail/detail/' . $lokasi);
     }
 
     public function filterDetailSuratJalan()

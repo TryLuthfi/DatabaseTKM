@@ -94,7 +94,7 @@ $total_tiang = 0;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "Aksesories "):
                                             $total_aksesories += $data['jumlah_stok'];
-                                            ?>
+                                    ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
@@ -103,7 +103,7 @@ $total_tiang = 0;
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
-                                            <?php
+                                    <?php
                                         endif;
                                     endforeach; ?>
                                 </tbody>
@@ -165,7 +165,7 @@ $total_tiang = 0;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "Closure"):
                                             $total_closure += $data['jumlah_stok'];
-                                            ?>
+                                    ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
@@ -174,7 +174,7 @@ $total_tiang = 0;
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
-                                            <?php
+                                    <?php
                                         endif;
                                     endforeach; ?>
                                 </tbody>
@@ -236,7 +236,7 @@ $total_tiang = 0;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "FAT"):
                                             $total_fat += $data['jumlah_stok'];
-                                            ?>
+                                    ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
@@ -245,7 +245,7 @@ $total_tiang = 0;
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
-                                            <?php
+                                    <?php
                                         endif;
                                     endforeach; ?>
                                 </tbody>
@@ -307,7 +307,7 @@ $total_tiang = 0;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "FDT"):
                                             $total_fdt += $data['jumlah_stok'];
-                                            ?>
+                                    ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
@@ -316,7 +316,7 @@ $total_tiang = 0;
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
-                                            <?php
+                                    <?php
                                         endif;
                                     endforeach; ?>
                                 </tbody>
@@ -378,7 +378,7 @@ $total_tiang = 0;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "HDPE "):
                                             $total_hdpe += $data['jumlah_stok'];
-                                            ?>
+                                    ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
@@ -387,7 +387,7 @@ $total_tiang = 0;
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
-                                            <?php
+                                    <?php
                                         endif;
                                     endforeach; ?>
                                 </tbody>
@@ -449,7 +449,7 @@ $total_tiang = 0;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "Kabel "):
                                             $total_kabel += $data['jumlah_stok'];
-                                            ?>
+                                    ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
@@ -458,7 +458,7 @@ $total_tiang = 0;
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
-                                            <?php
+                                    <?php
                                         endif;
                                     endforeach; ?>
                                 </tbody>
@@ -520,7 +520,7 @@ $total_tiang = 0;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "OTB "):
                                             $total_otb += $data['jumlah_stok'];
-                                            ?>
+                                    ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
@@ -529,7 +529,7 @@ $total_tiang = 0;
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
-                                            <?php
+                                    <?php
                                         endif;
                                     endforeach; ?>
                                 </tbody>
@@ -591,7 +591,7 @@ $total_tiang = 0;
                                     foreach ($getStokDetailArea as $data):
                                         if ($data['kategori_item'] == "Tiang"):
                                             $total_tiang += $data['jumlah_stok'];
-                                            ?>
+                                    ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_item'] ?></td>
@@ -600,7 +600,7 @@ $total_tiang = 0;
                                                 <td><?= $data['satuan_item'] ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
                                             </tr>
-                                            <?php
+                                    <?php
                                         endif;
                                     endforeach; ?>
                                 </tbody>
@@ -666,6 +666,7 @@ $total_tiang = 0;
                                         <th>Status</th>
                                         <th>QTY</th>
                                         <th>PIC</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -673,7 +674,7 @@ $total_tiang = 0;
 
                                     $total = 1;
                                     foreach ($getHistoriInOUtLogistikArea as $data):
-                                        ?>
+                                    ?>
                                         <tr>
                                             <td><?= $total++ ?></td>
                                             <td><?= $data['regional_lokasi_gudang'] ?></td>
@@ -684,6 +685,21 @@ $total_tiang = 0;
                                             <td><?= $data['nama_sumber_material'] ?></td>
                                             <td><?= $data['jumlah_stok'] ?></td>
                                             <td><?= $data['nama_user'] ?></td>
+                                            <td class="d-flex">
+                                                <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                    <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . urlencode($data['no_surat_jalan']) . '?id_lokasi_gudang=' . urlencode($data['id_lokasi_gudang']) . '&lokasi=' . urlencode(get_instance()->uri->segment(get_instance()->uri->total_segments())) ); ?>"
+                                                        id="tombol_hapus_rincian"
+                                                        class="btn btn-danger tombol_hapus_rincian">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                <?php } ?>
+
+                                                <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>"
+                                                    data-id-logistik-stok-unique="<?= $data['surat_jalan'] ?>"
+                                                    data-target="#form_detail_surat_jalan" data-toggle="modal"
+                                                    class="btn btn-primary tombol_detail ml-1"><i
+                                                        class=" fas fa-eye"></i></a>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -696,6 +712,150 @@ $total_tiang = 0;
     </section>
 
 
+    <div class="modal fade" id="form_detail_surat_jalan" data-backdrop="static">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Detail Report Stok Logistik</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="col-form-label">Nomor Surat Jalan</label>
+                                    <input type="text" class="form-control" name="nomor_surat_jalan"
+                                        id="detail_no_surat_jalan" disabled>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="col-form-label">Input Date</label>
+                                    <input type="date" class="form-control" name="tanggal_upload_stok"
+                                        id="tanggal_upload_stok" disabled>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="col-form-label">Area Gudang</label>
+                                    <input type="text" class="form-control" name="area_gudang" id="detail_area_gudang"
+                                        disabled>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="col-form-label">Project</label>
+                                    <input type="text" class="form-control" name="nama_project" id="detail_nama_project"
+                                        disabled>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="col-form-label">Sumber Material</label>
+                                    <input type="text" class="form-control" name="sumber_material"
+                                        id="detail_sumber_material" disabled>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <table class="table table-bordered" id="table_item_stok">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 5%;">No</th>
+                                            <th>Kategori</th>
+                                            <th>Item</th>
+                                            <th>Qty</th>
+                                            <th>Satuan Item</th>
+                                            <th>Merk Item</th>
+                                            <th>No Haspel</th>
+                                            <th>No Ref</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="hasilDetailDataSJ">
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="3">Total</th>
+                                            <th colspan="1"><span id="detail_total_qty">0</span></th>
+                                            <th colspan="4"></th>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label class="col-form-label">Keterangan</label>
+                                    <textarea type="text" class="form-control" name="keterangan_stok"
+                                        id="detail_keterangan_stok_item" disabled rows="4"
+                                        style="height: 100px;"></textarea>
+                                </div>
+
+                            </div>
+                            <div class="col-md-6 d-none" id="detail_ho_in_nomor_po">
+                                <div class="form-group">
+                                    <label class="col-form-label">Nomor PO</label>
+                                    <input type="text" class="form-control" name="detail_no_po_logistik"
+                                        id="detail_no_po_logistik" disabled>
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-none" id="detail_ho_out_nomor_pr">
+                                <div class="form-group">
+                                    <label class="col-form-label">Nomor PR</label>
+                                    <input type="text" class="form-control" name="detail_no_pr_logistik"
+                                        id="detail_no_pr_logistik" disabled>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 d-none" id="detail_ho_out_blank"></div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Lihat Surat Jalan</label>
+                                    <div class="card">
+                                        <div class="card-body p-6">
+                                            <div class="">
+                                                <div class="d-flex align-items-center overflow-hidden">
+
+                                                    <div class="flex-grow-1">
+                                                        <h5 class="font-size-15 mb-1 text-truncate"
+                                                            id="detail_nama_file_sj"></h5>
+                                                        <a href="" class="font-size-14 text-muted text-truncate"
+                                                            id="view_detail_surat_jalan" target="_blank"><u>View
+                                                                Folder</u></a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="container-detail-evidence">
+                                <div class="form-group">
+                                    <label>Lihat Bukti Evidence</label>
+                                    <div class="card">
+                                        <div class="card-body p-6">
+                                            <div class="">
+                                                <div class="d-flex align-items-center overflow-hidden">
+                                                    <div class="flex-grow-1">
+                                                        <h5 class="font-size-15 mb-1 text-truncate"
+                                                            id="detail_nama_file_evidence"></h5>
+                                                        <a href="" class="font-size-14 text-muted text-truncate"
+                                                            id="view_detail_evidence" target="_blank"><u>View
+                                                                Folder</u></a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Oke</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
 </div>
 
@@ -707,7 +867,7 @@ $total_tiang = 0;
 </aside>
 
 <script>
-    $(function () {
+    $(function() {
         $("#tabel_aksesories").DataTable({
             "responsive": true,
         });
@@ -740,20 +900,20 @@ $total_tiang = 0;
         <?php if ($status == 'sukses_tambah') { ?>
             swal("Success!", "Berhasil Ditambah!", "success");
         <?php } else if ($status == 'sukses_hapus') { ?>
-                swal("Success!", "Berhasil Dihapus!", "success");
+            swal("Success!", "Berhasil Dihapus!", "success");
         <?php } else if ($status == 'sukses_edit') { ?>
-                    swal("Success!", "Berhasil Edit Data!", "success");
+            swal("Success!", "Berhasil Edit Data!", "success");
         <?php } else if ($status == 'gagal_tambah') { ?>
-                        swal("Gagal!", "Gagal Menambah Data!", "warning");
+            swal("Gagal!", "Gagal Menambah Data!", "warning");
         <?php } else if ($status == 'gagal_edit') { ?>
-                            swal("Gagal!", "Gagal Mengedit Data!", "warning");
+            swal("Gagal!", "Gagal Mengedit Data!", "warning");
         <?php } else if ($status == 'gagal_hapus') { ?>
-                                swal("Gagal!", "Gagal Menghapus Data!", "warning");
+            swal("Gagal!", "Gagal Menghapus Data!", "warning");
         <?php } else { ?>
         <?php } ?>
     })
 
-    $(document).ready(function () {
+    $(document).ready(function() {
         $.fn.dataTable.ext.errMode = 'none';
 
         const tableAksesories = $('#tabel_aksesories').DataTable();
@@ -766,32 +926,53 @@ $total_tiang = 0;
         const tableTiang = $('#tabel_stok_tiang').DataTable();
 
         function updateTotalTabel() {
-            let totalTabelAksesories = 0, totalTabelClosure = 0, totalTabelFat = 0;
-            let totalTabelFdt = 0, totalTabelHdpe = 0, totalTabelKabel = 0;
-            let totalTabelOtb = 0, totalTabelTiang = 0;
+            let totalTabelAksesories = 0,
+                totalTabelClosure = 0,
+                totalTabelFat = 0;
+            let totalTabelFdt = 0,
+                totalTabelHdpe = 0,
+                totalTabelKabel = 0;
+            let totalTabelOtb = 0,
+                totalTabelTiang = 0;
 
-            tableAksesories.rows({ search: 'applied' }).data().each(row => {
+            tableAksesories.rows({
+                search: 'applied'
+            }).data().each(row => {
                 totalTabelAksesories += parseFloat(row[3].replace(/\./g, '')) || 0;
             });
-            tableClosure.rows({ search: 'applied' }).data().each(row => {
+            tableClosure.rows({
+                search: 'applied'
+            }).data().each(row => {
                 totalTabelClosure += parseFloat(row[3].replace(/\./g, '')) || 0;
             });
-            tableFat.rows({ search: 'applied' }).data().each(row => {
+            tableFat.rows({
+                search: 'applied'
+            }).data().each(row => {
                 totalTabelFat += parseFloat(row[3].replace(/\./g, '')) || 0;
             });
-            tableFdt.rows({ search: 'applied' }).data().each(row => {
+            tableFdt.rows({
+                search: 'applied'
+            }).data().each(row => {
                 totalTabelFdt += parseFloat(row[3].replace(/\./g, '')) || 0;
             });
-            tableHdpe.rows({ search: 'applied' }).data().each(row => {
+            tableHdpe.rows({
+                search: 'applied'
+            }).data().each(row => {
                 totalTabelHdpe += parseFloat(row[3].replace(/\./g, '')) || 0;
             });
-            tableKabel.rows({ search: 'applied' }).data().each(row => {
+            tableKabel.rows({
+                search: 'applied'
+            }).data().each(row => {
                 totalTabelKabel += parseFloat(row[3].replace(/\./g, '')) || 0;
             });
-            tableOtb.rows({ search: 'applied' }).data().each(row => {
+            tableOtb.rows({
+                search: 'applied'
+            }).data().each(row => {
                 totalTabelOtb += parseFloat(row[3].replace(/\./g, '')) || 0;
             });
-            tableTiang.rows({ search: 'applied' }).data().each(row => {
+            tableTiang.rows({
+                search: 'applied'
+            }).data().each(row => {
                 totalTabelTiang += parseFloat(row[3].replace(/\./g, '')) || 0;
             });
 
@@ -811,66 +992,241 @@ $total_tiang = 0;
         }, 500); // Tunggu 0.5 detik agar DataTables selesai inisialisasi
 
         // Update total saat tabel di-refresh (misalnya setelah search, filter, atau navigasi halaman)
-        $('.dataTable').on('draw.dt', function () {
+        $('.dataTable').on('draw.dt', function() {
             updateTotalTabel();
         });
+
+        $(".tombol_detail").click(function () {
+            var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
+            var selectedunique = $(this).data("id-logistik-stok-unique"); // Ambil ID dari tombol yang ditekan
+            // console.log(selectedunique);
+
+            if (!selectedSJ || selectedSJ === "") {
+                var tbody = $("#hasilDetailDataSJ");
+                tbody.empty();
+                document.getElementById("detail_no_surat_jalan").value = "";
+                document.getElementById("detail_total_qty").innerText = "";
+                document.getElementById("detail_area_gudang").value = "";
+                document.getElementById("detail_nama_project").value = "";
+                document.getElementById("detail_sumber_material").value = "";
+                document.getElementById("detail_keterangan_stok_item").value = "";
+                document.getElementById("detail_nama_file_sj").innerText = "No File Uploaded";
+                document.getElementById("detail_nama_file_evidence").innerText = "No File Uploaded";
+                document.getElementById("view_detail_surat_jalan").href = "#";
+                document.getElementById("view_detail_surat_jalan").style.display = "none";
+                document.getElementById("view_detail_evidence").href = "#";
+                document.getElementById("view_detail_evidence").style.display = "none";
+
+            } else {
+                Swal.fire({
+                    title: 'Loading...',
+                    text: 'Mohon tunggu, data sedang diambil...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                $.ajax({
+                    url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>", // Arahkan ke file PHP yang menangani filtering
+                    method: "POST",
+                    data: {
+                        no_surat_jalan: selectedunique
+                    },
+                    dataType: "json",
+                    success: function (response) {
+                        console.log("Response:", response);
+
+                        Swal.close();
+                        var tbody = $("#hasilDetailDataSJ");
+                        tbody.empty();
+
+                        var nomor = 1;
+                        let baseUrl = "<?= base_url() ?>"
+                        let lokasiUrl_sj = response.getDetailAreaBySJ[0].surat_jalan;
+                        let lokasiUrl_evidence = response.getDetailAreaBySJ[0].evidence;
+                        var totalStok = 0;
+
+                        $.each(response.getDetailAreaBySJ, function (index, getDetailAreaBySJ) {
+                            var jumlahStok = parseFloat(getDetailAreaBySJ.jumlah_stok) || 0; // Pastikan jumlahStok berupa angka
+                            totalStok += jumlahStok;
+
+                            var row = "<tr>" +
+                                "<td>" + nomor++ + "</td>" +
+                                "<td>" + getDetailAreaBySJ.kategori_item + "</td>" +
+                                "<td>" + getDetailAreaBySJ.nama_item + "</td>" +
+                                "<td>" + parseFloat(getDetailAreaBySJ.jumlah_stok).toLocaleString('id-ID') + "</td>" + // Format angka
+                                "<td>" + getDetailAreaBySJ.satuan_item + "</td>" +
+                                "<td>" + getDetailAreaBySJ.merk_stok + "</td>" +
+                                "<td>" + getDetailAreaBySJ.no_haspel_stok + "</td>" +
+                                "<td>" + getDetailAreaBySJ.no_ref_stok + "</td>" +
+                                "</tr>";
+                            tbody.append(row);
+                        });
+
+                        let tanggalFormatted = response.getDetailAreaBySJ[0].tanggal_upload_stok.split(" ")[0];
+
+                        document.getElementById("detail_total_qty").innerText = totalStok.toLocaleString('id-ID');
+                        document.getElementById("detail_no_surat_jalan").value = response.getDetailAreaBySJ[0].no_surat_jalan;
+                        document.getElementById("detail_area_gudang").value = response.getDetailAreaBySJ[0].kota_lokasi_gudang;
+                        document.getElementById("detail_nama_project").value = response.getDetailAreaBySJ[0].project_item;
+                        document.getElementById("detail_sumber_material").value = response.getDetailAreaBySJ[0].nama_sumber_material;
+                        document.getElementById("detail_keterangan_stok_item").value = response.getDetailAreaBySJ[0].keterangan_stok;
+                        document.getElementById("detail_no_po_logistik").value = response.getDetailAreaBySJ[0].no_po_logistik;
+                        document.getElementById("detail_no_pr_logistik").value = response.getDetailAreaBySJ[0].no_pr_logistik;
+                        document.getElementById("tanggal_upload_stok").value = tanggalFormatted;
+                        var filePath_sj = response.getDetailAreaBySJ[0].surat_jalan;
+                        var filePath_evidence = response.getDetailAreaBySJ[0].evidence;
+
+                        if (response.getDetailAreaBySJ[0].kota_lokasi_gudang === "HO") {
+                            if (response.getDetailAreaBySJ[0].status_sumber_material.includes("IN")) {
+                                $("#detail_ho_in_nomor_po, #detail_ho_out_blank").removeClass("d-none");
+                                $("#detail_ho_out_nomor_pr").addClass("d-none");
+
+                                $("#detail_no_pr_logistik").val("");
+
+                            } else if (response.getDetailAreaBySJ[0].status_sumber_material.includes("OUT")) {
+                                $("#detail_ho_out_nomor_pr, #detail_ho_out_blank").removeClass("d-none");
+                                $("#detail_ho_in_nomor_po").addClass("d-none");
+
+                                $("#no_po_logistik").val("");
+                            } else {
+                                $("#ho_in_nomor_po, #ho_out_nomor_pr, #detail_ho_out_blank").addClass("d-none");
+                                $("#no_po_logistik, #no_pr_logistik").val("");
+                            }
+                        } else {
+                            $("#detail_ho_in_nomor_po, #detail_ho_out_nomor_pr, #detail_ho_out_blank").addClass("d-none");
+                            $("#detail_no_po_logistik, #detail_no_pr_logistik").val("");
+                        }
+
+                        console.log('file sj', filePath_sj);
+                        console.log('file evidence', filePath_evidence);
+
+                        var fileName_sj = filePath_sj.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
+
+                        if (filePath_evidence == "" || filePath_evidence == null) {
+                            $('#container-detail-evidence').attr('hidden', true);
+                        } else {
+                            $('#container-detail-evidence').attr('hidden', false);
+                            var fileName_evidence = filePath_evidence.replace(/^.*[\\/]/, ''); // Hapus semua sebelum last "/"
+                            document.getElementById("view_detail_evidence").style.display = "block";
+                            document.getElementById("detail_nama_file_evidence").innerText = fileName_evidence;
+                            document.getElementById("view_detail_evidence").href = lokasiUrl_evidence != "./uploads/" ? baseUrl + lokasiUrl_evidence : "#";
+                        }
+
+                        document.getElementById("detail_nama_file_sj").innerText = fileName_sj;
+                        document.getElementById("view_detail_surat_jalan").style.display = "block";
+                        document.getElementById("view_detail_surat_jalan").href = baseUrl + lokasiUrl_sj;
+
+                        // console.log("Response:", response);
+                    },
+                    error: function (xhr, status, error) {
+
+                        Swal.close();
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: 'Terjadi kesalahan saat mengambil data!',
+                        });
+                        console.error("Error:", error);
+                        console.error("Response Text:", xhr.responseText);
+                    }
+                });
+            }
+        });
+
+        $('.tombol_hapus_rincian').on('click', function (e) {
+        e.preventDefault();
+        const href = $(this).attr('href');
+        swal({
+            title: 'Apakah anda yakin',
+            text: "data akan dihapus!",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'DELETE',
+            cancelButtonText: 'CANCEL'
+        }).then((result) => {
+            if (result.value) {
+                document.location.href = href;
+            }
+        })
+
+    });
     });
 
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function() {
         <?php foreach ($getSummaryDetailArea as $stokKategory): ?>
             var boxElement = document.getElementById("box_detail_area_<?= $stokKategory['kategori_item'] ?>");
 
             if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
-                boxElement.addEventListener("click", function () {
+                boxElement.addEventListener("click", function() {
                     console.log("<?= $stokKategory['kategori_item'] ?>");
                     <?php if ($stokKategory['kategori_item'] == 'Aksesories ') { ?>
                         var targetElement = document.getElementById("judul_stok_aksesories");
 
                         if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
-                            targetElement.scrollIntoView({ behavior: "smooth" });
+                            targetElement.scrollIntoView({
+                                behavior: "smooth"
+                            });
                         }
                     <?php } else if ($stokKategory['kategori_item'] == 'HDPE ') { ?>
-                            var targetElement = document.getElementById("judul_stok_hdpe");
+                        var targetElement = document.getElementById("judul_stok_hdpe");
 
-                            if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
-                                targetElement.scrollIntoView({ behavior: "smooth" });
-                            }
+                        if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                            targetElement.scrollIntoView({
+                                behavior: "smooth"
+                            });
+                        }
                     <?php } else if ($stokKategory['kategori_item'] == 'Kabel ') { ?>
-                                var targetElement = document.getElementById("judul_stok_kabel");
+                        var targetElement = document.getElementById("judul_stok_kabel");
 
-                                if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
-                                    targetElement.scrollIntoView({ behavior: "smooth" });
-                                }
+                        if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                            targetElement.scrollIntoView({
+                                behavior: "smooth"
+                            });
+                        }
                     <?php } else if ($stokKategory['kategori_item'] == 'Closure') { ?>
-                                    var targetElement = document.getElementById("judul_stok_closure");
+                        var targetElement = document.getElementById("judul_stok_closure");
 
-                                    if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
-                                        targetElement.scrollIntoView({ behavior: "smooth" });
-                                    }
+                        if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                            targetElement.scrollIntoView({
+                                behavior: "smooth"
+                            });
+                        }
                     <?php } else if ($stokKategory['kategori_item'] == 'FAT') { ?>
-                                        var targetElement = document.getElementById("judul_stok_fat");
+                        var targetElement = document.getElementById("judul_stok_fat");
 
-                                        if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
-                                            targetElement.scrollIntoView({ behavior: "smooth" });
-                                        }
+                        if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                            targetElement.scrollIntoView({
+                                behavior: "smooth"
+                            });
+                        }
                     <?php } else if ($stokKategory['kategori_item'] == 'FDT') { ?>
-                                            var targetElement = document.getElementById("judul_stok_fdt");
+                        var targetElement = document.getElementById("judul_stok_fdt");
 
-                                            if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
-                                                targetElement.scrollIntoView({ behavior: "smooth" });
-                                            }
+                        if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                            targetElement.scrollIntoView({
+                                behavior: "smooth"
+                            });
+                        }
                     <?php } else if ($stokKategory['kategori_item'] == 'OTB ') { ?>
-                                                var targetElement = document.getElementById("judul_stok_otb");
+                        var targetElement = document.getElementById("judul_stok_otb");
 
-                                                if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
-                                                    targetElement.scrollIntoView({ behavior: "smooth" });
-                                                }
+                        if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                            targetElement.scrollIntoView({
+                                behavior: "smooth"
+                            });
+                        }
                     <?php } else if ($stokKategory['kategori_item'] == 'Tiang') { ?>
-                                                    var targetElement = document.getElementById("judul_stok_tiang");
+                        var targetElement = document.getElementById("judul_stok_tiang");
 
-                                                    if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
-                                                        targetElement.scrollIntoView({ behavior: "smooth" });
-                                                    }
+                        if (targetElement) { // Pastikan elemen tujuan ada sebelum scrolling
+                            targetElement.scrollIntoView({
+                                behavior: "smooth"
+                            });
+                        }
                     <?php } ?>
                 });
             }
