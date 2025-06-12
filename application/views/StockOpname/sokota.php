@@ -67,9 +67,11 @@ $total = 1;
                                                             class="btn btn-success btn-sm">
                                                             Detail &nbsp;<i class="fas fa-share"></i>
                                                         </a>
-                                                        <a href="<?php echo site_url('StockOpname/hapusKota/' . $data['id_so_kota']); ?>"
-                                                            class="btn btn-danger btn-sm">
-                                                            Delete &nbsp;<i class="fas fa-trash"></i></a>
+                                                        <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                            <a href="<?php echo site_url('StockOpname/hapusKota/' . $data['id_so_kota']); ?>"
+                                                                class="btn btn-danger btn-sm">
+                                                                Delete &nbsp;<i class="fas fa-trash"></i></a>
+                                                        <?php }?>
                                                         <a href="<?= base_url('StockOpname/periode/' . $id_sop . '/lokasi/' . $data['id_lokasi_gudang'] . '?mode=de95b43bceeb4b998aed4aed5cef1ae7') ?>"
                                                             class="btn btn-warning btn-sm">
                                                             Edit &nbsp;<i class="fas fa-edit"></i>
