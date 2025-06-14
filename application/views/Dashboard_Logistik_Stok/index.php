@@ -657,9 +657,9 @@ $total_stok_dashboard = [];
                                             <th>QTY</th>
                                             <th>PIC</th>
                                             <th>Tanggal</th>
-                                            <th>No PO</th>
+                                            <!-- <th>No PO</th>
                                             <th>No PR</th>
-                                            <th>Lokasi Pengiriman</th>
+                                            <th>Lokasi Pengiriman</th> -->
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
@@ -679,9 +679,9 @@ $total_stok_dashboard = [];
                                                 </td>
                                                 <td><?= $data['nama_user'] ?></td>
                                                 <td><?= $data['tanggal_upload_stok'] ?></td>
-                                                <td><?= $data['no_po_logistik'] ?></td>
-                                                <td><?= $data['no_pr_logistik'] ?></td>
-                                                <td><?= $data['kota_lokasi_gudang_pengiriman'] ?></td>
+                                                <!-- <td><?= $data['no_po_logistik'] ?></td> -->
+                                                <!-- <td><?= $data['no_pr_logistik'] ?></td> -->
+                                                <!-- <td><?= $data['kota_lokasi_gudang_pengiriman'] ?></td> -->
                                                 <td class="d-flex">
                                                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                                                         <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . urlencode($data['no_surat_jalan']) . '?id_lokasi_gudang=' . urlencode($data['id_lokasi_gudang'])); ?>"
