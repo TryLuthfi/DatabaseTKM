@@ -1,10 +1,10 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    window.addEventListener("beforeunload", function () {
+    window.addEventListener("beforeunload", function() {
         localStorage.setItem("lastPage", window.location.href);
     });
 
-    window.addEventListener("load", function () {
+    window.addEventListener("load", function() {
         let lastPage = localStorage.getItem("lastPage");
         if (lastPage && document.referrer !== lastPage) {
             window.history.replaceState({}, '', lastPage);
@@ -253,7 +253,7 @@ $total_stok_dashboard = [];
                                     foreach ($getAllStokByKategory as $stokKategory):
 
                                         $total_stok_dashboard[$stokKategory['kategori_item']] = number_format(floatval($stokKategory['total_jumlah_stok']), 0, ",", ".") . " " . $stokKategory['satuan_item'];
-                                        ?>
+                                    ?>
                                         <div class="col-lg-3 col-6">
                                             <div class="small-box bg-info">
                                                 <div class="inner">
@@ -333,67 +333,67 @@ $total_stok_dashboard = [];
                                                                 $jumlah_OTB += $data['jumlah_OTB'];
                                                                 $jumlah_Tiang += $data['jumlah_Tiang'];
 
-                                                                ?>
+                                                            ?>
 
                                                                 <tr>
                                                                     <td><?= $total++ ?></td>
                                                                     <td><?= $data['regional_lokasi_gudang'] ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Aksesories'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Aksesories']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Aksesories'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Aksesories']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Closure'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Closure']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Closure'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Closure']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_FAT'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_FAT']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_FAT'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_FAT']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_FDT'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_FDT']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_FDT'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_FDT']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_HDPE'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_HDPE']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_HDPE'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_HDPE']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Kabel'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Kabel']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Kabel'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Kabel']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_OTB'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_OTB']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_OTB'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_OTB']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Tiang'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Tiang']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Tiang'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Tiang']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td>
                                                                         <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['regional_lokasi_gudang']); ?>"
                                                                             class="btn btn-primary"><i
@@ -490,68 +490,68 @@ $total_stok_dashboard = [];
 
                                                             foreach ($getAllStokByKategoryFilterCity as $data):
 
-                                                                ?>
+                                                            ?>
 
                                                                 <tr>
                                                                     <td><?= $total++ ?></td>
                                                                     <td><?= $data['regional_lokasi_gudang'] ?></td>
                                                                     <td><?= $data['kota_lokasi_gudang'] ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Aksesories'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Aksesories']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Aksesories'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Aksesories']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Closure'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Closure']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Closure'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Closure']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_FAT'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_FAT']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_FAT'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_FAT']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_FDT'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_FDT']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_FDT'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_FDT']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_HDPE'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_HDPE']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_HDPE'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_HDPE']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Kabel'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Kabel']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Kabel'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Kabel']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_OTB'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_OTB']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_OTB'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_OTB']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td><?php
-                                                                    if ($data['jumlah_Tiang'] == "0") {
-                                                                        echo "-";
-                                                                    } else {
-                                                                        echo number_format(floatval($data['jumlah_Tiang']), 0, ",", ".");
-                                                                    }
-                                                                    ?></td>
+                                                                        if ($data['jumlah_Tiang'] == "0") {
+                                                                            echo "-";
+                                                                        } else {
+                                                                            echo number_format(floatval($data['jumlah_Tiang']), 0, ",", ".");
+                                                                        }
+                                                                        ?></td>
                                                                     <td>
                                                                         <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['kota_lokasi_gudang']); ?>"
                                                                             class="btn btn-primary"><i
@@ -656,7 +656,7 @@ $total_stok_dashboard = [];
                                             <th>No SJ</th>
                                             <th>QTY</th>
                                             <th>PIC</th>
-                                            <th>Tanggal</th>
+                                            <th>Tanggal Surat</th>
                                             <!-- <th>No PO</th>
                                             <th>No PR</th>
                                             <th>Lokasi Pengiriman</th> -->
@@ -667,7 +667,7 @@ $total_stok_dashboard = [];
                                         <?php
                                         $total = 1;
                                         foreach ($getAllStokLogistik as $data):
-                                            ?>
+                                        ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['regional_lokasi_gudang'] ?></td>
@@ -735,9 +735,16 @@ $total_stok_dashboard = [];
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label class="col-form-label">Input Date</label>
+                                        <label class="col-form-label">Tanggal Surat</label>
                                         <input type="date" class="form-control" name="tanggal_upload_stok"
                                             value="<?php echo date('Y-m-d'); ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Tanggal Input</label>
+                                        <input type="date" class="form-control" name="tanggal_pembuatan_stok"
+                                            value="<?php echo date('Y-m-d'); ?>" readonly>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -906,11 +913,18 @@ $total_stok_dashboard = [];
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label class="col-form-label">Input Date</label>
+                                    <label class="col-form-label">Tanggal Surat</label>
                                     <input type="date" class="form-control" name="tanggal_upload_stok"
                                         id="tanggal_upload_stok" disabled>
                                 </div>
                             </div>
+                            <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-form-label">Tanggal Input</label>
+                                        <input type="date" class="form-control" name="tanggal_pembuatan_stok"
+                                            id="tanggal_pembuatan_stok" disabled>
+                                    </div>
+                                </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label class="col-form-label">Area Gudang</label>
@@ -1338,8 +1352,7 @@ $total_stok_dashboard = [];
 </aside>
 
 <script type="text/javascript">
-
-    document.getElementById("report_in_out_logistik").addEventListener("click", function () {
+    document.getElementById("report_in_out_logistik").addEventListener("click", function() {
         let inOutDiv = document.getElementById("isi_report_in_out_logistik");
         let stokDiv = document.getElementById("isi_report_stok_logistik");
         let inOutBtn = document.getElementById("report_in_out_logistik");
@@ -1357,7 +1370,7 @@ $total_stok_dashboard = [];
         inOutBtn.classList.add("active-tab");
     });
 
-    document.getElementById("report_stok_logistik").addEventListener("click", function () {
+    document.getElementById("report_stok_logistik").addEventListener("click", function() {
         let inOutDiv = document.getElementById("isi_report_in_out_logistik");
         let stokDiv = document.getElementById("isi_report_stok_logistik");
         let inOutBtn = document.getElementById("report_in_out_logistik");
@@ -1375,9 +1388,9 @@ $total_stok_dashboard = [];
         stokBtn.classList.add("active-tab");
     });
 
-    $(document).ready(function () {
+    $(document).ready(function() {
 
-        $('#id_kode_item').on('change', function () {
+        $('#id_kode_item').on('change', function() {
             var selectedValue = $('#id_kode_item').val();
             if ($(this).val() === "") {
                 return;
@@ -1408,7 +1421,7 @@ $total_stok_dashboard = [];
             $('#id_kode_item').val("").trigger('change');
         });
 
-        $('#id_project').change(function () {
+        $('#id_project').change(function() {
             $('#table_item_stok tbody').empty();
             counter = 1;
             let idBowheer = $(this).find(':selected').data('id-bowheer');
@@ -1425,11 +1438,11 @@ $total_stok_dashboard = [];
                     id_bowheer: idBowheer.toString()
                 },
                 dataType: "json",
-                success: function (response) {
+                success: function(response) {
 
                     $('#id_kode_item').empty().append('<option value="">Pilih Jenis Material</option>');
 
-                    $.each(response, function (index, project) {
+                    $.each(response, function(index, project) {
                         $('#id_kode_item').append(
                             `<option value="${project.id_kode_item}" data-satuan-item="${project.satuan_item}">${project.nama_item}</option>`
                         );
@@ -1437,7 +1450,7 @@ $total_stok_dashboard = [];
 
                     $('#id_kode_item').trigger('change');
                 },
-                error: function (xhr, status, error) {
+                error: function(xhr, status, error) {
                     console.error(error);
                 }
             });
@@ -1445,17 +1458,17 @@ $total_stok_dashboard = [];
 
         var counter = 1;
 
-        $(document).on('click', '.hapus-item', function () {
+        $(document).on('click', '.hapus-item', function() {
             $(this).closest('tr').remove();
 
-            $('#table_item_stok tbody tr').each(function (index) {
+            $('#table_item_stok tbody tr').each(function(index) {
                 $(this).find('td:first').text(index + 1);
             });
 
             counter--;
         });
 
-        $('#modal-xl-tambah').on('hidden.bs.modal', function () {
+        $('#modal-xl-tambah').on('hidden.bs.modal', function() {
             $('#table_item_stok tbody').empty();
             $('#nomor_surat_jalan').val('');
             $('#id_project').val('').trigger('change');
@@ -1463,7 +1476,7 @@ $total_stok_dashboard = [];
             counter = 1;
         });
 
-        $('#modal-xl-tambah').on('shown.bs.modal', function () {
+        $('#modal-xl-tambah').on('shown.bs.modal', function() {
             $('#id_kode_item').select2({
                 placeholder: "Pilih Jenis Material",
                 allowClear: true,
@@ -1474,14 +1487,14 @@ $total_stok_dashboard = [];
         });
 
 
-        $('.btn-tambah-data-item').on('click', function () {
+        $('.btn-tambah-data-item').on('click', function() {
             $('#file-sj').val('');
             $('#file-evidence').val('');
             $('.custom-file-label').text('Choose file');
             $('#keterangan_stok_item').val('');
         })
 
-        $('.custom-file-input').on('change', function (e) {
+        $('.custom-file-input').on('change', function(e) {
             let file = this.files[0];
             let allowedExtensions = /\.pdf$/i; // Hanya PDF
             let maxSize = 5120 * 1024; // 5MB
@@ -1507,7 +1520,7 @@ $total_stok_dashboard = [];
             }
         });
 
-        $("#form_tambah_stok").submit(function (event) {
+        $("#form_tambah_stok").submit(function(event) {
             let isValid = true;
             let errorMessage = [];
 
@@ -1522,7 +1535,7 @@ $total_stok_dashboard = [];
                 "#id_sumber_material": "Sumber material"
             };
 
-            $.each(requiredFields, function (selector, fieldName) {
+            $.each(requiredFields, function(selector, fieldName) {
                 if ($(selector).val() === "") {
                     errorMessage.push(fieldName + " harus dipilih.");
                 }
@@ -1552,8 +1565,8 @@ $total_stok_dashboard = [];
     // END LOGIC OF MODAL TAMBAH STOK 
 
     // STAR CALL NEW QUERY FOR DETAIL SURAT JALAN
-    $(document).ready(function () {
-        $(".tombol_detail").click(function () {
+    $(document).ready(function() {
+        $(".tombol_detail").click(function() {
             var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
             var selectedunique = $(this).data("id-logistik-stok-unique"); // Ambil ID dari tombol yang ditekan
             // console.log(selectedunique);
@@ -1590,7 +1603,7 @@ $total_stok_dashboard = [];
                         no_surat_jalan: selectedunique
                     },
                     dataType: "json",
-                    success: function (response) {
+                    success: function(response) {
                         console.log("Response:", response);
 
                         Swal.close();
@@ -1603,7 +1616,7 @@ $total_stok_dashboard = [];
                         let lokasiUrl_evidence = response.getDetailAreaBySJ[0].evidence;
                         var totalStok = 0;
 
-                        $.each(response.getDetailAreaBySJ, function (index, getDetailAreaBySJ) {
+                        $.each(response.getDetailAreaBySJ, function(index, getDetailAreaBySJ) {
                             var jumlahStok = parseFloat(getDetailAreaBySJ.jumlah_stok) || 0; // Pastikan jumlahStok berupa angka
                             totalStok += jumlahStok;
 
@@ -1621,6 +1634,7 @@ $total_stok_dashboard = [];
                         });
 
                         let tanggalFormatted = response.getDetailAreaBySJ[0].tanggal_upload_stok.split(" ")[0];
+                        let tanggalCreated = response.getDetailAreaBySJ[0].CREATED_AT ? response.getDetailAreaBySJ[0].CREATED_AT.split(" ")[0]:response.getDetailAreaBySJ[0].tanggal_upload_stok.split(" ")[0];
 
                         document.getElementById("detail_total_qty").innerText = totalStok.toLocaleString('id-ID');
                         document.getElementById("detail_no_surat_jalan").value = response.getDetailAreaBySJ[0].no_surat_jalan;
@@ -1631,6 +1645,7 @@ $total_stok_dashboard = [];
                         document.getElementById("detail_no_po_logistik").value = response.getDetailAreaBySJ[0].no_po_logistik;
                         document.getElementById("detail_no_pr_logistik").value = response.getDetailAreaBySJ[0].no_pr_logistik;
                         document.getElementById("tanggal_upload_stok").value = tanggalFormatted;
+                        document.getElementById("tanggal_pembuatan_stok").value = tanggalCreated;
                         var filePath_sj = response.getDetailAreaBySJ[0].surat_jalan;
                         var filePath_evidence = response.getDetailAreaBySJ[0].evidence;
 
@@ -1676,7 +1691,7 @@ $total_stok_dashboard = [];
 
                         // console.log("Response:", response);
                     },
-                    error: function (xhr, status, error) {
+                    error: function(xhr, status, error) {
 
                         Swal.close();
 
@@ -1695,21 +1710,21 @@ $total_stok_dashboard = [];
 
     // END GET DETAIL SUMMARY KATEGORI ITEM
 
-    $(function () {
+    $(function() {
 
         // notifikasi allert sukses atau tidak
         <?php if ($status == 'sukses_tambah') { ?>
             swal("Success!", "Berhasil Ditambah!", "success");
         <?php } else if ($status == 'sukses_hapus') { ?>
-                swal("Success!", "Berhasil Dihapus!", "success");
+            swal("Success!", "Berhasil Dihapus!", "success");
         <?php } else if ($status == 'sukses_edit') { ?>
-                    swal("Success!", "Berhasil Edit Data!", "success");
+            swal("Success!", "Berhasil Edit Data!", "success");
         <?php } else if ($status == 'gagal_tambah') { ?>
-                        swal("Gagal!", "Gagal Menambah Data!", "warning");
+            swal("Gagal!", "Gagal Menambah Data!", "warning");
         <?php } else if ($status == 'gagal_edit') { ?>
-                            swal("Gagal!", "Gagal Mengedit Data!", "warning");
+            swal("Gagal!", "Gagal Mengedit Data!", "warning");
         <?php } else if ($status == 'gagal_hapus') { ?>
-                                swal("Gagal!", "Gagal Menghapus Data!", "warning");
+            swal("Gagal!", "Gagal Menghapus Data!", "warning");
         <?php } else { ?>
         <?php } ?>
 
@@ -1722,7 +1737,7 @@ $total_stok_dashboard = [];
         })
     })
 
-    $(document).ready(function () {
+    $(document).ready(function() {
         $('#table_detail_kota').DataTable({
             "paging": true, // Tetap gunakan pagination
             "pageLength": 10, // Menampilkan 10 data per halaman
@@ -1734,7 +1749,7 @@ $total_stok_dashboard = [];
 
 
     // HAPUS FILTER DATA SELECT2
-    document.getElementById('reset_filter').addEventListener('click', function () {
+    document.getElementById('reset_filter').addEventListener('click', function() {
         const selectLokasi = document.getElementById('filter_lokasi');
         const selectBowheer = document.getElementById('filter_bowheer');
         const selectItem = document.getElementById('filter_item');
@@ -1784,11 +1799,11 @@ $total_stok_dashboard = [];
     var kirimData2 = "";
     var kirimData3 = "";
 
-    $(document).ready(function () {
+    $(document).ready(function() {
         // Simpan data awal tabel saat halaman pertama kali dimuat
-        $("#table_detail_kota tbody tr").each(function () {
+        $("#table_detail_kota tbody tr").each(function() {
             var row = [];
-            $(this).find("td").each(function () {
+            $(this).find("td").each(function() {
                 row.push($(this).html());
             });
             originalData.push(row);
@@ -1796,8 +1811,8 @@ $total_stok_dashboard = [];
     });
 
     // FUNCTION UPDATE DATA TABLE MENGGUNAKAN FILTER DATA
-    $(document).ready(function () {
-        $('#btnFilterDataProject').on('click', function () {
+    $(document).ready(function() {
+        $('#btnFilterDataProject').on('click', function() {
             var table = $('#table_data').DataTable();
             // Ambil nilai dari multiple select filter kategori
             var selectLokasi = $('#filter_lokasi').val() || []; // Array of selected values
@@ -1845,7 +1860,7 @@ $total_stok_dashboard = [];
 
                 resetTableFilterCity();
             } else {
-                
+
                 table
                     .column(2).search(lokasiFilterText, true, false) // Filter kategori (regex search)
                     .column(3).search(bowheerFilter, true, false) // Filter kategori (regex search)
@@ -1871,7 +1886,7 @@ $total_stok_dashboard = [];
                         tanggal: selectTanggal
                     },
                     dataType: "json",
-                    success: function (response) {
+                    success: function(response) {
                         Swal.close();
                         console.log("Filtered Data:", response);
 
@@ -1889,7 +1904,7 @@ $total_stok_dashboard = [];
                         let totalTiang = 0;
 
 
-                        $.each(response.getDashboardFiltered, function (index, getDashboardFiltered) {
+                        $.each(response.getDashboardFiltered, function(index, getDashboardFiltered) {
                             totalAksesories += Number(getDashboardFiltered.jumlah_Aksesories);
                             totalClosure += Number(getDashboardFiltered.jumlah_Closure);
                             totalFAT += Number(getDashboardFiltered.jumlah_FAT);
@@ -1913,7 +1928,7 @@ $total_stok_dashboard = [];
                         updateTableFilterCity(response.getAllStokByKategoryFilterCityFiltered);
                         console.log(Number(response.getDashboardFiltered[0].jumlah_Aksesories.toLocaleString('id-ID').replace(/,/g, '.')));
                     },
-                    error: function (xhr, status, error) {
+                    error: function(xhr, status, error) {
                         Swal.close();
 
                         Swal.fire({
@@ -1942,7 +1957,7 @@ $total_stok_dashboard = [];
         if (data.length === 0) {
             tbody.append('<tr><td colspan="12" class="text-center">Tidak ada data</td></tr>');
         } else {
-            $.each(data, function (index, item) {
+            $.each(data, function(index, item) {
                 var row = `<tr>
                 <td>${index + 1}</td>
                 <td>${item.regional_lokasi_gudang}</td>
@@ -1975,7 +1990,7 @@ $total_stok_dashboard = [];
         });
 
         // Tambahkan event listener ulang setelah AJAX update
-        newTable.on('draw', function () {
+        newTable.on('draw', function() {
             updateTotal();
         });
 
@@ -1989,9 +2004,9 @@ $total_stok_dashboard = [];
         var tbody = $("#table_detail_kota tbody");
         tbody.empty(); // Kosongkan isi tabel
 
-        $.each(originalData, function (index, row) {
+        $.each(originalData, function(index, row) {
             var tr = "<tr>";
-            $.each(row, function (i, cell) {
+            $.each(row, function(i, cell) {
                 tr += "<td>" + cell + "</td>";
             });
             tr += "</tr>";
@@ -2018,7 +2033,7 @@ $total_stok_dashboard = [];
 
     function formatRupiah(event) {
         var input = event.target;
-        var value = input.value.replace(/[^\d]/g, '');  // Menghapus karakter non-numeric
+        var value = input.value.replace(/[^\d]/g, ''); // Menghapus karakter non-numeric
         var formattedValue = '';
 
         // Format angka untuk ribuan
@@ -2033,10 +2048,10 @@ $total_stok_dashboard = [];
         input.value = "Rp. " + formattedValue;
     }
 
-    $(document).ready(function () {
+    $(document).ready(function() {
         $.fn.dataTable.ext.errMode = 'none';
         const table = $('#table_detail_kota').DataTable({
-            footerCallback: function () {
+            footerCallback: function() {
                 updateTotal();
             }
         });
@@ -2045,7 +2060,7 @@ $total_stok_dashboard = [];
         function updateTotal() {
             // Ambil semua data yang terlihat
             const table = $('#table_detail_kota').DataTable({
-                footerCallback: function () {
+                footerCallback: function() {
                     updateTotal();
                 }
             });
@@ -2065,7 +2080,7 @@ $total_stok_dashboard = [];
             let totalTabelKotaTiang = 0;
 
 
-            data.each(function (row) {
+            data.each(function(row) {
 
                 totalTabelKotaAksesories += parseFloat(row[3].replace(/\./g, '')) || 0;
                 totalTabelKotaClosure += parseFloat(row[4].replace(/\./g, '')) || 0;
@@ -2088,7 +2103,7 @@ $total_stok_dashboard = [];
         }
 
         // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
-        table.on('draw', function () {
+        table.on('draw', function() {
             updateTotal();
         });
 
@@ -2096,12 +2111,12 @@ $total_stok_dashboard = [];
         updateTotal();
     });
 
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function() {
         <?php foreach ($getAllStokByKategory as $stokKategory): ?>
             var boxElement = document.getElementById("box_detai_kategori_item_<?= $stokKategory['kategori_item'] ?>");
 
             if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
-                boxElement.addEventListener("click", function () {
+                boxElement.addEventListener("click", function() {
                     console.log("<?= $stokKategory['kategori_item'] ?>");
                     console.log("", lokasiFilter2);
 
@@ -2116,12 +2131,12 @@ $total_stok_dashboard = [];
                         let kategoriItem = "<?= $stokKategory['kategori_item'] ?>"
 
                         $.post("<?= base_url('Logistik_Stok_Detail/filter_kategori') ?>", {
-                            rincianData: rincianData,
-                            rincianData2: rincianData2,
-                            rincianData3: rincianData3,
-                            kategori_item: kategoriItem
-                        },
-                            function () {
+                                rincianData: rincianData,
+                                rincianData2: rincianData2,
+                                rincianData3: rincianData3,
+                                kategori_item: kategoriItem
+                            },
+                            function() {
                                 window.location.href = "<?= base_url('Logistik_Stok_Detail/filter_kategori_rdr') ?>?kategori=" + encodeURIComponent(kategoriItem);
                             }
                         );
@@ -2132,7 +2147,7 @@ $total_stok_dashboard = [];
         <?php endforeach; ?>
     });
 
-    $(document).ready(function () {
+    $(document).ready(function() {
         let table = $('#table_data').DataTable();
 
         // Fungsi filter berdasarkan date range di kolom ke-11 (index 10)
@@ -2158,12 +2173,12 @@ $total_stok_dashboard = [];
         });
 
         // Event saat date range dipilih
-        $('#date-range').on('apply.daterangepicker', function (ev, picker) {
+        $('#date-range').on('apply.daterangepicker', function(ev, picker) {
             $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
         });
 
         // ✅ Tombol "Cari" untuk memfilter tabel
-        $('#filtertanggal').on('click', function (e) {
+        $('#filtertanggal').on('click', function(e) {
             e.preventDefault();
             $.fn.dataTable.ext.search.pop(); // Hapus filter lama
             $.fn.dataTable.ext.search.push(filterByDate); // Tambahkan filter baru
@@ -2171,7 +2186,7 @@ $total_stok_dashboard = [];
         });
 
         // ✅ Tombol "Hapus" untuk mereset filter
-        $('#resetTanggal').on('click', function () {
+        $('#resetTanggal').on('click', function() {
             $('#date-range').val(''); // Kosongkan input
             $('#date-range').data('daterangepicker').setStartDate(moment());
             $('#date-range').data('daterangepicker').setEndDate(moment());
@@ -2181,7 +2196,7 @@ $total_stok_dashboard = [];
         });
     });
 
-    $(document).ready(function () {
+    $(document).ready(function() {
         $('#table_data').DataTable({
             responsive: false,
             fixedHeader: {
@@ -2191,10 +2206,10 @@ $total_stok_dashboard = [];
         });
     });
 
-    $(document).ready(function () {
+    $(document).ready(function() {
         $('[data-toggle="tooltip"]').tooltip();
 
-        $("#nomor_surat_jalan, #id_lokasi_gudang, #id_sumber_material").on("blur change", function () {
+        $("#nomor_surat_jalan, #id_lokasi_gudang, #id_sumber_material").on("blur change", function() {
             var selectedKota = $("#id_lokasi_gudang option:selected").text().trim(); // Ambil teks kota yang dipilih
             var selectedSumberMaterial = $("#id_sumber_material option:selected").text().trim(); // Ambil teks kota yang dipilih
 
@@ -2210,7 +2225,7 @@ $total_stok_dashboard = [];
                         id_lokasi_gudang: id_gudang
                     },
                     dataType: "json",
-                    success: function (response) {
+                    success: function(response) {
                         console.log("AJAX Cuccess : ", response);
                         if (response.status === "exists") {
                             let errorMsg = "Nomor Surat Jalan sudah ada di lokasi gudang ini!";
@@ -2218,7 +2233,9 @@ $total_stok_dashboard = [];
                                 .addClass("is-invalid")
                                 .attr("title", errorMsg)
                                 .tooltip("dispose") // Hapus tooltip lama
-                                .tooltip({ trigger: "click" }) // Aktifkan klik tooltip
+                                .tooltip({
+                                    trigger: "click"
+                                }) // Aktifkan klik tooltip
                                 .tooltip("show"); // Tampilkan tooltip
 
                             $("#btn-submit-stok").prop("disabled", true);
@@ -2231,7 +2248,7 @@ $total_stok_dashboard = [];
                             $("#btn-submit-stok").prop("disabled", false);
                         }
                     },
-                    error: function (xhr, status, error) {
+                    error: function(xhr, status, error) {
                         console.log("AJAX Error:", status, error);
                         alert("Terjadi kesalahan saat mengecek data. Coba lagi.");
                     }
@@ -2265,10 +2282,9 @@ $total_stok_dashboard = [];
 
         });
     });
-
 </script>
 <script>
-    $('.tombol_hapus_rincian').on('click', function (e) {
+    $('.tombol_hapus_rincian').on('click', function(e) {
         e.preventDefault();
         const href = $(this).attr('href');
         swal({
@@ -2291,7 +2307,7 @@ $total_stok_dashboard = [];
 
 <!-- FUNCTION FILTER UNTUK DOWNLOAD EXCEL LAPORAN IN OUT LOGISTIK -->
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function() {
         // Ambil data dari PHP dalam bentuk JSON
         var stokLogistik = <?= json_encode($getReportInOutMaterial, JSON_PRETTY_PRINT); ?>;
 
@@ -2333,23 +2349,27 @@ $total_stok_dashboard = [];
         populateDropdown(selectItem, uniqueItem);
 
         // Event Listener: Filter Kota berdasarkan Regional
-        selectRegional.addEventListener("change", function () {
+        selectRegional.addEventListener("change", function() {
             let selectedRegional = this.value;
             let filteredKota = stokLogistik
                 .filter(data => data.regional_lokasi_gudang === selectedRegional || selectedRegional === "")
                 .map(data => data.kota_lokasi_gudang);
 
-            populateDropdown(selectKota, getUniqueValues(filteredKota.map(kota => ({ kota })), "kota"));
+            populateDropdown(selectKota, getUniqueValues(filteredKota.map(kota => ({
+                kota
+            })), "kota"));
 
             // Filter Bowheer juga berdasarkan Regional
             let filteredBowheer = stokLogistik
                 .filter(data => data.regional_lokasi_gudang === selectedRegional || selectedRegional === "")
                 .map(data => data.nama_bowheer);
-            populateDropdown(selectBowheer, getUniqueValues(filteredBowheer.map(bowheer => ({ bowheer })), "bowheer"));
+            populateDropdown(selectBowheer, getUniqueValues(filteredBowheer.map(bowheer => ({
+                bowheer
+            })), "bowheer"));
         });
 
         // Event Listener: Filter Bowheer berdasarkan Kota
-        selectKota.addEventListener("change", function () {
+        selectKota.addEventListener("change", function() {
             let selectedKota = this.value;
             let selectedRegional = selectRegional.value;
 
@@ -2360,29 +2380,35 @@ $total_stok_dashboard = [];
                 )
                 .map(data => data.nama_bowheer);
 
-            populateDropdown(selectBowheer, getUniqueValues(filteredBowheer.map(bowheer => ({ bowheer })), "bowheer"));
+            populateDropdown(selectBowheer, getUniqueValues(filteredBowheer.map(bowheer => ({
+                bowheer
+            })), "bowheer"));
         });
 
         // Event Listener: Filter Kategori berdasarkan Bowheer
-        selectBowheer.addEventListener("change", function () {
+        selectBowheer.addEventListener("change", function() {
             let selectedBowheer = this.value;
 
             let filteredKategori = stokLogistik
                 .filter(data => data.nama_bowheer === selectedBowheer || selectedBowheer === "")
                 .map(data => data.kategori_item);
 
-            populateDropdown(selectKategori, getUniqueValues(filteredKategori.map(kategori => ({ kategori })), "kategori"));
+            populateDropdown(selectKategori, getUniqueValues(filteredKategori.map(kategori => ({
+                kategori
+            })), "kategori"));
         });
 
         // Event Listener: Filter Item berdasarkan Kategori
-        selectKategori.addEventListener("change", function () {
+        selectKategori.addEventListener("change", function() {
             let selectedKategori = this.value;
 
             let filteredItem = stokLogistik
                 .filter(data => data.kategori_item === selectedKategori || selectedKategori === "")
                 .map(data => data.nama_item);
 
-            populateDropdown(selectItem, getUniqueValues(filteredItem.map(item => ({ item })), "item"));
+            populateDropdown(selectItem, getUniqueValues(filteredItem.map(item => ({
+                item
+            })), "item"));
         });
 
         function filterData() {
@@ -2459,12 +2485,11 @@ $total_stok_dashboard = [];
         // Event listener untuk tombol download
         document.getElementById("downloadReportInOutLogistik").addEventListener("click", downloadExcel);
     });
-
 </script>
 
 <!-- FUNCTION FILTER UNTUK DOWNLOAD EXCEL LAPORAN STOK LOGISTIK -->
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function() {
         // Ambil data dari PHP dalam bentuk JSON
         var stokLogistik = <?= json_encode($getReportStokMaterial, JSON_PRETTY_PRINT); ?>;
 
@@ -2508,23 +2533,27 @@ $total_stok_dashboard = [];
         populateDropdown(selectItem, uniqueItem);
 
         // Event Listener: Filter Kota berdasarkan Regional
-        selectRegional.addEventListener("change", function () {
+        selectRegional.addEventListener("change", function() {
             let selectedRegional = this.value;
             let filteredKota = stokLogistik
                 .filter(data => data.regional_lokasi_gudang === selectedRegional || selectedRegional === "")
                 .map(data => data.kota_lokasi_gudang);
 
-            populateDropdown(selectKota, getUniqueValues(filteredKota.map(kota => ({ kota })), "kota"));
+            populateDropdown(selectKota, getUniqueValues(filteredKota.map(kota => ({
+                kota
+            })), "kota"));
 
             // Filter Bowheer juga berdasarkan Regional
             let filteredBowheer = stokLogistik
                 .filter(data => data.regional_lokasi_gudang === selectedRegional || selectedRegional === "")
                 .map(data => data.nama_bowheer);
-            populateDropdown(selectBowheer, getUniqueValues(filteredBowheer.map(bowheer => ({ bowheer })), "bowheer"));
+            populateDropdown(selectBowheer, getUniqueValues(filteredBowheer.map(bowheer => ({
+                bowheer
+            })), "bowheer"));
         });
 
         // Event Listener: Filter Bowheer berdasarkan Kota
-        selectKota.addEventListener("change", function () {
+        selectKota.addEventListener("change", function() {
             let selectedKota = this.value;
             let selectedRegional = selectRegional.value;
 
@@ -2535,29 +2564,35 @@ $total_stok_dashboard = [];
                 )
                 .map(data => data.nama_bowheer);
 
-            populateDropdown(selectBowheer, getUniqueValues(filteredBowheer.map(bowheer => ({ bowheer })), "bowheer"));
+            populateDropdown(selectBowheer, getUniqueValues(filteredBowheer.map(bowheer => ({
+                bowheer
+            })), "bowheer"));
         });
 
         // Event Listener: Filter Kategori berdasarkan Bowheer
-        selectBowheer.addEventListener("change", function () {
+        selectBowheer.addEventListener("change", function() {
             let selectedBowheer = this.value;
 
             let filteredKategori = stokLogistik
                 .filter(data => data.nama_bowheer === selectedBowheer || selectedBowheer === "")
                 .map(data => data.kategori_item);
 
-            populateDropdown(selectKategori, getUniqueValues(filteredKategori.map(kategori => ({ kategori })), "kategori"));
+            populateDropdown(selectKategori, getUniqueValues(filteredKategori.map(kategori => ({
+                kategori
+            })), "kategori"));
         });
 
         // Event Listener: Filter Item berdasarkan Kategori
-        selectKategori.addEventListener("change", function () {
+        selectKategori.addEventListener("change", function() {
             let selectedKategori = this.value;
 
             let filteredItem = stokLogistik
                 .filter(data => data.kategori_item === selectedKategori || selectedKategori === "")
                 .map(data => data.nama_item);
 
-            populateDropdown(selectItem, getUniqueValues(filteredItem.map(item => ({ item })), "item"));
+            populateDropdown(selectItem, getUniqueValues(filteredItem.map(item => ({
+                item
+            })), "item"));
         });
 
         let dateInput = document.getElementById("report_stok_date");
@@ -2572,7 +2607,7 @@ $total_stok_dashboard = [];
         }
 
         // Event Listener: Ambil data saat tanggal berubah
-        dateInput.addEventListener("change", function () {
+        dateInput.addEventListener("change", function() {
             let dateStart = this.value || getTodayDate();
             console.log("Tanggal yang dikirim:", dateStart);
 
@@ -2658,7 +2693,6 @@ $total_stok_dashboard = [];
         // Event listener untuk tombol download
         document.getElementById("downloadReportStokLogistik").addEventListener("click", downloadExcel);
     });
-
 </script>
 
 <script src="https://code.jquery.com/jquery-3.5.1.js"></script>

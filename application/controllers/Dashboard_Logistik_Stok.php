@@ -103,6 +103,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
         $id_bowheer = $this->input->post('id_bowheer');
         $id_sumber_material = $this->input->post('id_sumber_material');
         $tanggal_upload_stok = $this->input->post('tanggal_upload_stok');
+        $tanggal_pembuatan_stok = $this->input->post('tanggal_pembuatan_stok');
         $timestamp = date('_h_i_s');
         $uploaded_files = [];
         $files = [
@@ -141,6 +142,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
         foreach ($jumlah_stok as $key => $value) {
             $tanggalFormatted = "{$tanggal_upload_stok} " . date('H:i:s');
+            $tanggaCreated = "{$tanggal_pembuatan_stok} " . date('H:i:s');
 
             $data_insert[] = [
                 'no_surat_jalan' => $this->input->post('nomor_surat_jalan'),
@@ -160,7 +162,8 @@ class Dashboard_Logistik_Stok extends CI_Controller
                 'no_po_logistik' => $this->input->post('no_po_logistik'),
                 'no_pr_logistik' => $this->input->post('no_pr_logistik'),
                 'id_lokasi_gudang_pengiriman' => $this->input->post('id_lokasi_gudang_pengiriman'),
-                'id_user' => $this->session->userdata('id_user')
+                'id_user' => $this->session->userdata('id_user'),
+                'CREATED_AT' => $tanggaCreated
             ];
         }
 
