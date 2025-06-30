@@ -49,7 +49,7 @@ $total = 1;
                                             <th>Regional</th>
                                             <th>Provinsi</th>
                                             <th>Kota</th>
-                                            <th>Kecamatan</th>
+                                            <th>Alamat</th>
                                             <th>PIC</th>
                                             <th>Aksi</th>
                                         </tr>
