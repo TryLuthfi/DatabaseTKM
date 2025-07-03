@@ -89,9 +89,9 @@ $total = 1;
                                                         <a href="<?php echo site_url('StockOpname/hapusPeriode/' . $data['id_sop']); ?>"
                                                             class="btn btn-danger btn-sm">
                                                             Delete &nbsp;<i class="fas fa-trash"></i></a>
-                                                        <a href="#" class="btn btn-warning btn-sm"
+                                                        <!-- <a href="#" class="btn btn-warning btn-sm"
                                                             data-target="#modal-lg-edit<?= $data['id_sop'] ?>"
-                                                            data-toggle="modal"> Edit &nbsp; <i class="fas fa-edit"></i></a>
+                                                            data-toggle="modal"> Edit &nbsp; <i class="fas fa-edit"></i></a> -->
                                                     <?php } ?>
                                                 </td>
                                             </tr>
