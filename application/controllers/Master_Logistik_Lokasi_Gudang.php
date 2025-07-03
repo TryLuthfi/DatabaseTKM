@@ -41,7 +41,7 @@ class Master_Logistik_Lokasi_Gudang extends CI_Controller
             'regional_lokasi_gudang' => $_POST['regional_lokasi_gudang'],
             'provinsi_lokasi_gudang' => $_POST['provinsi_lokasi_gudang'],
             'kota_lokasi_gudang' => $_POST['kota_lokasi_gudang'],
-            'kecamatan_lokasi_gudang' => $_POST['kecamatan_lokasi_gudang'],
+            'alamat_lokasi_gudang' => $_POST['alamat_lokasi_gudang'],
             'id_user' => $_POST['id_user']
         );
 
@@ -76,7 +76,7 @@ class Master_Logistik_Lokasi_Gudang extends CI_Controller
             'regional_lokasi_gudang' => $_POST['regional_lokasi_gudang'],
             'provinsi_lokasi_gudang' => $_POST['provinsi_lokasi_gudang'],
             'kota_lokasi_gudang' => $_POST['kota_lokasi_gudang'],
-            'kecamatan_lokasi_gudang' => $_POST['kecamatan_lokasi_gudang'],
+            'alamat_lokasi_gudang' => $_POST['alamat_lokasi_gudang'],
             'id_user' => $_POST['id_user']
         );
 

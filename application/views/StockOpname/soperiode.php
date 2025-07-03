@@ -206,8 +206,8 @@ $total = 1;
                                 </div>
                                 <div class="form-group">
                                     <label class="col-form-label">Kecamatan</label>
-                                    <input type="text" class="form-control" name="kecamatan_lokasi_gudang"
-                                        autocomplete="off" value="<?= $data['kecamatan_lokasi_gudang'] ?>">
+                                    <input type="text" class="form-control" name="alamat_lokasi_gudang"
+                                        autocomplete="off" value="<?= $data['alamat_lokasi_gudang'] ?>">
                                 </div>
                                 <div class="form-group">
                                     <label class="col-form-label">Person In Control</label>

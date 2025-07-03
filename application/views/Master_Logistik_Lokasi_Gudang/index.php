@@ -63,7 +63,7 @@ $total = 1;
                                                 <td><?= $data['regional_lokasi_gudang'] ?></td>
                                                 <td><?= $data['provinsi_lokasi_gudang'] ?></td>
                                                 <td><?= $data['kota_lokasi_gudang'] ?></td>
-                                                <td><?= $data['kecamatan_lokasi_gudang'] ?></td>
+                                                <td><?= $data['alamat_lokasi_gudang'] ?></td>
                                                 <td><?= $data['nama_user'] ?></td>
                                                 <td>
                                                     <a href="<?php echo site_url('Master_Logistik_Lokasi_Gudang/hapusLokasiGudang/' . $data['id_lokasi_gudang']); ?>"
@@ -127,7 +127,7 @@ $total = 1;
                             </div>
                             <div class="form-group">
                                 <label class="col-form-label">Kecamatan</label>
-                                <input type="text" class="form-control" name="kecamatan_lokasi_gudang"
+                                <input type="text" class="form-control" name="alamat_lokasi_gudang"
                                     autocomplete="off" placeholder="Nama Kecamatan">
                             </div>
                             <div class="form-group">
@@ -192,8 +192,8 @@ $total = 1;
                                 </div>
                                 <div class="form-group">
                                     <label class="col-form-label">Kecamatan</label>
-                                    <input type="text" class="form-control" name="kecamatan_lokasi_gudang"
-                                        autocomplete="off" value="<?= $data['kecamatan_lokasi_gudang'] ?>">
+                                    <input type="text" class="form-control" name="alamat_lokasi_gudang"
+                                        autocomplete="off" value="<?= $data['alamat_lokasi_gudang'] ?>">
                                 </div>
                                 <div class="form-group">
                                     <label class="col-form-label">Person In Control</label>
