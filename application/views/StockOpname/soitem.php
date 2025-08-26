@@ -142,6 +142,7 @@ $total = 1;
 
                                                     <!-- mode edit -->
                                                     <?php if ($mode == "de95b43bceeb4b998aed4aed5cef1ae7"): ?>
+                                                        <input type="hidden" name="is_edit" value="1" id="">
                                                         <?php foreach ($getDetailSoItem as $index => $data): ?>
                                                             <tr>
                                                                 <td><?= $total++ ?></td>

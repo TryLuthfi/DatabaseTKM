@@ -99,46 +99,56 @@ class StockOpname extends CI_Controller
     public function inputSO()
     {
         if (!empty($this->session->userdata('id_user'))) {
-            // Ambil ID Periode & Lokasi dari form
             $id_sop = $this->input->post('id_sop');
             $id_lokasi_gudang = $this->input->post('id_lokasi_gudang');
-
-            // Ambil data yang dikirim dalam bentuk array
             $id_kode_item = $this->input->post('id_kode_item');
             $total_jumlah_stok = $this->input->post('total_jumlah_stok');
             $stok_so = $this->input->post('stok_so');
+            $stok_soi_edit = $this->input->post('soi_stok_opname');
             $keterangan = $this->input->post('keterangan');
 
-            // Looping untuk menyimpan setiap item ke database
-            $data_insert = [];
-            foreach ($id_kode_item as $index => $kode_item) {
-                // Cek apakah stok SO ada isinya atau tidak (hindari insert data kosong)
-                $data_insert[] = [
-                    'id_sop' => $id_sop,
-                    'id_kota_gudang' => $id_lokasi_gudang,
-                    'id_kode_item' => $kode_item,
-                    'soi_stok_asli' => $total_jumlah_stok[$index] ?? 0, // Default 0 jika null
-                    'soi_stok_opname' => $stok_so[$index] ?? 0, // Default 0 jika kosong
-                    'soi_keterangan' => $keterangan[$index] ?? ''
-                ];
-            }
+            if ($this->input->post('is_edit')) {
+                $this->db->trans_start();
 
-            $hasil_data = array(
-                'id_so_periode' => $id_sop,
-                'id_kota' => $id_lokasi_gudang,
-                'sok_status' => 'DONE',
-                'sok_tanggal' => date('Y-m-d H:i:s')
-            );
+                foreach ($id_kode_item as $index => $kode_item) {
+                    $this->db->where('id_sop', $id_sop);
+                    $this->db->where('id_kota_gudang', $id_lokasi_gudang);
+                    $this->db->where('id_kode_item', $kode_item);
+                    $this->db->update('tb_so_item', [
+                        'soi_stok_opname' => $stok_soi_edit[$index] ?? 0,
+                        'soi_keterangan'  => $keterangan[$index] ?? ''
+                    ]);
+                }
 
-            // Jika ada data yang akan disimpan
-            if (!empty($data_insert)) {
-                $this->MStockOpname->insertBatchSOItem($data_insert);
-                $this->MStockOpname->tambahSoKota($hasil_data);
+                $this->db->trans_complete();
                 $this->session->set_flashdata('success', 'Data stok opname berhasil disimpan.');
             } else {
-                $this->session->set_flashdata('error', 'Tidak ada data stok opname yang disimpan.');
-            }
+                $data_insert = [];
+                foreach ($id_kode_item as $index => $kode_item) {
+                    $data_insert[] = [
+                        'id_sop' => $id_sop,
+                        'id_kota_gudang' => $id_lokasi_gudang,
+                        'id_kode_item' => $kode_item,
+                        'soi_stok_asli' => $total_jumlah_stok[$index] ?? 0, // Default 0 jika null
+                        'soi_stok_opname' => !empty($stok_so[$index]) ? $stok_so[$index] : (!empty($stok_soi_edit[$index]) ? $stok_soi_edit[$index] : 0),
+                        'soi_keterangan' => $keterangan[$index] ?? ''
+                    ];
+                }
+                $hasil_data = array(
+                    'id_so_periode' => $id_sop,
+                    'id_kota' => $id_lokasi_gudang,
+                    'sok_status' => 'DONE',
+                    'sok_tanggal' => date('Y-m-d H:i:s')
+                );
 
+                if (!empty($data_insert)) {
+                    $this->MStockOpname->insertBatchSOItem($data_insert);
+                    $this->MStockOpname->tambahSoKota($hasil_data);
+                    $this->session->set_flashdata('success', 'Data stok opname berhasil disimpan.');
+                } else {
+                    $this->session->set_flashdata('error', 'Tidak ada data stok opname yang disimpan.');
+                }
+            }
             redirect('StockOpname/periode/' . $id_sop);
         } else {
             redirect('Auth');
