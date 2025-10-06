@@ -234,6 +234,118 @@ $id_menu = $this->uri->segment('1');
                         </a>
                     </li>
 
+                    <li class="nav-header">General Affair</li>
+
+                    <li class="nav-item has-treeview <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
+                        echo "menu-open";
+                    } ?>">
+                        <a href="#" class="nav-link <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
+                            echo "active";
+                        } ?>">
+                            <i class="nav-icon fas fa-money-check-alt"></i>
+                            <p>
+                                Master GA
+                                <i class="fas fa-angle-left right"></i>
+                                <span class="badge badge-info right">2</span>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                            </li>
+                        </ul>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="<?= base_url('Master_GA_Aset') ?>" class="nav-link <?php if ($id_menu == 'Master_GA_Aset') {
+                                      echo "active";
+                                  } ?>">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Kode Aset</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="<?= base_url('Logistik_Purchase_Request') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Purchase_Request') {
+                                                                                                    echo "active";
+                                                                                                } ?>">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Aset Kendaraan
+                            </p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item" style="pointer-events: none">
+                        <a href="<?= base_url('Logistik_Pesanan_Pabrik') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Pesanan_Pabrik') {
+                                                                                                    echo "active";
+                                                                                                } ?>">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Alat Terminasi
+                            </p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok') {
+                              echo "active";
+                          } ?>">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Alat Inventaris
+                            </p>
+                        </a>
+                    </li>
+                    <li class="nav-item has-treeview <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
+                        echo "menu-open";
+                    } ?>">
+                        <a href="#" class="nav-link <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
+                            echo "active";
+                        } ?>">
+                            <i class="nav-icon fas fa-money-check-alt"></i>
+                            <p>
+                                Gudang
+                                <i class="fas fa-angle-left right"></i>
+                                <span class="badge badge-info right">2</span>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                            </li>
+                        </ul>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item" style="pointer-events: none">
+                                <a href="<?= base_url('MyRepublik_Project') ?>" class="nav-link <?php if ($id_menu == 'MyRepublik_Project') {
+                                      echo "active";
+                                  } ?>">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Inhouse</p>
+                                </a>
+                            </li>
+                        </ul>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item" style="pointer-events: none">
+                                <a class="nav-link <?php if ($id_menu == 'MyRepublik_PO') {
+                                    echo "active";
+                                } ?>">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Subcon</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok') {
+                              echo "active";
+                          } ?>">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Seragam Kantor
+                            </p>
+                        </a>
+                    </li>
+
                     <li class="nav-header">Project</li>
 
                     <li class="nav-item has-treeview <?php if ($id_menu == 'Fiberstar_PO' || $id_menu == 'Fiberstar_Project' || $id_menu == 'Fiberstar_Project_Detail') {
