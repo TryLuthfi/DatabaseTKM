@@ -7,14 +7,39 @@ class MGA_Aset_Kendaraan extends CI_Model
     public function getMasterAsetKendaraan()
     {
         $data = $this->db->query('select * from tb_aset_kendaraan join tb_kode_aset on tb_aset_kendaraan.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset')
-                                    ->result_array();
+            ->result_array();
         return $data;
     }
 
-    public function getMasterBowheer()
+    public function getCountAsetKendaraan()
     {
-        $data = $this->db->query('SELECT * FROM tb_master_bowheer;')
-                                    ->result_array();
+        $data = $this->db->query('SELECT 
+    tb_kode_aset.ka_id_kode_aset,
+    tb_kode_aset.ka_nama_kode_aset,
+    tb_kode_aset.ka_jenis_aset,-- opsional, bisa ganti sesuai kolommu
+    COUNT(tb_aset_kendaraan.ka_id_kode_aset) AS total_aset_kendaraan
+FROM tb_aset_kendaraan
+JOIN tb_kode_aset 
+    ON tb_aset_kendaraan.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset
+GROUP BY tb_kode_aset.ka_id_kode_aset 
+ORDER BY tb_kode_aset.ka_id_kode_aset ASC;')
+            ->result_array();
+        return $data;
+    }
+
+    public function getCountAsetKendaraanByReg()
+    {
+        $data = $this->db->query('SELECT 
+    tb_aset_kendaraan.ak_area,
+    SUM(CASE WHEN tb_kode_aset.ka_jenis_aset = "MOBIL" THEN 1 ELSE 0 END) AS mobil,
+    SUM(CASE WHEN tb_kode_aset.ka_jenis_aset = "MOTOR" THEN 1 ELSE 0 END) AS motor,
+    COUNT(tb_aset_kendaraan.ka_id_kode_aset) AS total_aset
+FROM tb_aset_kendaraan
+JOIN tb_kode_aset 
+    ON tb_aset_kendaraan.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset
+GROUP BY tb_aset_kendaraan.ak_area
+ORDER BY tb_aset_kendaraan.ak_area ASC;')
+            ->result_array();
         return $data;
     }
 
@@ -23,7 +48,7 @@ class MGA_Aset_Kendaraan extends CI_Model
         $data = $this->db->query('SELECT * FROM tb_master_bowheer
                                     WHERE nama_bowheer IN ("PT. IFORTE","PT. TKM","PT. EKA MAS REPUBLIK")
                                     ORDER BY id_bowheer DESC;')
-                                    ->result_array();
+            ->result_array();
         return $data;
     }
 

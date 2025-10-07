@@ -2,9 +2,6 @@
 $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
-$satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
-$kategori_item = ['Tiang', 'OTB ', 'Kabel ', 'HDPE ', 'FDT', 'FAT', 'Closure', 'Aksesories '];
-
 $total = 1;
 ?>
 
@@ -26,6 +23,7 @@ $total = 1;
                 <div class="row">
                     <div class="clearfix hidden-md-up"></div>
 
+
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header">
@@ -45,39 +43,48 @@ $total = 1;
                                     <thead>
                                         <tr>
                                             <th>No</th>
-                                            <th>Kode Aset</th>
-                                            <th>Tipe Aset</th>
-                                            <th>Jenis Aset</th>
-                                            <th>Aksi</th>
+                                            <th>Kode</th>
+                                            <th>Merk Kendaraan</th>
+                                            <th>NOPOL</th>
+                                            <th>PIC</th>
+                                            <th>Area</th>
+                                            <th>Status</th>
+                                            <th>Detail</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php
-                                        foreach ($getMasterKodeAset as $data):
-                                            ?>
-                                            <tr>
-                                                <td><?= $total++ ?></td>
-                                                <td><?= $data['ka_nama_kode_aset'] ?></td>
-                                                <td><?= $data['ka_jenis_aset'] ?></td>
-                                                <td><?= $data['ka_tipe_kode_aset'] ?></td>
-                                                <td>
-                                                    <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                        id="tombol_hapus" class="btn btn-danger tombol_hapus" style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i
-                                                            class=" fas fa-trash"></i></a>
-                                                    <a href="#" class="btn btn-warning" style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                        data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
-                                                        data-toggle="modal"><i class="fas fa-edit"></i></a>
-                                                </td>
-                                            </tr>
+                                        foreach ($getMasterAsetKendaraan as $data):
+                                            if ($data['ka_jenis_aset'] == $getKategoriKendaraan):
+                                                ?>
+                                                <tr>
+                                                    <td><?= $total++ ?></td>
+                                                    <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
+                                                    <td><?= $data['ak_merk'] ?></td>
+                                                    <td><?= $data['ak_plat_nomor'] ?></td>
+                                                    <td><?= $data['ak_pic'] ?></td>
+                                                    <td><?= $data['ak_area'] ?></td>
+                                                    <td><?= $data['ak_status_aset'] ?></td>
+                                                    <td>
+                                                        <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>" style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                class=" fas fa-trash"></i></a>
+                                                        <a href="#" class="btn btn-warning" style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                            data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
+                                                            data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <a href="#" class="btn btn-primary" style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                            data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
+                                                            data-toggle="modal"><i class="fas fa-eye"></i></a>
+                                                    </td>
+                                                </tr>
 
-                                        <?php endforeach; ?>
+                                            <?php endif; endforeach; ?>
 
                                     </tbody>
                                     <tfoot>
                                         <tr>
                                             <th colspan="2">Total</th>
-                                            <th colspan="2"><?= number_format($total - 1, 0, ',', '.') ?></th>
-                                            <th colspan="1"></th>
+                                            <th colspan="6"><?= number_format($total - 1, 0, ',', '.') ?></th>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -85,6 +92,7 @@ $total = 1;
                             <!-- /.card-body -->
                         </div>
                     </div>
+
                 </div>
         </section>
 
@@ -127,8 +135,8 @@ $total = 1;
                             </div>
                             <div class="form-group">
                                 <label class="col-form-label">Penggunaan Project</label>
-                                <select name="project_item" class="form-control"
-                                    data-placeholder="Pilih Bowheer" style="width: 100%;">
+                                <select name="project_item" class="form-control" data-placeholder="Pilih Bowheer"
+                                    style="width: 100%;">
                                     <?php foreach ($getMasterBowheer as $data): ?>
                                         <option value="<?php echo $data['nama_bowheer'] ?>">
                                             <?php echo $data['nama_bowheer'] ?>
@@ -139,7 +147,7 @@ $total = 1;
                             <div class="form-group">
                                 <label class="col-form-label">Kepemilikan Item</label>
                                 <select name="id_bowheer_pemilik_item" class="form-control">
-                                <?php foreach ($getMasterBowheer as $data): ?>
+                                    <?php foreach ($getMasterBowheer as $data): ?>
                                         <option value="<?php echo $data['id_bowheer'] ?>">
                                             <?php echo $data['nama_bowheer'] ?>
                                         </option>
@@ -203,6 +211,77 @@ $total = 1;
         <?php } else { ?>
         <?php } ?>
     })
+
+    $(document).ready(function () {
+        $('#table_detail_kota').DataTable({
+            "paging": true, // Tetap gunakan pagination
+            "pageLength": 10, // Menampilkan 10 data per halaman
+            "info": false, // Menghilangkan "Showing 1 to X of X entries"
+            "searching": true, // Menghilangkan search bar
+            "lengthChange": false // Menghilangkan dropdown "Show entries"
+        });
+    });
+
+    $(document).ready(function () {
+        $.fn.dataTable.ext.errMode = 'none';
+        const table = $('#table_detail_kota').DataTable({
+            footerCallback: function () {
+                updateTotal();
+            }
+        });
+
+        // Fungsi untuk menghitung total dari data yang tampil
+        function updateTotal() {
+            // Ambil semua data yang terlihat
+            const table = $('#table_detail_kota').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                }
+            });
+
+            const data = table.rows({
+                search: 'applied'
+            }).data();
+
+            // Hitung total dari kolom Value (index 2)
+            let totalTabelMobil = 0;
+            let totalTabelMotor = 0;
+
+
+            data.each(function (row) {
+
+                totalTabelMobil += parseFloat(row[2].replace(/\./g, '')) || 0;
+                totalTabelMotor += parseFloat(row[3].replace(/\./g, '')) || 0;
+            });
+
+            document.getElementById('totalTabelMobil').innerText = totalTabelMobil.toLocaleString('id-ID');
+            document.getElementById('totalTabelMotor').innerText = totalTabelMotor.toLocaleString('id-ID');
+        }
+
+        // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+        table.on('draw', function () {
+            updateTotal();
+        });
+
+        // Hitung total pertama kali saat tabel dimuat
+        updateTotal();
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        <?php foreach ($getCountAsetKendaraan as $stokKendaraan): ?>
+            var boxElement = document.getElementById("box_detail_kendaraan_<?= $stokKendaraan['ka_jenis_aset'] ?>");
+
+            if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
+                boxElement.addEventListener("click", function () {
+                    console.log("<?= $stokKendaraan['ka_jenis_aset'] ?>");
+
+                    window.location.href = "<?= base_url("GA_Aset_Kendaraan/detailKendaraan/" . $stokKendaraan['ka_jenis_aset']) ?>";
+
+                });
+            }
+        <?php endforeach; ?>
+    });
+
 </script>
 
 

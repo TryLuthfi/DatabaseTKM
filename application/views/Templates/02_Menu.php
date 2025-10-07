@@ -236,10 +236,10 @@ $id_menu = $this->uri->segment('1');
 
                     <li class="nav-header">General Affair</li>
 
-                    <li class="nav-item has-treeview <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
+                    <li class="nav-item has-treeview <?php if ($id_menu == 'Master_GA_Aset' || $id_menu == 'Master_GA_Aset') {
                         echo "menu-open";
                     } ?>">
-                        <a href="#" class="nav-link <?php if ($id_menu == 'MyRepublik_PO' || $id_menu == 'MyRepublik_Project') {
+                        <a href="#" class="nav-link <?php if ($id_menu == 'Master_GA_Aset' || $id_menu == 'Master_GA_Aset') {
                             echo "active";
                         } ?>">
                             <i class="nav-icon fas fa-money-check-alt"></i>
@@ -287,7 +287,7 @@ $id_menu = $this->uri->segment('1');
                         </a>
                     </li>
 
-                    <li class="nav-item">
+                    <li class="nav-item" style="pointer-events: none">
                         <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok') {
                               echo "active";
                           } ?>">
@@ -335,7 +335,7 @@ $id_menu = $this->uri->segment('1');
                             </li>
                         </ul>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" style="pointer-events: none">
                         <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok') {
                               echo "active";
                           } ?>">

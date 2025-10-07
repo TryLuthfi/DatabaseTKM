@@ -15,17 +15,46 @@ class GA_Aset_Kendaraan extends CI_Controller
     {
         if (!empty($this->session->userdata('id_user'))) {
 
-        $data['title'] = 'Kode Aset';
-        $data['judul'] = 'Kode Aset';
+        $data['title'] = 'Aset Kendaraan';
+        $data['judul'] = 'Aset Kendaraan';
         $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getMasterAsetKendaraan();
-        $data['getMasterBowheer'] = $this->MGA_Aset_Kendaraan->getMasterBowheer();
-        $data['getMasterKepemilikan'] = $this->MGA_Aset_Kendaraan->getMasterKepemilikan();
+        $data['getCountAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraan();
+        $data['getCountAsetKendaraanByReg'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByReg();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
         $this->load->view('GA_Aset_Kendaraan/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+        } else {
+            redirect('Auth');
+        }
+    }
+
+    public function detailKendaraan($kategori_item)
+    {
+
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $decoded_url_area = urldecode($last_segment);
+
+        if (!empty($this->session->userdata('id_user'))) {
+
+            $data['title'] = 'Aset Kendaraan ' . strtoupper($decoded_url_area);
+            $data['judul'] = 'Aset Kendaraan ' . $decoded_url_area;
+            $data['getKategoriKendaraan'] = strtoupper($decoded_url_area);
+            $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getMasterAsetKendaraan();
+        $data['getCountAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraan();
+        $data['getCountAsetKendaraanByReg'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByReg();
+
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('GA_Aset_Kendaraan/indexkendaraan', $data);
+            // $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
+
         } else {
             redirect('Auth');
         }
