@@ -266,7 +266,7 @@ $id_menu = $this->uri->segment('1');
                     </li>
 
                     <li class="nav-item">
-                        <a href="<?= base_url('Logistik_Purchase_Request') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Purchase_Request') {
+                        <a href="<?= base_url('GA_Aset_Kendaraan') ?>" class="nav-link <?php if ($id_menu == 'GA_Aset_Kendaraan') {
                                                                                                     echo "active";
                                                                                                 } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>

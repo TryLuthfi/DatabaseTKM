@@ -1,12 +1,12 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-class MMaster_GA_Aset extends CI_Model
+class MGA_Aset_Kendaraan extends CI_Model
 {
 
-    public function getMasterKodeAset()
+    public function getMasterAsetKendaraan()
     {
-        $data = $this->db->query('SELECT * FROM tb_kode_aset;')
+        $data = $this->db->query('select * from tb_aset_kendaraan join tb_kode_aset on tb_aset_kendaraan.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset')
                                     ->result_array();
         return $data;
     }
@@ -29,19 +29,19 @@ class MMaster_GA_Aset extends CI_Model
 
     public function tambahKodeItem($data_array)
     {
-        $res = $this->db->insert("tb_master_GA_Aset", $data_array);
+        $res = $this->db->insert("tb_GA_Aset_Kendaraan", $data_array);
         return $res;
     }
 
     public function hapusKodeItem($id_kode_item)
     {
-        $res = $this->db->delete("tb_master_GA_Aset", $id_kode_item);
+        $res = $this->db->delete("tb_GA_Aset_Kendaraan", $id_kode_item);
         return $res;
     }
 
     public function editKodeItem($data_array, $id_kode_item)
     {
-        $res = $this->db->update("tb_master_GA_Aset", $data_array, $id_kode_item);
+        $res = $this->db->update("tb_GA_Aset_Kendaraan", $data_array, $id_kode_item);
         return $res;
     }
 

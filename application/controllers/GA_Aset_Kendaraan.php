@@ -1,14 +1,14 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-class Master_GA_Aset extends CI_Controller
+class GA_Aset_Kendaraan extends CI_Controller
 {
 
     public function __construct()
     {
         parent::__construct();
         $this->load->library('form_validation');
-        $this->load->model('MMaster_GA_Aset');
+        $this->load->model('MGA_Aset_Kendaraan');
     }
     
     public function index()
@@ -17,13 +17,13 @@ class Master_GA_Aset extends CI_Controller
 
         $data['title'] = 'Kode Aset';
         $data['judul'] = 'Kode Aset';
-        $data['getMasterKodeAset'] = $this->MMaster_GA_Aset->getMasterKodeAset();
-        $data['getMasterBowheer'] = $this->MMaster_GA_Aset->getMasterBowheer();
-        $data['getMasterKepemilikan'] = $this->MMaster_GA_Aset->getMasterKepemilikan();
+        $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getMasterAsetKendaraan();
+        $data['getMasterBowheer'] = $this->MGA_Aset_Kendaraan->getMasterBowheer();
+        $data['getMasterKepemilikan'] = $this->MGA_Aset_Kendaraan->getMasterKepemilikan();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
-        $this->load->view('Master_GA_Aset/index', $data);
+        $this->load->view('GA_Aset_Kendaraan/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
         } else {
@@ -46,14 +46,14 @@ class Master_GA_Aset extends CI_Controller
             'project_item' => $_POST['project_item']
         );
 
-        $res = $this->MMaster_GA_Aset->tambahKodeItem($hasil_data);
+        $res = $this->MGA_Aset_Kendaraan->tambahKodeItem($hasil_data);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_tambah');
-            redirect("Master_GA_Aset");
+            redirect("GA_Aset_Kendaraan");
         } else {
             $this->session->set_flashdata('status', 'gagal_tambah');
-            redirect("Master_GA_Aset");
+            redirect("GA_Aset_Kendaraan");
         }
     }
 
@@ -79,28 +79,28 @@ class Master_GA_Aset extends CI_Controller
         );
 
         $where = array('id_kode_item' => $id_kode_item);
-        $res = $this->MMaster_GA_Aset->editKodeItem($data_array, $where);
+        $res = $this->MGA_Aset_Kendaraan->editKodeItem($data_array, $where);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_edit');
-            redirect("Master_GA_Aset");
+            redirect("GA_Aset_Kendaraan");
         } else {
             $this->session->set_flashdata('status', 'gagal_edit');
-            redirect("Master_GA_Aset");
+            redirect("GA_Aset_Kendaraan");
         }
     }
 
     public function hapusKodeItem($id_kode_item)
     {
         $id_kode_item = array('id_kode_item' => $id_kode_item);
-        $res = $this->MMaster_GA_Aset->hapusKodeItem($id_kode_item);
+        $res = $this->MGA_Aset_Kendaraan->hapusKodeItem($id_kode_item);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_hapus');
-            redirect("Master_GA_Aset");
+            redirect("GA_Aset_Kendaraan");
         } else {
             $this->session->set_flashdata('status', 'gagal_hapus');
-            redirect("Master_GA_Aset");
+            redirect("GA_Aset_Kendaraan");
         }
     }
 }

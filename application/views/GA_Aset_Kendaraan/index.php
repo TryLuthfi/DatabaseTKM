@@ -53,7 +53,7 @@ $total = 1;
                                     </thead>
                                     <tbody>
                                         <?php
-                                        foreach ($getMasterKodeAset as $data):
+                                        foreach ($getMasterAsetKendaraan as $data):
                                             ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
