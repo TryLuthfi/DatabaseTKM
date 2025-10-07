@@ -395,9 +395,8 @@ $total = 1;
                                                                                 }
                                                                                 ?></td>
                                                                                 <td>
-                                                                                    <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['ak_area']); ?>"
-                                                                                        class="btn btn-primary disable"
-                                                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i
+                                                                                    <a href="<?php echo site_url('GA_Aset_Kendaraan/areaKendaraan/' . $data['ak_area']) ?>"
+                                                                                        class="btn btn-primary"><i
                                                                                             class=" fas fa-eye"></i></a>
                                                                                 </td>
                                                                             </tr>

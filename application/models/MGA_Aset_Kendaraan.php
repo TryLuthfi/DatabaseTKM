@@ -11,6 +11,27 @@ class MGA_Aset_Kendaraan extends CI_Model
         return $data;
     }
 
+    public function getMasterAsetKendaraanFilter()
+    {
+
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $filter_area = "ak_area";
+        $decoded_url_area = urldecode($last_segment);
+
+        if (stripos($decoded_url_area, "regional") !== false) {
+            $filter_area = "ak_regional";
+        } else {
+            $filter_area = "ak_area";
+        }
+
+        $data = $this->db->query('select * from tb_aset_kendaraan join tb_kode_aset on tb_aset_kendaraan.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset WHERE ' . $filter_area . ' = "' . $decoded_url_area . '"')
+            ->result_array();
+        return $data;
+    }
+
     public function getCountAsetKendaraan()
     {
         $data = $this->db->query('SELECT 
