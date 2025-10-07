@@ -12,13 +12,6 @@ $total = 1;
 
     <div class="content">
         <div class="content-header">
-            <div class="container-fluid">
-                <div class="row mb-2">
-                    <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><?= $judul ?></h1>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <section class="content">
@@ -42,37 +35,198 @@ $total = 1;
                                         </div>
                                     </div>
 
+                                    <div class="content-header">
+                                        <div class="container-fluid">
+                                            <div class="row mb-2">
+                                                <div class="col-sm-6">
+                                                    <h1 class="m-0 text-dark" style="text-align: center;">RODA 4 - MOBIL
+                                                    </h1>
+                                                </div><!-- /.col -->
+                                                <div class="col-sm-6">
+                                                    <h1 class="m-0 text-dark" style="text-align: center;">RODA 2 - MOTOR
+                                                    </h1>
+                                                </div><!-- /.col -->
+                                            </div><!-- /.row -->
+                                        </div><!-- /.container-fluid -->
+                                    </div>
+
                                     <div class="card-body" style="margin-top:10px;">
+
                                         <div class="container-fluid">
                                             <!-- Info boxes -->
                                             <div class="row">
                                                 <?php
                                                 foreach ($getCountAsetKendaraan as $stokKendaraan):
 
-                                                    $total_stok_kendaraan[$stokKendaraan['ka_jenis_aset']] = number_format(floatval($stokKendaraan['total_aset_kendaraan']), 0, ",", ".");
-                                                    ?>
-                                                    <div class="col-lg-3 col-6">
-                                                        <div class="small-box bg-info">
-                                                            <div class="inner">
+                                                    if ($stokKendaraan['ka_jenis_aset'] == "MOBIL"):
+
+                                                        $total_stok_kendaraan[$stokKendaraan['ka_jenis_aset']] = number_format(floatval($stokKendaraan['jml_aktif']), 0, ",", ".");
+                                                        ?>
+                                                        <div class="col-lg-3 col-6">
+                                                            <div class="small-box bg-info">
+                                                                <div class="inner">
 
 
-                                                                <h3
-                                                                    id="<?php echo 'total_dashboard_' . $stokKendaraan['ka_jenis_aset'] ?>">
-                                                                    <?= number_format(floatval($stokKendaraan['total_aset_kendaraan']), 0, ",", ".")?>
-                                                                </h3>
+                                                                    <h3
+                                                                        id="<?php echo 'total_dashboard_' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                        <?= number_format(floatval($stokKendaraan['jml_aktif']), 0, ",", ".") ?>
+                                                                    </h3>
 
 
-                                                                <p><?= $stokKendaraan['ka_jenis_aset'] ?></p>
+                                                                    <p><?= $stokKendaraan['ka_jenis_aset'] ?></p>
+                                                                </div>
+                                                                <div class="icon">
+                                                                    <i class="ion ion-bag"></i>
+                                                                </div>
+                                                                <a href="#" class="small-box-footer"
+                                                                    id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
+                                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
                                                             </div>
-                                                            <div class="icon">
-                                                                <i class="ion ion-bag"></i>
-                                                            </div>
-                                                            <a href="#" class="small-box-footer"
-                                                                id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
-                                                                Detail <i class="fas fa-arrow-circle-right"></i></a>
                                                         </div>
+                                                    <?php endif; endforeach; ?>
+
+                                                <div class="col-lg-3 col-6">
+                                                    <div class="small-box bg-info">
+
                                                     </div>
-                                                <?php endforeach ?>
+                                                </div>
+
+                                                <?php
+                                                foreach ($getCountAsetKendaraan as $stokKendaraan):
+
+                                                    if ($stokKendaraan['ka_jenis_aset'] == "MOTOR"):
+
+                                                        $total_stok_kendaraan[$stokKendaraan['ka_jenis_aset']] = number_format(floatval($stokKendaraan['jml_aktif']), 0, ",", ".");
+                                                        ?>
+                                                        <div class="col-lg-3 col-6">
+                                                            <div class="small-box bg-info">
+                                                                <div class="inner">
+
+
+                                                                    <h3
+                                                                        id="<?php echo 'total_dashboard_' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                        <?= number_format(floatval($stokKendaraan['jml_aktif']), 0, ",", ".") ?>
+                                                                    </h3>
+
+
+                                                                    <p><?= $stokKendaraan['ka_jenis_aset'] ?></p>
+                                                                </div>
+                                                                <div class="icon">
+                                                                    <i class="ion ion-bag"></i>
+                                                                </div>
+                                                                <a href="#" class="small-box-footer"
+                                                                    id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
+                                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
+                                                            </div>
+                                                        </div>
+                                                    <?php endif; endforeach ?>
+
+                                            </div>
+                                        </div>
+
+                                        <div class="container-fluid">
+                                            <!-- Info boxes -->
+                                            <div class="row">
+                                                <?php
+                                                foreach ($getCountAsetKendaraan as $stokKendaraan):
+
+                                                    if ($stokKendaraan['ka_jenis_aset'] == "MOBIL"):
+
+                                                        $total_stok_kendaraan[$stokKendaraan['ka_jenis_aset']] = number_format(floatval($stokKendaraan['jml_baik']), 0, ",", ".");
+                                                        ?>
+                                                        <div class="col-lg-3 col-6">
+                                                            <div class="small-box bg-success">
+                                                                <div class="inner">
+
+
+                                                                    <h3
+                                                                        id="<?php echo 'total_dashboard_' . $stokKendaraan['jml_baik'] ?>">
+                                                                        <?= number_format(floatval($stokKendaraan['jml_baik']), 0, ",", ".") ?>
+                                                                    </h3>
+
+
+                                                                    <p>Kondisi Baik</p>
+                                                                </div>
+                                                                <div class="icon">
+                                                                    <i class="ion ion-bag"></i>
+                                                                </div>
+                                                                <a href="#" class="small-box-footer"
+                                                                    id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
+                                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-lg-3 col-6">
+                                                            <div class="small-box bg-warning">
+                                                                <div class="inner">
+
+
+                                                                    <h3
+                                                                        id="<?php echo 'total_dashboard_' . $stokKendaraan['jml_rusak'] ?>">
+                                                                        <?= number_format(floatval($stokKendaraan['jml_rusak']), 0, ",", ".") ?>
+                                                                    </h3>
+
+
+                                                                    <p>Kondisi Rusak</p>
+                                                                </div>
+                                                                <div class="icon">
+                                                                    <i class="ion ion-bag"></i>
+                                                                </div>
+                                                                <a href="#" class="small-box-footer"
+                                                                    id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
+                                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
+                                                            </div>
+                                                        </div>
+                                                    <?php endif; endforeach; ?>
+                                                <?php
+                                                foreach ($getCountAsetKendaraan as $stokKendaraan):
+
+                                                    if ($stokKendaraan['ka_jenis_aset'] == "MOTOR"):
+
+                                                        $total_stok_kendaraan[$stokKendaraan['ka_jenis_aset']] = number_format(floatval($stokKendaraan['jml_baik']), 0, ",", ".");
+                                                        ?>
+                                                        <div class="col-lg-3 col-6">
+                                                            <div class="small-box bg-success">
+                                                                <div class="inner">
+
+
+                                                                    <h3
+                                                                        id="<?php echo 'total_dashboard_' . $stokKendaraan['jml_baik'] ?>">
+                                                                        <?= number_format(floatval($stokKendaraan['jml_baik']), 0, ",", ".") ?>
+                                                                    </h3>
+
+
+                                                                    <p>Kondisi Baik</p>
+                                                                </div>
+                                                                <div class="icon">
+                                                                    <i class="ion ion-bag"></i>
+                                                                </div>
+                                                                <a href="#" class="small-box-footer"
+                                                                    id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
+                                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-lg-3 col-6">
+                                                            <div class="small-box bg-warning">
+                                                                <div class="inner">
+
+
+                                                                    <h3
+                                                                        id="<?php echo 'total_dashboard_' . $stokKendaraan['jml_rusak'] ?>">
+                                                                        <?= number_format(floatval($stokKendaraan['jml_rusak']), 0, ",", ".") ?>
+                                                                    </h3>
+
+
+                                                                    <p>Kondisi Rusak</p>
+                                                                </div>
+                                                                <div class="icon">
+                                                                    <i class="ion ion-bag"></i>
+                                                                </div>
+                                                                <a href="#" class="small-box-footer"
+                                                                    id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
+                                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
+                                                            </div>
+                                                        </div>
+                                                    <?php endif; endforeach; ?>
 
                                             </div>
                                         </div>
@@ -81,7 +235,8 @@ $total = 1;
                                             <div class="container-fluid">
                                                 <div class="row mb-2">
                                                     <div class="col-sm-12">
-                                                        <h1 class="m-0 text-dark" style="text-align: center;">DISTRIBUSI KENDARAAN</h1>
+                                                        <h1 class="m-0 text-dark" style="text-align: center;">DISTRIBUSI
+                                                            KENDARAAN</h1>
                                                     </div><!-- /.col -->
                                                 </div><!-- /.row -->
                                             </div><!-- /.container-fluid -->
@@ -117,33 +272,34 @@ $total = 1;
                                                                         foreach ($getCountAsetKendaraanByReg as $data):
                                                                             if (!in_array($data['ak_area'], ['Terjual', 'Hilang'])):
 
-                                                                            ?>
+                                                                                ?>
 
-                                                                            <tr>
-                                                                                <td><?= $total++ ?></td>
-                                                                                <td><?= $data['ak_area'] ?></td>
-                                                                                <td><?php
-                                                                                if ($data['mobil'] == "0") {
-                                                                                    echo "-";
-                                                                                } else {
-                                                                                    echo number_format(floatval($data['mobil']), 0, ",", ".");
-                                                                                }
-                                                                                ?></td>
-                                                                                <td><?php
-                                                                                if ($data['motor'] == "0") {
-                                                                                    echo "-";
-                                                                                } else {
-                                                                                    echo number_format(floatval($data['motor']), 0, ",", ".");
-                                                                                }
-                                                                                ?></td>
-                                                                                <td>
-                                                                                    <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['ak_area']); ?>"
-                                                                                        class="btn btn-primary disable" style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i
-                                                                                            class=" fas fa-eye"></i></a>
-                                                                                </td>
-                                                                            </tr>
+                                                                                <tr>
+                                                                                    <td><?= $total++ ?></td>
+                                                                                    <td><?= $data['ak_area'] ?></td>
+                                                                                    <td><?php
+                                                                                    if ($data['mobil'] == "0") {
+                                                                                        echo "-";
+                                                                                    } else {
+                                                                                        echo number_format(floatval($data['mobil']), 0, ",", ".");
+                                                                                    }
+                                                                                    ?></td>
+                                                                                    <td><?php
+                                                                                    if ($data['motor'] == "0") {
+                                                                                        echo "-";
+                                                                                    } else {
+                                                                                        echo number_format(floatval($data['motor']), 0, ",", ".");
+                                                                                    }
+                                                                                    ?></td>
+                                                                                    <td>
+                                                                                        <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['ak_area']); ?>"
+                                                                                            class="btn btn-primary disable"
+                                                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i
+                                                                                                class=" fas fa-eye"></i></a>
+                                                                                    </td>
+                                                                                </tr>
 
-                                                                        <?php endif; endforeach; ?>
+                                                                            <?php endif; endforeach; ?>
 
                                                                     </tbody>
                                                                     <tfoot>
@@ -174,7 +330,7 @@ $total = 1;
                         </div>
                     </div>
 
-                    
+
 
                 </div>
         </section>
@@ -295,7 +451,7 @@ $total = 1;
         <?php } ?>
     })
 
-    $(document).ready(function() {
+    $(document).ready(function () {
         $('#table_detail_kota').DataTable({
             "paging": true, // Tetap gunakan pagination
             "pageLength": 10, // Menampilkan 10 data per halaman
@@ -305,10 +461,10 @@ $total = 1;
         });
     });
 
-    $(document).ready(function() {
+    $(document).ready(function () {
         $.fn.dataTable.ext.errMode = 'none';
         const table = $('#table_detail_kota').DataTable({
-            footerCallback: function() {
+            footerCallback: function () {
                 updateTotal();
             }
         });
@@ -317,7 +473,7 @@ $total = 1;
         function updateTotal() {
             // Ambil semua data yang terlihat
             const table = $('#table_detail_kota').DataTable({
-                footerCallback: function() {
+                footerCallback: function () {
                     updateTotal();
                 }
             });
@@ -331,7 +487,7 @@ $total = 1;
             let totalTabelMotor = 0;
 
 
-            data.each(function(row) {
+            data.each(function (row) {
 
                 totalTabelMobil += parseFloat(row[2].replace(/\./g, '')) || 0;
                 totalTabelMotor += parseFloat(row[3].replace(/\./g, '')) || 0;
@@ -342,7 +498,7 @@ $total = 1;
         }
 
         // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
-        table.on('draw', function() {
+        table.on('draw', function () {
             updateTotal();
         });
 
@@ -350,15 +506,15 @@ $total = 1;
         updateTotal();
     });
 
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
         <?php foreach ($getCountAsetKendaraan as $stokKendaraan): ?>
             var boxElement = document.getElementById("box_detail_kendaraan_<?= $stokKendaraan['ka_jenis_aset'] ?>");
 
             if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
-                boxElement.addEventListener("click", function() {
+                boxElement.addEventListener("click", function () {
                     console.log("<?= $stokKendaraan['ka_jenis_aset'] ?>");
 
-                        window.location.href = "<?= base_url("GA_Aset_Kendaraan/detailKendaraan/" . $stokKendaraan['ka_jenis_aset']) ?>";
+                    window.location.href = "<?= base_url("GA_Aset_Kendaraan/detailKendaraan/" . $stokKendaraan['ka_jenis_aset']) ?>";
 
                 });
             }

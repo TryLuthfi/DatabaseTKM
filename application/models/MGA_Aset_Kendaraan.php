@@ -16,12 +16,20 @@ class MGA_Aset_Kendaraan extends CI_Model
         $data = $this->db->query('SELECT 
     tb_kode_aset.ka_id_kode_aset,
     tb_kode_aset.ka_nama_kode_aset,
-    tb_kode_aset.ka_jenis_aset,-- opsional, bisa ganti sesuai kolommu
+    tb_kode_aset.ka_jenis_aset,
+    SUM(CASE WHEN tb_aset_kendaraan.ak_kondisi_aset = "BAIK" THEN 1 ELSE 0 END) AS jml_baik,
+    SUM(CASE WHEN tb_aset_kendaraan.ak_kondisi_aset = "RUSAK" THEN 1 ELSE 0 END) AS jml_rusak,
+    SUM(CASE WHEN tb_aset_kendaraan.ak_status_aset = "AKTIF" THEN 1 ELSE 0 END) AS jml_aktif,
+    SUM(CASE WHEN tb_aset_kendaraan.ak_status_aset = "TERJUAL" THEN 1 ELSE 0 END) AS jml_terjual,
+    SUM(CASE WHEN tb_aset_kendaraan.ak_status_aset = "HILANG" THEN 1 ELSE 0 END) AS jml_hilang,
     COUNT(tb_aset_kendaraan.ka_id_kode_aset) AS total_aset_kendaraan
 FROM tb_aset_kendaraan
 JOIN tb_kode_aset 
     ON tb_aset_kendaraan.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset
-GROUP BY tb_kode_aset.ka_id_kode_aset 
+GROUP BY 
+    tb_kode_aset.ka_id_kode_aset,
+    tb_kode_aset.ka_nama_kode_aset,
+    tb_kode_aset.ka_jenis_aset
 ORDER BY tb_kode_aset.ka_id_kode_aset ASC;')
             ->result_array();
         return $data;
