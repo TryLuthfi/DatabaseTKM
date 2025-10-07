@@ -45,7 +45,7 @@ class GA_Aset_Kendaraan extends CI_Controller
 
             $data['title'] = 'Aset Kendaraan ' . strtoupper($decoded_url_area);
             $data['judul'] = 'Aset Kendaraan ' . $decoded_url_area;
-            $data['getKategoriKendaraan'] = "A".strtoupper($decoded_url_area);
+            $data['getKategoriKendaraan'] = strtoupper($decoded_url_area);
             $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getMasterAsetKendaraan();
             $data['getCountAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraan();
             $data['getCountAsetKendaraanByKota'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByKota();

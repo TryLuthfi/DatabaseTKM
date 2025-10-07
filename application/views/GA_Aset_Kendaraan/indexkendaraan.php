@@ -2,29 +2,32 @@
 $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
-$option_aktif = ['AKTIF','HILANG','TERJUAL'];
+$option_aktif = ['AKTIF', 'HILANG', 'TERJUAL'];
 
-$prefix = substr($getKategoriKendaraan, 0, 1);
-$kategori = substr($getKategoriKendaraan, 1);
+$prefix = substr($getKategoriKendaraan, 0, 1); // A
+$kategori = substr($getKategoriKendaraan, 1); // MOBIL
 $substatus = '';
 $subkondisi = '';
 
-if ($kategori == 'A') {
+if ($prefix == 'A') {
     $substatus = 'AKTIF';
-} elseif ($kategori == 'H') {
+} elseif ($prefix == 'H') {
     $substatus = 'HILANG';
-} elseif ($kategori == 'T') {
+} elseif ($prefix == 'T') {
     $substatus = 'TERJUAL';
-} elseif ($kategori == 'B') {
+} elseif ($prefix == 'B') {
     $subkondisi = 'BAIK';
-} elseif ($kategori == 'R') {
+} elseif ($prefix == 'R') {
     $subkondisi = 'RUSAK';
 } else {
-    $subkategori = '';
+    $substatus = '';
+    $subkondisi = '';
 }
 
 $total = 1;
 ?>
+
+<script>alert(<?= $getKategoriKendaraan ?>);</script>
 
 <div class="content-wrapper">
 
@@ -33,7 +36,7 @@ $total = 1;
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><?= $judul ?></h1>
+                        <h1 class="m-0 text-dark"><?= $kategori = substr($getKategoriKendaraan, 1); ?></h1>
                     </div>
                 </div>
             </div>
@@ -77,32 +80,59 @@ $total = 1;
                                     <tbody>
                                         <?php
                                         foreach ($getMasterAsetKendaraan as $data):
-                                            if ($data['ka_jenis_aset'] == $kategori && $data['ak_status_aset'] == 'AKTIF'):
-                                                ?>
-                                                <tr>
-                                                    <td><?= $total++ ?></td>
-                                                    <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
-                                                    <td><?= $data['ak_merk'] ?></td>
-                                                    <td><?= $data['ak_plat_nomor'] ?></td>
-                                                    <td><?= $data['ak_pic'] ?></td>
-                                                    <td><?= $data['ak_area'] ?></td>
-                                                    <td><?= $data['ak_status_aset'] ?></td>
-                                                    <td>
-                                                        <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                                class=" fas fa-trash"></i></a>
-                                                        <a href="#" class="btn btn-warning"
-                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                            data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
-                                                            data-toggle="modal"><i class="fas fa-edit"></i></a>
-                                                        <a href="#" class="btn btn-primary"
-                                                            data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
-                                                            data-toggle="modal"><i class="fas fa-eye"></i></a>
-                                                    </td>
-                                                </tr>
+                                            if ($substatus != '') {
+                                                if ($data['ka_jenis_aset'] == $kategori && $data['ak_status_aset'] == $substatus) { ?>
+                                                    <tr>
+                                                        <td><?= $total++ ?></td>
+                                                        <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
+                                                        <td><?= $data['ak_merk'] ?></td>
+                                                        <td><?= $data['ak_plat_nomor'] ?></td>
+                                                        <td><?= $data['ak_pic'] ?></td>
+                                                        <td><?= $data['ak_area'] ?></td>
+                                                        <td><?= $data['ak_status_aset'] ?></td>
+                                                        <td>
+                                                            <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                                id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                    class=" fas fa-trash"></i></a>
+                                                            <a href="#" class="btn btn-warning"
+                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                                data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
+                                                                data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                            <a href="#" class="btn btn-primary"
+                                                                data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
+                                                                data-toggle="modal"><i class="fas fa-eye"></i></a>
+                                                        </td>
+                                                    </tr>
 
-                                            <?php endif; endforeach; ?>
+                                                <?php }
+                                            } else if ($subkondisi != '') {
+                                                if ($data['ka_jenis_aset'] == $kategori && $data['ak_kondisi_aset'] == $subkondisi) { ?>
+                                                        <tr>
+                                                            <td><?= $total++ ?></td>
+                                                            <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
+                                                            <td><?= $data['ak_merk'] ?></td>
+                                                            <td><?= $data['ak_plat_nomor'] ?></td>
+                                                            <td><?= $data['ak_pic'] ?></td>
+                                                            <td><?= $data['ak_area'] ?></td>
+                                                            <td><?= $data['ak_status_aset'] ?></td>
+                                                            <td>
+                                                                <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                                    style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                                    id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                        class=" fas fa-trash"></i></a>
+                                                                <a href="#" class="btn btn-warning"
+                                                                    style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                                    data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
+                                                                    data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                                <a href="#" class="btn btn-primary"
+                                                                    data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
+                                                                    data-toggle="modal"><i class="fas fa-eye"></i></a>
+                                                            </td>
+                                                        </tr>
+                                                <?php }
+                                            }
+                                        endforeach; ?>
 
                                     </tbody>
                                     <tfoot>
@@ -131,6 +161,7 @@ $total = 1;
             $remarks_plat = "";
             $warna_remarks_stnk = '';
             $warna_remarks_plat = '';
+            $warna_remarks_kondisi = '';
 
             // Cek jika tanggal valid
             if (!empty($tanggal_perolehan)) {
@@ -154,6 +185,14 @@ $total = 1;
                 $tanggal_beli_format_indo = date('d F Y', strtotime($data['ak_tahun_perolehan']));
                 $tanggal_plat_format_indo = date('d F Y', strtotime($data['ak_tanggal_plat']));
                 $tanggal_stnk_format_indo = date('d F Y', strtotime($data['ak_tanggal_stnk']));
+
+                if($data['ak_kondisi_aset'] == 'BAIK'){ 
+                    $warna_remarks_kondisi = "background-color: #d4edda; color: #155724;";
+                } else if($data['ak_kondisi_aset'] == 'RUSAK'){
+                    $warna_remarks_kondisi = "background-color: #f8d7da; color: #721c24;";
+                } else {
+                    $warna_remarks_kondisi = "";
+                }
 
                 if ($umur_stnk_hari > '10') {
                     $remarks_stnk = "AKTIF";
@@ -223,7 +262,8 @@ $total = 1;
                                                 <div class="form-group">
                                                     <label class="col-form-label">Kondisi Kendaraan</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ak_kondisi_aset'] ?>" readonly>
+                                                        autocomplete="off" value="<?= $data['ak_kondisi_aset'] ?>" readonly
+                                                        style="<?= $warna_remarks_kondisi ?> font-weight: bold;">
                                                 </div>
                                             </div>
                                         </div>

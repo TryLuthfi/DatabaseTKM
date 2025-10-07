@@ -57,7 +57,9 @@ $total = 1;
                                                                             <p><?= $stokKendaraan['ka_jenis_aset'] ?></p>
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
-                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                        <a href="#" class="small-box-footer"
+                                                                            id="<?php echo 'box_detail_kendaraan_A' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                            Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
@@ -76,7 +78,9 @@ $total = 1;
                                                                             <p>Kondisi Baik</p>
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
-                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                        <a href="#" class="small-box-footer"
+                                                                            id="<?php echo 'box_detail_kendaraan_B' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                            Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
@@ -90,7 +94,9 @@ $total = 1;
                                                                             <p>Kondisi Rusak</p>
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
-                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                        <a href="#" class="small-box-footer"
+                                                                            id="<?php echo 'box_detail_kendaraan_R' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                            Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
@@ -104,7 +110,9 @@ $total = 1;
                                                                             <p>Kendaraan Terjual</p>
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
-                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                        <a href="#" class="small-box-footer"
+                                                                            id="<?php echo 'box_detail_kendaraan_T' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                            Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
@@ -118,7 +126,9 @@ $total = 1;
                                                                             <p>Kendaraan Hilang</p>
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
-                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                        <a href="#" class="small-box-footer"
+                                                                            id="<?php echo 'box_detail_kendaraan_H' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                            Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
@@ -148,8 +158,9 @@ $total = 1;
                                                                             <p><?= $stokKendaraan['ka_jenis_aset'] ?></p>
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
-                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
-                                                                                class="fas fa-arrow-circle-right"></i></a>
+                                                                        <a href="#" class="small-box-footer"
+                                                                            id="<?php echo 'box_detail_kendaraan_A' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
+                                                                            Detail <i class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
                                                                 <div class="col-lg-6 col-12 mb-3">
@@ -166,7 +177,9 @@ $total = 1;
                                                                             <p>Kondisi Baik</p>
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
-                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                        <a href="#" class="small-box-footer"
+                                                                            id="<?php echo 'box_detail_kendaraan_B' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                            Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
@@ -180,7 +193,9 @@ $total = 1;
                                                                             <p>Kondisi Rusak</p>
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
-                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                        <a href="#" class="small-box-footer"
+                                                                            id="<?php echo 'box_detail_kendaraan_R' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                            Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
@@ -194,7 +209,9 @@ $total = 1;
                                                                             <p>Kendaraan Terjual</p>
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
-                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                        <a href="#" class="small-box-footer"
+                                                                            id="<?php echo 'box_detail_kendaraan_T' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                            Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
@@ -208,7 +225,9 @@ $total = 1;
                                                                             <p>Kendaraan Hilang</p>
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
-                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                        <a href="#" class="small-box-footer"
+                                                                            id="<?php echo 'box_detail_kendaraan_H' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                            Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
@@ -536,13 +555,6 @@ $total = 1;
     })
 
     $(document).ready(function () {
-        $('#table_detail_regional').DataTable({
-            "paging": true, // Tetap gunakan pagination
-            "pageLength": 10, // Menampilkan 10 data per halaman
-            "info": false, // Menghilangkan "Showing 1 to X of X entries"
-            "searching": true, // Menghilangkan search bar
-            "lengthChange": false // Menghilangkan dropdown "Show entries"
-        });
         $('#table_detail_kota').DataTable({
             "paging": true, // Tetap gunakan pagination
             "pageLength": 10, // Menampilkan 10 data per halaman
@@ -605,16 +617,47 @@ $total = 1;
 
     document.addEventListener("DOMContentLoaded", function () {
         <?php foreach ($getCountAsetKendaraan as $stokKendaraan): ?>
-            var boxElement = document.getElementById("box_detail_kendaraan_<?= $stokKendaraan['ka_jenis_aset'] ?>");
 
-            if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
-                boxElement.addEventListener("click", function () {
-                    console.log("<?= $stokKendaraan['ka_jenis_aset'] ?>");
-
-                    window.location.href = "<?= base_url("GA_Aset_Kendaraan/detailKendaraan/" . $stokKendaraan['ka_jenis_aset']) ?>";
-
+            // Untuk kondisi Aktif
+            var boxAktif = document.getElementById("box_detail_kendaraan_A<?= $stokKendaraan['ka_jenis_aset'] ?>");
+            if (boxAktif) {
+                boxAktif.addEventListener("click", function () {
+                    window.location.href = "<?= base_url('GA_Aset_Kendaraan/detailKendaraan/A' . $stokKendaraan['ka_jenis_aset']) ?>";
                 });
             }
+
+            // Untuk kondisi Baik
+            var boxBaik = document.getElementById("box_detail_kendaraan_B<?= $stokKendaraan['ka_jenis_aset'] ?>");
+            if (boxBaik) {
+                boxBaik.addEventListener("click", function () {
+                    window.location.href = "<?= base_url('GA_Aset_Kendaraan/detailKendaraan/B' . $stokKendaraan['ka_jenis_aset']) ?>";
+                });
+            }
+
+            // Untuk kondisi Rusak
+            var boxRusak = document.getElementById("box_detail_kendaraan_R<?= $stokKendaraan['ka_jenis_aset'] ?>");
+            if (boxRusak) {
+                boxRusak.addEventListener("click", function () {
+                    window.location.href = "<?= base_url('GA_Aset_Kendaraan/detailKendaraan/R' . $stokKendaraan['ka_jenis_aset']) ?>";
+                });
+            }
+
+            // Untuk kondisi Terjual
+            var boxTerjual = document.getElementById("box_detail_kendaraan_T<?= $stokKendaraan['ka_jenis_aset'] ?>");
+            if (boxTerjual) {
+                boxTerjual.addEventListener("click", function () {
+                    window.location.href = "<?= base_url('GA_Aset_Kendaraan/detailKendaraan/T' . $stokKendaraan['ka_jenis_aset']) ?>";
+                });
+            }
+
+            // Untuk kondisi Hilang
+            var boxHilang = document.getElementById("box_detail_kendaraan_H<?= $stokKendaraan['ka_jenis_aset'] ?>");
+            if (boxHilang) {
+                boxHilang.addEventListener("click", function () {
+                    window.location.href = "<?= base_url('GA_Aset_Kendaraan/detailKendaraan/H' . $stokKendaraan['ka_jenis_aset']) ?>";
+                });
+            }
+
         <?php endforeach; ?>
     });
 
