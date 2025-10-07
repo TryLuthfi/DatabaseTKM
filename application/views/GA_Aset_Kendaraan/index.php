@@ -35,304 +35,298 @@ $total = 1;
                                         </div>
                                     </div>
 
+                                    <div class="container-fluid">
+                                        <div class="row">
+
+                                            <!-- ====================== MOBIL (KIRI) ====================== -->
+                                            <div class="col-md-6 mt-4">
+                                                <div class="p-3 mb-4 shadow-sm rounded"
+                                                    style="background-color: #bbc1c754;">
+                                                    <h4 class="text-center mb-4 font-weight-bold text-primary">RODA 4 -
+                                                        MOBIL</h4>
+                                                    <div class="row">
+                                                        <?php foreach ($getCountAsetKendaraan as $stokKendaraan): ?>
+                                                            <?php if ($stokKendaraan['ka_jenis_aset'] == "MOBIL"): ?>
+
+                                                                <!-- TOTAL MOBIL -->
+                                                                <div class="col-lg-6 col-12 mb-3">
+                                                                    <div class="small-box bg-info">
+                                                                        <div class="inner">
+                                                                            <h3><?= number_format($stokKendaraan['jml_aktif'], 0, ",", ".") ?>
+                                                                            </h3>
+                                                                            <p><?= $stokKendaraan['ka_jenis_aset'] ?></p>
+                                                                        </div>
+                                                                        <div class="icon"><i class="ion ion-bag"></i></div>
+                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                                class="fas fa-arrow-circle-right"></i></a>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-lg-6 col-12 mb-3">
+                                                                    <div class="small-box bg-info">
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- KONDISI BAIK -->
+                                                                <div class="col-lg-6 col-12 mb-3">
+                                                                    <div class="small-box bg-success">
+                                                                        <div class="inner">
+                                                                            <h3><?= number_format($stokKendaraan['jml_baik'], 0, ",", ".") ?>
+                                                                            </h3>
+                                                                            <p>Kondisi Baik</p>
+                                                                        </div>
+                                                                        <div class="icon"><i class="ion ion-bag"></i></div>
+                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                                class="fas fa-arrow-circle-right"></i></a>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- KONDISI RUSAK -->
+                                                                <div class="col-lg-6 col-12 mb-3">
+                                                                    <div class="small-box bg-danger">
+                                                                        <div class="inner">
+                                                                            <h3><?= number_format($stokKendaraan['jml_rusak'], 0, ",", ".") ?>
+                                                                            </h3>
+                                                                            <p>Kondisi Rusak</p>
+                                                                        </div>
+                                                                        <div class="icon"><i class="ion ion-bag"></i></div>
+                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                                class="fas fa-arrow-circle-right"></i></a>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- TERJUAL -->
+                                                                <div class="col-lg-6 col-12 mb-3">
+                                                                    <div class="small-box bg-warning">
+                                                                        <div class="inner">
+                                                                            <h3><?= number_format($stokKendaraan['jml_terjual'], 0, ",", ".") ?>
+                                                                            </h3>
+                                                                            <p>Kendaraan Terjual</p>
+                                                                        </div>
+                                                                        <div class="icon"><i class="ion ion-bag"></i></div>
+                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                                class="fas fa-arrow-circle-right"></i></a>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- HILANG -->
+                                                                <div class="col-lg-6 col-12 mb-3">
+                                                                    <div class="small-box bg-danger">
+                                                                        <div class="inner">
+                                                                            <h3><?= number_format($stokKendaraan['jml_hilang'], 0, ",", ".") ?>
+                                                                            </h3>
+                                                                            <p>Kendaraan Hilang</p>
+                                                                        </div>
+                                                                        <div class="icon"><i class="ion ion-bag"></i></div>
+                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                                class="fas fa-arrow-circle-right"></i></a>
+                                                                    </div>
+                                                                </div>
+
+                                                            <?php endif; ?>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- ====================== MOTOR (KANAN) ====================== -->
+                                            <div class="col-md-6 mt-4">
+                                                <div class="p-3 mb-4 shadow-sm rounded"
+                                                    style="background-color:#bbc1c754;">
+                                                    <h4 class="text-center mb-4 font-weight-bold text-primary">RODA 2 -
+                                                        MOTOR</h4>
+                                                    <div class="row">
+                                                        <?php foreach ($getCountAsetKendaraan as $stokKendaraan): ?>
+                                                            <?php if ($stokKendaraan['ka_jenis_aset'] == "MOTOR"): ?>
+
+                                                                <!-- TOTAL MOTOR -->
+                                                                <div class="col-lg-6 col-12 mb-3">
+                                                                    <div class="small-box bg-info">
+                                                                        <div class="inner">
+                                                                            <h3><?= number_format($stokKendaraan['jml_aktif'], 0, ",", ".") ?>
+                                                                            </h3>
+                                                                            <p><?= $stokKendaraan['ka_jenis_aset'] ?></p>
+                                                                        </div>
+                                                                        <div class="icon"><i class="ion ion-bag"></i></div>
+                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                                class="fas fa-arrow-circle-right"></i></a>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-lg-6 col-12 mb-3">
+                                                                    <div class="small-box bg-info">
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- KONDISI BAIK -->
+                                                                <div class="col-lg-6 col-12 mb-3">
+                                                                    <div class="small-box bg-success">
+                                                                        <div class="inner">
+                                                                            <h3><?= number_format($stokKendaraan['jml_baik'], 0, ",", ".") ?>
+                                                                            </h3>
+                                                                            <p>Kondisi Baik</p>
+                                                                        </div>
+                                                                        <div class="icon"><i class="ion ion-bag"></i></div>
+                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                                class="fas fa-arrow-circle-right"></i></a>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- KONDISI RUSAK -->
+                                                                <div class="col-lg-6 col-12 mb-3">
+                                                                    <div class="small-box bg-danger">
+                                                                        <div class="inner">
+                                                                            <h3><?= number_format($stokKendaraan['jml_rusak'], 0, ",", ".") ?>
+                                                                            </h3>
+                                                                            <p>Kondisi Rusak</p>
+                                                                        </div>
+                                                                        <div class="icon"><i class="ion ion-bag"></i></div>
+                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                                class="fas fa-arrow-circle-right"></i></a>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- TERJUAL -->
+                                                                <div class="col-lg-6 col-12 mb-3">
+                                                                    <div class="small-box bg-warning">
+                                                                        <div class="inner">
+                                                                            <h3><?= number_format($stokKendaraan['jml_terjual'], 0, ",", ".") ?>
+                                                                            </h3>
+                                                                            <p>Kendaraan Terjual</p>
+                                                                        </div>
+                                                                        <div class="icon"><i class="ion ion-bag"></i></div>
+                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                                class="fas fa-arrow-circle-right"></i></a>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- HILANG -->
+                                                                <div class="col-lg-6 col-12 mb-3">
+                                                                    <div class="small-box bg-danger">
+                                                                        <div class="inner">
+                                                                            <h3><?= number_format($stokKendaraan['jml_hilang'], 0, ",", ".") ?>
+                                                                            </h3>
+                                                                            <p>Kendaraan Hilang</p>
+                                                                        </div>
+                                                                        <div class="icon"><i class="ion ion-bag"></i></div>
+                                                                        <a href="#" class="small-box-footer">Lihat Detail <i
+                                                                                class="fas fa-arrow-circle-right"></i></a>
+                                                                    </div>
+                                                                </div>
+
+                                                            <?php endif; ?>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+
+
+
                                     <div class="content-header">
                                         <div class="container-fluid">
                                             <div class="row mb-2">
-                                                <div class="col-sm-6">
-                                                    <h1 class="m-0 text-dark" style="text-align: center;">RODA 4 - MOBIL
-                                                    </h1>
-                                                </div><!-- /.col -->
-                                                <div class="col-sm-6">
-                                                    <h1 class="m-0 text-dark" style="text-align: center;">RODA 2 - MOTOR
-                                                    </h1>
+                                                <div class="col-sm-12">
+                                                    <h1 class="m-0 text-dark" style="text-align: center;">DISTRIBUSI
+                                                        KENDARAAN</h1>
                                                 </div><!-- /.col -->
                                             </div><!-- /.row -->
                                         </div><!-- /.container-fluid -->
                                     </div>
 
-                                    <div class="card-body" style="margin-top:10px;">
+                                    <section class="content">
 
                                         <div class="container-fluid">
                                             <!-- Info boxes -->
                                             <div class="row">
-                                                <?php
-                                                foreach ($getCountAsetKendaraan as $stokKendaraan):
+                                                <!-- fix for small devices only -->
+                                                <div class="clearfix hidden-md-up"></div>
 
-                                                    if ($stokKendaraan['ka_jenis_aset'] == "MOBIL"):
+                                                <div class="col-12">
+                                                    <div class="card">
+                                                        <!-- /.card-header -->
+                                                        <div class="card-body table-responsive text-nowrap ">
+                                                            <table id="table_detail_kota"
+                                                                class="table table-bordered table-hover">
+                                                                <thead class="bg-info">
+                                                                    <tr>
+                                                                        <th>No</th>
+                                                                        <th>Regional</th>
+                                                                        <th>Mobil</th>
+                                                                        <th>Motor</th>
+                                                                        <th>Detail</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <?php
+                                                                    $total = 1;
 
-                                                        $total_stok_kendaraan[$stokKendaraan['ka_jenis_aset']] = number_format(floatval($stokKendaraan['jml_aktif']), 0, ",", ".");
-                                                        ?>
-                                                        <div class="col-lg-3 col-6">
-                                                            <div class="small-box bg-info">
-                                                                <div class="inner">
+                                                                    foreach ($getCountAsetKendaraanByReg as $data):
+                                                                        if (!in_array($data['ak_area'], ['Terjual', 'Hilang'])):
 
+                                                                            ?>
 
-                                                                    <h3
-                                                                        id="<?php echo 'total_dashboard_' . $stokKendaraan['ka_jenis_aset'] ?>">
-                                                                        <?= number_format(floatval($stokKendaraan['jml_aktif']), 0, ",", ".") ?>
-                                                                    </h3>
+                                                                            <tr>
+                                                                                <td><?= $total++ ?></td>
+                                                                                <td><?= $data['ak_area'] ?></td>
+                                                                                <td><?php
+                                                                                if ($data['mobil'] == "0") {
+                                                                                    echo "-";
+                                                                                } else {
+                                                                                    echo number_format(floatval($data['mobil']), 0, ",", ".");
+                                                                                }
+                                                                                ?></td>
+                                                                                <td><?php
+                                                                                if ($data['motor'] == "0") {
+                                                                                    echo "-";
+                                                                                } else {
+                                                                                    echo number_format(floatval($data['motor']), 0, ",", ".");
+                                                                                }
+                                                                                ?></td>
+                                                                                <td>
+                                                                                    <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['ak_area']); ?>"
+                                                                                        class="btn btn-primary disable"
+                                                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i
+                                                                                            class=" fas fa-eye"></i></a>
+                                                                                </td>
+                                                                            </tr>
 
+                                                                        <?php endif; endforeach; ?>
 
-                                                                    <p><?= $stokKendaraan['ka_jenis_aset'] ?></p>
-                                                                </div>
-                                                                <div class="icon">
-                                                                    <i class="ion ion-bag"></i>
-                                                                </div>
-                                                                <a href="#" class="small-box-footer"
-                                                                    id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
-                                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
-                                                            </div>
+                                                                </tbody>
+                                                                <tfoot>
+                                                                    <tr>
+                                                                        <th colspan="2">TOTAL</th>
+                                                                        <th colspan="1"><span
+                                                                                id="totalTabelMobil">0</span>
+                                                                        </th>
+                                                                        <th colspan="1"><span
+                                                                                id="totalTabelMotor">0</span>
+                                                                        </th>
+                                                                        <th colspan="1"></th>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
                                                         </div>
-                                                    <?php endif; endforeach; ?>
-
-                                                <div class="col-lg-3 col-6">
-                                                    <div class="small-box bg-info">
-
+                                                        <!-- /.card-body -->
+                                                    </div>
+                                                    <div class="row">
+                                                        <!-- ISI -->
                                                     </div>
                                                 </div>
+                                    </section>
 
-                                                <?php
-                                                foreach ($getCountAsetKendaraan as $stokKendaraan):
-
-                                                    if ($stokKendaraan['ka_jenis_aset'] == "MOTOR"):
-
-                                                        $total_stok_kendaraan[$stokKendaraan['ka_jenis_aset']] = number_format(floatval($stokKendaraan['jml_aktif']), 0, ",", ".");
-                                                        ?>
-                                                        <div class="col-lg-3 col-6">
-                                                            <div class="small-box bg-info">
-                                                                <div class="inner">
-
-
-                                                                    <h3
-                                                                        id="<?php echo 'total_dashboard_' . $stokKendaraan['ka_jenis_aset'] ?>">
-                                                                        <?= number_format(floatval($stokKendaraan['jml_aktif']), 0, ",", ".") ?>
-                                                                    </h3>
-
-
-                                                                    <p><?= $stokKendaraan['ka_jenis_aset'] ?></p>
-                                                                </div>
-                                                                <div class="icon">
-                                                                    <i class="ion ion-bag"></i>
-                                                                </div>
-                                                                <a href="#" class="small-box-footer"
-                                                                    id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
-                                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
-                                                            </div>
-                                                        </div>
-                                                    <?php endif; endforeach ?>
-
-                                            </div>
-                                        </div>
-
-                                        <div class="container-fluid">
-                                            <!-- Info boxes -->
-                                            <div class="row">
-                                                <?php
-                                                foreach ($getCountAsetKendaraan as $stokKendaraan):
-
-                                                    if ($stokKendaraan['ka_jenis_aset'] == "MOBIL"):
-
-                                                        $total_stok_kendaraan[$stokKendaraan['ka_jenis_aset']] = number_format(floatval($stokKendaraan['jml_baik']), 0, ",", ".");
-                                                        ?>
-                                                        <div class="col-lg-3 col-6">
-                                                            <div class="small-box bg-success">
-                                                                <div class="inner">
-
-
-                                                                    <h3
-                                                                        id="<?php echo 'total_dashboard_' . $stokKendaraan['jml_baik'] ?>">
-                                                                        <?= number_format(floatval($stokKendaraan['jml_baik']), 0, ",", ".") ?>
-                                                                    </h3>
-
-
-                                                                    <p>Kondisi Baik</p>
-                                                                </div>
-                                                                <div class="icon">
-                                                                    <i class="ion ion-bag"></i>
-                                                                </div>
-                                                                <a href="#" class="small-box-footer"
-                                                                    id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
-                                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-lg-3 col-6">
-                                                            <div class="small-box bg-warning">
-                                                                <div class="inner">
-
-
-                                                                    <h3
-                                                                        id="<?php echo 'total_dashboard_' . $stokKendaraan['jml_rusak'] ?>">
-                                                                        <?= number_format(floatval($stokKendaraan['jml_rusak']), 0, ",", ".") ?>
-                                                                    </h3>
-
-
-                                                                    <p>Kondisi Rusak</p>
-                                                                </div>
-                                                                <div class="icon">
-                                                                    <i class="ion ion-bag"></i>
-                                                                </div>
-                                                                <a href="#" class="small-box-footer"
-                                                                    id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
-                                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
-                                                            </div>
-                                                        </div>
-                                                    <?php endif; endforeach; ?>
-                                                <?php
-                                                foreach ($getCountAsetKendaraan as $stokKendaraan):
-
-                                                    if ($stokKendaraan['ka_jenis_aset'] == "MOTOR"):
-
-                                                        $total_stok_kendaraan[$stokKendaraan['ka_jenis_aset']] = number_format(floatval($stokKendaraan['jml_baik']), 0, ",", ".");
-                                                        ?>
-                                                        <div class="col-lg-3 col-6">
-                                                            <div class="small-box bg-success">
-                                                                <div class="inner">
-
-
-                                                                    <h3
-                                                                        id="<?php echo 'total_dashboard_' . $stokKendaraan['jml_baik'] ?>">
-                                                                        <?= number_format(floatval($stokKendaraan['jml_baik']), 0, ",", ".") ?>
-                                                                    </h3>
-
-
-                                                                    <p>Kondisi Baik</p>
-                                                                </div>
-                                                                <div class="icon">
-                                                                    <i class="ion ion-bag"></i>
-                                                                </div>
-                                                                <a href="#" class="small-box-footer"
-                                                                    id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
-                                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-lg-3 col-6">
-                                                            <div class="small-box bg-warning">
-                                                                <div class="inner">
-
-
-                                                                    <h3
-                                                                        id="<?php echo 'total_dashboard_' . $stokKendaraan['jml_rusak'] ?>">
-                                                                        <?= number_format(floatval($stokKendaraan['jml_rusak']), 0, ",", ".") ?>
-                                                                    </h3>
-
-
-                                                                    <p>Kondisi Rusak</p>
-                                                                </div>
-                                                                <div class="icon">
-                                                                    <i class="ion ion-bag"></i>
-                                                                </div>
-                                                                <a href="#" class="small-box-footer"
-                                                                    id="<?php echo 'box_detail_kendaraan_' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
-                                                                    Detail <i class="fas fa-arrow-circle-right"></i></a>
-                                                            </div>
-                                                        </div>
-                                                    <?php endif; endforeach; ?>
-
-                                            </div>
-                                        </div>
-
-                                        <div class="content-header">
-                                            <div class="container-fluid">
-                                                <div class="row mb-2">
-                                                    <div class="col-sm-12">
-                                                        <h1 class="m-0 text-dark" style="text-align: center;">DISTRIBUSI
-                                                            KENDARAAN</h1>
-                                                    </div><!-- /.col -->
-                                                </div><!-- /.row -->
-                                            </div><!-- /.container-fluid -->
-                                        </div>
-
-                                        <section class="content">
-
-                                            <div class="container-fluid">
-                                                <!-- Info boxes -->
-                                                <div class="row">
-                                                    <!-- fix for small devices only -->
-                                                    <div class="clearfix hidden-md-up"></div>
-
-                                                    <div class="col-12">
-                                                        <div class="card">
-                                                            <!-- /.card-header -->
-                                                            <div class="card-body table-responsive text-nowrap ">
-                                                                <table id="table_detail_kota"
-                                                                    class="table table-bordered table-hover">
-                                                                    <thead class="bg-info">
-                                                                        <tr>
-                                                                            <th>No</th>
-                                                                            <th>Regional</th>
-                                                                            <th>Mobil</th>
-                                                                            <th>Motor</th>
-                                                                            <th>Detail</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        <?php
-                                                                        $total = 1;
-
-                                                                        foreach ($getCountAsetKendaraanByReg as $data):
-                                                                            if (!in_array($data['ak_area'], ['Terjual', 'Hilang'])):
-
-                                                                                ?>
-
-                                                                                <tr>
-                                                                                    <td><?= $total++ ?></td>
-                                                                                    <td><?= $data['ak_area'] ?></td>
-                                                                                    <td><?php
-                                                                                    if ($data['mobil'] == "0") {
-                                                                                        echo "-";
-                                                                                    } else {
-                                                                                        echo number_format(floatval($data['mobil']), 0, ",", ".");
-                                                                                    }
-                                                                                    ?></td>
-                                                                                    <td><?php
-                                                                                    if ($data['motor'] == "0") {
-                                                                                        echo "-";
-                                                                                    } else {
-                                                                                        echo number_format(floatval($data['motor']), 0, ",", ".");
-                                                                                    }
-                                                                                    ?></td>
-                                                                                    <td>
-                                                                                        <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['ak_area']); ?>"
-                                                                                            class="btn btn-primary disable"
-                                                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i
-                                                                                                class=" fas fa-eye"></i></a>
-                                                                                    </td>
-                                                                                </tr>
-
-                                                                            <?php endif; endforeach; ?>
-
-                                                                    </tbody>
-                                                                    <tfoot>
-                                                                        <tr>
-                                                                            <th colspan="2">TOTAL</th>
-                                                                            <th colspan="1"><span
-                                                                                    id="totalTabelMobil">0</span>
-                                                                            </th>
-                                                                            <th colspan="1"><span
-                                                                                    id="totalTabelMotor">0</span>
-                                                                            </th>
-                                                                            <th colspan="1"></th>
-                                                                        </tr>
-                                                                    </tfoot>
-                                                                </table>
-                                                            </div>
-                                                            <!-- /.card-body -->
-                                                        </div>
-                                                        <div class="row">
-                                                            <!-- ISI -->
-                                                        </div>
-                                                    </div>
-                                        </section>
-
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-
-
                 </div>
+
+
+
+            </div>
         </section>
 
         <!-- MODAL TAMBAH KODE ITEM LOGISTIK -->
