@@ -35,7 +35,24 @@ ORDER BY tb_kode_aset.ka_id_kode_aset ASC;')
         return $data;
     }
 
-    public function getCountAsetKendaraanByReg()
+    public function getCountAsetKendaraanByRegion()
+    {
+        $data = $this->db->query('SELECT 
+    tb_aset_kendaraan.ak_regional,
+    SUM(CASE WHEN tb_kode_aset.ka_jenis_aset = "MOBIL" THEN 1 ELSE 0 END) AS mobil,
+    SUM(CASE WHEN tb_kode_aset.ka_jenis_aset = "MOTOR" THEN 1 ELSE 0 END) AS motor,
+    COUNT(tb_aset_kendaraan.ka_id_kode_aset) AS total_aset
+FROM tb_aset_kendaraan
+JOIN tb_kode_aset 
+    ON tb_aset_kendaraan.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset
+    WHERE tb_aset_kendaraan.ak_status_aset = "AKTIF"
+GROUP BY tb_aset_kendaraan.ak_regional
+ORDER BY tb_aset_kendaraan.ak_regional ASC;')
+            ->result_array();
+        return $data;
+    }
+
+    public function getCountAsetKendaraanByKota()
     {
         $data = $this->db->query('SELECT 
     tb_aset_kendaraan.ak_area,
@@ -45,6 +62,7 @@ ORDER BY tb_kode_aset.ka_id_kode_aset ASC;')
 FROM tb_aset_kendaraan
 JOIN tb_kode_aset 
     ON tb_aset_kendaraan.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset
+    WHERE tb_aset_kendaraan.ak_status_aset = "AKTIF"
 GROUP BY tb_aset_kendaraan.ak_area
 ORDER BY tb_aset_kendaraan.ak_area ASC;')
             ->result_array();

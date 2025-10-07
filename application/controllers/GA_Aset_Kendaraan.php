@@ -19,7 +19,8 @@ class GA_Aset_Kendaraan extends CI_Controller
             $data['judul'] = 'Aset Kendaraan';
             $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getMasterAsetKendaraan();
             $data['getCountAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraan();
-            $data['getCountAsetKendaraanByReg'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByReg();
+            $data['getCountAsetKendaraanByKota'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByKota();
+            $data['getCountAsetKendaraanByRegion'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByRegion();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -47,7 +48,8 @@ class GA_Aset_Kendaraan extends CI_Controller
             $data['getKategoriKendaraan'] = "A".strtoupper($decoded_url_area);
             $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getMasterAsetKendaraan();
             $data['getCountAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraan();
-            $data['getCountAsetKendaraanByReg'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByReg();
+            $data['getCountAsetKendaraanByKota'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByKota();
+            $data['getCountAsetKendaraanByRegion'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByRegion();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');

@@ -222,15 +222,105 @@ $total = 1;
                                         </div>
                                     </div>
 
+                                    <div class="content-header">
+                                        <div class="container-fluid">
+                                            <div class="row mb-2">
+                                                <div class="col-sm-12">
+                                                    <h1 class="m-0 text-dark" style="text-align: center;">DISTRIBUSI
+                                                        KENDARAAN REGIONAL</h1>
+                                                </div><!-- /.col -->
+                                            </div><!-- /.row -->
+                                        </div><!-- /.container-fluid -->
+                                    </div>
 
+                                    <section class="content">
 
+                                        <div class="container-fluid">
+                                            <!-- Info boxes -->
+                                            <div class="row">
+                                                <!-- fix for small devices only -->
+                                                <div class="clearfix hidden-md-up"></div>
+
+                                                <div class="col-12">
+                                                    <div class="card">
+                                                        <!-- /.card-header -->
+                                                        <div class="card-body table-responsive text-nowrap ">
+                                                            <table id="table_detail_regional"
+                                                                class="table table-bordered table-hover">
+                                                                <thead class="bg-info">
+                                                                    <tr>
+                                                                        <th>No</th>
+                                                                        <th>Regional</th>
+                                                                        <th>Mobil</th>
+                                                                        <th>Motor</th>
+                                                                        <th>Detail</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <?php
+                                                                    $total = 1;
+
+                                                                    foreach ($getCountAsetKendaraanByRegion as $data):
+                                                                        if (!in_array($data['ak_regional'], ['Terjual', 'Hilang'])):
+
+                                                                            ?>
+
+                                                                            <tr>
+                                                                                <td><?= $total++ ?></td>
+                                                                                <td><?= $data['ak_regional'] ?></td>
+                                                                                <td><?php
+                                                                                if ($data['mobil'] == "0") {
+                                                                                    echo "-";
+                                                                                } else {
+                                                                                    echo number_format(floatval($data['mobil']), 0, ",", ".");
+                                                                                }
+                                                                                ?></td>
+                                                                                <td><?php
+                                                                                if ($data['motor'] == "0") {
+                                                                                    echo "-";
+                                                                                } else {
+                                                                                    echo number_format(floatval($data['motor']), 0, ",", ".");
+                                                                                }
+                                                                                ?></td>
+                                                                                <td>
+                                                                                    <a href="<?php echo site_url('Logistik_Stok_Detail/detail/' . $data['ak_regional']); ?>"
+                                                                                        class="btn btn-primary disable"
+                                                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i
+                                                                                            class=" fas fa-eye"></i></a>
+                                                                                </td>
+                                                                            </tr>
+
+                                                                        <?php endif; endforeach; ?>
+
+                                                                </tbody>
+                                                                <tfoot>
+                                                                    <tr>
+                                                                        <th colspan="2">TOTAL</th>
+                                                                        <th colspan="1"><span
+                                                                                id="totalTabelMobilRegional">0</span>
+                                                                        </th>
+                                                                        <th colspan="1"><span
+                                                                                id="totalTabelMotorRegional">0</span>
+                                                                        </th>
+                                                                        <th colspan="1"></th>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        </div>
+                                                        <!-- /.card-body -->
+                                                    </div>
+                                                    <div class="row">
+                                                        <!-- ISI -->
+                                                    </div>
+                                                </div>
+                                    </section>
 
                                     <div class="content-header">
                                         <div class="container-fluid">
                                             <div class="row mb-2">
                                                 <div class="col-sm-12">
                                                     <h1 class="m-0 text-dark" style="text-align: center;">DISTRIBUSI
-                                                        KENDARAAN</h1>
+                                                        KENDARAAN AREA</h1>
                                                 </div><!-- /.col -->
                                             </div><!-- /.row -->
                                         </div><!-- /.container-fluid -->
@@ -263,7 +353,7 @@ $total = 1;
                                                                     <?php
                                                                     $total = 1;
 
-                                                                    foreach ($getCountAsetKendaraanByReg as $data):
+                                                                    foreach ($getCountAsetKendaraanByKota as $data):
                                                                         if (!in_array($data['ak_area'], ['Terjual', 'Hilang'])):
 
                                                                             ?>
@@ -300,10 +390,10 @@ $total = 1;
                                                                     <tr>
                                                                         <th colspan="2">TOTAL</th>
                                                                         <th colspan="1"><span
-                                                                                id="totalTabelMobil">0</span>
+                                                                                id="totalTabelMobilKota">0</span>
                                                                         </th>
                                                                         <th colspan="1"><span
-                                                                                id="totalTabelMotor">0</span>
+                                                                                id="totalTabelMotorKota">0</span>
                                                                         </th>
                                                                         <th colspan="1"></th>
                                                                     </tr>
@@ -446,6 +536,13 @@ $total = 1;
     })
 
     $(document).ready(function () {
+        $('#table_detail_regional').DataTable({
+            "paging": true, // Tetap gunakan pagination
+            "pageLength": 10, // Menampilkan 10 data per halaman
+            "info": false, // Menghilangkan "Showing 1 to X of X entries"
+            "searching": true, // Menghilangkan search bar
+            "lengthChange": false // Menghilangkan dropdown "Show entries"
+        });
         $('#table_detail_kota').DataTable({
             "paging": true, // Tetap gunakan pagination
             "pageLength": 10, // Menampilkan 10 data per halaman
@@ -477,18 +574,24 @@ $total = 1;
             }).data();
 
             // Hitung total dari kolom Value (index 2)
-            let totalTabelMobil = 0;
-            let totalTabelMotor = 0;
+            let totalTabelMobilRegional = 0;
+            let totalTabelMobilKota = 0;
+            let totalTabelMotorRegional = 0;
+            let totalTabelMotorKota = 0;
 
 
             data.each(function (row) {
 
-                totalTabelMobil += parseFloat(row[2].replace(/\./g, '')) || 0;
-                totalTabelMotor += parseFloat(row[3].replace(/\./g, '')) || 0;
+                totalTabelMobilRegional += parseFloat(row[2].replace(/\./g, '')) || 0;
+                totalTabelMobilKota += parseFloat(row[2].replace(/\./g, '')) || 0;
+                totalTabelMotorRegional += parseFloat(row[3].replace(/\./g, '')) || 0;
+                totalTabelMotorKota += parseFloat(row[3].replace(/\./g, '')) || 0;
             });
 
-            document.getElementById('totalTabelMobil').innerText = totalTabelMobil.toLocaleString('id-ID');
-            document.getElementById('totalTabelMotor').innerText = totalTabelMotor.toLocaleString('id-ID');
+            document.getElementById('totalTabelMobilRegional').innerText = totalTabelMobilRegional.toLocaleString('id-ID');
+            document.getElementById('totalTabelMobilKota').innerText = totalTabelMobilKota.toLocaleString('id-ID');
+            document.getElementById('totalTabelMotorRegional').innerText = totalTabelMotorRegional.toLocaleString('id-ID');
+            document.getElementById('totalTabelMotorKota').innerText = totalTabelMotorKota.toLocaleString('id-ID');
         }
 
         // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
