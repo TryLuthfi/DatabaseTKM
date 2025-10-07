@@ -86,86 +86,10 @@ $total = 1;
                         </div>
                     </div>
                 </div>
+
+        
+
         </section>
-
-        <!-- MODAL TAMBAH KODE ITEM LOGISTIK -->
-        <form action=" <?php echo base_url('Master_Logistik_Kode_Item/tambahKodeItem') ?>" method="post">
-            <div class="modal fade" id="modal-lg-tambah">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h4 class="modal-title">Tambah Kode Item</h4>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="form-group">
-                                <label class="col-form-label">Nama Item</label>
-                                <input type="text" class="form-control" name="nama_item" autocomplete="off"
-                                    placeholder="Nama Item">
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Kategori Item</label>
-                                <select name="kategori_item" class="form-control">
-                                    <?php foreach ($kategori_item as $option): ?>
-                                        <option value="<?= $option ?>" <?= isset($data['satuan_item']) && $data['satuan_item'] == $option ? 'selected' : '' ?>>
-                                            <?= $option ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Jumlah Satuan</label>
-                                <select name="satuan_item" class="form-control">
-                                    <?php foreach ($satuan_options as $option): ?>
-                                        <option value="<?= $option ?>" <?= isset($data['satuan_item']) && $data['satuan_item'] == $option ? 'selected' : '' ?>>
-                                            <?= $option ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Penggunaan Project</label>
-                                <select name="project_item" class="form-control"
-                                    data-placeholder="Pilih Bowheer" style="width: 100%;">
-                                    <?php foreach ($getMasterBowheer as $data): ?>
-                                        <option value="<?php echo $data['nama_bowheer'] ?>">
-                                            <?php echo $data['nama_bowheer'] ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Kepemilikan Item</label>
-                                <select name="id_bowheer_pemilik_item" class="form-control">
-                                <?php foreach ($getMasterBowheer as $data): ?>
-                                        <option value="<?php echo $data['id_bowheer'] ?>">
-                                            <?php echo $data['nama_bowheer'] ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-form-label">Harga Penjualan</label>
-                                <input type="text" class="form-control" name="harga_penjualan" autocomplete="off"
-                                    placeholder="Harga">
-                            </div>
-
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-
-                                <button type="submit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading"
-                                        style="display:none"></i> Tambah</button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- /.modal-content -->
-                </div>
-                <!-- /.modal-dialog -->
-            </div>
-        </form>
-
     </div>
     <!-- /.content-wrapper -->
 

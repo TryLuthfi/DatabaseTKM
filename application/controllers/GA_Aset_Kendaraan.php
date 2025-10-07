@@ -10,22 +10,22 @@ class GA_Aset_Kendaraan extends CI_Controller
         $this->load->library('form_validation');
         $this->load->model('MGA_Aset_Kendaraan');
     }
-    
+
     public function index()
     {
         if (!empty($this->session->userdata('id_user'))) {
 
-        $data['title'] = 'Aset Kendaraan';
-        $data['judul'] = 'Aset Kendaraan';
-        $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getMasterAsetKendaraan();
-        $data['getCountAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraan();
-        $data['getCountAsetKendaraanByReg'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByReg();
+            $data['title'] = 'Aset Kendaraan';
+            $data['judul'] = 'Aset Kendaraan';
+            $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getMasterAsetKendaraan();
+            $data['getCountAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraan();
+            $data['getCountAsetKendaraanByReg'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByReg();
 
-        $this->load->view('Templates/01_Header', $data);
-        $this->load->view('Templates/02_Menu');
-        $this->load->view('GA_Aset_Kendaraan/index', $data);
-        $this->load->view('Templates/03_Footer');
-        $this->load->view('Templates/99_JS');
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('GA_Aset_Kendaraan/index', $data);
+            $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
         } else {
             redirect('Auth');
         }
@@ -44,10 +44,10 @@ class GA_Aset_Kendaraan extends CI_Controller
 
             $data['title'] = 'Aset Kendaraan ' . strtoupper($decoded_url_area);
             $data['judul'] = 'Aset Kendaraan ' . $decoded_url_area;
-            $data['getKategoriKendaraan'] = strtoupper($decoded_url_area);
+            $data['getKategoriKendaraan'] = "A".strtoupper($decoded_url_area);
             $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getMasterAsetKendaraan();
-        $data['getCountAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraan();
-        $data['getCountAsetKendaraanByReg'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByReg();
+            $data['getCountAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraan();
+            $data['getCountAsetKendaraanByReg'] = $this->MGA_Aset_Kendaraan->getCountAsetKendaraanByReg();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -60,7 +60,8 @@ class GA_Aset_Kendaraan extends CI_Controller
         }
     }
 
-    public function tambahKodeItem(){
+    public function tambahKodeItem()
+    {
 
         // echo ("<pre>");
         // print_r($_POST);
