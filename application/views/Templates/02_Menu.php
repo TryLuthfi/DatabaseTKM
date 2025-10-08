@@ -276,13 +276,13 @@ $id_menu = $this->uri->segment('1');
                         </a>
                     </li>
 
-                    <li class="nav-item" style="pointer-events: none">
-                        <a href="<?= base_url('Logistik_Pesanan_Pabrik') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Pesanan_Pabrik') {
+                    <li class="nav-item">
+                        <a href="<?= base_url('GA_Aset_Terminasi') ?>" class="nav-link <?php if ($id_menu == 'GA_Aset_Terminasi') {
                                                                                                     echo "active";
                                                                                                 } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
-                                Alat Terminasi
+                                Aset Terminasi
                             </p>
                         </a>
                     </li>
