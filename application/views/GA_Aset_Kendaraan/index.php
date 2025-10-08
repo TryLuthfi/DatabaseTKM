@@ -562,6 +562,8 @@ $total = 1;
         });
     });
 
+    
+
     $(document).ready(function () {
         $.fn.dataTable.ext.errMode = 'none';
         const table = $('#table_detail_kota').DataTable({
@@ -602,6 +604,7 @@ $total = 1;
             document.getElementById('totalTabelMobilKota').innerText = totalTabelMobilKota.toLocaleString('id-ID');
             document.getElementById('totalTabelMotorRegional').innerText = totalTabelMotorRegional.toLocaleString('id-ID');
             document.getElementById('totalTabelMotorKota').innerText = totalTabelMotorKota.toLocaleString('id-ID');
+            
         }
 
         // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
