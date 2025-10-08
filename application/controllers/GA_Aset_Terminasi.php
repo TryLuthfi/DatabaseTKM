@@ -15,12 +15,14 @@ class GA_Aset_Terminasi extends CI_Controller
     {
         if (!empty($this->session->userdata('id_user'))) {
 
-            $data['title'] = 'Aset Kendaraan';
-            $data['judul'] = 'Aset Kendaraan';
-            $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Terminasi->getMasterAsetKendaraan();
-            $data['getCountAsetKendaraan'] = $this->MGA_Aset_Terminasi->getCountAsetKendaraan();
-            $data['getCountAsetKendaraanByKota'] = $this->MGA_Aset_Terminasi->getCountAsetKendaraanByKota();
-            $data['getCountAsetKendaraanByRegion'] = $this->MGA_Aset_Terminasi->getCountAsetKendaraanByRegion();
+            $data['title'] = 'Aset Terminasi';
+            $data['judul'] = 'Aset Terminasi';
+            $data['getMasterAsetTerminasi'] = $this->MGA_Aset_Terminasi->getMasterAsetTerminasi();
+            $data['getCountAsetTerminasiLimit'] = $this->MGA_Aset_Terminasi->getCountAsetTerminasiLimit();
+            $data['getCountAsetTerminasiByRegionTipe1'] = $this->MGA_Aset_Terminasi->getCountAsetTerminasiByRegionTipe1();
+            $data['getCountAsetTerminasiByRegionTipe2'] = $this->MGA_Aset_Terminasi->getCountAsetTerminasiByRegionTipe2();
+            $data['getCountAsetTerminasiByRegionTipe3'] = $this->MGA_Aset_Terminasi->getCountAsetTerminasiByRegionTipe3();
+            $data['getCountAsetTerminasiByKota'] = $this->MGA_Aset_Terminasi->getCountAsetTerminasiByKota();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -32,25 +34,18 @@ class GA_Aset_Terminasi extends CI_Controller
         }
     }
 
-    public function detailKendaraan()
+    public function allAsetTerminasi()
     {
-
-        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
-        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
-        $last_segment = end($segments); // Ambil bagian terakhir dari URL
-
-        $decoded_url_area = urldecode($last_segment);
 
         if (!empty($this->session->userdata('id_user'))) {
 
-            $data['title'] = 'Aset Kendaraan ' . strtoupper($decoded_url_area);
-            $data['judul'] = 'Aset Kendaraan ' . $decoded_url_area;
-            $data['getKategoriKendaraan'] = strtoupper($decoded_url_area);
-            $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Terminasi->getMasterAsetKendaraan();
+            $data['title'] = 'Aset Terminasi';
+            $data['judul'] = 'Aset Terminasi';
+            $data['getCountAsetTerminasiAll'] = $this->MGA_Aset_Terminasi->getCountAsetTerminasiAll();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
-            $this->load->view('GA_Aset_Terminasi/indexkendaraan', $data);
+            $this->load->view('GA_Aset_Terminasi/indexall', $data);
             // $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
 
@@ -59,7 +54,7 @@ class GA_Aset_Terminasi extends CI_Controller
         }
     }
 
-    public function areaKendaraan()
+    public function detailTerminasi()
     {
 
         $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
@@ -70,16 +65,43 @@ class GA_Aset_Terminasi extends CI_Controller
 
         if (!empty($this->session->userdata('id_user'))) {
 
-            $data['title'] = 'Aset Kendaraan ' . strtoupper($decoded_url_area);
-            $data['judul'] = 'Aset Kendaraan ' . $decoded_url_area;
-            $data['filterURL'] = $decoded_url_area;
-            $data['getKategoriKendaraan'] = strtoupper($decoded_url_area);
-            $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Terminasi->getMasterAsetKendaraan();
-            $data['getMasterAsetKendaraanFilter'] = $this->MGA_Aset_Terminasi->getMasterAsetKendaraanFilter();
+            $data['title'] = 'Aset Terminasi ' . strtoupper($decoded_url_area);
+            $data['judul'] = 'Aset Terminasi ' . $decoded_url_area;
+            $data['getKategoriTerminasi'] = strtoupper($decoded_url_area);
+            $data['getMasterAsetTerminasi'] = $this->MGA_Aset_Terminasi->getMasterAsetTerminasi();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
-            $this->load->view('GA_Aset_Terminasi/indexkendaraanarea', $data);
+            $this->load->view('GA_Aset_Terminasi/indexTerminasi', $data);
+            // $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
+
+        } else {
+            redirect('Auth');
+        }
+    }
+
+    public function areaTerminasi()
+    {
+
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $decoded_url_area = urldecode($last_segment);
+
+        if (!empty($this->session->userdata('id_user'))) {
+
+            $data['title'] = 'Aset Terminasi ' . strtoupper($decoded_url_area);
+            $data['judul'] = 'Aset Terminasi ' . $decoded_url_area;
+            $data['filterURL'] = $decoded_url_area;
+            $data['getKategoriTerminasi'] = strtoupper($decoded_url_area);
+            $data['getMasterAsetTerminasi'] = $this->MGA_Aset_Terminasi->getMasterAsetTerminasi();
+            $data['getMasterAsetTerminasiFilter'] = $this->MGA_Aset_Terminasi->getMasterAsetTerminasiFilter();
+
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('GA_Aset_Terminasi/indexTerminasiarea', $data);
             // $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
 
