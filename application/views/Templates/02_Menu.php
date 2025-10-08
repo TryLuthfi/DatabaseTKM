@@ -288,7 +288,7 @@ $id_menu = $this->uri->segment('1');
                     </li>
 
                     <li class="nav-item" style="pointer-events: none">
-                        <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok') {
+                        <a href="<?= base_url('asd') ?>" class="nav-link <?php if ($id_menu == 'asd') {
                               echo "active";
                           } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
@@ -336,7 +336,7 @@ $id_menu = $this->uri->segment('1');
                         </ul>
                     </li>
                     <li class="nav-item" style="pointer-events: none">
-                        <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok') {
+                        <a href="<?= base_url('asd') ?>" class="nav-link <?php if ($id_menu == 'asd') {
                               echo "active";
                           } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
