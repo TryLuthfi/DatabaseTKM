@@ -357,8 +357,7 @@ $total = 1;
                                         <div class="container-fluid">
                                             <div class="row mb-2">
                                                 <div class="col-sm-12">
-                                                    <h1 class="m-0 text-dark" style="text-align: center;">DISTRIBUSI
-                                                        KENDARAAN AREA</h1>
+                                                        <h3 class="m-0 text-dark" style="text-align: center;">TIPE 3</h3>
                                                 </div><!-- /.col -->
                                             </div><!-- /.row -->
                                         </div><!-- /.container-fluid -->
@@ -376,14 +375,18 @@ $total = 1;
                                                     <div class="card">
                                                         <!-- /.card-header -->
                                                         <div class="card-body table-responsive text-nowrap ">
-                                                            <table id="table_detail_kota"
+                                                            <table id="table_detail_regional"
                                                                 class="table table-bordered table-hover">
                                                                 <thead class="bg-info">
                                                                     <tr>
                                                                         <th>No</th>
                                                                         <th>Regional</th>
-                                                                        <th>Mobil</th>
-                                                                        <th>Motor</th>
+                                                                        <th>Senter Optik</th>
+                                                                        <th>Sabuk Safety</th>
+                                                                        <th>Impact Drill</th>
+                                                                        <th>Elektroda</th>
+                                                                        <th>Tester Grounding</th>
+                                                                        <th>Mesin Kerja</th>
                                                                         <th>Detail</th>
                                                                     </tr>
                                                                 </thead>
@@ -391,46 +394,73 @@ $total = 1;
                                                                     <?php
                                                                     $total = 1;
 
-                                                                    foreach ($getCountAsetKendaraanByKota as $data):
-                                                                        if (!in_array($data['ak_area'], ['Terjual', 'Hilang'])):
+                                                                    foreach ($getCountAsetTerminasiByRegionTipe3 as $data):
 
                                                                             ?>
 
                                                                             <tr>
                                                                                 <td><?= $total++ ?></td>
-                                                                                <td><?= $data['ak_area'] ?></td>
+                                                                                <td><?= $data['at_regional'] ?></td>
                                                                                 <td><?php
-                                                                                if ($data['mobil'] == "0") {
+                                                                                if ($data['senter_optik'] == "0") {
                                                                                     echo "-";
                                                                                 } else {
-                                                                                    echo number_format(floatval($data['mobil']), 0, ",", ".");
+                                                                                    echo number_format(floatval($data['senter_optik']), 0, ",", ".");
                                                                                 }
                                                                                 ?></td>
                                                                                 <td><?php
-                                                                                if ($data['motor'] == "0") {
+                                                                                if ($data['sabuk_safety'] == "0") {
                                                                                     echo "-";
                                                                                 } else {
-                                                                                    echo number_format(floatval($data['motor']), 0, ",", ".");
+                                                                                    echo number_format(floatval($data['sabuk_safety']), 0, ",", ".");
+                                                                                }
+                                                                                ?></td>
+                                                                                <td><?php
+                                                                                if ($data['impact_drill'] == "0") {
+                                                                                    echo "-";
+                                                                                } else {
+                                                                                    echo number_format(floatval($data['impact_drill']), 0, ",", ".");
+                                                                                }
+                                                                                ?></td>
+                                                                                <td><?php
+                                                                                if ($data['elektroda'] == "0") {
+                                                                                    echo "-";
+                                                                                } else {
+                                                                                    echo number_format(floatval($data['elektroda']), 0, ",", ".");
+                                                                                }
+                                                                                ?></td>
+                                                                                <td><?php
+                                                                                if ($data['tester_grounding'] == "0") {
+                                                                                    echo "-";
+                                                                                } else {
+                                                                                    echo number_format(floatval($data['tester_grounding']), 0, ",", ".");
+                                                                                }
+                                                                                ?></td>
+                                                                                <td><?php
+                                                                                if ($data['mesin_kerja'] == "0") {
+                                                                                    echo "-";
+                                                                                } else {
+                                                                                    echo number_format(floatval($data['mesin_kerja']), 0, ",", ".");
                                                                                 }
                                                                                 ?></td>
                                                                                 <td>
-                                                                                    <a href="<?php echo site_url('GA_Aset_Kendaraan/areaKendaraan/' . $data['ak_area']) ?>"
+                                                                                    <a href="<?php echo site_url('GA_Aset_Terminasi/areaTerminasi/' . $data['at_regional']); ?>"
                                                                                         class="btn btn-primary"><i
                                                                                             class=" fas fa-eye"></i></a>
                                                                                 </td>
                                                                             </tr>
 
-                                                                        <?php endif; endforeach; ?>
+                                                                        <?php endforeach; ?>
 
                                                                 </tbody>
                                                                 <tfoot>
                                                                     <tr>
                                                                         <th colspan="2">TOTAL</th>
                                                                         <th colspan="1"><span
-                                                                                id="totalTabelMobilKota">0</span>
+                                                                                id="totalTabelMobilRegional">0</span>
                                                                         </th>
                                                                         <th colspan="1"><span
-                                                                                id="totalTabelMotorKota">0</span>
+                                                                                id="totalTabelMotorRegional">0</span>
                                                                         </th>
                                                                         <th colspan="1"></th>
                                                                     </tr>
