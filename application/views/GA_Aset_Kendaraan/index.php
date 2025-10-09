@@ -569,17 +569,21 @@ $total = 1;
         const table = $('#table_detail_kota').DataTable({
             footerCallback: function () {
                 updateTotal();
-            }
+            },
+            columnDefs: [
+                { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+            ],
+            order: [[1, 'asc']] // Urut default kolom Kode Aset
         });
+
+        table.on('order.dt search.dt', function () {
+            table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
+            });
+        }).draw();
 
         // Fungsi untuk menghitung total dari data yang tampil
         function updateTotal() {
-            // Ambil semua data yang terlihat
-            const table = $('#table_detail_kota').DataTable({
-                footerCallback: function () {
-                    updateTotal();
-                }
-            });
 
             const data = table.rows({
                 search: 'applied'

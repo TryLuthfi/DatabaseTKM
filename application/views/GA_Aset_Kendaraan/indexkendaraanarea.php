@@ -61,28 +61,28 @@ $total = 1;
                                     <tbody>
                                         <?php
                                         foreach ($getMasterAsetKendaraanFilter as $data): ?>
-                                                    <tr>
-                                                        <td><?= $total++ ?></td>
-                                                        <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
-                                                        <td><?= $data['ak_merk'] ?></td>
-                                                        <td><?= $data['ak_plat_nomor'] ?></td>
-                                                        <td><?= $data['ak_pic'] ?></td>
-                                                        <td><?= $data['ak_area'] ?></td>
-                                                        <td><?= $data['ak_status_aset'] ?></td>
-                                                        <td>
-                                                            <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                                id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                                    class=" fas fa-trash"></i></a>
-                                                            <a href="#" class="btn btn-warning"
-                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                                data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
-                                                                data-toggle="modal"><i class="fas fa-edit"></i></a>
-                                                            <a href="#" class="btn btn-primary"
-                                                                data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
-                                                                data-toggle="modal"><i class="fas fa-eye"></i></a>
-                                                        </td>
-                                                    </tr>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
+                                                <td><?= $data['ak_merk'] ?></td>
+                                                <td><?= $data['ak_plat_nomor'] ?></td>
+                                                <td><?= $data['ak_pic'] ?></td>
+                                                <td><?= $data['ak_area'] ?></td>
+                                                <td><?= $data['ak_status_aset'] ?></td>
+                                                <td>
+                                                    <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                        id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                            class=" fas fa-trash"></i></a>
+                                                    <a href="#" class="btn btn-warning"
+                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                        data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
+                                                        data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                    <a href="#" class="btn btn-primary"
+                                                        data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
+                                                        data-toggle="modal"><i class="fas fa-eye"></i></a>
+                                                </td>
+                                            </tr>
                                         <?php endforeach; ?>
 
                                     </tbody>
@@ -138,9 +138,9 @@ $total = 1;
                 $tanggal_plat_format_indo = date('d F Y', strtotime($data['ak_tanggal_plat']));
                 $tanggal_stnk_format_indo = date('d F Y', strtotime($data['ak_tanggal_stnk']));
 
-                if($data['ak_kondisi_aset'] == 'BAIK'){ 
+                if ($data['ak_kondisi_aset'] == 'BAIK') {
                     $warna_remarks_kondisi = "background-color: #d4edda; color: #155724;";
-                } else if($data['ak_kondisi_aset'] == 'RUSAK'){
+                } else if ($data['ak_kondisi_aset'] == 'RUSAK') {
                     $warna_remarks_kondisi = "background-color: #f8d7da; color: #721c24;";
                 } else {
                     $warna_remarks_kondisi = "";
@@ -524,31 +524,24 @@ $total = 1;
         const table = $('#tabel_pemasukan').DataTable({
             footerCallback: function () {
                 updateTotal();
-            }
+            },
+            columnDefs: [
+                { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+            ],
+            order: [[1, 'asc']] // Urut default kolom Kode Aset
         });
+
+        table.on('order.dt search.dt', function () {
+            table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
+            });
+        }).draw();
 
         // Fungsi untuk menghitung total dari data yang tampil
         function updateTotal() {
-            // Ambil semua data yang terlihat
-            const table = $('#tabel_pemasukan').DataTable({
-                footerCallback: function () {
-                    updateTotal();
-                }
-            });
-
-            const data = table.rows({
-                search: 'applied'
-            }).data();
-
-            // Hitung total dari kolom Value (index 2)
-            let totalTabelAset = 0;
-
-
-            data.each(function (row) {
-                totalTabelAset ++;
-            });
+            const data = table.rows({ search: 'applied' }).data();
+            let totalTabelAset = data.length;
             document.getElementById('totalTabelAset').innerText = totalTabelAset.toLocaleString('id-ID');
-
         }
 
         // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)

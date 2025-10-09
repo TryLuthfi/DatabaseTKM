@@ -568,38 +568,29 @@ $total = 1;
         });
     });
 
-    alert("tes");
-
     $(document).ready(function () {
         $.fn.dataTable.ext.errMode = 'none';
         const table = $('#tabel_pemasukan').DataTable({
             footerCallback: function () {
                 updateTotal();
-            }
+            },
+            columnDefs: [
+                { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+            ],
+            order: [[1, 'asc']] // Urut default kolom Kode Aset
         });
+
+        table.on('order.dt search.dt', function () {
+            table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
+            });
+        }).draw();
 
         // Fungsi untuk menghitung total dari data yang tampil
         function updateTotal() {
-            // Ambil semua data yang terlihat
-            const table = $('#tabel_pemasukan').DataTable({
-                footerCallback: function () {
-                    updateTotal();
-                }
-            });
-
-            const data = table.rows({
-                search: 'applied'
-            }).data();
-
-            // Hitung total dari kolom Value (index 2)
-            let totalTabelAset = 0;
-
-
-            data.each(function (row) {
-                totalTabelAset ++;
-            });
+            const data = table.rows({ search: 'applied' }).data();
+            let totalTabelAset = data.length;
             document.getElementById('totalTabelAset').innerText = totalTabelAset.toLocaleString('id-ID');
-
         }
 
         // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
