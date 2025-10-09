@@ -38,7 +38,6 @@ $total = 1;
                                     <div class="container-fluid">
                                         <div class="row">
 
-                                            <!-- ====================== MOBIL (KIRI) ====================== -->
                                             <div class="col-md-12 mt-4">
                                                 <div class="p-3 mb-4 shadow-sm rounded"
                                                     style="background-color: #bbc1c754;">
@@ -56,7 +55,7 @@ $total = 1;
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
                                                                         <a href="#" class="small-box-footer"
-                                                                            id="<?php echo 'box_detail_terminasi' . $stokTerminasi['ka_jenis_aset'] ?>">
+                                                                            id="<?php echo 'box_detail_terminasi_' . $stokTerminasi['ka_jenis_aset'] ?>">
                                                                             Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
@@ -83,7 +82,7 @@ $total = 1;
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
                                                                         <a href="#" class="small-box-footer"
-                                                                            id="<?php echo 'box_detail_terminasi' . $stokTerminasi['ka_jenis_aset'] ?>">
+                                                                            id="<?php echo 'box_detail_terminasi_' . $stokTerminasi['ka_jenis_aset'] ?>">
                                                                             Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
@@ -109,7 +108,7 @@ $total = 1;
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
                                                                         <a href="#" class="small-box-footer"
-                                                                            id="<?php echo 'box_detail_terminasi' . $stokTerminasi['ka_jenis_aset'] ?>">
+                                                                            id="<?php echo 'box_detail_terminasi_' . $stokTerminasi['ka_jenis_aset'] ?>">
                                                                             Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
@@ -256,97 +255,14 @@ $total = 1;
         });
     });
 
-    $(document).ready(function () {
-        $.fn.dataTable.ext.errMode = 'none';
-        const table = $('#table_detail_kota').DataTable({
-            footerCallback: function () {
-                updateTotal();
-            }
-        });
-
-        // Fungsi untuk menghitung total dari data yang tampil
-        function updateTotal() {
-            // Ambil semua data yang terlihat
-            const table = $('#table_detail_kota').DataTable({
-                footerCallback: function () {
-                    updateTotal();
-                }
-            });
-
-            const data = table.rows({
-                search: 'applied'
-            }).data();
-
-            // Hitung total dari kolom Value (index 2)
-            let totalTabelMobilRegional = 0;
-            let totalTabelMobilKota = 0;
-            let totalTabelMotorRegional = 0;
-            let totalTabelMotorKota = 0;
-
-
-            data.each(function (row) {
-
-                totalTabelMobilRegional += parseFloat(row[2].replace(/\./g, '')) || 0;
-                totalTabelMobilKota += parseFloat(row[2].replace(/\./g, '')) || 0;
-                totalTabelMotorRegional += parseFloat(row[3].replace(/\./g, '')) || 0;
-                totalTabelMotorKota += parseFloat(row[3].replace(/\./g, '')) || 0;
-            });
-
-            document.getElementById('totalTabelMobilRegional').innerText = totalTabelMobilRegional.toLocaleString('id-ID');
-            document.getElementById('totalTabelMobilKota').innerText = totalTabelMobilKota.toLocaleString('id-ID');
-            document.getElementById('totalTabelMotorRegional').innerText = totalTabelMotorRegional.toLocaleString('id-ID');
-            document.getElementById('totalTabelMotorKota').innerText = totalTabelMotorKota.toLocaleString('id-ID');
-        }
-
-        // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
-        table.on('draw', function () {
-            updateTotal();
-        });
-
-        // Hitung total pertama kali saat tabel dimuat
-        updateTotal();
-    });
-
     document.addEventListener("DOMContentLoaded", function () {
-        <?php foreach ($getCountAsetKendaraan as $stokKendaraan): ?>
+        <?php foreach ($getCountAsetTerminasiAll as $stokTerminasi): ?>
 
             // Untuk kondisi Aktif
-            var boxAktif = document.getElementById("box_detail_kendaraan_A<?= $stokKendaraan['ka_jenis_aset'] ?>");
+            var boxAktif = document.getElementById("box_detail_terminasi_<?= $stokTerminasi['ka_jenis_aset'] ?>");
             if (boxAktif) {
                 boxAktif.addEventListener("click", function () {
-                    window.location.href = "<?= base_url('GA_Aset_Kendaraan/detailKendaraan/A' . $stokKendaraan['ka_jenis_aset']) ?>";
-                });
-            }
-
-            // Untuk kondisi Baik
-            var boxBaik = document.getElementById("box_detail_kendaraan_B<?= $stokKendaraan['ka_jenis_aset'] ?>");
-            if (boxBaik) {
-                boxBaik.addEventListener("click", function () {
-                    window.location.href = "<?= base_url('GA_Aset_Kendaraan/detailKendaraan/B' . $stokKendaraan['ka_jenis_aset']) ?>";
-                });
-            }
-
-            // Untuk kondisi Rusak
-            var boxRusak = document.getElementById("box_detail_kendaraan_R<?= $stokKendaraan['ka_jenis_aset'] ?>");
-            if (boxRusak) {
-                boxRusak.addEventListener("click", function () {
-                    window.location.href = "<?= base_url('GA_Aset_Kendaraan/detailKendaraan/R' . $stokKendaraan['ka_jenis_aset']) ?>";
-                });
-            }
-
-            // Untuk kondisi Terjual
-            var boxTerjual = document.getElementById("box_detail_kendaraan_T<?= $stokKendaraan['ka_jenis_aset'] ?>");
-            if (boxTerjual) {
-                boxTerjual.addEventListener("click", function () {
-                    window.location.href = "<?= base_url('GA_Aset_Kendaraan/detailKendaraan/T' . $stokKendaraan['ka_jenis_aset']) ?>";
-                });
-            }
-
-            // Untuk kondisi Hilang
-            var boxHilang = document.getElementById("box_detail_kendaraan_H<?= $stokKendaraan['ka_jenis_aset'] ?>");
-            if (boxHilang) {
-                boxHilang.addEventListener("click", function () {
-                    window.location.href = "<?= base_url('GA_Aset_Kendaraan/detailKendaraan/H' . $stokKendaraan['ka_jenis_aset']) ?>";
+                    window.location.href = "<?= base_url('GA_Aset_Terminasi/detailTerminasi/' . $stokTerminasi['ka_jenis_aset']) ?>";
                 });
             }
 

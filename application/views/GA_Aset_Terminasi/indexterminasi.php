@@ -89,7 +89,9 @@ $total = 1;
                                     <tfoot>
                                         <tr>
                                             <th colspan="2">Total</th>
-                                            <th colspan="6"><?= number_format($total - 1, 0, ',', '.') ?></th>
+                                            <th colspan="1"><span id="totalTabelAset">0</span>
+                                            <th colspan="5"></span>
+                                            </th>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -103,6 +105,19 @@ $total = 1;
 
         <?php $tgl = date('Y-m-d'); ?>
         <?php foreach ($getMasterAsetTerminasiTipe as $data):
+
+            if (!empty($data['at_date_last_cek'])) {
+                $tanggal_cek_format_indo = date('d F Y', strtotime($data['at_date_last_cek']));
+            } else {
+                $tanggal_cek_format_indo = '';
+            }
+
+            if (!empty($data['at_date_input'])) {
+                $tanggal_input_format_indo = date('d F Y', strtotime($data['at_date_input']));
+            } else {
+                $tanggal_input_format_indo = '';
+            }
+
             ?>
             <form action="<?php echo site_url('ListArea/edit/' . $data['at_id_list_terminasi']); ?>" method="post"></form>
             <div class="modal fade" id="modal-view-terminasi<?= $data['at_id_list_terminasi'] ?>" tabindex="-1"
@@ -127,7 +142,9 @@ $total = 1;
                                             value="<?= $data['at_id_list_terminasi'] ?>">
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="flex-grow-1 border-top"></div>
-                                            <h3 class="mx-3"><?= $data['ka_jenis_aset']  . ' ' . $data['ka_nama_kode_aset']  . '-' . $data['at_sort'] ?></h3>
+                                            <h3 class="mx-3">
+                                                <?= $data['ka_jenis_aset'] . ' ' . $data['ka_nama_kode_aset'] . '-' . $data['at_sort'] ?>
+                                            </h3>
                                             <div class="flex-grow-1 border-top"></div>
                                         </div>
                                         <div class="row">
@@ -299,16 +316,16 @@ $total = 1;
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label class="col-form-label">Tanggal Terakhir Cek</label>
+                                                    <label class="col-form-label">Tanggal Opname Terakhir</label>
                                                     <input type="text" class="form-control"
-                                                        value="<?= $tanggal_plat_format_indo ?>" readonly>
+                                                        value="<?= $tanggal_cek_format_indo ?>" readonly>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="col-form-label">Tanggal Input Aplikasi</label>
                                                     <input type="text" class="form-control"
-                                                        value="<?= $tanggal_plat_format_indo ?>" readonly>
+                                                        value="<?= $tanggal_input_format_indo ?>" readonly>
                                                 </div>
                                             </div>
                                         </div>
@@ -370,18 +387,20 @@ $total = 1;
     })
 
     $(document).ready(function () {
-        $('#table_detail_kota').DataTable({
+        $('#tabel_pemasukan').DataTable({
             "paging": true, // Tetap gunakan pagination
             "pageLength": 10, // Menampilkan 10 data per halaman
-            "info": false, // Menghilangkan "Showing 1 to X of X entries"
+            "info": true, // Menghilangkan "Showing 1 to X of X entries"
             "searching": true, // Menghilangkan search bar
-            "lengthChange": false // Menghilangkan dropdown "Show entries"
+            "lengthChange": true // Menghilangkan dropdown "Show entries"
         });
     });
 
+    alert("tes");
+
     $(document).ready(function () {
         $.fn.dataTable.ext.errMode = 'none';
-        const table = $('#table_detail_kota').DataTable({
+        const table = $('#tabel_pemasukan').DataTable({
             footerCallback: function () {
                 updateTotal();
             }
@@ -390,7 +409,7 @@ $total = 1;
         // Fungsi untuk menghitung total dari data yang tampil
         function updateTotal() {
             // Ambil semua data yang terlihat
-            const table = $('#table_detail_kota').DataTable({
+            const table = $('#tabel_pemasukan').DataTable({
                 footerCallback: function () {
                     updateTotal();
                 }
@@ -401,18 +420,14 @@ $total = 1;
             }).data();
 
             // Hitung total dari kolom Value (index 2)
-            let totalTabelMobil = 0;
-            let totalTabelMotor = 0;
+            let totalTabelAset = 0;
 
 
             data.each(function (row) {
-
-                totalTabelMobil += parseFloat(row[2].replace(/\./g, '')) || 0;
-                totalTabelMotor += parseFloat(row[3].replace(/\./g, '')) || 0;
+                totalTabelAset ++;
             });
+            document.getElementById('totalTabelAset').innerText = totalTabelAset.toLocaleString('id-ID');
 
-            document.getElementById('totalTabelMobil').innerText = totalTabelMobil.toLocaleString('id-ID');
-            document.getElementById('totalTabelMotor').innerText = totalTabelMotor.toLocaleString('id-ID');
         }
 
         // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
@@ -424,20 +439,6 @@ $total = 1;
         updateTotal();
     });
 
-    document.addEventListener("DOMContentLoaded", function () {
-        <?php foreach ($getCountAsetKendaraan as $stokKendaraan): ?>
-            var boxElement = document.getElementById("box_detail_kendaraan_<?= $stokKendaraan['ka_jenis_aset'] ?>");
-
-            if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
-                boxElement.addEventListener("click", function () {
-                    console.log("<?= $stokKendaraan['ka_jenis_aset'] ?>");
-
-                    window.location.href = "<?= base_url("GA_Aset_Kendaraan/detailKendaraan/" . $stokKendaraan['ka_jenis_aset']) ?>";
-
-                });
-            }
-        <?php endforeach; ?>
-    });
 
 </script>
 
