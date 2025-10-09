@@ -287,13 +287,13 @@ $id_menu = $this->uri->segment('1');
                         </a>
                     </li>
 
-                    <li class="nav-item" style="pointer-events: none">
-                        <a href="<?= base_url('asd') ?>" class="nav-link <?php if ($id_menu == 'asd') {
+                    <li class="nav-item">
+                        <a href="<?= base_url('GA_Aset_Kantor') ?>" class="nav-link <?php if ($id_menu == 'GA_Aset_Kantor') {
                               echo "active";
                           } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
-                                Alat Inventaris
+                                Alat Kerja Kantor
                             </p>
                         </a>
                     </li>
