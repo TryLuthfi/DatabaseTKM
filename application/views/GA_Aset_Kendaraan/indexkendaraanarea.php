@@ -89,7 +89,8 @@ $total = 1;
                                     <tfoot>
                                         <tr>
                                             <th colspan="2">Total</th>
-                                            <th colspan="6"><?= number_format($total - 1, 0, ',', '.') ?></th>
+                                            <th colspan="1"><span id="totalTabelAset">0</span>
+                                            <th colspan="5"></span>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -509,18 +510,18 @@ $total = 1;
     })
 
     $(document).ready(function () {
-        $('#table_detail_kota').DataTable({
+        $('#tabel_pemasukan').DataTable({
             "paging": true, // Tetap gunakan pagination
             "pageLength": 10, // Menampilkan 10 data per halaman
-            "info": false, // Menghilangkan "Showing 1 to X of X entries"
+            "info": true, // Menghilangkan "Showing 1 to X of X entries"
             "searching": true, // Menghilangkan search bar
-            "lengthChange": false // Menghilangkan dropdown "Show entries"
+            "lengthChange": true // Menghilangkan dropdown "Show entries"
         });
     });
 
     $(document).ready(function () {
         $.fn.dataTable.ext.errMode = 'none';
-        const table = $('#table_detail_kota').DataTable({
+        const table = $('#tabel_pemasukan').DataTable({
             footerCallback: function () {
                 updateTotal();
             }
@@ -529,7 +530,7 @@ $total = 1;
         // Fungsi untuk menghitung total dari data yang tampil
         function updateTotal() {
             // Ambil semua data yang terlihat
-            const table = $('#table_detail_kota').DataTable({
+            const table = $('#tabel_pemasukan').DataTable({
                 footerCallback: function () {
                     updateTotal();
                 }
@@ -540,18 +541,14 @@ $total = 1;
             }).data();
 
             // Hitung total dari kolom Value (index 2)
-            let totalTabelMobil = 0;
-            let totalTabelMotor = 0;
+            let totalTabelAset = 0;
 
 
             data.each(function (row) {
-
-                totalTabelMobil += parseFloat(row[2].replace(/\./g, '')) || 0;
-                totalTabelMotor += parseFloat(row[3].replace(/\./g, '')) || 0;
+                totalTabelAset ++;
             });
+            document.getElementById('totalTabelAset').innerText = totalTabelAset.toLocaleString('id-ID');
 
-            document.getElementById('totalTabelMobil').innerText = totalTabelMobil.toLocaleString('id-ID');
-            document.getElementById('totalTabelMotor').innerText = totalTabelMotor.toLocaleString('id-ID');
         }
 
         // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
@@ -561,21 +558,6 @@ $total = 1;
 
         // Hitung total pertama kali saat tabel dimuat
         updateTotal();
-    });
-
-    document.addEventListener("DOMContentLoaded", function () {
-        <?php foreach ($getCountAsetKendaraan as $stokKendaraan): ?>
-            var boxElement = document.getElementById("box_detail_kendaraan_<?= $stokKendaraan['ka_jenis_aset'] ?>");
-
-            if (boxElement) { // Pastikan elemen ditemukan sebelum menambahkan event
-                boxElement.addEventListener("click", function () {
-                    console.log("<?= $stokKendaraan['ka_jenis_aset'] ?>");
-
-                    window.location.href = "<?= base_url("GA_Aset_Kendaraan/detailKendaraan/" . $stokKendaraan['ka_jenis_aset']) ?>";
-
-                });
-            }
-        <?php endforeach; ?>
     });
 
 </script>
