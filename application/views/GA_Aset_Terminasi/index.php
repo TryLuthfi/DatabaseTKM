@@ -6,6 +6,58 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
 $kategori_item = ['Tiang', 'OTB ', 'Kabel ', 'HDPE ', 'FDT', 'FAT', 'Closure', 'Aksesories '];
 
 $total = 1;
+$totalTabelSplicer = 0;
+$totalTabelOtdr = 0;
+$totalTabelGps = 0;
+$totalTabelCamera360 = 0;
+$totalTabelUtg = 0;
+$totalTabelTanggateleskopik = 0;
+$totalTabelOls = 0;
+$totalTabelOpm = 0;
+$totalTabelOfi = 0;
+$totalTabelLabelit = 0;
+$totalTabelPowerinverter = 0;
+$totalTabelRollmeter = 0;
+$totalTabelToolkits = 0;
+$totalTabelCleaver = 0;
+$totalTabelStripper = 0;
+$totalTabelSlitter = 0;
+$totalTabelSenteroptik = 0;
+$totalTabelSabuksafety = 0;
+$totalTabelImpactdrill = 0;
+$totalTabelElektroda = 0;
+$totalTabelTestergrounding = 0;
+$totalTabelMesinkerja = 0;
+
+
+foreach ($getCountAsetTerminasiByRegionTipe1 as $data):
+    $totalTabelSplicer += intval($data['splicer']);
+    $totalTabelOtdr += intval($data['otdr']);
+    $totalTabelGps += intval($data['gps']);
+    $totalTabelCamera360 += intval($data['camera_360']);
+    $totalTabelUtg += intval($data['utg']);
+    $totalTabelTanggateleskopik += intval($data['tangga_teleskopik']);
+    $totalTabelOls += intval($data['ols']);
+    $totalTabelOpm += intval($data['opm']);
+endforeach;
+foreach ($getCountAsetTerminasiByRegionTipe2 as $data):
+    $totalTabelOfi += intval($data['ofi']);
+    $totalTabelLabelit += intval($data['label_it']);
+    $totalTabelPowerinverter += intval($data['power_inverter']);
+    $totalTabelRollmeter += intval($data['roll_meter']);
+    $totalTabelToolkits += intval($data['toolkits']);
+    $totalTabelCleaver += intval($data['cleaver']);
+    $totalTabelStripper += intval($data['stripper']);
+    $totalTabelSlitter += intval($data['slitter']);
+endforeach;
+foreach ($getCountAsetTerminasiByRegionTipe3 as $data):
+    $totalTabelSenteroptik += intval($data['senter_optik']);
+    $totalTabelSabuksafety += intval($data['sabuk_safety']);
+    $totalTabelImpactdrill += intval($data['impact_drill']);
+    $totalTabelElektroda += intval($data['elektroda']);
+    $totalTabelTestergrounding += intval($data['tester_grounding']);
+    $totalTabelMesinkerja += intval($data['mesin_kerja']);
+endforeach;
 ?>
 
 <div class="content-wrapper">
@@ -198,7 +250,15 @@ $total = 1;
                                                                 <tfoot>
                                                                     <tr>
                                                                         <th colspan="2">TOTAL</th>
-                                                                        <th><span id="totalTabelSplicer">0</span></th>
+                                                                        <th><span><?= $totalTabelSplicer ?></span></th>
+                                                                        <th><span><?= $totalTabelOtdr ?></span></th>
+                                                                        <th><span><?= $totalTabelGps ?></span></th>
+                                                                        <th><span><?= $totalTabelCamera360 ?></span></th>
+                                                                        <th><span><?= $totalTabelUtg ?></span></th>
+                                                                        <th><span><?= $totalTabelTanggateleskopik ?></span>
+                                                                        </th>
+                                                                        <th><span><?= $totalTabelOls ?></span></th>
+                                                                        <th><span><?= $totalTabelOpm ?></span></th>
                                                                         <th></th>
                                                                     </tr>
                                                                 </tfoot>
@@ -332,23 +392,15 @@ $total = 1;
                                                                 <tfoot>
                                                                     <tr>
                                                                         <th colspan="2">TOTAL</th>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelOfi">0</span>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelLabelit">0</span>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelPowerinverter">0</span>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelRollmeter">0</span>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelToolkits">0</span>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelCleaver">0</span>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelStripper">0</span>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelSlitter">0</span>
-                                                                        <th colspan="1"></th>
+                                                                        <th><span><?= $totalTabelOfi ?></span></th>
+                                                                        <th><span><?= $totalTabelLabelit ?></span></th>
+                                                                        <th><span><?= $totalTabelPowerinverter ?></span></th>
+                                                                        <th><span><?= $totalTabelRollmeter ?></span></th>
+                                                                        <th><span><?= $totalTabelToolkits ?></span></th>
+                                                                        <th><span><?= $totalTabelCleaver ?></span></th>
+                                                                        <th><span><?= $totalTabelStripper ?></span></th>
+                                                                        <th><span><?= $totalTabelSlitter ?></span></th>
+                                                                        <th></th>
                                                                     </tr>
                                                                 </tfoot>
                                                             </table>
@@ -465,19 +517,13 @@ $total = 1;
                                                                 <tfoot>
                                                                     <tr>
                                                                         <th colspan="2">TOTAL</th>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelSenteroptik">0</span>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelSabuksafety">0</span>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelImpactdrill">0</span>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelElektroda">0</span>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelTestergrounding">0</span>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelMesinkerja">0</span>
-                                                                        <th colspan="1"></th>
+                                                                        <th><span><?= $totalTabelSenteroptik ?></span></th>
+                                                                        <th><span><?= $totalTabelSabuksafety ?></span></th>
+                                                                        <th><span><?= $totalTabelImpactdrill ?></span></th>
+                                                                        <th><span><?= $totalTabelElektroda ?></span></th>
+                                                                        <th><span><?= $totalTabelTestergrounding ?></span></th>
+                                                                        <th><span><?= $totalTabelMesinkerja ?></span></th>
+                                                                        <th></th>
                                                                     </tr>
                                                                 </tfoot>
                                                             </table>
@@ -593,7 +639,6 @@ $total = 1;
 
 <script>
     $(function () {
-
         //Initialize Select2 Elements
         $('.select2').select2()
         $('.select2bs4').select2({
