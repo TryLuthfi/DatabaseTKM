@@ -73,10 +73,10 @@ class GA_Aset_Terminasi extends CI_Controller
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
-            $this->load->view('GA_Aset_Terminasi/indexTerminasi', $data);
+            $this->load->view('GA_Aset_Terminasi/indexterminasi', $data);
             // $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
-
+//update
         } else {
             redirect('Auth');
         }
