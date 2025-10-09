@@ -107,7 +107,7 @@ endforeach;
                                                                     </div>
                                                                     <div class="icon"><i class="ion ion-bag"></i></div>
                                                                     <a href="#" class="small-box-footer"
-                                                                        id="<?php echo 'box_detail_terminasi' . $stokTerminasi['ka_jenis_aset'] ?>">
+                                                                        id="<?php echo 'box_detail_terminasi_' . $stokTerminasi['ka_jenis_aset'] ?>">
                                                                         Lihat Detail <i
                                                                             class="fas fa-arrow-circle-right"></i></a>
                                                                 </div>
@@ -670,6 +670,20 @@ endforeach;
             "searching": false, // Menghilangkan search bar
             "lengthChange": false // Menghilangkan dropdown "Show entries"
         });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        <?php foreach ($getCountAsetTerminasiLimit as $stokTerminasi): ?>
+
+            // Untuk kondisi Aktif
+            var boxAktif = document.getElementById("box_detail_terminasi_<?= $stokTerminasi['ka_jenis_aset'] ?>");
+            if (boxAktif) {
+                boxAktif.addEventListener("click", function () {
+                    window.location.href = "<?= base_url('GA_Aset_Terminasi/detailTerminasi/' . $stokTerminasi['ka_jenis_aset']) ?>";
+                });
+            }
+
+        <?php endforeach; ?>
     });
 </script>
 

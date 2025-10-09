@@ -69,6 +69,7 @@ class GA_Aset_Terminasi extends CI_Controller
             $data['judul'] = 'Aset Terminasi ' . $decoded_url_area;
             $data['getKategoriTerminasi'] = strtoupper($decoded_url_area);
             $data['getMasterAsetTerminasi'] = $this->MGA_Aset_Terminasi->getMasterAsetTerminasi();
+            $data['getMasterAsetTerminasiTipe'] = $this->MGA_Aset_Terminasi->getMasterAsetTerminasiTipe();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');

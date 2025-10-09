@@ -4,30 +4,9 @@ $error_log = $this->session->flashdata('error_log');
 
 $option_aktif = ['AKTIF', 'HILANG', 'TERJUAL'];
 
-$prefix = substr($getKategoriKendaraan, 0, 1); // A
-$kategori = substr($getKategoriKendaraan, 1); // MOBIL
-$substatus = '';
-$subkondisi = '';
-
-if ($prefix == 'A') {
-    $substatus = 'AKTIF';
-} elseif ($prefix == 'H') {
-    $substatus = 'HILANG';
-} elseif ($prefix == 'T') {
-    $substatus = 'TERJUAL';
-} elseif ($prefix == 'B') {
-    $subkondisi = 'BAIK';
-} elseif ($prefix == 'R') {
-    $subkondisi = 'RUSAK';
-} else {
-    $substatus = '';
-    $subkondisi = '';
-}
 
 $total = 1;
 ?>
-
-<script>alert(<?= $getKategoriKendaraan ?>);</script>
 
 <div class="content-wrapper">
 
@@ -36,7 +15,7 @@ $total = 1;
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><?= $kategori = substr($getKategoriKendaraan, 1); ?></h1>
+                        <h1 class="m-0 text-dark"><?= $getKategoriTerminasi ?></h1>
                     </div>
                 </div>
             </div>
@@ -68,70 +47,42 @@ $total = 1;
                                     <thead>
                                         <tr>
                                             <th>No</th>
-                                            <th>Kode</th>
-                                            <th>Merk Kendaraan</th>
-                                            <th>NOPOL</th>
+                                            <th>Kode Aset</th>
+                                            <th>Jenis Aset</th>
+                                            <th>Merk</th>
+                                            <th>Type</th>
                                             <th>PIC</th>
                                             <th>Area</th>
-                                            <th>Status</th>
                                             <th>Detail</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php
-                                        foreach ($getMasterAsetKendaraan as $data):
-                                            if ($substatus != '') {
-                                                if ($data['ka_jenis_aset'] == $kategori && $data['ak_status_aset'] == $substatus) { ?>
-                                                    <tr>
-                                                        <td><?= $total++ ?></td>
-                                                        <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
-                                                        <td><?= $data['ak_merk'] ?></td>
-                                                        <td><?= $data['ak_plat_nomor'] ?></td>
-                                                        <td><?= $data['ak_pic'] ?></td>
-                                                        <td><?= $data['ak_area'] ?></td>
-                                                        <td><?= $data['ak_status_aset'] ?></td>
-                                                        <td>
-                                                            <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                                id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                                    class=" fas fa-trash"></i></a>
-                                                            <a href="#" class="btn btn-warning"
-                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                                data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
-                                                                data-toggle="modal"><i class="fas fa-edit"></i></a>
-                                                            <a href="#" class="btn btn-primary"
-                                                                data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
-                                                                data-toggle="modal"><i class="fas fa-eye"></i></a>
-                                                        </td>
-                                                    </tr>
+                                        foreach ($getMasterAsetTerminasiTipe as $data): ?>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['ka_nama_kode_aset'] . '-' . $data['at_sort'] ?></td>
+                                                <td><?= $data['ka_jenis_aset'] ?></td>
+                                                <td><?= $data['at_merk'] ?></td>
+                                                <td><?= $data['at_type'] ?></td>
+                                                <td><?= $data['at_pic'] ?></td>
+                                                <td><?= $data['at_area'] ?></td>
+                                                <td>
+                                                    <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                        id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                            class=" fas fa-trash"></i></a>
+                                                    <a href="#" class="btn btn-warning"
+                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                        data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
+                                                        data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                    <a href="#" class="btn btn-primary"
+                                                        data-target="#modal-view-terminasi<?= $data['at_id_list_terminasi'] ?>"
+                                                        data-toggle="modal"><i class="fas fa-eye"></i></a>
+                                                </td>
+                                            </tr>
 
-                                                <?php }
-                                            } else if ($subkondisi != '') {
-                                                if ($data['ka_jenis_aset'] == $kategori && $data['ak_kondisi_aset'] == $subkondisi) { ?>
-                                                        <tr>
-                                                            <td><?= $total++ ?></td>
-                                                            <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
-                                                            <td><?= $data['ak_merk'] ?></td>
-                                                            <td><?= $data['ak_plat_nomor'] ?></td>
-                                                            <td><?= $data['ak_pic'] ?></td>
-                                                            <td><?= $data['ak_area'] ?></td>
-                                                            <td><?= $data['ak_status_aset'] ?></td>
-                                                            <td>
-                                                                <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                                    style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                                    id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                                        class=" fas fa-trash"></i></a>
-                                                                <a href="#" class="btn btn-warning"
-                                                                    style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                                    data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
-                                                                    data-toggle="modal"><i class="fas fa-edit"></i></a>
-                                                                <a href="#" class="btn btn-primary"
-                                                                    data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
-                                                                    data-toggle="modal"><i class="fas fa-eye"></i></a>
-                                                            </td>
-                                                        </tr>
-                                                <?php }
-                                            }
+                                            <?php
                                         endforeach; ?>
 
                                     </tbody>
@@ -151,86 +102,15 @@ $total = 1;
         </section>
 
         <?php $tgl = date('Y-m-d'); ?>
-        <?php foreach ($getMasterAsetKendaraan as $data):
-
-            $tanggal_perolehan = isset($data['ak_tahun_perolehan']) ? $data['ak_tahun_perolehan'] : null;
-            $tanggal_stnk = isset($data['ak_tanggal_stnk']) ? $data['ak_tanggal_stnk'] : null;
-            $tanggal_plat = isset($data['ak_tanggal_plat']) ? $data['ak_tanggal_plat'] : null;
-
-            $remarks_stnk = "";
-            $remarks_plat = "";
-            $warna_remarks_stnk = '';
-            $warna_remarks_plat = '';
-            $warna_remarks_kondisi = '';
-
-            // Cek jika tanggal valid
-            if (!empty($tanggal_perolehan)) {
-
-                $formatDate = new DateTime(date('Y-m-d'));
-
-                $awal_tanggal_beli = new DateTime($tanggal_perolehan);
-                $awal_tanggal_stnk = new DateTime($tanggal_stnk);
-                $awal_tanggal_plat = new DateTime($tanggal_plat);
-                $selisih_tanggal_beli = $awal_tanggal_beli->diff($formatDate);
-                $selisih_tanggal_stnk = $awal_tanggal_stnk->diff($formatDate);
-                $selisih_tanggal_plat = $awal_tanggal_plat->diff($formatDate);
-
-                $umur_kendaraan = $selisih_tanggal_beli->y . ' tahun ' . $selisih_tanggal_beli->m . ' bulan ' . $selisih_tanggal_beli->d . ' hari';
-                $umur_stnk = $selisih_tanggal_stnk->y . ' tahun ' . $selisih_tanggal_stnk->m . ' bulan ' . $selisih_tanggal_stnk->d . ' hari';
-                $umur_plat = $selisih_tanggal_plat->y . ' tahun ' . $selisih_tanggal_plat->m . ' bulan ' . $selisih_tanggal_plat->d . ' hari';
-                $umur_kendaraan_hari = $selisih_tanggal_beli->days . ' hari';
-                $umur_stnk_hari = $selisih_tanggal_stnk->days . ' hari';
-                $umur_plat_hari = $selisih_tanggal_plat->days . ' hari';
-
-                $tanggal_beli_format_indo = date('d F Y', strtotime($data['ak_tahun_perolehan']));
-                $tanggal_plat_format_indo = date('d F Y', strtotime($data['ak_tanggal_plat']));
-                $tanggal_stnk_format_indo = date('d F Y', strtotime($data['ak_tanggal_stnk']));
-
-                if($data['ak_kondisi_aset'] == 'BAIK'){ 
-                    $warna_remarks_kondisi = "background-color: #d4edda; color: #155724;";
-                } else if($data['ak_kondisi_aset'] == 'RUSAK'){
-                    $warna_remarks_kondisi = "background-color: #f8d7da; color: #721c24;";
-                } else {
-                    $warna_remarks_kondisi = "";
-                }
-
-                if ($umur_stnk_hari > '10') {
-                    $remarks_stnk = "AKTIF";
-                    $warna_remarks_stnk = "background-color: #d4edda; color: #155724;";
-                } else if ($umur_stnk_hari <= '10') {
-                    $remarks_stnk = "AKAN MATI";
-                    $warna_remarks_stnk = "background-color: #f8d7da; color: #721c24;";
-                } else if ($umur_stnk_hari <= days) {
-                    $remarks_stnk = "MATI";
-                    $warna_remarks_stnk = "background-color: #fff3cd; color: #856404;";
-                } else {
-                    $remarks_stnk = "";
-                }
-
-                if ($umur_plat_hari > '10') {
-                    $remarks_plat = "AKTIF";
-                    $warna_remarks_plat = "background-color: #d4edda; color: #155724;";
-                } else if ($umur_plat_hari <= '10') {
-                    $remarks_plat = "AKAN MATI";
-                    $warna_remarks_plat = "background-color: #f8d7da; color: #721c24;";
-                } else if ($umur_plat_hari <= days) {
-                    $remarks_plat = "MATI";
-                    $warna_remarks_plat = "background-color: #fff3cd; color: #856404;";
-                } else {
-                    $remarks_plat = "";
-                }
-
-            } else {
-                $umur_kendaraan = '-';
-            }
+        <?php foreach ($getMasterAsetTerminasiTipe as $data):
             ?>
-            <form action="<?php echo site_url('ListArea/edit/' . $data['ak_id_list_kendaraan']); ?>" method="post"></form>
-            <div class="modal fade" id="modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>" tabindex="-1"
+            <form action="<?php echo site_url('ListArea/edit/' . $data['at_id_list_terminasi']); ?>" method="post"></form>
+            <div class="modal fade" id="modal-view-terminasi<?= $data['at_id_list_terminasi'] ?>" tabindex="-1"
                 role="dialog" aria-labelledby="modal-tambah-label" aria-hidden="true">
                 <div class="modal-dialog modal-xl" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h4 class="modal-title">DETAIL DATA KENDARAAN</h4>
+                            <h4 class="modal-title">DETAIL DATA TERMINASI</h4>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
@@ -243,161 +123,90 @@ $total = 1;
 
                                 <div class="card">
                                     <div class="card-body">
-                                        <input type="hidden" name="ak_id_list_kendaraan"
-                                            value="<?= $data['ak_id_list_kendaraan'] ?>">
+                                        <input type="hidden" name="at_id_list_terminasi"
+                                            value="<?= $data['at_id_list_terminasi'] ?>">
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="flex-grow-1 border-top"></div>
-                                            <h3 class="mx-3"><?= $data['ak_plat_nomor'] ?></h3>
+                                            <h3 class="mx-3"><?= $data['ka_jenis_aset']  . ' ' . $data['ka_nama_kode_aset']  . '-' . $data['at_sort'] ?></h3>
                                             <div class="flex-grow-1 border-top"></div>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label class="col-form-label">Merk Kendaraan</label>
+                                                    <label class="col-form-label">Merk</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ak_merk'] ?>" readonly>
+                                                        autocomplete="off" value="<?= $data['at_merk'] ?>" readonly>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label class="col-form-label">Kondisi Kendaraan</label>
+                                                    <label class="col-form-label">Type</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ak_kondisi_aset'] ?>" readonly
-                                                        style="<?= $warna_remarks_kondisi ?> font-weight: bold;">
+                                                        autocomplete="off" value="<?= $data['at_type'] ?>" readonly
+                                                        style="font-weight: bold;">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Serial Number</label>
+                                                    <input type="text" class="form-control" name="access_id_project"
+                                                        autocomplete="off" value="<?= $data['at_serial_number'] ?>" readonly
+                                                        style="font-weight: bold;">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Kondisi</label>
+                                                    <input type="text" class="form-control" name="access_id_project"
+                                                        autocomplete="off" value="<?= $data['at_kondisi_aset'] ?>" readonly
+                                                        style="font-weight: bold;">
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label class="col-form-label">Pajak STNK</label>
-                                                    <input type="text" class="form-control" name="access_id_project"
-                                                        value="<?= strtoupper($remarks_stnk) ?>" readonly
-                                                        style="<?= $warna_remarks_stnk ?> font-weight: bold;">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label class="col-form-label">Pajak Plat</label>
-                                                    <input type="text" class="form-control" name="access_id_project"
-                                                        value="<?= strtoupper($remarks_plat) ?>" readonly
-                                                        style="<?= $warna_remarks_plat ?> font-weight: bold;">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="d-flex align-items-center mt-3">
+                                        <div class="d-flex align-items-center mb-3 mt-3">
                                             <div class="flex-grow-1 border-top"></div>
-                                            <h4 class="mx-3">PIC & LOKASI</h4>
+                                            <h5 class="mx-3">PIC & LOKASI</h5>
                                             <div class="flex-grow-1 border-top"></div>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label class="col-form-label">PIC Kendaraan</label>
+                                                    <label class="col-form-label">PIC Aset</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ak_pic'] ?>" readonly>
+                                                        autocomplete="off" value="<?= $data['at_pic'] ?>" readonly>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label class="col-form-label">Lokasi Kendaraan</label>
+                                                    <label class="col-form-label">Regional</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ak_area'] ?>" readonly>
+                                                        autocomplete="off" value="<?= $data['at_regional'] ?>" readonly>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label class="col-form-label">Regional Kendaraan</label>
+                                                    <label class="col-form-label">Area</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ak_regional'] ?>" readonly>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label class="col-form-label">Tanggal Beli</label>
-                                                    <input type="text" class="form-control"
-                                                        value="<?= $tanggal_beli_format_indo ?>" readonly>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label class="col-form-label">Umur Kendaraan</label>
-                                                    <input type="text" class="form-control" value="<?= $umur_kendaraan ?>"
-                                                        readonly>
+                                                        autocomplete="off" value="<?= $data['at_area'] ?>" readonly>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="flex-grow-1 border-top"></div>
-                                            <h5 class="mx-3">STATUS STNK</h5>
+                                            <h5 class="mx-3">EVIDENCE & FILE PENDUKUNG</h5>
                                             <div class="flex-grow-1 border-top"></div>
                                         </div>
 
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label class="col-form-label">Tanggal STNK</label>
-                                                    <input type="text" class="form-control"
-                                                        value="<?= $tanggal_stnk_format_indo ?>" readonly>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label class="col-form-label">Due Date</label>
-                                                    <input type="text" class="form-control" value="<?= $umur_stnk_hari ?>"
-                                                        readonly>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="flex-grow-1 border-top"></div>
-                                            <h5 class="mx-3">STATUS PLAT NOMOR</h5>
-                                            <div class="flex-grow-1 border-top"></div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label class="col-form-label">Tanggal PLAT</label>
-                                                    <input type="text" class="form-control"
-                                                        value="<?= $tanggal_plat_format_indo ?>" readonly>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label class="col-form-label">Due Date</label>
-                                                    <input type="text" class="form-control" value="<?= $umur_plat_hari ?>"
-                                                        readonly>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-center mb-3">
-                                            <div class="flex-grow-1 border-top"></div>
-                                            <h5 class="mx-3">EVIDENCE KENDARAAN</h5>
-                                            <div class="flex-grow-1 border-top"></div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label>Lihat Foto STNK</label>
+                                                    <label>Lihat Foto Alat</label>
                                                     <div class="card">
                                                         <div class="card-body p-6">
                                                             <div class="">
@@ -420,30 +229,7 @@ $total = 1;
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label>Lihat Foto BPKB</label>
-                                                    <div class="card">
-                                                        <div class="card-body p-6">
-                                                            <div class="">
-                                                                <div class="d-flex align-items-center overflow-hidden">
-
-                                                                    <div class="flex-grow-1">
-                                                                        <h5 class="font-size-15 mb-1 text-truncate"
-                                                                            id="detail_nama_file_sj"></h5>
-                                                                        <a href=""
-                                                                            class="font-size-14 text-muted text-truncate"
-                                                                            id="view_detail_surat_jalan"
-                                                                            target="_blank"><u>View
-                                                                                Folder</u></a>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-12">
-                                                <div class="form-group">
-                                                    <label>Lihat Foto Kendaraan</label>
+                                                    <label>BA / FIle Lain</label>
                                                     <div class="card">
                                                         <div class="card-body p-6">
                                                             <div class="">
@@ -482,7 +268,7 @@ $total = 1;
                                                     <label class="col-form-label">Status Aset</label>
                                                     <select name="ak_status_aset" class="form-control">
                                                         <?php foreach ($option_aktif as $option): ?>
-                                                            <option value="<?= $option ?>" <?= isset($data['ak_status_aset']) && $data['ak_status_aset'] == $option ? 'selected' : '' ?>>
+                                                            <option value="<?= $option ?>" <?= isset($data['at_status_aset']) && $data['at_status_aset'] == $option ? 'selected' : '' ?>>
                                                                 <?= $option ?>
                                                             </option>
                                                         <?php endforeach; ?>
@@ -495,8 +281,34 @@ $total = 1;
                                                 <div class="form-group">
                                                     <label class="col-form-label">Keterangan</label>
                                                     <textarea class="form-control"
-                                                        name="remarks_status"><?= $data['ak_keterangan_aset'] ?></textarea>
+                                                        name="remarks_status"><?= $data['at_keterangan_aset'] ?></textarea>
 
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="flex-grow-1 border-top"></div>
+                                            <h5 class="mx-3">TANGGAL UPDATE</h5>
+                                            <div class="flex-grow-1 border-top"></div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Tanggal Terakhir Cek</label>
+                                                    <input type="text" class="form-control"
+                                                        value="<?= $tanggal_plat_format_indo ?>" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Tanggal Input Aplikasi</label>
+                                                    <input type="text" class="form-control"
+                                                        value="<?= $tanggal_plat_format_indo ?>" readonly>
                                                 </div>
                                             </div>
                                         </div>

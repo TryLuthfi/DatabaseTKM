@@ -6,28 +6,22 @@ class MGA_Aset_Terminasi extends CI_Model
 
     public function getMasterAsetTerminasi()
     {
-        $data = $this->db->query('select * from tb_aset_kendaraan join tb_kode_aset on tb_aset_kendaraan.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset')
+        $data = $this->db->query('select * from tb_aset_terminasi join tb_kode_aset on tb_aset_terminasi.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset')
             ->result_array();
         return $data;
     }
 
-    public function getMasterAsetKendaraanFilter()
+    public function getMasterAsetTerminasiTipe()
     {
 
         $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
         $segments = explode("/", $url_path); // Pecah berdasarkan "/"
         $last_segment = end($segments); // Ambil bagian terakhir dari URL
 
-        $filter_area = "ak_area";
+        $filter_area = "ka_jenis_aset";
         $decoded_url_area = urldecode($last_segment);
 
-        if (stripos($decoded_url_area, "regional") !== false) {
-            $filter_area = "ak_regional";
-        } else {
-            $filter_area = "ak_area";
-        }
-
-        $data = $this->db->query('select * from tb_aset_kendaraan join tb_kode_aset on tb_aset_kendaraan.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset WHERE ' . $filter_area . ' = "' . $decoded_url_area . '"')
+        $data = $this->db->query('select * from tb_aset_terminasi join tb_kode_aset on tb_aset_terminasi.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset WHERE ' . $filter_area . ' = "' . $decoded_url_area . '"')
             ->result_array();
         return $data;
     }
