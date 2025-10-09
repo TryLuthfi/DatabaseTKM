@@ -406,8 +406,7 @@ $total = 1;
                                                                 <tfoot>
                                                                     <tr>
                                                                         <th colspan="2">TOTAL</th>
-                                                                        <th colspan="1"><span
-                                                                                id="totalTabelMobilKota">0</span>
+                                                                        <th colspan="1"><span id="totalTabelMobilKota">0</span>
                                                                         </th>
                                                                         <th colspan="1"><span
                                                                                 id="totalTabelMotorKota">0</span>
@@ -577,10 +576,12 @@ $total = 1;
         });
 
         table.on('order.dt search.dt', function () {
-            table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
-                cell.innerHTML = i + 1;
-            });
-        }).draw();
+        table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+            cell.innerHTML = i + 1;
+        });
+    }).draw();
+
+        
 
         // Fungsi untuk menghitung total dari data yang tampil
         function updateTotal() {

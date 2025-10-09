@@ -6,25 +6,6 @@ $satuan_options = ['Batang', 'Meter', 'Pc(s)', 'Unit', 'Roll', 'Pcs'];
 $kategori_item = ['Tiang', 'OTB ', 'Kabel ', 'HDPE ', 'FDT', 'FAT', 'Closure', 'Aksesories '];
 
 $total = 1;
-$totalTabelLaptop = 0;
-$totalTabelPrinter = 0;
-$totalTabelScanner = 0;
-$totalTabelMarkom = 0;
-$totalTabelDrafter = 0;
-$totalTabelHardisk = 0;
-$totalTabelHandphone = 0;
-$totalTabelCutting_Plotter = 0;
-
-foreach ($getCountAsetOfficeByRegionTipe as $data):
-    $totalTabelLaptop += intval($data['laptop']);
-    $totalTabelPrinter += intval($data['printer']);
-    $totalTabelScanner += intval($data['scanner']);
-    $totalTabelMarkom += intval($data['markom']);
-    $totalTabelDrafter += intval($data['drafter']);
-    $totalTabelHardisk += intval($data['hardisk']);
-    $totalTabelHandphone += intval($data['handphone']);
-    $totalTabelCutting_Plotter += intval($data['cutting_plotter']);
-endforeach;
 ?>
 
 <div class="content-wrapper">
@@ -45,7 +26,7 @@ endforeach;
                                 <!-- DIRECT CHAT DANGER -->
                                 <div class="card card-primary direct-chat direct-chat-primary shadow-lg">
                                     <div class="card-header">
-                                        <h3 class="card-title">TOTAL ASET Office</h3>
+                                        <h3 class="card-title">TOTAL ASET OFFICE</h3>
 
                                         <div class="card-tools">
                                             <button type="button" class="btn btn-tool" data-card-widget="collapse">
@@ -74,7 +55,7 @@ endforeach;
                                                                     </div>
                                                                     <div class="icon"><i class="ion ion-bag"></i></div>
                                                                     <a href="#" class="small-box-footer"
-                                                                        id="<?php echo 'box_detail_Office_' . $stokOffice['ka_jenis_aset'] ?>">
+                                                                        id="<?php echo 'box_detail_office_' . $stokOffice['ka_jenis_aset'] ?>">
                                                                         Lihat Detail <i
                                                                             class="fas fa-arrow-circle-right"></i></a>
                                                                 </div>
@@ -111,20 +92,20 @@ endforeach;
                                                     <div class="card">
                                                         <!-- /.card-header -->
                                                         <div class="card-body table-responsive text-nowrap ">
-                                                            <table id="table_detail_kota1"
+                                                            <table id="table_detail_regional"
                                                                 class="table table-bordered table-hover">
                                                                 <thead class="bg-info">
                                                                     <tr>
                                                                         <th>No</th>
                                                                         <th>Regional</th>
-                                                                        <th>Splicer</th>
-                                                                        <th>OTDR</th>
-                                                                        <th>GPS</th>
-                                                                        <th>Camera 360</th>
-                                                                        <th>UTG</th>
-                                                                        <th>Tangga Teleskopik</th>
-                                                                        <th>OLS</th>
-                                                                        <th>OPM</th>
+                                                                        <th>Laptop</th>
+                                                                        <th>Printer</th>
+                                                                        <th>Scanner</th>
+                                                                        <th>Markom</th>
+                                                                        <th>Drafter</th>
+                                                                        <th>Hardisk</th>
+                                                                        <th>Handphone</th>
+                                                                        <th>Cutting Plotter</th>
                                                                         <th>Detail</th>
                                                                     </tr>
                                                                 </thead>
@@ -209,16 +190,159 @@ endforeach;
                                                                 <tfoot>
                                                                     <tr>
                                                                         <th colspan="2">TOTAL</th>
-                                                                        <th><span><?= $totalTabelLaptop ?></span></th>
-                                                                        <th><span><?= $totalTabelPrinter ?></span></th>
-                                                                        <th><span><?= $totalTabelScanner ?></span></th>
-                                                                        <th><span><?= $totalTabelMarkom ?></span>
+                                                                        <th><span id="totalTabelLaptopRegional">0</span></th>
+                                                                        <th><span id="totalTabelPrinterRegional">0</span></th>
+                                                                        <th><span id="totalTabelScannerRegional">0</span></th>
+                                                                        <th><span id="totalTabelMarkomRegional">0</span></th>
+                                                                        <th><span id="totalTabelDrafterRegional">0</span></th>
+                                                                        <th><span id="totalTabelHardiskRegional">0</span></th>
+                                                                        <th><span id="totalTabelHandphoneRegional">0</span></th>
+                                                                        <th><span id="totalTabelCuttingPlotterRegional">0</span>
                                                                         </th>
-                                                                        <th><span><?= $totalTabelDrafter ?></span></th>
-                                                                        <th><span><?= $totalTabelHardisk ?></span>
+                                                                        <th></th>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        </div>
+                                                        <!-- /.card-body -->
+                                                    </div>
+                                                    <div class="row">
+                                                        <!-- ISI -->
+                                                    </div>
+                                                </div>
+                                    </section>
+
+                                    <div class="content-header">
+                                        <div class="container-fluid">
+                                            <div class="row mb-2 mt-3">
+                                                <div class="col-sm-12">
+                                                    <h1 class="m-0 mb-2 text-dark" style="text-align: center;">
+                                                        DISTRIBUSI
+                                                        ALKER KANTOR KOTA</h1>
+                                                </div><!-- /.col -->
+                                            </div><!-- /.row -->
+                                        </div><!-- /.container-fluid -->
+                                    </div>
+
+                                    <section class="content">
+
+                                        <div class="container-fluid">
+                                            <!-- Info boxes -->
+                                            <div class="row">
+                                                <!-- fix for small devices only -->
+                                                <div class="clearfix hidden-md-up"></div>
+
+                                                <div class="col-12">
+                                                    <div class="card">
+                                                        <!-- /.card-header -->
+                                                        <div class="card-body table-responsive text-nowrap ">
+                                                            <table id="table_detail_kota"
+                                                                class="table table-bordered table-hover">
+                                                                <thead class="bg-info">
+                                                                    <tr>
+                                                                        <th>No</th>
+                                                                        <th>Regional</th>
+                                                                        <th>Laptop</th>
+                                                                        <th>Printer</th>
+                                                                        <th>Scanner</th>
+                                                                        <th>Markom</th>
+                                                                        <th>Drafter</th>
+                                                                        <th>Hardisk</th>
+                                                                        <th>Handphone</th>
+                                                                        <th>Cutting Plotter</th>
+                                                                        <th>Detail</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <?php
+                                                                    $total = 1;
+
+                                                                    foreach ($getCountAsetOfficeByCityTipe as $data):
+
+                                                                        ?>
+
+                                                                        <tr>
+                                                                            <td><?= $total++ ?></td>
+                                                                            <td><?= $data['ao_area'] ?></td>
+                                                                            <td><?php
+                                                                            if ($data['laptop'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['laptop']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?php
+                                                                            if ($data['printer'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['printer']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?php
+                                                                            if ($data['printer'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['printer']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?php
+                                                                            if ($data['markom'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['markom']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?php
+                                                                            if ($data['drafter'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['drafter']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?php
+                                                                            if ($data['hardisk'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['hardisk']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?php
+                                                                            if ($data['handphone'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['handphone']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?php
+                                                                            if ($data['cutting_plotter'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['cutting_plotter']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td>
+                                                                                <a href="<?php echo site_url('GA_Aset_Office/areaOffice/' . $data['ao_area']); ?>"
+                                                                                    class="btn btn-primary"
+                                                                                    style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i
+                                                                                        class=" fas fa-eye"></i></a>
+                                                                            </td>
+                                                                        </tr>
+
+                                                                    <?php endforeach; ?>
+
+                                                                </tbody>
+                                                                <tfoot>
+                                                                    <tr>
+                                                                        <th colspan="2">TOTAL</th>
+                                                                        <th><span id="totalTabelLaptopCity">0</span></th>
+                                                                        <th><span id="totalTabelPrinterCity">0</span></th>
+                                                                        <th><span id="totalTabelScannerCity">0</span></th>
+                                                                        <th><span id="totalTabelMarkomCity">0</span></th>
+                                                                        <th><span id="totalTabelDrafterCity">0</span></th>
+                                                                        <th><span id="totalTabelHardiskCity">0</span></th>
+                                                                        <th><span id="totalTabelHandphoneCity">0</span></th>
+                                                                        <th><span id="totalTabelCuttingPlotterCity">0</span>
                                                                         </th>
-                                                                        <th><span><?= $totalTabelHandphone ?></span></th>
-                                                                        <th><span><?= $totalTabelCutting_Plotter ?></span></th>
                                                                         <th></th>
                                                                     </tr>
                                                                 </tfoot>
@@ -360,27 +484,107 @@ endforeach;
 
     $(document).ready(function () {
         $('#table_detail_kota').DataTable({
-            "paging": false, // Tetap gunakan pagination
+            "paging": true, // Tetap gunakan pagination
             "pageLength": 10, // Menampilkan 10 data per halaman
             "info": false, // Menghilangkan "Showing 1 to X of X entries"
-            "searching": false, // Menghilangkan search bar
+            "searching": true, // Menghilangkan search bar
             "lengthChange": false // Menghilangkan dropdown "Show entries"
         });
     });
 
+    $(document).ready(function () {
+        $.fn.dataTable.ext.errMode = 'none';
+        const table = $('#table_detail_kota').DataTable({
+            footerCallback: function () {
+                updateTotal();
+            },
+            columnDefs: [
+                { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+            ],
+            order: [[1, 'asc']] // Urut default kolom Kode Aset
+        });
+
+        table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+        // Fungsi untuk menghitung total dari data yang tampil
+        function updateTotal() {
+
+            const data = table.rows({
+                search: 'applied'
+            }).data();
+
+            
+
+            // Hitung total dari kolom Value (index 2)
+            let totalTabelLaptop = 0;
+            let totalTabelPrinter = 0;
+            let totalTabelScanner = 0;
+            let totalTabelMarkom = 0;
+            let totalTabelDrafter = 0;
+            let totalTabelHardisk = 0;
+            let totalTabelHandphone = 0;
+            let totalTabelCuttingPlotter = 0;
+
+
+            data.each(function (row) {
+
+                totalTabelLaptop += parseFloat(row[2].replace(/\./g, '')) || 0;
+                totalTabelPrinter += parseFloat(row[3].replace(/\./g, '')) || 0;
+                totalTabelScanner += parseFloat(row[4].replace(/\./g, '')) || 0;
+                totalTabelMarkom += parseFloat(row[5].replace(/\./g, '')) || 0;
+                totalTabelDrafter += parseFloat(row[6].replace(/\./g, '')) || 0;
+                totalTabelHardisk += parseFloat(row[7].replace(/\./g, '')) || 0;
+                totalTabelHandphone += parseFloat(row[8].replace(/\./g, '')) || 0;
+                totalTabelCuttingPlotter += parseFloat(row[9].replace(/\./g, '')) || 0;
+            });
+
+            document.getElementById('totalTabelLaptopRegional').innerText = totalTabelLaptop.toLocaleString('id-ID');
+            document.getElementById('totalTabelPrinterRegional').innerText = totalTabelPrinter.toLocaleString('id-ID');
+            document.getElementById('totalTabelScannerRegional').innerText = totalTabelScanner.toLocaleString('id-ID');
+            document.getElementById('totalTabelMarkomRegional').innerText = totalTabelMarkom.toLocaleString('id-ID');
+            document.getElementById('totalTabelDrafterRegional').innerText = totalTabelDrafter.toLocaleString('id-ID');
+            document.getElementById('totalTabelHardiskRegional').innerText = totalTabelHardisk.toLocaleString('id-ID');
+            document.getElementById('totalTabelHandphoneRegional').innerText = totalTabelHandphone.toLocaleString('id-ID');
+            document.getElementById('totalTabelCuttingPlotterRegional').innerText = totalTabelCuttingPlotter.toLocaleString('id-ID');
+
+            document.getElementById('totalTabelLaptopCity').innerText = totalTabelLaptop.toLocaleString('id-ID');
+            document.getElementById('totalTabelPrinterCity').innerText = totalTabelPrinter.toLocaleString('id-ID');
+            document.getElementById('totalTabelScannerCity').innerText = totalTabelScanner.toLocaleString('id-ID');
+            document.getElementById('totalTabelMarkomCity').innerText = totalTabelMarkom.toLocaleString('id-ID');
+            document.getElementById('totalTabelDrafterCity').innerText = totalTabelDrafter.toLocaleString('id-ID');
+            document.getElementById('totalTabelHardiskCity').innerText = totalTabelHardisk.toLocaleString('id-ID');
+            document.getElementById('totalTabelHandphoneCity').innerText = totalTabelHandphone.toLocaleString('id-ID');
+            document.getElementById('totalTabelCuttingPlotterCity').innerText = totalTabelCuttingPlotter.toLocaleString('id-ID');
+
+        }
+
+        // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+        table.on('draw', function () {
+            updateTotal();
+        });
+
+        // Hitung total pertama kali saat tabel dimuat
+        updateTotal();
+    });
+
     document.addEventListener("DOMContentLoaded", function () {
-        <?php foreach ($getCountAsetOfficeLimit as $stokOffice): ?>
+        <?php foreach ($getCountAsetOfficeAll as $stokOffice): ?>
 
             // Untuk kondisi Aktif
-            var boxAktif = document.getElementById("box_detail_Office_<?= $stokOffice['ka_jenis_aset'] ?>");
+            var boxAktif = document.getElementById("box_detail_office_<?= $stokOffice['ka_jenis_aset'] ?>");
             if (boxAktif) {
                 boxAktif.addEventListener("click", function () {
-                    window.location.href = "<?= base_url('GA_Aset_Office/detailOffice/' . $stokOffice['ka_jenis_aset']) ?>";
+                    window.location.href = "<?= base_url('GA_Aset_Kantor/detailOffice/' . $stokOffice['ka_jenis_aset']) ?>";
                 });
             }
 
         <?php endforeach; ?>
     });
+
 </script>
 
 
