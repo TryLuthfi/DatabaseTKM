@@ -36,7 +36,11 @@ $total = 1;
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><?= $kategori = substr($getKategoriKendaraan, 1); ?></h1>
+                        <?php if ($substatus != "") { ?>
+                            <h1 class="m-0 text-dark">Detail Kendaraan - <?= $kategori = substr($getKategoriKendaraan, 1); ?> - <?= $substatus ?></h1>
+                            <?php } else { ?>
+                                <h1 class="m-0 text-dark">Detail Kendaraan - <?= $kategori = substr($getKategoriKendaraan, 1); ?> - <?= $subkondisi ?></h1>
+                                <?php } ?>
                     </div>
                 </div>
             </div>
