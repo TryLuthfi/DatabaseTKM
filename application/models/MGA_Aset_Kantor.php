@@ -11,6 +11,27 @@ class MGA_Aset_Kantor extends CI_Model
         return $data;
     }
 
+    public function getMasterAsetOfficeArea()
+    {
+
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $filter_area = "ka_jenis_aset";
+        $decoded_url_area = urldecode($last_segment);
+
+        if (stripos($decoded_url_area, "regional") !== false) {
+            $filter_area = "ao_regional";
+        } else {
+            $filter_area = "ao_area";
+        }
+
+        $data = $this->db->query('select * from tb_aset_office join tb_kode_aset on tb_aset_office.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset WHERE ' . $filter_area . ' = "' . $decoded_url_area . '"')
+            ->result_array();
+        return $data;
+    }
+
     public function getMasterAsetOfficeTipe()
     {
 
@@ -41,6 +62,40 @@ GROUP BY
     tao.ka_id_kode_aset
 ORDER BY 
     tao.ka_id_kode_aset ASC;')
+            ->result_array();
+        return $data;
+    }
+
+    public function getCountAsetOfficeByKota()
+    {
+
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $filter_area = "ka_jenis_aset";
+        $decoded_url_area = urldecode($last_segment);
+
+        if (stripos($decoded_url_area, "regional") !== false) {
+            $filter_area = "ao_regional";
+        } else {
+            $filter_area = "ao_area";
+        }
+
+        $data = $this->db->query('SELECT 
+    tka.ka_jenis_aset,
+    tka.ka_sorting,
+    COUNT(*) AS total_data
+FROM 
+    tb_aset_office tao
+JOIN 
+    tb_kode_aset tka 
+    ON tao.ka_id_kode_aset = tka.ka_id_kode_aset
+    WHERE ' . $filter_area . ' = "' . $decoded_url_area . '"
+GROUP BY 
+    tao.ka_id_kode_aset
+ORDER BY 
+    tao.ka_id_kode_aset ASC')
             ->result_array();
         return $data;
     }
@@ -85,23 +140,6 @@ JOIN tb_kode_aset
     WHERE tb_aset_office.ao_status_aset = "AKTIF"
 GROUP BY tb_aset_office.ao_area
 ORDER BY tb_aset_office.ao_area ASC;')
-            ->result_array();
-        return $data;
-    }
-
-    public function getCountAsetOfficeByKota()
-    {
-        $data = $this->db->query('SELECT 
-    tb_aset_kendaraan.ak_area,
-    SUM(CASE WHEN tb_kode_aset.ka_jenis_aset = "MOBIL" THEN 1 ELSE 0 END) AS mobil,
-    SUM(CASE WHEN tb_kode_aset.ka_jenis_aset = "MOTOR" THEN 1 ELSE 0 END) AS motor,
-    COUNT(tb_aset_kendaraan.ka_id_kode_aset) AS total_aset
-FROM tb_aset_kendaraan
-JOIN tb_kode_aset 
-    ON tb_aset_kendaraan.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset
-    WHERE tb_aset_kendaraan.ak_status_aset = "AKTIF"
-GROUP BY tb_aset_kendaraan.ak_area
-ORDER BY tb_aset_kendaraan.ak_area ASC;')
             ->result_array();
         return $data;
     }

@@ -33,18 +33,28 @@ class GA_Aset_Kantor extends CI_Controller
         }
     }
 
-    public function allAsetOffice()
+    public function detailOfficeArea()
     {
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $decoded_url_area = urldecode($last_segment);
 
         if (!empty($this->session->userdata('id_user'))) {
 
             $data['title'] = 'Aset Office';
             $data['judul'] = 'Aset Office';
+            $data['filterURL'] = $decoded_url_area;
+            $data['getKategoriOffice'] = strtoupper($decoded_url_area);
             $data['getCountAsetOfficeAll'] = $this->MGA_Aset_Kantor->getCountAsetOfficeAll();
+            $data['getMasterAsetOffice'] = $this->MGA_Aset_Kantor->getMasterAsetOffice();
+            $data['getMasterAsetOfficeArea'] = $this->MGA_Aset_Kantor->getMasterAsetOfficeArea();
+            $data['getCountAsetOfficeByKota'] = $this->MGA_Aset_Kantor->getCountAsetOfficeByKota();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
-            $this->load->view('GA_Aset_Kantor/indexall', $data);
+            $this->load->view('GA_Aset_Kantor/indexofficearea', $data);
             // $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
 
@@ -67,41 +77,13 @@ class GA_Aset_Kantor extends CI_Controller
             $data['title'] = 'Aset Kantor ' . strtoupper($decoded_url_area);
             $data['judul'] = 'Aset Kantor ' . $decoded_url_area;
             $data['getKategoriOffice'] = strtoupper($decoded_url_area);
+            $data['filterURL'] = $decoded_url_area;
             $data['getMasterAsetOffice'] = $this->MGA_Aset_Kantor->getMasterAsetOffice();
             $data['getMasterAsetOfficeTipe'] = $this->MGA_Aset_Kantor->getMasterAsetOfficeTipe();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
             $this->load->view('GA_Aset_Kantor/indexoffice', $data);
-            // $this->load->view('Templates/03_Footer');
-            $this->load->view('Templates/99_JS');
-
-        } else {
-            redirect('Auth');
-        }
-    }
-
-    public function areaOffice()
-    {
-
-        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
-        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
-        $last_segment = end($segments); // Ambil bagian terakhir dari URL
-
-        $decoded_url_area = urldecode($last_segment);
-
-        if (!empty($this->session->userdata('id_user'))) {
-
-            $data['title'] = 'Aset Office ' . strtoupper($decoded_url_area);
-            $data['judul'] = 'Aset Office ' . $decoded_url_area;
-            $data['filterURL'] = $decoded_url_area;
-            $data['getKategoriOffice'] = strtoupper($decoded_url_area);
-            $data['getMasterAsetOffice'] = $this->MGA_Aset_Kantor->getMasterAsetOffice();
-            $data['getMasterAsetOfficeFilter'] = $this->MGA_Aset_Kantor->getMasterAsetOfficeFilter();
-
-            $this->load->view('Templates/01_Header', $data);
-            $this->load->view('Templates/02_Menu');
-            $this->load->view('GA_Aset_Kantor/indexOfficearea', $data);
             // $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
 

@@ -177,9 +177,8 @@ $total = 1;
                                                                             }
                                                                             ?></td>
                                                                             <td>
-                                                                                <a href="<?php echo site_url('GA_Aset_Office/areaOffice/' . $data['ao_regional']); ?>"
-                                                                                    class="btn btn-primary"
-                                                                                    style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i
+                                                                                <a href="<?php echo site_url('GA_Aset_Kantor/detailOfficeArea/' . $data['ao_regional']); ?>"
+                                                                                    class="btn btn-primary"><i
                                                                                         class=" fas fa-eye"></i></a>
                                                                             </td>
                                                                         </tr>
@@ -321,9 +320,8 @@ $total = 1;
                                                                             }
                                                                             ?></td>
                                                                             <td>
-                                                                                <a href="<?php echo site_url('GA_Aset_Office/areaOffice/' . $data['ao_area']); ?>"
-                                                                                    class="btn btn-primary"
-                                                                                    style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i
+                                                                                <a href="<?php echo site_url('GA_Aset_Kantor/detailOfficeArea/' . $data['ao_area']); ?>"
+                                                                                    class="btn btn-primary"><i
                                                                                         class=" fas fa-eye"></i></a>
                                                                             </td>
                                                                         </tr>
