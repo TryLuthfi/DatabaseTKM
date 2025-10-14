@@ -92,64 +92,64 @@ class GA_Aset_Kantor extends CI_Controller
         }
     }
 
-    public function tambahKodeItem()
+    public function tambahAsetKantor()
     {
 
-        // echo ("<pre>");
-        // print_r($_POST);
-        // echo ("</pre>");
+        echo ("<pre>");
+        print_r($_POST);
+        echo ("</pre>");
 
-        $hasil_data = array(
-            'nama_item' => $_POST['nama_item'],
-            'kategori_item' => $_POST['kategori_item'],
-            'satuan_item' => $_POST['satuan_item'],
-            'id_bowheer_pemilik_item' => $_POST['id_bowheer_pemilik_item'],
-            'harga_penjualan' => $_POST['harga_penjualan'],
-            'project_item' => $_POST['project_item']
-        );
+    //     $hasil_data = array(
+    //         'nama_item' => $_POST['nama_item'],
+    //         'kategori_item' => $_POST['kategori_item'],
+    //         'satuan_item' => $_POST['satuan_item'],
+    //         'id_bowheer_pemilik_item' => $_POST['id_bowheer_pemilik_item'],
+    //         'harga_penjualan' => $_POST['harga_penjualan'],
+    //         'project_item' => $_POST['project_item']
+    //     );
 
-        $res = $this->MGA_Aset_Kantor->tambahKodeItem($hasil_data);
+    //     $res = $this->MGA_Aset_Kantor->tambahKodeItem($hasil_data);
 
-        if ($res >= 1) {
-            $this->session->set_flashdata('status', 'sukses_tambah');
-            redirect("GA_Aset_Kantor");
-        } else {
-            $this->session->set_flashdata('status', 'gagal_tambah');
-            redirect("GA_Aset_Kantor");
-        }
+    //     if ($res >= 1) {
+    //         $this->session->set_flashdata('status', 'sukses_tambah');
+    //         redirect("GA_Aset_Kantor");
+    //     } else {
+    //         $this->session->set_flashdata('status', 'gagal_tambah');
+    //         redirect("GA_Aset_Kantor");
+    //     }
     }
 
-    public function editKodeItem($id_kode_item)
+    public function editAsetKantor($ao_id_list_office)
     {
 
-        // echo ("<pre>");
-        // print_r($_POST);
-        // echo ("</pre>");
+        echo ("<pre>");
+        print_r($_POST);
+        echo ("</pre>");
 
-        if (!empty($_POST['project_item'])) {
-            $kota_string = implode(", ", $_POST['project_item']);
-        } else {
-            $kota_string = "";
-        }
+        // if (!empty($_POST['project_item'])) {
+        //     $kota_string = implode(", ", $_POST['project_item']);
+        // } else {
+        //     $kota_string = "";
+        // }
 
-        $data_array = array(
-            'nama_item' => $_POST['nama_item'],
-            'satuan_item' => $_POST['satuan_item'],
-            'kategori_item' => $_POST['kategori_item'],
-            'project_item' => $kota_string,
-            'id_bowheer_pemilik_item' => $_POST['id_bowheer_pemilik_item']
-        );
+        // $data_array = array(
+        //     'nama_item' => $_POST['nama_item'],
+        //     'satuan_item' => $_POST['satuan_item'],
+        //     'kategori_item' => $_POST['kategori_item'],
+        //     'project_item' => $kota_string,
+        //     'id_bowheer_pemilik_item' => $_POST['id_bowheer_pemilik_item']
+        // );
 
-        $where = array('id_kode_item' => $id_kode_item);
-        $res = $this->MGA_Aset_Kantor->editKodeItem($data_array, $where);
+        // $where = array('ao_id_list_office' => $ao_id_list_office);
+        // $res = $this->MGA_Aset_Kantor->editAsetKantor($data_array, $where);
 
-        if ($res >= 1) {
-            $this->session->set_flashdata('status', 'sukses_edit');
-            redirect("GA_Aset_Kantor");
-        } else {
-            $this->session->set_flashdata('status', 'gagal_edit');
-            redirect("GA_Aset_Kantor");
-        }
+        // if ($res >= 1) {
+        //     $this->session->set_flashdata('status', 'sukses_edit');
+        //     redirect("GA_Aset_Kantor");
+        // } else {
+        //     $this->session->set_flashdata('status', 'gagal_edit');
+        //     redirect("GA_Aset_Kantor");
+        // }
     }
 
     public function hapusKodeItem($id_kode_item)
