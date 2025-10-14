@@ -13,14 +13,16 @@ $total = 1;
 <div class="content-wrapper">
 
     <div class="content">
+
         <div class="content-header">
             <div class="container-fluid">
                 <div class="row mb-2">
-                    <div class="col-sm-6">
-                        <h1 class="m-0 text-dark"><?= $judul ?></h1>
-                    </div>
-                </div>
-            </div>
+                    <div class="col-sm-12">
+                        <h1 class="m-0 text-dark" style="text-align: center;">DISTRIBUSI
+                            MOBIL AREA - <?= strtoupper($filterURL) ?></h1>
+                    </div><!-- /.col -->
+                </div><!-- /.row -->
+            </div><!-- /.container-fluid -->
         </div>
 
         <section class="content">
@@ -28,24 +30,17 @@ $total = 1;
                 <div class="row">
                     <div class="clearfix hidden-md-up"></div>
 
-
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header">
                                 <div class="row">
                                     <div class="col-6">
-                                        <h3 class="card-title">List Dashboard Kode Aset </h3>
-                                    </div>
-                                    <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold"
-                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
+                                        <h3 class="card-title">List Mobil </h3>
                                     </div>
                                 </div>
                             </div>
                             <div class="card-body table-scrollable">
-                                <table id="tabel_pemasukan" class="table table-bordered table-striped">
+                                <table id="tabel_mobil" class="table table-bordered table-striped">
                                     <thead>
                                         <tr>
                                             <th>No</th>
@@ -60,36 +55,126 @@ $total = 1;
                                     </thead>
                                     <tbody>
                                         <?php
-                                        foreach ($getMasterAsetKendaraanFilter as $data): ?>
-                                            <tr>
-                                                <td><?= $total++ ?></td>
-                                                <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
-                                                <td><?= $data['ak_merk'] ?></td>
-                                                <td><?= $data['ak_plat_nomor'] ?></td>
-                                                <td><?= $data['ak_pic'] ?></td>
-                                                <td><?= $data['ak_area'] ?></td>
-                                                <td><?= $data['ak_status_aset'] ?></td>
-                                                <td>
-                                                    <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                        id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                            class=" fas fa-trash"></i></a>
-                                                    <a href="#" class="btn btn-warning"
-                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                        data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
-                                                        data-toggle="modal"><i class="fas fa-edit"></i></a>
-                                                    <a href="#" class="btn btn-primary"
-                                                        data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
-                                                        data-toggle="modal"><i class="fas fa-eye"></i></a>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
+                                        foreach ($getMasterAsetKendaraanFilter as $data):
+                                            if ($data['ka_jenis_aset'] == 'MOBIL'):
+
+                                                ?>
+                                                <tr>
+                                                    <td><?= $total++ ?></td>
+                                                    <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
+                                                    <td><?= $data['ak_merk'] ?></td>
+                                                    <td><?= $data['ak_plat_nomor'] ?></td>
+                                                    <td><?= $data['ak_pic'] ?></td>
+                                                    <td><?= $data['ak_area'] ?></td>
+                                                    <td><?= $data['ak_status_aset'] ?></td>
+                                                    <td>
+                                                        <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                class=" fas fa-trash"></i></a>
+                                                        <a href="#" class="btn btn-warning"
+                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                            data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
+                                                            data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <a href="#" class="btn btn-primary"
+                                                            data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
+                                                            data-toggle="modal"><i class="fas fa-eye"></i></a>
+                                                    </td>
+                                                </tr>
+                                            <?php endif; endforeach; ?>
 
                                     </tbody>
                                     <tfoot>
                                         <tr>
                                             <th colspan="2">Total</th>
-                                            <th colspan="1"><span id="totalTabelAset">0</span>
+                                            <th colspan="1"><span id="totalTabelMobil">0</span>
+                                            <th colspan="5"></span>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <!-- /.card-body -->
+                        </div>
+                    </div>
+
+                </div>
+        </section>
+
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-12">
+                        <h1 class="m-0 text-dark" style="text-align: center;">DISTRIBUSI
+                            MOTOR AREA - <?= strtoupper($filterURL) ?></h1>
+                    </div><!-- /.col -->
+                </div><!-- /.row -->
+            </div><!-- /.container-fluid -->
+        </div>
+
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="clearfix hidden-md-up"></div>
+
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <h3 class="card-title">List Motor </h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body table-scrollable">
+                                <table id="tabel_motor" class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Kode</th>
+                                            <th>Merk Kendaraan</th>
+                                            <th>NOPOL</th>
+                                            <th>PIC</th>
+                                            <th>Area</th>
+                                            <th>Status</th>
+                                            <th>Detail</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $total = 1;
+                                        foreach ($getMasterAsetKendaraanFilter as $data):
+                                            if ($data['ka_jenis_aset'] == 'MOTOR'):
+
+                                                ?>
+                                                <tr>
+                                                    <td><?= $total++ ?></td>
+                                                    <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
+                                                    <td><?= $data['ak_merk'] ?></td>
+                                                    <td><?= $data['ak_plat_nomor'] ?></td>
+                                                    <td><?= $data['ak_pic'] ?></td>
+                                                    <td><?= $data['ak_area'] ?></td>
+                                                    <td><?= $data['ak_status_aset'] ?></td>
+                                                    <td>
+                                                        <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                class=" fas fa-trash"></i></a>
+                                                        <a href="#" class="btn btn-warning"
+                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                            data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
+                                                            data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <a href="#" class="btn btn-primary"
+                                                            data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
+                                                            data-toggle="modal"><i class="fas fa-eye"></i></a>
+                                                    </td>
+                                                </tr>
+                                            <?php endif; endforeach; ?>
+
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="2">Total</th>
+                                            <th colspan="1"><span id="totalTabelMotor">0</span>
                                             <th colspan="5"></span>
                                         </tr>
                                     </tfoot>
@@ -510,7 +595,17 @@ $total = 1;
     })
 
     $(document).ready(function () {
-        $('#tabel_pemasukan').DataTable({
+        $('#tabel_mobil').DataTable({
+            "paging": true, // Tetap gunakan pagination
+            "pageLength": 10, // Menampilkan 10 data per halaman
+            "info": true, // Menghilangkan "Showing 1 to X of X entries"
+            "searching": true, // Menghilangkan search bar
+            "lengthChange": true // Menghilangkan dropdown "Show entries"
+        });
+    });
+
+    $(document).ready(function () {
+        $('#tabel_motor').DataTable({
             "paging": true, // Tetap gunakan pagination
             "pageLength": 10, // Menampilkan 10 data per halaman
             "info": true, // Menghilangkan "Showing 1 to X of X entries"
@@ -521,7 +616,7 @@ $total = 1;
 
     $(document).ready(function () {
         $.fn.dataTable.ext.errMode = 'none';
-        const table = $('#tabel_pemasukan').DataTable({
+        const table = $('#tabel_mobil').DataTable({
             footerCallback: function () {
                 updateTotal();
             },
@@ -540,8 +635,42 @@ $total = 1;
         // Fungsi untuk menghitung total dari data yang tampil
         function updateTotal() {
             const data = table.rows({ search: 'applied' }).data();
-            let totalTabelAset = data.length;
-            document.getElementById('totalTabelAset').innerText = totalTabelAset.toLocaleString('id-ID');
+            let totalTabelMobil = data.length;
+            document.getElementById('totalTabelMobil').innerText = totalTabelMobil.toLocaleString('id-ID');
+        }
+
+        // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+        table.on('draw', function () {
+            updateTotal();
+        });
+
+        // Hitung total pertama kali saat tabel dimuat
+        updateTotal();
+    });
+
+    $(document).ready(function () {
+        $.fn.dataTable.ext.errMode = 'none';
+        const table = $('#tabel_motor').DataTable({
+            footerCallback: function () {
+                updateTotal();
+            },
+            columnDefs: [
+                { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+            ],
+            order: [[1, 'asc']] // Urut default kolom Kode Aset
+        });
+
+        table.on('order.dt search.dt', function () {
+            table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
+            });
+        }).draw();
+
+        // Fungsi untuk menghitung total dari data yang tampil
+        function updateTotal() {
+            const data = table.rows({ search: 'applied' }).data();
+            let totalTabelMotor = data.length;
+            document.getElementById('totalTabelMotor').innerText = totalTabelMotor.toLocaleString('id-ID');
         }
 
         // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
