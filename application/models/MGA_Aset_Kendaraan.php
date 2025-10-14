@@ -102,9 +102,9 @@ ORDER BY tb_aset_kendaraan.ak_area ASC;')
         return $res;
     }
 
-    public function editKodeItem($data_array, $id_kode_item)
+    public function editKendaraan($data_array, $ak_id_list_kendaraan)
     {
-        $res = $this->db->update("tb_aset_kendaraan", $data_array, $id_kode_item);
+        $res = $this->db->update("tb_aset_kendaraan", $data_array, $ak_id_list_kendaraan);
         return $res;
     }
 

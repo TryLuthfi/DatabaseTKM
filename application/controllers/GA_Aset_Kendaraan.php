@@ -95,6 +95,8 @@ class GA_Aset_Kendaraan extends CI_Controller
         // print_r($_POST);
         // echo ("</pre>");
 
+        $previousUrl = $this->input->server('HTTP_REFERER');
+
         $hasil_data = array(
             'ka_id_kode_aset' => $_POST['ka_id_kode_aset'],
             'ak_plat_nomor' => $_POST['ak_plat_nomor'],
@@ -114,57 +116,61 @@ class GA_Aset_Kendaraan extends CI_Controller
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_tambah');
-            redirect("GA_Aset_Kendaraan");
+            redirect($previousUrl);
         } else {
             $this->session->set_flashdata('status', 'gagal_tambah');
-            redirect("GA_Aset_Kendaraan");
+            redirect($previousUrl);
         }
     }
 
-    public function editKodeItem($id_kode_item)
+    public function editKendaraan($ak_id_list_kendaraan)
     {
 
         // echo ("<pre>");
         // print_r($_POST);
         // echo ("</pre>");
+        $previousUrl = $this->input->server('HTTP_REFERER');
 
-        if (!empty($_POST['project_item'])) {
-            $kota_string = implode(", ", $_POST['project_item']);
-        } else {
-            $kota_string = "";
-        }
-
-        $data_array = array(
-            'nama_item' => $_POST['nama_item'],
-            'satuan_item' => $_POST['satuan_item'],
-            'kategori_item' => $_POST['kategori_item'],
-            'project_item' => $kota_string,
-            'id_bowheer_pemilik_item' => $_POST['id_bowheer_pemilik_item']
+        $hasil_data = array(
+            'ka_id_kode_aset' => $_POST['ka_id_kode_aset'],
+            'ak_plat_nomor' => $_POST['ak_plat_nomor'],
+            'ak_merk' => $_POST['ak_merk'],
+            'ak_kondisi_aset' => $_POST['ak_kondisi_aset'],
+            'ak_pic' => $_POST['ak_pic'],
+            'ak_area' => $_POST['ak_area'],
+            'ak_regional' => $_POST['ak_regional'],
+            'ak_tahun_perolehan' => $_POST['ak_tahun_perolehan'],
+            'ak_tanggal_stnk' => $_POST['ak_tanggal_stnk'],
+            'ak_tanggal_plat' => $_POST['ak_tanggal_plat'],
+            'ak_status_aset' => $_POST['ak_status_aset'],
+            'ak_keterangan_aset' => $_POST['ak_keterangan_aset']
         );
 
-        $where = array('id_kode_item' => $id_kode_item);
-        $res = $this->MGA_Aset_Kendaraan->editKodeItem($data_array, $where);
+        $where = array('ak_id_list_kendaraan' => $ak_id_list_kendaraan);
+        $res = $this->MGA_Aset_Kendaraan->editKendaraan($hasil_data, $where);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_edit');
-            redirect("GA_Aset_Kendaraan");
+            redirect($previousUrl);
         } else {
             $this->session->set_flashdata('status', 'gagal_edit');
-            redirect("GA_Aset_Kendaraan");
+            redirect($previousUrl);
         }
     }
 
     public function hapusKendaraan($ak_id_list_kendaraan)
     {
+        $previousUrl = $this->input->server('HTTP_REFERER');
+        
         $ak_id_list_kendaraan = array('ak_id_list_kendaraan' => $ak_id_list_kendaraan);
         $res = $this->MGA_Aset_Kendaraan->hapusKendaraan($ak_id_list_kendaraan);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_hapus');
-            redirect("GA_Aset_Kendaraan");
+            redirect($previousUrl);
         } else {
             $this->session->set_flashdata('status', 'gagal_hapus');
-            redirect("GA_Aset_Kendaraan");
+            redirect($previousUrl);
         }
     }
 }
