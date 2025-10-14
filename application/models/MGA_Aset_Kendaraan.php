@@ -90,30 +90,21 @@ ORDER BY tb_aset_kendaraan.ak_area ASC;')
         return $data;
     }
 
-    public function getMasterKepemilikan()
+    public function tambahKendaraan($data_array)
     {
-        $data = $this->db->query('SELECT * FROM tb_master_bowheer
-                                    WHERE nama_bowheer IN ("PT. IFORTE","PT. TKM","PT. EKA MAS REPUBLIK")
-                                    ORDER BY id_bowheer DESC;')
-            ->result_array();
-        return $data;
-    }
-
-    public function tambahKodeItem($data_array)
-    {
-        $res = $this->db->insert("tb_GA_Aset_Kendaraan", $data_array);
+        $res = $this->db->insert("tb_aset_kendaraan", $data_array);
         return $res;
     }
 
-    public function hapusKodeItem($id_kode_item)
+    public function hapusKendaraan($ak_id_list_kendaraan)
     {
-        $res = $this->db->delete("tb_GA_Aset_Kendaraan", $id_kode_item);
+        $res = $this->db->delete("tb_aset_kendaraan", $ak_id_list_kendaraan);
         return $res;
     }
 
     public function editKodeItem($data_array, $id_kode_item)
     {
-        $res = $this->db->update("tb_GA_Aset_Kendaraan", $data_array, $id_kode_item);
+        $res = $this->db->update("tb_aset_kendaraan", $data_array, $id_kode_item);
         return $res;
     }
 

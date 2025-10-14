@@ -3,6 +3,7 @@ $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
 $option_aktif = ['AKTIF', 'HILANG', 'TERJUAL'];
+$jenis_kendaraan = ['MOBIL', 'MOTOR'];
 
 $prefix = substr($getKategoriKendaraan, 0, 1); // A
 $kategori = substr($getKategoriKendaraan, 1); // MOBIL
@@ -37,10 +38,14 @@ $total = 1;
                 <div class="row mb-2">
                     <div class="col-sm-6">
                         <?php if ($substatus != "") { ?>
-                            <h1 class="m-0 text-dark">Detail Kendaraan - <?= $kategori = substr($getKategoriKendaraan, 1); ?> - <?= $substatus ?></h1>
-                            <?php } else { ?>
-                                <h1 class="m-0 text-dark">Detail Kendaraan - <?= $kategori = substr($getKategoriKendaraan, 1); ?> - <?= $subkondisi ?></h1>
-                                <?php } ?>
+                            <h1 class="m-0 text-dark">Detail Kendaraan -
+                                <?= $kategori = substr($getKategoriKendaraan, 1); ?> - <?= $substatus ?>
+                            </h1>
+                        <?php } else { ?>
+                            <h1 class="m-0 text-dark">Detail Kendaraan -
+                                <?= $kategori = substr($getKategoriKendaraan, 1); ?> - <?= $subkondisi ?>
+                            </h1>
+                        <?php } ?>
                     </div>
                 </div>
             </div>
@@ -61,8 +66,7 @@ $total = 1;
                                     </div>
                                     <div class="col-6">
                                         <a href="#" class="btn btn-success float-right text-bold"
-                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
+                                            data-target="#modal-tambah-kendaraan" data-toggle="modal">Tambah &nbsp;<i
                                                 class="fas fa-plus"></i> </a>
                                     </div>
                                 </div>
@@ -95,8 +99,7 @@ $total = 1;
                                                         <td><?= $data['ak_area'] ?></td>
                                                         <td><?= $data['ak_status_aset'] ?></td>
                                                         <td>
-                                                            <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                            <a href="<?php echo site_url('GA_Aset_Kendaraan/hapusKendaraan/' . $data['ak_id_list_kendaraan']); ?>"
                                                                 id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                                     class=" fas fa-trash"></i></a>
                                                             <a href="#" class="btn btn-warning"
@@ -121,8 +124,7 @@ $total = 1;
                                                             <td><?= $data['ak_area'] ?></td>
                                                             <td><?= $data['ak_status_aset'] ?></td>
                                                             <td>
-                                                                <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                                    style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                                <a href="<?php echo site_url('GA_Aset_Kendaraan/hapusKendaraan/' . $data['ak_id_list_kendaraan']); ?>"
                                                                     id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                                         class=" fas fa-trash"></i></a>
                                                                 <a href="#" class="btn btn-warning"
@@ -155,6 +157,7 @@ $total = 1;
                 </div>
         </section>
 
+        <!-- VIEW DATA KENDARAAN -->
         <?php $tgl = date('Y-m-d'); ?>
         <?php foreach ($getMasterAsetKendaraan as $data):
 
@@ -191,9 +194,9 @@ $total = 1;
                 $tanggal_plat_format_indo = date('d F Y', strtotime($data['ak_tanggal_plat']));
                 $tanggal_stnk_format_indo = date('d F Y', strtotime($data['ak_tanggal_stnk']));
 
-                if($data['ak_kondisi_aset'] == 'BAIK'){ 
+                if ($data['ak_kondisi_aset'] == 'BAIK') {
                     $warna_remarks_kondisi = "background-color: #d4edda; color: #155724;";
-                } else if($data['ak_kondisi_aset'] == 'RUSAK'){
+                } else if ($data['ak_kondisi_aset'] == 'RUSAK') {
                     $warna_remarks_kondisi = "background-color: #f8d7da; color: #721c24;";
                 } else {
                     $warna_remarks_kondisi = "";
@@ -524,6 +527,301 @@ $total = 1;
             </form>
         <?php endforeach; ?>
 
+
+        <!-- MODAL TAMBAH KENDARAAN -->
+        <form action="<?php echo site_url('GA_Aset_Kendaraan/tambahKendaraan/'); ?>" method="post">
+            <div class="modal fade" id="modal-tambah-kendaraan" tabindex="-1" role="dialog"
+                aria-labelledby="modal-tambah-label" aria-hidden="true">
+                <div class="modal-dialog modal-xl" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">TAMBAH DATA KENDARAAN</h4>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <?php
+                        ?>
+                        <div class="modal-body" style="background-color:rgb(247, 243, 243);">
+                            <section class="content">
+
+                                <div class="card">
+                                    <div class="card-body">
+                                        <input type="hidden" name="ak_id_list_kendaraan" value="">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Jenis Kendaraan</label>
+                                                    <select name="ka_id_kode_aset" class="form-control">
+                                                        <option value="1">MOBIL</option>
+                                                        <option value="2">MOTOR</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Nomor Kendaraan</label>
+                                                    <input type="text" class="form-control" name="ak_plat_nomor"
+                                                        autocomplete="off" placeholder="B **** HHK">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Merk Kendaraan</label>
+                                                    <input type="text" class="form-control" name="ak_merk"
+                                                        autocomplete="off"
+                                                        placeholder="Honda Beat (AT) / Toyota Avanza">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Kondisi Kendaraan</label>
+                                                    <select name="ak_kondisi_aset" class="form-control">
+                                                        <option value="BAIK">BAIK</option>
+                                                        <option value="RUSAK">RUSAK</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center mt-3">
+                                            <div class="flex-grow-1 border-top"></div>
+                                            <h4 class="mx-3">PIC & LOKASI</h4>
+                                            <div class="flex-grow-1 border-top"></div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">PIC Kendaraan</label>
+                                                    <input type="text" class="form-control" name="ak_pic"
+                                                        autocomplete="off">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Lokasi Kendaraan</label>
+                                                    <input type="text" class="form-control" name="ak_area"
+                                                        autocomplete="off" placeholder="Jakarta / Bandung">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Regional Kendaraan</label>
+                                                    <select name="ak_regional" class="form-control">
+                                                        <option value="REGIONAL 1">Reg 1</option>
+                                                        <option value="REGIONAL 2">Reg 2</option>
+                                                        <option value="REGIONAL 3">Reg 3</option>
+                                                        <option value="REGIONAL 4">Reg 4</option>
+                                                        <option value="REGIONAL 5">Reg 5</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Tanggal Beli</label>
+                                                    <input type="date" class="form-control" id="tanggal_beli"
+                                                        name="ak_tahun_perolehan">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Umur Kendaraan</label>
+                                                    <input type="text" class="form-control" value="" id="umur_kendaraan"
+                                                        readonly>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="flex-grow-1 border-top"></div>
+                                            <h5 class="mx-3">STATUS STNK</h5>
+                                            <div class="flex-grow-1 border-top"></div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Tanggal STNK</label>
+                                                    <input type="date" class="form-control" id="tanggal_stnk"
+                                                        name="ak_tanggal_stnk">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Due Date</label>
+                                                    <input type="text" class="form-control" value="" id="due_date_stnk"
+                                                        readonly>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="flex-grow-1 border-top"></div>
+                                            <h5 class="mx-3">STATUS PLAT NOMOR</h5>
+                                            <div class="flex-grow-1 border-top"></div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Tanggal PLAT</label>
+                                                    <input type="date" class="form-control" id="tanggal_plat"
+                                                        name="ak_tanggal_plat">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Due Date</label>
+                                                    <input type="text" class="form-control" value="" id="due_date_plat"
+                                                        readonly>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="flex-grow-1 border-top"></div>
+                                            <h5 class="mx-3">EVIDENCE KENDARAAN</h5>
+                                            <div class="flex-grow-1 border-top"></div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Lihat Foto STNK</label>
+                                                    <div class="card">
+                                                        <div class="card-body p-6">
+                                                            <div class="">
+                                                                <div class="d-flex align-items-center overflow-hidden">
+
+                                                                    <div class="flex-grow-1">
+                                                                        <h5 class="font-size-15 mb-1 text-truncate"
+                                                                            id="detail_nama_file_sj"></h5>
+                                                                        <a href=""
+                                                                            class="font-size-14 text-muted text-truncate"
+                                                                            id="view_detail_surat_jalan"
+                                                                            target="_blank"><u>View
+                                                                                Folder</u></a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Lihat Foto BPKB</label>
+                                                    <div class="card">
+                                                        <div class="card-body p-6">
+                                                            <div class="">
+                                                                <div class="d-flex align-items-center overflow-hidden">
+
+                                                                    <div class="flex-grow-1">
+                                                                        <h5 class="font-size-15 mb-1 text-truncate"
+                                                                            id="detail_nama_file_sj"></h5>
+                                                                        <a href=""
+                                                                            class="font-size-14 text-muted text-truncate"
+                                                                            id="view_detail_surat_jalan"
+                                                                            target="_blank"><u>View
+                                                                                Folder</u></a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <div class="form-group">
+                                                    <label>Lihat Foto Kendaraan</label>
+                                                    <div class="card">
+                                                        <div class="card-body p-6">
+                                                            <div class="">
+                                                                <div class="d-flex align-items-center overflow-hidden">
+
+                                                                    <div class="flex-grow-1">
+                                                                        <h5 class="font-size-15 mb-1 text-truncate"
+                                                                            id="detail_nama_file_sj"></h5>
+                                                                        <a href=""
+                                                                            class="font-size-14 text-muted text-truncate"
+                                                                            id="view_detail_surat_jalan"
+                                                                            target="_blank"><u>View
+                                                                                Folder</u></a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="flex-grow-1 border-top"></div>
+                                            <h5 class="mx-3">INFORMASI LAIN</h5>
+                                            <div class="flex-grow-1 border-top"></div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Status Aset</label>
+                                                    <select name="ak_status_aset" class="form-control">
+                                                        <?php foreach ($option_aktif as $option): ?>
+                                                            <option value="<?= $option ?>">
+                                                                <?= $option ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Keterangan</label>
+                                                    <textarea class="form-control" name="ak_keterangan_aset"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </section>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                            <button type="submit" name="btnEdit" class="btn btn-primary"><i
+                                    class="fa fa-spinner fa-spin loading" style="display:none"></i>
+                                Simpan</button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </form>
+
     </div>
     <!-- /.content-wrapper -->
 
@@ -604,6 +902,96 @@ $total = 1;
 
         // Hitung total pertama kali saat tabel dimuat
         updateTotal();
+    });
+
+    document.getElementById("tanggal_beli").addEventListener("change", function () {
+        const tanggalBeli = new Date(this.value);
+        const hariIni = new Date();
+
+        if (!this.value) {
+            document.getElementById("umur_kendaraan").value = "";
+            return;
+        }
+
+        // Hitung selisih tahun, bulan, dan hari
+        let tahun = hariIni.getFullYear() - tanggalBeli.getFullYear();
+        let bulan = hariIni.getMonth() - tanggalBeli.getMonth();
+        let hari = hariIni.getDate() - tanggalBeli.getDate();
+
+        // Koreksi jika bulan/hari negatif
+        if (hari < 0) {
+            bulan--;
+            const bulanSebelumnya = new Date(hariIni.getFullYear(), hariIni.getMonth(), 0);
+            hari += bulanSebelumnya.getDate();
+        }
+
+        if (bulan < 0) {
+            tahun--;
+            bulan += 12;
+        }
+
+        // Tampilkan hasil
+        document.getElementById("umur_kendaraan").value =
+            `${tahun} tahun ${bulan} bulan ${hari} hari`;
+    });
+
+    document.getElementById("tanggal_stnk").addEventListener("change", function () {
+        const tglStnk = new Date(this.value);
+
+        if (!this.value) {
+            document.getElementById("due_date_stnk").value = "";
+            return;
+        }
+
+        // Hitung tanggal jatuh tempo 350 hari dari tanggal STNK
+        const dueDate = new Date(tglStnk);
+        dueDate.setDate(dueDate.getDate());
+
+        // Hitung selisih hari dari hari ini ke dueDate
+        const today = new Date();
+        const diffTime = dueDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        document.getElementById("due_date_stnk").value = diffDays + " Hari";
+    });
+
+    document.getElementById("tanggal_plat").addEventListener("change", function () {
+        const tglPlat = new Date(this.value);
+
+        if (!this.value) {
+            document.getElementById("due_date_plat").value = "";
+            return;
+        }
+
+        // Hitung tanggal jatuh tempo 350 hari dari tanggal STNK
+        const dueDate = new Date(tglPlat);
+        dueDate.setDate(dueDate.getDate());
+
+        // Hitung selisih hari dari hari ini ke dueDate
+        const today = new Date();
+        const diffTime = dueDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        document.getElementById("due_date_plat").value = diffDays + " Hari";
+    });
+
+    $('.tombol_hapus').on('click', function (e) {
+        e.preventDefault();
+        const href = $(this).attr('href');
+        swal({
+            title: 'Apakah anda yakin',
+            text: "data akan dihapus!",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Delete'
+        }).then((result) => {
+            if (result.value) {
+                document.location.href = href;
+            }
+        })
+
     });
 </script>
 

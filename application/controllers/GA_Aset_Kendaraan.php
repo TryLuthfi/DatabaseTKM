@@ -88,7 +88,7 @@ class GA_Aset_Kendaraan extends CI_Controller
         }
     }
 
-    public function tambahKodeItem()
+    public function tambahKendaraan()
     {
 
         // echo ("<pre>");
@@ -96,15 +96,21 @@ class GA_Aset_Kendaraan extends CI_Controller
         // echo ("</pre>");
 
         $hasil_data = array(
-            'nama_item' => $_POST['nama_item'],
-            'kategori_item' => $_POST['kategori_item'],
-            'satuan_item' => $_POST['satuan_item'],
-            'id_bowheer_pemilik_item' => $_POST['id_bowheer_pemilik_item'],
-            'harga_penjualan' => $_POST['harga_penjualan'],
-            'project_item' => $_POST['project_item']
+            'ka_id_kode_aset' => $_POST['ka_id_kode_aset'],
+            'ak_plat_nomor' => $_POST['ak_plat_nomor'],
+            'ak_merk' => $_POST['ak_merk'],
+            'ak_kondisi_aset' => $_POST['ak_kondisi_aset'],
+            'ak_pic' => $_POST['ak_pic'],
+            'ak_area' => $_POST['ak_area'],
+            'ak_regional' => $_POST['ak_regional'],
+            'ak_tahun_perolehan' => $_POST['ak_tahun_perolehan'],
+            'ak_tanggal_stnk' => $_POST['ak_tanggal_stnk'],
+            'ak_tanggal_plat' => $_POST['ak_tanggal_plat'],
+            'ak_status_aset' => $_POST['ak_status_aset'],
+            'ak_keterangan_aset' => $_POST['ak_keterangan_aset']
         );
 
-        $res = $this->MGA_Aset_Kendaraan->tambahKodeItem($hasil_data);
+        $res = $this->MGA_Aset_Kendaraan->tambahKendaraan($hasil_data);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_tambah');
@@ -148,10 +154,10 @@ class GA_Aset_Kendaraan extends CI_Controller
         }
     }
 
-    public function hapusKodeItem($id_kode_item)
+    public function hapusKendaraan($ak_id_list_kendaraan)
     {
-        $id_kode_item = array('id_kode_item' => $id_kode_item);
-        $res = $this->MGA_Aset_Kendaraan->hapusKodeItem($id_kode_item);
+        $ak_id_list_kendaraan = array('ak_id_list_kendaraan' => $ak_id_list_kendaraan);
+        $res = $this->MGA_Aset_Kendaraan->hapusKendaraan($ak_id_list_kendaraan);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_hapus');
