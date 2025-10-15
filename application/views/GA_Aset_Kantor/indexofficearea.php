@@ -993,7 +993,7 @@ $total = 1;
                                             <div class="col-md-12">
                                                 <div class="form-group">
                                                     <label class="col-form-label">Status Aset</label>
-                                                    <select name="ak_status_aset" class="form-control">
+                                                    <select name="ao_status_aset" class="form-control">
                                                         <?php foreach ($option_aktif as $option): ?>
                                                             <option value="<?= $option ?>" <?= isset($data['ao_status_aset']) && $data['ao_status_aset'] == $option ? 'selected' : '' ?>>
                                                                 <?= $option ?>
@@ -1374,8 +1374,6 @@ $total = 1;
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <input type="hidden" name="ao_id_list_office"
-                                                    value="<?= $data['ao_id_list_office'] ?>">
                                                 <label class="col-form-label">Jenis Aset</label>
                                                 <select name="ka_id_kode_aset" class="form-control">
                                                     <option value="25">LAPTOP</option>
@@ -1537,7 +1535,7 @@ $total = 1;
                                 <div class="col-md-12">
                                     <div class="form-group">
                                         <label class="col-form-label">Status Aset</label>
-                                        <select name="ak_status_aset" class="form-control">
+                                        <select name="ao_status_aset" class="form-control">
                                             <?php foreach ($option_aktif as $option): ?>
                                                 <option value="<?= $option ?>">
                                                     <?= $option ?>

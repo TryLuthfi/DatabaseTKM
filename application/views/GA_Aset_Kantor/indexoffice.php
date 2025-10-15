@@ -119,7 +119,6 @@ $total = 1;
             }
 
             ?>
-            <form action="<?php echo site_url('ListArea/edit/' . $data['ao_id_list_office']); ?>" method="post"></form>
             <div class="modal fade" id="modal-view-Office<?= $data['ao_id_list_office'] ?>" tabindex="-1"
                 role="dialog" aria-labelledby="modal-tambah-label" aria-hidden="true">
                 <div class="modal-dialog modal-xl" role="document">
@@ -283,7 +282,7 @@ $total = 1;
                                             <div class="col-md-12">
                                                 <div class="form-group">
                                                     <label class="col-form-label">Status Aset</label>
-                                                    <select name="ak_status_aset" class="form-control">
+                                                    <select name="ao_status_aset" class="form-control">
                                                         <?php foreach ($option_aktif as $option): ?>
                                                             <option value="<?= $option ?>" <?= isset($data['ao_status_aset']) && $data['ao_status_aset'] == $option ? 'selected' : '' ?>>
                                                                 <?= $option ?>
@@ -336,16 +335,14 @@ $total = 1;
                         </div>
 
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-                            <button type="submit" name="btnEdit" class="btn btn-primary"><i
-                                    class="fa fa-spinner fa-spin loading" style="display:none"></i>
-                                Simpan</button>
+                            <button type="button" class="btn btn-success" data-dismiss="modal"><i
+                                    class="fa fa-spinner fa-spin loading" style="display: none;"></i>
+                                Oke</button>
                         </div>
 
                     </div>
                 </div>
             </div>
-            </form>
         <?php endforeach; ?>
 
     </div>

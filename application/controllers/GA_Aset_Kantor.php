@@ -95,28 +95,38 @@ class GA_Aset_Kantor extends CI_Controller
     public function tambahAsetKantor()
     {
 
-        echo ("<pre>");
-        print_r($_POST);
-        echo ("</pre>");
+        // echo ("<pre>");
+        // print_r($_POST);
+        // echo ("</pre>");
 
-    //     $hasil_data = array(
-    //         'nama_item' => $_POST['nama_item'],
-    //         'kategori_item' => $_POST['kategori_item'],
-    //         'satuan_item' => $_POST['satuan_item'],
-    //         'id_bowheer_pemilik_item' => $_POST['id_bowheer_pemilik_item'],
-    //         'harga_penjualan' => $_POST['harga_penjualan'],
-    //         'project_item' => $_POST['project_item']
-    //     );
+        $previousUrl = $this->input->server('HTTP_REFERER');
 
-    //     $res = $this->MGA_Aset_Kantor->tambahKodeItem($hasil_data);
+        $hasil_data = array(
+            'ka_id_kode_aset' => $_POST['ka_id_kode_aset'],
+            'ao_merk' => $_POST['ao_merk'],
+            'ao_type' => $_POST['ao_type'],
+            'ao_serial_number' => $_POST['ao_serial_number'],
+            'ao_spesifikasi' => $_POST['ao_spesifikasi'],
+            'ao_kondisi_aset' => $_POST['ao_kondisi_aset'],
+            'ao_pic' => $_POST['ao_pic'],
+            'ao_regional' => $_POST['ao_regional'],
+            'ao_area' => $_POST['ao_area'],
+            'ao_status_aset' => $_POST['ao_status_aset'],
+            'ao_keterangan_aset' => $_POST['ao_keterangan_aset'],
+            'ao_tahun_perolehan' => $_POST['ao_tahun_perolehan'],
+            'ao_date_last_cek' => $_POST['ao_date_last_cek'],
+            'ao_date_input' => $_POST['ao_date_input']
+        );
 
-    //     if ($res >= 1) {
-    //         $this->session->set_flashdata('status', 'sukses_tambah');
-    //         redirect("GA_Aset_Kantor");
-    //     } else {
-    //         $this->session->set_flashdata('status', 'gagal_tambah');
-    //         redirect("GA_Aset_Kantor");
-    //     }
+        $res = $this->MGA_Aset_Kantor->tambahAsetKantor($hasil_data);
+
+        if ($res >= 1) {
+            $this->session->set_flashdata('status', 'sukses_tambah');
+            redirect($previousUrl);
+        } else {
+            $this->session->set_flashdata('status', 'gagal_tambah');
+            redirect($previousUrl);
+        }
     }
 
     public function editAsetKantor($ao_id_list_office)
