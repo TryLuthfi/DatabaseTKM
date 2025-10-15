@@ -59,6 +59,33 @@ class GA_Aset_Kendaraan extends CI_Controller
         }
     }
 
+    public function detailAllKendaraan()
+    {
+
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $decoded_url_area = urldecode($last_segment);
+
+        if (!empty($this->session->userdata('id_user'))) {
+
+            $data['title'] = 'Aset Kendaraan ' . strtoupper($decoded_url_area);
+            $data['judul'] = 'Aset Kendaraan ' . $decoded_url_area;
+            $data['getKategoriKendaraan'] = strtoupper($decoded_url_area);
+            $data['getMasterAsetKendaraan'] = $this->MGA_Aset_Kendaraan->getMasterAsetKendaraan();
+
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('GA_Aset_Kendaraan/indexallkendaraan', $data);
+            // $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
+
+        } else {
+            redirect('Auth');
+        }
+    }
+
     public function areaKendaraan()
     {
 
@@ -161,7 +188,7 @@ class GA_Aset_Kendaraan extends CI_Controller
     public function hapusKendaraan($ak_id_list_kendaraan)
     {
         $previousUrl = $this->input->server('HTTP_REFERER');
-        
+
         $ak_id_list_kendaraan = array('ak_id_list_kendaraan' => $ak_id_list_kendaraan);
         $res = $this->MGA_Aset_Kendaraan->hapusKendaraan($ak_id_list_kendaraan);
 

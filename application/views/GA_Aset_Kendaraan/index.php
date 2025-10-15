@@ -136,6 +136,13 @@ $total = 1;
                                                             <?php endif; ?>
                                                         <?php endforeach; ?>
                                                     </div>
+                                                    <a href="<?= base_url('GA_Aset_Kendaraan/detailAllKendaraan/Mobil') ?>"
+                                                        class="text-decoration-none">
+                                                        <h5 class="text-center mb-4 font-weight-bold text-primary"
+                                                            style="text-decoration: underline;">
+                                                            Lihat Semua Mobil &#8594;
+                                                        </h5>
+                                                    </a>
                                                 </div>
                                             </div>
 
@@ -235,6 +242,13 @@ $total = 1;
                                                             <?php endif; ?>
                                                         <?php endforeach; ?>
                                                     </div>
+                                                    <a href="<?= base_url('GA_Aset_Kendaraan/detailAllKendaraan/Motor') ?>"
+                                                        class="text-decoration-none">
+                                                        <h5 class="text-center mb-4 font-weight-bold text-primary"
+                                                            style="text-decoration: underline;">
+                                                            Lihat Semua Motor &#8594;
+                                                        </h5>
+                                                    </a>
                                                 </div>
                                             </div>
 
