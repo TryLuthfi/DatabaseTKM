@@ -105,8 +105,7 @@ $total = 1;
                                                     <td><?= $data['ao_pic'] ?></td>
                                                     <td><?= $data['ao_area'] ?></td>
                                                     <td>
-                                                        <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                        <a href="<?php echo site_url('GA_Aset_Kantor/hapusAsetKantor/' . $data['ao_id_list_office']); ?>"
                                                             id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                                 class=" fas fa-trash"></i></a>
                                                         <a href="#" class="btn btn-warning"
@@ -1279,7 +1278,7 @@ $total = 1;
                                         <div class="col-md-12">
                                             <div class="form-group">
                                                 <label class="col-form-label">Status Aset</label>
-                                                <select name="ak_status_aset" class="form-control">
+                                                <select name="ao_status_aset" class="form-control">
                                                     <?php foreach ($option_aktif as $option): ?>
                                                         <option value="<?= $option ?>" <?= isset($data['ao_status_aset']) && $data['ao_status_aset'] == $option ? 'selected' : '' ?>>
                                                             <?= $option ?>
@@ -2048,6 +2047,26 @@ $total = 1;
             }
         <?php endforeach; ?>
     });
+
+    $('.tombol_hapus').on('click', function (e) {
+        e.preventDefault();
+        const href = $(this).attr('href');
+        swal({
+            title: 'Apakah anda yakin',
+            text: "data akan dihapus!",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Delete'
+        }).then((result) => {
+            if (result.value) {
+                document.location.href = href;
+            }
+        })
+
+    });
+
 </script>
 
 

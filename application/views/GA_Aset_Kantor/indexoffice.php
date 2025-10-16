@@ -68,13 +68,11 @@ $total = 1;
                                                 <td><?= $data['ao_pic'] ?></td>
                                                 <td><?= $data['ao_area'] ?></td>
                                                 <td>
-                                                    <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                    <a href="<?php echo site_url('GA_Aset_Kantor/hapusAsetKantor/' . $data['ao_id_list_office']); ?>"
                                                         id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                             class=" fas fa-trash"></i></a>
                                                     <a href="#" class="btn btn-warning"
-                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                        data-target="#modal-lg-edit<?= $data['ka_id_kode_aset'] ?>"
+                                                        data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
                                                         data-toggle="modal"><i class="fas fa-edit"></i></a>
                                                     <a href="#" class="btn btn-primary"
                                                         data-target="#modal-view-Office<?= $data['ao_id_list_office'] ?>"
@@ -103,6 +101,7 @@ $total = 1;
                 </div>
         </section>
 
+        <!-- modal view aset kantor -->
         <?php $tgl = date('Y-m-d'); ?>
         <?php foreach ($getMasterAsetOfficeTipe as $data):
 
@@ -119,8 +118,8 @@ $total = 1;
             }
 
             ?>
-            <div class="modal fade" id="modal-view-Office<?= $data['ao_id_list_office'] ?>" tabindex="-1"
-                role="dialog" aria-labelledby="modal-tambah-label" aria-hidden="true">
+            <div class="modal fade" id="modal-view-Office<?= $data['ao_id_list_office'] ?>" tabindex="-1" role="dialog"
+                aria-labelledby="modal-tambah-label" aria-hidden="true">
                 <div class="modal-dialog modal-xl" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -345,15 +344,303 @@ $total = 1;
             </div>
         <?php endforeach; ?>
 
-    </div>
-    <!-- /.content-wrapper -->
+        <!-- MODAL EDIT DETAIL ASET KANTOR -->
+        <?php $tgl = date('Y-m-d'); ?>
+        <?php foreach ($getMasterAsetOfficeTipe as $data):
 
-    <?php $this->session->set_flashdata('status', 'kosong'); ?>
+            if (!empty($data['ao_date_last_cek'])) {
+                $tanggal_cek_formao_indo = date('d F Y', strtotime($data['ao_date_last_cek']));
+            } else {
+                $tanggal_cek_formao_indo = '';
+            }
 
-    <!-- Control Sidebar -->
-    <aside class="control-sidebar control-sidebar-dark">
-        <!-- Control sidebar content goes here -->
-    </aside>
+            if (!empty($data['ao_date_input'])) {
+                $tanggal_input_formao_indo = date('d F Y', strtotime($data['ao_date_input']));
+            } else {
+                $tanggal_input_formao_indo = '';
+            }
+
+            ?>
+            <form action="<?php echo site_url('GA_Aset_Kantor/editAsetKantor/' . $data['ao_id_list_office']); ?>"
+                method="post">
+                <div class="modal fade" id="modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>" tabindex="-1"
+                    role="dialog" aria-labelledby="modal-tambah-label" aria-hidden="true">
+                    <div class="modal-dialog modal-xl" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">EDIT DATA ASET KANTOR</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+
+                            <?php
+                            ?>
+                            <div class="modal-body" style="background-color:rgb(247, 243, 243);">
+                                <section class="content">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <input type="hidden" name="ao_id_list_office"
+                                                value="<?= $data['ao_id_list_office'] ?>">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h3 class="mx-3">
+                                                    <?= $data['ka_jenis_aset'] . ' ' . $data['ka_nama_kode_aset'] . '-' . $data['ao_sort'] ?>
+                                                </h3>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <input type="hidden" name="ao_id_list_office"
+                                                            value="<?= $data['ao_id_list_office'] ?>">
+                                                        <label class="col-form-label">Jenis Aset</label>
+                                                        <select name="ka_id_kode_aset" class="form-control">
+                                                            <option value="25" <?php if ($data['ka_jenis_aset'] == 'LAPTOP') { ?>selected <?php } ?>>LAPTOP</option>
+                                                            <option value="26" <?php if ($data['ka_jenis_aset'] == 'PRINTER') { ?>selected <?php } ?>>PRINTER</option>
+                                                            <option value="27" <?php if ($data['ka_jenis_aset'] == 'SCANNER') { ?>selected <?php } ?>>SCANNER</option>
+                                                            <option value="28" <?php if ($data['ka_jenis_aset'] == 'MARKOM') { ?>selected <?php } ?>>MARKOM</option>
+                                                            <option value="29" <?php if ($data['ka_jenis_aset'] == 'DRAFTER') { ?>selected <?php } ?>>DRAFTER</option>
+                                                            <option value="30" <?php if ($data['ka_jenis_aset'] == 'HARDISK') { ?>selected <?php } ?>>HARDISK</option>
+                                                            <option value="31" <?php if ($data['ka_jenis_aset'] == 'HANDPHONE') { ?>selected <?php } ?>>HANDPHONE</option>
+                                                            <option value="32" <?php if ($data['ka_jenis_aset'] == 'CUTTING PLOTTER') { ?>selected <?php } ?>>CUTTING PLOTTER</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Merk Aset</label>
+                                                        <input type="text" class="form-control" name="ao_merk"
+                                                            autocomplete="off" value="<?= $data['ao_merk'] ?>">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Type</label>
+                                                        <input type="text" class="form-control" name="ao_type"
+                                                            autocomplete="off" value="<?= $data['ao_type'] ?>"
+                                                            style="font-weight: bold;">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Serial Number</label>
+                                                        <input type="text" class="form-control" name="ao_serial_number"
+                                                            autocomplete="off" value="<?= $data['ao_serial_number'] ?>"
+                                                            style="font-weight: bold;">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Spesifikasi</label>
+                                                        <input type="text" class="form-control" name="ao_spesifikasi"
+                                                            autocomplete="off" value="<?= $data['ao_spesifikasi'] ?>"
+                                                            style="font-weight: bold;">
+                                                    </div>
+                                                </div>
+
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Kondisi Aset</label>
+                                                        <select name="ao_kondisi_aset" class="form-control">
+                                                            <option value="BAIK" <?php if ($data['ao_kondisi_aset'] == 'BAIK') { ?>selected <?php } ?>>BAIK
+                                                            </option>
+                                                            <option value="RUSAK" <?php if ($data['ao_kondisi_aset'] == 'RUSAK') { ?>selected <?php } ?>>
+                                                                RUSAK
+                                                            </option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex align-items-center mb-3 mt-3">
+                                                <div class="flex-grow-1 border-top"></div>
+                                                <h5 class="mx-3">PIC & LOKASI</h5>
+                                                <div class="flex-grow-1 border-top"></div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">PIC Aset</label>
+                                                        <input type="text" class="form-control" name="ao_pic"
+                                                            autocomplete="off" value="<?= $data['ao_pic'] ?>" s>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="col-form-label">Regional Kendaraan</label>
+                                                        <select name="ao_regional" class="form-control">
+                                                            <option value="" <?php if ($data['ao_regional'] == '') { ?>selected <?php } ?>>Pilih Regional</option>
+                                                            <option value="REGIONAL 1" <?php if ($data['ao_regional'] == 'REGIONAL 1') { ?>selected <?php } ?>>REGIONAL 1</option>
+                                                            <option value="REGIONAL 2" <?php if ($data['ao_regional'] == 'REGIONAL 2') { ?>selected <?php } ?>>REGIONAL 2</option>
+                                                            <option value="REGIONAL 3" <?php if ($data['ao_regional'] == 'REGIONAL 3') { ?>selected <?php } ?>>REGIONAL 3</option>
+                                                            <option value="REGIONAL 4" <?php if ($data['ao_regional'] == 'REGIONAL 4') { ?>selected <?php } ?>>REGIONAL 4</option>
+                                                            <option value="REGIONAL 5" <?php if ($data['ao_regional'] == 'REGIONAL 5') { ?>selected <?php } ?>>REGIONAL 5</option>
+                                                    </div>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="col-form-label">Area</label>
+                                                    <input type="text" class="form-control" name="ao_area"
+                                                        autocomplete="off" value="<?= $data['ao_area'] ?>" s>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="flex-grow-1 border-top"></div>
+                                        <h5 class="mx-3">EVIDENCE & FILE PENDUKUNG</h5>
+                                        <div class="flex-grow-1 border-top"></div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Lihat Foto Alat</label>
+                                                <div class="card">
+                                                    <div class="card-body p-6">
+                                                        <div class="">
+                                                            <div class="d-flex align-items-center overflow-hidden">
+
+                                                                <div class="flex-grow-1">
+                                                                    <h5 class="font-size-15 mb-1 text-truncate"
+                                                                        id="detail_nama_file_sj"></h5>
+                                                                    <a href="" class="font-size-14 text-muted text-truncate"
+                                                                        id="view_detail_surao_jalan" target="_blank"><u>View
+                                                                            Folder</u></a>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>BA / FIle Lain</label>
+                                                <div class="card">
+                                                    <div class="card-body p-6">
+                                                        <div class="">
+                                                            <div class="d-flex align-items-center overflow-hidden">
+
+                                                                <div class="flex-grow-1">
+                                                                    <h5 class="font-size-15 mb-1 text-truncate"
+                                                                        id="detail_nama_file_sj"></h5>
+                                                                    <a href="" class="font-size-14 text-muted text-truncate"
+                                                                        id="view_detail_surao_jalan" target="_blank"><u>View
+                                                                            Folder</u></a>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="flex-grow-1 border-top"></div>
+                                        <h5 class="mx-3">INFORMASI LAIN</h5>
+                                        <div class="flex-grow-1 border-top"></div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="form-group">
+                                                <label class="col-form-label">Status Aset</label>
+                                                <select name="ao_status_aset" class="form-control">
+                                                    <?php foreach ($option_aktif as $option): ?>
+                                                        <option value="<?= $option ?>" <?= isset($data['ao_status_aset']) && $data['ao_status_aset'] == $option ? 'selected' : '' ?>>
+                                                            <?= $option ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="form-group">
+                                                <label class="col-form-label">Keterangan</label>
+                                                <textarea class="form-control"
+                                                    name="ao_keterangan_aset"><?= $data['ao_keterangan_aset'] ?></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="flex-grow-1 border-top"></div>
+                                        <h5 class="mx-3">TANGGAL UPDATE</h5>
+                                        <div class="flex-grow-1 border-top"></div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="col-form-label">Tahun Perolehan</label>
+                                                <input type="text" class="form-control" name="ao_tahun_perolehan"
+                                                    autocomplete="off" value="<?= $data['ao_tahun_perolehan'] ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="col-form-label">Tanggal Opname Terakhir</label>
+                                                <input type="text" class="form-control" name="ao_date_last_cek"
+                                                    value="<?= $tanggal_cek_formao_indo ?>">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="col-form-label">Tanggal Input Aplikasi</label>
+                                                <input type="text" class="form-control" name="ao_date_input"
+                                                    value="<?= $tanggal_input_formao_indo ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            </section>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                            <button type="submit" name="btnEdit" class="btn btn-primary"><i
+                                    class="fa fa-spinner fa-spin loading" style="display:none"></i>
+                                Simpan</button>
+                        </div>
+
+                    </div>
+                </div>
+        </div>
+        </form>
+    <?php endforeach; ?>
+
+</div>
+<!-- /.content-wrapper -->
+
+<?php $this->session->set_flashdata('status', 'kosong'); ?>
+
+<!-- Control Sidebar -->
+<aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content goes here -->
+</aside>
 
 </div>
 
@@ -425,6 +712,25 @@ $total = 1;
 
         // Hitung total pertama kali saat tabel dimuat
         updateTotal();
+    });
+
+    $('.tombol_hapus').on('click', function (e) {
+        e.preventDefault();
+        const href = $(this).attr('href');
+        swal({
+            title: 'Apakah anda yakin',
+            text: "data akan dihapus!",
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Delete'
+        }).then((result) => {
+            if (result.value) {
+                document.location.href = href;
+            }
+        })
+
     });
 
 

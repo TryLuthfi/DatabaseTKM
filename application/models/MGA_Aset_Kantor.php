@@ -150,15 +150,15 @@ ORDER BY tb_aset_office.ao_area ASC;')
         return $res;
     }
 
-    public function hapusKodeItem($id_kode_item)
+    public function hapusAsetKantor($ao_id_list_office)
     {
-        $res = $this->db->delete("tb_aset_office", $id_kode_item);
+        $res = $this->db->delete("tb_aset_office", $ao_id_list_office);
         return $res;
     }
 
-    public function editKodeItem($data_array, $id_kode_item)
+    public function editAsetKantor($hasil_data, $ao_id_list_office)
     {
-        $res = $this->db->update("tb_aset_office", $data_array, $id_kode_item);
+        $res = $this->db->update("tb_aset_office", $hasil_data, $ao_id_list_office);
         return $res;
     }
 

@@ -132,47 +132,55 @@ class GA_Aset_Kantor extends CI_Controller
     public function editAsetKantor($ao_id_list_office)
     {
 
-        echo ("<pre>");
-        print_r($_POST);
-        echo ("</pre>");
+        // echo ("<pre>");
+        // print_r($_POST);
+        // echo ("</pre>");
 
-        // if (!empty($_POST['project_item'])) {
-        //     $kota_string = implode(", ", $_POST['project_item']);
-        // } else {
-        //     $kota_string = "";
-        // }
+        $previousUrl = $this->input->server('HTTP_REFERER');
 
-        // $data_array = array(
-        //     'nama_item' => $_POST['nama_item'],
-        //     'satuan_item' => $_POST['satuan_item'],
-        //     'kategori_item' => $_POST['kategori_item'],
-        //     'project_item' => $kota_string,
-        //     'id_bowheer_pemilik_item' => $_POST['id_bowheer_pemilik_item']
-        // );
+        $hasil_data = array(
+            'ka_id_kode_aset' => $_POST['ka_id_kode_aset'],
+            'ao_merk' => $_POST['ao_merk'],
+            'ao_type' => $_POST['ao_type'],
+            'ao_serial_number' => $_POST['ao_serial_number'],
+            'ao_spesifikasi' => $_POST['ao_spesifikasi'],
+            'ao_kondisi_aset' => $_POST['ao_kondisi_aset'],
+            'ao_pic' => $_POST['ao_pic'],
+            'ao_regional' => $_POST['ao_regional'],
+            'ao_area' => $_POST['ao_area'],
+            'ao_status_aset' => $_POST['ao_status_aset'],
+            'ao_keterangan_aset' => $_POST['ao_keterangan_aset'],
+            'ao_tahun_perolehan' => $_POST['ao_tahun_perolehan'],
+            'ao_date_last_cek' => $_POST['ao_date_last_cek'],
+            'ao_date_input' => $_POST['ao_date_input']
+        );
 
-        // $where = array('ao_id_list_office' => $ao_id_list_office);
-        // $res = $this->MGA_Aset_Kantor->editAsetKantor($data_array, $where);
+        $where = array('ao_id_list_office' => $ao_id_list_office);
+        $res = $this->MGA_Aset_Kantor->editAsetKantor($hasil_data, $where);
 
-        // if ($res >= 1) {
-        //     $this->session->set_flashdata('status', 'sukses_edit');
-        //     redirect("GA_Aset_Kantor");
-        // } else {
-        //     $this->session->set_flashdata('status', 'gagal_edit');
-        //     redirect("GA_Aset_Kantor");
-        // }
+        if ($res >= 1) {
+            $this->session->set_flashdata('status', 'sukses_edit');
+            redirect($previousUrl);
+        } else {
+            $this->session->set_flashdata('status', 'gagal_edit');
+            redirect($previousUrl);
+        }
     }
 
-    public function hapusKodeItem($id_kode_item)
+    public function hapusAsetKantor($ao_id_list_office)
     {
-        $id_kode_item = array('id_kode_item' => $id_kode_item);
-        $res = $this->MGA_Aset_Kantor->hapusKodeItem($id_kode_item);
+
+        $previousUrl = $this->input->server('HTTP_REFERER');
+
+        $ao_id_list_office = array('ao_id_list_office' => $ao_id_list_office);
+        $res = $this->MGA_Aset_Kantor->hapusAsetKantor($ao_id_list_office);
 
         if ($res >= 1) {
             $this->session->set_flashdata('status', 'sukses_hapus');
-            redirect("GA_Aset_Kantor");
+            redirect($previousUrl);
         } else {
             $this->session->set_flashdata('status', 'gagal_hapus');
-            redirect("GA_Aset_Kantor");
+            redirect($previousUrl);
         }
     }
 }
