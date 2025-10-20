@@ -105,12 +105,14 @@ $total = 1;
                                                     <td><?= $data['ao_pic'] ?></td>
                                                     <td><?= $data['ao_area'] ?></td>
                                                     <td>
-                                                        <a href="<?php echo site_url('GA_Aset_Kantor/hapusAsetKantor/' . $data['ao_id_list_office']); ?>"
-                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                                class=" fas fa-trash"></i></a>
-                                                        <a href="#" class="btn btn-warning"
-                                                            data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
-                                                            data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                            <a href="<?php echo site_url('GA_Aset_Kantor/hapusAsetKantor/' . $data['ao_id_list_office']); ?>"
+                                                                id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                    class=" fas fa-trash"></i></a>
+                                                            <a href="#" class="btn btn-warning"
+                                                                data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
+                                                                data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php } ?>
                                                         <a href="#" class="btn btn-primary"
                                                             data-target="#modal-view-Office<?= $data['ao_id_list_office'] ?>"
                                                             data-toggle="modal"><i class="fas fa-eye"></i></a>
@@ -199,13 +201,15 @@ $total = 1;
                                                     <td><?= $data['ao_pic'] ?></td>
                                                     <td><?= $data['ao_area'] ?></td>
                                                     <td>
-                                                        <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                                class=" fas fa-trash"></i></a>
-                                                        <a href="#" class="btn btn-warning"
-                                                            data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
-                                                            data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                            <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                                id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                    class=" fas fa-trash"></i></a>
+                                                            <a href="#" class="btn btn-warning"
+                                                                data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
+                                                                data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php } ?>
                                                         <a href="#" class="btn btn-primary"
                                                             data-target="#modal-view-Office<?= $data['ao_id_list_office'] ?>"
                                                             data-toggle="modal"><i class="fas fa-eye"></i></a>
@@ -294,13 +298,15 @@ $total = 1;
                                                     <td><?= $data['ao_pic'] ?></td>
                                                     <td><?= $data['ao_area'] ?></td>
                                                     <td>
-                                                        <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                                class=" fas fa-trash"></i></a>
-                                                        <a href="#" class="btn btn-warning"
-                                                            data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
-                                                            data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                            <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                                id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                    class=" fas fa-trash"></i></a>
+                                                            <a href="#" class="btn btn-warning"
+                                                                data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
+                                                                data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php } ?>
                                                         <a href="#" class="btn btn-primary"
                                                             data-target="#modal-view-Office<?= $data['ao_id_list_office'] ?>"
                                                             data-toggle="modal"><i class="fas fa-eye"></i></a>
@@ -389,13 +395,15 @@ $total = 1;
                                                     <td><?= $data['ao_pic'] ?></td>
                                                     <td><?= $data['ao_area'] ?></td>
                                                     <td>
-                                                        <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                                class=" fas fa-trash"></i></a>
-                                                        <a href="#" class="btn btn-warning"
-                                                            data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
-                                                            data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                            <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                                id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                    class=" fas fa-trash"></i></a>
+                                                            <a href="#" class="btn btn-warning"
+                                                                data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
+                                                                data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php } ?>
                                                         <a href="#" class="btn btn-primary"
                                                             data-target="#modal-view-Office<?= $data['ao_id_list_office'] ?>"
                                                             data-toggle="modal"><i class="fas fa-eye"></i></a>
@@ -484,13 +492,15 @@ $total = 1;
                                                     <td><?= $data['ao_pic'] ?></td>
                                                     <td><?= $data['ao_area'] ?></td>
                                                     <td>
-                                                        <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                                class=" fas fa-trash"></i></a>
-                                                        <a href="#" class="btn btn-warning"
-                                                            data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
-                                                            data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                            <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                                id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                    class=" fas fa-trash"></i></a>
+                                                            <a href="#" class="btn btn-warning"
+                                                                data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
+                                                                data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php } ?>
                                                         <a href="#" class="btn btn-primary"
                                                             data-target="#modal-view-Office<?= $data['ao_id_list_office'] ?>"
                                                             data-toggle="modal"><i class="fas fa-eye"></i></a>
@@ -579,13 +589,15 @@ $total = 1;
                                                     <td><?= $data['ao_pic'] ?></td>
                                                     <td><?= $data['ao_area'] ?></td>
                                                     <td>
-                                                        <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                                class=" fas fa-trash"></i></a>
-                                                        <a href="#" class="btn btn-warning"
-                                                            data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
-                                                            data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                            <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                                id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                    class=" fas fa-trash"></i></a>
+                                                            <a href="#" class="btn btn-warning"
+                                                                data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
+                                                                data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php } ?>
                                                         <a href="#" class="btn btn-primary"
                                                             data-target="#modal-view-Office<?= $data['ao_id_list_office'] ?>"
                                                             data-toggle="modal"><i class="fas fa-eye"></i></a>
@@ -674,13 +686,15 @@ $total = 1;
                                                     <td><?= $data['ao_pic'] ?></td>
                                                     <td><?= $data['ao_area'] ?></td>
                                                     <td>
-                                                        <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                                class=" fas fa-trash"></i></a>
-                                                        <a href="#" class="btn btn-warning"
-                                                            data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
-                                                            data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                            <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                                id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                    class=" fas fa-trash"></i></a>
+                                                            <a href="#" class="btn btn-warning"
+                                                                data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
+                                                                data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php } ?>
                                                         <a href="#" class="btn btn-primary"
                                                             data-target="#modal-view-Office<?= $data['ao_id_list_office'] ?>"
                                                             data-toggle="modal"><i class="fas fa-eye"></i></a>
@@ -769,13 +783,15 @@ $total = 1;
                                                     <td><?= $data['ao_pic'] ?></td>
                                                     <td><?= $data['ao_area'] ?></td>
                                                     <td>
-                                                        <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
-                                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                            id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
-                                                                class=" fas fa-trash"></i></a>
-                                                        <a href="#" class="btn btn-warning"
-                                                            data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
-                                                            data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                            <a href="<?php echo site_url('Master_GA_Aset/hapusKodeAset/' . $data['ka_id_kode_aset']); ?>"
+                                                                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                                id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                    class=" fas fa-trash"></i></a>
+                                                            <a href="#" class="btn btn-warning"
+                                                                data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
+                                                                data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                        <?php } ?>
                                                         <a href="#" class="btn btn-primary"
                                                             data-target="#modal-view-Office<?= $data['ao_id_list_office'] ?>"
                                                             data-toggle="modal"><i class="fas fa-eye"></i></a>

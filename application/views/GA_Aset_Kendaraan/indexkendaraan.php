@@ -99,12 +99,14 @@ $total = 1;
                                                         <td><?= $data['ak_area'] ?></td>
                                                         <td><?= $data['ak_status_aset'] ?></td>
                                                         <td>
+                                                            <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                                                             <a href="<?php echo site_url('GA_Aset_Kendaraan/hapusKendaraan/' . $data['ak_id_list_kendaraan']); ?>"
                                                                 id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                                     class=" fas fa-trash"></i></a>
                                                             <a href="#" class="btn btn-warning"
                                                                 data-target="#modal-edit-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
                                                                 data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                            <?php } ?>
                                                             <a href="#" class="btn btn-primary"
                                                                 data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
                                                                 data-toggle="modal"><i class="fas fa-eye"></i></a>
@@ -123,12 +125,14 @@ $total = 1;
                                                             <td><?= $data['ak_area'] ?></td>
                                                             <td><?= $data['ak_status_aset'] ?></td>
                                                             <td>
+                                                                <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                                                                 <a href="<?php echo site_url('GA_Aset_Kendaraan/hapusKendaraan/' . $data['ak_id_list_kendaraan']); ?>"
                                                                     id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                                         class=" fas fa-trash"></i></a>
                                                                 <a href="#" class="btn btn-warning"
                                                                     data-target="#modal-edit-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
                                                                     data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                                <?php } ?>
                                                                 <a href="#" class="btn btn-primary"
                                                                     data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
                                                                     data-toggle="modal"><i class="fas fa-eye"></i></a>

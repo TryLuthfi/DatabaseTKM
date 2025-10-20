@@ -685,8 +685,7 @@ $total_stok_dashboard = [];
                                                 <td class="d-flex">
                                                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                                                         <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . urlencode($data['no_surat_jalan']) . '?id_lokasi_gudang=' . urlencode($data['id_lokasi_gudang'])); ?>"
-                                                            id="tombol_hapus_rincian"
-                                                            class="btn btn-danger tombol_hapus_rincian">
+                                                            id="tombol_hapus_rincian" class="btn btn-danger tombol_hapus_rincian">
                                                             <i class="fas fa-trash"></i>
                                                         </a>
                                                     <?php } ?>
