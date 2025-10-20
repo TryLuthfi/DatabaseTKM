@@ -6,10 +6,47 @@ class MGA_Aset_Kantor extends CI_Model
 
     public function getMasterAsetOffice()
     {
-        $data = $this->db->query('select * from tb_aset_office join tb_kode_aset on tb_aset_office.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset')
+        $data = $this->db->query('SELECT * FROM tb_aset_office JOIN tb_kode_aset ON tb_aset_office.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset')
             ->result_array();
         return $data;
     }
+
+    public function getFilteredAsetKantor($regional = null, $area = null, $tahun = null, $status = null, $kondisi = null, $grouped = false)
+    {
+        if ($grouped) {
+            // === GROUP BY versi (saat filter diklik) ===
+            $this->db->select('tka.ka_jenis_aset, COUNT(*) AS total, GROUP_CONCAT(tao.ao_id_list_office) AS list_id');
+        } else {
+            // === Non-GROUP BY versi (tampilan awal) ===
+            $this->db->select('tao.*, tka.ka_jenis_aset');
+        }
+
+        $this->db->from('tb_aset_office tao');
+        $this->db->join('tb_kode_aset tka', 'tao.ka_id_kode_aset = tka.ka_id_kode_aset', 'left');
+
+        // ===== Filter dinamis =====
+        if (!empty($regional))
+            $this->db->where_in('tao.ao_regional', (array) $regional);
+        if (!empty($area))
+            $this->db->where_in('tao.ao_area', (array) $area);
+        if (!empty($tahun))
+            $this->db->where_in('tao.ao_tahun_perolehan', (array) $tahun);
+        if (!empty($status))
+            $this->db->where_in('tao.ao_status_aset', (array) $status);
+        if (!empty($kondisi))
+            $this->db->where_in('tao.ao_kondisi_aset', (array) $kondisi);
+
+        // ===== Jika grouped aktif, tambahkan GROUP BY =====
+        if ($grouped) {
+            $this->db->group_by('tka.ka_jenis_aset');
+            $this->db->order_by('tka.ka_jenis_aset', 'ASC');
+        } else {
+            $this->db->order_by('tao.ao_id_list_office', 'ASC');
+        }
+
+        return $this->db->get()->result_array();
+    }
+
 
     public function getMasterAsetOfficeArea()
     {
@@ -27,7 +64,7 @@ class MGA_Aset_Kantor extends CI_Model
             $filter_area = "ao_area";
         }
 
-        $data = $this->db->query('select * from tb_aset_office join tb_kode_aset on tb_aset_office.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset WHERE ' . $filter_area . ' = "' . $decoded_url_area . '"')
+        $data = $this->db->query('SELECT * FROM tb_aset_office JOIN tb_kode_aset ON tb_aset_office.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset WHERE ' . $filter_area . ' = "' . $decoded_url_area . '"')
             ->result_array();
         return $data;
     }
@@ -160,6 +197,19 @@ ORDER BY tb_aset_office.ao_area ASC;')
     {
         $res = $this->db->update("tb_aset_office", $hasil_data, $ao_id_list_office);
         return $res;
+    }
+
+    public function getReportStokAsetkantor()
+    {
+        $data = $this->db->query("SELECT
+	*
+FROM
+	tb_aset_office
+JOIN tb_kode_aset ON
+	tb_aset_office.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset
+	ORDER BY tb_aset_office.ka_id_kode_aset, tb_aset_office.ao_regional, tb_aset_office.ao_area;")->result_array();
+
+    return $data;
     }
 
 }
