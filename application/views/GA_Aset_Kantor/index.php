@@ -645,6 +645,9 @@ $progressJSON = json_encode($getFilteredAsetKantor);
                                 </div>
 
                                 <div class="col-md-12 mt-3 d-flex justify-content-end">
+                                    <button id="hapusReportStokAsetKantor" class="btn btn-secondary mt-2 mr-2">
+                                        Hapus Filter
+                                    </button>
                                     <button id="downloadReportStokAsetKantor" class="btn btn-primary mt-2">
                                         Download Excel 🚀
                                     </button>
@@ -1060,7 +1063,50 @@ $progressJSON = json_encode($getFilteredAsetKantor);
                 XLSX.writeFile(workbook, filename);
             }
 
+            function resetFilter() {
+                const selectedRegional = document.getElementById('report_stok_regional');
+                const selectedKota = document.getElementById('report_stok_kota');
+                const selectedJenis = document.getElementById('report_stok_jenis');
+                const selectedKondisi = document.getElementById('report_stok_kondisi');
+                const selectedStatus = document.getElementById('report_stok_status');
+
+                const optionsRegional = selectedRegional.options;
+                const optionsKota = selectedKota.options;
+                const optionsJenis = selectedJenis.options;
+                const optionsKondisi = selectedKondisi.options;
+                const optionsStatus = selectedStatus.options;
+
+                // Hapus semua pilihan
+                for (let i = 0; i < optionsRegional.length; i++) {
+                    optionsRegional[i].selected = false; // Hilangkan pilihan
+                }
+
+                for (let i = 0; i < optionsKota.length; i++) {
+                    optionsKota[i].selected = false; // Hilangkan pilihan
+                }
+
+                for (let i = 0; i < optionsJenis.length; i++) {
+                    optionsJenis[i].selected = false; // Hilangkan pilihan
+                }
+
+                for (let i = 0; i < optionsKondisi.length; i++) {
+                    optionsKondisi[i].selected = false; // Hilangkan pilihan
+                }
+
+                for (let i = 0; i < optionsStatus.length; i++) {
+                    optionsStatus[i].selected = false; // Hilangkan pilihan
+                }
+
+                // Pilih opsi default (indeks 0)
+                selectedRegional.dispatchEvent(new Event('change'));
+                selectedKota.dispatchEvent(new Event('change'));
+                selectedJenis.dispatchEvent(new Event('change'));
+                selectedKondisi.dispatchEvent(new Event('change'));
+                selectedStatus.dispatchEvent(new Event('change'));;
+            }
+
             document.getElementById("downloadReportStokAsetKantor").addEventListener("click", downloadExcel);
+            document.getElementById("hapusReportStokAsetKantor").addEventListener("click", resetFilter);
         });
     </script>
 
