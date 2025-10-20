@@ -22,6 +22,15 @@ class GA_Aset_Kantor extends CI_Controller
             $data['getCountAsetOfficeByRegionTipe'] = $this->MGA_Aset_Kantor->getCountAsetOfficeByRegionTipe();
             $data['getCountAsetOfficeByCityTipe'] = $this->MGA_Aset_Kantor->getCountAsetOfficeByCityTipe();
             $data['getCountAsetOfficeByKota'] = $this->MGA_Aset_Kantor->getCountAsetOfficeByKota();
+            $data['getReportStokAsetkantor'] = $this->MGA_Aset_Kantor->getReportStokAsetkantor();
+
+            $regional = $this->input->get('regional');
+            $area = $this->input->get('area');
+            $tahun = $this->input->get('tahun');
+            $kondisi = $this->input->get('kondisi');
+            $status = $this->input->get('status');
+
+            $data['getFilteredAsetKantor'] = $this->MGA_Aset_Kantor->getFilteredAsetKantor($regional, $area, $tahun, $kondisi, $status);
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -31,6 +40,23 @@ class GA_Aset_Kantor extends CI_Controller
         } else {
             redirect('Auth');
         }
+    }
+
+    public function filterDataProject()
+    {
+        error_reporting(0);
+    ini_set('display_errors', 0);
+    
+        $regional = $this->input->post('regional');
+        $area = $this->input->post('area');
+        $tahun = $this->input->post('tahun');
+        $status = $this->input->post('status');
+        $kondisi = $this->input->post('kondisi');
+
+        // true berarti gunakan versi group by
+        $result = $this->MGA_Aset_Kantor->getFilteredAsetKantor($regional, $area, $tahun, $status, $kondisi, true);
+
+        echo json_encode($result);
     }
 
     public function detailOfficeArea()
