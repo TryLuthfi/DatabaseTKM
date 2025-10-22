@@ -1102,7 +1102,7 @@ $progressJSON = json_encode($getFilteredAsetKantor);
                 selectedKota.dispatchEvent(new Event('change'));
                 selectedJenis.dispatchEvent(new Event('change'));
                 selectedKondisi.dispatchEvent(new Event('change'));
-                selectedStatus.dispatchEvent(new Event('change'));;
+                selectedStatus.dispatchEvent(new Event('change'));
             }
 
             document.getElementById("downloadReportStokAsetKantor").addEventListener("click", downloadExcel);
