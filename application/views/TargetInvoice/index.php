@@ -35,8 +35,7 @@ $error_log = $this->session->flashdata('error_log');
               <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-file-invoice-dollar"></i></span>
               <div class="info-box-content">
                 <span class="info-box-text">TARGET INVOICE TW - 4</span>
-                <span class="info-box-number">
-                  Rp. 110.000.000.000
+                <span class="info-box-number" id="dashboardTargetInvoice">
                 </span>
               </div>
               <!-- /.info-box-content -->
@@ -50,8 +49,8 @@ $error_log = $this->session->flashdata('error_log');
             <div class="info-box mb-3">
               <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-file-invoice-dollar"></i></span>
               <div class="info-box-content">
-                <span class="info-box-text">ACHIEVE INVOICE TW - 3</span>
-                <span class="info-box-number">
+                <span class="info-box-text">ACHIEVE INVOICE TW - 4</span>
+                <span class="info-box-number" id="dashboardAchievInvoice">
                   Rp. 0
                 </span>
               </div>
@@ -66,8 +65,8 @@ $error_log = $this->session->flashdata('error_log');
             <div class="info-box mb-3">
               <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
               <div class="info-box-content">
-                <span class="info-box-text">SISA INVOICE TW - 3</span>
-                <span class="info-box-number">
+                <span class="info-box-text">SISA INVOICE TW - 4</span>
+                <span class="info-box-number" id="dashboardSisaInvoice">
                   Rp. 0
                 </span>
               </div>
@@ -82,8 +81,8 @@ $error_log = $this->session->flashdata('error_log');
             <div class="info-box mb-3">
               <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
               <div class="info-box-content">
-                <span class="info-box-text">SISA INVOICE 2025</span>
-                <span class="info-box-number">
+                <span class="info-box-text">PERSENTASE INVOICE TW - 4</span>
+                <span class="info-box-number" id="dashboardPersentaseInvoice">
                   Rp. 0
                 </span>
               </div>
@@ -92,7 +91,6 @@ $error_log = $this->session->flashdata('error_log');
           </a>
           <!-- /.info-box -->
         </div>
-      </div>
     </div>
 
     <div class="container-fluid">
@@ -102,7 +100,7 @@ $error_log = $this->session->flashdata('error_log');
           <div class="card">
             <div class="card-header border-0">
               <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved RFS Week - 01 </h3>
+                <h3 class="card-title">Achieved Invoice TW - 4</h3>
                 <a href="javascript:void(0);">View Report</a>
               </div>
             </div>
@@ -148,7 +146,7 @@ $error_log = $this->session->flashdata('error_log');
           <div class="card">
             <div class="card-header border-0">
               <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved RFS Week - 01 </h3>
+                <h3 class="card-title">Achieved Invoice TW - 4</h3>
                 <a href="javascript:void(0);">View Report</a>
               </div>
             </div>
@@ -223,8 +221,6 @@ $error_log = $this->session->flashdata('error_log');
                                             <div class="row mb-2">
                                                 <div class="col-sm-12">
                                                     <h1 class="m-0 mb-2 text-dark" style="text-align: center;">
-                                                        TARGET INVOICE 2025</h1>
-                                                    <h1 class="m-0 mb-2 text-dark" style="text-align: center;">
                                                         LIST BOWHEER</h1>
                                                 </div><!-- /.col -->
                                             </div><!-- /.row -->
@@ -248,14 +244,14 @@ $error_log = $this->session->flashdata('error_log');
                                                                 <thead class="bg-info" style="text-align: center;">
                                                                     <tr>
                                                                         <th>No</th>
-                                                                        <th>Project</th>
+                                                                        <th>PROJECT</th>
                                                                         <th>PIC TKM</th>
-                                                                        <th>Target Invoice</th>
-                                                                        <th>Achiev Invoice</th>
-                                                                        <th>Outstanding</th>
-                                                                        <th>Target ( % )</th>
-                                                                        <th>Outstanding ( % )</th>
-                                                                        <th>Detail</th>
+                                                                        <th>TARGET INVOICE</th>
+                                                                        <th>ACHIEVED INVOICE</th>
+                                                                        <th>OUTSTANDING</th>
+                                                                        <th>ACHIEVED ( % )</th>
+                                                                        <th>OUTSTANDING ( % )</th>
+                                                                        <th>DETAIL</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
@@ -296,7 +292,7 @@ $error_log = $this->session->flashdata('error_log');
                                                                             <td><?= rtrim(rtrim(number_format($data['persen_deviasi'], 2, '.', ''), '0'), '.') ?>%
                                                                             </td>
                                                                             <td>
-                                                                                <a href="<?php echo site_url('TargetInvoice/detailOfficeArea/' . $data['id_bowheer']); ?>"
+                                                                                <a href="<?php echo site_url('TargetInvoice/detailBowheer/' . $data['id_bowheer']); ?>"
                                                                                     class="btn btn-primary"><i
                                                                                         class=" fas fa-eye"></i></a>
                                                                             </td>
@@ -362,17 +358,18 @@ $error_log = $this->session->flashdata('error_log');
                                                         <div class="card-body table-responsive text-nowrap ">
                                                             <table id="table_target_city"
                                                                 class="table table-bordered table-hover">
-                                                                <thead class="bg-info">
+                                                                <thead class="bg-info" style="text-align: center;">
                                                                     <tr>
                                                                         <th>No</th>
-                                                                        <th>Regional</th>
-                                                                        <th>Kota</th>
-                                                                        <th>Target Invoice</th>
-                                                                        <th>Achiev Invoice</th>
-                                                                        <th>Outstanding</th>
-                                                                        <th>Target ( % )</th>
-                                                                        <th>Outstanding ( % )</th>
-                                                                        <th>Detail</th>
+                                                                        <th>REGIONAL</th>
+                                                                        <th>KOTA</th>
+                                                                        <th>PIC AREA</th>
+                                                                        <th>TARGET INVOICE</th>
+                                                                        <th>ACHIEVED INVOICE</th>
+                                                                        <th>OUTSTANDING</th>
+                                                                        <th>ACHIEVED ( % )</th>
+                                                                        <th>OUTSTANDING ( % )</th>
+                                                                        <th>DETAIL</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
@@ -387,6 +384,7 @@ $error_log = $this->session->flashdata('error_log');
                                                                             <td><?= $total++ ?></td>
                                                                             <td><?= $data['regional_target'] ?></td>
                                                                             <td><?= $data['area_target'] ?></td>
+                                                                            <td><?= $data['pic_user'] ?></td>
                                                                             <td><?php
                                                                             if ($data['total_target'] == "0") {
                                                                                 echo "-";
@@ -413,7 +411,7 @@ $error_log = $this->session->flashdata('error_log');
                                                                             <td><?= rtrim(rtrim(number_format($data['persen_deviasi'], 2, '.', ''), '0'), '.') ?>%
                                                                             </td>
                                                                             <td>
-                                                                                <a href="<?php echo site_url('TargetInvoice/detailOfficeArea/' . $data['id_bowheer']); ?>"
+                                                                                <a href="<?php echo site_url('TargetInvoice/detailKota/' . $data['area_target']); ?>"
                                                                                     class="btn btn-primary"><i
                                                                                         class=" fas fa-eye"></i></a>
                                                                             </td>
@@ -424,7 +422,7 @@ $error_log = $this->session->flashdata('error_log');
                                                                 </tbody>
                                                                 <tfoot>
                                                                     <tr>
-                                                                        <th colspan="3" style="text-align: center;">TOTAL</th>
+                                                                        <th colspan="4" style="text-align: center;">TOTAL</th>
                                                                         <th><span
                                                                                 id="totalTargetInvoiceCity">0</span>
                                                                         </th>
@@ -726,7 +724,10 @@ $error_log = $this->session->flashdata('error_log');
                 document.getElementById('totalPersentaseTargetInvoiceBowheer').innerText = (totalAchievInvoiceBowheer / totalTargetInvoiceBowheer * 100) + "%" ;
                 document.getElementById('totalPersentaseDeviasiTargetInvoiceBowheer').innerText = (totalDeviasiInvoiceBowheer / totalTargetInvoiceBowheer * 100) + "%";
 
-
+                document.getElementById('dashboardTargetInvoice').innerText = "RP. "+totalTargetInvoiceBowheer.toLocaleString('id-ID');
+                document.getElementById('dashboardAchievInvoice').innerText = "RP. "+totalAchievInvoiceBowheer.toLocaleString('id-ID');
+                document.getElementById('dashboardSisaInvoice').innerText = "RP. "+totalDeviasiInvoiceBowheer.toLocaleString('id-ID');
+                document.getElementById('dashboardPersentaseInvoice').innerText = (totalAchievInvoiceBowheer / totalTargetInvoiceBowheer * 100) + "%" ;
             }
 
             // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
@@ -771,11 +772,11 @@ $error_log = $this->session->flashdata('error_log');
 
 
                 data.each(function (row) {
-                    totalTargetInvoiceCity += parseFloat(row[3].replace(/\./g, '')) || 0;
-                    totalAchievInvoiceCity += parseFloat(row[4].replace(/\./g, '')) || 0;
-                    totalDeviasiInvoiceCity += parseFloat(row[5].replace(/\./g, '')) || 0;
-                    totalPersentaseTargetInvoiceCity += parseFloat(row[6].replace(/\./g, '')) || 0;
-                    totalPersentaseDeviasiTargetInvoiceCity += parseFloat(row[7].replace(/\./g, '')) || 0;
+                    totalTargetInvoiceCity += parseFloat(row[4].replace(/\./g, '')) || 0;
+                    totalAchievInvoiceCity += parseFloat(row[5].replace(/\./g, '')) || 0;
+                    totalDeviasiInvoiceCity += parseFloat(row[6].replace(/\./g, '')) || 0;
+                    totalPersentaseTargetInvoiceCity += parseFloat(row[7].replace(/\./g, '')) || 0;
+                    totalPersentaseDeviasiTargetInvoiceCity += parseFloat(row[8].replace(/\./g, '')) || 0;
                 });
 
                 document.getElementById('totalTargetInvoiceCity').innerText = totalTargetInvoiceCity.toLocaleString('id-ID');

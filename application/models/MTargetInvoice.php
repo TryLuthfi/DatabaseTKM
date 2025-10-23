@@ -32,7 +32,7 @@ class MTargetInvoice extends CI_Model
 FROM tb_target_invoice tti
 JOIN tb_master_bowheer tmb
     ON tti.id_bowheer = tmb.id_bowheer
-GROUP BY tti.id_bowheer;')
+GROUP BY tti.id_bowheer')
             ->result_array();
         return $data;
     }
@@ -67,8 +67,53 @@ FROM tb_target_invoice tti
 JOIN tb_master_bowheer tmb
     ON tti.id_bowheer = tmb.id_bowheer
 GROUP BY tti.area_target
-ORDER BY tti.regional_target, tti.area_target;')
+ORDER BY total_target DESC;')
+            ->result_array();
+        return $data;
+    }
+
+    public function getTargetBowheerFilterCity()
+    {
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments);
+        $decoded_url_area = urldecode($last_segment);
+
+        $data = $this->db->query('SELECT
+	*,
+	SUM(tti.qty_target) AS total_target,
+    SUM(tti.qty_achiev_target) AS total_achiev,
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi
+FROM tb_target_invoice tti
+JOIN tb_master_bowheer tmb
+    ON tti.id_bowheer = tmb.id_bowheer
+    WHERE tti.area_target = "' . $decoded_url_area . '"
+    GROUP by tti.id_bowheer
+    ORDER BY total_target DESC;')
+            ->result_array();
+        return $data;
+    }
+
+    public function getTargetCityFilterBowheer()
+    {
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments);
+        $decoded_url_area = urldecode($last_segment);
+
+        $data = $this->db->query('SELECT
+	*,
+	SUM(tti.qty_target) AS total_target,
+    SUM(tti.qty_achiev_target) AS total_achiev,
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi
+FROM tb_target_invoice tti
+JOIN tb_master_bowheer tmb
+    ON tti.id_bowheer = tmb.id_bowheer
+    WHERE tti.id_bowheer = "' . $decoded_url_area . '"
+    GROUP BY tti.area_target
+    ORDER BY total_target DESC')
             ->result_array();
         return $data;
     }
 }
+
