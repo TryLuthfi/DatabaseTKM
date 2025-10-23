@@ -7,197 +7,202 @@ $error_log = $this->session->flashdata('error_log');
 
 <div class="content-wrapper">
     <div class="content-header">
-    <div class="container-fluid">
-      <div class="row mb-2">
-        <div class="col-sm-12 ">
-          <h1 class="m-0 text-dark" style="text-align: center;">DASHBOARD RKAP 2025 ( ALL PROJECT )</h1>
-        </div><!-- /.col -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div>
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12 ">
+                    <h1 class="m-0 text-dark" style="text-align: center;">DASHBOARD RKAP 2025 ( ALL PROJECT )</h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
 
     <div class="content">
         <div class="content-header">
         </div>
 
         <section class="content">
-    <div class="container-fluid">
-        <h5 class="mb-12" style="text-align: center; margin-top:-10px; margin-bottom:30px;">REKAP INVOICE & RFS</h5>
-    </div>
-    <div class="container-fluid">
-      <!-- Info boxes -->
-      <div class="row">
-        <!-- /.col -->
-
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Pengeluaran") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-file-invoice-dollar"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">TARGET INVOICE TW - 4</span>
-                <span class="info-box-number" id="dashboardTargetInvoice">
-                </span>
-              </div>
-              <!-- /.info-box-content -->
+            <div class="container-fluid">
+                <h5 class="mb-12" style="text-align: center; margin-top:-10px; margin-bottom:30px;">REKAP INVOICE & RFS
+                </h5>
             </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
+            <div class="container-fluid">
+                <!-- Info boxes -->
+                <div class="row">
+                    <!-- /.col -->
 
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Pengeluaran") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-file-invoice-dollar"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">ACHIEVE INVOICE TW - 4</span>
-                <span class="info-box-number" id="dashboardAchievInvoice">
-                  Rp. 0
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <a href="<?= base_url("Pengeluaran") ?>">
+                            <div class="info-box mb-3">
+                                <span class="info-box-icon bg-danger elevation-1"><i
+                                        class="fas fa-file-invoice-dollar"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">TARGET INVOICE TW - 4</span>
+                                    <span class="info-box-number" id="dashboardTargetInvoice">
+                                    </span>
+                                </div>
+                                <!-- /.info-box-content -->
+                            </div>
+                        </a>
+                        <!-- /.info-box -->
+                    </div>
 
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Laporan") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">SISA INVOICE TW - 4</span>
-                <span class="info-box-number" id="dashboardSisaInvoice">
-                  Rp. 0
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <a href="<?= base_url("Pengeluaran") ?>">
+                            <div class="info-box mb-3">
+                                <span class="info-box-icon bg-danger elevation-1"><i
+                                        class="fas fa-file-invoice-dollar"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">ACHIEVE INVOICE TW - 4</span>
+                                    <span class="info-box-number" id="dashboardAchievInvoice">
+                                        Rp. 0
+                                    </span>
+                                </div>
+                                <!-- /.info-box-content -->
+                            </div>
+                        </a>
+                        <!-- /.info-box -->
+                    </div>
 
-        <div class="col-12 col-sm-6 col-md-3">
-          <a href="<?= base_url("Laporan") ?>">
-            <div class="info-box mb-3">
-              <span class="info-box-icon bg-success elevation-1"><i class="fas fa-money-check-alt"></i></span>
-              <div class="info-box-content">
-                <span class="info-box-text">PERSENTASE INVOICE TW - 4</span>
-                <span class="info-box-number" id="dashboardPersentaseInvoice">
-                  Rp. 0
-                </span>
-              </div>
-              <!-- /.info-box-content -->
-            </div>
-          </a>
-          <!-- /.info-box -->
-        </div>
-    </div>
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <a href="<?= base_url("Laporan") ?>">
+                            <div class="info-box mb-3">
+                                <span class="info-box-icon bg-success elevation-1"><i
+                                        class="fas fa-money-check-alt"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">SISA INVOICE TW - 4</span>
+                                    <span class="info-box-number" id="dashboardSisaInvoice">
+                                        Rp. 0
+                                    </span>
+                                </div>
+                                <!-- /.info-box-content -->
+                            </div>
+                        </a>
+                        <!-- /.info-box -->
+                    </div>
 
-    <div class="container-fluid">
-      <div class="row">
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <a href="<?= base_url("Laporan") ?>">
+                            <div class="info-box mb-3">
+                                <span class="info-box-icon bg-success elevation-1"><i
+                                        class="fas fa-money-check-alt"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">PERSENTASE INVOICE TW - 4</span>
+                                    <span class="info-box-number" id="dashboardPersentaseInvoice">
+                                        Rp. 0
+                                    </span>
+                                </div>
+                                <!-- /.info-box-content -->
+                            </div>
+                        </a>
+                        <!-- /.info-box -->
+                    </div>
+                </div>
 
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-header border-0">
-              <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved Invoice TW - 4</h3>
-                <a href="javascript:void(0);">View Report</a>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex">
-                <p class="d-flex flex-column">
-                  <span class="text-bold text-lg">18.280 HP</span>
-                  <span>TOP Area</span>
-                </p>
-                <p class="ml-auto d-flex flex-column text-right">
-                  <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> 80.1%
-                  </span>
-                  <span class="text-muted">Week - 01</span>
-                </p>
-              </div>
-              <!-- /.d-flex -->
+                <div class="container-fluid">
+                    <div class="row">
 
-              <div class="position-relative mb-4">
-                <canvas id="rkap_chart_line" height="200"></canvas>
-              </div>
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header border-0">
+                                    <div class="d-flex justify-content-between">
+                                        <h3 class="card-title">Achieved Invoice TW - 4</h3>
+                                        <a href="javascript:void(0);">View Report</a>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex">
+                                        <p class="d-flex flex-column">
+                                            <span class="text-bold text-lg">18.280 HP</span>
+                                            <span>TOP Area</span>
+                                        </p>
+                                        <p class="ml-auto d-flex flex-column text-right">
+                                            <span class="text-success">
+                                                <i class="fas fa-arrow-up"></i> 80.1%
+                                            </span>
+                                            <span class="text-muted">Week - 01</span>
+                                        </p>
+                                    </div>
+                                    <!-- /.d-flex -->
 
-              <div class="d-flex flex-row justify-content-end">
-                <span class="mr-3">
-                  <i class="fas fa-square text-primary"></i> Target RKAP
-                </span>
+                                    <div class="position-relative mb-4">
+                                        <canvas id="rkap_chart_line" height="200"></canvas>
+                                    </div>
 
-                <span class="mr-3">
-                  <i class="fas fa-square text-green"></i> Achieved PO
-                </span>
+                                    <div class="d-flex flex-row justify-content-end">
+                                        <span class="mr-3">
+                                            <i class="fas fa-square text-primary"></i> Target RKAP
+                                        </span>
 
-                <span class="mr-3">
-                  <i class="fas fa-square text-orange"></i> Achieved Invoice
-                </span>
+                                        <span class="mr-3">
+                                            <i class="fas fa-square text-green"></i> Achieved PO
+                                        </span>
 
-              </div>
-            </div>
-          </div>
-          <!-- /.card -->
-        </div>
+                                        <span class="mr-3">
+                                            <i class="fas fa-square text-orange"></i> Achieved Invoice
+                                        </span>
 
-        <div class="col-lg-6">
-          <div class="card">
-            <div class="card-header border-0">
-              <div class="d-flex justify-content-between">
-                <h3 class="card-title">Achieved Invoice TW - 4</h3>
-                <a href="javascript:void(0);">View Report</a>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="d-flex">
-                <p class="d-flex flex-column">
-                  <span class="text-bold text-lg">18.280 HP</span>
-                  <span>TOP AREA</span>
-                </p>
-                <p class="ml-auto d-flex flex-column text-right">
-                  <span class="text-success">
-                    <i class="fas fa-arrow-up"></i> 80.1%
-                  </span>
-                  <span class="text-muted">Week - 01</span>
-                </p>
-              </div>
-              <!-- /.d-flex -->
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- /.card -->
+                        </div>
 
-              <div class="position-relative mb-4">
-                <canvas id="rkap_chart_bar" height="200"></canvas>
-              </div>
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header border-0">
+                                    <div class="d-flex justify-content-between">
+                                        <h3 class="card-title">Achieved Invoice TW - 4</h3>
+                                        <a href="javascript:void(0);">View Report</a>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex">
+                                        <p class="d-flex flex-column">
+                                            <span class="text-bold text-lg">18.280 HP</span>
+                                            <span>TOP AREA</span>
+                                        </p>
+                                        <p class="ml-auto d-flex flex-column text-right">
+                                            <span class="text-success">
+                                                <i class="fas fa-arrow-up"></i> 80.1%
+                                            </span>
+                                            <span class="text-muted">Week - 01</span>
+                                        </p>
+                                    </div>
+                                    <!-- /.d-flex -->
 
-              <div class="d-flex flex-row justify-content-end">
-                <span class="mr-3">
-                  <i class="fas fa-square text-primary"></i> Target RKAP
-                </span>
+                                    <div class="position-relative mb-4">
+                                        <canvas id="rkap_chart_bar" height="200"></canvas>
+                                    </div>
 
-                <span class="mr-3">
-                  <i class="fas fa-square text-green"></i> Achieved PO
-                </span>
+                                    <div class="d-flex flex-row justify-content-end">
+                                        <span class="mr-3">
+                                            <i class="fas fa-square text-primary"></i> Target RKAP
+                                        </span>
 
-                <span class="mr-3">
-                  <i class="fas fa-square text-orange"></i> Achieved Invoice
-                </span>
+                                        <span class="mr-3">
+                                            <i class="fas fa-square text-green"></i> Achieved PO
+                                        </span>
 
-              </div>
-            </div>
-          </div>
+                                        <span class="mr-3">
+                                            <i class="fas fa-square text-orange"></i> Achieved Invoice
+                                        </span>
 
-        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-    </div>
+                        </div>
 
-  </section>
+                    </div>
+
+        </section>
 
         <section class="content">
             <div class="container-fluid">
                 <div class="row">
                     <div class="clearfix hidden-md-up"></div>
 
-                    
+
 
                     <div class="container-fluid">
 
@@ -215,7 +220,7 @@ $error_log = $this->session->flashdata('error_log');
                                         </div>
                                     </div>
 
-                            
+
                                     <div class="content-header">
                                         <div class="container-fluid">
                                             <div class="row mb-2">
@@ -303,7 +308,8 @@ $error_log = $this->session->flashdata('error_log');
                                                                 </tbody>
                                                                 <tfoot>
                                                                     <tr>
-                                                                        <th colspan="3" style="text-align: center;">TOTAL</th>
+                                                                        <th colspan="3" style="text-align: center;">
+                                                                            TOTAL</th>
                                                                         <th><span
                                                                                 id="totalTargetInvoiceBowheer">0</span>
                                                                         </th>
@@ -327,6 +333,13 @@ $error_log = $this->session->flashdata('error_log');
                                                         </div>
                                                         <!-- /.card-body -->
                                                     </div>
+                                                    <a href="<?= base_url('TargetInvoice/weekBowheer/') ?>"
+                                                            class="text-decoration-none">
+                                                            <h5 class="text-center mb-4 font-weight-bold text-primary"
+                                                                style="text-decoration: underline;">
+                                                                Lihat Rincian Mingguan &#8594;
+                                                            </h5>
+                                                        </a>
                                                     <div class="row">
                                                         <!-- ISI -->
                                                     </div>
@@ -422,15 +435,13 @@ $error_log = $this->session->flashdata('error_log');
                                                                 </tbody>
                                                                 <tfoot>
                                                                     <tr>
-                                                                        <th colspan="4" style="text-align: center;">TOTAL</th>
-                                                                        <th><span
-                                                                                id="totalTargetInvoiceCity">0</span>
+                                                                        <th colspan="4" style="text-align: center;">
+                                                                            TOTAL</th>
+                                                                        <th><span id="totalTargetInvoiceCity">0</span>
                                                                         </th>
-                                                                        <th><span
-                                                                                id="totalAchievInvoiceCity">0</span>
+                                                                        <th><span id="totalAchievInvoiceCity">0</span>
                                                                         </th>
-                                                                        <th><span
-                                                                                id="totalDeviasiInvoiceCity">0</span>
+                                                                        <th><span id="totalDeviasiInvoiceCity">0</span>
                                                                         </th>
                                                                         <th><span
                                                                                 id="totalPersentaseTargetInvoiceCity">0</span>
@@ -444,7 +455,13 @@ $error_log = $this->session->flashdata('error_log');
                                                                 </tfoot>
                                                             </table>
                                                         </div>
-                                                        <!-- /.card-body -->
+                                                        <a href="<?= base_url('GA_Aset_Terminasi/allAsetTerminasi') ?>"
+                                                            class="text-decoration-none">
+                                                            <h5 class="text-center mb-4 font-weight-bold text-primary"
+                                                                style="text-decoration: underline;">
+                                                                Lihat Rincian Mingguan &#8594;
+                                                            </h5>
+                                                        </a>
                                                     </div>
                                                     <div class="row">
                                                         <!-- ISI -->
@@ -664,7 +681,7 @@ $error_log = $this->session->flashdata('error_log');
                 "lengthChange": false // Menghilangkan dropdown "Show entries"
             });
         });
-        
+
         $(document).ready(function () {
             $('#table_target_city').DataTable({
                 "paging": true, // Tetap gunakan pagination
@@ -674,7 +691,7 @@ $error_log = $this->session->flashdata('error_log');
                 "lengthChange": false // Menghilangkan dropdown "Show entries"
             });
         });
-        
+
         $(document).ready(function () {
             $.fn.dataTable.ext.errMode = 'none';
             const table = $('#table_target_bowheer').DataTable({
@@ -721,13 +738,13 @@ $error_log = $this->session->flashdata('error_log');
                 document.getElementById('totalTargetInvoiceBowheer').innerText = totalTargetInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('totalAchievInvoiceBowheer').innerText = totalAchievInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('totalDeviasiInvoiceBowheer').innerText = totalDeviasiInvoiceBowheer.toLocaleString('id-ID');
-                document.getElementById('totalPersentaseTargetInvoiceBowheer').innerText = (totalAchievInvoiceBowheer / totalTargetInvoiceBowheer * 100) + "%" ;
+                document.getElementById('totalPersentaseTargetInvoiceBowheer').innerText = (totalAchievInvoiceBowheer / totalTargetInvoiceBowheer * 100) + "%";
                 document.getElementById('totalPersentaseDeviasiTargetInvoiceBowheer').innerText = (totalDeviasiInvoiceBowheer / totalTargetInvoiceBowheer * 100) + "%";
 
-                document.getElementById('dashboardTargetInvoice').innerText = "RP. "+totalTargetInvoiceBowheer.toLocaleString('id-ID');
-                document.getElementById('dashboardAchievInvoice').innerText = "RP. "+totalAchievInvoiceBowheer.toLocaleString('id-ID');
-                document.getElementById('dashboardSisaInvoice').innerText = "RP. "+totalDeviasiInvoiceBowheer.toLocaleString('id-ID');
-                document.getElementById('dashboardPersentaseInvoice').innerText = (totalAchievInvoiceBowheer / totalTargetInvoiceBowheer * 100) + "%" ;
+                document.getElementById('dashboardTargetInvoice').innerText = "RP. " + totalTargetInvoiceBowheer.toLocaleString('id-ID');
+                document.getElementById('dashboardAchievInvoice').innerText = "RP. " + totalAchievInvoiceBowheer.toLocaleString('id-ID');
+                document.getElementById('dashboardSisaInvoice').innerText = "RP. " + totalDeviasiInvoiceBowheer.toLocaleString('id-ID');
+                document.getElementById('dashboardPersentaseInvoice').innerText = (totalAchievInvoiceBowheer / totalTargetInvoiceBowheer * 100) + "%";
             }
 
             // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
@@ -782,7 +799,7 @@ $error_log = $this->session->flashdata('error_log');
                 document.getElementById('totalTargetInvoiceCity').innerText = totalTargetInvoiceCity.toLocaleString('id-ID');
                 document.getElementById('totalAchievInvoiceCity').innerText = totalAchievInvoiceCity.toLocaleString('id-ID');
                 document.getElementById('totalDeviasiInvoiceCity').innerText = totalDeviasiInvoiceCity.toLocaleString('id-ID');
-                document.getElementById('totalPersentaseTargetInvoiceCity').innerText = (totalAchievInvoiceCity / totalTargetInvoiceCity * 100) + "%" ;
+                document.getElementById('totalPersentaseTargetInvoiceCity').innerText = (totalAchievInvoiceCity / totalTargetInvoiceCity * 100) + "%";
                 document.getElementById('totalPersentaseDeviasiTargetInvoiceCity').innerText = (totalDeviasiInvoiceCity / totalTargetInvoiceCity * 100) + "%";
 
             }
@@ -852,5 +869,5 @@ $error_log = $this->session->flashdata('error_log');
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartfibertstar.js"></script>
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartmyrep.js"></script>
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardrkap.js"></script>
+    <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartmyrep.js"></script>
+    <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardrkap.js"></script>

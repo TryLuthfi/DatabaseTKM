@@ -83,7 +83,7 @@ $total = 1;
                                                 }
                                                 ?></td>
                                                 <td>
-                                                    <a href="#" class="btn btn-primary"
+                                                    <a href="#" class="btn btn-primary" style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
                                                         data-target="#modal-view-Office<?= $data['id_target_invoice'] ?>"
                                                         data-toggle="modal"><i class="fas fa-eye"></i></a>
                                                 </td>

@@ -115,5 +115,45 @@ JOIN tb_master_bowheer tmb
             ->result_array();
         return $data;
     }
+
+    public function getTargetWeekFilterBowheer()
+    {
+
+        $data = $this->db->query('SELECT
+    tb_target_invoice.id_bowheer, tb_master_bowheer.nama_bowheer,
+    SUM(CASE WHEN week_target = "W1" AND month_target = "OKTOBER" THEN qty_target ELSE 0 END) AS `TW1 OKTOBER`,
+    SUM(CASE WHEN week_achiev_target = "W1" AND month_achiev_target = "OKTOBER" THEN qty_achiev_target ELSE 0 END) AS `RW1 OKTOBER`,
+    SUM(CASE WHEN week_target = "W2" AND month_target = "OKTOBER" THEN qty_target ELSE 0 END) AS `TW2 OKTOBER`,
+     SUM(CASE WHEN week_achiev_target = "W2" AND month_achiev_target = "OKTOBER" THEN qty_achiev_target ELSE 0 END) AS `RW2 OKTOBER`,
+    SUM(CASE WHEN week_target = "W3" AND month_target = "OKTOBER" THEN qty_target ELSE 0 END) AS `TW3 OKTOBER`,
+     SUM(CASE WHEN week_achiev_target = "W3" AND month_achiev_target = "OKTOBER" THEN qty_achiev_target ELSE 0 END) AS `RW3 OKTOBER`,
+    SUM(CASE WHEN week_target = "W4" AND month_target = "OKTOBER" THEN qty_target ELSE 0 END) AS `TW4 OKTOBER`,
+     SUM(CASE WHEN week_achiev_target = "W4" AND month_achiev_target = "OKTOBER" THEN qty_achiev_target ELSE 0 END) AS `RW4 OKTOBER`,
+    SUM(CASE WHEN week_target = "W5" AND month_target = "OKTOBER" THEN qty_target ELSE 0 END) AS `TW5 OKTOBER`,
+     SUM(CASE WHEN week_achiev_target = "W5" AND month_achiev_target = "OKTOBER" THEN qty_achiev_target ELSE 0 END) AS `RW5 OKTOBER`,
+    
+    SUM(CASE WHEN week_target = "W1" AND month_target = "NOVEMBER" THEN qty_target ELSE 0 END) AS `TW1 NOVEMBER`,
+     SUM(CASE WHEN week_achiev_target = "W1" AND month_achiev_target = "OKTOBER" THEN qty_achiev_target ELSE 0 END) AS `RW1 NOVEMBER`,
+    SUM(CASE WHEN week_target = "W2" AND month_target = "NOVEMBER" THEN qty_target ELSE 0 END) AS `TW2 NOVEMBER`,
+     SUM(CASE WHEN week_achiev_target = "W2" AND month_achiev_target = "OKTOBER" THEN qty_achiev_target ELSE 0 END) AS `RW2 NOVEMBER`,
+    SUM(CASE WHEN week_target = "W3" AND month_target = "NOVEMBER" THEN qty_target ELSE 0 END) AS `TW3 NOVEMBER`,
+     SUM(CASE WHEN week_achiev_target = "W3" AND month_achiev_target = "OKTOBER" THEN qty_achiev_target ELSE 0 END) AS `RW3 NOVEMBER`,
+    SUM(CASE WHEN week_target = "W4" AND month_target = "NOVEMBER" THEN qty_target ELSE 0 END) AS `TW4 NOVEMBER`,
+     SUM(CASE WHEN week_achiev_target = "W4" AND month_achiev_target = "OKTOBER" THEN qty_achiev_target ELSE 0 END) AS `RW4 NOVEMBER`,
+    
+    SUM(CASE WHEN week_target = "W1" AND month_target = "DESEMBER" THEN qty_target ELSE 0 END) AS `TW1 DESEMBER`,
+     SUM(CASE WHEN week_achiev_target = "W1" AND month_achiev_target = "OKTOBER" THEN qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
+    SUM(CASE WHEN week_target = "W2" AND month_target = "DESEMBER" THEN qty_target ELSE 0 END) AS `TW2 DESEMBER`,
+     SUM(CASE WHEN week_achiev_target = "W2" AND month_achiev_target = "OKTOBER" THEN qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`
+FROM
+    tb_target_invoice
+    JOIN tb_master_bowheer
+    ON tb_target_invoice.id_bowheer = tb_master_bowheer.id_bowheer
+GROUP BY
+    id_bowheer;')
+            ->result_array();
+        return $data;
+    }
+
 }
 
