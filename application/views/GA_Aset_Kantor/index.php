@@ -212,7 +212,7 @@ $progressJSON = json_encode($getFilteredAsetKantor);
                                                 <div class="col-12">
                                                     <div class="card">
                                                         <!-- /.card-header -->
-                                                        <div class="card-body table-responsive text-nowrap ">
+                                                        <div class="card-body table-responsive text-nowrap">
                                                             <table id="table_detail_regional"
                                                                 class="table table-bordered table-hover">
                                                                 <thead class="bg-info">

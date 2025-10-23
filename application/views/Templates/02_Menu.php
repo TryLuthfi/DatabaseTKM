@@ -481,13 +481,13 @@ $id_menu = $this->uri->segment('1');
                         </ul>
                     </li>
                     <li class="nav-header">Report</li>
-                    <li class="nav-item" style="pointer-events: none">
-                        <a href="<?= base_url('forbidden') ?>" class="nav-link <?php if ($id_menu == 'forbidden') {
+                    <li class="nav-item">
+                        <a href="<?= base_url('TargetInvoice') ?>" class="nav-link <?php if ($id_menu == 'TargetInvoice') {
                               echo "active";
                           } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
-                                Pendapatan
+                                Target Invoice
                             </p>
                         </a>
                     </li>
