@@ -110,5 +110,32 @@ class TargetInvoice extends CI_Controller
             redirect('Auth');
         }
     }
+
+    public function weekCity()
+    {
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $decoded_url_area = urldecode($last_segment);
+
+        if (!empty($this->session->userdata('id_user'))) {
+
+            $data['title'] = 'Target Invoice';
+            $data['judul'] = 'Target Invoice';
+            $data['filterURL'] = $decoded_url_area;
+            $data['getTargetAllBowheer'] = $this->MTargetInvoice->getTargetAllBowheer();
+            $data['getTargetAllCity'] = $this->MTargetInvoice->getTargetAllCity();
+            $data['getTargetWeekFilterCity'] = $this->MTargetInvoice->getTargetWeekFilterCity();
+
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('TargetInvoice/indexweekcity', $data);
+            $this->load->view('Templates/99_JS');
+
+        } else {
+            redirect('Auth');
+        }
+    }
     
 }

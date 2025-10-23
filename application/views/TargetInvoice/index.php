@@ -455,7 +455,7 @@ $error_log = $this->session->flashdata('error_log');
                                                                 </tfoot>
                                                             </table>
                                                         </div>
-                                                        <a href="<?= base_url('GA_Aset_Terminasi/allAsetTerminasi') ?>"
+                                                        <a href="<?= base_url('TargetInvoice/weekCity/') ?>"
                                                             class="text-decoration-none">
                                                             <h5 class="text-center mb-4 font-weight-bold text-primary"
                                                                 style="text-decoration: underline;">
