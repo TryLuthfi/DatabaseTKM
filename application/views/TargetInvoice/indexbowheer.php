@@ -4,7 +4,7 @@ $error_log = $this->session->flashdata('error_log');
 
 $option_aktif = ['AKTIF', 'HILANG', 'TERJUAL'];
 foreach ($getTargetCityFilterBowheer as $data):
-    $judul = "DETAIL TARGET INVOICE - ". $data['nama_bowheer'];
+    $judul = "DETAIL TARGET INVOICE - " . $data['nama_bowheer'];
 endforeach;
 
 $total = 1;
@@ -26,28 +26,48 @@ $total = 1;
         </div>
 
         <section class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="clearfix hidden-md-up"></div>
+            <div class="col-12 col-sm-12">
+                <div class="card card-dark card-tabs">
+                    <div class="card-header p-0 pt-1">
+                        <ul class="nav nav-tabs" id="custom-tabs-two-tab" role="tablist">
+                            <li class="pt-2 px-3">
+                                <h3 class="card-title">DETAIL</h3>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" id="custom-tabs-first-profile-tab" data-toggle="pill"
+                                    href="#custom-tabs-satu" role="tab" aria-controls="custom-tabs-two-home"
+                                    aria-selected="true">SUMMARY TARGET</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
+                                    href="#custom-tabs-dua" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">MONTHLY</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabs-tiga" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">OKTOBER</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabs-empat" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">NOVEMBER</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabs-lima" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">DESEMBER</a>
+                            </li>
+                        </ul>
+                    </div>
 
+                    <div class="card-body">
+                        <div class="tab-content" id="custom-tabs-two-tabContent">
 
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <h3 class="card-title">LIST DASHBOARD </h3>
-                                    </div>
-                                    <div class="col-6">
-                                        <a href="#" class="btn btn-success float-right text-bold"
-                                            style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                            data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i
-                                                class="fas fa-plus"></i> </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card-body table-scrollable">
-                                <table id="tabel_targetbowheer_filter_city" class="table table-bordered table-striped">
+                            <!-- TAB NAV PERTAMA -->
+                            <div class="tab-pane show active" id="custom-tabs-satu" role="tabpanel"
+                                aria-labelledby="custom-tabs-two-profile-tab">
+                                <table id="tabel_summary" class="table table-bordered table-striped">
                                     <thead style="text-align: center;">
                                         <tr>
                                             <th>No</th>
@@ -57,7 +77,7 @@ $total = 1;
                                             <th>TARGET INVOICE</th>
                                             <th>ACHIEVED INVOICE</th>
                                             <th>OUTSTANDING</th>
-                                            <th>DETAIL</th> 
+                                            <th>DETAIL</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -89,7 +109,8 @@ $total = 1;
                                                 }
                                                 ?></td>
                                                 <td>
-                                                    <a href="#" class="btn btn-primary" style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+                                                    <a href="#" class="btn btn-primary"
+                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
                                                         data-target="#modal-view-Office<?= $data['id_target_invoice'] ?>"
                                                         data-toggle="modal"><i class="fas fa-eye"></i></a>
                                                 </td>
@@ -114,11 +135,425 @@ $total = 1;
                                     </tfoot>
                                 </table>
                             </div>
-                            <!-- /.card-body -->
+
+                            <!-- TAB NAV KEDUA -->
+                            <div class="tab-pane fade" id="custom-tabs-dua" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="card-body table-responsive" style="width:100%;">
+                                    <table id="tabel_targetbowheer_filter_monthly"
+                                        class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th rowspan="3"
+                                                    style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    No</th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    PROJECT</th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL TARGET</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    OKTOBER</th>
+                                                    <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    NOVEMBER</th>
+                                                    <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    DESEMBER</th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL ACHIEVED
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    DEVIASI
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <!-- DESEMBER -->
+                                                <?php for ($i = 0; $i < 3; $i++): ?>
+                                                    <th style="text-align:center; background-color: indianred;">TARGET</th>
+                                                    <th style="text-align:center; background-color: darkseagreen;">ACHIEVED
+                                                    </th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php $no = 1;
+                                            foreach ($getTargetWeekFilterBowheer as $data):
+                                                $target = $data['TOTAL TARGET DESEMBER'];
+                                                $achiev = $data['TOTAL ACHIEVED DESEMBER'];
+                                                $deviasi = $target - $achiev;
+                                                ?>
+                                                <tr>
+                                                    <td><?= $no++ ?></td>
+                                                    <td><?= $data['nama_bowheer'] ?></td>
+                                                    <td><?= ($data['TOTAL TARGET DESEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET DESEMBER']), 0, ",", ".") : '-') ?>
+                                                        <!-- DESEMBER -->
+                                                    <td><?= ($data['TW1 DESEMBER'] != 0 ? number_format(floatval($data['TW1 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW1 DESEMBER'] != 0 ? number_format(floatval($data['RW1 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW2 DESEMBER'] != 0 ? number_format(floatval($data['TW2 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW2 DESEMBER'] != 0 ? number_format(floatval($data['RW2 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW2 DESEMBER'] != 0 ? number_format(floatval($data['TW2 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW2 DESEMBER'] != 0 ? number_format(floatval($data['RW2 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="2">Total</th>
+                                                <?php for ($i = 0; $i < 9; $i++): ?>
+                                                    <th>0</th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV KETIGA -->
+                            <div class="tab-pane fade" id="custom-tabs-tiga" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0">
+                                            <table id="tabel_targetbowheer_filter_city1"
+                                                class="table table-bordered table-striped nowrap w-100">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="3"
+                                                            style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            PROJECT</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="10"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            OKTOBER
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- OKTOBER -->
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            1
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            2
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            3
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            4
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            5
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- OKTOBER -->
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetWeekFilterBowheer as $data):
+                                                        $target = $data['TOTAL TARGET OKTOBER'];
+                                                        $achiev = $data['TOTAL ACHIEVED OKTOBER'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['nama_bowheer'] ?></td>
+                                                            <td><?= ($data['TOTAL TARGET OKTOBER'] != 0 ? number_format(floatval($data['TOTAL TARGET OKTOBER']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- OKTOBER -->
+                                                            <td><?= ($data['TW1 OKTOBER'] != 0 ? number_format(floatval($data['TW1 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW1 OKTOBER'] != 0 ? number_format(floatval($data['RW1 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW2 OKTOBER'] != 0 ? number_format(floatval($data['TW2 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW2 OKTOBER'] != 0 ? number_format(floatval($data['RW2 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW3 OKTOBER'] != 0 ? number_format(floatval($data['TW3 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW3 OKTOBER'] != 0 ? number_format(floatval($data['RW3 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW4 OKTOBER'] != 0 ? number_format(floatval($data['TW4 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW4 OKTOBER'] != 0 ? number_format(floatval($data['RW4 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW5 OKTOBER'] != 0 ? number_format(floatval($data['TW5 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW5 OKTOBER'] != 0 ? number_format(floatval($data['RW5 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED OKTOBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="2">Total</th>
+                                                        <?php for ($i = 0; $i < 13; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV KEEMPAT -->
+                            <div class="tab-pane fade" id="custom-tabs-empat" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="card-body table-responsive" style="width:100%;">
+                                    <table id="tabel_targetbowheer_filter_city2"
+                                        class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th rowspan="3"
+                                                    style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    No
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    PROJECT
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL TARGET
+                                                </th>
+                                                <th colspan="8"
+                                                    style="text-align:center; background-color: blueviolet; color: #ffffff;">
+                                                    NOVEMBER
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL ACHIEVED
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    DEVIASI
+                                                </th>
+                                            </tr>
+                                            </tr>
+
+                                            <tr>
+                                                <!-- NOVEMBER -->
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet; color: #ffffff;">
+                                                    WEEK 1</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet; color: #ffffff;">
+                                                    WEEK 2</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet; color: #ffffff;">
+                                                    WEEK 3</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet; color: #ffffff;">
+                                                    WEEK 4</th>
+                                            </tr>
+
+                                            <tr>
+                                                <!-- Subheader TARGET & ACHIEVED -->
+                                                <?php for ($i = 0; $i < 4; $i++): ?>
+                                                    <th
+                                                        style="text-align:center; background-color: indianred; color: #ffffff;">
+                                                        TARGET</th>
+                                                    <th
+                                                        style="text-align:center; background-color: darkseagreen; color: #000000;">
+                                                        ACHIEVED</th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php $no = 1;
+                                            foreach ($getTargetWeekFilterBowheer as $data):
+                                                $target = $data['TOTAL TARGET NOVEMBER'];
+                                                $achiev = $data['TOTAL ACHIEVED NOVEMBER'];
+                                                $deviasi = $target - $achiev;
+
+                                                ?>
+                                                <tr>
+                                                    <td><?= $no++ ?></td>
+                                                    <td><?= $data['nama_bowheer'] ?></td>
+                                                    <td><?= ($data['TOTAL TARGET NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+
+                                                    <!-- NOVEMBER -->
+                                                    <td><?= ($data['TW1 NOVEMBER'] != 0 ? number_format(floatval($data['TW1 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW1 NOVEMBER'] != 0 ? number_format(floatval($data['RW1 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW2 NOVEMBER'] != 0 ? number_format(floatval($data['TW2 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW2 NOVEMBER'] != 0 ? number_format(floatval($data['RW2 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW3 NOVEMBER'] != 0 ? number_format(floatval($data['TW3 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW3 NOVEMBER'] != 0 ? number_format(floatval($data['RW3 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW4 NOVEMBER'] != 0 ? number_format(floatval($data['TW4 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW4 NOVEMBER'] != 0 ? number_format(floatval($data['RW4 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+
+                                                    <td><?= ($data['TOTAL ACHIEVED NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                    </td>
+
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="2">Total</th>
+                                                <?php for ($i = 0; $i < 11; $i++): ?>
+                                                    <th>0</th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV KELIMA -->
+                            <div class="tab-pane fade" id="custom-tabs-lima" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="card-body table-responsive" style="width:100%;">
+                                    <table id="tabel_targetbowheer_filter_city3"
+                                        class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th rowspan="3"
+                                                    style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    No</th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    PROJECT</th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL TARGET</th>
+                                                <th colspan="4"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    DESEMBER</th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL ACHIEVED
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    DEVIASI
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <!-- DESEMBER -->
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    WEEK 1</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    WEEK 2</th>
+                                            </tr>
+                                            <tr>
+                                                <!-- DESEMBER -->
+                                                <?php for ($i = 0; $i < 2; $i++): ?>
+                                                    <th style="text-align:center; background-color: indianred;">TARGET</th>
+                                                    <th style="text-align:center; background-color: darkseagreen;">ACHIEVED
+                                                    </th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php $no = 1;
+                                            foreach ($getTargetWeekFilterBowheer as $data):
+                                                $target = $data['TOTAL TARGET DESEMBER'];
+                                                $achiev = $data['TOTAL ACHIEVED DESEMBER'];
+                                                $deviasi = $target - $achiev;
+                                                ?>
+                                                <tr>
+                                                    <td><?= $no++ ?></td>
+                                                    <td><?= $data['nama_bowheer'] ?></td>
+                                                    <td><?= ($data['TOTAL TARGET DESEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET DESEMBER']), 0, ",", ".") : '-') ?>
+                                                        <!-- DESEMBER -->
+                                                    <td><?= ($data['TW1 DESEMBER'] != 0 ? number_format(floatval($data['TW1 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW1 DESEMBER'] != 0 ? number_format(floatval($data['RW1 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW2 DESEMBER'] != 0 ? number_format(floatval($data['TW2 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW2 DESEMBER'] != 0 ? number_format(floatval($data['RW2 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="2">Total</th>
+                                                <?php for ($i = 0; $i < 7; $i++): ?>
+                                                    <th>0</th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
-
+                    <!-- /.card -->
                 </div>
+            </div>
         </section>
 
     </div>
@@ -160,65 +595,212 @@ $total = 1;
     })
 
     $(document).ready(function () {
-            $('#tabel_targetbowheer_filter_city').DataTable({
-                "paging": true, // Tetap gunakan pagination
-                "pageLength": 10, // Menampilkan 10 data per halaman
-                "info": true, // Menghilangkan "Showing 1 to X of X entries"
-                "searching": true, // Menghilangkan search bar
-                "lengthChange": true // Menghilangkan dropdown "Show entries"
-            });
+        $('#tabel_targetbowheer_filter_city1').DataTable({
+            paging: true,
+            pageLength: 10,
+            info: true,
+            searching: true,
+            lengthChange: true,
+            autoWidth: false,     // aktifkan scroll horizontal otomatis
+            responsive: false,   // matikan agar kolom tetap sejajar
+            ordering: true,
+            initComplete: function () {
+                // pastikan wrapper scroll ikut lebar layar
+                $('.dataTables_scrollHead, .dataTables_scrollBody')
+                    .css('width', '100%');
+            }
         });
+        $('#tabel_targetbowheer_filter_city2').DataTable({
+            paging: true,
+            pageLength: 10,
+            info: true,
+            searching: true,
+            lengthChange: true,
+            autoWidth: false,     // aktifkan scroll horizontal otomatis
+            responsive: false,   // matikan agar kolom tetap sejajar
+            ordering: true,
+            initComplete: function () {
+                // pastikan wrapper scroll ikut lebar layar
+                $('.dataTables_scrollHead, .dataTables_scrollBody')
+                    .css('width', '100%');
+            }
+        });
+        $('#tabel_targetbowheer_filter_city3').DataTable({
+            paging: true,
+            pageLength: 10,
+            info: true,
+            searching: true,
+            lengthChange: true,
+            autoWidth: false,     // aktifkan scroll horizontal otomatis
+            responsive: false,   // matikan agar kolom tetap sejajar
+            ordering: true,
+            initComplete: function () {
+                // pastikan wrapper scroll ikut lebar layar
+                $('.dataTables_scrollHead, .dataTables_scrollBody')
+                    .css('width', '100%');
+            }
+        });
+    });
 
     $(document).ready(function () {
         $.fn.dataTable.ext.errMode = 'none';
-        const table = $('#tabel_targetbowheer_filter_city').DataTable({
+
+        const table = $('#tabel_targetbowheer_filter_city1').DataTable({
             footerCallback: function () {
                 updateTotal();
             },
             columnDefs: [
                 { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
             ],
-            order: [[1, 'asc']] // Urut default kolom Kode Aset
+            order: [[1, 'asc']]
         });
 
+        // Tambah nomor otomatis di kolom pertama
         table.on('order.dt search.dt', function () {
             table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
                 cell.innerHTML = i + 1;
             });
         }).draw();
 
-        // Fungsi untuk menghitung total dari data yang tampil
+        // Fungsi utama untuk hitung total otomatis
         function updateTotal() {
+            const data = table.rows({ search: 'applied' }).data();
 
-            const data = table.rows({
-                search: 'applied'
-            }).data();
-
-
-
-            // Hitung total dari kolom Value (index 2)
-            let totalTargetInvoiceBowheer = 0;
-            let totalAchievedInvoiceBowheer = 0;
-            let totalSisaInvoiceBowheer = 0;
+            let totalKolom = Array(13).fill(0);
 
             data.each(function (row) {
-
-                totalTargetInvoiceBowheer += parseFloat(row[4].replace(/\./g, '')) || 0;
-                totalAchievedInvoiceBowheer += parseFloat(row[5].replace(/\./g, '')) || 0;
-                totalSisaInvoiceBowheer += parseFloat(row[6].replace(/\./g, '')) || 0;
+                for (let i = 2; i < 15; i++) { // misal kolom angka mulai dari index ke-2
+                    // Hapus titik dan koma dulu
+                    let value = row[i]
+                        .toString()
+                        .replace(/\./g, '')   // hapus titik
+                        .replace(/,/g, '')    // hapus koma
+                        .replace(/[^0-9-]/g, ''); // hapus selain angka
+                    totalKolom[i - 2] += parseFloat(value) || 0;
+                }
             });
 
-            document.getElementById('totalTargetInvoiceBowheer').innerText = totalTargetInvoiceBowheer.toLocaleString('id-ID');
-            document.getElementById('totalAchievedInvoiceBowheer').innerText = totalAchievedInvoiceBowheer.toLocaleString('id-ID');
-            document.getElementById('totalSisaInvoiceBowheer').innerText = totalSisaInvoiceBowheer.toLocaleString('id-ID');
+            for (let i = 0; i < totalKolom.length; i++) {
+                let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                $(table.column(i + 2).footer()).text(totalFormatted);
+            }
+
         }
 
-        // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+        // Jalankan ulang total setiap kali tabel berubah
         table.on('draw', function () {
             updateTotal();
         });
 
-        // Hitung total pertama kali saat tabel dimuat
+        // Hitung total pertama kali
+        updateTotal();
+    });
+
+    $(document).ready(function () {
+        $.fn.dataTable.ext.errMode = 'none';
+
+        const table = $('#tabel_targetbowheer_filter_city2').DataTable({
+            footerCallback: function () {
+                updateTotal();
+            },
+            columnDefs: [
+                { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+            ],
+            order: [[1, 'asc']]
+        });
+
+        // Tambah nomor otomatis di kolom pertama
+        table.on('order.dt search.dt', function () {
+            table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
+            });
+        }).draw();
+
+        // Fungsi utama untuk hitung total otomatis
+        function updateTotal() {
+            const data = table.rows({ search: 'applied' }).data();
+
+            let totalKolom = Array(11).fill(0);
+
+            data.each(function (row) {
+                for (let i = 2; i < 13; i++) { // misal kolom angka mulai dari index ke-2
+                    // Hapus titik dan koma dulu
+                    let value = row[i]
+                        .toString()
+                        .replace(/\./g, '')   // hapus titik
+                        .replace(/,/g, '')    // hapus koma
+                        .replace(/[^0-9-]/g, ''); // hapus selain angka
+                    totalKolom[i - 2] += parseFloat(value) || 0;
+                }
+            });
+
+            for (let i = 0; i < totalKolom.length; i++) {
+                let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                $(table.column(i + 2).footer()).text(totalFormatted);
+            }
+
+        }
+
+        // Jalankan ulang total setiap kali tabel berubah
+        table.on('draw', function () {
+            updateTotal();
+        });
+
+        // Hitung total pertama kali
+        updateTotal();
+    });
+
+    $(document).ready(function () {
+        $.fn.dataTable.ext.errMode = 'none';
+
+        const table = $('#tabel_targetbowheer_filter_city3').DataTable({
+            footerCallback: function () {
+                updateTotal();
+            },
+            columnDefs: [
+                { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+            ],
+            order: [[1, 'asc']]
+        });
+
+        // Tambah nomor otomatis di kolom pertama
+        table.on('order.dt search.dt', function () {
+            table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
+            });
+        }).draw();
+
+        // Fungsi utama untuk hitung total otomatis
+        function updateTotal() {
+            const data = table.rows({ search: 'applied' }).data();
+
+            let totalKolom = Array(7).fill(0);
+
+            data.each(function (row) {
+                for (let i = 2; i < 9; i++) { // misal kolom angka mulai dari index ke-2
+                    // Hapus titik dan koma dulu
+                    let value = row[i]
+                        .toString()
+                        .replace(/\./g, '')   // hapus titik
+                        .replace(/,/g, '')    // hapus koma
+                        .replace(/[^0-9-]/g, ''); // hapus selain angka
+                    totalKolom[i - 2] += parseFloat(value) || 0;
+                }
+            });
+
+            for (let i = 0; i < totalKolom.length; i++) {
+                let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                $(table.column(i + 2).footer()).text(totalFormatted);
+            }
+
+        }
+
+        // Jalankan ulang total setiap kali tabel berubah
+        table.on('draw', function () {
+            updateTotal();
+        });
+
+        // Hitung total pertama kali
         updateTotal();
     });
 

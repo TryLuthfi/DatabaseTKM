@@ -99,32 +99,32 @@ $total = 1;
                                             <tr>
                                                 <td><?= $no++ ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
-                                                <td><?= ($data['TOTAL TARGET OKTOBER'] != 0 ? number_format($data['TOTAL TARGET OKTOBER']) : '-') ?>
+                                                <td><?= ($data['TOTAL TARGET OKTOBER'] != 0 ? number_format(floatval($data['TOTAL TARGET OKTOBER']), 0, ",", ".") : '-') ?>
 
                                                     <!-- OKTOBER -->
-                                                <td><?= ($data['TW1 OKTOBER'] != 0 ? number_format($data['TW1 OKTOBER']) : '-') ?>
+                                                <td><?= ($data['TW1 OKTOBER'] != 0 ? number_format(floatval($data['TW1 OKTOBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['RW1 OKTOBER'] != 0 ? number_format($data['RW1 OKTOBER']) : '-') ?>
+                                                <td><?= ($data['RW1 OKTOBER'] != 0 ? number_format(floatval($data['RW1 OKTOBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['TW2 OKTOBER'] != 0 ? number_format($data['TW2 OKTOBER']) : '-') ?>
+                                                <td><?= ($data['TW2 OKTOBER'] != 0 ? number_format(floatval($data['TW2 OKTOBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['RW2 OKTOBER'] != 0 ? number_format($data['RW2 OKTOBER']) : '-') ?>
+                                                <td><?= ($data['RW2 OKTOBER'] != 0 ? number_format(floatval($data['RW2 OKTOBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['TW3 OKTOBER'] != 0 ? number_format($data['TW3 OKTOBER']) : '-') ?>
+                                                <td><?= ($data['TW3 OKTOBER'] != 0 ? number_format(floatval($data['TW3 OKTOBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['RW3 OKTOBER'] != 0 ? number_format($data['RW3 OKTOBER']) : '-') ?>
+                                                <td><?= ($data['RW3 OKTOBER'] != 0 ? number_format(floatval($data['RW3 OKTOBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['TW4 OKTOBER'] != 0 ? number_format($data['TW4 OKTOBER']) : '-') ?>
+                                                <td><?= ($data['TW4 OKTOBER'] != 0 ? number_format(floatval($data['TW4 OKTOBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['RW4 OKTOBER'] != 0 ? number_format($data['RW4 OKTOBER']) : '-') ?>
+                                                <td><?= ($data['RW4 OKTOBER'] != 0 ? number_format(floatval($data['RW4 OKTOBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['TW5 OKTOBER'] != 0 ? number_format($data['TW5 OKTOBER']) : '-') ?>
+                                                <td><?= ($data['TW5 OKTOBER'] != 0 ? number_format(floatval($data['TW5 OKTOBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['RW5 OKTOBER'] != 0 ? number_format($data['RW5 OKTOBER']) : '-') ?>
+                                                <td><?= ($data['RW5 OKTOBER'] != 0 ? number_format(floatval($data['RW5 OKTOBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['TOTAL ACHIEVED OKTOBER'] != 0 ? number_format($data['TOTAL ACHIEVED OKTOBER']) : '-') ?>
+                                                <td><?= ($data['TOTAL ACHIEVED OKTOBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED OKTOBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($deviasi != 0 ? number_format($deviasi) : '-') ?></td>
+                                                <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
@@ -250,30 +250,30 @@ $total = 1;
                                             <tr>
                                                 <td><?= $no++ ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
-                                                <td><?= ($data['TOTAL TARGET NOVEMBER'] != 0 ? number_format($data['TOTAL TARGET NOVEMBER']) : '-') ?>
+                                                <td><?= ($data['TOTAL TARGET NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET NOVEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
 
                                                 <!-- NOVEMBER -->
-                                                <td><?= ($data['TW1 NOVEMBER'] != 0 ? number_format($data['TW1 NOVEMBER']) : '-') ?>
+                                                <td><?= ($data['TW1 NOVEMBER'] != 0 ? number_format(floatval($data['TW1 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['RW1 NOVEMBER'] != 0 ? number_format($data['RW1 NOVEMBER']) : '-') ?>
+                                                <td><?= ($data['RW1 NOVEMBER'] != 0 ? number_format(floatval($data['RW1 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['TW2 NOVEMBER'] != 0 ? number_format($data['TW2 NOVEMBER']) : '-') ?>
+                                                <td><?= ($data['TW2 NOVEMBER'] != 0 ? number_format(floatval($data['TW2 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['RW2 NOVEMBER'] != 0 ? number_format($data['RW2 NOVEMBER']) : '-') ?>
+                                                <td><?= ($data['RW2 NOVEMBER'] != 0 ? number_format(floatval($data['RW2 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['TW3 NOVEMBER'] != 0 ? number_format($data['TW3 NOVEMBER']) : '-') ?>
+                                                <td><?= ($data['TW3 NOVEMBER'] != 0 ? number_format(floatval($data['TW3 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['RW3 NOVEMBER'] != 0 ? number_format($data['RW3 NOVEMBER']) : '-') ?>
+                                                <td><?= ($data['RW3 NOVEMBER'] != 0 ? number_format(floatval($data['RW3 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['TW4 NOVEMBER'] != 0 ? number_format($data['TW4 NOVEMBER']) : '-') ?>
+                                                <td><?= ($data['TW4 NOVEMBER'] != 0 ? number_format(floatval($data['TW4 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['RW4 NOVEMBER'] != 0 ? number_format($data['RW4 NOVEMBER']) : '-') ?>
+                                                <td><?= ($data['RW4 NOVEMBER'] != 0 ? number_format(floatval($data['RW4 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
 
-                                                <td><?= ($data['TOTAL ACHIEVED NOVEMBER'] != 0 ? number_format($data['TOTAL ACHIEVED NOVEMBER']) : '-') ?>
+                                                <td><?= ($data['TOTAL ACHIEVED NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED NOVEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($deviasi != 0 ? number_format($deviasi) : '-') ?></td>
+                                                <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?></td>
 
                                             </tr>
                                         <?php endforeach; ?>
@@ -380,19 +380,19 @@ $total = 1;
                                             <tr>
                                                 <td><?= $no++ ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
-                                                <td><?= ($data['TOTAL TARGET DESEMBER'] != 0 ? number_format($data['TOTAL TARGET DESEMBER']) : '-') ?>
+                                                <td><?= ($data['TOTAL TARGET DESEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET DESEMBER']), 0, ",", ".") : '-') ?>
                                                     <!-- DESEMBER -->
-                                                <td><?= ($data['TW1 DESEMBER'] != 0 ? number_format($data['TW1 DESEMBER']) : '-') ?>
+                                                <td><?= ($data['TW1 DESEMBER'] != 0 ? number_format(floatval($data['TW1 DESEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['RW1 DESEMBER'] != 0 ? number_format($data['RW1 DESEMBER']) : '-') ?>
+                                                <td><?= ($data['RW1 DESEMBER'] != 0 ? number_format(floatval($data['RW1 DESEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['TW2 DESEMBER'] != 0 ? number_format($data['TW2 DESEMBER']) : '-') ?>
+                                                <td><?= ($data['TW2 DESEMBER'] != 0 ? number_format(floatval($data['TW2 DESEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['RW2 DESEMBER'] != 0 ? number_format($data['RW2 DESEMBER']) : '-') ?>
+                                                <td><?= ($data['RW2 DESEMBER'] != 0 ? number_format(floatval($data['RW2 DESEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format($data['TOTAL ACHIEVED DESEMBER']) : '-') ?>
+                                                <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED DESEMBER']), 0, ",", ".") : '-') ?>
                                                 </td>
-                                                <td><?= ($deviasi != 0 ? number_format($deviasi) : '-') ?></td>
+                                                <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>

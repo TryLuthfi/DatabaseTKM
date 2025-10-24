@@ -738,13 +738,13 @@ $error_log = $this->session->flashdata('error_log');
                 document.getElementById('totalTargetInvoiceBowheer').innerText = totalTargetInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('totalAchievInvoiceBowheer').innerText = totalAchievInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('totalDeviasiInvoiceBowheer').innerText = totalDeviasiInvoiceBowheer.toLocaleString('id-ID');
-                document.getElementById('totalPersentaseTargetInvoiceBowheer').innerText = (totalAchievInvoiceBowheer / totalTargetInvoiceBowheer * 100) + "%";
-                document.getElementById('totalPersentaseDeviasiTargetInvoiceBowheer').innerText = (totalDeviasiInvoiceBowheer / totalTargetInvoiceBowheer * 100) + "%";
+                document.getElementById('totalPersentaseTargetInvoiceBowheer').innerText = (totalAchievInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(2) + " %";
+                document.getElementById('totalPersentaseDeviasiTargetInvoiceBowheer').innerText = (totalDeviasiInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(2) + " %";
 
                 document.getElementById('dashboardTargetInvoice').innerText = "RP. " + totalTargetInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('dashboardAchievInvoice').innerText = "RP. " + totalAchievInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('dashboardSisaInvoice').innerText = "RP. " + totalDeviasiInvoiceBowheer.toLocaleString('id-ID');
-                document.getElementById('dashboardPersentaseInvoice').innerText = (totalAchievInvoiceBowheer / totalTargetInvoiceBowheer * 100) + "%";
+                document.getElementById('dashboardPersentaseInvoice').innerText = (totalAchievInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(2) + " %";
             }
 
             // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
@@ -799,8 +799,8 @@ $error_log = $this->session->flashdata('error_log');
                 document.getElementById('totalTargetInvoiceCity').innerText = totalTargetInvoiceCity.toLocaleString('id-ID');
                 document.getElementById('totalAchievInvoiceCity').innerText = totalAchievInvoiceCity.toLocaleString('id-ID');
                 document.getElementById('totalDeviasiInvoiceCity').innerText = totalDeviasiInvoiceCity.toLocaleString('id-ID');
-                document.getElementById('totalPersentaseTargetInvoiceCity').innerText = (totalAchievInvoiceCity / totalTargetInvoiceCity * 100) + "%";
-                document.getElementById('totalPersentaseDeviasiTargetInvoiceCity').innerText = (totalDeviasiInvoiceCity / totalTargetInvoiceCity * 100) + "%";
+                document.getElementById('totalPersentaseTargetInvoiceCity').innerText = (totalAchievInvoiceCity / totalTargetInvoiceCity * 100).toFixed(2) + " %";
+                document.getElementById('totalPersentaseDeviasiTargetInvoiceCity').innerText = (totalDeviasiInvoiceCity / totalTargetInvoiceCity * 100).toFixed(2) + " %";
 
             }
 

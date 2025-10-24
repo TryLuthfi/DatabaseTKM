@@ -73,6 +73,7 @@ class TargetInvoice extends CI_Controller
             $data['getTargetAllBowheer'] = $this->MTargetInvoice->getTargetAllBowheer();
             $data['getTargetAllCity'] = $this->MTargetInvoice->getTargetAllCity();
             $data['getTargetCityFilterBowheer'] = $this->MTargetInvoice->getTargetCityFilterBowheer();
+            $data['getTargetWeekFilterBowheer'] = $this->MTargetInvoice->getTargetWeekFilterBowheer();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
