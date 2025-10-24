@@ -62,7 +62,8 @@ $total = 1;
                             <!-- TAB NAV PERTAMA -->
                             <div class="tab-pane show active" id="custom-tabs-satu" role="tabpanel"
                                 aria-labelledby="custom-tabs-two-profile-tab">
-                                <table id="tabel_targetbowheer_filter_summary" class="table table-bordered table-striped">
+                                <table id="tabel_targetbowheer_filter_summary"
+                                    class="table table-bordered table-striped">
                                     <thead style="text-align: center;">
                                         <tr>
                                             <th>No</th>
@@ -219,6 +220,14 @@ $total = 1;
                                                             <th>0</th>
                                                         <?php endfor; ?>
                                                     </tr>
+                                                    <tr>
+                                                        <th colspan="3">Persentase</th>
+                                                        <?php for ($i = 0; $i < 3; $i++): ?>
+                                                            <th colspan="2" style="text-align:end;">0</th>
+                                                        <?php endfor; ?>
+                                                        <th style="text-align:end;">0</th>
+                                                        <th style="text-align:end;">0</th>
+                                                    </tr>
                                                 </tfoot>
                                             </table>
                                         </div>
@@ -341,6 +350,14 @@ $total = 1;
                                                             <th>0</th>
                                                         <?php endfor; ?>
                                                     </tr>
+                                                    <tr>
+                                                        <th colspan="3">Persentase</th>
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th colspan="2" style="text-align:end;">0</th>
+                                                        <?php endfor; ?>
+                                                        <th style="text-align:end;">0</th>
+                                                        <th style="text-align:end;">0</th>
+                                                    </tr>
                                                 </tfoot>
                                             </table>
                                         </div>
@@ -458,6 +475,14 @@ $total = 1;
                                                 <?php for ($i = 0; $i < 11; $i++): ?>
                                                     <th>0</th>
                                                 <?php endfor; ?>
+                                                <tr>
+                                                        <th colspan="3">Persentase</th>
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th colspan="2" style="text-align:end;">0</th>
+                                                        <?php endfor; ?>
+                                                        <th style="text-align:end;">0</th>
+                                                        <th style="text-align:end;">0</th>
+                                                    </tr>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -732,30 +757,29 @@ $total = 1;
 
         const table = $('#tabel_targetbowheer_filter_month').DataTable({
             footerCallback: function () {
-                updateTotal();
+                updateTotalDanPersentase();
             },
             columnDefs: [
-                { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                { orderable: false, targets: 0 }
             ],
             order: [[1, 'asc']]
         });
 
-        // Tambah nomor otomatis di kolom pertama
+        // Nomor urut otomatis
         table.on('order.dt search.dt', function () {
             table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
                 cell.innerHTML = i + 1;
             });
         }).draw();
 
-        // Fungsi utama untuk hitung total otomatis
-        function updateTotal() {
+        // Fungsi total + persentase
+        function updateTotalDanPersentase() {
             const data = table.rows({ search: 'applied' }).data();
 
             let totalKolom = Array(9).fill(0);
 
             data.each(function (row) {
-                for (let i = 2; i < 11; i++) { // misal kolom angka mulai dari index ke-2
-                    // Hapus titik dan koma dulu
+                for (let i = 2; i < 11; i++) {
                     let value = row[i]
                         .toString()
                         .replace(/\./g, '')   // hapus titik
@@ -765,20 +789,46 @@ $total = 1;
                 }
             });
 
+            // Tulis total ke baris footer pertama
             for (let i = 0; i < totalKolom.length; i++) {
                 let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
                 $(table.column(i + 2).footer()).text(totalFormatted);
             }
 
+            // Hitung persentase
+            // Index mapping (dari struktur tabel kamu):
+            // 2: Total Target, 3: Okt Target, 4: Okt Achieved, 5: Nov Target, 6: Nov Achieved, 7: Des Target, 8: Des Achieved, 9: Grand Achieved, 10: Deviasi
+
+            function hitungPersen(target, achieved) {
+                if (target === 0 && achieved > 0) return 100;   // ada hasil tapi target kosong
+                if (target === 0 && achieved === 0) return 0;   // dua-duanya kosong
+                return (achieved / target) * 100;               // normal
+            }
+
+            // Hitung persentase
+            const persenOktober = hitungPersen(totalKolom[3 - 2], totalKolom[4 - 2]);
+            const persenNovember = hitungPersen(totalKolom[5 - 2], totalKolom[6 - 2]);
+            const persenDesember = hitungPersen(totalKolom[7 - 2], totalKolom[8 - 2]);
+            const persenGrand = hitungPersen(totalKolom[2 - 2], totalKolom[9 - 2]);
+            const persenDeviasi = hitungPersen(totalKolom[2 - 2], totalKolom[10 - 2]);
+
+            // Update baris kedua footer (Persentase)
+            let footerRows = $('#tabel_targetbowheer_filter_month tfoot tr');
+            let barisPersen = $(footerRows[1]).find('th');
+
+            // isi sesuai kolom
+            barisPersen.eq(1).text(persenOktober.toFixed(2) + '%');
+            barisPersen.eq(2).text(persenNovember.toFixed(2) + '%');
+            barisPersen.eq(3).text(persenDesember.toFixed(2) + '%');
+            barisPersen.eq(4).text(persenGrand.toFixed(2) + '%');
+            barisPersen.eq(5).text(persenDeviasi.toFixed(2) + '%');
         }
 
-        // Jalankan ulang total setiap kali tabel berubah
         table.on('draw', function () {
-            updateTotal();
+            updateTotalDanPersentase();
         });
 
-        // Hitung total pertama kali
-        updateTotal();
+        updateTotalDanPersentase();
     });
 
     $(document).ready(function () {
@@ -786,7 +836,7 @@ $total = 1;
 
         const table = $('#tabel_targetbowheer_filter_city1').DataTable({
             footerCallback: function () {
-                updateTotal();
+                updateTotalDanPersentase();
             },
             columnDefs: [
                 { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
@@ -802,7 +852,7 @@ $total = 1;
         }).draw();
 
         // Fungsi utama untuk hitung total otomatis
-        function updateTotal() {
+        function updateTotalDanPersentase() {
             const data = table.rows({ search: 'applied' }).data();
 
             let totalKolom = Array(13).fill(0);
@@ -824,15 +874,40 @@ $total = 1;
                 $(table.column(i + 2).footer()).text(totalFormatted);
             }
 
+            function hitungPersen(target, achieved) {
+                if (target === 0 && achieved > 0) return 100;   // ada hasil tapi target kosong
+                if (target === 0 && achieved === 0) return 0;   // dua-duanya kosong
+                return (achieved / target) * 100;               // normal
+            }
+
+            const persenOktoW1 = hitungPersen(totalKolom[3 - 2], totalKolom[4 - 2]);
+            const persenOktoW2 = hitungPersen(totalKolom[5 - 2], totalKolom[6 - 2]);
+            const persenOktoW3 = hitungPersen(totalKolom[7 - 2], totalKolom[8 - 2]);
+            const persenOktoW4 = hitungPersen(totalKolom[9 - 2], totalKolom[10 - 2]);
+            const persenOktoW5 = hitungPersen(totalKolom[11 - 2], totalKolom[12 - 2]);
+            const persenGrand = hitungPersen(totalKolom[2 - 2], totalKolom[13 - 2]);
+            const persenDeviasi = hitungPersen(totalKolom[2 - 2], totalKolom[14 - 2]);
+
+            let footerRows = $('#tabel_targetbowheer_filter_city1 tfoot tr');
+            let barisPersen = $(footerRows[1]).find('th');
+
+            barisPersen.eq(1).text(persenOktoW1.toFixed(2) + '%');
+            barisPersen.eq(2).text(persenOktoW2.toFixed(2) + '%');
+            barisPersen.eq(3).text(persenOktoW3.toFixed(2) + '%');
+            barisPersen.eq(4).text(persenOktoW4.toFixed(2) + '%');
+            barisPersen.eq(5).text(persenOktoW5.toFixed(2) + '%');
+            barisPersen.eq(6).text(persenGrand.toFixed(2) + '%');
+            barisPersen.eq(7).text(persenDeviasi.toFixed(2) + '%');
+
         }
 
         // Jalankan ulang total setiap kali tabel berubah
         table.on('draw', function () {
-            updateTotal();
+            updateTotalDanPersentase();
         });
 
         // Hitung total pertama kali
-        updateTotal();
+        updateTotalDanPersentase();
     });
 
     $(document).ready(function () {
