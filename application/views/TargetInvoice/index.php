@@ -333,7 +333,7 @@ $error_log = $this->session->flashdata('error_log');
                                                         </div>
                                                         <!-- /.card-body -->
                                                     </div>
-                                                    <a href="<?= base_url('TargetInvoice/weekBowheer/') ?>"
+                                                    <a href="<?= base_url('TargetInvoice/allBowheer/') ?>"
                                                             class="text-decoration-none">
                                                             <h5 class="text-center mb-4 font-weight-bold text-primary"
                                                                 style="text-decoration: underline;">
@@ -455,7 +455,7 @@ $error_log = $this->session->flashdata('error_log');
                                                                 </tfoot>
                                                             </table>
                                                         </div>
-                                                        <a href="<?= base_url('TargetInvoice/weekCity/') ?>"
+                                                        <a href="<?= base_url('TargetInvoice/allCity/') ?>"
                                                             class="text-decoration-none">
                                                             <h5 class="text-center mb-4 font-weight-bold text-primary"
                                                                 style="text-decoration: underline;">

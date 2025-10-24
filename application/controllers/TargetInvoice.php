@@ -15,8 +15,8 @@ class TargetInvoice extends CI_Controller
     {
         if (!empty($this->session->userdata('id_user'))) {
 
-            $data['title'] = 'Target Invoice';
-            $data['judul'] = 'Target Invoice';
+            $data['title'] = 'TARGET INVOICE';
+            $data['judul'] = 'TARGET INVOICE';
             $data['getTargetAllBowheer'] = $this->MTargetInvoice->getTargetAllBowheer();
             $data['getTargetAllCity'] = $this->MTargetInvoice->getTargetAllCity();
 
@@ -40,16 +40,15 @@ class TargetInvoice extends CI_Controller
 
         if (!empty($this->session->userdata('id_user'))) {
 
-            $data['title'] = 'Target Invoice';
-            $data['judul'] = 'Target Invoice';
+            $data['title'] = 'TARGET INVOICE';
+            $data['judul'] = 'TARGET INVOICE';
             $data['filterURL'] = $decoded_url_area;
-            $data['getTargetAllBowheer'] = $this->MTargetInvoice->getTargetAllBowheer();
-            $data['getTargetAllCity'] = $this->MTargetInvoice->getTargetAllCity();
-            $data['getTargetBowheerFilterCity'] = $this->MTargetInvoice->getTargetBowheerFilterCity();
+            $data['getDetailTargetBowheerFilterCity'] = $this->MTargetInvoice->getDetailTargetBowheerFilterCity();
+            $data['getAllTargetRincianInvoice'] = $this->MTargetInvoice->getAllTargetRincianInvoice();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
-            $this->load->view('TargetInvoice/indexkota', $data);
+            $this->load->view('TargetInvoice/indexdetailcity', $data);
             $this->load->view('Templates/99_JS');
 
         } else {
@@ -67,17 +66,40 @@ class TargetInvoice extends CI_Controller
 
         if (!empty($this->session->userdata('id_user'))) {
 
-            $data['title'] = 'Target Invoice';
-            $data['judul'] = 'Target Invoice';
+            $data['title'] = 'TARGET INVOICE';
+            $data['judul'] = 'TARGET INVOICE';
             $data['filterURL'] = $decoded_url_area;
-            $data['getTargetAllBowheer'] = $this->MTargetInvoice->getTargetAllBowheer();
-            $data['getTargetAllCity'] = $this->MTargetInvoice->getTargetAllCity();
+            $data['getDetailTargetCityFilterBowheer'] = $this->MTargetInvoice->getDetailTargetCityFilterBowheer();
+            $data['getAllTargetRincianInvoice'] = $this->MTargetInvoice->getAllTargetRincianInvoice();
+
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('TargetInvoice/indexdetailbowheer', $data);
+            $this->load->view('Templates/99_JS');
+
+        } else {
+            redirect('Auth');
+        }
+    }
+
+    public function allBowheer()
+    {
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments); // Ambil bagian terakhir dari URL
+
+        $decoded_url_area = urldecode($last_segment);
+
+        if (!empty($this->session->userdata('id_user'))) {
+
+            $data['title'] = 'TARGET INVOICE - PROJECT';
+            $data['judul'] = 'TARGET INVOICE - PROJECT';
             $data['getTargetCityFilterBowheer'] = $this->MTargetInvoice->getTargetCityFilterBowheer();
-            $data['getTargetWeekFilterBowheer'] = $this->MTargetInvoice->getTargetWeekFilterBowheer();
+            $data['getTargetRincianFilterBowheer'] = $this->MTargetInvoice->getTargetRincianFilterBowheer();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
-            $this->load->view('TargetInvoice/indexbowheer', $data);
+            $this->load->view('TargetInvoice/indexallbowheer', $data);
             $this->load->view('Templates/99_JS');
 
         } else {
@@ -85,53 +107,19 @@ class TargetInvoice extends CI_Controller
         }
     }
 
-    public function weekBowheer()
+    public function allCity()
     {
-        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
-        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
-        $last_segment = end($segments); // Ambil bagian terakhir dari URL
-
-        $decoded_url_area = urldecode($last_segment);
 
         if (!empty($this->session->userdata('id_user'))) {
 
-            $data['title'] = 'Target Invoice';
-            $data['judul'] = 'Target Invoice';
-            $data['filterURL'] = $decoded_url_area;
-            $data['getTargetAllBowheer'] = $this->MTargetInvoice->getTargetAllBowheer();
-            $data['getTargetAllCity'] = $this->MTargetInvoice->getTargetAllCity();
-            $data['getTargetWeekFilterBowheer'] = $this->MTargetInvoice->getTargetWeekFilterBowheer();
+            $data['title'] = 'TARGET INVOICE - KOTA';
+            $data['judul'] = 'TARGET INVOICE - KOTA';
+            $data['getTargetBowheerFilterCity'] = $this->MTargetInvoice->getTargetBowheerFilterCity();
+            $data['getTargetRincianFilterCity'] = $this->MTargetInvoice->getTargetRincianFilterCity();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
-            $this->load->view('TargetInvoice/indexweekbowheer', $data);
-            $this->load->view('Templates/99_JS');
-
-        } else {
-            redirect('Auth');
-        }
-    }
-
-    public function weekCity()
-    {
-        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
-        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
-        $last_segment = end($segments); // Ambil bagian terakhir dari URL
-
-        $decoded_url_area = urldecode($last_segment);
-
-        if (!empty($this->session->userdata('id_user'))) {
-
-            $data['title'] = 'Target Invoice';
-            $data['judul'] = 'Target Invoice';
-            $data['filterURL'] = $decoded_url_area;
-            $data['getTargetAllBowheer'] = $this->MTargetInvoice->getTargetAllBowheer();
-            $data['getTargetAllCity'] = $this->MTargetInvoice->getTargetAllCity();
-            $data['getTargetWeekFilterCity'] = $this->MTargetInvoice->getTargetWeekFilterCity();
-
-            $this->load->view('Templates/01_Header', $data);
-            $this->load->view('Templates/02_Menu');
-            $this->load->view('TargetInvoice/indexweekcity', $data);
+            $this->load->view('TargetInvoice/indexallcity', $data);
             $this->load->view('Templates/99_JS');
 
         } else {

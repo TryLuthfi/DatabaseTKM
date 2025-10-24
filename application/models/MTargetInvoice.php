@@ -3,7 +3,6 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MTargetInvoice extends CI_Model
 {
-
     public function getTargetAllBowheer()
     {
         $data = $this->db->query('SELECT
@@ -74,6 +73,41 @@ ORDER BY total_target DESC;')
 
     public function getTargetBowheerFilterCity()
     {
+
+        $data = $this->db->query('SELECT
+	*,
+	SUM(tti.qty_target) AS total_target,
+    SUM(tti.qty_achiev_target) AS total_achiev,
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi
+FROM tb_target_invoice tti
+JOIN tb_master_bowheer_invoice tmb
+    ON tti.id_bowheer = tmb.id_bowheer
+    GROUP by tti.area_target
+    ORDER BY total_target DESC;')
+            ->result_array();
+        return $data;
+    }
+
+    public function getTargetCityFilterBowheer()
+    {
+
+        $data = $this->db->query('SELECT
+	*,
+	SUM(tti.qty_target) AS total_target,
+    SUM(tti.qty_achiev_target) AS total_achiev,
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi
+FROM tb_target_invoice tti
+JOIN tb_master_bowheer_invoice tmb
+    ON tti.id_bowheer = tmb.id_bowheer
+    GROUP BY tti.id_bowheer
+    ORDER BY total_target DESC')
+            ->result_array();
+        return $data;
+    }
+
+    public function getDetailTargetCityFilterBowheer()
+    {
+
         $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
         $segments = explode("/", $url_path); // Pecah berdasarkan "/"
         $last_segment = end($segments);
@@ -87,14 +121,37 @@ ORDER BY total_target DESC;')
 FROM tb_target_invoice tti
 JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
-    WHERE tti.area_target = "' . $decoded_url_area . '"
-    GROUP by tti.id_bowheer
-    ORDER BY total_target DESC;')
+    WHERE tti.id_bowheer = "'.$decoded_url_area.'"
+    GROUP BY tti.area_target
+    ORDER BY total_target DESC')
             ->result_array();
         return $data;
     }
 
-    public function getTargetCityFilterBowheer()
+    public function getDetailTargetBowheerFilterCity()
+    {
+
+        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
+        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
+        $last_segment = end($segments);
+        $decoded_url_area = urldecode($last_segment);
+
+        $data = $this->db->query('SELECT
+	*,
+	SUM(tti.qty_target) AS total_target,
+    SUM(tti.qty_achiev_target) AS total_achiev,
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi
+FROM tb_target_invoice tti
+JOIN tb_master_bowheer_invoice tmb
+    ON tti.id_bowheer = tmb.id_bowheer
+    WHERE tti.area_target = "'.$decoded_url_area.'"
+    GROUP BY tti.id_bowheer
+    ORDER BY total_target DESC')
+            ->result_array();
+        return $data;
+    }
+
+    public function getTargetCityFilterBowheerDetail()
     {
         $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
         $segments = explode("/", $url_path); // Pecah berdasarkan "/"
@@ -109,14 +166,14 @@ JOIN tb_master_bowheer_invoice tmb
 FROM tb_target_invoice tti
 JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
-    WHERE tti.id_bowheer = "' . $decoded_url_area . '"
+    WHERE tti.id_bowheer = "'.$decoded_url_area.'"
     GROUP BY tti.area_target
     ORDER BY total_target DESC')
             ->result_array();
         return $data;
     }
 
-    public function getTargetWeekFilterBowheer()
+    public function getTargetRincianFilterBowheer()
     {
 
         $data = $this->db->query('SELECT
@@ -175,7 +232,7 @@ GROUP BY
         return $data;
     }
 
-    public function getTargetWeekFilterCity()
+    public function getTargetRincianFilterCity()
     {
 
         $data = $this->db->query('SELECT
@@ -231,6 +288,66 @@ JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
 GROUP BY
     tti.area_target;')
+            ->result_array();
+        return $data;
+    }
+
+    public function getAllTargetRincianInvoice()
+    {
+
+        $data = $this->db->query('SELECT
+    tti.id_bowheer,
+    tti.area_target,
+    tmb.nama_bowheer,
+
+    -- Total per bulan
+    SUM(CASE WHEN tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TOTAL TARGET OKTOBER`,
+    SUM(CASE WHEN tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TOTAL TARGET NOVEMBER`,
+    SUM(CASE WHEN tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TOTAL TARGET DESEMBER`,
+
+    -- Total achieved per bulan
+    SUM(CASE WHEN tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED OKTOBER`,
+    SUM(CASE WHEN tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED NOVEMBER`,
+    SUM(CASE WHEN tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED DESEMBER`,
+
+    -- Grand Total seluruh bulan
+    SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET`,
+    SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED`,
+
+    -- OKTOBER
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW1 OKTOBER`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 OKTOBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW2 OKTOBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 OKTOBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW3 OKTOBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 OKTOBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW4 OKTOBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 OKTOBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW5 OKTOBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 OKTOBER`,
+
+    -- NOVEMBER
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 NOVEMBER`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 NOVEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 NOVEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 NOVEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW3 NOVEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 NOVEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 NOVEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 NOVEMBER`,
+
+    -- DESEMBER
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`
+
+FROM
+    tb_target_invoice tti
+JOIN tb_master_bowheer_invoice tmb 
+    ON tti.id_bowheer = tmb.id_bowheer
+GROUP BY
+    tti.area_target, tmb.nama_bowheer;')
             ->result_array();
         return $data;
     }
