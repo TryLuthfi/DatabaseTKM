@@ -479,54 +479,163 @@ $total = 1;
 
     $(document).ready(function () {
         $.fn.dataTable.ext.errMode = 'none';
-        const table = $('#tabel_targetbowheer_filter_city').DataTable({
+
+        const table = $('#tabel_targetbowheer_filter_city1').DataTable({
             footerCallback: function () {
                 updateTotal();
             },
             columnDefs: [
                 { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
             ],
-            order: [[1, 'asc']] // Urut default kolom Kode Aset
+            order: [[1, 'asc']]
         });
 
+        // Tambah nomor otomatis di kolom pertama
         table.on('order.dt search.dt', function () {
             table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
                 cell.innerHTML = i + 1;
             });
-        }).draw();
+        }).draw();  
 
-        // Fungsi untuk menghitung total dari data yang tampil
+        // Fungsi utama untuk hitung total otomatis
         function updateTotal() {
+            const data = table.rows({ search: 'applied' }).data();
 
-            const data = table.rows({
-                search: 'applied'
-            }).data();
-
-
-
-            // Hitung total dari kolom Value (index 2)
-            let totalTargetInvoiceBowheer = 0;
-            let totalAchievedInvoiceBowheer = 0;
-            let totalSisaInvoiceBowheer = 0;
+            let totalKolom = Array(13).fill(0);
 
             data.each(function (row) {
-
-                totalTargetInvoiceBowheer += parseFloat(row[4].replace(/\./g, '')) || 0;
-                totalAchievedInvoiceBowheer += parseFloat(row[5].replace(/\./g, '')) || 0;
-                totalSisaInvoiceBowheer += parseFloat(row[6].replace(/\./g, '')) || 0;
+                for (let i = 2; i < 15; i++) { // misal kolom angka mulai dari index ke-2
+                    // Hapus titik dan koma dulu
+                    let value = row[i]
+                        .toString()
+                        .replace(/\./g, '')   // hapus titik
+                        .replace(/,/g, '')    // hapus koma
+                        .replace(/[^0-9-]/g, ''); // hapus selain angka
+                    totalKolom[i - 2] += parseFloat(value) || 0;
+                }
             });
 
-            document.getElementById('totalTargetInvoiceBowheer').innerText = totalTargetInvoiceBowheer.toLocaleString('id-ID');
-            document.getElementById('totalAchievedInvoiceBowheer').innerText = totalAchievedInvoiceBowheer.toLocaleString('id-ID');
-            document.getElementById('totalSisaInvoiceBowheer').innerText = totalSisaInvoiceBowheer.toLocaleString('id-ID');
+            for (let i = 0; i < totalKolom.length; i++) {
+                let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                $(table.column(i + 2).footer()).text(totalFormatted);
+            }
+
         }
 
-        // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+        // Jalankan ulang total setiap kali tabel berubah
         table.on('draw', function () {
             updateTotal();
         });
 
-        // Hitung total pertama kali saat tabel dimuat
+        // Hitung total pertama kali
+        updateTotal();
+    });
+
+    $(document).ready(function () {
+        $.fn.dataTable.ext.errMode = 'none';
+
+        const table = $('#tabel_targetbowheer_filter_city2').DataTable({
+            footerCallback: function () {
+                updateTotal();
+            },
+            columnDefs: [
+                { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+            ],
+            order: [[1, 'asc']]
+        });
+
+        // Tambah nomor otomatis di kolom pertama
+        table.on('order.dt search.dt', function () {
+            table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
+            });
+        }).draw();  
+
+        // Fungsi utama untuk hitung total otomatis
+        function updateTotal() {
+            const data = table.rows({ search: 'applied' }).data();
+
+            let totalKolom = Array(11).fill(0);
+
+            data.each(function (row) {
+                for (let i = 2; i < 13; i++) { // misal kolom angka mulai dari index ke-2
+                    // Hapus titik dan koma dulu
+                    let value = row[i]
+                        .toString()
+                        .replace(/\./g, '')   // hapus titik
+                        .replace(/,/g, '')    // hapus koma
+                        .replace(/[^0-9-]/g, ''); // hapus selain angka
+                    totalKolom[i - 2] += parseFloat(value) || 0;
+                }
+            });
+
+            for (let i = 0; i < totalKolom.length; i++) {
+                let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                $(table.column(i + 2).footer()).text(totalFormatted);
+            }
+
+        }
+
+        // Jalankan ulang total setiap kali tabel berubah
+        table.on('draw', function () {
+            updateTotal();
+        });
+
+        // Hitung total pertama kali
+        updateTotal();
+    });
+
+    $(document).ready(function () {
+        $.fn.dataTable.ext.errMode = 'none';
+
+        const table = $('#tabel_targetbowheer_filter_city3').DataTable({
+            footerCallback: function () {
+                updateTotal();
+            },
+            columnDefs: [
+                { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+            ],
+            order: [[1, 'asc']]
+        });
+
+        // Tambah nomor otomatis di kolom pertama
+        table.on('order.dt search.dt', function () {
+            table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
+            });
+        }).draw();  
+
+        // Fungsi utama untuk hitung total otomatis
+        function updateTotal() {
+            const data = table.rows({ search: 'applied' }).data();
+
+            let totalKolom = Array(7).fill(0);
+
+            data.each(function (row) {
+                for (let i = 2; i < 9; i++) { // misal kolom angka mulai dari index ke-2
+                    // Hapus titik dan koma dulu
+                    let value = row[i]
+                        .toString()
+                        .replace(/\./g, '')   // hapus titik
+                        .replace(/,/g, '')    // hapus koma
+                        .replace(/[^0-9-]/g, ''); // hapus selain angka
+                    totalKolom[i - 2] += parseFloat(value) || 0;
+                }
+            });
+
+            for (let i = 0; i < totalKolom.length; i++) {
+                let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                $(table.column(i + 2).footer()).text(totalFormatted);
+            }
+
+        }
+
+        // Jalankan ulang total setiap kali tabel berubah
+        table.on('draw', function () {
+            updateTotal();
+        });
+
+        // Hitung total pertama kali
         updateTotal();
     });
 

@@ -30,7 +30,7 @@ class MTargetInvoice extends CI_Model
         END, 2
     ) AS persen_deviasi
 FROM tb_target_invoice tti
-JOIN tb_master_bowheer tmb
+JOIN tb_master_bowheer_invoice  tmb
     ON tti.id_bowheer = tmb.id_bowheer
 GROUP BY tti.id_bowheer')
             ->result_array();
@@ -64,7 +64,7 @@ GROUP BY tti.id_bowheer')
         END, 2
     ) AS persen_deviasi
 FROM tb_target_invoice tti
-JOIN tb_master_bowheer tmb
+JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
 GROUP BY tti.area_target
 ORDER BY total_target DESC;')
@@ -85,7 +85,7 @@ ORDER BY total_target DESC;')
     SUM(tti.qty_achiev_target) AS total_achiev,
     (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi
 FROM tb_target_invoice tti
-JOIN tb_master_bowheer tmb
+JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
     WHERE tti.area_target = "' . $decoded_url_area . '"
     GROUP by tti.id_bowheer
@@ -107,7 +107,7 @@ JOIN tb_master_bowheer tmb
     SUM(tti.qty_achiev_target) AS total_achiev,
     (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi
 FROM tb_target_invoice tti
-JOIN tb_master_bowheer tmb
+JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
     WHERE tti.id_bowheer = "' . $decoded_url_area . '"
     GROUP BY tti.area_target
@@ -167,7 +167,7 @@ JOIN tb_master_bowheer tmb
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`
 FROM
     tb_target_invoice tti
-    JOIN tb_master_bowheer tmb
+    JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
 GROUP BY
     id_bowheer;')
@@ -227,7 +227,7 @@ GROUP BY
 
 FROM
     tb_target_invoice tti
-JOIN tb_master_bowheer tmb 
+JOIN tb_master_bowheer_invoice tmb 
     ON tti.id_bowheer = tmb.id_bowheer
 GROUP BY
     tti.area_target;')
