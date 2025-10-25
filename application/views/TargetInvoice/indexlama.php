@@ -99,101 +99,38 @@ $error_log = $this->session->flashdata('error_log');
                 </div>
 
                 <div class="container-fluid">
-                    <div class="row">
-
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header border-0">
-                                    <div class="d-flex justify-content-between">
-                                        <h3 class="card-title">Achieved Invoice TW - 4</h3>
-                                        <a href="javascript:void(0);">View Report</a>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-flex">
-                                        <p class="d-flex flex-column">
-                                            <span class="text-bold text-lg">18.280 HP</span>
-                                            <span>TOP Area</span>
-                                        </p>
-                                        <p class="ml-auto d-flex flex-column text-right">
-                                            <span class="text-success">
-                                                <i class="fas fa-arrow-up"></i> 80.1%
-                                            </span>
-                                            <span class="text-muted">Week - 01</span>
-                                        </p>
-                                    </div>
-                                    <!-- /.d-flex -->
-
-                                    <div class="position-relative mb-4">
-                                        <canvas id="rkap_chart_line" height="200"></canvas>
-                                    </div>
-
-                                    <div class="d-flex flex-row justify-content-end">
-                                        <span class="mr-3">
-                                            <i class="fas fa-square text-primary"></i> Target RKAP
-                                        </span>
-
-                                        <span class="mr-3">
-                                            <i class="fas fa-square text-green"></i> Achieved PO
-                                        </span>
-
-                                        <span class="mr-3">
-                                            <i class="fas fa-square text-orange"></i> Achieved Invoice
-                                        </span>
-
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- /.card -->
-                        </div>
-
-                        <div class="col-lg-6">
-                            <div class="card">
-                                <div class="card-header border-0">
-                                    <div class="d-flex justify-content-between">
-                                        <h3 class="card-title">Achieved Invoice TW - 4</h3>
-                                        <a href="javascript:void(0);">View Report</a>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-flex">
-                                        <p class="d-flex flex-column">
-                                            <span class="text-bold text-lg">18.280 HP</span>
-                                            <span>TOP AREA</span>
-                                        </p>
-                                        <p class="ml-auto d-flex flex-column text-right">
-                                            <span class="text-success">
-                                                <i class="fas fa-arrow-up"></i> 80.1%
-                                            </span>
-                                            <span class="text-muted">Week - 01</span>
-                                        </p>
-                                    </div>
-                                    <!-- /.d-flex -->
-
-                                    <div class="position-relative mb-4">
-                                        <canvas id="rkap_chart_bar" height="200"></canvas>
-                                    </div>
-
-                                    <div class="d-flex flex-row justify-content-end">
-                                        <span class="mr-3">
-                                            <i class="fas fa-square text-primary"></i> Target RKAP
-                                        </span>
-
-                                        <span class="mr-3">
-                                            <i class="fas fa-square text-green"></i> Achieved PO
-                                        </span>
-
-                                        <span class="mr-3">
-                                            <i class="fas fa-square text-orange"></i> Achieved Invoice
-                                        </span>
-
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-
+                    <div class="content-header">
+                        <div class="container-fluid">
+                            <div class="row mb-2">
+                                <div class="col-sm-12">
+                                    <h1 class="m-0 text-dark" style="text-align: center;">CHART STAGGING</h1>
+                                </div><!-- /.col -->
+                            </div><!-- /.row -->
+                        </div><!-- /.container-fluid -->
                     </div>
+
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="card-body">
+                                <div class="chart" style="height: 300px;">
+                                    <canvas id="invoice_chart_bar_pic"
+                                        style="min-height: 250px; height: 400px; max-height: 400px; max-width: 100%;"></canvas>
+                                </div>
+                                <div id="paginationControlsPIC" class="mt-3 d-flex justify-content-center"></div>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="card-body">
+                                <div class="chart" style="height: 300px;">
+                                    <canvas id="invoice_chart_bar_area"
+                                        style="min-height: 250px; height: 400px; max-height: 400px; max-width: 100%;"></canvas>
+                                </div>
+                                <div id="paginationControlsArea" class="mt-3 d-flex justify-content-center"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
         </section>
 
@@ -211,7 +148,7 @@ $error_log = $this->session->flashdata('error_log');
                                 <!-- DIRECT CHAT DANGER -->
                                 <div class="card card-primary direct-chat direct-chat-primary shadow-lg">
                                     <div class="card-header">
-                                        <h3 class="card-title">TOTAL ASET OFFICE</h3>
+                                        <h3 class="card-title">TOTAL DISTRIBUSI INVOICE</h3>
 
                                         <div class="card-tools">
                                             <button type="button" class="btn btn-tool" data-card-widget="collapse">
@@ -219,6 +156,127 @@ $error_log = $this->session->flashdata('error_log');
                                             </button>
                                         </div>
                                     </div>
+
+                                    <div class="content-header">
+                                        <div class="container-fluid">
+                                            <div class="row mb-2">
+                                                <div class="col-sm-12">
+                                                    <h1 class="m-0 mb-2 text-dark" style="text-align: center;">
+                                                        LIST PIC</h1>
+                                                </div><!-- /.col -->
+                                            </div><!-- /.row -->
+                                        </div><!-- /.container-fluid -->
+                                    </div>
+
+                                    <section class="content">
+
+                                        <div class="container-fluid">
+                                            <!-- Info boxes -->
+                                            <div class="row">
+                                                <!-- fix for small devices only -->
+                                                <div class="clearfix hidden-md-up"></div>
+
+                                                <div class="col-12">
+                                                    <div class="card">
+                                                        <!-- /.card-header -->
+                                                        <div class="card-body table-responsive text-nowrap ">
+                                                            <table id="table_target_pic"
+                                                                class="table table-bordered table-hover">
+                                                                <thead class="bg-info" style="text-align: center;">
+                                                                    <tr>
+                                                                        <th>No</th>
+                                                                        <th>PIC TKM</th>
+                                                                        <th>TARGET INVOICE</th>
+                                                                        <th>ACHIEVED INVOICE</th>
+                                                                        <th>OUTSTANDING</th>
+                                                                        <th>ACHIEVED ( % )</th>
+                                                                        <th>OUTSTANDING ( % )</th>
+                                                                        <th>DETAIL</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <?php
+                                                                    $total = 1;
+
+                                                                    foreach ($getTargetAllPIC as $data):
+
+                                                                        ?>
+
+                                                                        <tr>
+                                                                            <td><?= $total++ ?></td>
+                                                                            <td><?= $data['pic_user'] ?></td>
+                                                                            <td><?php
+                                                                            if ($data['total_target'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['total_target']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?php
+                                                                            if ($data['total_achiev'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['total_achiev']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?php
+                                                                            if ($data['deviasi'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['deviasi']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?= rtrim(rtrim(number_format($data['persen_achiev'], 2, '.', ''), '0'), '.') ?>%
+                                                                            </td>
+                                                                            <td><?= rtrim(rtrim(number_format($data['persen_deviasi'], 2, '.', ''), '0'), '.') ?>%
+                                                                            </td>
+                                                                            <td>
+                                                                                <a href="<?php echo site_url('TargetInvoice/detailBowheer/' . $data['id_bowheer']); ?>"
+                                                                                    class="btn btn-primary"
+                                                                                    style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i
+                                                                                        class=" fas fa-eye"></i></a>
+                                                                            </td>
+                                                                        </tr>
+
+                                                                    <?php endforeach; ?>
+
+                                                                </tbody>
+                                                                <tfoot>
+                                                                    <tr>
+                                                                        <th colspan="2" style="text-align: center;">
+                                                                            TOTAL</th>
+                                                                        <th><span id="totalTargetInvoicePIC">0</span>
+                                                                        </th>
+                                                                        <th><span id="totalAchievInvoicePIC">0</span>
+                                                                        </th>
+                                                                        <th><span id="totalDeviasiInvoicePIC">0</span>
+                                                                        </th>
+                                                                        <th><span
+                                                                                id="totalPersentaseTargetInvoicePIC">0</span>
+                                                                        </th>
+                                                                        <th><span
+                                                                                id="totalPersentaseDeviasiTargetInvoicePIC">0</span>
+                                                                        </th>
+                                                                        </th>
+                                                                        <th></th>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        </div>
+                                                        <!-- /.card-body -->
+                                                    </div>
+                                                    <a href="<?= base_url('TargetInvoice/allBowheer/') ?>"
+                                                        class="text-decoration-none">
+                                                        <h5 class="text-center mb-4 font-weight-bold text-primary"
+                                                            style="text-decoration: underline;">
+                                                            Lihat Rincian Mingguan &#8594;
+                                                        </h5>
+                                                    </a>
+                                                    <div class="row">
+                                                        <!-- ISI -->
+                                                    </div>
+                                                </div>
+                                    </section>
 
 
                                     <div class="content-header">
@@ -334,12 +392,135 @@ $error_log = $this->session->flashdata('error_log');
                                                         <!-- /.card-body -->
                                                     </div>
                                                     <a href="<?= base_url('TargetInvoice/allBowheer/') ?>"
+                                                        class="text-decoration-none">
+                                                        <h5 class="text-center mb-4 font-weight-bold text-primary"
+                                                            style="text-decoration: underline;">
+                                                            Lihat Rincian Mingguan &#8594;
+                                                        </h5>
+                                                    </a>
+                                                    <div class="row">
+                                                        <!-- ISI -->
+                                                    </div>
+                                                </div>
+                                    </section>
+
+                                    <div class="content-header">
+                                        <div class="container-fluid">
+                                            <div class="row mb-2 mt-3">
+                                                <div class="col-sm-12">
+                                                    <h1 class="m-0 mb-2 text-dark" style="text-align: center;">
+                                                        LIST REGIONAL</h1>
+                                                </div><!-- /.col -->
+                                            </div><!-- /.row -->
+                                        </div><!-- /.container-fluid -->
+                                    </div>
+
+                                    <section class="content">
+
+                                        <div class="container-fluid">
+                                            <!-- Info boxes -->
+                                            <div class="row">
+                                                <!-- fix for small devices only -->
+                                                <div class="clearfix hidden-md-up"></div>
+
+                                                <div class="col-12">
+                                                    <div class="card">
+                                                        <!-- /.card-header -->
+                                                        <div class="card-body table-responsive text-nowrap ">
+                                                            <table id="table_target_regional"
+                                                                class="table table-bordered table-hover">
+                                                                <thead class="bg-info" style="text-align: center;">
+                                                                    <tr>
+                                                                        <th>No</th>
+                                                                        <th>REGIONAL</th>
+                                                                        <th>TARGET INVOICE</th>
+                                                                        <th>ACHIEVED INVOICE</th>
+                                                                        <th>OUTSTANDING</th>
+                                                                        <th>ACHIEVED ( % )</th>
+                                                                        <th>OUTSTANDING ( % )</th>
+                                                                        <th>DETAIL</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <?php
+                                                                    $total = 1;
+
+                                                                    foreach ($getTargetAllRegional as $data):
+
+                                                                        ?>
+
+                                                                        <tr>
+                                                                            <td><?= $total++ ?></td>
+                                                                            <td><?= $data['regional_target'] ?></td>
+                                                                            <td><?php
+                                                                            if ($data['total_target'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['total_target']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?php
+                                                                            if ($data['total_achiev'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['total_achiev']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?php
+                                                                            if ($data['deviasi'] == "0") {
+                                                                                echo "-";
+                                                                            } else {
+                                                                                echo number_format(floatval($data['deviasi']), 0, ",", ".");
+                                                                            }
+                                                                            ?></td>
+                                                                            <td><?= rtrim(rtrim(number_format($data['persen_achiev'], 2, '.', ''), '0'), '.') ?>%
+                                                                            </td>
+                                                                            <td><?= rtrim(rtrim(number_format($data['persen_deviasi'], 2, '.', ''), '0'), '.') ?>%
+                                                                            </td>
+                                                                            <td>
+                                                                                <a href="<?php echo site_url('TargetInvoice/detailKota/' . $data['area_target']); ?>"
+                                                                                    class="btn btn-primary"
+                                                                                    style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"><i
+                                                                                        class=" fas fa-eye"></i></a>
+                                                                            </td>
+                                                                        </tr>
+
+                                                                    <?php endforeach; ?>
+
+                                                                </tbody>
+                                                                <tfoot>
+                                                                    <tr>
+                                                                        <th colspan="2" style="text-align: center;">
+                                                                            TOTAL</th>
+                                                                        <th><span
+                                                                                id="totalTargetInvoiceRegional">0</span>
+                                                                        </th>
+                                                                        <th><span
+                                                                                id="totalAchievInvoiceRegional">0</span>
+                                                                        </th>
+                                                                        <th><span
+                                                                                id="totalDeviasiInvoiceRegional">0</span>
+                                                                        </th>
+                                                                        <th><span
+                                                                                id="totalPersentaseTargetInvoiceRegional">0</span>
+                                                                        </th>
+                                                                        <th><span
+                                                                                id="totalPersentaseDeviasiTargetInvoiceRegional">0</span>
+                                                                        </th>
+                                                                        </th>
+                                                                        <th></th>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        </div>
+                                                        <a href="<?= base_url('TargetInvoice/allRegional/') ?>"
                                                             class="text-decoration-none">
                                                             <h5 class="text-center mb-4 font-weight-bold text-primary"
                                                                 style="text-decoration: underline;">
                                                                 Lihat Rincian Mingguan &#8594;
                                                             </h5>
                                                         </a>
+                                                    </div>
                                                     <div class="row">
                                                         <!-- ISI -->
                                                     </div>
@@ -455,7 +636,7 @@ $error_log = $this->session->flashdata('error_log');
                                                                 </tfoot>
                                                             </table>
                                                         </div>
-                                                        <a href="<?= base_url('TargetInvoice/allCity/') ?>"
+                                                        <a href="<?= base_url('TargetInvoice/allRegional/') ?>"
                                                             class="text-decoration-none">
                                                             <h5 class="text-center mb-4 font-weight-bold text-primary"
                                                                 style="text-decoration: underline;">
@@ -673,8 +854,28 @@ $error_log = $this->session->flashdata('error_log');
         })
 
         $(document).ready(function () {
+            $('#table_target_pic').DataTable({
+                "paging": false, // Tetap gunakan pagination
+                "pageLength": 10, // Menampilkan 10 data per halaman
+                "info": false, // Menghilangkan "Showing 1 to X of X entries"
+                "searching": true, // Menghilangkan search bar
+                "lengthChange": false // Menghilangkan dropdown "Show entries"
+            });
+        });
+
+        $(document).ready(function () {
             $('#table_target_bowheer').DataTable({
                 "paging": false, // Tetap gunakan pagination
+                "pageLength": 10, // Menampilkan 10 data per halaman
+                "info": false, // Menghilangkan "Showing 1 to X of X entries"
+                "searching": true, // Menghilangkan search bar
+                "lengthChange": false // Menghilangkan dropdown "Show entries"
+            });
+        });
+
+        $(document).ready(function () {
+            $('#table_target_regional').DataTable({
+                "paging": true, // Tetap gunakan pagination
                 "pageLength": 10, // Menampilkan 10 data per halaman
                 "info": false, // Menghilangkan "Showing 1 to X of X entries"
                 "searching": true, // Menghilangkan search bar
@@ -690,6 +891,66 @@ $error_log = $this->session->flashdata('error_log');
                 "searching": true, // Menghilangkan search bar
                 "lengthChange": false // Menghilangkan dropdown "Show entries"
             });
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+            const table = $('#table_target_pic').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']] // Urut default kolom Kode Aset
+            });
+
+            table.on('order.dt search.dt', function () {
+                table_target_pic
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi untuk menghitung total dari data yang tampil
+            function updateTotal() {
+
+                const data = table.rows({
+                    search: 'applied'
+                }).data();
+
+
+
+                // Hitung total dari kolom Value (index 2)
+                let totalTargetInvoicePIC = 0;
+                let totalAchievInvoicePIC = 0;
+                let totalDeviasiInvoicePIC = 0;
+                let totalPersentaseTargetInvoicePIC = 0;
+                let totalPersentaseDeviasiTargetInvoicePIC = 0;
+
+                data.each(function (row) {
+
+                    totalTargetInvoicePIC += parseFloat(row[2].replace(/\./g, '')) || 0;
+                    totalAchievInvoicePIC += parseFloat(row[3].replace(/\./g, '')) || 0;
+                    totalDeviasiInvoicePIC += parseFloat(row[4].replace(/\./g, '')) || 0;
+                    totalPersentaseTargetInvoicePIC += parseFloat(row[5].replace(/\./g, '')) || 0;
+                    totalPersentaseDeviasiTargetInvoicePIC += parseFloat(row[6].replace(/\./g, '')) || 0;
+                });
+
+                document.getElementById('totalTargetInvoicePIC').innerText = totalTargetInvoicePIC.toLocaleString('id-ID');
+                document.getElementById('totalAchievInvoicePIC').innerText = totalAchievInvoicePIC.toLocaleString('id-ID');
+                document.getElementById('totalDeviasiInvoicePIC').innerText = totalDeviasiInvoicePIC.toLocaleString('id-ID');
+                document.getElementById('totalPersentaseTargetInvoicePIC').innerText = (totalAchievInvoicePIC / totalTargetInvoicePIC * 100).toFixed(2) + " %";
+                document.getElementById('totalPersentaseDeviasiTargetInvoicePIC').innerText = (totalDeviasiInvoicePIC / totalTargetInvoicePIC * 100).toFixed(2) + " %";
+            }
+
+            // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali saat tabel dimuat
+            updateTotal();
         });
 
         $(document).ready(function () {
@@ -758,6 +1019,63 @@ $error_log = $this->session->flashdata('error_log');
 
         $(document).ready(function () {
             $.fn.dataTable.ext.errMode = 'none';
+            const table = $('#table_target_regional').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']] // Urut default kolom Kode Aset
+            });
+
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi untuk menghitung total dari data yang tampil
+            function updateTotal() {
+
+                const data = table.rows({
+                    search: 'applied'
+                }).data();
+
+                let totalTargetInvoiceRegional = 0;
+                let totalAchievInvoiceRegional = 0;
+                let totalDeviasiInvoiceRegional = 0;
+                let totalPersentaseTargetInvoiceRegional = 0;
+                let totalPersentaseDeviasiTargetInvoiceRegional = 0;
+
+
+                data.each(function (row) {
+                    totalTargetInvoiceRegional += parseFloat(row[2].replace(/\./g, '')) || 0;
+                    totalAchievInvoiceRegional += parseFloat(row[3].replace(/\./g, '')) || 0;
+                    totalDeviasiInvoiceRegional += parseFloat(row[4].replace(/\./g, '')) || 0;
+                    totalPersentaseTargetInvoiceRegional += parseFloat(row[5].replace(/\./g, '')) || 0;
+                    totalPersentaseDeviasiTargetInvoiceRegional += parseFloat(row[6].replace(/\./g, '')) || 0;
+                });
+
+                document.getElementById('totalTargetInvoiceRegional').innerText = totalTargetInvoiceRegional.toLocaleString('id-ID');
+                document.getElementById('totalAchievInvoiceRegional').innerText = totalAchievInvoiceRegional.toLocaleString('id-ID');
+                document.getElementById('totalDeviasiInvoiceRegional').innerText = totalDeviasiInvoiceRegional.toLocaleString('id-ID');
+                document.getElementById('totalPersentaseTargetInvoiceRegional').innerText = (totalAchievInvoiceRegional / totalTargetInvoiceRegional * 100).toFixed(2) + " %";
+                document.getElementById('totalPersentaseDeviasiTargetInvoiceRegional').innerText = (totalDeviasiInvoiceRegional / totalTargetInvoiceRegional * 100).toFixed(2) + " %";
+
+            }
+
+            // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali saat tabel dimuat
+            updateTotal();
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
             const table = $('#table_target_city').DataTable({
                 footerCallback: function () {
                     updateTotal();
@@ -811,6 +1129,371 @@ $error_log = $this->session->flashdata('error_log');
 
             // Hitung total pertama kali saat tabel dimuat
             updateTotal();
+        });
+
+        $(function () {
+
+
+            const dataBarInvoicePIC = <?php echo json_encode($getTargetAllPIC); ?>;
+            const invoicePICBar = dataBarInvoicePIC.map(item => item.pic_user);
+            const totalTargetBar = dataBarInvoicePIC.map(item => item.total_target);
+            const achievTargetBar = dataBarInvoicePIC.map(item => item.total_achiev);
+            const deviasiTargetBar = dataBarInvoicePIC.map(item => item.deviasi);
+
+            const originalData = {
+                labels: invoicePICBar, // Semua label asli
+                datasets: [
+                    {
+                        label: 'TARGET',
+                        backgroundColor: '#007bff',
+                        borderColor: '#007bff',
+                        data: totalTargetBar
+                    },
+                    {
+                        label: 'ACHIEVED',
+                        backgroundColor: '#d2d6de',
+                        borderColor: '#d2d6de',
+                        data: achievTargetBar
+                    },
+                    {
+                        label: 'OUTSTANDING',
+                        backgroundColor: '#FD7E14',
+                        borderColor: '#FD7E14',
+                        data: deviasiTargetBar
+                    }
+                ]
+            };
+
+            const itemsPerPage = 10; // Tampilkan 5 data per halaman
+            let currentPagePIC = 1; // Halaman aktif
+            let filterStatePIC = []; // Menyimpan state filter legend
+
+            function getPagedDataPIC(page) {
+                const startIndex = (page - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+
+                // Filter data berdasarkan halaman
+                const pagedLabels = originalData.labels.slice(startIndex, endIndex);
+                const pagedDatasets = originalData.datasets.map((dataset, index) => ({
+                    ...dataset,
+                    data: dataset.data.slice(startIndex, endIndex)
+                }));
+
+                return { labels: pagedLabels, datasets: pagedDatasets };
+            }
+
+            const barChartCanvas = $('#invoice_chart_bar_pic').get(0).getContext('2d');
+            let barChart; // Variabel untuk menyimpan instance Chart.js
+
+            function renderChartPIC(page) {
+                const pagedData = getPagedDataPIC(page);
+
+                if (barChart) {
+                    barChart.destroy(); // Hancurkan chart lama sebelum membuat baru
+                }
+
+                barChart = new Chart(barChartCanvas, {
+                    type: 'bar',
+                    data: pagedData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        datasetFill: false,
+                        plugins: {
+                            legend: {
+                                onClick: function (e, legendItem) {
+                                    const datasetIndex = legendItem.datasetIndex;
+                                    const chart = legendItem.chart;
+
+                                    // Toggle visibility dataset
+                                    const meta = chart.getDatasetMeta(datasetIndex);
+                                    meta.hidden = meta.hidden === null ? !chart.data.datasets[datasetIndex].hidden : null;
+
+                                    // Simpan status filter ke filterStatePIC
+                                    filterStatePIC[datasetIndex] = meta.hidden;
+
+                                    chart.update(); // Update chart setelah perubahan
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Terapkan filter yang disimpan
+                applyFilterStatePICPIC(barChart);
+            }
+
+            function applyFilterStatePICPIC(chart) {
+                if (filterStatePIC.length > 0) {
+                    chart.data.datasets.forEach((dataset, index) => {
+                        const meta = chart.getDatasetMeta(index);
+                        meta.hidden = filterStatePIC[index] || null;
+                    });
+                    chart.update();
+                }
+            }
+
+            function createPaginationControlsPICPIC(totalPages) {
+                const paginationContainer = $('#paginationControlsPIC');
+                paginationContainer.empty(); // Hapus tombol lama
+
+                // Tombol Previous
+                const prevButton = $(`<button class="btn btn-sm btn-secondary m-1">Previous</button>`);
+                prevButton.prop('disabled', currentPagePIC === 1);
+                prevButton.on('click', function () {
+                    if (currentPagePIC > 1) {
+                        currentPagePIC--;
+                        renderChartPIC(currentPagePIC);
+                        highlightActivePagePIC(totalPages);
+                    }
+                });
+                paginationContainer.append(prevButton);
+
+                // Tombol untuk setiap halaman
+                for (let i = 1; i <= totalPages; i++) {
+                    const button = $(`<button class="btn btn-sm btn-primary m-1">${i}</button>`);
+                    if (i === currentPagePIC) {
+                        button.addClass('active'); // Tambahkan class aktif pada halaman saat ini
+                    }
+                    button.on('click', function () {
+                        currentPagePIC = i;
+                        renderChartPIC(currentPagePIC); // Render chart untuk halaman baru
+                        highlightActivePagePIC(totalPages);
+                    });
+                    paginationContainer.append(button);
+                }
+
+                // Tombol Next
+                const nextButton = $(`<button class="btn btn-sm btn-secondary m-1">Next</button>`);
+                nextButton.prop('disabled', currentPagePIC === totalPages);
+                nextButton.on('click', function () {
+                    if (currentPagePIC < totalPages) {
+                        currentPagePIC++;
+                        renderChartPIC(currentPagePIC);
+                        highlightActivePagePIC(totalPages);
+                    }
+                });
+                paginationContainer.append(nextButton);
+            }
+
+            function highlightActivePagePIC(totalPages) {
+                const paginationContainer = $('#paginationControlsPIC');
+                paginationContainer.find('button').removeClass('active'); // Hapus highlight dari semua tombol
+
+                // Highlight tombol aktif
+                paginationContainer
+                    .find('button')
+                    .filter(function () {
+                        return $(this).text() == currentPagePIC || $(this).text() == "Next" || $(this).text() == "Previous";
+                    })
+                    .addClass('active');
+
+                // Perbarui tombol Previous dan Next
+                paginationContainer.find('button:contains("Previous")').prop('disabled', currentPagePIC === 1);
+                paginationContainer.find('button:contains("Next")').prop('disabled', currentPagePIC === totalPages);
+            }
+
+            const totalPages = Math.ceil(originalData.labels.length / itemsPerPage);
+
+            // Inisialisasi
+            renderChartPIC(currentPagePIC);
+            createPaginationControlsPICPIC(totalPages);
+
+
+            //BAR BIASA TANPA SELECTED
+
+            'use strict'
+
+        })
+
+        $(function () {
+
+
+            const dataBarInvoiceArea = <?php echo json_encode($getTargetAllCity); ?>;
+            const invoiceAreaBar = dataBarInvoiceArea.map(item => item.area_target);
+            const totalTargetAreaBar = dataBarInvoiceArea.map(item => item.total_target);
+            const achievTargetAreaBar = dataBarInvoiceArea.map(item => item.total_achiev);
+            const deviasiTargetAreaBar = dataBarInvoiceArea.map(item => item.deviasi);
+
+            const originalData = {
+                labels: invoiceAreaBar, // Semua label asli
+                datasets: [
+                    {
+                        label: 'TARGET',
+                        backgroundColor: '#007bff',
+                        borderColor: '#007bff',
+                        data: totalTargetAreaBar
+                    },
+                    {
+                        label: 'ACHIEVED',
+                        backgroundColor: '#d2d6de',
+                        borderColor: '#d2d6de',
+                        data: achievTargetAreaBar
+                    },
+                    {
+                        label: 'OUTSTANDING',
+                        backgroundColor: '#FD7E14',
+                        borderColor: '#FD7E14',
+                        data: deviasiTargetAreaBar
+                    }
+                ]
+            };
+
+            const itemsPerPage = 5; // Tampilkan 5 data per halaman
+            let currentPageArea = 1; // Halaman aktif
+            let filterStateArea = []; // Menyimpan state filter legend
+
+            function getPagedDataArea(page) {
+                const startIndex = (page - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+
+                // Filter data berdasarkan halaman
+                const pagedLabels = originalData.labels.slice(startIndex, endIndex);
+                const pagedDatasets = originalData.datasets.map((dataset, index) => ({
+                    ...dataset,
+                    data: dataset.data.slice(startIndex, endIndex)
+                }));
+
+                return { labels: pagedLabels, datasets: pagedDatasets };
+            }
+
+            const barChartCanvas = $('#invoice_chart_bar_area').get(0).getContext('2d');
+            let barChart; // Variabel untuk menyimpan instance Chart.js
+
+            function renderChartArea(page) {
+                const pagedData = getPagedDataArea(page);
+
+                if (barChart) {
+                    barChart.destroy(); // Hancurkan chart lama sebelum membuat baru
+                }
+
+                barChart = new Chart(barChartCanvas, {
+                    type: 'bar',
+                    data: pagedData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        datasetFill: false,
+                        plugins: {
+                            legend: {
+                                onClick: function (e, legendItem) {
+                                    const datasetIndex = legendItem.datasetIndex;
+                                    const chart = legendItem.chart;
+
+                                    // Toggle visibility dataset
+                                    const meta = chart.getDatasetMeta(datasetIndex);
+                                    meta.hidden = meta.hidden === null ? !chart.data.datasets[datasetIndex].hidden : null;
+
+                                    // Simpan status filter ke filterStateArea
+                                    filterStateArea[datasetIndex] = meta.hidden;
+
+                                    chart.update(); // Update chart setelah perubahan
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Terapkan filter yang disimpan
+                applyFilterStateAreaArea(barChart);
+            }
+
+            function applyFilterStateAreaArea(chart) {
+                if (filterStateArea.length > 0) {
+                    chart.data.datasets.forEach((dataset, index) => {
+                        const meta = chart.getDatasetMeta(index);
+                        meta.hidden = filterStateArea[index] || null;
+                    });
+                    chart.update();
+                }
+            }
+
+            function createPaginationControlsAreaArea(totalPages) {
+                const paginationContainer = $('#paginationControlsArea');
+                paginationContainer.empty(); // Hapus tombol lama
+
+                // Tombol Previous
+                const prevButton = $(`<button class="btn btn-sm btn-secondary m-1">Previous</button>`);
+                prevButton.prop('disabled', currentPageArea === 1);
+                prevButton.on('click', function () {
+                    if (currentPageArea > 1) {
+                        currentPageArea--;
+                        renderChartArea(currentPageArea);
+                        highlightActivePageArea(totalPages);
+                    }
+                });
+                paginationContainer.append(prevButton);
+
+                // Tombol untuk setiap halaman
+                for (let i = 1; i <= totalPages; i++) {
+                    const button = $(`<button class="btn btn-sm btn-primary m-1">${i}</button>`);
+                    if (i === currentPageArea) {
+                        button.addClass('active'); // Tambahkan class aktif pada halaman saat ini
+                    }
+                    button.on('click', function () {
+                        currentPageArea = i;
+                        renderChartArea(currentPageArea); // Render chart untuk halaman baru
+                        highlightActivePageArea(totalPages);
+                    });
+                    paginationContainer.append(button);
+                }
+
+                // Tombol Next
+                const nextButton = $(`<button class="btn btn-sm btn-secondary m-1">Next</button>`);
+                nextButton.prop('disabled', currentPageArea === totalPages);
+                nextButton.on('click', function () {
+                    if (currentPageArea < totalPages) {
+                        currentPageArea++;
+                        renderChartArea(currentPageArea);
+                        highlightActivePageArea(totalPages);
+                    }
+                });
+                paginationContainer.append(nextButton);
+            }
+
+            function highlightActivePageArea(totalPages) {
+                const paginationContainer = $('#paginationControlsArea');
+                paginationContainer.find('button').removeClass('active'); // Hapus highlight dari semua tombol
+
+                // Highlight tombol aktif
+                paginationContainer
+                    .find('button')
+                    .filter(function () {
+                        return $(this).text() == currentPageArea || $(this).text() == "Next" || $(this).text() == "Previous";
+                    })
+                    .addClass('active');
+
+                // Perbarui tombol Previous dan Next
+                paginationContainer.find('button:contains("Previous")').prop('disabled', currentPageArea === 1);
+                paginationContainer.find('button:contains("Next")').prop('disabled', currentPageArea === totalPages);
+            }
+
+            const totalPages = Math.ceil(originalData.labels.length / itemsPerPage);
+
+            // Inisialisasi
+            renderChartArea(currentPageArea);
+            createPaginationControlsAreaArea(totalPages);
+
+
+            //BAR BIASA TANPA SELECTED
+
+            'use strict'
+
+        })
+
+        $(document).ready(function () {
+            $('.card[data-card-widget="collapse"]').addClass('card-tools');
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            let cardfilter = document.getElementById("cardfiltercollapse").closest(".card");
+            let cardpo = document.getElementById("cardpocollapse").closest(".card");
+            let cardstagging = document.getElementById("cardstaggingcollapse").closest(".card");
+            let cardsummary = document.getElementById("cardsummarycollapse").closest(".card");
+            // cardfilter.classList.add("collapsed-card");
+            cardpo.classList.add("collapsed-card");
+            cardstagging.classList.add("collapsed-card");
+            cardsummary.classList.add("collapsed-card");
         });
 
     </script>

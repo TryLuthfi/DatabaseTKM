@@ -17,12 +17,21 @@ class TargetInvoice extends CI_Controller
 
             $data['title'] = 'TARGET INVOICE';
             $data['judul'] = 'TARGET INVOICE';
+            $data['getTargetAllPIC'] = $this->MTargetInvoice->getTargetAllPIC();
             $data['getTargetAllBowheer'] = $this->MTargetInvoice->getTargetAllBowheer();
+            $data['getTargetAllRegional'] = $this->MTargetInvoice->getTargetAllRegional();
             $data['getTargetAllCity'] = $this->MTargetInvoice->getTargetAllCity();
+
+            $data['getTargetCityFilterBowheer'] = $this->MTargetInvoice->getTargetCityFilterBowheer();
+            $data['getTargetRincianFilterBowheer'] = $this->MTargetInvoice->getTargetRincianFilterBowheer();
+            $data['getTargetBowheerFilterCity'] = $this->MTargetInvoice->getTargetBowheerFilterCity();
+            $data['getTargetRincianFilterCity'] = $this->MTargetInvoice->getTargetRincianFilterCity();
+            $data['getTargetRincianFilterPIC'] = $this->MTargetInvoice->getTargetRincianFilterPIC();
+            $data['getTargetRincianFilterRegional'] = $this->MTargetInvoice->getTargetRincianFilterRegional();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
-            $this->load->view('TargetInvoice/index', $data);
+            $this->load->view('TargetInvoice/indexbaru', $data);
             $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
         } else {

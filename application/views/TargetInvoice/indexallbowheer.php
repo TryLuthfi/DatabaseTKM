@@ -137,8 +137,8 @@ $total = 1;
 
                                 <div class="container-fluid px-0">
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
-                                    <div class="card border-0 shadow-none">
-                                        <div class="card-body table-responsive" style="width:100%;">
+                                    <div class="card border-0 shadow-none w-full">
+                                        <div class="card-body table-responsive w-full" style="width:100%;">
                                     <table id="tabel_targetbowheer_filter_month"
                                         class="table table-bordered table-striped">
                                                 <thead>
@@ -150,7 +150,7 @@ $total = 1;
                                                             style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             PROJECT</th>
                                                         <th rowspan="2"
-                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             TOTAL TARGET</th>
                                                         <th colspan="3"
                                                             style="text-align:center; background-color: aqua;">
@@ -165,19 +165,19 @@ $total = 1;
                                                             DESEMBER
                                                         </th>
                                                         <th rowspan="2"
-                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             TOTAL ACHIEVED
                                                         </th>
                                                         <th rowspan="2"
-                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             DEVIASI
                                                         </th>
                                                         <th rowspan="2"
-                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             ACHIEVED ( % )
                                                         </th>
                                                         <th rowspan="2"
-                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             DEVIASI ( % )
                                                         </th>
                                                     </tr>
@@ -296,24 +296,24 @@ $total = 1;
                                                 <thead>
                                                     <tr>
                                                         <th rowspan="3"
-                                                            style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             No</th>
                                                         <th rowspan="3"
-                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             PROJECT</th>
                                                         <th rowspan="3"
-                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             TOTAL TARGET</th>
                                                         <th colspan="10"
                                                             style="text-align:center; background-color: aqua;">
                                                             OKTOBER
                                                         </th>
                                                         <th rowspan="3"
-                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             TOTAL ACHIEVED
                                                         </th>
                                                         <th rowspan="3"
-                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             DEVIASI
                                                         </th>
                                                     </tr>
@@ -423,15 +423,15 @@ $total = 1;
                                         <thead>
                                             <tr>
                                                 <th rowspan="3"
-                                                    style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     No
                                                 </th>
                                                 <th rowspan="3"
-                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     PROJECT
                                                 </th>
                                                 <th rowspan="3"
-                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     TOTAL TARGET
                                                 </th>
                                                 <th colspan="8"
@@ -439,11 +439,11 @@ $total = 1;
                                                     NOVEMBER
                                                 </th>
                                                 <th rowspan="3"
-                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     TOTAL ACHIEVED
                                                 </th>
                                                 <th rowspan="3"
-                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     DEVIASI
                                                 </th>
                                             </tr>
@@ -547,23 +547,23 @@ $total = 1;
                                         <thead>
                                             <tr>
                                                 <th rowspan="3"
-                                                    style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     No</th>
                                                 <th rowspan="3"
-                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     PROJECT</th>
                                                 <th rowspan="3"
-                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     TOTAL TARGET</th>
                                                 <th colspan="4"
                                                     style="text-align:center; background-color: aquamarine;">
                                                     DESEMBER</th>
                                                 <th rowspan="3"
-                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     TOTAL ACHIEVED
                                                 </th>
                                                 <th rowspan="3"
-                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     DEVIASI
                                                 </th>
                                             </tr>

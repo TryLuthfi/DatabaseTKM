@@ -72,7 +72,7 @@ $total = 1;
                             <!-- TAB NAV PERTAMA -->
                             <div class="tab-pane show active" id="custom-tabs-satu" role="tabpanel"
                                 aria-labelledby="custom-tabs-two-profile-tab">
-                                <table id="tabel_targetbowheer_filter_summary" class="table table-bordered table-striped">
+                                <table id="tabel_targetbowheer_filter_summary" class="table table-bordered table-striped ">
                                     <thead style="text-align: center;">
                                         <tr>
                                             <th>No</th>
@@ -148,9 +148,9 @@ $total = 1;
                                 <div class="container-fluid px-0">
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
                                     <div class="card border-0 shadow-none">
-                                        <div class="card-body p-0">
+                                        <div class="card-body p-0 w-full">
                                             <table id="tabel_targetbowheer_filter_month"
-                                                class="table table-bordered table-striped nowrap w-100">
+                                                class="table table-bordered table-striped nowrap">
                                                 <thead>
                                                     <tr>
                                                         <th rowspan="2"
@@ -175,11 +175,11 @@ $total = 1;
                                                             DESEMBER
                                                         </th>
                                                         <th rowspan="2"
-                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             TOTAL ACHIEVED
                                                         </th>
                                                         <th rowspan="2"
-                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             DEVIASI
                                                         </th>
                                                     </tr>
