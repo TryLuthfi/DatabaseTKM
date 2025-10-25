@@ -477,7 +477,7 @@ $total = 1;
                                                 <?php endfor; ?>
                                                 <tr>
                                                         <th colspan="3">Persentase</th>
-                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                        <?php for ($i = 0; $i < 4; $i++): ?>
                                                             <th colspan="2" style="text-align:end;">0</th>
                                                         <?php endfor; ?>
                                                         <th style="text-align:end;">0</th>
@@ -915,7 +915,7 @@ $total = 1;
 
         const table = $('#tabel_targetbowheer_filter_city2').DataTable({
             footerCallback: function () {
-                updateTotal();
+                updateTotalDanPersentase();
             },
             columnDefs: [
                 { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
@@ -931,7 +931,7 @@ $total = 1;
         }).draw();
 
         // Fungsi utama untuk hitung total otomatis
-        function updateTotal() {
+        function updateTotalDanPersentase() {
             const data = table.rows({ search: 'applied' }).data();
 
             let totalKolom = Array(11).fill(0);
@@ -953,15 +953,38 @@ $total = 1;
                 $(table.column(i + 2).footer()).text(totalFormatted);
             }
 
+            function hitungPersen(target, achieved) {
+                if (target === 0 && achieved > 0) return 100;   // ada hasil tapi target kosong
+                if (target === 0 && achieved === 0) return 0;   // dua-duanya kosong
+                return (achieved / target) * 100;               // normal
+            }
+
+            const persenSeptW1 = hitungPersen(totalKolom[3 - 2], totalKolom[4 - 2]);
+            const persenSeptW2 = hitungPersen(totalKolom[5 - 2], totalKolom[6 - 2]);
+            const persenSeptW3 = hitungPersen(totalKolom[7 - 2], totalKolom[8 - 2]);
+            const persenSeptW4 = hitungPersen(totalKolom[9 - 2], totalKolom[10 - 2]);
+            const persenGrand = hitungPersen(totalKolom[2 - 2], totalKolom[11 - 2]);
+            const persenDeviasi = hitungPersen(totalKolom[2 - 2], totalKolom[12 - 2]);
+
+            let footerRows = $('#tabel_targetbowheer_filter_city2 tfoot tr');
+            let barisPersen = $(footerRows[1]).find('th');
+
+            barisPersen.eq(1).text(persenSeptW1.toFixed(2) + '%');
+            barisPersen.eq(2).text(persenSeptW2.toFixed(2) + '%');
+            barisPersen.eq(3).text(persenSeptW3.toFixed(2) + '%');
+            barisPersen.eq(4).text(persenSeptW4.toFixed(2) + '%');
+            barisPersen.eq(6).text(persenGrand.toFixed(2) + '%');
+            barisPersen.eq(7).text(persenDeviasi.toFixed(2) + '%');
+
         }
 
         // Jalankan ulang total setiap kali tabel berubah
         table.on('draw', function () {
-            updateTotal();
+            updateTotalDanPersentase();
         });
 
         // Hitung total pertama kali
-        updateTotal();
+        updateTotalDanPersentase();
     });
 
     $(document).ready(function () {

@@ -114,6 +114,7 @@ class TargetInvoice extends CI_Controller
 
             $data['title'] = 'TARGET INVOICE - KOTA';
             $data['judul'] = 'TARGET INVOICE - KOTA';
+            $data['getAllData'] = $this->MTargetInvoice->getAllData();
             $data['getTargetBowheerFilterCity'] = $this->MTargetInvoice->getTargetBowheerFilterCity();
             $data['getTargetRincianFilterCity'] = $this->MTargetInvoice->getTargetRincianFilterCity();
 
@@ -126,5 +127,19 @@ class TargetInvoice extends CI_Controller
             redirect('Auth');
         }
     }
-    
+
+    public function get_target_invoice()
+    {
+        $bowheer = $this->input->post('bowheer');
+        $area = $this->input->post('area');
+        $month = $this->input->post('month');
+        $week = $this->input->post('week');
+
+        // Ambil data dari model
+        $this->load->model('MTargetInvoice');
+        $result = $this->MTargetInvoice->getTargetInvoice($bowheer, $area, $month, $week);
+        echo json_encode($result);
+        exit;
+    }
+
 }

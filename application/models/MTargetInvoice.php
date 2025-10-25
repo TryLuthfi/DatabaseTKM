@@ -3,6 +3,14 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MTargetInvoice extends CI_Model
 {
+
+    public function getAllData()
+    {
+        $data = $this->db->query('SELECT * FROM tb_target_invoice tti JOIN tb_master_bowheer_invoice tmbi ON tti.id_bowheer = tmbi.id_bowheer')
+            ->result_array();
+        return $data;
+    }
+
     public function getTargetAllBowheer()
     {
         $data = $this->db->query('SELECT
@@ -287,7 +295,8 @@ FROM
 JOIN tb_master_bowheer_invoice tmb 
     ON tti.id_bowheer = tmb.id_bowheer
 GROUP BY
-    tti.area_target;')
+    tti.area_target
+    ORDER BY `GRAND TOTAL TARGET` DESC;')
             ->result_array();
         return $data;
     }
@@ -347,9 +356,30 @@ FROM
 JOIN tb_master_bowheer_invoice tmb 
     ON tti.id_bowheer = tmb.id_bowheer
 GROUP BY
-    tti.area_target, tmb.nama_bowheer;')
+    tti.area_target
+    ORDER BY `GRAND TOTAL TARGET` DESC;')
             ->result_array();
         return $data;
+    }
+
+    public function getTargetInvoice($bowheer, $area, $month, $week)
+    {
+
+        $id = $this->db->select('id_bowheer')->where('nama_bowheer', $bowheer)->get('tb_master_bowheer_invoice')->row()->id_bowheer;
+
+        $this->db->select('qty_target');
+        $this->db->from('tb_target_invoice');
+        $this->db->where('id_bowheer', $id);
+        $this->db->where('area_target', $area);
+        $this->db->where('month_target', $month);
+        $this->db->where('week_target', $week);
+        $query = $this->db->get();
+
+        if ($query->num_rows() > 0) {
+            return ['qty_target' => $query->row()->qty_target];
+        } else {
+            return ['qty_target' => 0];
+        }
     }
 
 }

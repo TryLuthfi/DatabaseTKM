@@ -3,6 +3,13 @@ $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
 $total = 1;
+
+
+// Ambil hanya yang unik
+$unique_bowheer = array_unique(array_column($getAllData, 'nama_bowheer'));
+$unique_area = array_unique(array_column($getAllData, 'area_target'));
+$unique_month = array_unique(array_column($getAllData, 'month_target'));
+$unique_week = array_unique(array_column($getAllData, 'week_target'));
 ?>
 
 <div class="content-wrapper">
@@ -62,7 +69,8 @@ $total = 1;
                             <!-- TAB NAV PERTAMA -->
                             <div class="tab-pane show active" id="custom-tabs-satu" role="tabpanel"
                                 aria-labelledby="custom-tabs-two-profile-tab">
-                                <table id="tabel_targetbowheer_filter_summary" class="table table-bordered table-striped">
+                                <table id="tabel_targetbowheer_filter_summary"
+                                    class="table table-bordered table-striped">
                                     <thead style="text-align: center;">
                                         <tr>
                                             <th>No</th>
@@ -70,7 +78,6 @@ $total = 1;
                                             <th>TARGET INVOICE</th>
                                             <th>ACHIEVED INVOICE</th>
                                             <th>OUTSTANDING</th>
-                                            <th>DETAIL</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -99,12 +106,6 @@ $total = 1;
                                                     echo number_format(floatval($data['deviasi']), 0, ",", ".");
                                                 }
                                                 ?></td>
-                                                <td>
-                                                    <a href="#" class="btn btn-primary"
-                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                        data-target="#modal-view-Office<?= $data['id_target_invoice'] ?>"
-                                                        data-toggle="modal"><i class="fas fa-eye"></i></a>
-                                                </td>
                                             </tr>
 
                                             <?php
@@ -120,11 +121,13 @@ $total = 1;
                                             </th>
                                             <th><span id="totalSisaInvoiceBowheer">0</span>
                                             </th>
-                                            <th colspan="1"></span>
-                                            </th>
                                         </tr>
                                     </tfoot>
                                 </table>
+                                <div class="modal-footer">
+                                    <a href="#" class="btn btn-success float-right text-bold"
+                                        data-target="#modal-lg-tambah_boq" data-toggle="modal">Tambah Invoice &nbsp;</a>
+                                </div>
                             </div>
 
                             <!-- TAB NAV KEDUA -->
@@ -558,6 +561,86 @@ $total = 1;
             </div>
         </section>
 
+        <form action="<?php echo site_url('MTargetInvoice/addInvoice'); ?>" method="post">
+            <div class="modal fade" id="modal-lg-tambah_boq">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Tambah Invoice</h4>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="form-group col-md-12">
+                                    <label class="col-form-label">Bowheer / Project</label>
+                                    <select id="filter_bowheer" class="form-control" data-placeholder="Pilih Project"
+                                        style="width: 100%;">
+                                        <option value="" selected disabled hidden>Pilih Bowheer</option>
+                                        <?php foreach ($unique_bowheer as $bowheer): ?>
+                                            <option value="<?= $bowheer ?>"><?= $bowheer ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="form-group col-md-12">
+                                    <label class="col-form-label">Area</label>
+                                    <select id="filter_area" class="form-control" data-placeholder="Pilih Area"
+                                        style="width: 100%;">
+                                        <option value="" selected disabled hidden>Pilih Area</option>
+                                        <?php foreach ($unique_area as $area): ?>
+                                            <option value="<?= $area ?>"><?= $area ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="form-group col-md-6">
+                                    <label class="col-form-label">Bulan</label>
+                                    <select id="filter_month" class="form-control" data-placeholder="Pilih Bulan"
+                                        style="width: 100%;">
+                                        <option value="" selected disabled hidden>Pilih Bulan Invoice</option>
+                                        <?php foreach ($unique_month as $month): ?>
+                                            <option value="<?= $month ?>"><?= $month ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label class="col-form-label">Week</label>
+                                    <select id="filter_week" class="form-control" data-placeholder="Pilih Minggu"
+                                        style="width: 100%;">
+                                        <option value="" selected disabled hidden>Pilih Minggu Invoice</option>
+                                        <?php foreach ($unique_week as $week): ?>
+                                            <option value="<?= $week ?>"><?= $week ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-form-label">Target Invoice</label>
+                                <input type="text" class="form-control" name="target_invoice" autocomplete="off"
+                                    placeholder="0" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-form-label">Realisasi Invoice</label>
+                                <input type="text" class="form-control" name="achiev_invoice" autocomplete="off"
+                                    placeholder="0">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+
+                                <button type="submit" name="btnEdit" class="btn btn-primary"><i
+                                        class="fa fa-spinner fa-spin loading" style="display:none"></i>
+                                    Simpan</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
     </div>
     <!-- /.content-wrapper -->
 
@@ -941,6 +1024,49 @@ $total = 1;
 
         // Hitung total pertama kali
         updateTotal();
+    });
+
+    $(document).ready(function () {
+        function loadTargetInvoice() {
+            const bowheer = $('#filter_bowheer').val();
+            const area = $('#filter_area').val();
+            const month = $('#filter_month').val();
+            const week = $('#filter_week').val();
+
+            // Pastikan semua filter sudah dipilih
+            if (bowheer && area && month && week) {
+                $.ajax({
+                    url: "<?= base_url('TargetInvoice/get_target_invoice') ?>",
+                    type: "POST",
+                    dataType: "json",
+                    data: {
+                        bowheer: $('#filter_bowheer').val(),
+                        area: $('#filter_area').val(),
+                        month: $('#filter_month').val(),
+                        week: $('#filter_week').val()
+                    },
+                    success: function (res) {
+                        console.log(res);
+                        let qty = res.qty_target ? parseFloat(res.qty_target) : 0;
+
+                        // Format ke bentuk rupiah dengan titik
+                        let formatted = "Rp " + qty.toLocaleString('id-ID');
+
+                        // Masukkan ke input field
+                        $('[name="target_invoice"]').val(formatted);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error:", error);
+                        console.log(xhr.responseText);
+                    }
+                });
+            }
+        }
+
+        // Jalankan ketika salah satu dropdown berubah
+        $('#filter_bowheer, #filter_area, #filter_month, #filter_week').on('change', function () {
+            loadTargetInvoice();
+        });
     });
 
 
