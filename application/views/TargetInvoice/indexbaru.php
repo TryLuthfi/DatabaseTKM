@@ -11,7 +11,7 @@ $total = 1;
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12 ">
-                    <h1 class="m-0 text-dark" style="text-align: center;">DASHBOARD RKAP 2025 ( ALL PROJECT )</h1>
+                    <h1 class="m-0 text-dark" style="text-align: center;">DASHBOARD TARGET INVOICE ( ALL PROJECT )</h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
