@@ -70,7 +70,7 @@ class TargetInvoice extends CI_Controller
             $data['judul'] = 'TARGET INVOICE';
             $data['filterURL'] = $decoded_url_area;
             $data['getDetailTargetCityFilterBowheer'] = $this->MTargetInvoice->getDetailTargetCityFilterBowheer();
-            $data['getAllTargetRincianInvoice'] = $this->MTargetInvoice->getAllTargetRincianInvoice();
+            $data['getAllTargetRincianInvoiceDecode'] = $this->MTargetInvoice->getAllTargetRincianInvoiceDecode();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');

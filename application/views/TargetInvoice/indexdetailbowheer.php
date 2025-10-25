@@ -196,7 +196,7 @@ $total = 1;
                                                 </thead>
                                                 <tbody>
                                                     <?php $no = 1;
-                                                    foreach ($getAllTargetRincianInvoice as $data):
+                                                    foreach ($getAllTargetRincianInvoiceDecode as $data):
                                                         if($data['id_bowheer'] == $decoded_url_area):
                                                         $target = $data['GRAND TOTAL TARGET'];
                                                         $achiev = $data['GRAND TOTAL ACHIEVED'];
@@ -311,7 +311,7 @@ $total = 1;
                                                 </thead>
                                                 <tbody>
                                                     <?php $no = 1;
-                                                    foreach ($getAllTargetRincianInvoice as $data):
+                                                    foreach ($getAllTargetRincianInvoiceDecode as $data):
                                                         if($data['id_bowheer'] == $decoded_url_area):
                                                         $target = $data['TOTAL TARGET OKTOBER'];
                                                         $achiev = $data['TOTAL ACHIEVED OKTOBER'];
@@ -430,7 +430,7 @@ $total = 1;
                                         </thead>
                                         <tbody>
                                             <?php $no = 1;
-                                            foreach ($getAllTargetRincianInvoice as $data):
+                                            foreach ($getAllTargetRincianInvoiceDecode as $data):
                                                 if($data['id_bowheer'] == $decoded_url_area):
                                                 $target = $data['TOTAL TARGET NOVEMBER'];
                                                 $achiev = $data['TOTAL ACHIEVED NOVEMBER'];
@@ -531,7 +531,7 @@ $total = 1;
                                         </thead>
                                         <tbody>
                                             <?php $no = 1;
-                                            foreach ($getAllTargetRincianInvoice as $data):
+                                            foreach ($getAllTargetRincianInvoiceDecode as $data):
                                                 if($data['id_bowheer'] == $decoded_url_area):
                                                 $target = $data['TOTAL TARGET DESEMBER'];
                                                 $achiev = $data['TOTAL ACHIEVED DESEMBER'];
