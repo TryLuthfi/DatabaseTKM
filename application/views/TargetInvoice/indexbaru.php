@@ -2056,10 +2056,6 @@ $total = 1;
                                         </tr>
                                     </tfoot>
                                 </table>
-                                <div class="modal-footer">
-                                    <a href="#" class="btn btn-success float-right text-bold"
-                                        data-target="#modal-lg-tambah_boq" data-toggle="modal">Tambah Invoice &nbsp;</a>
-                                </div>
                             </div>
 
                             <!-- TAB NAV KEDUA -->
