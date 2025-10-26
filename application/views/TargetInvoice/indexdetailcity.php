@@ -4,7 +4,7 @@ $error_log = $this->session->flashdata('error_log');
 
 $option_aktif = ['AKTIF', 'HILANG', 'TERJUAL'];
 foreach ($getDetailTargetBowheerFilterCity as $data):
-    $judul = "DETAIL TARGET INVOICE - " . $data['nama_bowheer'];
+    $judul = "DETAIL TARGET INVOICE - " . $data['area_target'];
 endforeach;
 
 $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
