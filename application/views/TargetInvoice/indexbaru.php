@@ -786,6 +786,7 @@ $total = 1;
                                         <tr>
                                             <th>No</th>
                                             <th>PROJECT</th>
+                                            <th>PIC</th>
                                             <th>TARGET INVOICE</th>
                                             <th>ACHIEVED INVOICE</th>
                                             <th>OUTSTANDING</th>
@@ -801,6 +802,7 @@ $total = 1;
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['nama_bowheer'] ?></td>
+                                                <td><?= $data['pic_user'] ?></td>
                                                 <td><?php if ($data['total_target'] == "0") {
                                                     echo "-";
                                                 } else {
