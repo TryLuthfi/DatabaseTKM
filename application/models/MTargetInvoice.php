@@ -191,8 +191,8 @@ JOIN tb_master_bowheer_invoice tmb
 FROM tb_target_invoice tti
 JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
-    GROUP BY tmb.pic_user
-    ORDER BY total_target DESC')
+    GROUP BY tti.id_bowheer
+    ORDER BY tmb.pic_user ASC')
             ->result_array();
         return $data;
     }

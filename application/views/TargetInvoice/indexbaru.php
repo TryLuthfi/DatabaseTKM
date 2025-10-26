@@ -839,7 +839,7 @@ $total = 1;
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <th colspan="2">Total</th>
+                                            <th colspan="3">Total</th>
                                             <th><span id="totalTargetInvoiceBowheer">0</span>
                                             </th>
                                             <th><span id="totalAchievedInvoiceBowheer">0</span>
@@ -2862,9 +2862,9 @@ $total = 1;
 
                 data.each(function (row) {
 
-                    totalTargetInvoiceBowheer += parseFloat(row[2].replace(/\./g, '')) || 0;
-                    totalAchievedInvoiceBowheer += parseFloat(row[3].replace(/\./g, '')) || 0;
-                    totalSisaInvoiceBowheer += parseFloat(row[4].replace(/\./g, '')) || 0;
+                    totalTargetInvoiceBowheer += parseFloat(row[3].replace(/\./g, '')) || 0;
+                    totalAchievedInvoiceBowheer += parseFloat(row[4].replace(/\./g, '')) || 0;
+                    totalSisaInvoiceBowheer += parseFloat(row[5].replace(/\./g, '')) || 0;
                 });
 
                 document.getElementById('totalTargetInvoiceBowheer').innerText = totalTargetInvoiceBowheer.toLocaleString('id-ID');
