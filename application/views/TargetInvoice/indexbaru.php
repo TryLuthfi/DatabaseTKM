@@ -406,7 +406,7 @@ $total = 1;
                                                     <tr>
                                                         <th colspan="3">Deviasi</th>
                                                         <?php for ($i = 0; $i < 3; $i++): ?>
-                                                            <th colspan="3" style="text-align: end;">0</th>
+                                                            <th colspan="3" style="text-align: end; font-">0</th>
                                                         <?php endfor; ?>
                                                         <th colspan="4"></th>
                                                     </tr>
