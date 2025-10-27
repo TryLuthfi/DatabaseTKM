@@ -74,7 +74,7 @@ ORDER BY total_target DESC;')
 FROM tb_target_invoice tti
 JOIN tb_master_bowheer_invoice  tmb
     ON tti.id_bowheer = tmb.id_bowheer
-GROUP BY tti.id_bowheer')
+GROUP BY tti.id_bowheer ORDER BY total_target DESC')
             ->result_array();
         return $data;
     }
