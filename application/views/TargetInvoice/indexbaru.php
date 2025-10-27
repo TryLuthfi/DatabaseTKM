@@ -241,7 +241,6 @@ $total = 1;
                                             </th>
                                             <th><span id="totalPersentaseDeviasiTargetInvoicePIC">0</span>
                                             </th>
-                                            </th>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -796,7 +795,7 @@ $total = 1;
                                                     TOTAL ACHIEVED
                                                 </th>
                                                 <th rowspan="3"
-                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    style="text-align:cente r; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     DEVIASI
                                                 </th>
                                                 <th rowspan="3"
@@ -2188,12 +2187,14 @@ $total = 1;
                                             <th>TARGET INVOICE</th>
                                             <th>ACHIEVED INVOICE</th>
                                             <th>OUTSTANDING</th>
+                                            <th>ACHIEVED ( % )</th>
+                                            <th>OUTSTANDING ( % )</th>
                                             <th>DETAIL</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php
-                                        foreach ($getTargetBowheerFilterCity as $data): ?>
+                                        foreach ($getTargetAllCity as $data): ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['area_target'] ?></td>
@@ -2217,6 +2218,10 @@ $total = 1;
                                                     echo number_format(floatval($data['deviasi']), 0, ",", ".");
                                                 }
                                                 ?></td>
+                                                <td><?= rtrim(rtrim(number_format($data['persen_achiev'], 0, '.', ''), '0'), '.') ?>%
+                                                </td>
+                                                <td><?= rtrim(rtrim(number_format($data['persen_deviasi'], 0, '.', ''), '0'), '.') ?>%
+                                                </td>
                                                 <td>
                                                     <a href="<?php echo site_url('TargetInvoice/detailKota/' . $data['area_target']); ?>"
                                                         class="btn btn-primary"><i class=" fas fa-eye"></i></a>
@@ -2236,6 +2241,10 @@ $total = 1;
                                             </th>
                                             <th><span id="totalSisaInvoiceCity">0</span>
                                             </th>
+                                            <th><span id="totalPersentaseTargetInvoiceCity">0</span>
+                                            </th>
+                                            <th><span id="totalPersentaseDeviasiTargetInvoiceCity">0</span>
+                                            </th>
                                             <th></th>
                                         </tr>
                                     </tfoot>
@@ -2249,7 +2258,7 @@ $total = 1;
                                 <div class="container-fluid px-0">
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
                                     <div class="card border-0 shadow-none">
-                                        <div class="card-body p-0">
+                                        <div class="card-body p-0 table-responsive">
                                             <table id="tabel_targetcity_month"
                                                 class="table table-bordered table-striped nowrap w-100">
                                                 <thead>
@@ -2263,15 +2272,15 @@ $total = 1;
                                                         <th rowspan="2"
                                                             style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             TOTAL TARGET</th>
-                                                        <th colspan="2"
+                                                        <th colspan="3"
                                                             style="text-align:center; background-color: aqua;">
                                                             OKTOBER
                                                         </th>
-                                                        <th colspan="2"
+                                                        <th colspan="3"
                                                             style="text-align:center; background-color: aqua;">
                                                             NOVEMBER
                                                         </th>
-                                                        <th colspan="2"
+                                                        <th colspan="3"
                                                             style="text-align:center; background-color: aqua;">
                                                             DESEMBER
                                                         </th>
@@ -2283,6 +2292,14 @@ $total = 1;
                                                             style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             DEVIASI
                                                         </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            ACHIEVED ( % )
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI ( % )
+                                                        </th>
                                                     </tr>
                                                     <tr>
                                                         <!-- OKTOBER -->
@@ -2291,6 +2308,9 @@ $total = 1;
                                                                 TARGET</th>
                                                             <th style="text-align:center; background-color: darkseagreen;">
                                                                 ACHIEVED
+                                                            </th>
+                                                            <th style="text-align:center; background-color: blueviolet;">
+                                                                %
                                                             </th>
                                                         <?php endfor; ?>
                                                     </tr>
@@ -2312,17 +2332,66 @@ $total = 1;
                                                             </td>
                                                             <td><?= ($data['TOTAL ACHIEVED OKTOBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED OKTOBER']), 0, ",", ".") : '-') ?>
                                                             </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET OKTOBER'] > 0 && $data['TOTAL ACHIEVED OKTOBER'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED OKTOBER'] / $data['TOTAL TARGET OKTOBER']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
                                                             <td><?= ($data['TOTAL TARGET NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET NOVEMBER']), 0, ",", ".") : '-') ?>
                                                             </td>
                                                             <td><?= ($data['TOTAL ACHIEVED NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET NOVEMBER'] > 0 && $data['TOTAL ACHIEVED NOVEMBER'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED NOVEMBER'] / $data['TOTAL TARGET NOVEMBER']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
                                                             </td>
                                                             <td><?= ($data['TOTAL TARGET DESEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET DESEMBER']), 0, ",", ".") : '-') ?>
                                                             </td>
                                                             <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED DESEMBER']), 0, ",", ".") : '-') ?>
                                                             </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET DESEMBER'] > 0 && $data['TOTAL ACHIEVED DESEMBER'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED DESEMBER'] / $data['TOTAL TARGET DESEMBER']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
                                                             <td><?= ($data['GRAND TOTAL ACHIEVED'] != 0 ? number_format(floatval($data['GRAND TOTAL ACHIEVED']), 0, ",", ".") : '-') ?>
                                                             </td>
                                                             <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['GRAND TOTAL ACHIEVED'] > 0 && $data['GRAND TOTAL TARGET'] > 0) {
+                                                                    $persentase = ($data['GRAND TOTAL ACHIEVED'] / $data['GRAND TOTAL TARGET']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if (!empty($data['GRAND TOTAL TARGET']) && $data['GRAND TOTAL TARGET'] != 0) {
+                                                                    echo number_format(($deviasi / $data['GRAND TOTAL TARGET'] * 100), 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
                                                             </td>
                                                         </tr>
                                                     <?php endforeach; ?>
@@ -2330,7 +2399,7 @@ $total = 1;
                                                 <tfoot>
                                                     <tr>
                                                         <th colspan="2">Total</th>
-                                                        <?php for ($i = 0; $i < 9; $i++): ?>
+                                                        <?php for ($i = 0; $i < 14; $i++): ?>
                                                             <th>0</th>
                                                         <?php endfor; ?>
                                                     </tr>
@@ -2348,7 +2417,7 @@ $total = 1;
                                 <div class="container-fluid px-0">
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
                                     <div class="card border-0 shadow-none">
-                                        <div class="card-body p-0">
+                                        <div class="card-body p-0 table-responsive md:w-auto">
                                             <table id="tabel_targetcity_oktober"
                                                 class="table table-bordered table-striped nowrap w-100">
                                                 <thead>
@@ -2362,7 +2431,7 @@ $total = 1;
                                                         <th rowspan="3"
                                                             style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             TOTAL TARGET</th>
-                                                        <th colspan="10"
+                                                        <th colspan="15"
                                                             style="text-align:center; background-color: aqua;">
                                                             OKTOBER
                                                         </th>
@@ -2374,26 +2443,34 @@ $total = 1;
                                                             style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             DEVIASI
                                                         </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            ACHIEVED ( % )
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI ( % )
+                                                        </th>
                                                     </tr>
                                                     <tr>
                                                         <!-- OKTOBER -->
-                                                        <th colspan="2"
+                                                        <th colspan="3"
                                                             style="text-align:center; background-color: aqua;">WEEK
                                                             1
                                                         </th>
-                                                        <th colspan="2"
+                                                        <th colspan="3"
                                                             style="text-align:center; background-color: aqua;">WEEK
                                                             2
                                                         </th>
-                                                        <th colspan="2"
+                                                        <th colspan="3"
                                                             style="text-align:center; background-color: aqua;">WEEK
                                                             3
                                                         </th>
-                                                        <th colspan="2"
+                                                        <th colspan="3"
                                                             style="text-align:center; background-color: aqua;">WEEK
                                                             4
                                                         </th>
-                                                        <th colspan="2"
+                                                        <th colspan="3"
                                                             style="text-align:center; background-color: aqua;">WEEK
                                                             5
                                                         </th>
@@ -2405,6 +2482,9 @@ $total = 1;
                                                                 TARGET</th>
                                                             <th style="text-align:center; background-color: darkseagreen;">
                                                                 ACHIEVED
+                                                            </th>
+                                                            <th style="text-align:center; background-color: blueviolet;">
+                                                                %
                                                             </th>
                                                         <?php endfor; ?>
                                                     </tr>
@@ -2426,25 +2506,94 @@ $total = 1;
                                                             </td>
                                                             <td><?= ($data['RW1 OKTOBER'] != 0 ? number_format(floatval($data['RW1 OKTOBER']), 0, ",", ".") : '-') ?>
                                                             </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW1 OKTOBER'] > 0 && $data['RW1 OKTOBER'] > 0) {
+                                                                    $persentase = ($data['RW1 OKTOBER'] / $data['TW1 OKTOBER']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
                                                             <td><?= ($data['TW2 OKTOBER'] != 0 ? number_format(floatval($data['TW2 OKTOBER']), 0, ",", ".") : '-') ?>
                                                             </td>
                                                             <td><?= ($data['RW2 OKTOBER'] != 0 ? number_format(floatval($data['RW2 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW2 OKTOBER'] > 0 && $data['RW2 OKTOBER'] > 0) {
+                                                                    $persentase = ($data['RW2 OKTOBER'] / $data['TW2 OKTOBER']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
                                                             </td>
                                                             <td><?= ($data['TW3 OKTOBER'] != 0 ? number_format(floatval($data['TW3 OKTOBER']), 0, ",", ".") : '-') ?>
                                                             </td>
                                                             <td><?= ($data['RW3 OKTOBER'] != 0 ? number_format(floatval($data['RW3 OKTOBER']), 0, ",", ".") : '-') ?>
                                                             </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW3 OKTOBER'] > 0 && $data['RW3 OKTOBER'] > 0) {
+                                                                    $persentase = ($data['RW3 OKTOBER'] / $data['TW3 OKTOBER']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
                                                             <td><?= ($data['TW4 OKTOBER'] != 0 ? number_format(floatval($data['TW4 OKTOBER']), 0, ",", ".") : '-') ?>
                                                             </td>
                                                             <td><?= ($data['RW4 OKTOBER'] != 0 ? number_format(floatval($data['RW4 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW4 OKTOBER'] > 0 && $data['RW4 OKTOBER'] > 0) {
+                                                                    $persentase = ($data['RW4 OKTOBER'] / $data['TW4 OKTOBER']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
                                                             </td>
                                                             <td><?= ($data['TW5 OKTOBER'] != 0 ? number_format(floatval($data['TW5 OKTOBER']), 0, ",", ".") : '-') ?>
                                                             </td>
                                                             <td><?= ($data['RW5 OKTOBER'] != 0 ? number_format(floatval($data['RW5 OKTOBER']), 0, ",", ".") : '-') ?>
                                                             </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW5 OKTOBER'] > 0 && $data['RW5 OKTOBER'] > 0) {
+                                                                    $persentase = ($data['RW5 OKTOBER'] / $data['TW5 OKTOBER']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
                                                             <td><?= ($data['TOTAL ACHIEVED OKTOBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED OKTOBER']), 0, ",", ".") : '-') ?>
                                                             </td>
                                                             <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL ACHIEVED OKTOBER'] > 0 && $data['TOTAL TARGET OKTOBER'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED OKTOBER'] / $data['TOTAL TARGET OKTOBER']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if (!empty($data['TOTAL TARGET OKTOBER']) && $data['TOTAL TARGET OKTOBER'] != 0) {
+                                                                    echo number_format(($deviasi / $data['TOTAL TARGET OKTOBER'] * 100), 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
                                                             </td>
                                                         </tr>
                                                     <?php endforeach; ?>
@@ -2452,7 +2601,7 @@ $total = 1;
                                                 <tfoot>
                                                     <tr>
                                                         <th colspan="2">Total</th>
-                                                        <?php for ($i = 0; $i < 13; $i++): ?>
+                                                        <?php for ($i = 0; $i < 20; $i++): ?>
                                                             <th>0</th>
                                                         <?php endfor; ?>
                                                     </tr>
@@ -2483,7 +2632,7 @@ $total = 1;
                                                     style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     TOTAL TARGET
                                                 </th>
-                                                <th colspan="8"
+                                                <th colspan="12"
                                                     style="text-align:center; background-color: blueviolet; color: #ffffff;">
                                                     NOVEMBER
                                                 </th>
@@ -2495,21 +2644,29 @@ $total = 1;
                                                     style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     DEVIASI
                                                 </th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    ACHIEVED ( % )
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    DEVIASI ( % )
+                                                </th>
                                             </tr>
                                             </tr>
 
                                             <tr>
                                                 <!-- NOVEMBER -->
-                                                <th colspan="2"
+                                                <th colspan="3"
                                                     style="text-align:center; background-color: blueviolet; color: #ffffff;">
                                                     WEEK 1</th>
-                                                <th colspan="2"
+                                                <th colspan="3"
                                                     style="text-align:center; background-color: blueviolet; color: #ffffff;">
                                                     WEEK 2</th>
-                                                <th colspan="2"
+                                                <th colspan="3"
                                                     style="text-align:center; background-color: blueviolet; color: #ffffff;">
                                                     WEEK 3</th>
-                                                <th colspan="2"
+                                                <th colspan="3"
                                                     style="text-align:center; background-color: blueviolet; color: #ffffff;">
                                                     WEEK 4</th>
                                             </tr>
@@ -2523,6 +2680,9 @@ $total = 1;
                                                     <th
                                                         style="text-align:center; background-color: darkseagreen; color: #000000;">
                                                         ACHIEVED</th>
+                                                    <th style="text-align:center; background-color: blueviolet;">
+                                                        %
+                                                    </th>
                                                 <?php endfor; ?>
                                             </tr>
                                         </thead>
@@ -2545,22 +2705,80 @@ $total = 1;
                                                     </td>
                                                     <td><?= ($data['RW1 NOVEMBER'] != 0 ? number_format(floatval($data['RW1 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
+                                                    <td>
+                                                        <?php
+                                                        if ($data['TW1 NOVEMBER'] > 0 && $data['RW1 NOVEMBER'] > 0) {
+                                                            $persentase = ($data['RW1 NOVEMBER'] / $data['TW1 NOVEMBER']) * 100;
+                                                            echo number_format($persentase, 0, ",", ".") . '%';
+                                                        } else {
+                                                            echo '-';
+                                                        }
+                                                        ?>
+                                                    </td>
                                                     <td><?= ($data['TW2 NOVEMBER'] != 0 ? number_format(floatval($data['TW2 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
                                                     <td><?= ($data['RW2 NOVEMBER'] != 0 ? number_format(floatval($data['RW2 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php
+                                                        if ($data['TW2 NOVEMBER'] > 0 && $data['RW2 NOVEMBER'] > 0) {
+                                                            $persentase = ($data['RW2 NOVEMBER'] / $data['TW2 NOVEMBER']) * 100;
+                                                            echo number_format($persentase, 0, ",", ".") . '%';
+                                                        } else {
+                                                            echo '-';
+                                                        }
+                                                        ?>
                                                     </td>
                                                     <td><?= ($data['TW3 NOVEMBER'] != 0 ? number_format(floatval($data['TW3 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
                                                     <td><?= ($data['RW3 NOVEMBER'] != 0 ? number_format(floatval($data['RW3 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
+                                                    <td>
+                                                        <?php
+                                                        if ($data['TW3 NOVEMBER'] > 0 && $data['RW3 NOVEMBER'] > 0) {
+                                                            $persentase = ($data['RW3 NOVEMBER'] / $data['TW3 NOVEMBER']) * 100;
+                                                            echo number_format($persentase, 0, ",", ".") . '%';
+                                                        } else {
+                                                            echo '-';
+                                                        }
+                                                        ?>
+                                                    </td>
                                                     <td><?= ($data['TW4 NOVEMBER'] != 0 ? number_format(floatval($data['TW4 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
                                                     <td><?= ($data['RW4 NOVEMBER'] != 0 ? number_format(floatval($data['RW4 NOVEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
+                                                    <td>
+                                                        <?php
+                                                        if ($data['TW4 NOVEMBER'] > 0 && $data['RW4 NOVEMBER'] > 0) {
+                                                            $persentase = ($data['RW4 NOVEMBER'] / $data['TW4 NOVEMBER']) * 100;
+                                                            echo number_format($persentase, 0, ",", ".") . '%';
+                                                        } else {
+                                                            echo '-';
+                                                        }
+                                                        ?>
 
                                                     <td><?= ($data['TOTAL ACHIEVED NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED NOVEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
                                                     <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php
+                                                        if ($data['TOTAL ACHIEVED NOVEMBER'] > 0 && $data['TOTAL TARGET NOVEMBER'] > 0) {
+                                                            $persentase = ($data['TOTAL ACHIEVED NOVEMBER'] / $data['TOTAL TARGET NOVEMBER']) * 100;
+                                                            echo number_format($persentase, 0, ",", ".") . '%';
+                                                        } else {
+                                                            echo '-';
+                                                        }
+                                                        ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php
+                                                        if (!empty($data['TOTAL TARGET NOVEMBER']) && $data['TOTAL TARGET NOVEMBER'] != 0) {
+                                                            echo number_format(($deviasi / $data['TOTAL TARGET NOVEMBER'] * 100), 0, ",", ".") . '%';
+                                                        } else {
+                                                            echo '-';
+                                                        }
+                                                        ?>
                                                     </td>
 
                                                 </tr>
@@ -2569,7 +2787,7 @@ $total = 1;
                                         <tfoot>
                                             <tr>
                                                 <th colspan="2">Total</th>
-                                                <?php for ($i = 0; $i < 11; $i++): ?>
+                                                <?php for ($i = 0; $i < 17; $i++): ?>
                                                     <th>0</th>
                                                 <?php endfor; ?>
                                             </tr>
@@ -2595,7 +2813,7 @@ $total = 1;
                                                 <th rowspan="3"
                                                     style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     TOTAL TARGET</th>
-                                                <th colspan="4"
+                                                <th colspan="6"
                                                     style="text-align:center; background-color: aquamarine;">
                                                     DESEMBER</th>
                                                 <th rowspan="3"
@@ -2606,13 +2824,21 @@ $total = 1;
                                                     style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     DEVIASI
                                                 </th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    ACHIEVED ( % )
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    DEVIASI ( % )
+                                                </th>
                                             </tr>
                                             <tr>
                                                 <!-- DESEMBER -->
-                                                <th colspan="2"
+                                                <th colspan="3"
                                                     style="text-align:center; background-color: aquamarine;">
                                                     WEEK 1</th>
-                                                <th colspan="2"
+                                                <th colspan="3"
                                                     style="text-align:center; background-color: aquamarine;">
                                                     WEEK 2</th>
                                             </tr>
@@ -2621,6 +2847,9 @@ $total = 1;
                                                 <?php for ($i = 0; $i < 2; $i++): ?>
                                                     <th style="text-align:center; background-color: indianred;">TARGET</th>
                                                     <th style="text-align:center; background-color: darkseagreen;">ACHIEVED
+                                                    </th>
+                                                    <th style="text-align:center; background-color: blueviolet;">
+                                                        %
                                                     </th>
                                                 <?php endfor; ?>
                                             </tr>
@@ -2641,13 +2870,52 @@ $total = 1;
                                                     </td>
                                                     <td><?= ($data['RW1 DESEMBER'] != 0 ? number_format(floatval($data['RW1 DESEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
+                                                    <td>
+                                                        <?php
+                                                        if ($data['TW1 DESEMBER'] > 0 && $data['RW1 DESEMBER'] > 0) {
+                                                            $persentase = ($data['RW1 DESEMBER'] / $data['TW1 DESEMBER']) * 100;
+                                                            echo number_format($persentase, 0, ",", ".") . '%';
+                                                        } else {
+                                                            echo '-';
+                                                        }
+                                                        ?>
+                                                    </td>
                                                     <td><?= ($data['TW2 DESEMBER'] != 0 ? number_format(floatval($data['TW2 DESEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
                                                     <td><?= ($data['RW2 DESEMBER'] != 0 ? number_format(floatval($data['RW2 DESEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
+                                                    <td>
+                                                        <?php
+                                                        if ($data['TW2 DESEMBER'] > 0 && $data['RW2 DESEMBER'] > 0) {
+                                                            $persentase = ($data['RW2 DESEMBER'] / $data['TW2 DESEMBER']) * 100;
+                                                            echo number_format($persentase, 0, ",", ".") . '%';
+                                                        } else {
+                                                            echo '-';
+                                                        }
+                                                        ?>
+                                                    </td>
                                                     <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED DESEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
                                                     <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php
+                                                        if ($data['TOTAL ACHIEVED DESEMBER'] > 0 && $data['TOTAL TARGET DESEMBER'] > 0) {
+                                                            $persentase = ($data['TOTAL ACHIEVED DESEMBER'] / $data['TOTAL TARGET DESEMBER']) * 100;
+                                                            echo number_format($persentase, 0, ",", ".") . '%';
+                                                        } else {
+                                                            echo '-';
+                                                        }
+                                                        ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php
+                                                        if (!empty($data['TOTAL TARGET DESEMBER']) && $data['TOTAL TARGET DESEMBER'] != 0) {
+                                                            echo number_format(($deviasi / $data['TOTAL TARGET DESEMBER'] * 100), 0, ",", ".") . '%';
+                                                        } else {
+                                                            echo '-';
+                                                        }
+                                                        ?>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -2655,7 +2923,7 @@ $total = 1;
                                         <tfoot>
                                             <tr>
                                                 <th colspan="2">Total</th>
-                                                <?php for ($i = 0; $i < 7; $i++): ?>
+                                                <?php for ($i = 0; $i < 11; $i++): ?>
                                                     <th>0</th>
                                                 <?php endfor; ?>
                                             </tr>
@@ -3383,20 +3651,26 @@ $total = 1;
 
 
                 // Hitung total dari kolom Value (index 2)
-                let totalTargetInvoiceBowheer = 0;
-                let totalAchievedInvoiceBowheer = 0;
-                let totalSisaInvoiceBowheer = 0;
+                let totalTargetInvoiceCity = 0;
+                let totalAchievedInvoiceCity = 0;
+                let totalSisaInvoiceCity = 0;
+                let totalPersentaseTargetInvoiceCity = 0;
+                let totalPersentaseDeviasiTargetInvoiceCity = 0;
 
                 data.each(function (row) {
 
-                    totalTargetInvoiceBowheer += parseFloat(row[2].replace(/\./g, '')) || 0;
-                    totalAchievedInvoiceBowheer += parseFloat(row[3].replace(/\./g, '')) || 0;
-                    totalSisaInvoiceBowheer += parseFloat(row[4].replace(/\./g, '')) || 0;
+                    totalTargetInvoiceCity += parseFloat(row[2].replace(/\./g, '')) || 0;
+                    totalAchievedInvoiceCity += parseFloat(row[3].replace(/\./g, '')) || 0;
+                    totalSisaInvoiceCity += parseFloat(row[4].replace(/\./g, '')) || 0;
+                    totalPersentaseTargetInvoiceCity += parseFloat(row[5].replace(/\./g, '')) || 0;
+                    totalPersentaseDeviasiTargetInvoiceCity += parseFloat(row[6].replace(/\./g, '')) || 0;
                 });
 
-                document.getElementById('totalTargetInvoiceCity').innerText = totalTargetInvoiceBowheer.toLocaleString('id-ID');
-                document.getElementById('totalAchievedInvoiceCity').innerText = totalAchievedInvoiceBowheer.toLocaleString('id-ID');
-                document.getElementById('totalSisaInvoiceCity').innerText = totalSisaInvoiceBowheer.toLocaleString('id-ID');
+                document.getElementById('totalTargetInvoiceCity').innerText = totalTargetInvoiceCity.toLocaleString('id-ID');
+                document.getElementById('totalAchievedInvoiceCity').innerText = totalAchievedInvoiceCity.toLocaleString('id-ID');
+                document.getElementById('totalSisaInvoiceCity').innerText = totalSisaInvoiceCity.toLocaleString('id-ID');
+                document.getElementById('totalPersentaseTargetInvoiceCity').innerText = (totalAchievedInvoiceCity / totalTargetInvoiceCity * 100).toFixed(0) + " %";
+                document.getElementById('totalPersentaseDeviasiTargetInvoiceCity').innerText = (totalSisaInvoiceCity / totalTargetInvoiceCity * 100).toFixed(0) + " %";
             }
 
             // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
@@ -3412,6 +3686,228 @@ $total = 1;
             $.fn.dataTable.ext.errMode = 'none';
 
             const table = $('#tabel_targetcity_month').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Tambah nomor otomatis di kolom pertama
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi utama untuk hitung total otomatis
+            function updateTotal() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                let totalKolom = Array(14).fill(0);
+
+                data.each(function (row) {
+                    for (let i = 2; i < 16; i++) { // misal kolom angka mulai dari index ke-2
+                        // Hapus titik dan koma dulu
+                        let value = row[i]
+                            .toString()
+                            .replace(/\./g, '')   // hapus titik
+                            .replace(/,/g, '')    // hapus koma
+                            .replace(/[^0-9-]/g, ''); // hapus selain angka
+                        totalKolom[i - 2] += parseFloat(value) || 0;
+                    }
+                });
+
+                for (let i = 0; i < totalKolom.length; i++) {
+                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    $(table.column(i + 2).footer()).text(totalFormatted);
+                }
+
+                function hitungPersen(target, achieved) {
+                    if (target === 0 && achieved > 0) return 100;
+                    if (target === 0 && achieved === 0) return 0;
+                    return (achieved / target) * 100;
+                }
+
+                const persenOktober = hitungPersen(totalKolom[1], totalKolom[2]);
+                const persenNovember = hitungPersen(totalKolom[4], totalKolom[5]);
+                const persenDesember = hitungPersen(totalKolom[7], totalKolom[8]);
+                const persenGrand = hitungPersen(totalKolom[0], totalKolom[10]);
+                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[11]);
+
+                $(table.column(5).footer()).text(persenOktober.toFixed(0) + ' %');
+                $(table.column(8).footer()).text(persenNovember.toFixed(0) + ' %');
+                $(table.column(11).footer()).text(persenDesember.toFixed(0) + ' %');
+                $(table.column(14).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(15).footer()).text(persenDeviasi.toFixed(0) + ' %');
+
+            }
+
+            // Jalankan ulang total setiap kali tabel berubah
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali
+            updateTotal();
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetcity_oktober').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Tambah nomor otomatis di kolom pertama
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi utama untuk hitung total otomatis
+            function updateTotal() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                let totalKolom = Array(18).fill(0);
+
+                data.each(function (row) {
+                    for (let i = 2; i < 20; i++) { // misal kolom angka mulai dari index ke-2
+                        // Hapus titik dan koma dulu
+                        let value = row[i]
+                            .toString()
+                            .replace(/\./g, '')   // hapus titik
+                            .replace(/,/g, '')    // hapus koma
+                            .replace(/[^0-9-]/g, ''); // hapus selain angka
+                        totalKolom[i - 2] += parseFloat(value) || 0;
+                    }
+                });
+
+                for (let i = 0; i < totalKolom.length; i++) {
+                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    $(table.column(i + 2).footer()).text(totalFormatted);
+                }
+
+                function hitungPersen(target, achieved) {
+                    if (target === 0 && achieved > 0) return 100;
+                    if (target === 0 && achieved === 0) return 0;
+                    return (achieved / target) * 100;
+                }
+
+                const persenW1Oktober = hitungPersen(totalKolom[1], totalKolom[2]);
+                const persenW2Oktober = hitungPersen(totalKolom[4], totalKolom[5]);
+                const persenW3Oktober = hitungPersen(totalKolom[7], totalKolom[8]);
+                const persenW4Oktober = hitungPersen(totalKolom[10], totalKolom[11]);
+                const persenW5Oktober = hitungPersen(totalKolom[13], totalKolom[14]);
+                const persenGrand = hitungPersen(totalKolom[0], totalKolom[16]);
+                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[17]);
+
+                $(table.column(5).footer()).text(persenW1Oktober.toFixed(0) + ' %');
+                $(table.column(8).footer()).text(persenW2Oktober.toFixed(0) + ' %');
+                $(table.column(11).footer()).text(persenW3Oktober.toFixed(0) + ' %');
+                $(table.column(14).footer()).text(persenW4Oktober.toFixed(0) + ' %');
+                $(table.column(17).footer()).text(persenW5Oktober.toFixed(0) + ' %');
+                $(table.column(20).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(21).footer()).text(persenDeviasi.toFixed(0) + ' %');
+
+            }
+
+            // Jalankan ulang total setiap kali tabel berubah
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali
+            updateTotal();
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetcity_november').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Tambah nomor otomatis di kolom pertama
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi utama untuk hitung total otomatis
+            function updateTotal() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                let totalKolom = Array(15).fill(0);
+
+                data.each(function (row) {
+                    for (let i = 2; i < 17; i++) { // misal kolom angka mulai dari index ke-2
+                        // Hapus titik dan koma dulu
+                        let value = row[i]
+                            .toString()
+                            .replace(/\./g, '')   // hapus titik
+                            .replace(/,/g, '')    // hapus koma
+                            .replace(/[^0-9-]/g, ''); // hapus selain angka
+                        totalKolom[i - 2] += parseFloat(value) || 0;
+                    }
+                });
+
+                for (let i = 0; i < totalKolom.length; i++) {
+                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    $(table.column(i + 2).footer()).text(totalFormatted);
+                }
+
+                function hitungPersen(target, achieved) {
+                    if (target === 0 && achieved > 0) return 100;
+                    if (target === 0 && achieved === 0) return 0;
+                    return (achieved / target) * 100;
+                }
+
+                const persenW1November = hitungPersen(totalKolom[1], totalKolom[2]);
+                const persenW2November = hitungPersen(totalKolom[4], totalKolom[5]);
+                const persenW3November = hitungPersen(totalKolom[7], totalKolom[8]);
+                const persenW4November = hitungPersen(totalKolom[10], totalKolom[11]);
+                const persenGrand = hitungPersen(totalKolom[0], totalKolom[13]);
+                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[14]);
+
+                $(table.column(5).footer()).text(persenW1November.toFixed(0) + ' %');
+                $(table.column(8).footer()).text(persenW2November.toFixed(0) + ' %');
+                $(table.column(11).footer()).text(persenW3November.toFixed(0) + ' %');
+                $(table.column(14).footer()).text(persenW4November.toFixed(0) + ' %');
+                $(table.column(17).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(18).footer()).text(persenDeviasi.toFixed(0) + ' %');
+
+            }
+
+            // Jalankan ulang total setiap kali tabel berubah
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali
+            updateTotal();
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetcity_desember').DataTable({
                 footerCallback: function () {
                     updateTotal();
                 },
@@ -3451,167 +3947,21 @@ $total = 1;
                     $(table.column(i + 2).footer()).text(totalFormatted);
                 }
 
-            }
-
-            // Jalankan ulang total setiap kali tabel berubah
-            table.on('draw', function () {
-                updateTotal();
-            });
-
-            // Hitung total pertama kali
-            updateTotal();
-        });
-
-        $(document).ready(function () {
-            $.fn.dataTable.ext.errMode = 'none';
-
-            const table = $('#tabel_targetcity_oktober').DataTable({
-                footerCallback: function () {
-                    updateTotal();
-                },
-                columnDefs: [
-                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
-                ],
-                order: [[1, 'asc']]
-            });
-
-            // Tambah nomor otomatis di kolom pertama
-            table.on('order.dt search.dt', function () {
-                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
-                    cell.innerHTML = i + 1;
-                });
-            }).draw();
-
-            // Fungsi utama untuk hitung total otomatis
-            function updateTotal() {
-                const data = table.rows({ search: 'applied' }).data();
-
-                let totalKolom = Array(13).fill(0);
-
-                data.each(function (row) {
-                    for (let i = 2; i < 15; i++) { // misal kolom angka mulai dari index ke-2
-                        // Hapus titik dan koma dulu
-                        let value = row[i]
-                            .toString()
-                            .replace(/\./g, '')   // hapus titik
-                            .replace(/,/g, '')    // hapus koma
-                            .replace(/[^0-9-]/g, ''); // hapus selain angka
-                        totalKolom[i - 2] += parseFloat(value) || 0;
-                    }
-                });
-
-                for (let i = 0; i < totalKolom.length; i++) {
-                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
-                    $(table.column(i + 2).footer()).text(totalFormatted);
+                function hitungPersen(target, achieved) {
+                    if (target === 0 && achieved > 0) return 100;
+                    if (target === 0 && achieved === 0) return 0;
+                    return (achieved / target) * 100;
                 }
 
-            }
+                const persenW1Desember = hitungPersen(totalKolom[1], totalKolom[2]);
+                const persenW2Desember = hitungPersen(totalKolom[4], totalKolom[5]);
+                const persenGrand = hitungPersen(totalKolom[0], totalKolom[7]);
+                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[8]);
 
-            // Jalankan ulang total setiap kali tabel berubah
-            table.on('draw', function () {
-                updateTotal();
-            });
-
-            // Hitung total pertama kali
-            updateTotal();
-        });
-
-        $(document).ready(function () {
-            $.fn.dataTable.ext.errMode = 'none';
-
-            const table = $('#tabel_targetcity_november').DataTable({
-                footerCallback: function () {
-                    updateTotal();
-                },
-                columnDefs: [
-                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
-                ],
-                order: [[1, 'asc']]
-            });
-
-            // Tambah nomor otomatis di kolom pertama
-            table.on('order.dt search.dt', function () {
-                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
-                    cell.innerHTML = i + 1;
-                });
-            }).draw();
-
-            // Fungsi utama untuk hitung total otomatis
-            function updateTotal() {
-                const data = table.rows({ search: 'applied' }).data();
-
-                let totalKolom = Array(11).fill(0);
-
-                data.each(function (row) {
-                    for (let i = 2; i < 13; i++) { // misal kolom angka mulai dari index ke-2
-                        // Hapus titik dan koma dulu
-                        let value = row[i]
-                            .toString()
-                            .replace(/\./g, '')   // hapus titik
-                            .replace(/,/g, '')    // hapus koma
-                            .replace(/[^0-9-]/g, ''); // hapus selain angka
-                        totalKolom[i - 2] += parseFloat(value) || 0;
-                    }
-                });
-
-                for (let i = 0; i < totalKolom.length; i++) {
-                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
-                    $(table.column(i + 2).footer()).text(totalFormatted);
-                }
-
-            }
-
-            // Jalankan ulang total setiap kali tabel berubah
-            table.on('draw', function () {
-                updateTotal();
-            });
-
-            // Hitung total pertama kali
-            updateTotal();
-        });
-
-        $(document).ready(function () {
-            $.fn.dataTable.ext.errMode = 'none';
-
-            const table = $('#tabel_targetcity_desember').DataTable({
-                footerCallback: function () {
-                    updateTotal();
-                },
-                columnDefs: [
-                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
-                ],
-                order: [[1, 'asc']]
-            });
-
-            // Tambah nomor otomatis di kolom pertama
-            table.on('order.dt search.dt', function () {
-                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
-                    cell.innerHTML = i + 1;
-                });
-            }).draw();
-
-            // Fungsi utama untuk hitung total otomatis
-            function updateTotal() {
-                const data = table.rows({ search: 'applied' }).data();
-
-                let totalKolom = Array(7).fill(0);
-
-                data.each(function (row) {
-                    for (let i = 2; i < 9; i++) { // misal kolom angka mulai dari index ke-2
-                        // Hapus titik dan koma dulu
-                        let value = row[i]
-                            .toString()
-                            .replace(/\./g, '')   // hapus titik
-                            .replace(/,/g, '')    // hapus koma
-                            .replace(/[^0-9-]/g, ''); // hapus selain angka
-                        totalKolom[i - 2] += parseFloat(value) || 0;
-                    }
-                });
-
-                for (let i = 0; i < totalKolom.length; i++) {
-                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
-                    $(table.column(i + 2).footer()).text(totalFormatted);
-                }
+                $(table.column(5).footer()).text(persenW1Desember.toFixed(0) + ' %');
+                $(table.column(8).footer()).text(persenW2Desember.toFixed(0) + ' %');
+                $(table.column(11).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(12).footer()).text(persenDeviasi.toFixed(0) + ' %');
 
             }
 

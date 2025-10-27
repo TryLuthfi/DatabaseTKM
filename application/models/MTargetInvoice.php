@@ -561,11 +561,11 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`
 
 FROM
-    tb_target_invoice tti
+    tb_target_invoice tti 
 JOIN tb_master_bowheer_invoice tmb 
     ON tti.id_bowheer = tmb.id_bowheer
 GROUP BY
-    tti.area_target
+    tti.area_target, tmb.nama_bowheer 
     ORDER BY `GRAND TOTAL TARGET` DESC;')
             ->result_array();
         return $data;
