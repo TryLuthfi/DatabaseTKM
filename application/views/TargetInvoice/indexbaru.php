@@ -218,9 +218,21 @@ $total = 1;
                                                     echo number_format(floatval($data['deviasi']), 0, ",", ".");
                                                 }
                                                 ?></td>
-                                                <td><?= rtrim(rtrim(number_format($data['persen_achiev'], 0, '.', ''), '0'), '.') ?>%
+                                                <td><?php
+                                                if ($data['persen_achiev'] > 0 && $data['persen_achiev'] > 0) {
+                                                    echo number_format($data['persen_achiev'], 0, ",", ".") . '%';
+                                                } else {
+                                                    echo '-';
+                                                }
+                                                ?>
                                                 </td>
-                                                <td><?= rtrim(rtrim(number_format($data['persen_deviasi'], 0, '.', ''), '0'), '.') ?>%
+                                                <td><?php
+                                                if ($data['persen_deviasi'] > 0 && $data['persen_deviasi'] > 0) {
+                                                    echo number_format($data['persen_deviasi'], 0, ",", ".") . '%';
+                                                } else {
+                                                    echo '-';
+                                                }
+                                                ?>
                                                 </td>
                                             </tr>
 
@@ -390,6 +402,13 @@ $total = 1;
                                                         <?php for ($i = 0; $i < 14; $i++): ?>
                                                             <th>0</th>
                                                         <?php endfor; ?>
+                                                    </tr>
+                                                    <tr>
+                                                        <th colspan="3">Deviasi</th>
+                                                        <?php for ($i = 0; $i < 3; $i++): ?>
+                                                            <th colspan="3" style="text-align: end;">0</th>
+                                                        <?php endfor; ?>
+                                                        <th colspan="4"></th>
                                                     </tr>
                                                 </tfoot>
                                             </table>
@@ -1007,9 +1026,21 @@ $total = 1;
                                                     echo number_format(floatval($data['deviasi']), 0, ",", ".");
                                                 }
                                                 ?></td>
-                                                <td><?= rtrim(rtrim(number_format($data['persen_achiev'], 2, '.', ''), '0'), '.') ?>%
+                                                <td><?php
+                                                if ($data['persen_achiev'] > 0 && $data['persen_achiev'] > 0) {
+                                                    echo number_format($data['persen_achiev'], 0, ",", ".") . '%';
+                                                } else {
+                                                    echo '-';
+                                                }
+                                                ?>
                                                 </td>
-                                                <td><?= rtrim(rtrim(number_format($data['persen_deviasi'], 2, '.', ''), '0'), '.') ?>%
+                                                <td><?php
+                                                if ($data['persen_deviasi'] > 0 && $data['persen_deviasi'] > 0) {
+                                                    echo number_format($data['persen_deviasi'], 0, ",", ".") . '%';
+                                                } else {
+                                                    echo '-';
+                                                }
+                                                ?>
                                                 </td>
                                                 <td>
                                                     <a href="<?php echo site_url('TargetInvoice/detailBowheer/' . $data['id_bowheer']); ?>"
@@ -3323,13 +3354,13 @@ $total = 1;
                 document.getElementById('totalTargetInvoiceBowheer').innerText = totalTargetInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('totalAchievedInvoiceBowheer').innerText = totalAchievedInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('totalSisaInvoiceBowheer').innerText = totalSisaInvoiceBowheer.toLocaleString('id-ID');
-                document.getElementById('totalPersentaseTargetInvoiceBowheer').innerText = (totalAchievedInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(2) + " %";
-                document.getElementById('totalPersentaseDeviasiTargetInvoiceBowheer').innerText = (totalSisaInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(2) + " %";
+                document.getElementById('totalPersentaseTargetInvoiceBowheer').innerText = (totalAchievedInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(0) + " %";
+                document.getElementById('totalPersentaseDeviasiTargetInvoiceBowheer').innerText = (totalSisaInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(0) + " %";
 
                 document.getElementById('dashboardTargetInvoice').innerText = "RP. " + totalTargetInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('dashboardAchievInvoice').innerText = "RP. " + totalAchievedInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('dashboardSisaInvoice').innerText = "RP. " + totalSisaInvoiceBowheer.toLocaleString('id-ID');
-                document.getElementById('dashboardPersentaseInvoice').innerText = (totalAchievedInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(2) + " %";
+                document.getElementById('dashboardPersentaseInvoice').innerText = (totalAchievedInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(0) + " %";
             }
 
             // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
@@ -4093,6 +4124,17 @@ $total = 1;
                 $(table.column(11).footer()).text(persenDesember.toFixed(0) + ' %');
                 $(table.column(14).footer()).text(persenGrand.toFixed(0) + ' %');
                 $(table.column(15).footer()).text(persenDeviasi.toFixed(0) + ' %');
+
+                const deviasiOktNov = totalKolom[1] - totalKolom[2];
+                const deviasiNovDes = totalKolom[4] - totalKolom[5];
+                const deviasiDesTotal = totalKolom[7] - totalKolom[8];
+
+                const footerRows = $('#tabel_targetpic_month tfoot tr');
+                const barisDeviasi = $(footerRows[1]).find('th');
+
+                barisDeviasi.eq(1).text(deviasiOktNov.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                barisDeviasi.eq(2).text(deviasiNovDes.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                barisDeviasi.eq(3).text(deviasiDesTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
 
             }
 
