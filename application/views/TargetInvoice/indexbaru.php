@@ -31,12 +31,12 @@ $total = 1;
 
                     <div class="col-12 col-sm-6 col-md-3">
                         <div class="info-box mb-3">
-                            <span class="info-box-icon bg-danger elevation-1"><i
+                            <span class="info-box-icon bg-grey elevation-1"><i
                                     class="fas fa-file-invoice-dollar"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">TARGET INVOICE TW - 4</span>
-                                <h4 class="info-box-number" id="dashboardTargetInvoice">
-</h4>
+                                <span class="info-box-number" id="dashboardTargetInvoice">
+                                </span>
                             </div>
                             <!-- /.info-box-content -->
                         </div>
@@ -45,8 +45,8 @@ $total = 1;
                     </div>
 
                     <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3">
-                            <span class="info-box-icon bg-danger elevation-1"><i
+                        <div class="info-box mb-3 glow-red">
+                            <span class="info-box-icon bg-grey elevation-1"><i
                                     class="fas fa-file-invoice-dollar"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">ACHIEVE INVOICE TW - 4</span>
@@ -61,8 +61,8 @@ $total = 1;
                     </div>
 
                     <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3">
-                            <span class="info-box-icon bg-success elevation-1"><i
+                        <div class="info-box mb-3 glow-red">
+                            <span class="info-box-icon bg-grey elevation-1"><i
                                     class="fas fa-money-check-alt"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">SISA INVOICE TW - 4</span>
@@ -78,13 +78,13 @@ $total = 1;
 
                     <div class="col-12 col-sm-6 col-md-3">
                         <div class="info-box mb-3">
-                            <span class="info-box-icon bg-success elevation-1"><i
+                            <span class="info-box-icon bg-grey elevation-1"><i
                                     class="fas fa-money-check-alt"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">PERSENTASE INVOICE TW - 4</span>
-                                <h4 class="info-box-number" id="dashboardPersentaseInvoice">
+                                <span class="info-box-number" id="dashboardPersentaseInvoice">
                                     Rp. 0
-                                </h4>
+                                </span>
                             </div>
                             <!-- /.info-box-content -->
                         </div>
@@ -5081,5 +5081,16 @@ $total = 1;
             text-align: right;
             background-color: #f8f9fa;
             font-weight: bold;
+        }
+
+        .glow-red {
+            border: 1px solid rgba(255, 0, 0, 0.7);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+            transition: box-shadow 0.3s ease-in-out;
+            border-radius: 10px;
+        }
+
+        .glow-red:hover {
+            box-shadow: 0 0 25px rgba(255, 0, 0, 0.9);
         }
     </style>
