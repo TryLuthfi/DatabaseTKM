@@ -135,6 +135,7 @@ $id_menu = $this->uri->segment('1');
                         $id_menu == 'Logistik_Purchase_Request' ||
                         $id_menu == 'Logistik_Pesanan_Pabrik' ||
                         $id_menu == 'Dashboard_Logistik_Stok' ||
+                        $id_menu == 'Logistik_Stok_Detail' ||
                         $id_menu == 'StockOpname'
                     ) {
                         echo 'menu-open';
@@ -148,6 +149,7 @@ $id_menu = $this->uri->segment('1');
                             $id_menu == 'Logistik_Purchase_Request' ||
                             $id_menu == 'Logistik_Pesanan_Pabrik' ||
                             $id_menu == 'Dashboard_Logistik_Stok' ||
+                            $id_menu == 'Logistik_Stok_Detail' ||
                             $id_menu == 'StockOpname'
                         ) {
                             echo 'active';
@@ -480,7 +482,7 @@ $id_menu = $this->uri->segment('1');
                             </li>
                         </ul>
                     </li>
-                    <li class="nav-header">Report</li>
+                    <li class="nav-header">TARGET 110 M</li>
                     <li class="nav-item">
                         <a href="<?= base_url('TargetInvoice') ?>" class="nav-link <?php if ($id_menu == 'TargetInvoice') {
                               echo "active";
@@ -491,13 +493,13 @@ $id_menu = $this->uri->segment('1');
                             </p>
                         </a>
                     </li>
-                    <li class="nav-item" style="pointer-events: none">
-                        <a href="<?= base_url('forbidden') ?>" class="nav-link <?php if ($id_menu == 'forbidden') {
+                    <li class="nav-item">
+                        <a href="<?= base_url('RincianInvoice') ?>" class="nav-link <?php if ($id_menu == 'RincianInvoice') {
                               echo "active";
                           } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
-                                Rincian Pendapatan
+                                Rincian Invoice
                             </p>
                         </a>
                     </li>

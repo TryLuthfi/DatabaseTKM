@@ -49,8 +49,8 @@ $total = 1;
                             <span class="info-box-icon bg-grey elevation-1"><i
                                     class="fas fa-file-invoice-dollar"></i></span>
                             <div class="info-box-content">
-                                <span class="info-box-text">ACHIEVE INVOICE TW - 4</span>
-                                <h4 class="info-box-number" id="dashboardAchievInvoice">
+                                <span class="info-box-text">ACHIEVED INVOICE TW - 4</span>
+                                <h4 class="info-box-number" style="color: #33cc33;" id="dashboardAchievInvoice">
                                     Rp. 0
                                 </h4>
                             </div>
@@ -66,7 +66,7 @@ $total = 1;
                                     class="fas fa-money-check-alt"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">SISA INVOICE TW - 4</span>
-                                <h4 class="info-box-number" id="dashboardSisaInvoice">
+                                <h4 class="info-box-number" style="color: #ce0808ff;" id="dashboardSisaInvoice">
                                     Rp. 0
                                 </h4>
                             </div>
