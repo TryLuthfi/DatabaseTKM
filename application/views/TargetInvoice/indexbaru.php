@@ -45,7 +45,7 @@ $total = 1;
                     </div>
 
                     <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3 glow-red">
+                        <div class="info-box mb-3 glow-green">
                             <span class="info-box-icon bg-grey elevation-1"><i
                                     class="fas fa-file-invoice-dollar"></i></span>
                             <div class="info-box-content">
@@ -224,7 +224,7 @@ $total = 1;
                                                 if ($data['persen_achiev'] > 0 && $data['persen_achiev'] > 0) {
                                                     echo number_format($data['persen_achiev'], 0, ",", ".") . '%';
                                                 } else {
-                                                    echo '-';
+                                                    echo '0%';
                                                 }
                                                 ?>
                                                 </td>
@@ -232,7 +232,7 @@ $total = 1;
                                                 if ($data['persen_deviasi'] > 0 && $data['persen_deviasi'] > 0) {
                                                     echo number_format($data['persen_deviasi'], 0, ",", ".") . '%';
                                                 } else {
-                                                    echo '-';
+                                                    echo '0%';
                                                 }
                                                 ?>
                                                 </td>
@@ -4032,8 +4032,6 @@ $total = 1;
                     search: 'applied'
                 }).data();
 
-
-
                 // Hitung total dari kolom Value (index 2)
                 let totalAchievInvoicePIC = 0;
                 let totalTargetInvoicePIC = 0;
@@ -4055,23 +4053,53 @@ $total = 1;
                 document.getElementById('totalDeviasiInvoicePIC').innerText = totalDeviasiInvoicePIC.toLocaleString('id-ID');
                 const achieved = (totalTargetInvoicePIC > 0 && totalAchievInvoicePIC > 0)
                     ? ((totalAchievInvoicePIC / totalTargetInvoicePIC) * 100).toFixed(0) + " %"
-                    : "-";
+                    : "0";
 
                 const outstanding = (totalDeviasiInvoicePIC > 0 && totalTargetInvoicePIC > 0)
                     ? ((totalDeviasiInvoicePIC / totalTargetInvoicePIC) * 100).toFixed(0) + " %"
-                    : "-";
+                    : "0";
 
                 document.getElementById('totalPersentaseTargetInvoicePIC').innerText = achieved;
                 document.getElementById('totalPersentaseDeviasiTargetInvoicePIC').innerText = outstanding;
             }
 
+            function highlightCells() {
+                $('#tabel_targetpic_summary tbody tr').each(function () {
+                    const cell = $(this).find('td:eq(5)'); // kolom ke-6 (ACHIEVED %)
+                    let persenText = cell.text().trim();
+
+                    // Bersihkan simbol lama (agar tidak dobel)
+                    persenText = persenText.replace(/<[^>]+>/g, '').replace(/[\u2191\u2193✅❌]/g, '');
+
+                    const persen = parseFloat(persenText.replace('%', '').replace(',', '.')) || 0;
+
+                    // Default: hapus isi lalu tambahkan kembali dengan ikon
+                    let icon = '';
+                    if (persen < 100) {
+                        icon = ' <i class="fas fa-arrow-down text-danger"></i>'; // merah turun
+                        cell.addClass('cell-red');
+                    } else if (persen === 100) {
+                        icon = ' <i class="fas fa-check-circle text-success"></i>'; // hijau centang
+                        cell.addClass('cell-green-light');
+                    } else if (persen > 100) {
+                        icon = ' <i class="fas fa-arrow-up text-success"></i>'; // hijau naik
+                        cell.addClass('cell-green-dark');
+                    }
+
+                    // Update isi cell
+                    cell.html(`${persenText}${icon}`);
+                });
+            }
+
             // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
             table.on('draw', function () {
                 updateTotal();
+                highlightCells();
             });
 
             // Hitung total pertama kali saat tabel dimuat
             updateTotal();
+            highlightCells();
         });
 
         $(document).ready(function () {
@@ -5083,6 +5111,8 @@ $total = 1;
             font-weight: bold;
         }
 
+        /* upgrade warna header merah */
+
         .glow-red {
             border: 1px solid rgba(255, 0, 0, 0.7);
             box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
@@ -5092,5 +5122,39 @@ $total = 1;
 
         .glow-red:hover {
             box-shadow: 0 0 25px rgba(255, 0, 0, 0.9);
+        }
+
+        /* upgrade warna header hijau */
+        .glow-green {
+            border: 1px solid rgba(0, 255, 0, 0.7);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+            transition: box-shadow 0.3s ease-in-out;
+            border-radius: 10px;
+        }
+
+        .glow-green:hover {
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.9);
+        }
+
+
+        /* upgrade warna table */
+
+        .cell-red {
+            font-color: #ffb3b3 !important;
+            color: #eb0000ff !important;
+            font-weight: bold;
+        }
+
+        /* 🟢 Hijau muda untuk = 100% */
+        .cell-green-light {
+            color: #b3ffb3 !important;
+            font-weight: bold;
+        }
+
+        /* 🟩 Hijau tua untuk > 100% */
+        .cell-green-dark {
+            color: #33cc33 !important;
+            font-weight: bold;
+            font-weight: bold;
         }
     </style>
