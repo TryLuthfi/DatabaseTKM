@@ -6,6 +6,8 @@ $total = 1;
 
 ?>
 
+<meta name="format-detection" content="telephone=no">
+
 <div class="content-wrapper">
     <div class="content-header">
         <div class="container-fluid">
@@ -33,8 +35,8 @@ $total = 1;
                                     class="fas fa-file-invoice-dollar"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">TARGET INVOICE TW - 4</span>
-                                <span class="info-box-number" id="dashboardTargetInvoice">
-                                </span>
+                                <h4 class="info-box-number" id="dashboardTargetInvoice">
+</h4>
                             </div>
                             <!-- /.info-box-content -->
                         </div>
@@ -48,9 +50,9 @@ $total = 1;
                                     class="fas fa-file-invoice-dollar"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">ACHIEVE INVOICE TW - 4</span>
-                                <span class="info-box-number" id="dashboardAchievInvoice">
+                                <h4 class="info-box-number" id="dashboardAchievInvoice">
                                     Rp. 0
-                                </span>
+                                </h4>
                             </div>
                             <!-- /.info-box-content -->
                         </div>
@@ -64,9 +66,9 @@ $total = 1;
                                     class="fas fa-money-check-alt"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">SISA INVOICE TW - 4</span>
-                                <span class="info-box-number" id="dashboardSisaInvoice">
+                                <h4 class="info-box-number" id="dashboardSisaInvoice">
                                     Rp. 0
-                                </span>
+                                </h4>
                             </div>
                             <!-- /.info-box-content -->
                         </div>
@@ -80,9 +82,9 @@ $total = 1;
                                     class="fas fa-money-check-alt"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">PERSENTASE INVOICE TW - 4</span>
-                                <span class="info-box-number" id="dashboardPersentaseInvoice">
+                                <h4 class="info-box-number" id="dashboardPersentaseInvoice">
                                     Rp. 0
-                                </span>
+                                </h4>
                             </div>
                             <!-- /.info-box-content -->
                         </div>
@@ -4033,8 +4035,8 @@ $total = 1;
 
 
                 // Hitung total dari kolom Value (index 2)
-                let totalTargetInvoicePIC = 0;
                 let totalAchievInvoicePIC = 0;
+                let totalTargetInvoicePIC = 0;
                 let totalDeviasiInvoicePIC = 0;
                 let totalPersentaseTargetInvoicePIC = 0;
                 let totalPersentaseDeviasiTargetInvoicePIC = 0;
@@ -4051,8 +4053,16 @@ $total = 1;
                 document.getElementById('totalTargetInvoicePIC').innerText = totalTargetInvoicePIC.toLocaleString('id-ID');
                 document.getElementById('totalAchievInvoicePIC').innerText = totalAchievInvoicePIC.toLocaleString('id-ID');
                 document.getElementById('totalDeviasiInvoicePIC').innerText = totalDeviasiInvoicePIC.toLocaleString('id-ID');
-                document.getElementById('totalPersentaseTargetInvoicePIC').innerText = (totalAchievInvoicePIC / totalTargetInvoicePIC * 100).toFixed(0) + " %";
-                document.getElementById('totalPersentaseDeviasiTargetInvoicePIC').innerText = (totalDeviasiInvoicePIC / totalTargetInvoicePIC * 100).toFixed(0) + " %";
+                const achieved = (totalTargetInvoicePIC > 0 && totalAchievInvoicePIC > 0)
+                    ? ((totalAchievInvoicePIC / totalTargetInvoicePIC) * 100).toFixed(0) + " %"
+                    : "-";
+
+                const outstanding = (totalDeviasiInvoicePIC > 0 && totalTargetInvoicePIC > 0)
+                    ? ((totalDeviasiInvoicePIC / totalTargetInvoicePIC) * 100).toFixed(0) + " %"
+                    : "-";
+
+                document.getElementById('totalPersentaseTargetInvoicePIC').innerText = achieved;
+                document.getElementById('totalPersentaseDeviasiTargetInvoicePIC').innerText = outstanding;
             }
 
             // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
@@ -5066,3 +5076,10 @@ $total = 1;
     <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartfibertstar.js"></script>
     <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardchartmyrep.js"></script>
     <script src="<?= base_url('assets') ?>/dist/js/pages/dashboardrkap.js"></script>
+    <style>
+        #tabel_targetpic_summary tfoot th {
+            text-align: right;
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+    </style>

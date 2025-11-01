@@ -78,7 +78,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
                 exit('Error: Variable $id_bowheer is null');
             }
 
-            $data = $this->db->query('SELECT * FROM tb_master_logistik_kode_item WHERE project_item = "' . $id_bowheer . '" ')->result_array();
+            $data = $this->db->query('SELECT * FROM tb_master_logistik_kode_item join tb_master_bowheer ON tb_master_logistik_kode_item.id_bowheer_pemilik_item = tb_master_bowheer.id_bowheer WHERE project_item = "' . $id_bowheer . '"')->result_array();
 
             if ($data === null) {
                 exit('Error: Query failed');

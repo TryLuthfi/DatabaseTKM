@@ -1443,7 +1443,7 @@ $total_stok_dashboard = [];
 
                     $.each(response, function(index, project) {
                         $('#id_kode_item').append(
-                            `<option value="${project.id_kode_item}" data-satuan-item="${project.satuan_item}">${project.nama_item}</option>`
+                            `<option value="${project.id_kode_item}" data-satuan-item="${project.satuan_item}">${project.nama_item} - ${project.nama_bowheer}</option>`
                         );
                     });
 

@@ -283,7 +283,7 @@ ORDER BY
     }
     public function getMasterKodeItem(): mixed
     {
-        $data = $this->db->query('SELECT * FROM `tb_master_logistik_kode_item`')->result_array();
+        $data = $this->db->query('SELECT * FROM tb_master_logistik_kode_item tmlki join tb_master_bowheer tmb ON tmlki.id_bowheer_pemilik_item = tmb.id_bowheer')->result_array();
         return $data;
     }
 
