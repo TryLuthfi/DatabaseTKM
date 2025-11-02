@@ -66,4 +66,36 @@ class RincianInvoice extends CI_Controller
         log_message('debug', 'Last Query: ' . $this->db->last_query());
     }
 
+    public function get_target_invoice()
+    {
+        $bowheer = $this->input->post('bowheer');
+        $area = $this->input->post('area');
+        $month = $this->input->post('month');
+        $week = $this->input->post('week');
+
+        log_message('debug', 'FILTER BOWHEER: ' . print_r($bowheer, true));
+
+        // Ambil data dari model
+        $this->load->model('MRincianInvoice');
+        $result = $this->MRincianInvoice->getTargetInvoice($bowheer, $area, $month, $week);
+        echo json_encode($result);
+        exit;
+    }
+
+    public function addInvoice()
+    {
+        $data = $this->input->post();
+
+        $this->load->model('MRincianInvoice');
+        $result = $this->MRincianInvoice->updateAchievInvoice($data);
+
+        if ($result['status']) {
+            $this->session->set_flashdata('success', 'sukses_tambah' . number_format($result['nilai_update'], 0, ',', '.'));
+        } else {
+            $this->session->set_flashdata('error', 'gagal_tambah' . $result['message']);
+        }
+
+        redirect('RincianInvoice');
+    }
+
 }
