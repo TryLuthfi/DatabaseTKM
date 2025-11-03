@@ -278,17 +278,18 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h4 class="modal-title">TAMBAH INVOICE</h4>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <h4 class="modal-title">🧾 TAMBAH INVOICE</h4>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
+
                         <div class="modal-body">
                             <div class="row">
                                 <div class="form-group col-md-12">
-                                    <label class="col-form-label">Bowheer / Project</label>
+                                    <label>Bowheer / Project</label>
                                     <select id="addfilter_bowheer" name="addfilter_bowheer" class="form-control"
-                                        data-placeholder="Pilih Project" style="width: 100%;">
+                                        style="width:100%;">
                                         <option value="" selected disabled hidden>Pilih Bowheer</option>
                                         <?php foreach ($unique_bowheer as $bowheer): ?>
                                             <option value="<?= $bowheer ?>"><?= $bowheer ?></option>
@@ -296,11 +297,12 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                                     </select>
                                 </div>
                             </div>
+
                             <div class="row">
                                 <div class="form-group col-md-12">
-                                    <label class="col-form-label">Area</label>
+                                    <label>Area</label>
                                     <select id="addfilter_area" name="addfilter_area" class="form-control"
-                                        data-placeholder="Pilih Area" style="width: 100%;">
+                                        style="width:100%;">
                                         <option value="" selected disabled hidden>Pilih Area</option>
                                         <?php foreach ($unique_city as $area): ?>
                                             <option value="<?= $area ?>"><?= $area ?></option>
@@ -308,11 +310,12 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                                     </select>
                                 </div>
                             </div>
+
                             <div class="row">
                                 <div class="form-group col-md-6">
-                                    <label class="col-form-label">Bulan</label>
+                                    <label>Bulan</label>
                                     <select id="addfilter_month" name="addfilter_month" class="form-control"
-                                        data-placeholder="Pilih Bulan" style="width: 100%;">
+                                        style="width:100%;">
                                         <option value="" selected disabled hidden>Pilih Bulan Invoice</option>
                                         <?php foreach ($unique_month as $month): ?>
                                             <option value="<?= $month ?>"><?= $month ?></option>
@@ -320,9 +323,9 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                                     </select>
                                 </div>
                                 <div class="form-group col-md-6">
-                                    <label class="col-form-label">Week</label>
+                                    <label>Week</label>
                                     <select id="addfilter_week" name="addfilter_week" class="form-control"
-                                        data-placeholder="Pilih Minggu" style="width: 100%;">
+                                        style="width:100%;">
                                         <option value="" selected disabled hidden>Pilih Minggu Invoice</option>
                                         <?php foreach ($unique_week as $week): ?>
                                             <option value="<?= $week ?>"><?= $week ?></option>
@@ -330,33 +333,38 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                                     </select>
                                 </div>
                             </div>
+
                             <div class="form-group">
-                                <label class="col-form-label">Target Invoice</label>
+                                <label>Target Invoice</label>
                                 <input type="text" class="form-control" name="target_invoice" autocomplete="off"
                                     placeholder="0" readonly>
                             </div>
+
                             <div class="form-group">
-                                <label class="col-form-label">Realisasi Invoice</label>
+                                <label>Realisasi Invoice</label>
                                 <input type="text" class="form-control" name="achiev_invoice" autocomplete="off"
                                     placeholder="0">
                             </div>
+
                             <div class="form-group" style="display:none">
-                                <label class="col-form-label">Tambahan Invoice</label>
+                                <label>Tambahan Invoice</label>
                                 <input type="text" class="form-control" name="tambahan_invoice" autocomplete="off"
                                     placeholder="0">
                             </div>
+
                             <div class="form-group" style="display:none">
-                                <label class="col-form-label">Total Invoice</label>
+                                <label>Total Invoice</label>
                                 <input type="text" class="form-control" name="total_invoice" autocomplete="off"
                                     placeholder="0" readonly>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                        </div>
 
-                                <button type="submit" name="btnEdit" class="btn btn-primary"><i
-                                        class="fa fa-spinner fa-spin loading" style="display:none"></i>
-                                    Simpan</button>
-                            </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                            <button type="submit" name="btnEdit" class="btn btn-primary">
+                                <i class="fa fa-spinner fa-spin loading" style="display:none"></i>
+                                Simpan
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -659,7 +667,7 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
 
         function formatRupiah(value) {
             let num = parseFloat(value.toString().replace(/[^\d]/g, '')) || 0;
-            return 'Rp. ' + formatTitik(num);
+            return '' + formatTitik(num);
         }
 
         // === ANIMASI ANGKA DASHBOARD ===
@@ -740,7 +748,7 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                             let qtyAchiev = res.qty_achiev_target ? parseFloat(res.qty_achiev_target) : 0;
 
                             // Format angka ke Rupiah dengan titik
-                            const formatRupiah = (val) => "Rp " + (parseFloat(val) || 0).toLocaleString('id-ID');
+                            const formatRupiah = (val) => "" + (parseFloat(val) || 0).toLocaleString('id-ID');
 
                             // Masukkan nilai ke field
                             $('[name="target_invoice"]').val(formatRupiah(qtyTarget));
@@ -759,17 +767,7 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                                 $('[name="total_invoice"]').val(formatRupiah(qtyAchiev));
 
                                 // Format input tambahan_invoice hanya angka & auto Rupiah
-                                $('[name="tambahan_invoice"]').off('input').on('input', function () {
-                                    let raw = $(this).val().replace(/[^\d]/g, ''); // hapus non-digit
-                                    if (raw === '') raw = '0';
 
-                                    const tambahan = parseFloat(raw);
-                                    $(this).val(formatRupiah(tambahan));
-
-                                    // Hitung total = qtyAchiev + tambahan
-                                    const total = qtyAchiev + tambahan;
-                                    $('[name="total_invoice"]').val(formatRupiah(total));
-                                });
                             } else {
                                 // Jika qty_achiev_target kosong, reset ke mode input baru
                                 $('[name="achiev_invoice"]').prop('disabled', false);
@@ -795,215 +793,225 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
 
         $(document).ready(function () {
 
-    // === Fungsi format Rupiah ===
-    function formatRupiah(angka) {
-        angka = angka.toString().replace(/[^\d]/g, "");
-        if (angka === "") return "";
-        return "Rp " + angka.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    }
+            // === Format rupiah mendukung angka negatif ===
+            function formatRupiah(angka) {
+                angka = angka.toString().replace(/[^0-9\-]/g, ""); // izinkan minus
 
-    // === Fungsi hitung total otomatis ===
-    function updateTotalInvoice() {
-        let achiev = parseInt($("[name='achiev_invoice']").val().replace(/[^\d]/g, "")) || 0;
-        let tambahan = parseInt($("[name='tambahan_invoice']").val().replace(/[^\d]/g, "")) || 0;
-        let total = achiev + tambahan;
-        $("[name='total_invoice']").val(formatRupiah(total));
-    }
+                if (angka === "" || angka === "-") return angka; // biar bisa ketik "-" dulu
 
-    // === Format otomatis ===
-    $(document).on("input", "[name='achiev_invoice'], [name='tambahan_invoice']", function () {
-        $(this).val(formatRupiah($(this).val()));
-        updateTotalInvoice();
-    });
+                let num = parseFloat(angka);
+                if (isNaN(num)) num = 0;
 
-    // === Fungsi ambil target invoice ===
-    function loadTargetInvoice() {
-        const bowheer = $('#addfilter_bowheer').val();
-        const area = $('#addfilter_area').val();
-        const month = $('#addfilter_month').val();
-        const week = $('#addfilter_week').val();
+                const formatted = (num < 0 ? "-" : "") + Math.abs(num).toLocaleString('id-ID');
+                return formatted;
+            }
 
-        if (bowheer && area && month && week) {
-            $.ajax({
-                url: "<?= base_url('RincianInvoice/get_target_invoice') ?>",
-                type: "POST",
-                dataType: "json",
-                data: { bowheer, area, month, week },
-                success: function (res) {
-                    console.log(res);
+            // === Hitung total otomatis ===
+            function updateTotalInvoice() {
+                let achiev = parseFloat($("[name='achiev_invoice']").val().replace(/[^0-9\-]/g, "")) || 0;
+                let tambahan = parseFloat($("[name='tambahan_invoice']").val().replace(/[^0-9\-]/g, "")) || 0;
+                let total = achiev + tambahan;
 
-                    let qtyTarget = res.qty_target ? parseFloat(res.qty_target) : 0;
-                    let qtyAchiev = res.qty_achiev_target ? parseFloat(res.qty_achiev_target) : 0;
+                const formattedTotal = (total < 0 ? "-" : "") + Math.abs(total).toLocaleString('id-ID');
+                $("[name='total_invoice']").val(formattedTotal);
+            }
 
-                    $('[name="target_invoice"]').val(formatRupiah(qtyTarget));
-                    $('[name="achiev_invoice"]').val(formatRupiah(qtyAchiev));
+            // === Event gabungan, tidak duplikat lagi ===
+            $(document).on("input", "[name='achiev_invoice'], [name='tambahan_invoice']", function (e) {
+                const caretPos = e.target.selectionStart; // simpan posisi kursor agar tidak loncat
+                $(this).val(formatRupiah($(this).val()));
+                e.target.setSelectionRange(caretPos, caretPos);
+                updateTotalInvoice();
+            });
 
-                    if (res.status === "area_not_found") {
-                        // Jika area tidak ditemukan, tampilkan alert konfirmasi
-                        Swal.fire({
-                            icon: 'question',
-                            title: 'Area belum terdaftar',
-                            text: 'Project ini tidak memiliki area ini. Tambahkan area dan invoice?',
-                            showCancelButton: true,
-                            confirmButtonText: 'Ya, Tambahkan!',
-                            cancelButtonText: 'Batal'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                // Kirim request untuk createNewTargetInvoice otomatis
-                                $.ajax({
-                                    url: "<?= base_url('RincianInvoice/createNewTargetInvoice') ?>",
-                                    type: "POST",
-                                    dataType: "json",
-                                    data: { bowheer, area, month, week },
-                                    success: function (res2) {
-                                        Swal.fire({
-                                            icon: res2.status ? 'success' : 'error',
-                                            title: res2.status ? 'Berhasil' : 'Gagal',
-                                            text: res2.message
+            // === Fungsi ambil target invoice ===
+            function loadTargetInvoice() {
+                const bowheer = $('#addfilter_bowheer').val();
+                const area = $('#addfilter_area').val();
+                const month = $('#addfilter_month').val();
+                const week = $('#addfilter_week').val();
+
+                if (bowheer && area && month && week) {
+                    $.ajax({
+                        url: "<?= base_url('RincianInvoice/get_target_invoice') ?>",
+                        type: "POST",
+                        dataType: "json",
+                        data: { bowheer, area, month, week },
+                        success: function (res) {
+                            console.log(res);
+
+                            let qtyTarget = res.qty_target ? parseFloat(res.qty_target) : 0;
+                            let qtyAchiev = res.qty_achiev_target ? parseFloat(res.qty_achiev_target) : 0;
+
+                            $('[name="target_invoice"]').val(formatRupiah(qtyTarget));
+                            $('[name="achiev_invoice"]').val(formatRupiah(qtyAchiev));
+
+                            if (res.status === "area_not_found") {
+                                // Jika area tidak ditemukan, tampilkan alert konfirmasi
+                                Swal.fire({
+                                    icon: 'question',
+                                    title: 'Area belum terdaftar',
+                                    text: 'Project ini tidak memiliki area ini. Tambahkan area dan invoice?',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Ya, Tambahkan!',
+                                    cancelButtonText: 'Batal'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        // Kirim request untuk createNewTargetInvoice otomatis
+                                        $.ajax({
+                                            url: "<?= base_url('RincianInvoice/createNewTargetInvoice') ?>",
+                                            type: "POST",
+                                            dataType: "json",
+                                            data: { bowheer, area, month, week },
+                                            success: function (res2) {
+                                                Swal.fire({
+                                                    icon: res2.status ? 'success' : 'error',
+                                                    title: res2.status ? 'Berhasil' : 'Gagal',
+                                                    text: res2.message
+                                                });
+                                                loadTargetInvoice(); // reload data setelah tambah
+                                            },
+                                            error: function (xhr) {
+                                                console.log(xhr.responseText);
+                                            }
                                         });
-                                        loadTargetInvoice(); // reload data setelah tambah
-                                    },
-                                    error: function (xhr) {
-                                        console.log(xhr.responseText);
                                     }
                                 });
                             }
-                        });
-                    }
 
-                    if (qtyAchiev && qtyAchiev !== 0) {
-                        $('[name="achiev_invoice"]').prop('disabled', true);
-                        $('[name="tambahan_invoice"]').closest('.form-group').slideDown();
-                        $('[name="total_invoice"]').closest('.form-group').slideDown();
-                        $('[name="total_invoice"]').val(formatRupiah(qtyAchiev));
-                    } else {
-                        $('[name="achiev_invoice"]').prop('disabled', false);
-                        $('[name="tambahan_invoice"]').closest('.form-group').slideUp();
-                        $('[name="total_invoice"]').closest('.form-group').slideUp();
-                        $('[name="tambahan_invoice"]').val('');
-                        $('[name="total_invoice"]').val('');
-                    }
-                },
-                error: function (xhr, status, error) {
-                    console.error("Error:", error);
-                    console.log(xhr.responseText);
+                            if (qtyAchiev && qtyAchiev !== 0) {
+                                $('[name="achiev_invoice"]').prop('disabled', true);
+                                $('[name="tambahan_invoice"]').closest('.form-group').slideDown();
+                                $('[name="total_invoice"]').closest('.form-group').slideDown();
+                                $('[name="total_invoice"]').val(formatRupiah(qtyAchiev));
+                            } else {
+                                $('[name="achiev_invoice"]').prop('disabled', false);
+                                $('[name="tambahan_invoice"]').closest('.form-group').slideUp();
+                                $('[name="total_invoice"]').closest('.form-group').slideUp();
+                                $('[name="tambahan_invoice"]').val('');
+                                $('[name="total_invoice"]').val('');
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.error("Error:", error);
+                            console.log(xhr.responseText);
+                        }
+                    });
                 }
-            });
-        }
-    }
+            }
 
-    // Jalankan ketika dropdown berubah
-    $('#addfilter_bowheer, #addfilter_area, #addfilter_month, #addfilter_week').on('change', loadTargetInvoice);
+            // Jalankan ketika dropdown berubah
+            $('#addfilter_bowheer, #addfilter_area, #addfilter_month, #addfilter_week').on('change', loadTargetInvoice);
 
-    // === VALIDASI SAAT SIMPAN ===
-    $("form").on("submit", function (e) {
-    e.preventDefault();
+            // === VALIDASI SAAT SIMPAN ===
+            $("form").on("submit", function (e) {
+                e.preventDefault();
 
-    // 🔹 Validasi tetap dipertahankan (jangan dihapus)
-    let bowheer = $("#addfilter_bowheer").val();
-    let area = $("#addfilter_area").val();
-    let month = $("#addfilter_month").val();
-    let week = $("#addfilter_week").val();
-    let achiev = $("[name='achiev_invoice']").val().trim();
-    let tambahanVisible = $("[name='tambahan_invoice']").closest('.form-group').is(":visible");
-    let tambahan = $("[name='tambahan_invoice']").val().trim();
+                // 🔹 Validasi tetap dipertahankan (jangan dihapus)
+                let bowheer = $("#addfilter_bowheer").val();
+                let area = $("#addfilter_area").val();
+                let month = $("#addfilter_month").val();
+                let week = $("#addfilter_week").val();
+                let achiev = $("[name='achiev_invoice']").val().trim();
+                let tambahanVisible = $("[name='tambahan_invoice']").closest('.form-group').is(":visible");
+                let tambahan = $("[name='tambahan_invoice']").val().trim();
 
-    if (!bowheer || !area || !month || !week) {
-        Swal.fire({ icon: 'warning', title: 'Data belum lengkap!', text: 'Pastikan semua dropdown sudah dipilih.' });
-        return;
-    }
-    if (achiev === "" || achiev === "Rp 0") {
-        Swal.fire({ icon: 'warning', title: 'Input belum diisi!', text: 'Nilai Realisasi Invoice harus diisi.' });
-        return;
-    }
-    if (tambahanVisible && (tambahan === "" || tambahan === "Rp 0")) {
-        Swal.fire({ icon: 'warning', title: 'Input belum diisi!', text: 'Tambahan Invoice wajib diisi jika tampil.' });
-        return;
-    }
+                if (!bowheer || !area || !month || !week) {
+                    Swal.fire({ icon: 'warning', title: 'Data belum lengkap!', text: 'Pastikan semua dropdown sudah dipilih.' });
+                    return;
+                }
+                if (achiev === "" || achiev === "0") {
+                    Swal.fire({ icon: 'warning', title: 'Input belum diisi!', text: 'Nilai Realisasi Invoice harus diisi.' });
+                    return;
+                }
+                if (tambahanVisible && (tambahan === "" || tambahan === "0")) {
+                    Swal.fire({ icon: 'warning', title: 'Input belum diisi!', text: 'Tambahan Invoice wajib diisi jika tampil.' });
+                    return;
+                }
 
-    // 🔹 Jika lolos validasi → konfirmasi simpan
-    Swal.fire({
-        icon: 'question',
-        title: 'Simpan Invoice?',
-        text: 'Pastikan semua data sudah benar sebelum disimpan.',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Simpan!',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const formData = $("form").serialize();
+                // 🔹 Jika lolos validasi → konfirmasi simpan
+                Swal.fire({
+                    icon: 'question',
+                    title: 'Simpan Invoice?',
+                    text: 'Pastikan semua data sudah benar sebelum disimpan.',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Simpan!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const formData = $("form").serialize();
 
-            $.ajax({
-                url: "<?= base_url('RincianInvoice/addInvoice') ?>",
-                type: "POST",
-                data: formData,
-                dataType: "json",
-                success: function (res) {
-                    console.log(res);
+                        $.ajax({
+                            url: "<?= base_url('RincianInvoice/addInvoice') ?>",
+                            type: "POST",
+                            data: formData,
+                            dataType: "json",
+                            success: function (res) {
+                                console.log(res);
 
-                    if (res.status === 'not_found') {
-                        // 🔸 Tampilkan alert area belum ada
-                        Swal.fire({
-                            icon: 'question',
-                            title: 'Area belum terdaftar',
-                            text: 'Project ini tidak memiliki area ini. Tambahkan area dan invoice?',
-                            showCancelButton: true,
-                            confirmButtonText: 'Ya, Tambahkan!',
-                            cancelButtonText: 'Batal'
-                        }).then((r) => {
-                            if (r.isConfirmed) {
-                                $.ajax({
-                                    url: "<?= base_url('RincianInvoice/createNewTargetInvoice') ?>",
-                                    type: "POST",
-                                    dataType: "json",
-                                    data: res,
-                                    success: function (res2) {
-                                        Swal.fire({
-                                            icon: res2.status ? 'success' : 'error',
-                                            title: res2.status ? 'Berhasil' : 'Gagal',
-                                            text: res2.message
-                                        }).then(() => location.reload());
-                                    }
-                                });
+                                if (res.status === 'not_found') {
+                                    // 🔸 Tampilkan alert area belum ada
+                                    Swal.fire({
+                                        icon: 'question',
+                                        title: 'Area belum terdaftar',
+                                        text: 'Project ini tidak memiliki area ini. Tambahkan area dan invoice?',
+                                        showCancelButton: true,
+                                        confirmButtonText: 'Ya, Tambahkan!',
+                                        cancelButtonText: 'Batal'
+                                    }).then((r) => {
+                                        if (r.isConfirmed) {
+                                            $.ajax({
+                                                url: "<?= base_url('RincianInvoice/createNewTargetInvoice') ?>",
+                                                type: "POST",
+                                                dataType: "json",
+                                                data: res,
+                                                success: function (res2) {
+                                                    Swal.fire({
+                                                        icon: res2.status ? 'success' : 'error',
+                                                        title: res2.status ? 'Berhasil' : 'Gagal',
+                                                        text: res2.message
+                                                    }).then(() => location.reload());
+                                                }
+                                            });
+                                        }
+                                    });
+                                } else if (res.status) {
+                                    // 🔸 Jika berhasil update
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Berhasil!',
+                                        text: 'Invoice berhasil disimpan.'
+                                    }).then(() => location.reload());
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Gagal!',
+                                        text: res.message || 'Terjadi kesalahan.'
+                                    });
+                                }
+                            },
+                            error: function (xhr) {
+                                console.error(xhr.responseText);
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil!',
+                                    text: 'Invoice berhasil disimpan.'
+                                }).then(() => location.reload());
                             }
                         });
-                    } else if (res.status) {
-                        // 🔸 Jika berhasil update
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            text: 'Invoice berhasil disimpan.'
-                        }).then(() => location.reload());
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal!',
-                            text: res.message || 'Terjadi kesalahan.'
-                        });
                     }
-                },
-                error: function (xhr) {
-                    console.error(xhr.responseText);
-                    Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            text: 'Invoice berhasil disimpan.'
-                        }).then(() => location.reload());
-                }
+                });
             });
-        }
-    });
-});
 
-    // Reset form ketika modal dibuka
-    $('#modal-lg-tambah-invoice').on('show.bs.modal', function () {
-        $(this).find('form')[0].reset();
-        $("[name='achiev_invoice'], [name='tambahan_invoice'], [name='total_invoice']").val("Rp 0");
-        $("[name='tambahan_invoice']").closest('.form-group').hide();
-        $("[name='total_invoice']").closest('.form-group').hide();
-    });
+            // Reset form ketika modal dibuka
+            $('#modal-lg-tambah-invoice').on('show.bs.modal', function () {
+                $(this).find('form')[0].reset();
+                $("[name='achiev_invoice'], [name='tambahan_invoice'], [name='total_invoice']").val("");
+                $("[name='tambahan_invoice']").closest('.form-group').hide();
+                $("[name='total_invoice']").closest('.form-group').hide();
+            });
 
-});
+        });
     </script>
 
 
@@ -1104,5 +1112,100 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
             100% {
                 box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
             }
+        }
+
+        /* ======== TAMBAHAN STYLE UNTUK MODAL TAMBAH INVOICE ======== */
+        #modal-lg-tambah-invoice .modal-content {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        #modal-lg-tambah-invoice .modal-header {
+            background: linear-gradient(135deg, #007bff, #6610f2);
+            color: white;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            padding: 1rem 1.5rem;
+        }
+
+        #modal-lg-tambah-invoice .modal-header h4 {
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        #modal-lg-tambah-invoice .modal-body {
+            background-color: #f9fafc;
+            padding: 1.5rem;
+            border-radius: 0 0 15px 15px;
+        }
+
+        #modal-lg-tambah-invoice .form-group label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        #modal-lg-tambah-invoice .form-control {
+            border-radius: 10px;
+            border: 1px solid #ced4da;
+            transition: all 0.2s ease-in-out;
+        }
+
+        #modal-lg-tambah-invoice .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        #modal-lg-tambah-invoice .modal-footer {
+            background: #f1f3f6;
+            border-top: 1px solid #dee2e6;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+        }
+
+        #modal-lg-tambah-invoice .btn-primary {
+            background: linear-gradient(135deg, #007bff, #6610f2);
+            border: none;
+            border-radius: 10px;
+            padding: 8px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        #modal-lg-tambah-invoice .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+        }
+
+        #modal-lg-tambah-invoice .btn-danger {
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 8px 20px;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Tombol pemicu modal (judul TAMBAH INVOICE) */
+        .text-primary.font-weight-bold {
+            background: linear-gradient(90deg, #007bff, #6610f2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: all 0.3s ease;
+        }
+
+        .text-primary.font-weight-bold:hover {
+            transform: scale(1.05);
+            text-shadow: 0 0 10px rgba(102, 16, 242, 0.4);
         }
     </style>

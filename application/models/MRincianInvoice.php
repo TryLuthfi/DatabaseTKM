@@ -160,6 +160,17 @@ ORDER BY total_target DESC;')
             'area_target' => $area
         ])->num_rows() > 0;
 
+        $cleanRupiah = function ($val) {
+            if ($val === null || $val === '')
+                return 0;
+            $val = trim(str_replace(['Rp', ' ', '.'], '', $val));
+            $val = str_replace(',', '', $val);
+            if (strpos($val, '-') === 0) {
+                return -1 * (float) str_replace('-', '', $val);
+            }
+            return (float) $val;
+        };
+
         if (!$exists) {
             return [
                 'status' => 'not_found',
@@ -168,23 +179,21 @@ ORDER BY total_target DESC;')
                 'area_target' => $area,
                 'month' => $month,
                 'week' => $week,
-                'nilai_update' => str_replace(['Rp', ' ', '.'], '', $data['achiev_invoice'])
+                'nilai_update' => $cleanRupiah($data['achiev_invoice'])
             ];
         }
 
-        // Tentukan nilai update
-        $total_invoice = str_replace(['Rp', ' ', '.'], '', $data['total_invoice']);
-        $tambahan_invoice = str_replace(['Rp', ' ', '.'], '', $data['tambahan_invoice']);
-        $achiev_invoice = str_replace(['Rp', ' ', '.'], '', $data['achiev_invoice']);
+        $total_invoice = $cleanRupiah($data['total_invoice']);
+        $tambahan_invoice = $cleanRupiah($data['tambahan_invoice']);
+        $achiev_invoice = $cleanRupiah($data['achiev_invoice']);
 
-        // Default value
         $nilai_update = 0;
 
-        if (!empty($total_invoice) && $total_invoice > 0) {
+        if ($total_invoice !== 0) {
             $nilai_update = $total_invoice;
-        } elseif (!empty($tambahan_invoice) && $tambahan_invoice > 0) {
+        } elseif ($tambahan_invoice !== 0) {
             $nilai_update = $achiev_invoice + $tambahan_invoice;
-        } elseif (!empty($achiev_invoice) && $achiev_invoice > 0) {
+        } elseif ($achiev_invoice !== 0) {
             $nilai_update = $achiev_invoice;
         }
 
