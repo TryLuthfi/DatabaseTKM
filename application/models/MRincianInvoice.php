@@ -11,6 +11,13 @@ class MRincianInvoice extends CI_Model
         return $data;
     }
 
+    public function getAllKoKab()
+    {
+        $data = $this->db->query('SELECT * FROM md_kokab_indonesia ORDER BY name ASC')
+            ->result_array();
+        return $data;
+    }
+
     public function getTargetAllPIC()
     {
         $data = $this->db->query('SELECT
@@ -147,6 +154,24 @@ ORDER BY total_target DESC;')
 
         $id_bowheer = $row->id_bowheer;
 
+        // Cek apakah kombinasi sudah ada
+        $exists = $this->db->get_where('tb_target_invoice', [
+            'id_bowheer' => $id_bowheer,
+            'area_target' => $area
+        ])->num_rows() > 0;
+
+        if (!$exists) {
+            return [
+                'status' => 'not_found',
+                'message' => 'Project tidak memiliki area ini',
+                'id_bowheer' => $id_bowheer,
+                'area_target' => $area,
+                'month' => $month,
+                'week' => $week,
+                'nilai_update' => str_replace(['Rp', ' ', '.'], '', $data['achiev_invoice'])
+            ];
+        }
+
         // Tentukan nilai update
         $total_invoice = str_replace(['Rp', ' ', '.'], '', $data['total_invoice']);
         $tambahan_invoice = str_replace(['Rp', ' ', '.'], '', $data['tambahan_invoice']);
@@ -177,6 +202,58 @@ ORDER BY total_target DESC;')
             return ['status' => false, 'message' => 'Tidak ada data yang diubah'];
         }
     }
+
+    public function createNewTargetInvoice($data)
+    {
+        $id_bowheer = $data['id_bowheer'];
+        $area = $data['area_target'];
+        $nilai_update = $data['nilai_update'];
+        $month_selected = strtoupper($data['month']);
+        $week_selected = strtoupper($data['week']);
+
+        // Struktur minggu per bulan
+        $weeks_by_month = [
+            'OKTOBER' => ['W1', 'W2', 'W3', 'W4', 'W4'],
+            'NOVEMBER' => ['W1', 'W2', 'W3', 'W4'],
+            'DESEMBER' => ['W1', 'W2']
+        ];
+
+        $data_insert = [];
+
+        // Loop seluruh bulan & minggu → total 11 kombinasi
+        foreach ($weeks_by_month as $month => $weeks) {
+            foreach ($weeks as $week) {
+                $data_insert[] = [
+                    'id_bowheer' => $id_bowheer,
+                    'regional_target' => 'REGIONAL -',
+                    'area_target' => $area,
+                    'pic_target' => 'HO',
+                    'week_target' => $week,
+                    'month_target' => $month,
+                    'qty_target' => '',
+                    'qty_achiev_target' => ($month === $month_selected && $week === $week_selected)
+                        ? $nilai_update
+                        : ''
+                ];
+            }
+        }
+
+        // Masukkan semua baris ke database
+        $this->db->insert_batch('tb_target_invoice', $data_insert);
+
+        if ($this->db->affected_rows() > 0) {
+            return [
+                'status' => true,
+                'message' => 'Area baru berhasil ditambahkan beserta seluruh kombinasi bulan & minggu.'
+            ];
+        } else {
+            return [
+                'status' => false,
+                'message' => 'Gagal menambahkan area baru.'
+            ];
+        }
+    }
+
 
 }
 

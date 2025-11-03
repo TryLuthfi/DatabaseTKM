@@ -84,18 +84,43 @@ class RincianInvoice extends CI_Controller
 
     public function addInvoice()
     {
-        $data = $this->input->post();
 
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        $data = $this->input->post();
         $this->load->model('MRincianInvoice');
+
         $result = $this->MRincianInvoice->updateAchievInvoice($data);
 
-        if ($result['status']) {
-            $this->session->set_flashdata('success', 'sukses_tambah' . number_format($result['nilai_update'], 0, ',', '.'));
-        } else {
-            $this->session->set_flashdata('error', 'gagal_tambah' . $result['message']);
+        // Jika area belum ada
+        if ($result['status'] === 'not_found') {
+            echo json_encode([
+                'status' => 'not_found',
+                'message' => 'Project tidak memiliki area ini',
+                'id_bowheer' => $result['id_bowheer'],
+                'area_target' => $result['area_target'],
+                'month' => $result['month'],
+                'week' => $result['week'],
+                'nilai_update' => $result['nilai_update']
+            ]);
+            return;
         }
 
-        redirect('RincianInvoice');
+        echo json_encode($result);
+    }
+
+
+    public function createNewTargetInvoice()
+    {
+
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        $data = $this->input->post();
+        $this->load->model('MRincianInvoice');
+        $result = $this->MRincianInvoice->createNewTargetInvoice($data);
+        echo json_encode($result);
     }
 
 }
