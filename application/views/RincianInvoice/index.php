@@ -300,14 +300,28 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
 
                             <div class="row">
                                 <div class="form-group col-md-12">
-                                    <label>Area</label>
-                                    <select id="addfilter_area" name="addfilter_area" class="form-control"
-                                        style="width:100%;">
+                                    <label class="col-form-label">Area</label>
+                                    <select id="addfilter_area" name="addfilter_area" class="form-control area-dropdown"
+                                        data-placeholder="Pilih Area" style="width: 100%;">
                                         <option value="" selected disabled hidden>Pilih Area</option>
                                         <?php foreach ($unique_city as $area): ?>
                                             <option value="<?= $area ?>"><?= $area ?></option>
                                         <?php endforeach; ?>
                                     </select>
+
+                                    <!-- Tombol tambah kota -->
+                                    <div class="text-right mt-2">
+                                        <button type="button" id="btnTambahKota" class="btn btn-link text-primary p-0"
+                                            style="font-weight:600;">
+                                            + Tambah Kota Baru
+                                        </button>
+                                    </div>
+
+                                    <!-- Input kota baru (disembunyikan dulu) -->
+                                    <div id="inputKotaBaruContainer" style="display:none; margin-top:10px;">
+                                        <input type="text" id="inputKotaBaru" name="inputKotaBaru" class="form-control"
+                                            placeholder="Ketik nama kota baru..." autocomplete="off">
+                                    </div>
                                 </div>
                             </div>
 
@@ -909,27 +923,48 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
 
                 // 🔹 Validasi tetap dipertahankan (jangan dihapus)
                 let bowheer = $("#addfilter_bowheer").val();
-                let area = $("#addfilter_area").val();
+                const inputKotaBaru = $('#inputKotaBaru');
+                const areaDropdown = $('#addfilter_area');
+                let area = areaDropdown.val(); // ✅ Tambahkan ini
                 let month = $("#addfilter_month").val();
                 let week = $("#addfilter_week").val();
                 let achiev = $("[name='achiev_invoice']").val().trim();
                 let tambahanVisible = $("[name='tambahan_invoice']").closest('.form-group').is(":visible");
                 let tambahan = $("[name='tambahan_invoice']").val().trim();
 
+                // 🔹 Jika tambah kota baru aktif → pakai nilai input kota baru
+                if (inputKotaBaru.is(':visible') && inputKotaBaru.val().trim() !== '') {
+                    area = inputKotaBaru.val().trim(); // ✅ overwrite nilai area
+                    areaDropdown.val(area); // agar ikut terkirim via serialize
+                }
+
+                // 🔹 Validasi dropdown dan input wajib
                 if (!bowheer || !area || !month || !week) {
-                    Swal.fire({ icon: 'warning', title: 'Data belum lengkap!', text: 'Pastikan semua dropdown sudah dipilih.' });
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Data belum lengkap!',
+                        text: 'Pastikan semua dropdown sudah dipilih.'
+                    });
                     return;
                 }
                 if (achiev === "" || achiev === "0") {
-                    Swal.fire({ icon: 'warning', title: 'Input belum diisi!', text: 'Nilai Realisasi Invoice harus diisi.' });
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Input belum diisi!',
+                        text: 'Nilai Realisasi Invoice harus diisi.'
+                    });
                     return;
                 }
                 if (tambahanVisible && (tambahan === "" || tambahan === "0")) {
-                    Swal.fire({ icon: 'warning', title: 'Input belum diisi!', text: 'Tambahan Invoice wajib diisi jika tampil.' });
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Input belum diisi!',
+                        text: 'Tambahan Invoice wajib diisi jika tampil.'
+                    });
                     return;
                 }
 
-                // 🔹 Jika lolos validasi → konfirmasi simpan
+                // 🔹 Konfirmasi simpan
                 Swal.fire({
                     icon: 'question',
                     title: 'Simpan Invoice?',
@@ -950,7 +985,6 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                                 console.log(res);
 
                                 if (res.status === 'not_found') {
-                                    // 🔸 Tampilkan alert area belum ada
                                     Swal.fire({
                                         icon: 'question',
                                         title: 'Area belum terdaftar',
@@ -976,7 +1010,6 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                                         }
                                     });
                                 } else if (res.status) {
-                                    // 🔸 Jika berhasil update
                                     Swal.fire({
                                         icon: 'success',
                                         title: 'Berhasil!',
@@ -1011,6 +1044,63 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                 $("[name='total_invoice']").closest('.form-group').hide();
             });
 
+        });
+
+        $(document).ready(function () {
+            let isTambahKotaActive = false;
+
+            // Toggle form tambah kota
+            $('#btnTambahKota').on('click', function () {
+                isTambahKotaActive = !isTambahKotaActive;
+
+                if (isTambahKotaActive) {
+                    // Saat aktif → tampilkan input, disable dropdown
+                    $('#inputKotaBaruContainer').slideDown();
+                    $('#addfilter_area').prop('disabled', true);
+                    $('#inputKotaBaru').focus();
+                    $(this).text('× Batalkan Tambah Kota');
+                } else {
+                    // Saat nonaktif → sembunyikan input, enable dropdown
+                    $('#inputKotaBaruContainer').slideUp();
+                    $('#addfilter_area').prop('disabled', false);
+                    $('#inputKotaBaru').val('');
+                    $(this).text('+ Tambah Kota Baru');
+                }
+            });
+
+            // Pastikan saat submit form, area_target diambil sesuai yang aktif
+            $('form').on('submit', function (e) {
+                const isInputBaru = isTambahKotaActive;
+                const areaDropdown = $('#addfilter_area').val();
+                const areaBaru = $('#inputKotaBaru').val().trim();
+
+                if (isInputBaru && areaBaru === '') {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Kota baru belum diisi!',
+                        text: 'Silakan isi nama kota sebelum melanjutkan.'
+                    });
+                    return false;
+                }
+
+                // Jika kota baru aktif, gunakan nilainya sebagai area_target
+                if (isInputBaru) {
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: 'addfilter_area',
+                        value: areaBaru
+                    }).appendTo('form');
+                } else if (!areaDropdown) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Area belum dipilih!',
+                        text: 'Pilih area dari daftar atau tambahkan area baru.'
+                    });
+                    return false;
+                }
+            });
         });
     </script>
 
@@ -1207,5 +1297,15 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
         .text-primary.font-weight-bold:hover {
             transform: scale(1.05);
             text-shadow: 0 0 10px rgba(102, 16, 242, 0.4);
+        }
+
+        #btnTambahKota {
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        #btnTambahKota:hover {
+            text-decoration: underline;
+            transform: scale(1.05);
         }
     </style>
