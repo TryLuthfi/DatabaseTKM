@@ -1809,7 +1809,11 @@ $total = 1;
                                                                 }
                                                                 ?>
                                                             </td>
-                                                            <td><?= number_format(($deviasi / $data['GRAND TOTAL TARGET'] * 100), 0, ",", ".") . '%' ?>
+                                                            <td><?php if($data['GRAND TOTAL TARGET'] > 0){
+                                                                echo number_format((($deviasi / $data['GRAND TOTAL TARGET']) * 100), 0, ",", ".") . '%';
+                                                            } else {
+                                                                echo '-';
+                                                            } ?>
                                                             </td>
                                                         </tr>
                                                     <?php endforeach; ?>
