@@ -82,9 +82,9 @@ $total = 1;
                                     class="fas fa-money-check-alt"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">PERSENTASE INVOICE TW - 4</span>
-                                <span class="info-box-number" id="dashboardPersentaseInvoice">
+                                <h4 class="info-box-number" id="dashboardPersentaseInvoice">
                                     Rp. 0
-                                </span>
+                                </h4>
                             </div>
                             <!-- /.info-box-content -->
                         </div>
@@ -93,36 +93,42 @@ $total = 1;
                     </div>
                 </div>
 
-                <div class="container-fluid">
-                    <div class="content-header">
-                        <div class="container-fluid">
-                            <div class="row mb-2">
-                                <div class="col-sm-12">
-                                    <h1 class="m-0 text-dark" style="text-align: center;">CHART STAGGING</h1>
-                                </div><!-- /.col -->
-                            </div><!-- /.row -->
-                        </div><!-- /.container-fluid -->
+                <div class="container-fluid py-4 bg-light rounded shadow-sm">
+                    <div class="content-header mb-4 text-center">
+                        <h1 class="display-6 text-primary fw-bold">📊 Chart Stagging</h1>
+                        <p class="text-muted mb-0">Perbandingan antara Target, Achieved, dan Outstanding setiap PIC &
+                            Area</p>
+                        <hr class="w-25 mx-auto border-primary">
                     </div>
 
-
-                    <div class="row">
-                        <div class="col-6">
-                            <div class="card-body">
-                                <div class="chart" style="height: 300px;">
-                                    <canvas id="invoice_chart_bar_pic"
-                                        style="min-height: 250px; height: 400px; max-height: 400px; max-width: 100%;"></canvas>
+                    <div class="row g-4">
+                        <!-- Chart by PIC -->
+                        <div class="col-12 col-lg-6">
+                            <div class="card border-0 shadow-lg rounded-4 h-100">
+                                <div class="card-header bg-primary text-white text-center rounded-top-4">
+                                    <h5 class="mb-0 fw-semibold"><i class="fas fa-user-tie me-2"></i>Chart Berdasarkan
+                                        PIC</h5>
                                 </div>
-                                <div id="paginationControlsPIC" class="mt-3 d-flex justify-content-center"></div>
+                                <div class="card-body bg-white rounded-bottom-4">
+                                    <canvas id="invoice_chart_bar_pic"
+                                        style="min-height: 250px; height: 400px; max-height: 400px; width: 100%;"></canvas>
+                                </div>
+                                <div id="paginationControlsPIC" class="my-3 d-flex justify-content-center"></div>
                             </div>
                         </div>
 
-                        <div class="col-6">
-                            <div class="card-body">
-                                <div class="chart" style="height: 300px;">
-                                    <canvas id="invoice_chart_bar_area"
-                                        style="min-height: 250px; height: 400px; max-height: 400px; max-width: 100%;"></canvas>
+                        <!-- Chart by AREA -->
+                        <div class="col-12 col-lg-6">
+                            <div class="card border-0 shadow-lg rounded-4 h-100">
+                                <div class="card-header bg-success text-white text-center rounded-top-4">
+                                    <h5 class="mb-0 fw-semibold"><i class="fas fa-map-marked-alt me-2"></i>Chart
+                                        Berdasarkan Project</h5>
                                 </div>
-                                <div id="paginationControlsArea" class="mt-3 d-flex justify-content-center"></div>
+                                <div class="card-body bg-white rounded-bottom-4">
+                                    <canvas id="invoice_chart_bar_area"
+                                        style="min-height: 250px; height: 400px; max-height: 400px; width: 100%;"></canvas>
+                                </div>
+                                <div id="paginationControlsArea" class="my-3 d-flex justify-content-center"></div>
                             </div>
                         </div>
                     </div>
@@ -1809,7 +1815,7 @@ $total = 1;
                                                                 }
                                                                 ?>
                                                             </td>
-                                                            <td><?php if($data['GRAND TOTAL TARGET'] > 0){
+                                                            <td><?php if ($data['GRAND TOTAL TARGET'] > 0) {
                                                                 echo number_format((($deviasi / $data['GRAND TOTAL TARGET']) * 100), 0, ",", ".") . '%';
                                                             } else {
                                                                 echo '-';
@@ -3357,6 +3363,8 @@ $total = 1;
                     totalSisaInvoiceBowheer += parseFloat(row[5].replace(/\./g, '')) || 0;
                 });
 
+                let persen = (totalAchievedInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(0);
+
                 document.getElementById('totalTargetInvoiceBowheer').innerText = totalTargetInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('totalAchievedInvoiceBowheer').innerText = totalAchievedInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('totalSisaInvoiceBowheer').innerText = totalSisaInvoiceBowheer.toLocaleString('id-ID');
@@ -3366,7 +3374,30 @@ $total = 1;
                 document.getElementById('dashboardTargetInvoice').innerText = "RP. " + totalTargetInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('dashboardAchievInvoice').innerText = "RP. " + totalAchievedInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('dashboardSisaInvoice').innerText = "RP. " + totalSisaInvoiceBowheer.toLocaleString('id-ID');
-                document.getElementById('dashboardPersentaseInvoice').innerText = (totalAchievedInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(0) + " %";
+
+                let dashboardInvoice = document.getElementById('dashboardPersentaseInvoice');
+
+                let icon = '';
+                let colorClass = '';
+                let textValue = persen + ' %';
+
+                // Tentukan kondisi tampilan
+                if (persen < 100) {
+                    icon = '<i class="fas fa-arrow-down text-danger ms-2"></i>';
+                    colorClass = 'text-danger fw-bold';
+                } else if (persen == 100) {
+                    icon = '<i class="fas fa-check-circle text-success ms-2"></i>';
+                    colorClass = 'text-success fw-bold';
+                } else if (persen > 100) {
+                    icon = '<i class="fas fa-arrow-up text-success ms-2"></i>';
+                    colorClass = 'text-success fw-bold';
+                }
+
+                dashboardInvoice.innerHTML = `
+    <span class="${colorClass}" style="font-weight:600;">
+        ${textValue} ${icon}
+    </span>
+`;
             }
 
             // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
@@ -5160,5 +5191,29 @@ $total = 1;
             color: #33cc33 !important;
             font-weight: bold;
             font-weight: bold;
+        }
+
+        .card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        #paginationControlsPIC button,
+        #paginationControlsArea button {
+            margin: 0 4px;
+            border-radius: 50%;
+            padding: 6px 12px;
+            transition: all 0.2s;
+        }
+
+        #paginationControlsPIC button.active,
+        #paginationControlsArea button.active {
+            background-color: #007bff !important;
+            color: white !important;
+            box-shadow: 0 0 6px rgba(0, 123, 255, 0.6);
+        }
+
+        #paginationControlsPIC button:hover,
+        #paginationControlsArea button:hover {
+            transform: scale(1.1);
         }
     </style>
