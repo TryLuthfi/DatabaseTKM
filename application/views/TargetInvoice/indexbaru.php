@@ -93,13 +93,61 @@ $total = 1;
                     </div>
                 </div>
 
-                <div class="container-fluid py-4 bg-light rounded shadow-sm">
-                    <div class="content-header mb-4 text-center">
-                        <h1 class="display-6 text-primary fw-bold">📊 Chart Stagging</h1>
-                        <p class="text-muted mb-0">Perbandingan antara Target, Achieved, dan Outstanding setiap PIC &
-                            Area</p>
-                        <hr class="w-25 mx-auto border-primary">
+                <div class="content-header">
+                    <div class="container-fluid">
+                        <div class="row mb-2">
+                            <div class="col-sm-12 ">
+                                <h3 class="m-0 text-dark" style="text-align: center;">DAILY TARGET TO ACHIEV INVOICE</h3>
+                            </div><!-- /.col -->
+                        </div><!-- /.row -->
+                    </div><!-- /.container-fluid -->
+                </div>
+
+                <div class="row">
+                    <!-- /.col -->
+
+                    <div class="col-12 col-sm-6 col-md-3" style="visibility: hidden;">
+                        <div class="info-box mb-3">
+                        </div>
+                        <!-- /.info-box -->
                     </div>
+
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="info-box mb-3 glow-yellow">
+                            <span class="info-box-icon bg-grey elevation-1"><i
+                                    class="fas fa-file-invoice-dollar"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">DAILY TARGET INVOICE</span>
+                                <h4 class="info-box-number" style="color: #33cc33;" id="dashboardTargetInvoiceHarian">
+                                    Rp. 0
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <div class="info-box mb-3 glow-yellow">
+                            <span class="info-box-icon bg-grey elevation-1"><i
+                                    class="fas fa-money-check-alt"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">PERSENTASE TARGET INVOICE</span>
+                                <h4 class="info-box-number" style="color: #ce0808ff;"
+                                    id="dashboardPersentaseTargetHarian">
+                                    Rp. 0
+                                </h4>
+                            </div>
+                        </div>
+                        </a>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-md-3" style="visibility: hidden;">
+                        <div class="info-box mb-3">
+                        </div>
+                        <!-- /.info-box -->
+                    </div>
+                </div>
+
+                <div class="container-fluid py-4 bg-light rounded shadow-sm">
 
                     <div class="row g-4">
                         <!-- Chart by PIC -->
@@ -3398,6 +3446,35 @@ $total = 1;
         ${textValue} ${icon}
     </span>
 `;
+
+                function hitungSisaHariKerja() {
+                    const today = new Date();
+                    const tahun = today.getFullYear();
+                    const bulan = 10; // 0-based index, 10 = November
+                    const lastDate = new Date(tahun, bulan + 1, 0); // 30 November
+
+                    let sisaHari = 0;
+                    let current = new Date(today);
+
+                    while (current <= lastDate) {
+                        const day = current.getDay(); // 0 = Minggu, 6 = Sabtu
+                        if (day !== 0) sisaHari++; // Hitung Senin–Sabtu
+                        current.setDate(current.getDate() + 1);
+                    }
+
+                    return sisaHari;
+                }
+
+                const sisaHariKerja = hitungSisaHariKerja();
+
+                const targetHarian = totalSisaInvoiceBowheer / sisaHariKerja;
+                const persentaseHarian = (100 / sisaHariKerja).toFixed(1);
+
+                document.getElementById('dashboardTargetInvoiceHarian').innerText =
+                    "Rp. " + Math.round(targetHarian).toLocaleString('id-ID');
+
+                document.getElementById('dashboardPersentaseTargetHarian').innerText =
+                    persentaseHarian + " %";
             }
 
             // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
@@ -5170,6 +5247,19 @@ $total = 1;
         .glow-green:hover {
             box-shadow: 0 0 25px rgba(0, 255, 0, 0.9);
         }
+
+        /* upgrade warna header kuning */
+        .glow-yellow {
+    border: 1px solid rgba(196, 218, 4, 0.4);
+    box-shadow: 0 6px 12px rgba(196, 218, 4, 0.6); /* arah bayangan ke bawah */
+    transition: box-shadow 0.3s ease-in-out, transform 0.2s;
+    border-radius: 10px;
+}
+
+.glow-yellow:hover {
+    box-shadow: 0 10px 18px rgba(196, 218, 4, 0.8); /* glow lebih tegas ke bawah saat hover */
+    transform: translateY(-2px); /* efek sedikit mengangkat saat hover */
+}
 
 
         /* upgrade warna table */
