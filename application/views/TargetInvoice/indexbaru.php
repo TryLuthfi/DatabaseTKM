@@ -3490,7 +3490,7 @@ $total = 1;
                 const sisaHariKerja = hitungSisaHariKerja();
 
                 const targetHarian = totalSisaInvoiceBowheer / sisaHariKerja;
-                const persentaseHarian = (100 / sisaHariKerja).toFixed(1);
+                const persentaseHarian = ((100 - persen) / sisaHariKerja).toFixed(1);
 
                 document.getElementById('dashboardTargetInvoiceHarian').innerText =
                     "Rp. " + Math.round(targetHarian).toLocaleString('id-ID');
