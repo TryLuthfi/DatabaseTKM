@@ -11,6 +11,8 @@ $unique_city = array_unique(array_column($getAllData, 'area_target'));
 $unique_month = array_unique(array_column($getAllData, 'month_target'));
 $unique_week = array_unique(array_column($getAllData, 'week_target'));
 
+sort($unique_city, SORT_STRING | SORT_FLAG_CASE);
+
 
 ?>
 
@@ -318,11 +320,25 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                                     </div>
 
                                     <!-- Input kota baru (disembunyikan dulu) -->
+
+                                    <select id="inputRegionalBaru" name="inputRegionalBaru" class="form-control area-dropdown"
+                                        data-placeholder="Pilih Regional Baru" style="width: 100%; display:none; margin-top:10px;">
+                                        <option value="" selected disabled hidden>Pilih Regional Baru</option>
+                                        <?php foreach ($unique_regional as $regional): ?>
+                                            <option value="<?= $regional ?>"><?= $regional ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+
                                     <div id="inputKotaBaruContainer" style="display:none; margin-top:10px;">
                                         <input type="text" id="inputKotaBaru" name="inputKotaBaru" class="form-control"
                                             placeholder="Ketik nama kota baru..." autocomplete="off">
                                     </div>
-                                </div>
+
+                                    <div id="inputPICBaruContainer" style="display:none; margin-top:10px;">
+                                        <input type="text" id="inputPICBaru" name="inputPICBaru" class="form-control"
+                                            placeholder="Ketik PIC baru..." autocomplete="off">
+                                    </div>
+                                </div> 
                             </div>
 
                             <div class="row">
@@ -860,7 +876,7 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                             $('[name="target_invoice"]').val(formatRupiah(qtyTarget));
                             $('[name="achiev_invoice"]').val(formatRupiah(qtyAchiev));
 
-                            if (res.status === "area_not_found") {
+                            if (res.status === "not_found") {
                                 // Jika area tidak ditemukan, tampilkan alert konfirmasi
                                 Swal.fire({
                                     icon: 'question',
@@ -926,6 +942,8 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                 const inputKotaBaru = $('#inputKotaBaru');
                 const areaDropdown = $('#addfilter_area');
                 let area = areaDropdown.val(); // ✅ Tambahkan ini
+                let regional = $("#inputRegionalBaru").val();
+                let pic = $("#inputPICBaru").val();
                 let month = $("#addfilter_month").val();
                 let week = $("#addfilter_week").val();
                 let achiev = $("[name='achiev_invoice']").val().trim();
@@ -999,6 +1017,7 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                                                 type: "POST",
                                                 dataType: "json",
                                                 data: res,
+                                                
                                                 success: function (res2) {
                                                     Swal.fire({
                                                         icon: res2.status ? 'success' : 'error',
@@ -1057,14 +1076,24 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                     // Saat aktif → tampilkan input, disable dropdown
                     $('#inputKotaBaruContainer').slideDown();
                     $('#addfilter_area').prop('disabled', true);
-                    $('#inputKotaBaru').focus();
+                    $('#addfilter_area').val('');
                     $(this).text('× Batalkan Tambah Kota');
+
+                    $('#inputRegionalBaru').slideDown();
+
+                    $('#inputPICBaruContainer').slideDown();
                 } else {
                     // Saat nonaktif → sembunyikan input, enable dropdown
                     $('#inputKotaBaruContainer').slideUp();
                     $('#addfilter_area').prop('disabled', false);
                     $('#inputKotaBaru').val('');
                     $(this).text('+ Tambah Kota Baru');
+
+                    $('#inputRegionalBaru').slideUp();
+                    $('#inputRegionalBaru').val('');
+
+                    $('#inputPICBaruContainer').slideUp();
+                    $('#inputPICBaru').val('');
                 }
             });
 
@@ -1073,6 +1102,8 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                 const isInputBaru = isTambahKotaActive;
                 const areaDropdown = $('#addfilter_area').val();
                 const areaBaru = $('#inputKotaBaru').val().trim();
+                const regionalBaru = $('#inputRegionalBaru').val().trim();
+                const picBaru = $('#inputPICBaru').val().trim();
 
                 if (isInputBaru && areaBaru === '') {
                     e.preventDefault();
@@ -1080,6 +1111,26 @@ $unique_week = array_unique(array_column($getAllData, 'week_target'));
                         icon: 'warning',
                         title: 'Kota baru belum diisi!',
                         text: 'Silakan isi nama kota sebelum melanjutkan.'
+                    });
+                    return false;
+                }
+
+                if (isInputBaru && regionalBaru === '') {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Regional baru belum diisi!',
+                        text: 'Silakan isi nama regional sebelum melanjutkan.'
+                    });
+                    return false;
+                }
+
+                if (isInputBaru && picBaru === '') {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'warning',
+                            title: 'PIC baru belum diisi!',
+                            text: 'Silakan isi nama PIC sebelum melanjutkan.'
                     });
                     return false;
                 }

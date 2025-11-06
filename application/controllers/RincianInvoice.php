@@ -102,6 +102,8 @@ class RincianInvoice extends CI_Controller
                 'area_target' => $result['area_target'],
                 'month' => $result['month'],
                 'week' => $result['week'],
+                'regional' => $result['regional'],
+                'pic' => $result['pic'],
                 'nilai_update' => $result['nilai_update']
             ]);
             return;

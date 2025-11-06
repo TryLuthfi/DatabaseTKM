@@ -147,6 +147,8 @@ ORDER BY total_target DESC;')
         $area = $data['addfilter_area'];
         $month = $data['addfilter_month'];
         $week = $data['addfilter_week'];
+        $regional = $data['inputRegionalBaru'];
+        $pic = $data['inputPICBaru'];
 
         // Cari ID Bowheer
         $row = $this->db->select('id_bowheer')
@@ -185,6 +187,8 @@ ORDER BY total_target DESC;')
                 'area_target' => $area,
                 'month' => $month,
                 'week' => $week,
+                'regional' => $regional,
+                'pic' => $pic,
                 'nilai_update' => $cleanRupiah($data['achiev_invoice'])
             ];
         }
@@ -220,9 +224,16 @@ ORDER BY total_target DESC;')
 
     public function createNewTargetInvoice($data)
     {
+
+        // echo ("<pre>");
+        // print_r($_POST);
+        // echo ("</pre>");
+
         $id_bowheer = $data['id_bowheer'];
         $area = $data['area_target'];
         $nilai_update = $data['nilai_update'];
+        $regional = $data['regional'];
+        $pic = $data['pic'];
         $month_selected = strtoupper($data['month']);
         $week_selected = strtoupper($data['week']);
 
@@ -240,9 +251,9 @@ ORDER BY total_target DESC;')
             foreach ($weeks as $week) {
                 $data_insert[] = [
                     'id_bowheer' => $id_bowheer,
-                    'regional_target' => 'REGIONAL -',
+                    'regional_target' => $regional,
                     'area_target' => $area,
-                    'pic_target' => 'HO',
+                    'pic_target' => $pic,
                     'week_target' => $week,
                     'month_target' => $month,
                     'qty_target' => '',

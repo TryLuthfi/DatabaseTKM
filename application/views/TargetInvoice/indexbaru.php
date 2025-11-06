@@ -276,7 +276,7 @@ $total = 1;
                                                 ?></td>
                                                 <td><?php
                                                 if ($data['persen_achiev'] > 0 && $data['persen_achiev'] > 0) {
-                                                    echo number_format($data['persen_achiev'], 0, ",", ".") . '%';
+                                                    echo number_format($data['persen_achiev'], 1, ",", ".") . '%';
                                                 } else {
                                                     echo '0%';
                                                 }
@@ -1084,7 +1084,7 @@ $total = 1;
                                                 ?></td>
                                                 <td><?php
                                                 if ($data['persen_achiev'] > 0 && $data['persen_achiev'] > 0) {
-                                                    echo number_format($data['persen_achiev'], 0, ",", ".") . '%';
+                                                    echo number_format($data['persen_achiev'], 1, ",", ".") . '%';
                                                 } else {
                                                     echo '-';
                                                 }
@@ -1701,9 +1701,9 @@ $total = 1;
                                                     echo number_format(floatval($data['deviasi']), 0, ",", ".");
                                                 }
                                                 ?></td>
-                                                <td><?= rtrim(rtrim(number_format($data['persen_achiev'], 2, '.', ''), '0'), '.') ?>%
+                                                <td><?= rtrim(rtrim(number_format($data['persen_achiev'], 1, '.', ''), '0'), '.') ?>%
                                                 </td>
-                                                <td><?= rtrim(rtrim(number_format($data['persen_deviasi'], 2, '.', ''), '0'), '.') ?>%
+                                                <td><?= rtrim(rtrim(number_format($data['persen_deviasi'], 1, '.', ''), '0'), '.') ?>%
                                                 </td>
                                             </tr>
 
@@ -2309,9 +2309,9 @@ $total = 1;
                                                     echo number_format(floatval($data['deviasi']), 0, ",", ".");
                                                 }
                                                 ?></td>
-                                                <td><?= rtrim(rtrim(number_format($data['persen_achiev'], 0, '.', ''), '0'), '.') ?>%
+                                                <td><?= rtrim(rtrim(number_format($data['persen_achiev'], 1, '.', ''), '0'), '.') ?>%
                                                 </td>
-                                                <td><?= rtrim(rtrim(number_format($data['persen_deviasi'], 0, '.', ''), '0'), '.') ?>%
+                                                <td><?= rtrim(rtrim(number_format($data['persen_deviasi'], 1, '.', ''), '0'), '.') ?>%
                                                 </td>
                                                 <td>
                                                     <a href="<?php echo site_url('TargetInvoice/detailKota/' . $data['area_target']); ?>"
@@ -3480,13 +3480,43 @@ $total = 1;
                     persentaseHarian + " %";
             }
 
+            function highlightCells() {
+                $('#tabel_targetbowheer_summary tbody tr').each(function () {
+                    const cell = $(this).find('td:eq(6)'); // kolom ke-6 (ACHIEVED %)
+                    let persenText = cell.text().trim();
+
+                    // Bersihkan simbol lama (agar tidak dobel)
+                    persenText = persenText.replace(/<[^>]+>/g, '').replace(/[\u2191\u2193✅❌]/g, '');
+
+                    const persen = parseFloat(persenText.replace('%', '').replace(',', '.')) || 0;
+
+                    // Default: hapus isi lalu tambahkan kembali dengan ikon
+                    let icon = '';
+                    if (persen < 100) {
+                        icon = ' <i class="fas fa-arrow-down text-danger"></i>'; // merah turun
+                        cell.addClass('cell-red');
+                    } else if (persen === 100) {
+                        icon = ' <i class="fas fa-check-circle text-success"></i>'; // hijau centang
+                        cell.addClass('cell-green-light');
+                    } else if (persen > 100) {
+                        icon = ' <i class="fas fa-arrow-up text-success"></i>'; // hijau naik
+                        cell.addClass('cell-green-dark');
+                    }
+
+                    // Update isi cell
+                    cell.html(`${persenText}${icon}`);
+                });
+            }
+
             // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
             table.on('draw', function () {
                 updateTotal();
+                highlightCells();
             });
 
             // Hitung total pertama kali saat tabel dimuat
             updateTotal();
+            highlightCells();
         });
 
         $(document).ready(function () {
@@ -3821,13 +3851,43 @@ $total = 1;
                 document.getElementById('totalPersentaseDeviasiTargetInvoiceCity').innerText = (totalSisaInvoiceCity / totalTargetInvoiceCity * 100).toFixed(0) + " %";
             }
 
+            function highlightCells() {
+                $('#tabel_targetcity_summary tbody tr').each(function () {
+                    const cell = $(this).find('td:eq(5)'); // kolom ke-6 (ACHIEVED %)
+                    let persenText = cell.text().trim();
+
+                    // Bersihkan simbol lama (agar tidak dobel)
+                    persenText = persenText.replace(/<[^>]+>/g, '').replace(/[\u2191\u2193✅❌]/g, '');
+
+                    const persen = parseFloat(persenText.replace('%', '').replace(',', '.')) || 0;
+
+                    // Default: hapus isi lalu tambahkan kembali dengan ikon
+                    let icon = '';
+                    if (persen < 100) {
+                        icon = ' <i class="fas fa-arrow-down text-danger"></i>'; // merah turun
+                        cell.addClass('cell-red');
+                    } else if (persen === 100) {
+                        icon = ' <i class="fas fa-check-circle text-success"></i>'; // hijau centang
+                        cell.addClass('cell-green-light');
+                    } else if (persen > 100) {
+                        icon = ' <i class="fas fa-arrow-up text-success"></i>'; // hijau naik
+                        cell.addClass('cell-green-dark');
+                    }
+
+                    // Update isi cell
+                    cell.html(`${persenText}${icon}`);
+                });
+            }
+
             // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
             table.on('draw', function () {
                 updateTotal();
+                highlightCells();
             });
 
             // Hitung total pertama kali saat tabel dimuat
             updateTotal();
+            highlightCells();
         });
 
         $(document).ready(function () {
@@ -4571,13 +4631,43 @@ $total = 1;
                 document.getElementById('totalPersentaseDeviasiTargetInvoiceRegional').innerText = (totalDeviasiInvoiceRegional / totalTargetInvoiceRegional * 100).toFixed(2) + " %";
             }
 
+            function highlightCells() {
+                $('#tabel_targetregional_summary tbody tr').each(function () {
+                    const cell = $(this).find('td:eq(5)'); // kolom ke-6 (ACHIEVED %)
+                    let persenText = cell.text().trim();
+
+                    // Bersihkan simbol lama (agar tidak dobel)
+                    persenText = persenText.replace(/<[^>]+>/g, '').replace(/[\u2191\u2193✅❌]/g, '');
+
+                    const persen = parseFloat(persenText.replace('%', '').replace(',', '.')) || 0;
+
+                    // Default: hapus isi lalu tambahkan kembali dengan ikon
+                    let icon = '';
+                    if (persen < 100) {
+                        icon = ' <i class="fas fa-arrow-down text-danger"></i>'; // merah turun
+                        cell.addClass('cell-red');
+                    } else if (persen === 100) {
+                        icon = ' <i class="fas fa-check-circle text-success"></i>'; // hijau centang
+                        cell.addClass('cell-green-light');
+                    } else if (persen > 100) {
+                        icon = ' <i class="fas fa-arrow-up text-success"></i>'; // hijau naik
+                        cell.addClass('cell-green-dark');
+                    }
+
+                    // Update isi cell
+                    cell.html(`${persenText}${icon}`);
+                });
+            }
+
             // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
             table.on('draw', function () {
                 updateTotal();
+                highlightCells();
             });
 
             // Hitung total pertama kali saat tabel dimuat
             updateTotal();
+            highlightCells();
         });
 
         $(document).ready(function () {
