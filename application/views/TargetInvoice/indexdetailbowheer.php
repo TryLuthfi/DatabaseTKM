@@ -4,13 +4,14 @@ $error_log = $this->session->flashdata('error_log');
 
 $option_aktif = ['AKTIF', 'HILANG', 'TERJUAL'];
 foreach ($getDetailTargetCityFilterBowheer as $data):
-    $judul = "DETAIL TARGET INVOICE - " . $data['nama_bowheer'];
+    $judul_regional = "DETAIL REGIONAL PROJECT - " . $data['nama_bowheer'];
+    $judul_kota = "DETAIL KOTA PROJECT - " . $data['nama_bowheer'];
 endforeach;
 
 $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
-        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
-        $last_segment = end($segments);
-        $decoded_url_area = urldecode($last_segment);
+$segments = explode("/", $url_path); // Pecah berdasarkan "/"
+$last_segment = end($segments);
+$decoded_url_area = urldecode($last_segment);
 
 $total = 1;
 ?>
@@ -18,12 +19,559 @@ $total = 1;
 <div class="content-wrapper">
 
     <div class="content">
+
         <div class="content-header">
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-12">
                         <h1 class="m-0 text-dark" style="text-align: center;">
-                            <?= $judul ?>
+                            <?= $judul_regional ?>
+                        </h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="content">
+            <div class="col-12 col-sm-12">
+                <div class="card card-dark card-tabs">
+                    <div class="card-header p-0 pt-1">
+                        <ul class="nav nav-tabs" id="custom-tabs-two-tab" role="tablist">
+                            <li class="pt-2 px-3">
+                                <h3 class="card-title">DETAIL</h3>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" id="custom-tabs-first-profile-tab" data-toggle="pill"
+                                    href="#custom-tabs-satu-regional" role="tab" aria-controls="custom-tabs-two-home"
+                                    aria-selected="true">SUMMARY TARGET</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
+                                    href="#custom-tabs-dua-regional" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">MONTHLY</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabs-tiga-regional" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">OKTOBER</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabs-empat-regional" role="tab"
+                                    aria-controls="custom-tabs-two-profile" aria-selected="false">NOVEMBER</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabs-lima-regional" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">DESEMBER</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="tab-content" id="custom-tabs-two-tabContent">
+
+                            <!-- TAB NAV PERTAMA -->
+                            <div class="tab-pane show active" id="custom-tabs-satu-regional" role="tabpanel"
+                                aria-labelledby="custom-tabs-two-profile-tab">
+                                <table id="tabel_targetbowheer_filter_summary_regional"
+                                    class="table table-bordered table-striped ">
+                                    <thead style="text-align: center;">
+                                        <tr>
+                                            <th>No</th>
+                                            <th>REGIONAL</th>
+                                            <th>TARGET INVOICE</th>
+                                            <th>ACHIEVED INVOICE</th>
+                                            <th>OUTSTANDING</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        foreach ($getDetailTargetCityFilterBowheerRegional as $data): ?>
+                                            <tr>
+                                                <td><?= $total++ ?></td>
+                                                <td><?= $data['regional_target'] ?></td>
+                                                <td><?php if ($data['total_target'] == "0") {
+                                                    echo "-";
+                                                } else {
+                                                    echo number_format(floatval($data['total_target']), 0, ",", ".");
+                                                } ?></td>
+                                                </td>
+                                                <td><?php
+                                                if ($data['total_achiev'] == "0") {
+                                                    echo "-";
+                                                } else {
+                                                    echo number_format(floatval($data['total_achiev']), 0, ",", ".");
+                                                }
+                                                ?></td>
+                                                <td><?php
+                                                if ($data['deviasi'] == "0") {
+                                                    echo "-";
+                                                } else {
+                                                    echo number_format(floatval($data['deviasi']), 0, ",", ".");
+                                                }
+                                                ?></td>
+                                            </tr>
+
+                                            <?php
+                                        endforeach; ?>
+
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="2">Total</th>
+                                            <th><span id="totalTargetInvoiceBowheerRegional">0</span>
+                                            </th>
+                                            <th><span id="totalAchievedInvoiceBowheerRegional">0</span>
+                                            </th>
+                                            <th><span id="totalSisaInvoiceBowheerRegional">0</span>
+                                            </th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                            <!-- TAB NAV KEDUA -->
+                            <div class="tab-pane fade" id="custom-tabs-dua-regional" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0 w-full">
+                                            <table id="tabel_targetbowheer_filter_month_regional"
+                                                class="table table-bordered table-striped nowrap">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="2"
+                                                            style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="2"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            REGIONAL</th>
+                                                        <th rowspan="2"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            OKTOBER
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            NOVEMBER
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            DESEMBER
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- OKTOBER -->
+                                                        <?php for ($i = 0; $i < 3; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getAllTargetRincianInvoiceDecodeRegional as $data):
+                                                        if ($data['id_bowheer'] == $decoded_url_area):
+                                                            $target = $data['GRAND TOTAL TARGET'];
+                                                            $achiev = $data['GRAND TOTAL ACHIEVED'];
+                                                            $deviasi = $target - $achiev;
+                                                            ?>
+                                                            <tr>
+                                                                <td><?= $no++ ?></td>
+                                                                <td><?= $data['regional_target'] ?></td>
+                                                                <td><?= ($data['GRAND TOTAL TARGET'] != 0 ? number_format(floatval($data['GRAND TOTAL TARGET']), 0, ",", ".") : '-') ?>
+
+                                                                    <!-- OKTOBER -->
+                                                                <td><?= ($data['TOTAL TARGET OKTOBER'] != 0 ? number_format(floatval($data['TOTAL TARGET OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TOTAL ACHIEVED OKTOBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TOTAL TARGET NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TOTAL ACHIEVED NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TOTAL TARGET DESEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET DESEMBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED DESEMBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['GRAND TOTAL ACHIEVED'] != 0 ? number_format(floatval($data['GRAND TOTAL ACHIEVED']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endif; endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="2">Total</th>
+                                                        <?php for ($i = 0; $i < 9; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV KETIGA -->
+                            <div class="tab-pane fade" id="custom-tabs-tiga-regional" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0">
+                                            <table id="tabel_targetbowheer_filter_city1-regional"
+                                                class="table table-bordered table-striped nowrap w-100">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="3"
+                                                            style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            REGIONAL</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="10"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            OKTOBER
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- OKTOBER -->
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            1
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            2
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            3
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            4
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            5
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- OKTOBER -->
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getAllTargetRincianInvoiceDecodeRegional as $data):
+                                                        if ($data['id_bowheer'] == $decoded_url_area):
+                                                            $target = $data['TOTAL TARGET OKTOBER'];
+                                                            $achiev = $data['TOTAL ACHIEVED OKTOBER'];
+                                                            $deviasi = $target - $achiev;
+                                                            ?>
+                                                            <tr>
+                                                                <td><?= $no++ ?></td>
+                                                                <td><?= $data['regional_target'] ?></td>
+                                                                <td><?= ($data['TOTAL TARGET OKTOBER'] != 0 ? number_format(floatval($data['TOTAL TARGET OKTOBER']), 0, ",", ".") : '-') ?>
+
+                                                                    <!-- OKTOBER -->
+                                                                <td><?= ($data['TW1 OKTOBER'] != 0 ? number_format(floatval($data['TW1 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['RW1 OKTOBER'] != 0 ? number_format(floatval($data['RW1 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TW2 OKTOBER'] != 0 ? number_format(floatval($data['TW2 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['RW2 OKTOBER'] != 0 ? number_format(floatval($data['RW2 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TW3 OKTOBER'] != 0 ? number_format(floatval($data['TW3 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['RW3 OKTOBER'] != 0 ? number_format(floatval($data['RW3 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TW4 OKTOBER'] != 0 ? number_format(floatval($data['TW4 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['RW4 OKTOBER'] != 0 ? number_format(floatval($data['RW4 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TW5 OKTOBER'] != 0 ? number_format(floatval($data['TW5 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['RW5 OKTOBER'] != 0 ? number_format(floatval($data['RW5 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TOTAL ACHIEVED OKTOBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endif; endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="2">Total</th>
+                                                        <?php for ($i = 0; $i < 13; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV KEEMPAT -->
+                            <div class="tab-pane fade" id="custom-tabs-empat-regional" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="card-body table-responsive" style="width:100%;">
+                                    <table id="tabel_targetbowheer_filter_city2_regional"
+                                        class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th rowspan="3"
+                                                    style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    No
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    REGIONAL
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL TARGET
+                                                </th>
+                                                <th colspan="8"
+                                                    style="text-align:center; background-color: blueviolet; color: #ffffff;">
+                                                    NOVEMBER
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL ACHIEVED
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    DEVIASI
+                                                </th>
+                                            </tr>
+                                            </tr>
+
+                                            <tr>
+                                                <!-- NOVEMBER -->
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet; color: #ffffff;">
+                                                    WEEK 1</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet; color: #ffffff;">
+                                                    WEEK 2</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet; color: #ffffff;">
+                                                    WEEK 3</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet; color: #ffffff;">
+                                                    WEEK 4</th>
+                                            </tr>
+
+                                            <tr>
+                                                <!-- Subheader TARGET & ACHIEVED -->
+                                                <?php for ($i = 0; $i < 4; $i++): ?>
+                                                    <th
+                                                        style="text-align:center; background-color: indianred; color: #ffffff;">
+                                                        TARGET</th>
+                                                    <th
+                                                        style="text-align:center; background-color: darkseagreen; color: #000000;">
+                                                        ACHIEVED</th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php $no = 1;
+                                            foreach ($getAllTargetRincianInvoiceDecodeRegional as $data):
+                                                if ($data['id_bowheer'] == $decoded_url_area):
+                                                    $target = $data['TOTAL TARGET NOVEMBER'];
+                                                    $achiev = $data['TOTAL ACHIEVED NOVEMBER'];
+                                                    $deviasi = $target - $achiev;
+
+                                                    ?>
+                                                    <tr>
+                                                        <td><?= $no++ ?></td>
+                                                        <td><?= $data['regional_target'] ?></td>
+                                                        <td><?= ($data['TOTAL TARGET NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+
+                                                        <!-- NOVEMBER -->
+                                                        <td><?= ($data['TW1 NOVEMBER'] != 0 ? number_format(floatval($data['TW1 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['RW1 NOVEMBER'] != 0 ? number_format(floatval($data['RW1 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['TW2 NOVEMBER'] != 0 ? number_format(floatval($data['TW2 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['RW2 NOVEMBER'] != 0 ? number_format(floatval($data['RW2 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['TW3 NOVEMBER'] != 0 ? number_format(floatval($data['TW3 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['RW3 NOVEMBER'] != 0 ? number_format(floatval($data['RW3 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['TW4 NOVEMBER'] != 0 ? number_format(floatval($data['TW4 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['RW4 NOVEMBER'] != 0 ? number_format(floatval($data['RW4 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+
+                                                        <td><?= ($data['TOTAL ACHIEVED NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                        </td>
+
+                                                    </tr>
+                                                <?php endif; endforeach; ?>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="2">Total</th>
+                                                <?php for ($i = 0; $i < 11; $i++): ?>
+                                                    <th>0</th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV KELIMA -->
+                            <div class="tab-pane fade" id="custom-tabs-lima-regional" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="card-body table-responsive" style="width:100%;">
+                                    <table id="tabel_targetbowheer_filter_city3_regional"
+                                        class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th rowspan="3"
+                                                    style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    No</th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    REGIONAL</th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL TARGET</th>
+                                                <th colspan="4"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    DESEMBER</th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL ACHIEVED
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    DEVIASI
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <!-- DESEMBER -->
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    WEEK 1</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    WEEK 2</th>
+                                            </tr>
+                                            <tr>
+                                                <!-- DESEMBER -->
+                                                <?php for ($i = 0; $i < 2; $i++): ?>
+                                                    <th style="text-align:center; background-color: indianred;">TARGET</th>
+                                                    <th style="text-align:center; background-color: darkseagreen;">ACHIEVED
+                                                    </th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php $no = 1;
+                                            foreach ($getAllTargetRincianInvoiceDecodeRegional as $data):
+                                                if ($data['id_bowheer'] == $decoded_url_area):
+                                                    $target = $data['TOTAL TARGET DESEMBER'];
+                                                    $achiev = $data['TOTAL ACHIEVED DESEMBER'];
+                                                    $deviasi = $target - $achiev;
+                                                    ?>
+                                                    <tr>
+                                                        <td><?= $no++ ?></td>
+                                                        <td><?= $data['regional_target'] ?></td>
+                                                        <td><?= ($data['TOTAL TARGET DESEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET DESEMBER']), 0, ",", ".") : '-') ?>
+                                                            <!-- DESEMBER -->
+                                                        <td><?= ($data['TW1 DESEMBER'] != 0 ? number_format(floatval($data['TW1 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['RW1 DESEMBER'] != 0 ? number_format(floatval($data['RW1 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['TW2 DESEMBER'] != 0 ? number_format(floatval($data['TW2 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['RW2 DESEMBER'] != 0 ? number_format(floatval($data['RW2 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED DESEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                    </tr>
+                                                <?php endif; endforeach; ?>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="2">Total</th>
+                                                <?php for ($i = 0; $i < 7; $i++): ?>
+                                                    <th>0</th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <!-- /.card -->
+                </div>
+            </div>
+        </section>
+
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-12">
+                        <h1 class="m-0 text-dark" style="text-align: center;">
+                            <?= $judul_kota ?>
                         </h1>
                     </div>
                 </div>
@@ -72,7 +620,21 @@ $total = 1;
                             <!-- TAB NAV PERTAMA -->
                             <div class="tab-pane show active" id="custom-tabs-satu" role="tabpanel"
                                 aria-labelledby="custom-tabs-two-profile-tab">
-                                <table id="tabel_targetbowheer_filter_summary" class="table table-bordered table-striped ">
+
+                                <div class="mb-3 d-flex justify-content-start align-items-center">
+                                    <label class="mr-2 font-weight-bold text-secondary">Filter Regional:</label>
+                                    <select id="filterRegional" class="form-control" style="width: 200px;">
+                                        <option value="">Semua Regional</option>
+                                        <option value="REGIONAL 1">REGIONAL 1</option>
+                                        <option value="REGIONAL 2">REGIONAL 2</option>
+                                        <option value="REGIONAL 3">REGIONAL 3</option>
+                                        <option value="REGIONAL 4">REGIONAL 4</option>
+                                    </select>
+                                </div>
+
+
+                                <table id="tabel_targetbowheer_filter_summary"
+                                    class="table table-bordered table-striped ">
                                     <thead style="text-align: center;">
                                         <tr>
                                             <th>No</th>
@@ -82,7 +644,6 @@ $total = 1;
                                             <th>TARGET INVOICE</th>
                                             <th>ACHIEVED INVOICE</th>
                                             <th>OUTSTANDING</th>
-                                            <th>DETAIL</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -113,12 +674,6 @@ $total = 1;
                                                     echo number_format(floatval($data['deviasi']), 0, ",", ".");
                                                 }
                                                 ?></td>
-                                                <td>
-                                                    <a href="#" class="btn btn-primary"
-                                                        style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-                                                        data-target="#modal-view-Office<?= $data['id_target_invoice'] ?>"
-                                                        data-toggle="modal"><i class="fas fa-eye"></i></a>
-                                                </td>
                                             </tr>
 
                                             <?php
@@ -133,8 +688,6 @@ $total = 1;
                                             <th><span id="totalAchievedInvoiceBowheer">0</span>
                                             </th>
                                             <th><span id="totalSisaInvoiceBowheer">0</span>
-                                            </th>
-                                            <th colspan="1"></span>
                                             </th>
                                         </tr>
                                     </tfoot>
@@ -197,35 +750,35 @@ $total = 1;
                                                 <tbody>
                                                     <?php $no = 1;
                                                     foreach ($getAllTargetRincianInvoiceDecode as $data):
-                                                        if($data['id_bowheer'] == $decoded_url_area):
-                                                        $target = $data['GRAND TOTAL TARGET'];
-                                                        $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                        $deviasi = $target - $achiev;
-                                                        ?>
-                                                        <tr>
-                                                            <td><?= $no++ ?></td>
-                                                            <td><?= $data['area_target'] ?></td>
-                                                            <td><?= ($data['GRAND TOTAL TARGET'] != 0 ? number_format(floatval($data['GRAND TOTAL TARGET']), 0, ",", ".") : '-') ?>
+                                                        if ($data['id_bowheer'] == $decoded_url_area):
+                                                            $target = $data['GRAND TOTAL TARGET'];
+                                                            $achiev = $data['GRAND TOTAL ACHIEVED'];
+                                                            $deviasi = $target - $achiev;
+                                                            ?>
+                                                            <tr>
+                                                                <td><?= $no++ ?></td>
+                                                                <td><?= $data['area_target'] ?></td>
+                                                                <td><?= ($data['GRAND TOTAL TARGET'] != 0 ? number_format(floatval($data['GRAND TOTAL TARGET']), 0, ",", ".") : '-') ?>
 
-                                                                <!-- OKTOBER -->
-                                                            <td><?= ($data['TOTAL TARGET OKTOBER'] != 0 ? number_format(floatval($data['TOTAL TARGET OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['TOTAL ACHIEVED OKTOBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['TOTAL TARGET NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET NOVEMBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['TOTAL ACHIEVED NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED NOVEMBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['TOTAL TARGET DESEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET DESEMBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED DESEMBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['GRAND TOTAL ACHIEVED'] != 0 ? number_format(floatval($data['GRAND TOTAL ACHIEVED']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                        </tr>
-                                                    <?php endif; endforeach; ?>
+                                                                    <!-- OKTOBER -->
+                                                                <td><?= ($data['TOTAL TARGET OKTOBER'] != 0 ? number_format(floatval($data['TOTAL TARGET OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TOTAL ACHIEVED OKTOBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TOTAL TARGET NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TOTAL ACHIEVED NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TOTAL TARGET DESEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET DESEMBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED DESEMBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['GRAND TOTAL ACHIEVED'] != 0 ? number_format(floatval($data['GRAND TOTAL ACHIEVED']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endif; endforeach; ?>
                                                 </tbody>
                                                 <tfoot>
                                                     <tr>
@@ -312,43 +865,43 @@ $total = 1;
                                                 <tbody>
                                                     <?php $no = 1;
                                                     foreach ($getAllTargetRincianInvoiceDecode as $data):
-                                                        if($data['id_bowheer'] == $decoded_url_area):
-                                                        $target = $data['TOTAL TARGET OKTOBER'];
-                                                        $achiev = $data['TOTAL ACHIEVED OKTOBER'];
-                                                        $deviasi = $target - $achiev;
-                                                        ?>
-                                                        <tr>
-                                                            <td><?= $no++ ?></td>
-                                                            <td><?= $data['area_target'] ?></td>
-                                                            <td><?= ($data['TOTAL TARGET OKTOBER'] != 0 ? number_format(floatval($data['TOTAL TARGET OKTOBER']), 0, ",", ".") : '-') ?>
+                                                        if ($data['id_bowheer'] == $decoded_url_area):
+                                                            $target = $data['TOTAL TARGET OKTOBER'];
+                                                            $achiev = $data['TOTAL ACHIEVED OKTOBER'];
+                                                            $deviasi = $target - $achiev;
+                                                            ?>
+                                                            <tr>
+                                                                <td><?= $no++ ?></td>
+                                                                <td><?= $data['area_target'] ?></td>
+                                                                <td><?= ($data['TOTAL TARGET OKTOBER'] != 0 ? number_format(floatval($data['TOTAL TARGET OKTOBER']), 0, ",", ".") : '-') ?>
 
-                                                                <!-- OKTOBER -->
-                                                            <td><?= ($data['TW1 OKTOBER'] != 0 ? number_format(floatval($data['TW1 OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['RW1 OKTOBER'] != 0 ? number_format(floatval($data['RW1 OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['TW2 OKTOBER'] != 0 ? number_format(floatval($data['TW2 OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['RW2 OKTOBER'] != 0 ? number_format(floatval($data['RW2 OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['TW3 OKTOBER'] != 0 ? number_format(floatval($data['TW3 OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['RW3 OKTOBER'] != 0 ? number_format(floatval($data['RW3 OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['TW4 OKTOBER'] != 0 ? number_format(floatval($data['TW4 OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['RW4 OKTOBER'] != 0 ? number_format(floatval($data['RW4 OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['TW5 OKTOBER'] != 0 ? number_format(floatval($data['TW5 OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['RW5 OKTOBER'] != 0 ? number_format(floatval($data['RW5 OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($data['TOTAL ACHIEVED OKTOBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED OKTOBER']), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
-                                                            </td>
-                                                        </tr>
-                                                    <?php endif; endforeach; ?>
+                                                                    <!-- OKTOBER -->
+                                                                <td><?= ($data['TW1 OKTOBER'] != 0 ? number_format(floatval($data['TW1 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['RW1 OKTOBER'] != 0 ? number_format(floatval($data['RW1 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TW2 OKTOBER'] != 0 ? number_format(floatval($data['TW2 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['RW2 OKTOBER'] != 0 ? number_format(floatval($data['RW2 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TW3 OKTOBER'] != 0 ? number_format(floatval($data['TW3 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['RW3 OKTOBER'] != 0 ? number_format(floatval($data['RW3 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TW4 OKTOBER'] != 0 ? number_format(floatval($data['TW4 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['RW4 OKTOBER'] != 0 ? number_format(floatval($data['RW4 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TW5 OKTOBER'] != 0 ? number_format(floatval($data['TW5 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['RW5 OKTOBER'] != 0 ? number_format(floatval($data['RW5 OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($data['TOTAL ACHIEVED OKTOBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED OKTOBER']), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                                <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endif; endforeach; ?>
                                                 </tbody>
                                                 <tfoot>
                                                     <tr>
@@ -431,43 +984,43 @@ $total = 1;
                                         <tbody>
                                             <?php $no = 1;
                                             foreach ($getAllTargetRincianInvoiceDecode as $data):
-                                                if($data['id_bowheer'] == $decoded_url_area):
-                                                $target = $data['TOTAL TARGET NOVEMBER'];
-                                                $achiev = $data['TOTAL ACHIEVED NOVEMBER'];
-                                                $deviasi = $target - $achiev;
+                                                if ($data['id_bowheer'] == $decoded_url_area):
+                                                    $target = $data['TOTAL TARGET NOVEMBER'];
+                                                    $achiev = $data['TOTAL ACHIEVED NOVEMBER'];
+                                                    $deviasi = $target - $achiev;
 
-                                                ?>
-                                                <tr>
-                                                    <td><?= $no++ ?></td>
-                                                    <td><?= $data['area_target'] ?></td>
-                                                    <td><?= ($data['TOTAL TARGET NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET NOVEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
+                                                    ?>
+                                                    <tr>
+                                                        <td><?= $no++ ?></td>
+                                                        <td><?= $data['area_target'] ?></td>
+                                                        <td><?= ($data['TOTAL TARGET NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
 
-                                                    <!-- NOVEMBER -->
-                                                    <td><?= ($data['TW1 NOVEMBER'] != 0 ? number_format(floatval($data['TW1 NOVEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($data['RW1 NOVEMBER'] != 0 ? number_format(floatval($data['RW1 NOVEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($data['TW2 NOVEMBER'] != 0 ? number_format(floatval($data['TW2 NOVEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($data['RW2 NOVEMBER'] != 0 ? number_format(floatval($data['RW2 NOVEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($data['TW3 NOVEMBER'] != 0 ? number_format(floatval($data['TW3 NOVEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($data['RW3 NOVEMBER'] != 0 ? number_format(floatval($data['RW3 NOVEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($data['TW4 NOVEMBER'] != 0 ? number_format(floatval($data['TW4 NOVEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($data['RW4 NOVEMBER'] != 0 ? number_format(floatval($data['RW4 NOVEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
+                                                        <!-- NOVEMBER -->
+                                                        <td><?= ($data['TW1 NOVEMBER'] != 0 ? number_format(floatval($data['TW1 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['RW1 NOVEMBER'] != 0 ? number_format(floatval($data['RW1 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['TW2 NOVEMBER'] != 0 ? number_format(floatval($data['TW2 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['RW2 NOVEMBER'] != 0 ? number_format(floatval($data['RW2 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['TW3 NOVEMBER'] != 0 ? number_format(floatval($data['TW3 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['RW3 NOVEMBER'] != 0 ? number_format(floatval($data['RW3 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['TW4 NOVEMBER'] != 0 ? number_format(floatval($data['TW4 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['RW4 NOVEMBER'] != 0 ? number_format(floatval($data['RW4 NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
 
-                                                    <td><?= ($data['TOTAL ACHIEVED NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED NOVEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
-                                                    </td>
+                                                        <td><?= ($data['TOTAL ACHIEVED NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED NOVEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                        </td>
 
-                                                </tr>
-                                            <?php endif; endforeach; ?>
+                                                    </tr>
+                                                <?php endif; endforeach; ?>
                                         </tbody>
                                         <tfoot>
                                             <tr>
@@ -532,30 +1085,30 @@ $total = 1;
                                         <tbody>
                                             <?php $no = 1;
                                             foreach ($getAllTargetRincianInvoiceDecode as $data):
-                                                if($data['id_bowheer'] == $decoded_url_area):
-                                                $target = $data['TOTAL TARGET DESEMBER'];
-                                                $achiev = $data['TOTAL ACHIEVED DESEMBER'];
-                                                $deviasi = $target - $achiev;
-                                                ?>
-                                                <tr>
-                                                    <td><?= $no++ ?></td>
-                                                    <td><?= $data['area_target'] ?></td>
-                                                    <td><?= ($data['TOTAL TARGET DESEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET DESEMBER']), 0, ",", ".") : '-') ?>
-                                                        <!-- DESEMBER -->
-                                                    <td><?= ($data['TW1 DESEMBER'] != 0 ? number_format(floatval($data['TW1 DESEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($data['RW1 DESEMBER'] != 0 ? number_format(floatval($data['RW1 DESEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($data['TW2 DESEMBER'] != 0 ? number_format(floatval($data['TW2 DESEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($data['RW2 DESEMBER'] != 0 ? number_format(floatval($data['RW2 DESEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED DESEMBER']), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                    <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
-                                                    </td>
-                                                </tr>
-                                            <?php endif; endforeach; ?>
+                                                if ($data['id_bowheer'] == $decoded_url_area):
+                                                    $target = $data['TOTAL TARGET DESEMBER'];
+                                                    $achiev = $data['TOTAL ACHIEVED DESEMBER'];
+                                                    $deviasi = $target - $achiev;
+                                                    ?>
+                                                    <tr>
+                                                        <td><?= $no++ ?></td>
+                                                        <td><?= $data['area_target'] ?></td>
+                                                        <td><?= ($data['TOTAL TARGET DESEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET DESEMBER']), 0, ",", ".") : '-') ?>
+                                                            <!-- DESEMBER -->
+                                                        <td><?= ($data['TW1 DESEMBER'] != 0 ? number_format(floatval($data['TW1 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['RW1 DESEMBER'] != 0 ? number_format(floatval($data['RW1 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['TW2 DESEMBER'] != 0 ? number_format(floatval($data['TW2 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['RW2 DESEMBER'] != 0 ? number_format(floatval($data['RW2 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED DESEMBER']), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                        <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                        </td>
+                                                    </tr>
+                                                <?php endif; endforeach; ?>
                                         </tbody>
                                         <tfoot>
                                             <tr>
@@ -615,6 +1168,86 @@ $total = 1;
     })
 
     $(document).ready(function () {
+        $('#tabel_targetbowheer_filter_summary_regional').DataTable({
+            paging: true,
+            pageLength: 10,
+            info: true,
+            searching: true,
+            lengthChange: true,
+            autoWidth: false,     // aktifkan scroll horizontal otomatis
+            responsive: false,   // matikan agar kolom tetap sejajar
+            ordering: true,
+            initComplete: function () {
+                // pastikan wrapper scroll ikut lebar layar
+                $('.dataTables_scrollHead, .dataTables_scrollBody')
+                    .css('width', '100%');
+            }
+        });
+        $('#tabel_targetbowheer_filter_city1_regional').DataTable({
+            paging: true,
+            pageLength: 10,
+            info: true,
+            searching: true,
+            lengthChange: true,
+            autoWidth: false,     // aktifkan scroll horizontal otomatis
+            responsive: false,   // matikan agar kolom tetap sejajar
+            ordering: true,
+            initComplete: function () {
+                // pastikan wrapper scroll ikut lebar layar
+                $('.dataTables_scrollHead, .dataTables_scrollBody')
+                    .css('width', '100%');
+            }
+        });
+        $('#tabel_targetbowheer_filter_city2_regional').DataTable({
+            paging: true,
+            pageLength: 10,
+            info: true,
+            searching: true,
+            lengthChange: true,
+            autoWidth: false,     // aktifkan scroll horizontal otomatis
+            responsive: false,   // matikan agar kolom tetap sejajar
+            ordering: true,
+            initComplete: function () {
+                // pastikan wrapper scroll ikut lebar layar
+                $('.dataTables_scrollHead, .dataTables_scrollBody')
+                    .css('width', '100%');
+            }
+        });
+        $('#tabel_targetbowheer_filter_city3_regional').DataTable({
+            paging: true,
+            pageLength: 10,
+            info: true,
+            searching: true,
+            lengthChange: true,
+            autoWidth: false,     // aktifkan scroll horizontal otomatis
+            responsive: false,   // matikan agar kolom tetap sejajar
+            ordering: true,
+            initComplete: function () {
+                // pastikan wrapper scroll ikut lebar layar
+                $('.dataTables_scrollHead, .dataTables_scrollBody')
+                    .css('width', '100%');
+            }
+        });
+        $('#tabel_targetbowheer_filter_month_regional').DataTable({
+            paging: true,
+            pageLength: 10,
+            info: true,
+            searching: true,
+            lengthChange: true,
+            autoWidth: false,     // aktifkan scroll horizontal otomatis
+            responsive: false,   // matikan agar kolom tetap sejajar
+            ordering: true,
+            initComplete: function () {
+                // pastikan wrapper scroll ikut lebar layar
+                $('.dataTables_scrollHead, .dataTables_scrollBody')
+                    .css('width', '100%');
+            }
+        });
+
+    });
+
+
+    $(document).ready(function () {
         $('#tabel_targetbowheer_filter_summary').DataTable({
             paging: true,
             pageLength: 10,
@@ -624,6 +1257,14 @@ $total = 1;
             autoWidth: false,     // aktifkan scroll horizontal otomatis
             responsive: false,   // matikan agar kolom tetap sejajar
             ordering: true,
+            language: {
+                "search": "Cari:",
+                "lengthMenu": "Tampilkan _MENU_ data",
+                "zeroRecords": "Tidak ada data ditemukan",
+                "info": "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+                "infoEmpty": "Tidak ada data",
+                "infoFiltered": "(difilter dari total _MAX_ data)"
+            },
             initComplete: function () {
                 // pastikan wrapper scroll ikut lebar layar
                 $('.dataTables_scrollHead, .dataTables_scrollBody')
@@ -675,7 +1316,7 @@ $total = 1;
                     .css('width', '100%');
             }
         });
-         $('#tabel_targetbowheer_filter_month').DataTable({
+        $('#tabel_targetbowheer_filter_month').DataTable({
             paging: true,
             pageLength: 10,
             info: true,
@@ -690,11 +1331,19 @@ $total = 1;
                     .css('width', '100%');
             }
         });
-        
+
     });
 
     $(document).ready(function () {
         $.fn.dataTable.ext.errMode = 'none';
+
+        $('#filterRegional').on('change', function () {
+            var val = $(this).val();
+            table.column(1) // kolom ke-1 (REGIONAL)
+                .search(val ? '^' + val + '$' : '', true, false) // exact match
+                .draw();
+        });
+
         const table = $('#tabel_targetbowheer_filter_summary').DataTable({
             footerCallback: function () {
                 updateTotal();
