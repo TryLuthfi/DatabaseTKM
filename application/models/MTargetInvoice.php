@@ -84,6 +84,7 @@ GROUP BY tti.id_bowheer ORDER BY total_target DESC')
         $data = $this->db->query('SELECT
 	tti.regional_target,
 	tti.area_target,
+    tti.pic_target,
 	tmb.id_bowheer,
     tmb.nama_bowheer,
     tmb.pic_user,
@@ -353,6 +354,7 @@ GROUP BY
         $data = $this->db->query('SELECT
     tti.id_bowheer,
     tti.area_target,
+    tti.pic_target,
     tmb.nama_bowheer,
 
     -- Total per bulan

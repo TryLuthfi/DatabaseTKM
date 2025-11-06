@@ -2275,6 +2275,7 @@ $total = 1;
                                         <tr>
                                             <th>No</th>
                                             <th>KOTA</th>
+                                            <th>PIC AREA</th>
                                             <th>TARGET INVOICE</th>
                                             <th>ACHIEVED INVOICE</th>
                                             <th>OUTSTANDING</th>
@@ -2289,6 +2290,7 @@ $total = 1;
                                             <tr>
                                                 <td><?= $total++ ?></td>
                                                 <td><?= $data['area_target'] ?></td>
+                                                <td><?= $data['pic_target'] ?></td>
                                                 <td><?php if ($data['total_target'] == "0") {
                                                     echo "-";
                                                 } else {
@@ -2325,7 +2327,7 @@ $total = 1;
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <th colspan="2">Total</th>
+                                            <th colspan="3">Total</th>
                                             <th><span id="totalTargetInvoiceCity">0</span>
                                             </th>
                                             <th><span id="totalAchievedInvoiceCity">0</span>
@@ -2360,6 +2362,9 @@ $total = 1;
                                                         <th rowspan="2"
                                                             style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             KOTA</th>
+                                                            <th rowspan="2"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            PIC AREA</th>
                                                         <th rowspan="2"
                                                             style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             TOTAL TARGET</th>
@@ -2416,6 +2421,7 @@ $total = 1;
                                                         <tr>
                                                             <td><?= $no++ ?></td>
                                                             <td><?= $data['area_target'] ?></td>
+                                                            <td><?= $data['pic_target'] ?></td>
                                                             <td><?= ($data['GRAND TOTAL TARGET'] != 0 ? number_format(floatval($data['GRAND TOTAL TARGET']), 0, ",", ".") : '-') ?>
 
                                                                 <!-- OKTOBER -->
@@ -2489,7 +2495,7 @@ $total = 1;
                                                 </tbody>
                                                 <tfoot>
                                                     <tr>
-                                                        <th colspan="2">Total</th>
+                                                        <th colspan="3">Total</th>
                                                         <?php for ($i = 0; $i < 14; $i++): ?>
                                                             <th>0</th>
                                                         <?php endfor; ?>
@@ -2519,6 +2525,9 @@ $total = 1;
                                                         <th rowspan="3"
                                                             style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             KOTA</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            PIC AREA</th>
                                                         <th rowspan="3"
                                                             style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             TOTAL TARGET</th>
@@ -2590,6 +2599,7 @@ $total = 1;
                                                         <tr>
                                                             <td><?= $no++ ?></td>
                                                             <td><?= $data['area_target'] ?></td>
+                                                            <td><?= $data['pic_target'] ?></td>
                                                             <td><?= ($data['TOTAL TARGET OKTOBER'] != 0 ? number_format(floatval($data['TOTAL TARGET OKTOBER']), 0, ",", ".") : '-') ?>
 
                                                                 <!-- OKTOBER -->
@@ -2691,7 +2701,7 @@ $total = 1;
                                                 </tbody>
                                                 <tfoot>
                                                     <tr>
-                                                        <th colspan="2">Total</th>
+                                                        <th colspan="3">Total</th>
                                                         <?php for ($i = 0; $i < 20; $i++): ?>
                                                             <th>0</th>
                                                         <?php endfor; ?>
@@ -2718,6 +2728,10 @@ $total = 1;
                                                 <th rowspan="3"
                                                     style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     KOTA
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    PIC AREA
                                                 </th>
                                                 <th rowspan="3"
                                                     style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
@@ -2788,6 +2802,7 @@ $total = 1;
                                                 <tr>
                                                     <td><?= $no++ ?></td>
                                                     <td><?= $data['area_target'] ?></td>
+                                                    <td><?= $data['pic_target'] ?></td>
                                                     <td><?= ($data['TOTAL TARGET NOVEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET NOVEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
 
@@ -2877,7 +2892,7 @@ $total = 1;
                                         </tbody>
                                         <tfoot>
                                             <tr>
-                                                <th colspan="2">Total</th>
+                                                <th colspan="3">Total</th>
                                                 <?php for ($i = 0; $i < 17; $i++): ?>
                                                     <th>0</th>
                                                 <?php endfor; ?>
@@ -2901,6 +2916,9 @@ $total = 1;
                                                 <th rowspan="3"
                                                     style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     KOTA</th>
+                                                <th rowspan="3"
+                                                    style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    PIC AREA</th>
                                                 <th rowspan="3"
                                                     style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     TOTAL TARGET</th>
@@ -2955,6 +2973,7 @@ $total = 1;
                                                 <tr>
                                                     <td><?= $no++ ?></td>
                                                     <td><?= $data['area_target'] ?></td>
+                                                    <td><?= $data['pic_target'] ?></td>
                                                     <td><?= ($data['TOTAL TARGET DESEMBER'] != 0 ? number_format(floatval($data['TOTAL TARGET DESEMBER']), 0, ",", ".") : '-') ?>
                                                         <!-- DESEMBER -->
                                                     <td><?= ($data['TW1 DESEMBER'] != 0 ? number_format(floatval($data['TW1 DESEMBER']), 0, ",", ".") : '-') ?>
@@ -3013,7 +3032,7 @@ $total = 1;
                                         </tbody>
                                         <tfoot>
                                             <tr>
-                                                <th colspan="2">Total</th>
+                                                <th colspan="3">Total</th>
                                                 <?php for ($i = 0; $i < 11; $i++): ?>
                                                     <th>0</th>
                                                 <?php endfor; ?>
@@ -3837,11 +3856,11 @@ $total = 1;
 
                 data.each(function (row) {
 
-                    totalTargetInvoiceCity += parseFloat(row[2].replace(/\./g, '')) || 0;
-                    totalAchievedInvoiceCity += parseFloat(row[3].replace(/\./g, '')) || 0;
-                    totalSisaInvoiceCity += parseFloat(row[4].replace(/\./g, '')) || 0;
-                    totalPersentaseTargetInvoiceCity += parseFloat(row[5].replace(/\./g, '')) || 0;
-                    totalPersentaseDeviasiTargetInvoiceCity += parseFloat(row[6].replace(/\./g, '')) || 0;
+                    totalTargetInvoiceCity += parseFloat(row[3].replace(/\./g, '')) || 0;
+                    totalAchievedInvoiceCity += parseFloat(row[4].replace(/\./g, '')) || 0;
+                    totalSisaInvoiceCity += parseFloat(row[5].replace(/\./g, '')) || 0;
+                    totalPersentaseTargetInvoiceCity += parseFloat(row[6].replace(/\./g, '')) || 0;
+                    totalPersentaseDeviasiTargetInvoiceCity += parseFloat(row[7].replace(/\./g, '')) || 0;
                 });
 
                 document.getElementById('totalTargetInvoiceCity').innerText = totalTargetInvoiceCity.toLocaleString('id-ID');
@@ -3914,10 +3933,10 @@ $total = 1;
             function updateTotal() {
                 const data = table.rows({ search: 'applied' }).data();
 
-                let totalKolom = Array(14).fill(0);
+                let totalKolom = Array(15).fill(0);
 
                 data.each(function (row) {
-                    for (let i = 2; i < 16; i++) { // misal kolom angka mulai dari index ke-2
+                    for (let i = 2; i < 17; i++) { // misal kolom angka mulai dari index ke-2
                         // Hapus titik dan koma dulu
                         let value = row[i]
                             .toString()
@@ -3933,23 +3952,26 @@ $total = 1;
                     $(table.column(i + 2).footer()).text(totalFormatted);
                 }
 
+
+
                 function hitungPersen(target, achieved) {
                     if (target === 0 && achieved > 0) return 100;
                     if (target === 0 && achieved === 0) return 0;
                     return (achieved / target) * 100;
                 }
+                
 
-                const persenOktober = hitungPersen(totalKolom[1], totalKolom[2]);
-                const persenNovember = hitungPersen(totalKolom[4], totalKolom[5]);
-                const persenDesember = hitungPersen(totalKolom[7], totalKolom[8]);
-                const persenGrand = hitungPersen(totalKolom[0], totalKolom[10]);
-                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[11]);
+                const persenOktober = hitungPersen(totalKolom[2], totalKolom[3]);
+                const persenNovember = hitungPersen(totalKolom[5], totalKolom[6]);
+                const persenDesember = hitungPersen(totalKolom[8], totalKolom[9]);
+                const persenGrand = hitungPersen(totalKolom[1], totalKolom[11]);
+                const persenDeviasi = hitungPersen(totalKolom[1], totalKolom[12]);
 
-                $(table.column(5).footer()).text(persenOktober.toFixed(0) + ' %');
-                $(table.column(8).footer()).text(persenNovember.toFixed(0) + ' %');
-                $(table.column(11).footer()).text(persenDesember.toFixed(0) + ' %');
-                $(table.column(14).footer()).text(persenGrand.toFixed(0) + ' %');
-                $(table.column(15).footer()).text(persenDeviasi.toFixed(0) + ' %');
+                $(table.column(6).footer()).text(persenOktober.toFixed(0) + ' %');
+                $(table.column(9).footer()).text(persenNovember.toFixed(0) + ' %');
+                $(table.column(12).footer()).text(persenDesember.toFixed(0) + ' %');
+                $(table.column(15).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(16).footer()).text(persenDeviasi.toFixed(0) + ' %');
 
             }
 
@@ -3986,10 +4008,10 @@ $total = 1;
             function updateTotal() {
                 const data = table.rows({ search: 'applied' }).data();
 
-                let totalKolom = Array(18).fill(0);
+                let totalKolom = Array(19).fill(0);
 
                 data.each(function (row) {
-                    for (let i = 2; i < 20; i++) { // misal kolom angka mulai dari index ke-2
+                    for (let i = 2; i < 21; i++) { // misal kolom angka mulai dari index ke-2
                         // Hapus titik dan koma dulu
                         let value = row[i]
                             .toString()
@@ -4011,21 +4033,21 @@ $total = 1;
                     return (achieved / target) * 100;
                 }
 
-                const persenW1Oktober = hitungPersen(totalKolom[1], totalKolom[2]);
-                const persenW2Oktober = hitungPersen(totalKolom[4], totalKolom[5]);
-                const persenW3Oktober = hitungPersen(totalKolom[7], totalKolom[8]);
-                const persenW4Oktober = hitungPersen(totalKolom[10], totalKolom[11]);
-                const persenW5Oktober = hitungPersen(totalKolom[13], totalKolom[14]);
-                const persenGrand = hitungPersen(totalKolom[0], totalKolom[16]);
-                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[17]);
+                const persenW1Oktober = hitungPersen(totalKolom[2], totalKolom[3]);
+                const persenW2Oktober = hitungPersen(totalKolom[5], totalKolom[6]);
+                const persenW3Oktober = hitungPersen(totalKolom[8], totalKolom[9]);
+                const persenW4Oktober = hitungPersen(totalKolom[11], totalKolom[12]);
+                const persenW5Oktober = hitungPersen(totalKolom[14], totalKolom[15]);
+                const persenGrand = hitungPersen(totalKolom[1], totalKolom[17]);
+                const persenDeviasi = hitungPersen(totalKolom[1], totalKolom[18]);
 
-                $(table.column(5).footer()).text(persenW1Oktober.toFixed(0) + ' %');
-                $(table.column(8).footer()).text(persenW2Oktober.toFixed(0) + ' %');
-                $(table.column(11).footer()).text(persenW3Oktober.toFixed(0) + ' %');
-                $(table.column(14).footer()).text(persenW4Oktober.toFixed(0) + ' %');
-                $(table.column(17).footer()).text(persenW5Oktober.toFixed(0) + ' %');
-                $(table.column(20).footer()).text(persenGrand.toFixed(0) + ' %');
-                $(table.column(21).footer()).text(persenDeviasi.toFixed(0) + ' %');
+                $(table.column(6).footer()).text(persenW1Oktober.toFixed(0) + ' %');
+                $(table.column(9).footer()).text(persenW2Oktober.toFixed(0) + ' %');
+                $(table.column(12).footer()).text(persenW3Oktober.toFixed(0) + ' %');
+                $(table.column(15).footer()).text(persenW4Oktober.toFixed(0) + ' %');
+                $(table.column(18).footer()).text(persenW5Oktober.toFixed(0) + ' %');
+                $(table.column(21).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(22).footer()).text(persenDeviasi.toFixed(0) + ' %');
 
             }
 
@@ -4062,10 +4084,10 @@ $total = 1;
             function updateTotal() {
                 const data = table.rows({ search: 'applied' }).data();
 
-                let totalKolom = Array(15).fill(0);
+                let totalKolom = Array(16).fill(0);
 
                 data.each(function (row) {
-                    for (let i = 2; i < 17; i++) { // misal kolom angka mulai dari index ke-2
+                    for (let i = 2; i < 18; i++) { // misal kolom angka mulai dari index ke-2
                         // Hapus titik dan koma dulu
                         let value = row[i]
                             .toString()
@@ -4087,19 +4109,19 @@ $total = 1;
                     return (achieved / target) * 100;
                 }
 
-                const persenW1November = hitungPersen(totalKolom[1], totalKolom[2]);
-                const persenW2November = hitungPersen(totalKolom[4], totalKolom[5]);
-                const persenW3November = hitungPersen(totalKolom[7], totalKolom[8]);
-                const persenW4November = hitungPersen(totalKolom[10], totalKolom[11]);
-                const persenGrand = hitungPersen(totalKolom[0], totalKolom[13]);
-                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[14]);
+                const persenW1November = hitungPersen(totalKolom[2], totalKolom[3]);
+                const persenW2November = hitungPersen(totalKolom[5], totalKolom[6]);
+                const persenW3November = hitungPersen(totalKolom[8], totalKolom[9]);
+                const persenW4November = hitungPersen(totalKolom[11], totalKolom[12]);
+                const persenGrand = hitungPersen(totalKolom[1], totalKolom[14]);
+                const persenDeviasi = hitungPersen(totalKolom[1], totalKolom[15]);
 
-                $(table.column(5).footer()).text(persenW1November.toFixed(0) + ' %');
-                $(table.column(8).footer()).text(persenW2November.toFixed(0) + ' %');
-                $(table.column(11).footer()).text(persenW3November.toFixed(0) + ' %');
-                $(table.column(14).footer()).text(persenW4November.toFixed(0) + ' %');
-                $(table.column(17).footer()).text(persenGrand.toFixed(0) + ' %');
-                $(table.column(18).footer()).text(persenDeviasi.toFixed(0) + ' %');
+                $(table.column(6).footer()).text(persenW1November.toFixed(0) + ' %');
+                $(table.column(9).footer()).text(persenW2November.toFixed(0) + ' %');
+                $(table.column(12).footer()).text(persenW3November.toFixed(0) + ' %');
+                $(table.column(15).footer()).text(persenW4November.toFixed(0) + ' %');
+                $(table.column(18).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(19).footer()).text(persenDeviasi.toFixed(0) + ' %');
 
             }
 
@@ -4136,10 +4158,10 @@ $total = 1;
             function updateTotal() {
                 const data = table.rows({ search: 'applied' }).data();
 
-                let totalKolom = Array(9).fill(0);
+                let totalKolom = Array(10).fill(0);
 
                 data.each(function (row) {
-                    for (let i = 2; i < 11; i++) { // misal kolom angka mulai dari index ke-2
+                    for (let i = 2; i < 12; i++) { // misal kolom angka mulai dari index ke-2
                         // Hapus titik dan koma dulu
                         let value = row[i]
                             .toString()
@@ -4161,15 +4183,15 @@ $total = 1;
                     return (achieved / target) * 100;
                 }
 
-                const persenW1Desember = hitungPersen(totalKolom[1], totalKolom[2]);
-                const persenW2Desember = hitungPersen(totalKolom[4], totalKolom[5]);
-                const persenGrand = hitungPersen(totalKolom[0], totalKolom[7]);
-                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[8]);
+                const persenW1Desember = hitungPersen(totalKolom[2], totalKolom[3]);
+                const persenW2Desember = hitungPersen(totalKolom[5], totalKolom[6]);
+                const persenGrand = hitungPersen(totalKolom[1], totalKolom[8]);
+                const persenDeviasi = hitungPersen(totalKolom[1], totalKolom[9]);
 
-                $(table.column(5).footer()).text(persenW1Desember.toFixed(0) + ' %');
-                $(table.column(8).footer()).text(persenW2Desember.toFixed(0) + ' %');
-                $(table.column(11).footer()).text(persenGrand.toFixed(0) + ' %');
-                $(table.column(12).footer()).text(persenDeviasi.toFixed(0) + ' %');
+                $(table.column(6).footer()).text(persenW1Desember.toFixed(0) + ' %');
+                $(table.column(9).footer()).text(persenW2Desember.toFixed(0) + ' %');
+                $(table.column(12).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(13).footer()).text(persenDeviasi.toFixed(0) + ' %');
 
             }
 
