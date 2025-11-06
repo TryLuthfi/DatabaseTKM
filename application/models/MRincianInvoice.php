@@ -85,16 +85,22 @@ ORDER BY total_target DESC;')
 
         $this->db->having('SUM(qty_achiev_target) >', 0);
         // === GROUP BY DYNAMIC ===
-        if (!empty($pic) && !empty($bowheer) && !empty($regional) && !empty($city)) {
+        if (!empty($pic) && empty($bowheer) && empty($regional) && empty($city) && empty($month) && empty($week)) { // FILTER PIC ONLY
             $this->db->group_by(['pic_user', 'nama_bowheer']);
-        } elseif (empty($pic) && !empty($bowheer)) {
+        } else if (empty($pic) && !empty($bowheer) && empty($regional) && empty($city) && empty($month) && empty($week)) { // FILTER BOWHEER ONLY
+            $this->db->group_by(['nama_bowheer','area_target']);
+        } else if (empty($pic) && empty($bowheer) && !empty($regional) && empty($city) && empty($month) && empty($week)) { // FILTER REGIONAL ONLY
             $this->db->group_by(['pic_user', 'nama_bowheer', 'regional_target', 'area_target']);
-        } elseif (empty($pic) && empty($bowheer) && !empty($regional)) {
+        } else if (empty($pic) && empty($bowheer) && empty($regional) && !empty($city) && empty($month) && empty($week)) { // FILTER CITY ONLY
             $this->db->group_by(['pic_user', 'nama_bowheer', 'regional_target', 'area_target']);
-        } elseif (empty($pic) && empty($bowheer) && empty($regional) && !empty($city)) {
-            $this->db->group_by(['pic_user', 'nama_bowheer', 'regional_target', 'area_target']);
+        } else if (empty($pic) && empty($bowheer) && empty($regional) && empty($city) && !empty($month) && empty($week)) { // FILTER MONTH ONLY
+            $this->db->group_by(['pic_user', 'nama_bowheer']);
+        } else if (empty($pic) && empty($bowheer) && empty($regional) && empty($city) && empty($month) && !empty($week)) { // FILTER WEEK ONLY
+            $this->db->group_by(['pic_user', 'nama_bowheer']);
+        } else if(!empty($bowheer)){
+            $this->db->group_by(['nama_bowheer', 'area_target']);
         } else {
-            $this->db->group_by(['pic_user']);
+            $this->db->group_by(['nama_bowheer']);
         }
 
         $query = $this->db->get();
