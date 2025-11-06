@@ -3411,7 +3411,7 @@ $total = 1;
                     totalSisaInvoiceBowheer += parseFloat(row[5].replace(/\./g, '')) || 0;
                 });
 
-                let persen = (totalAchievedInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(0);
+                let persen = (totalAchievedInvoiceBowheer / totalTargetInvoiceBowheer * 100).toFixed(1);
 
                 document.getElementById('totalTargetInvoiceBowheer').innerText = totalTargetInvoiceBowheer.toLocaleString('id-ID');
                 document.getElementById('totalAchievedInvoiceBowheer').innerText = totalAchievedInvoiceBowheer.toLocaleString('id-ID');
@@ -3464,6 +3464,9 @@ $total = 1;
 
                     return sisaHari;
                 }
+
+                console.log("sisa invoice:", totalSisaInvoiceBowheer);
+                console.log("sisa hari kerja:", hitungSisaHariKerja());
 
                 const sisaHariKerja = hitungSisaHariKerja();
 
