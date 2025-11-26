@@ -52,9 +52,9 @@ $total = 1;
                                                                 <div class="col-lg-6 col-12 mb-3">
                                                                     <div class="small-box bg-info">
                                                                         <div class="inner">
-                                                                            <h3><?= number_format($stokKendaraan['jml_aktif'], 0, ",", ".") ?>
+                                                                            <h3><?= number_format($stokKendaraan['total_aset_kendaraan'], 0, ",", ".") ?>
                                                                             </h3>
-                                                                            <p><?= $stokKendaraan['ka_jenis_aset'] ?></p>
+                                                                            <p>Seluruh Aset</p>
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
                                                                         <a href="#" class="small-box-footer"
@@ -66,6 +66,16 @@ $total = 1;
 
                                                                 <div class="col-lg-6 col-12 mb-3">
                                                                     <div class="small-box bg-info">
+                                                                        <div class="inner">
+                                                                            <h3><?= number_format($stokKendaraan['jml_aktif'], 0, ",", ".") ?>
+                                                                            </h3>
+                                                                            <p>Jumlah Aset Aktif</p>
+                                                                        </div>
+                                                                        <div class="icon"><i class="ion ion-bag"></i></div>
+                                                                        <a href="#" class="small-box-footer"
+                                                                            id="<?php echo 'box_detail_kendaraan_S' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                            Lihat Detail <i
+                                                                                class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
 
@@ -160,9 +170,9 @@ $total = 1;
                                                                 <div class="col-lg-6 col-12 mb-3">
                                                                     <div class="small-box bg-info">
                                                                         <div class="inner">
-                                                                            <h3><?= number_format($stokKendaraan['jml_aktif'], 0, ",", ".") ?>
+                                                                            <h3><?= number_format($stokKendaraan['total_aset_kendaraan'], 0, ",", ".") ?>
                                                                             </h3>
-                                                                            <p><?= $stokKendaraan['ka_jenis_aset'] ?></p>
+                                                                            <p>Seluruh Aset</p>
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
                                                                         <a href="#" class="small-box-footer"
@@ -172,6 +182,15 @@ $total = 1;
                                                                 </div>
                                                                 <div class="col-lg-6 col-12 mb-3">
                                                                     <div class="small-box bg-info">
+                                                                        <div class="inner">
+                                                                            <h3><?= number_format($stokKendaraan['jml_aktif'], 0, ",", ".") ?>
+                                                                            </h3>
+                                                                            <p>Jumlah Aset Aktif</p>
+                                                                        </div>
+                                                                        <div class="icon"><i class="ion ion-bag"></i></div>
+                                                                        <a href="#" class="small-box-footer"
+                                                                            id="<?php echo 'box_detail_kendaraan_S' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
+                                                                            Detail <i class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
 
@@ -651,6 +670,13 @@ $total = 1;
             if (boxBaik) {
                 boxBaik.addEventListener("click", function () {
                     window.location.href = "<?= base_url('GA_Aset_Kendaraan/detailKendaraan/B' . $stokKendaraan['ka_jenis_aset']) ?>";
+                });
+            }
+
+            var boxBaik = document.getElementById("box_detail_kendaraan_S<?= $stokKendaraan['ka_jenis_aset'] ?>");
+            if (boxBaik) {
+                boxBaik.addEventListener("click", function () {
+                    window.location.href = "<?= base_url('GA_Aset_Kendaraan/detailKendaraan/S' . $stokKendaraan['ka_jenis_aset']) ?>";
                 });
             }
 
