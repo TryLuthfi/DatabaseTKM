@@ -515,6 +515,116 @@ $id_menu = $this->uri->segment('1');
                             </p>
                         </a>
                     </li>
+                    <li class="nav-header">Gul House</li>
+                    <li class="nav-item has-treeview <?php if (
+                        $id_menu == 'aMaster_Logistik_Lokasi_Gudang' ||
+                        $id_menu == 'aMaster_Logistik_Kode_Item' ||
+                        $id_menu == 'aMaster_Logistik_Sumber_Material' ||
+                        $id_menu == 'aMaster_Logistik_Pabrik' ||
+                        $id_menu == 'aLogistik_Purchase_Request' ||
+                        $id_menu == 'aLogistik_Pesanan_Pabrik' ||
+                        $id_menu == 'aDashboard_Logistik_Stok' ||
+                        $id_menu == 'aLogistik_Stok_Detail' ||
+                        $id_menu == 'aStockOpname'
+                    ) {
+                        echo 'menu-open';
+                    } ?>">
+
+                        <a href="#" class="nav-link <?php if (
+                            $id_menu == 'aMaster_Logistik_Kode_Item' ||
+                            $id_menu == 'aMaster_Logistik_Sumber_Material' ||
+                            $id_menu == 'aMaster_Logistik_Lokasi_Gudang' ||
+                            $id_menu == 'aMaster_Logistik_Pabrik' ||
+                            $id_menu == 'aLogistik_Purchase_Request' ||
+                            $id_menu == 'aLogistik_Pesanan_Pabrik' ||
+                            $id_menu == 'aDashboard_Logistik_Stok' ||
+                            $id_menu == 'aLogistik_Stok_Detail' ||
+                            $id_menu == 'aStockOpname'
+                        ) {
+                            echo 'active';
+                        } ?>">
+                            <i class="nav-icon fas fa-boxes"></i>
+                            <p>
+                                Gul House
+                                <i class="right fas fa-angle-left"></i>
+                                <span class="badge badge-info right">5</span>
+                            </p>
+                        </a>
+
+                        <ul class="nav nav-treeview">
+                            <!-- Master Logistik -->
+                            <li class="nav-item has-treeview <?php if (
+                                $id_menu == 'aMaster_Logistik_Lokasi_Gudang' ||
+                                $id_menu == 'aMaster_Logistik_Kode_Item' ||
+                                $id_menu == 'aMaster_Logistik_Sumber_Material' ||
+                                $id_menu == 'aMaster_Logistik_Pabrik'
+                            ) {
+                                echo 'menu-open';
+                            } ?>">
+                                <a href="#" class="nav-link <?php if (
+                                    $id_menu == 'aMaster_Logistik_Lokasi_Gudang' ||
+                                    $id_menu == 'aMaster_Logistik_Kode_Item' ||
+                                    $id_menu == 'aMaster_Logistik_Sumber_Material' ||
+                                    $id_menu == 'aMaster_Logistik_Pabrik'
+                                ) {
+                                    echo 'active';
+                                } ?>">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>Master Data
+                                        <i class="right fas fa-angle-left"></i>
+                                        <span class="badge badge-info right">3</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item" style="pointer-events: none">
+                                        <a href="<?= base_url('aMaster_Logistik_Lokasi_Gudang') ?>"
+                                            class="nav-link <?php if ($id_menu == 'aMaster_Logistik_Lokasi_Gudang')
+                                                echo 'active'; ?>">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master Rooms</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" style="pointer-events: none">
+                                        <a href="<?= base_url('aMaster_Logistik_Kode_Item') ?>"
+                                            class="nav-link <?php if ($id_menu == 'aMaster_Logistik_Kode_Item')
+                                                echo 'active'; ?>">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master Asets</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" style="pointer-events: none">
+                                        <a href="<?= base_url('aMaster_Logistik_Sumber_Material') ?>"
+                                            class="nav-link <?php if ($id_menu == 'aMaster_Logistik_Sumber_Material')
+                                                echo 'active'; ?>">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master Tenants
+                                            </p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <!-- Purchase Request -->
+                            <li class="nav-item" style="pointer-events: none">
+                                <a href="<?= base_url('aLogistik_Purchase_Request') ?>"
+                                    class="nav-link <?php if ($id_menu == 'aLogistik_Purchase_Request')
+                                        echo 'active'; ?>">
+                                    <i class="far fa-file nav-icon"></i>
+                                    <p>List Tenants - Rooms</p>
+                                </a>
+                            </li>
+
+                            <!-- Purchase Order -->
+                            <li class="nav-item" style="pointer-events: none">
+                                <a href="<?= base_url('aLogistik_Pesanan_Pabrik') ?>"
+                                    class="nav-link <?php if ($id_menu == 'aLogistik_Pesanan_Pabrik')
+                                        echo 'active'; ?>">
+                                    <i class="far fa-file nav-icon"></i>
+                                    <p>Pembayaran Kos</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
 
                 </ul>
             </nav>
