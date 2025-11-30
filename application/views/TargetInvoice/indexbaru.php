@@ -97,7 +97,8 @@ $total = 1;
                     <div class="container-fluid">
                         <div class="row mb-2">
                             <div class="col-sm-12 ">
-                                <h3 class="m-0 text-dark" style="text-align: center;">DAILY TARGET TO ACHIEV INVOICE</h3>
+                                <h3 class="m-0 text-dark" style="text-align: center;">DAILY TARGET TO ACHIEV INVOICE
+                                </h3>
                             </div><!-- /.col -->
                         </div><!-- /.row -->
                     </div><!-- /.container-fluid -->
@@ -2362,7 +2363,7 @@ $total = 1;
                                                         <th rowspan="2"
                                                             style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             KOTA</th>
-                                                            <th rowspan="2"
+                                                        <th rowspan="2"
                                                             style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                             PIC AREA</th>
                                                         <th rowspan="2"
@@ -3468,35 +3469,38 @@ $total = 1;
 
                 function hitungSisaHariKerja() {
                     const today = new Date();
-                    const tahun = today.getFullYear();
-                    const bulan = 10; // 0-based index, 10 = November
-                    const lastDate = new Date(tahun, bulan + 1, 0); // 30 November
+                    const batasAkhir = new Date(today.getFullYear(), 11, 12); // 12 Desember 2025 (bulan 11)
+
+                    // Jika sudah melewati batas → return 0 agar tidak Infinity
+                    if (today > batasAkhir) return 0;
 
                     let sisaHari = 0;
                     let current = new Date(today);
 
-                    while (current <= lastDate) {
+                    while (current <= batasAkhir) {
                         const day = current.getDay(); // 0 = Minggu, 6 = Sabtu
-                        if (day !== 0) sisaHari++; // Hitung Senin–Sabtu
+                        if (day !== 0) sisaHari++; // Hitung hari kerja Senin–Sabtu
                         current.setDate(current.getDate() + 1);
                     }
 
                     return sisaHari;
                 }
 
-                console.log("sisa invoice:", totalSisaInvoiceBowheer);
-                console.log("sisa hari kerja:", hitungSisaHariKerja());
-
                 const sisaHariKerja = hitungSisaHariKerja();
 
-                const targetHarian = totalSisaInvoiceBowheer / sisaHariKerja;
-                const persentaseHarian = ((100 - persen) / sisaHariKerja).toFixed(1);
+                if (sisaHariKerja === 0 || totalSisaInvoiceBowheer <= 0) {
+                    document.getElementById('dashboardTargetInvoiceHarian').innerText = "-";
+                    document.getElementById('dashboardPersentaseTargetHarian').innerText = "-";
+                } else {
+                    const targetHarian = totalSisaInvoiceBowheer / sisaHariKerja;
+                    const persentaseHarian = ((100 - persen) / sisaHariKerja).toFixed(1);
 
-                document.getElementById('dashboardTargetInvoiceHarian').innerText =
-                    "Rp. " + Math.round(targetHarian).toLocaleString('id-ID');
+                    document.getElementById('dashboardTargetInvoiceHarian').innerText =
+                        "Rp. " + Math.round(targetHarian).toLocaleString('id-ID');
 
-                document.getElementById('dashboardPersentaseTargetHarian').innerText =
-                    persentaseHarian + " %";
+                    document.getElementById('dashboardPersentaseTargetHarian').innerText =
+                        persentaseHarian + " %";
+                }
             }
 
             function highlightCells() {
@@ -3959,7 +3963,7 @@ $total = 1;
                     if (target === 0 && achieved === 0) return 0;
                     return (achieved / target) * 100;
                 }
-                
+
 
                 const persenOktober = hitungPersen(totalKolom[2], totalKolom[3]);
                 const persenNovember = hitungPersen(totalKolom[5], totalKolom[6]);
@@ -5365,16 +5369,19 @@ $total = 1;
 
         /* upgrade warna header kuning */
         .glow-yellow {
-    border: 1px solid rgba(196, 218, 4, 0.4);
-    box-shadow: 0 6px 12px rgba(196, 218, 4, 0.6); /* arah bayangan ke bawah */
-    transition: box-shadow 0.3s ease-in-out, transform 0.2s;
-    border-radius: 10px;
-}
+            border: 1px solid rgba(196, 218, 4, 0.4);
+            box-shadow: 0 6px 12px rgba(196, 218, 4, 0.6);
+            /* arah bayangan ke bawah */
+            transition: box-shadow 0.3s ease-in-out, transform 0.2s;
+            border-radius: 10px;
+        }
 
-.glow-yellow:hover {
-    box-shadow: 0 10px 18px rgba(196, 218, 4, 0.8); /* glow lebih tegas ke bawah saat hover */
-    transform: translateY(-2px); /* efek sedikit mengangkat saat hover */
-}
+        .glow-yellow:hover {
+            box-shadow: 0 10px 18px rgba(196, 218, 4, 0.8);
+            /* glow lebih tegas ke bawah saat hover */
+            transform: translateY(-2px);
+            /* efek sedikit mengangkat saat hover */
+        }
 
 
         /* upgrade warna table */

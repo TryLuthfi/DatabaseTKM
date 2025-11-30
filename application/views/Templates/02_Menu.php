@@ -267,15 +267,15 @@ $id_menu = $this->uri->segment('1');
                     <li class="nav-item has-treeview <?= (
                         $id_menu == 'Master_GA_Aset' ||
                         $id_menu == 'GA_Aset_Kendaraan' ||
-                        $id_menu == 'GA_Aset_Terminasi' ||
-                        $id_menu == 'GA_Aset_Kantor' ||
+                        $id_menu == 'GA_Alat_Terminasi' ||
+                        $id_menu == 'GA_Sarana_Kerja' ||
                         $id_menu == 'asd'
                     ) ? 'menu-open' : '' ?>">
                         <a href="#" class="nav-link <?= (
                             $id_menu == 'Master_GA_Aset' ||
                             $id_menu == 'GA_Aset_Kendaraan' ||
-                            $id_menu == 'GA_Aset_Terminasi' ||
-                            $id_menu == 'GA_Aset_Kantor' ||
+                            $id_menu == 'GA_Alat_Terminasi' ||
+                            $id_menu == 'GA_Sarana_Kerja' ||
                             $id_menu == 'asd'
                         ) ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-building"></i>
@@ -290,7 +290,7 @@ $id_menu = $this->uri->segment('1');
                             <!-- MASTER GA -->
                             <li class="nav-item has-treeview <?= ($id_menu == 'Master_GA_Aset') ? 'menu-open' : '' ?>">
                                 <a href="#" class="nav-link <?= ($id_menu == 'Master_GA_Aset') ? 'active' : '' ?>">
-                                    <i class="far fa-circle nav-icon"></i>
+                                    <i class="far fa-folder nav-icon"></i>
                                     <p>
                                         Master GA
                                         <i class="fas fa-angle-left right"></i>
@@ -317,22 +317,74 @@ $id_menu = $this->uri->segment('1');
                                 </a>
                             </li>
 
-                            <!-- ASET TERMINASI -->
-                            <li class="nav-item">
-                                <a href="<?= base_url('GA_Aset_Terminasi') ?>"
-                                    class="nav-link <?= ($id_menu == 'GA_Aset_Terminasi') ? 'active' : '' ?>">
-                                    <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                    <p>Aset Terminasi</p>
+                            <li class="nav-item has-treeview <?= ($id_menu == 'GA_Aset_Terminasi') ? 'menu-open' : '' ?>">
+                                <a href="#" class="nav-link <?= ($id_menu == 'GA_Aset_Terminasi') ? 'active' : '' ?>">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>
+                                        Alker Saker
+                                        <i class="fas fa-angle-left right"></i>
+                                        <span class="badge badge-info right">2</span>
+                                    </p>
                                 </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('GA_Aset_Kantor') ?>"
+                                            class="nav-link <?= ($id_menu == 'GA_Aset_Kantor') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Alat Kerja Kantor</p>
+                                        </a>
+                                    </li>
+                                </ul>
+
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('GA_Alat_Terminasi') ?>"
+                                            class="nav-link <?= ($id_menu == 'GA_Alat_Terminasi') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Alat Terminasi</p>
+                                        </a>
+                                    </li>
+                                </ul>
+
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('GA_Aset_Terminasi') ?>"
+                                            class="nav-link <?= ($id_menu == 'GA_Sarana_Kerja') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Sarana Kerja</p>
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
 
-                            <!-- ALAT KERJA KANTOR -->
-                            <li class="nav-item">
-                                <a href="<?= base_url('GA_Aset_Kantor') ?>"
-                                    class="nav-link <?= ($id_menu == 'GA_Aset_Kantor') ? 'active' : '' ?>">
-                                    <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                    <p>Alat Kerja Kantor</p>
+                            <li class="nav-item has-treeview <?= ($id_menu == 'GA_Aset_Terminasi') ? 'menu-open' : '' ?>">
+                                <a href="#" class="nav-link <?= ($id_menu == 'GA_Aset_Terminasi') ? 'active' : '' ?>">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>
+                                        Inventaris Kantor
+                                        <i class="fas fa-angle-left right"></i>
+                                        <span class="badge badge-info right">2</span>
+                                    </p>
                                 </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item" style="pointer-events: none">
+                                        <a href="<?= base_url('GA_Aset_Terminasi') ?>"
+                                            class="nav-link <?= ($id_menu == 'GA_Aset_Terminasi') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Perlengkapan Kantor</p>
+                                        </a>
+                                    </li>
+                                </ul>
+
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item" style="pointer-events: none">
+                                        <a href="<?= base_url('GA_Aset_Terminasi') ?>"
+                                            class="nav-link <?= ($id_menu == 'GA_Aset_Terminasi') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Seragam Kantor</p>
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
 
                             <!-- GUDANG -->
@@ -340,7 +392,7 @@ $id_menu = $this->uri->segment('1');
                                 class="nav-item has-treeview <?= ($id_menu == 'inhouse' || $id_menu == 'Subcon') ? 'menu-open' : '' ?>">
                                 <a href="#"
                                     class="nav-link <?= ($id_menu == 'inhouse' || $id_menu == 'Subcon') ? 'active' : '' ?>">
-                                    <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                                    <i class="far fa-folder nav-icon"></i>
                                     <p>
                                         Gudang
                                         <i class="fas fa-angle-left right"></i>
@@ -363,15 +415,6 @@ $id_menu = $this->uri->segment('1');
                                         </a>
                                     </li>
                                 </ul>
-                            </li>
-
-                            <!-- SERAGAM KANTOR -->
-                            <li class="nav-item" style="pointer-events: none;">
-                                <a href="<?= base_url('asd') ?>"
-                                    class="nav-link <?= ($id_menu == 'asd') ? 'active' : '' ?>">
-                                    <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                    <p>Seragam Kantor</p>
-                                </a>
                             </li>
 
                         </ul>
