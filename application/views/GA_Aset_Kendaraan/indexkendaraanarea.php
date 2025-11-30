@@ -587,9 +587,9 @@ $total = 1;
                                                 value="<?= $data['ak_id_list_kendaraan'] ?>">
                                                         <label class="col-form-label">Jenis Kendaraan</label>
                                                         <select name="ka_id_kode_aset" class="form-control">
-                                                            <option value="1" <?php if ($data['ka_jenis_aset'] == 'MOBIL') { ?>selected <?php } ?>>MOBIL
+                                                            <option value="21" <?php if ($data['ka_jenis_aset'] == 'MOBIL') { ?>selected <?php } ?>>MOBIL
                                                             </option>
-                                                            <option value="2" <?php if ($data['ka_jenis_aset'] == 'MOTOR') { ?>selected <?php } ?>>MOTOR
+                                                            <option value="22" <?php if ($data['ka_jenis_aset'] == 'MOTOR') { ?>selected <?php } ?>>MOTOR
                                                             </option>
                                                         </select>
                                                     </div>
