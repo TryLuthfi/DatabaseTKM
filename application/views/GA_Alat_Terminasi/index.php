@@ -1160,17 +1160,16 @@ $progressJSON = json_encode($unique_regional);
         });
 
         document.getElementById('reset_filter').addEventListener('click', function () {
+            // alert('Reset filter clicked!');
             const selectedRegional = document.getElementById('filter_regional');
             const selectedArea = document.getElementById('filter_area');
             const selectedKondisi = document.getElementById('filter_kondisi');
             const selectedStatus = document.getElementById('filter_status');
-            const selectedTahunPerolehan = document.getElementById('filter_tahun_perolehan');
 
             const optionsRegional = selectedRegional.options;
             const optionsArea = selectedArea.options;
             const optionsKondisi = selectedKondisi.options;
             const optionsStatus = selectedStatus.options;
-            const optionsTahunPerolehan = selectedTahunPerolehan.options;
 
             // Hapus semua pilihan
             for (let i = 0; i < optionsRegional.length; i++) {
@@ -1189,18 +1188,15 @@ $progressJSON = json_encode($unique_regional);
                 optionsStatus[i].selected = false; // Hilangkan pilihan
             }
 
-            for (let i = 0; i < optionsTahunPerolehan.length; i++) {
-                optionsTahunPerolehan[i].selected = false; // Hilangkan pilihan
-            }
 
             // Pilih opsi default (indeks 0)
             selectedRegional.dispatchEvent(new Event('change'));
             selectedArea.dispatchEvent(new Event('change'));
             selectedKondisi.dispatchEvent(new Event('change'));
             selectedStatus.dispatchEvent(new Event('change'));
-            selectedTahunPerolehan.dispatchEvent(new Event('change'));;
 
             document.getElementById('btnFilterDataProject').click();
+
         });
 
         $('#btnFilterDataProject').on('click', function () {
