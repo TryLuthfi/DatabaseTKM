@@ -102,7 +102,7 @@ JOIN
 GROUP BY 
     tat.ka_id_kode_aset
 ORDER BY 
-    tat.ka_id_kode_aset ASC')
+    CAST(tka.ka_sorting AS UNSIGNED) ASC;')
             ->result_array();
         return $data;
     }
