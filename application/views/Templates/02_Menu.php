@@ -348,7 +348,7 @@ $id_menu = $this->uri->segment('1');
 
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item">
-                                        <a href="<?= base_url('GA_Aset_Terminasi') ?>"
+                                        <a href="<?= base_url('GA_Sarana_Kerja') ?>"
                                             class="nav-link <?= ($id_menu == 'GA_Sarana_Kerja') ? 'active' : '' ?>">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Sarana Kerja</p>
