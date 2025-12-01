@@ -12,23 +12,30 @@ $subkondisi = '';
 
 if ($prefix == 'A') {
     $substatus = 'AKTIF';
+    $subkondisi = '';
+} elseif ($prefix == 'S') {
+    $substatus = 'SEMUA ASET';
+    $subkondisi = 'SEMUA ASET';
 } elseif ($prefix == 'H') {
     $substatus = 'HILANG';
+    $subkondisi = '';
 } elseif ($prefix == 'T') {
     $substatus = 'TERJUAL';
+    $subkondisi = '';
 } elseif ($prefix == 'B') {
     $subkondisi = 'BAIK';
+    $substatus = '';
 } elseif ($prefix == 'R') {
     $subkondisi = 'RUSAK';
+    $substatus = '';
 } else {
     $substatus = '';
     $subkondisi = '';
 }
 
+
 $total = 1;
 ?>
-
-<script>alert(<?= $getKategoriKendaraan ?>);</script>
 
 <div class="content-wrapper">
 
@@ -88,8 +95,8 @@ $total = 1;
                                     <tbody>
                                         <?php
                                         foreach ($getMasterAsetKendaraan as $data):
-                                            if ($substatus != '') {
-                                                if ($data['ka_jenis_aset'] == $kategori && $data['ak_status_aset'] == $substatus) { ?>
+                                            if ($substatus != '' && $subkondisi === '') {
+                                                if ($data['ka_jenis_aset'] == $kategori && $data['ak_status_aset'] === $substatus) { ?>
                                                     <tr>
                                                         <td><?= $total++ ?></td>
                                                         <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
@@ -114,8 +121,8 @@ $total = 1;
                                                     </tr>
 
                                                 <?php }
-                                            } else if ($subkondisi != '') {
-                                                if ($data['ka_jenis_aset'] == $kategori && $data['ak_kondisi_aset'] == $subkondisi) { ?>
+                                            } else if ($subkondisi != '' && $substatus === '') {
+                                                if ($data['ka_jenis_aset'] === $kategori && $data['ak_kondisi_aset'] == $subkondisi) { ?>
                                                         <tr>
                                                             <td><?= $total++ ?></td>
                                                             <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
@@ -139,7 +146,32 @@ $total = 1;
                                                             </td>
                                                         </tr>
                                                 <?php }
-                                            }
+                                            } else if ($subkondisi === 'SEMUA ASET' && $substatus === 'SEMUA ASET') {
+                                                if ($data['ka_jenis_aset'] == $kategori) { ?>
+                                                        <tr>
+                                                            <td><?= $total++ ?></td>
+                                                            <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ak_sort'] ?></td>
+                                                            <td><?= $data['ak_merk'] ?></td>
+                                                            <td><?= $data['ak_plat_nomor'] ?></td>
+                                                            <td><?= $data['ak_pic'] ?></td>
+                                                            <td><?= $data['ak_area'] ?></td>
+                                                            <td><?= $data['ak_status_aset'] ?></td>
+                                                            <td>
+                                                                <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                                                <a href="<?php echo site_url('GA_Aset_Kendaraan/hapusKendaraan/' . $data['ak_id_list_kendaraan']); ?>"
+                                                                    id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
+                                                                        class=" fas fa-trash"></i></a>
+                                                                <a href="#" class="btn btn-warning"
+                                                                    data-target="#modal-edit-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
+                                                                    data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                                <?php } ?>
+                                                                <a href="#" class="btn btn-primary"
+                                                                    data-target="#modal-view-kendaraan<?= $data['ak_id_list_kendaraan'] ?>"
+                                                                    data-toggle="modal"><i class="fas fa-eye"></i></a>
+                                                            </td>
+                                                        </tr>
+                                                <?php }
+                                            }   
                                         endforeach; ?>
 
                                     </tbody>

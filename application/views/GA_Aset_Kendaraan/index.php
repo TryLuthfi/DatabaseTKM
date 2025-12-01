@@ -58,7 +58,7 @@ $total = 1;
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
                                                                         <a href="#" class="small-box-footer"
-                                                                            id="<?php echo 'box_detail_kendaraan_A' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                            id="<?php echo 'box_detail_kendaraan_S' . $stokKendaraan['ka_jenis_aset'] ?>">
                                                                             Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
@@ -73,7 +73,7 @@ $total = 1;
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
                                                                         <a href="#" class="small-box-footer"
-                                                                            id="<?php echo 'box_detail_kendaraan_S' . $stokKendaraan['ka_jenis_aset'] ?>">
+                                                                            id="<?php echo 'box_detail_kendaraan_A' . $stokKendaraan['ka_jenis_aset'] ?>">
                                                                             Lihat Detail <i
                                                                                 class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
@@ -176,7 +176,7 @@ $total = 1;
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
                                                                         <a href="#" class="small-box-footer"
-                                                                            id="<?php echo 'box_detail_kendaraan_A' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
+                                                                            id="<?php echo 'box_detail_kendaraan_S' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
                                                                             Detail <i class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
@@ -189,7 +189,7 @@ $total = 1;
                                                                         </div>
                                                                         <div class="icon"><i class="ion ion-bag"></i></div>
                                                                         <a href="#" class="small-box-footer"
-                                                                            id="<?php echo 'box_detail_kendaraan_S' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
+                                                                            id="<?php echo 'box_detail_kendaraan_A' . $stokKendaraan['ka_jenis_aset'] ?>">Lihat
                                                                             Detail <i class="fas fa-arrow-circle-right"></i></a>
                                                                     </div>
                                                                 </div>
