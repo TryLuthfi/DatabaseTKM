@@ -1082,7 +1082,7 @@ $progressJSON = json_encode($unique_regional);
                 var boxAktif = document.getElementById("box_detail_office_<?= $stokOffice['ka_jenis_aset'] ?>");
                 if (boxAktif) {
                     boxAktif.addEventListener("click", function () {
-                        window.location.href = "<?= base_url('GA_Alat_Terminasi/detailOffice/' . $stokOffice['ka_jenis_aset']) ?>";
+                        window.location.href = "<?= base_url('GA_Alat_Terminasi/detailTerminasi/' . $stokOffice['ka_jenis_aset']) ?>";
                     });
                 }
 

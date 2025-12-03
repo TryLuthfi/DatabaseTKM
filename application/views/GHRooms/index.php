@@ -11,16 +11,6 @@ $total = 1;
   <section class="content">
 
     <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0 text-dark">Distribusi Area</h1>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="content-header">
       <h1 class="m-0 text-dark ">List Kamar</h1>
     </div>
 
@@ -36,6 +26,7 @@ $total = 1;
           <table class="table table-bordered table-striped" id="roomsTable">
             <thead>
               <tr>
+                <th>No</th>
                 <th>Kode</th>
                 <th>Nama</th>
                 <th>Tipe</th>
@@ -47,10 +38,11 @@ $total = 1;
             <tbody>
               <?php foreach ($rooms as $r): ?>
                 <tr>
+                  <td><?= $total++ ?></td>
                   <td><?= $r['code'] ?></td>
                   <td><?= $r['name'] ?></td>
                   <td><?= $r['type_name'] ?></td>
-                  <td>Rp <?= number_format($r['price'], 0, ",", ".") ?></td>
+                  <td>Rp <?= number_format($r['price_default'], 0, ",", ".") ?></td>
                   <td><span class="badge badge-info"><?= strtoupper($r['status']) ?></span></td>
                   <td>
                     <button class="btn btn-sm btn-warning btnEdit" data-id="<?= $r['id'] ?>">
@@ -71,70 +63,70 @@ $total = 1;
   </section>
 
   <div class="modal fade" id="modalRoom">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="formRoom">
-                <div class="modal-header">
-                    <h4 class="modal-title">Form Kamar</h4>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
-                </div>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form id="formRoom">
+          <div class="modal-header">
+            <h4 class="modal-title">Form Kamar</h4>
+            <button type="button" class="close" data-dismiss="modal">
+              <span>&times;</span>
+            </button>
+          </div>
 
-                <div class="modal-body">
+          <div class="modal-body">
 
-                    <input type="hidden" id="room_id">
+            <input type="hidden" id="room_id">
 
-                    <div class="form-group">
-                        <label>Kode</label>
-                        <input type="text" class="form-control" id="code" required>
-                    </div>
+            <div class="form-group">
+              <label>Kode</label>
+              <input type="text" class="form-control" id="code" required>
+            </div>
 
-                    <div class="form-group">
-                        <label>Nama Kamar</label>
-                        <input type="text" class="form-control" id="name">
-                    </div>
+            <div class="form-group">
+              <label>Nama Kamar</label>
+              <input type="text" class="form-control" id="name">
+            </div>
 
-                    <div class="form-group">
-                        <label>Tipe Kamar</label>
-                        <select class="form-control" id="room_type_id">
-                            <option value="">-- Pilih --</option>
-                            <?php foreach ($types as $t): ?>
-                                <option value="<?= $t['id'] ?>"><?= $t['name'] ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
+            <div class="form-group">
+              <label>Tipe Kamar</label>
+              <select class="form-control" id="room_type_id">
+                <option value="">-- Pilih --</option>
+                <?php foreach ($types as $t): ?>
+                  <option value="<?= $t['id'] ?>"><?= $t['name'] ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
 
-                    <div class="form-group">
-                        <label>Harga</label>
-                        <input type="text" class="form-control" id="price">
-                    </div>
+            <div class="form-group">
+              <label>Harga</label>
+              <input type="text" class="form-control" id="price">
+            </div>
 
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select class="form-control" id="status">
-                            <option value="available">Tersedia</option>
-                            <option value="occupied">Terisi</option>
-                            <option value="maintenance">Maintenance</option>
-                        </select>
-                    </div>
+            <div class="form-group">
+              <label>Status</label>
+              <select class="form-control" id="status">
+                <option value="available">Tersedia</option>
+                <option value="occupied">Terisi</option>
+                <option value="maintenance">Maintenance</option>
+              </select>
+            </div>
 
-                    <div class="form-group">
-                        <label>Catatan</label>
-                        <textarea id="notes" class="form-control"></textarea>
-                    </div>
+            <div class="form-group">
+              <label>Catatan</label>
+              <textarea id="notes" class="form-control"></textarea>
+            </div>
 
-                </div>
+          </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Simpan</button>
-                </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-primary">Simpan</button>
+          </div>
 
-            </form>
-        </div>
+        </form>
+      </div>
     </div>
-</div>
+  </div>
 
 </div>
 
@@ -159,20 +151,6 @@ $total = 1;
       prefix: " Rp. ",
       digitsOptional: true
     })
-
-    // notifikasi allert sukses atau tidak
-    <?php if ($status == 'sukses_tambah') { ?>
-      swal("Success!", "Berhasil menambah PO!", "success");
-    <?php } else if ($status == 'sukses_hapus') { ?>
-        swal("Success!", "Berhasil menghapus PO!", "success");
-    <?php } else if ($status == 'PO sudah ada') { ?>
-          swal("Gagal!", "PO Sudah ada", "warning");
-    <?php } else if ($status == 'sukses_hapus') { ?>
-            swal("Success!", "Berhasil menghapus PO!", "success");>
-      <?php } else if ($status == 'gagal_hapus') { ?>
-              swal("Gagal!", "Gagal menghapus PO!", "warning");>
-      <?php } else { ?>
-    <?php } ?>
 
   });
 
@@ -202,85 +180,120 @@ $total = 1;
     $('.nilai_po2').mask('000.000.000', { reverse: true });
 
   })
-</script>
 
-<script>
   $(document).ready(function () {
 
     $("#roomsTable").DataTable();
 
     $("#btnAddRoom").click(function () {
-        $("#formRoom")[0].reset();
-        $("#room_id").val("");
-        $("#modalRoom .modal-title").text("Tambah Kamar");
-        $("#modalRoom").modal("show");
+      $("#formRoom")[0].reset();
+      $("#room_id").val("");
+      $("#modalRoom .modal-title").text("Tambah Kamar");
+      $("#modalRoom").modal("show");
     });
 
     // Simpan
     $("#formRoom").submit(function (e) {
-        e.preventDefault();
+      e.preventDefault();
 
-        let id = $("#room_id").val();
-        let url = id === "" 
-            ? "<?= base_url('Rooms/add') ?>"
-            : "<?= base_url('Rooms/update/') ?>" + id;
+      let id = $("#room_id").val();
+      let url = id === ""
+        ? "<?= base_url('GHRooms/add') ?>"
+        : "<?= base_url('GHRooms/update/') ?>" + id;
 
-        $.ajax({
-            url: url,
-            type: "POST",
-            data: {
-                room_type_id: $("#room_type_id").val(),
-                code: $("#code").val(),
-                name: $("#name").val(),
-                price: $("#price").val(),
-                status: $("#status").val(),
-                notes: $("#notes").val()
-            },
-            dataType: "json",
-            success: function () {
-                location.reload();
-            }
-        });
+      $.ajax({
+        url: url,
+        type: "POST",
+        data: {
+          room_type_id: $("#room_type_id").val(),
+          code: $("#code").val(),
+          name: $("#name").val(),
+          price: $("#price").val(),
+          status: $("#status").val(),
+          notes: $("#notes").val()
+        },
+        dataType: "json",
+        success: function (res) {
+
+          if (res.status === "sukses_tambah") {
+            swal("Success!", "Berhasil menambah DATA!", "success");
+          }
+          else if (res.status === "sukses_edit") {
+            swal("Success!", "Berhasil mengubah DATA!", "success");
+          }
+          else if (res.status === "gagal_tambah") {
+            swal("Gagal!", "Gagal menambah DATA!", "error");
+          }
+          else if (res.status === "gagal_edit") {
+            swal("Gagal!", "Gagal mengubah DATA!", "error");
+          }
+
+          setTimeout(() => location.reload(), 1500);
+        }
+      });
     });
 
     // Edit
     $(".btnEdit").click(function () {
-        let id = $(this).data("id");
+      let id = $(this).data("id");
 
-        $.get("<?= base_url('Rooms/edit/') ?>" + id, function (res) {
-            $("#room_id").val(res.id);
-            $("#code").val(res.code);
-            $("#name").val(res.name);
-            $("#room_type_id").val(res.room_type_id);
-            $("#price").val(res.price);
-            $("#status").val(res.status);
-            $("#notes").val(res.notes);
+      $.get("<?= base_url('GHRooms/edit/') ?>" + id, function (res) {
+        $("#room_id").val(res.id);
+        $("#code").val(res.code);
+        $("#name").val(res.name);
+        $("#room_type_id").val(res.room_type_id);
+        $("#price").val(res.price);
+        $("#status").val(res.status);
+        $("#notes").val(res.notes);
 
-            $("#modalRoom .modal-title").text("Edit Kamar");
-            $("#modalRoom").modal("show");
-        }, "json");
+        $("#modalRoom .modal-title").text("Edit Kamar " + id);
+        $("#modalRoom").modal("show");
+      }, "json");
     });
 
     // Hapus
     $(".btnDelete").click(function () {
-        let id = $(this).data("id");
+      let id = $(this).data("id");
 
-        Swal.fire({
-            icon: "warning",
-            title: "Hapus kamar?",
-            showCancelButton: true,
-            confirmButtonText: "Ya",
-        }).then(res => {
-            if (res.isConfirmed) {
-                $.get("<?= base_url('Rooms/delete/') ?>" + id, function () {
-                    location.reload();
-                });
+      Swal.fire({
+        icon: "warning",
+        title: "Hapus kamar?",
+        text: "Data kamar akan dihapus permanen!",
+        showCancelButton: true,
+        confirmButtonText: "Ya, Hapus!",
+        cancelButtonText: "Batal"
+      }).then(res => {
+
+        if (res.isConfirmed) {
+
+          $.ajax({
+            url: "<?= base_url('GHRooms/delete/') ?>" + id,
+            type: "GET",
+            dataType: "json",
+            success: function (res) {
+
+              if (res.status === "sukses_hapus") {
+                Swal.fire("Berhasil!", "Data berhasil dihapus.", "success")
+                  .then(() => location.reload());
+              }
+              else if (res.status === "gagal_hapus") {
+                Swal.fire("Gagal!", "Gagal menghapus data.", "error");
+              }
+            },
+            error: function () {
+              Swal.fire("Error!", "Terjadi kesalahan server.", "error");
             }
-        });
+          });
+
+        }
+      });
     });
 
-});
+  });
+
 </script>
+
+
 <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>

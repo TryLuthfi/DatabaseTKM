@@ -8,10 +8,10 @@ class MGHRooms extends CI_Model
 
     public function get_all()
     {
-        $this->db->select('rooms.*, room_types.name AS type_name');
+        $this->db->select('rooms.*, room_types.price_default,  room_types.name AS type_name');
         $this->db->from($this->table);
         $this->db->join('room_types', 'room_types.id = rooms.room_type_id', 'left');
-        $this->db->order_by('rooms.code', 'ASC');
+        $this->db->order_by('rooms.id', 'ASC');
         return $this->db->get()->result_array();
     }
 

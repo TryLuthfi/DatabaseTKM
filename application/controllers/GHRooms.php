@@ -6,6 +6,10 @@ class GHRooms extends CI_Controller
 
     public function __construct()
     {
+
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
         parent::__construct();
         $this->load->library('form_validation');
         $this->load->model('MGHRooms');
@@ -31,60 +35,55 @@ class GHRooms extends CI_Controller
     }
 
     public function add()
-    {
-        $hasil_data = array(
-            'regional_area' => $_POST['regional_area'],
-            'provinsi_area' => $_POST['provinsi_area'],
-            'kota_area' => $_POST['kota_area'],
-            'kecamatan_area' => $_POST['kecamatan_area']
-        );
+{
+    $data = [
+        'room_type_id' => $this->input->post('room_type_id'),
+        'code' => $this->input->post('code'),
+        'name' => $this->input->post('name'),
+        'price' => str_replace(".", "", $this->input->post('price')),
+        'status' => $this->input->post('status'),
+        'notes' => $this->input->post('notes')
+    ];
 
-        $res = $this->MGHRooms->addArea($hasil_data);
+    $insert = $this->MGHRooms->insert($data);
 
-        if ($res >= 1) {
-            $this->session->set_flashdata('status', 'sukses_tambah');
-            redirect("GHRooms");
-        } else {
-            $this->session->set_flashdata('status', 'gagal_tambah');
-            redirect("GHRooms");
-        }
+    echo json_encode([
+        'status' => $insert ? 'sukses_tambah' : 'gagal_tambah'
+    ]);
+}
 
-    }
 
     public function edit($id)
     {
-
-        $data_array = array(
-            'regional_area' => $_POST['regional_area'],
-            'provinsi_area' => $_POST['provinsi_area'],
-            'kota_area' => $_POST['kota_area'],
-            'kecamatan_area' => $_POST['kecamatan_area']
-        );
-
-        $where = array('id_area' => $id);
-
-        $res = $this->MGHRooms->updateArea($data_array, $where);
-
-        if ($res >= 1) {
-            $this->session->set_flashdata('status', 'sukses_edit');
-            redirect("GHRooms");
-        } else {
-            $this->session->set_flashdata('status', 'gagal_edit');
-            redirect("GHRooms");
-        }
+        $data = $this->MGHRooms->get_by_id($id);
+        echo json_encode($data);
     }
+
+    public function update($id)
+{
+    $data = [
+        'room_type_id' => $this->input->post('room_type_id'),
+        'code' => $this->input->post('code'),
+        'name' => $this->input->post('name'),
+        'price' => str_replace(".", "", $this->input->post('price')),
+        'status' => $this->input->post('status'),
+        'notes' => $this->input->post('notes')
+    ];
+
+    $update = $this->MGHRooms->update($id, $data);
+
+    echo json_encode([
+        'status' => $update ? 'sukses_edit' : 'gagal_edit'
+    ]);
+}
 
     public function delete($id)
-    {
-        $id_area = array('id_area' => $id);
-        $res = $this->MGHRooms->deleteArea($id_area);
+{
+    $delete = $this->MGHRooms->delete($id);
 
-        if ($res >= 1) {
-            $this->session->set_flashdata('status', 'sukses_hapus');
-            redirect("GHRooms");
-        } else {
-            $this->session->set_flashdata('status', 'gagal_hapus');
-            redirect("GHRooms");
-        }
-    }
+    echo json_encode([
+        'status' => $delete ? 'sukses_hapus' : 'gagal_hapus'
+    ]);
+}
+
 }
