@@ -477,7 +477,7 @@ $total_stok_dashboard = [];
                                                                 <th>Closure</th>
                                                                 <th>FAT</th>
                                                                 <th>FDT</th>
-                                                                <th>HPDE</th>
+                                                                <th>HDPE</th>
                                                                 <th>Kabel</th>
                                                                 <th>OTB</th>
                                                                 <th>Tiang</th>
