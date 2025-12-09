@@ -91,7 +91,7 @@ class GA_Alat_Terminasi extends CI_Controller
         }
     }
 
-    public function detailOffice()
+    public function detailTerminasi()
     {
 
         $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
@@ -111,7 +111,7 @@ class GA_Alat_Terminasi extends CI_Controller
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
-            $this->load->view('GA_Alat_Terminasi/indexoffice', $data);
+            $this->load->view('GA_Alat_Terminasi/indexdetailterminasi', $data);
             // $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
 

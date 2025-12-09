@@ -61,23 +61,23 @@ $total = 1;
                                         foreach ($getMasterAsetOfficeTipe as $data): ?>
                                             <tr>
                                                 <td><?= $total++ ?></td>
-                                                <td><?= $data['ka_nama_kode_aset'] . '-' . $data['ao_sort'] ?></td>
+                                                <td><?= $data['ka_nama_kode_aset'] . '-' . $data['at_sort'] ?></td>
                                                 <td><?= $data['ka_jenis_aset'] ?></td>
-                                                <td><?= $data['ao_merk'] ?></td>
-                                                <td><?= $data['ao_type'] ?></td>
-                                                <td><?= $data['ao_pic'] ?></td>
-                                                <td><?= $data['ao_area'] ?></td>
+                                                <td><?= $data['at_merk'] ?></td>
+                                                <td><?= $data['at_type'] ?></td>
+                                                <td><?= $data['at_pic'] ?></td>
+                                                <td><?= $data['at_area'] ?></td>
                                                 <td>
                                                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
-                                                        <a href="<?php echo site_url('GA_Aset_Kantor/hapusAsetKantor/' . $data['ao_id_list_office']); ?>"
+                                                        <a href="<?php echo site_url('GA_Aset_Kantor/hapusAsetKantor/' . $data['at_id_list_terminasi']); ?>"
                                                             id="tombol_hapus" class="btn btn-danger tombol_hapus"><i
                                                                 class=" fas fa-trash"></i></a>
                                                         <a href="#" class="btn btn-warning"
-                                                            data-target="#modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>"
+                                                            data-target="#modal-edit-aset_kantor<?= $data['at_id_list_terminasi'] ?>"
                                                             data-toggle="modal"><i class="fas fa-edit"></i></a>
                                                     <?php } ?>
                                                     <a href="#" class="btn btn-primary"
-                                                        data-target="#modal-view-Office<?= $data['ao_id_list_office'] ?>"
+                                                        data-target="#modal-view-Office<?= $data['at_id_list_terminasi'] ?>"
                                                         data-toggle="modal"><i class="fas fa-eye"></i></a>
                                                 </td>
                                             </tr>
@@ -107,20 +107,20 @@ $total = 1;
         <?php $tgl = date('Y-m-d'); ?>
         <?php foreach ($getMasterAsetOfficeTipe as $data):
 
-            if (!empty($data['ao_date_last_cek'])) {
-                $tanggal_cek_formao_indo = date('d F Y', strtotime($data['ao_date_last_cek']));
+            if (!empty($data['at_date_last_cek'])) {
+                $tanggal_cek_format_indo = date('d F Y', strtotime($data['at_date_last_cek']));
             } else {
-                $tanggal_cek_formao_indo = '';
+                $tanggal_cek_format_indo = '';
             }
 
-            if (!empty($data['ao_date_input'])) {
-                $tanggal_input_formao_indo = date('d F Y', strtotime($data['ao_date_input']));
+            if (!empty($data['at_date_input'])) {
+                $tanggal_input_format_indo = date('d F Y', strtotime($data['at_date_input']));
             } else {
-                $tanggal_input_formao_indo = '';
+                $tanggal_input_format_indo = '';
             }
 
             ?>
-            <div class="modal fade" id="modal-view-Office<?= $data['ao_id_list_office'] ?>" tabindex="-1" role="dialog"
+            <div class="modal fade" id="modal-view-Office<?= $data['at_id_list_terminasi'] ?>" tabindex="-1" role="dialog"
                 aria-labelledby="modal-tambah-label" aria-hidden="true">
                 <div class="modal-dialog modal-xl" role="document">
                     <div class="modal-content">
@@ -138,12 +138,12 @@ $total = 1;
 
                                 <div class="card">
                                     <div class="card-body">
-                                        <input type="hidden" name="ao_id_list_office"
-                                            value="<?= $data['ao_id_list_office'] ?>">
+                                        <input type="hidden" name="at_id_list_terminasi"
+                                            value="<?= $data['at_id_list_terminasi'] ?>">
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="flex-grow-1 border-top"></div>
                                             <h3 class="mx-3">
-                                                <?= $data['ka_jenis_aset'] . ' ' . $data['ka_nama_kode_aset'] . '-' . $data['ao_sort'] ?>
+                                                <?= $data['ka_jenis_aset'] . ' ' . $data['ka_nama_kode_aset'] . '-' . $data['at_sort'] ?>
                                             </h3>
                                             <div class="flex-grow-1 border-top"></div>
                                         </div>
@@ -152,14 +152,14 @@ $total = 1;
                                                 <div class="form-group">
                                                     <label class="col-form-label">Merk</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ao_merk'] ?>" readonly>
+                                                        autocomplete="off" value="<?= $data['at_merk'] ?>" readonly>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="col-form-label">Type</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ao_type'] ?>" readonly
+                                                        autocomplete="off" value="<?= $data['at_type'] ?>" readonly
                                                         style="font-weight: bold;">
                                                 </div>
                                             </div>
@@ -167,7 +167,7 @@ $total = 1;
                                                 <div class="form-group">
                                                     <label class="col-form-label">Serial Number</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ao_serial_number'] ?>" readonly
+                                                        autocomplete="off" value="<?= $data['at_serial_number'] ?>" readonly
                                                         style="font-weight: bold;">
                                                 </div>
                                             </div>
@@ -175,7 +175,7 @@ $total = 1;
                                                 <div class="form-group">
                                                     <label class="col-form-label">Kondisi</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ao_kondisi_aset'] ?>" readonly
+                                                        autocomplete="off" value="<?= $data['at_kondisi_aset'] ?>" readonly
                                                         style="font-weight: bold;">
                                                 </div>
                                             </div>
@@ -190,7 +190,7 @@ $total = 1;
                                                 <div class="form-group">
                                                     <label class="col-form-label">PIC Aset</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ao_pic'] ?>" readonly>
+                                                        autocomplete="off" value="<?= $data['at_pic'] ?>" readonly>
                                                 </div>
                                             </div>
                                         </div>
@@ -199,14 +199,14 @@ $total = 1;
                                                 <div class="form-group">
                                                     <label class="col-form-label">Regional</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ao_regional'] ?>" readonly>
+                                                        autocomplete="off" value="<?= $data['at_regional'] ?>" readonly>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="col-form-label">Area</label>
                                                     <input type="text" class="form-control" name="access_id_project"
-                                                        autocomplete="off" value="<?= $data['ao_area'] ?>" readonly>
+                                                        autocomplete="off" value="<?= $data['at_area'] ?>" readonly>
                                                 </div>
                                             </div>
                                         </div>
@@ -234,7 +234,7 @@ $total = 1;
                                                                             id="detail_nama_file_sj"></h5>
                                                                         <a href=""
                                                                             class="font-size-14 text-muted text-truncate"
-                                                                            id="view_detail_surao_jalan"
+                                                                            id="view_detail_surat_jalan"
                                                                             target="_blank"><u>View
                                                                                 Folder</u></a>
                                                                     </div>
@@ -257,7 +257,7 @@ $total = 1;
                                                                             id="detail_nama_file_sj"></h5>
                                                                         <a href=""
                                                                             class="font-size-14 text-muted text-truncate"
-                                                                            id="view_detail_surao_jalan"
+                                                                            id="view_detail_surat_jalan"
                                                                             target="_blank"><u>View
                                                                                 Folder</u></a>
                                                                     </div>
@@ -283,9 +283,9 @@ $total = 1;
                                             <div class="col-md-12">
                                                 <div class="form-group">
                                                     <label class="col-form-label">Status Aset</label>
-                                                    <select name="ao_status_aset" class="form-control">
+                                                    <select name="at_status_aset" class="form-control">
                                                         <?php foreach ($option_aktif as $option): ?>
-                                                            <option value="<?= $option ?>" <?= isset($data['ao_status_aset']) && $data['ao_status_aset'] == $option ? 'selected' : '' ?>>
+                                                            <option value="<?= $option ?>" <?= isset($data['at_status_aset']) && $data['at_status_aset'] == $option ? 'selected' : '' ?>>
                                                                 <?= $option ?>
                                                             </option>
                                                         <?php endforeach; ?>
@@ -298,7 +298,7 @@ $total = 1;
                                                 <div class="form-group">
                                                     <label class="col-form-label">Keterangan</label>
                                                     <textarea class="form-control"
-                                                        name="remarks_status"><?= $data['ao_keterangan_aset'] ?></textarea>
+                                                        name="remarks_status"><?= $data['at_keterangan_aset'] ?></textarea>
 
                                                 </div>
                                             </div>
@@ -318,14 +318,14 @@ $total = 1;
                                                 <div class="form-group">
                                                     <label class="col-form-label">Tanggal Opname Terakhir</label>
                                                     <input type="text" class="form-control"
-                                                        value="<?= $tanggal_cek_formao_indo ?>" readonly>
+                                                        value="<?= $tanggal_cek_format_indo ?>" readonly>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="col-form-label">Tanggal Input Aplikasi</label>
                                                     <input type="text" class="form-control"
-                                                        value="<?= $tanggal_input_formao_indo ?>" readonly>
+                                                        value="<?= $tanggal_input_format_indo ?>" readonly>
                                                 </div>
                                             </div>
                                         </div>
@@ -350,22 +350,22 @@ $total = 1;
         <?php $tgl = date('Y-m-d'); ?>
         <?php foreach ($getMasterAsetOfficeTipe as $data):
 
-            if (!empty($data['ao_date_last_cek'])) {
-                $tanggal_cek_formao_indo = date('d F Y', strtotime($data['ao_date_last_cek']));
+            if (!empty($data['at_date_last_cek'])) {
+                $tanggal_cek_format_indo = date('d F Y', strtotime($data['at_date_last_cek']));
             } else {
-                $tanggal_cek_formao_indo = '';
+                $tanggal_cek_format_indo = '';
             }
 
-            if (!empty($data['ao_date_input'])) {
-                $tanggal_input_formao_indo = date('d F Y', strtotime($data['ao_date_input']));
+            if (!empty($data['at_date_input'])) {
+                $tanggal_input_format_indo = date('d F Y', strtotime($data['at_date_input']));
             } else {
-                $tanggal_input_formao_indo = '';
+                $tanggal_input_format_indo = '';
             }
 
             ?>
-            <form action="<?php echo site_url('GA_Aset_Kantor/editAsetKantor/' . $data['ao_id_list_office']); ?>"
+            <form action="<?php echo site_url('GA_Aset_Kantor/editAsetKantor/' . $data['at_id_list_terminasi']); ?>"
                 method="post">
-                <div class="modal fade" id="modal-edit-aset_kantor<?= $data['ao_id_list_office'] ?>" tabindex="-1"
+                <div class="modal fade" id="modal-edit-aset_kantor<?= $data['at_id_list_terminasi'] ?>" tabindex="-1"
                     role="dialog" aria-labelledby="modal-tambah-label" aria-hidden="true">
                     <div class="modal-dialog modal-xl" role="document">
                         <div class="modal-content">
@@ -382,20 +382,20 @@ $total = 1;
                                 <section class="content">
                                     <div class="card">
                                         <div class="card-body">
-                                            <input type="hidden" name="ao_id_list_office"
-                                                value="<?= $data['ao_id_list_office'] ?>">
+                                            <input type="hidden" name="at_id_list_terminasi"
+                                                value="<?= $data['at_id_list_terminasi'] ?>">
                                             <div class="d-flex align-items-center mb-3">
                                                 <div class="flex-grow-1 border-top"></div>
                                                 <h3 class="mx-3">
-                                                    <?= $data['ka_jenis_aset'] . ' ' . $data['ka_nama_kode_aset'] . '-' . $data['ao_sort'] ?>
+                                                    <?= $data['ka_jenis_aset'] . ' ' . $data['ka_nama_kode_aset'] . '-' . $data['at_sort'] ?>
                                                 </h3>
                                                 <div class="flex-grow-1 border-top"></div>
                                             </div>
                                             <div class="row">
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <input type="hidden" name="ao_id_list_office"
-                                                            value="<?= $data['ao_id_list_office'] ?>">
+                                                        <input type="hidden" name="at_id_list_terminasi"
+                                                            value="<?= $data['at_id_list_terminasi'] ?>">
                                                         <label class="col-form-label">Jenis Aset</label>
                                                         <select name="ka_id_kode_aset" class="form-control">
                                                             <option value="25" <?php if ($data['ka_jenis_aset'] == 'LAPTOP') { ?>selected <?php } ?>>LAPTOP</option>
@@ -412,31 +412,31 @@ $total = 1;
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Merk Aset</label>
-                                                        <input type="text" class="form-control" name="ao_merk"
-                                                            autocomplete="off" value="<?= $data['ao_merk'] ?>">
+                                                        <input type="text" class="form-control" name="at_merk"
+                                                            autocomplete="off" value="<?= $data['at_merk'] ?>">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Type</label>
-                                                        <input type="text" class="form-control" name="ao_type"
-                                                            autocomplete="off" value="<?= $data['ao_type'] ?>"
+                                                        <input type="text" class="form-control" name="at_type"
+                                                            autocomplete="off" value="<?= $data['at_type'] ?>"
                                                             style="font-weight: bold;">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Serial Number</label>
-                                                        <input type="text" class="form-control" name="ao_serial_number"
-                                                            autocomplete="off" value="<?= $data['ao_serial_number'] ?>"
+                                                        <input type="text" class="form-control" name="at_serial_number"
+                                                            autocomplete="off" value="<?= $data['at_serial_number'] ?>"
                                                             style="font-weight: bold;">
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Spesifikasi</label>
-                                                        <input type="text" class="form-control" name="ao_spesifikasi"
-                                                            autocomplete="off" value="<?= $data['ao_spesifikasi'] ?>"
+                                                        <input type="text" class="form-control" name="at_spesifikasi"
+                                                            autocomplete="off" value="<?= $data['at_spesifikasi'] ?>"
                                                             style="font-weight: bold;">
                                                     </div>
                                                 </div>
@@ -446,10 +446,10 @@ $total = 1;
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Kondisi Aset</label>
-                                                        <select name="ao_kondisi_aset" class="form-control">
-                                                            <option value="BAIK" <?php if ($data['ao_kondisi_aset'] == 'BAIK') { ?>selected <?php } ?>>BAIK
+                                                        <select name="at_kondisi_aset" class="form-control">
+                                                            <option value="BAIK" <?php if ($data['at_kondisi_aset'] == 'BAIK') { ?>selected <?php } ?>>BAIK
                                                             </option>
-                                                            <option value="RUSAK" <?php if ($data['ao_kondisi_aset'] == 'RUSAK') { ?>selected <?php } ?>>
+                                                            <option value="RUSAK" <?php if ($data['at_kondisi_aset'] == 'RUSAK') { ?>selected <?php } ?>>
                                                                 RUSAK
                                                             </option>
                                                         </select>
@@ -465,8 +465,8 @@ $total = 1;
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">PIC Aset</label>
-                                                        <input type="text" class="form-control" name="ao_pic"
-                                                            autocomplete="off" value="<?= $data['ao_pic'] ?>" s>
+                                                        <input type="text" class="form-control" name="at_pic"
+                                                            autocomplete="off" value="<?= $data['at_pic'] ?>" s>
                                                     </div>
                                                 </div>
                                             </div>
@@ -474,13 +474,13 @@ $total = 1;
                                                 <div class="col-md-6">
                                                     <div class="form-group">
                                                         <label class="col-form-label">Regional Kendaraan</label>
-                                                        <select name="ao_regional" class="form-control">
-                                                            <option value="" <?php if ($data['ao_regional'] == '') { ?>selected <?php } ?>>Pilih Regional</option>
-                                                            <option value="REGIONAL 1" <?php if ($data['ao_regional'] == 'REGIONAL 1') { ?>selected <?php } ?>>REGIONAL 1</option>
-                                                            <option value="REGIONAL 2" <?php if ($data['ao_regional'] == 'REGIONAL 2') { ?>selected <?php } ?>>REGIONAL 2</option>
-                                                            <option value="REGIONAL 3" <?php if ($data['ao_regional'] == 'REGIONAL 3') { ?>selected <?php } ?>>REGIONAL 3</option>
-                                                            <option value="REGIONAL 4" <?php if ($data['ao_regional'] == 'REGIONAL 4') { ?>selected <?php } ?>>REGIONAL 4</option>
-                                                            <option value="REGIONAL 5" <?php if ($data['ao_regional'] == 'REGIONAL 5') { ?>selected <?php } ?>>REGIONAL 5</option>
+                                                        <select name="at_regional" class="form-control">
+                                                            <option value="" <?php if ($data['at_regional'] == '') { ?>selected <?php } ?>>Pilih Regional</option>
+                                                            <option value="REGIONAL 1" <?php if ($data['at_regional'] == 'REGIONAL 1') { ?>selected <?php } ?>>REGIONAL 1</option>
+                                                            <option value="REGIONAL 2" <?php if ($data['at_regional'] == 'REGIONAL 2') { ?>selected <?php } ?>>REGIONAL 2</option>
+                                                            <option value="REGIONAL 3" <?php if ($data['at_regional'] == 'REGIONAL 3') { ?>selected <?php } ?>>REGIONAL 3</option>
+                                                            <option value="REGIONAL 4" <?php if ($data['at_regional'] == 'REGIONAL 4') { ?>selected <?php } ?>>REGIONAL 4</option>
+                                                            <option value="REGIONAL 5" <?php if ($data['at_regional'] == 'REGIONAL 5') { ?>selected <?php } ?>>REGIONAL 5</option>
                                                     </div>
                                                     </select>
                                                 </div>
@@ -488,8 +488,8 @@ $total = 1;
                                             <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label class="col-form-label">Area</label>
-                                                    <input type="text" class="form-control" name="ao_area"
-                                                        autocomplete="off" value="<?= $data['ao_area'] ?>" s>
+                                                    <input type="text" class="form-control" name="at_area"
+                                                        autocomplete="off" value="<?= $data['at_area'] ?>" s>
                                                 </div>
                                             </div>
                                         </div>
@@ -516,7 +516,7 @@ $total = 1;
                                                                     <h5 class="font-size-15 mb-1 text-truncate"
                                                                         id="detail_nama_file_sj"></h5>
                                                                     <a href="" class="font-size-14 text-muted text-truncate"
-                                                                        id="view_detail_surao_jalan" target="_blank"><u>View
+                                                                        id="view_detail_surat_jalan" target="_blank"><u>View
                                                                             Folder</u></a>
                                                                 </div>
                                                             </div>
@@ -537,7 +537,7 @@ $total = 1;
                                                                     <h5 class="font-size-15 mb-1 text-truncate"
                                                                         id="detail_nama_file_sj"></h5>
                                                                     <a href="" class="font-size-14 text-muted text-truncate"
-                                                                        id="view_detail_surao_jalan" target="_blank"><u>View
+                                                                        id="view_detail_surat_jalan" target="_blank"><u>View
                                                                             Folder</u></a>
                                                                 </div>
                                                             </div>
@@ -562,9 +562,9 @@ $total = 1;
                                         <div class="col-md-12">
                                             <div class="form-group">
                                                 <label class="col-form-label">Status Aset</label>
-                                                <select name="ao_status_aset" class="form-control">
+                                                <select name="at_status_aset" class="form-control">
                                                     <?php foreach ($option_aktif as $option): ?>
-                                                        <option value="<?= $option ?>" <?= isset($data['ao_status_aset']) && $data['ao_status_aset'] == $option ? 'selected' : '' ?>>
+                                                        <option value="<?= $option ?>" <?= isset($data['at_status_aset']) && $data['at_status_aset'] == $option ? 'selected' : '' ?>>
                                                             <?= $option ?>
                                                         </option>
                                                     <?php endforeach; ?>
@@ -577,7 +577,7 @@ $total = 1;
                                             <div class="form-group">
                                                 <label class="col-form-label">Keterangan</label>
                                                 <textarea class="form-control"
-                                                    name="ao_keterangan_aset"><?= $data['ao_keterangan_aset'] ?></textarea>
+                                                    name="at_keterangan_aset"><?= $data['at_keterangan_aset'] ?></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -594,8 +594,8 @@ $total = 1;
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label class="col-form-label">Tahun Perolehan</label>
-                                                <input type="text" class="form-control" name="ao_tahun_perolehan"
-                                                    autocomplete="off" value="<?= $data['ao_tahun_perolehan'] ?>">
+                                                <input type="text" class="form-control" name="at_tahun_perolehan"
+                                                    autocomplete="off" value="<?= $data['at_tahun_perolehan'] ?>">
                                             </div>
                                         </div>
                                     </div>
@@ -603,15 +603,15 @@ $total = 1;
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label class="col-form-label">Tanggal Opname Terakhir</label>
-                                                <input type="text" class="form-control" name="ao_date_last_cek"
-                                                    value="<?= $tanggal_cek_formao_indo ?>">
+                                                <input type="text" class="form-control" name="at_date_last_cek"
+                                                    value="<?= $tanggal_cek_format_indo ?>">
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
                                                 <label class="col-form-label">Tanggal Input Aplikasi</label>
-                                                <input type="text" class="form-control" name="ao_date_input"
-                                                    value="<?= $tanggal_input_formao_indo ?>">
+                                                <input type="text" class="form-control" name="at_date_input"
+                                                    value="<?= $tanggal_input_format_indo ?>">
                                             </div>
                                         </div>
                                     </div>

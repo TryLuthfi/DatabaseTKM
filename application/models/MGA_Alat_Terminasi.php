@@ -67,7 +67,7 @@ class MGA_Alat_Terminasi extends CI_Model
             $filter_area = "ao_area";
         }
 
-        $data = $this->db->query('SELECT * FROM tb_aset_office JOIN tb_kode_aset ON tb_aset_office.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset WHERE ' . $filter_area . ' = "' . $decoded_url_area . '"')
+        $data = $this->db->query('SELECT * FROM tb_aset_terminasi tat  JOIN tb_kode_aset tka ON tat.ka_id_kode_aset = tka.ka_id_kode_aset WHERE ' . $filter_area . ' = "' . $decoded_url_area . '"')
             ->result_array();
         return $data;
     }
@@ -79,10 +79,10 @@ class MGA_Alat_Terminasi extends CI_Model
         $segments = explode("/", $url_path); // Pecah berdasarkan "/"
         $last_segment = end($segments); // Ambil bagian terakhir dari URL
 
-        $filter_area = "ka_jenis_aset";
+        $filter_area = "tka.ka_jenis_aset";
         $decoded_url_area = urldecode($last_segment);
 
-        $data = $this->db->query('select * from tb_aset_office join tb_kode_aset on tb_aset_office.ka_id_kode_aset = tb_kode_aset.ka_id_kode_aset WHERE ' . $filter_area . ' = "' . $decoded_url_area . '"')
+        $data = $this->db->query('SELECT * FROM tb_aset_terminasi tat  JOIN tb_kode_aset tka ON tat.ka_id_kode_aset = tka.ka_id_kode_aset WHERE ' . $filter_area . ' = "' . $decoded_url_area . '"')
             ->result_array();
         return $data;
     }
