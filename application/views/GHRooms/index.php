@@ -1,6 +1,7 @@
 <?php
-$status = $this->session->flashdata('status');
+$statusAlert = $this->session->flashdata('statusAlert');
 $error_log = $this->session->flashdata('error_log');
+
 
 $total = 1;
 ?>
@@ -15,11 +16,50 @@ $total = 1;
     </div>
 
     <section class="content">
+
+      <div class="row">
+
+        <!-- BOX TOTAL KAMAR -->
+        <div class="col-md-3">
+          <div class="small-box bg-primary box-filter" data-filter="all">
+            <div class="inner">
+              <h3><?= $total_rooms ?></h3>
+              <p>Total Kamar</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-door-closed"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOX PER TYPE -->
+        <?php foreach ($room_types_summary as $rt): ?>
+          <div class="col-md-3">
+            <div class="small-box bg-success box-filter" data-filter="<?= $rt['type_name'] ?>">
+              <div class="inner">
+                <h3><?= $rt['total'] ?></h3>
+                <p><?= $rt['type_name'] ?></p>
+              </div>
+              <div class="icon">
+                <i class="fas fa-tag"></i>
+              </div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+
+      </div>
+
       <div class="card">
         <div class="card-header">
-          <button class="btn btn-primary float-right" id="btnAddRoom">
-            <i class="fas fa-plus"></i> Tambah Kamar
-          </button>
+          <div class="row">
+            <div class="col-6">
+              <h3 class="card-title">List Kamar</h3>
+            </div>
+            <div class="col-6">
+              <a href="#" class="btn btn-primary float-right text-bold" data-target="#modalTambahRoom"
+                data-toggle="modal">Tambah &nbsp;<i class="fas fa-plus"></i> </a>
+            </div>
+          </div>
         </div>
 
         <div class="card-body">
@@ -32,127 +72,239 @@ $total = 1;
                 <th>Tipe</th>
                 <th>Harga</th>
                 <th>Status</th>
+                <th>Catatan</th>
                 <th width="120">Aksi</th>
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($rooms as $r): ?>
+              <?php foreach ($getAllRooms as $rooms): ?>
                 <tr>
                   <td><?= $total++ ?></td>
-                  <td><?= $r['code'] ?></td>
-                  <td><?= $r['name'] ?></td>
-                  <td><?= $r['type_name'] ?></td>
-                  <td>Rp <?= number_format($r['price_default'], 0, ",", ".") ?></td>
-                  <td><span class="badge badge-info"><?= strtoupper($r['status']) ?></span></td>
+                  <td><?= $rooms['code'] ?></td>
+                  <td><?= $rooms['name'] ?></td>
+                  <td><?= $rooms['type_name'] ?></td>
+                  <td>Rp <?= number_format($rooms['price'], 0, ",", ".") ?></td>
                   <td>
-                    <button class="btn btn-sm btn-warning btnEdit" data-id="<?= $r['id'] ?>">
-                      <i class="fas fa-edit"></i>
-                    </button>
-
-                    <button class="btn btn-sm btn-danger btnDelete" data-id="<?= $r['id'] ?>">
-                      <i class="fas fa-trash"></i>
-                    </button>
+                    <?php
+                    $status = strtolower($rooms['status']); // Pastikan status dalam huruf kecil untuk perbandingan
+                    switch ($status) {
+                      case 'available':
+                        $badgeClass = 'badge-success'; // Warna hijau untuk available
+                        break;
+                      case 'occupied':
+                        $badgeClass = 'badge-danger'; // Warna merah untuk occupied
+                        break;
+                      case 'maintenance':
+                        $badgeClass = 'badge-warning'; // Warna kuning untuk maintenance
+                        break;
+                      default:
+                        $badgeClass = 'badge-secondary'; // Warna default untuk status lain
+                        break;
+                    }
+                    ?>
+                    <span class="badge <?= $badgeClass ?>"><?= strtoupper($rooms['status']) ?></span>
+                  </td>
+                  <td><?= $rooms['notes'] ?></td>
+                  <td>
+                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                      <a href="<?php echo site_url('GHRooms/hapusKamar/' . $rooms['id']); ?>" id="tombol_hapus"
+                        class="btn btn-danger tombol_hapus"><i class=" fas fa-trash"></i></a>
+                      <a href="#" class="btn btn-warning" data-target="#modalEditRoom<?= $rooms['id'] ?>"
+                        data-toggle="modal"><i class="fas fa-edit"></i></a>
+                    <?php } ?>
                   </td>
                 </tr>
               <?php endforeach; ?>
             </tbody>
+            <tfoot>
+              <tr>
+                <th colspan="2">Total</th>
+                <th colspan="1"><span id="totalTabelAset">0</span>
+                <th colspan="5"></span>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
     </section>
   </section>
 
-  <div class="modal fade" id="modalRoom">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <form id="formRoom">
-          <div class="modal-header">
-            <h4 class="modal-title">Form Kamar</h4>
-            <button type="button" class="close" data-dismiss="modal">
-              <span>&times;</span>
-            </button>
-          </div>
-
-          <div class="modal-body">
-
-            <input type="hidden" id="room_id">
-
-            <div class="form-group">
-              <label>Kode</label>
-              <input type="text" class="form-control" id="code" required>
+  <form action="<?php echo site_url('GHRooms/tambahKamar/'); ?>" method="post">
+    <div class="modal fade" id="modalTambahRoom">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <form id="formRoom">
+            <div class="modal-header">
+              <h4 class="modal-title">Form Kamar</h4>
+              <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+              </button>
             </div>
 
-            <div class="form-group">
-              <label>Nama Kamar</label>
-              <input type="text" class="form-control" id="name">
+            <div class="modal-body">
+
+              <input type="hidden" id="room_id">
+
+              <div class="form-group">
+                <label>Lokasi</label>
+                <select class="form-control" id="status" name="code">
+                  <option value="GH 1">GH 1</option>
+                  <option value="GH 2">GH 2</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Nama Kamar</label>
+                <input type="text" class="form-control" id="name" name="name">
+              </div>
+
+              <div class="form-group">
+                <label>Tipe Kamar</label>
+                <select class="form-control" id="room_type_id" name="room_type_id">
+                  <option value="">-- Pilih --</option>
+                  <?php foreach ($types as $t): ?>
+                    <option value="<?= $t['id'] ?>"><?= $t['name'] ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Harga</label>
+                <input type="text" class="form-control" id="price" name="price">
+              </div>
+
+              <div class="form-group">
+                <label>Status</label>
+                <select class="form-control" id="status" name="status">
+                  <option value="available">Tersedia</option>
+                  <option value="occupied">Terisi</option>
+                  <option value="maintenance">Maintenance</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Catatan</label>
+                <textarea id="notes" name="notes" class="form-control"></textarea>
+              </div>
+
             </div>
 
-            <div class="form-group">
-              <label>Tipe Kamar</label>
-              <select class="form-control" id="room_type_id">
-                <option value="">-- Pilih --</option>
-                <?php foreach ($types as $t): ?>
-                  <option value="<?= $t['id'] ?>"><?= $t['name'] ?></option>
-                <?php endforeach; ?>
-              </select>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+              <button type="submit" class="btn btn-primary">Simpan</button>
             </div>
 
-            <div class="form-group">
-              <label>Harga</label>
-              <input type="text" class="form-control" id="price">
-            </div>
-
-            <div class="form-group">
-              <label>Status</label>
-              <select class="form-control" id="status">
-                <option value="available">Tersedia</option>
-                <option value="occupied">Terisi</option>
-                <option value="maintenance">Maintenance</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>Catatan</label>
-              <textarea id="notes" class="form-control"></textarea>
-            </div>
-
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-primary">Simpan</button>
-          </div>
-
-        </form>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
+  </form>
+
+  <?php foreach ($getAllRooms as $rooms): ?>
+    <form action="<?php echo site_url('GHRooms/editKamar/' . $rooms['id']); ?>" method="post">
+      <div class="modal fade" id="modalEditRoom<?= $rooms['id'] ?>">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <form id="formRoom">
+              <div class="modal-header">
+                <h4 class="modal-title">Form Kamar</h4>
+                <button type="button" class="close" data-dismiss="modal">
+                  <span>&times;</span>
+                </button>
+              </div>
+
+              <div class="modal-body">
+
+                <input type="hidden" id="id" name="id" value="<?= $rooms['id'] ?>">
+
+                <div class="form-group">
+                  <label>Lokasi</label>
+                  <select class="form-control" id="status" name="code">
+                    <option value="GH 1" <?php if ($rooms['code'] == 'GH 1') { ?>selected <?php } ?>>GH 1
+                    </option>
+                    <option value="GH 2" <?php if ($rooms['code'] == 'GH 2') { ?>selected <?php } ?>>GH 2
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Nama Kamar</label>
+                  <input type="text" class="form-control" id="name" name="name" value="<?= $rooms['name'] ?>">
+                </div>
+
+                <div class="form-group">
+                  <label>Tipe Kamar</label>
+                  <select class="form-control" id="room_type_id" name="room_type_id">
+                    <option value="">-- Pilih --</option>
+                    <?php foreach ($types as $t): ?>
+                      <option value="<?= $t['id'] ?>" <?= isset($rooms['room_type_id']) && $rooms['room_type_id'] == $t['id'] ? 'selected' : '' ?>>
+                        <?= $t['name'] ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Harga</label>
+                  <input type="text" class="form-control" id="price" name="price" value="<?= $rooms['price'] ?>">
+                </div>
+
+                <div class="form-group">
+                  <label>Status</label>
+                  <select class="form-control" id="status" name="status">
+                    <option value="available" <?php if ($rooms['status'] == 'available') { ?>selected <?php } ?>>Tersedia
+                    </option>
+                    <option value="occupied" <?php if ($rooms['status'] == 'occupied') { ?>selected <?php } ?>>Terisi
+                    </option>
+                    <option value="maintenance" <?php if ($rooms['status'] == 'maintenance') { ?>selected <?php } ?>>
+                      Maintenance</option>
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Catatan</label>
+                  <textarea id="notes" name="notes" class="form-control"><?= $rooms['notes'] ?></textarea>
+                </div>
+
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan</button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      </div>
+    </form>
+  <?php endforeach; ?>
 
 </div>
 
-<?php $this->session->set_flashdata('status', 'kosong'); ?>
+<?php $this->session->set_flashdata('statusAlert', 'kosong'); ?>
 
-
-<script>
-  $('#1').datepicker({
-    inputs: $('input[name=tanggal_berangkat]'),
-    format: 'dd/mm/yyyy'
-  })
-  $('#2').datepicker({
-    inputs: $('input[name=utanggal_berangkat]'),
-    format: 'dd/mm/yyyy'
-  })
-</script>
 <script type="text/javascript">
+
   $(function () {
+    <?php if ($statusAlert == 'sukses_tambah') { ?>
+      swal("Success!", "Berhasil Ditambah!", "success");
+    <?php } else if ($statusAlert == 'sukses_hapus') { ?>
+        swal("Success!", "Berhasil Dihapus!", "success");
+    <?php } else if ($statusAlert == 'sukses_edit') { ?>
+          swal("Success!", "Berhasil Edit Data!", "success");
+    <?php } else if ($statusAlert == 'gagal_tambah') { ?>
+            swal("Gagal!", "Gagal Menambah Data!", "warning");
+    <?php } else if ($statusAlert == 'gagal_edit') { ?>
+              swal("Gagal!", "Gagal Mengedit Data!", "warning");
+    <?php } else if ($statusAlert == 'gagal_hapus') { ?>
+                swal("Gagal!", "Gagal Menghapus Data!", "warning");
+    <?php } else { ?>
+    <?php } ?>
 
-    // format angka rupiah
-    $('[data-mask]').inputmask("currency", {
-      prefix: " Rp. ",
-      digitsOptional: true
-    })
 
-  });
+  })
 
   $('.tombol_hapus').on('click', function (e) {
     e.preventDefault();
@@ -172,123 +324,49 @@ $total = 1;
     })
 
   });
-</script>
-<script type="text/javascript">
-  $(document).ready(function () {
-
-    // Format mata uang.
-    $('.nilai_po2').mask('000.000.000', { reverse: true });
-
-  })
 
   $(document).ready(function () {
+    $('#roomsTable').DataTable({
+      "paging": true, // Tetap gunakan pagination
+      "pageLength": 10, // Menampilkan 10 data per halaman
+      "info": true, // Menghilangkan "Showing 1 to X of X entries"
+      "searching": true, // Menghilangkan search bar
+      "lengthChange": true // Menghilangkan dropdown "Show entries"
+    });
+  });
 
-    $("#roomsTable").DataTable();
-
-    $("#btnAddRoom").click(function () {
-      $("#formRoom")[0].reset();
-      $("#room_id").val("");
-      $("#modalRoom .modal-title").text("Tambah Kamar");
-      $("#modalRoom").modal("show");
+  $(document).ready(function () {
+    $.fn.dataTable.ext.errMode = 'none';
+    const table = $('#roomsTable').DataTable({
+      footerCallback: function () {
+        updateTotal();
+      },
+      columnDefs: [
+        { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+      ],
+      order: [[1, 'asc']] // Urut default kolom Kode Aset
     });
 
-    // Simpan
-    $("#formRoom").submit(function (e) {
-      e.preventDefault();
-
-      let id = $("#room_id").val();
-      let url = id === ""
-        ? "<?= base_url('GHRooms/add') ?>"
-        : "<?= base_url('GHRooms/update/') ?>" + id;
-
-      $.ajax({
-        url: url,
-        type: "POST",
-        data: {
-          room_type_id: $("#room_type_id").val(),
-          code: $("#code").val(),
-          name: $("#name").val(),
-          price: $("#price").val(),
-          status: $("#status").val(),
-          notes: $("#notes").val()
-        },
-        dataType: "json",
-        success: function (res) {
-
-          if (res.status === "sukses_tambah") {
-            swal("Success!", "Berhasil menambah DATA!", "success");
-          }
-          else if (res.status === "sukses_edit") {
-            swal("Success!", "Berhasil mengubah DATA!", "success");
-          }
-          else if (res.status === "gagal_tambah") {
-            swal("Gagal!", "Gagal menambah DATA!", "error");
-          }
-          else if (res.status === "gagal_edit") {
-            swal("Gagal!", "Gagal mengubah DATA!", "error");
-          }
-
-          setTimeout(() => location.reload(), 1500);
-        }
+    table.on('order.dt search.dt', function () {
+      table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+        cell.innerHTML = i + 1;
       });
+    }).draw();
+
+    // Fungsi untuk menghitung total dari data yang tampil
+    function updateTotal() {
+      const data = table.rows({ search: 'applied' }).data();
+      let totalTabelAset = data.length;
+      document.getElementById('totalTabelAset').innerText = totalTabelAset.toLocaleString('id-ID');
+    }
+
+    // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+    table.on('draw', function () {
+      updateTotal();
     });
 
-    // Edit
-    $(".btnEdit").click(function () {
-      let id = $(this).data("id");
-
-      $.get("<?= base_url('GHRooms/edit/') ?>" + id, function (res) {
-        $("#room_id").val(res.id);
-        $("#code").val(res.code);
-        $("#name").val(res.name);
-        $("#room_type_id").val(res.room_type_id);
-        $("#price").val(res.price);
-        $("#status").val(res.status);
-        $("#notes").val(res.notes);
-
-        $("#modalRoom .modal-title").text("Edit Kamar " + id);
-        $("#modalRoom").modal("show");
-      }, "json");
-    });
-
-    // Hapus
-    $(".btnDelete").click(function () {
-      let id = $(this).data("id");
-
-      Swal.fire({
-        icon: "warning",
-        title: "Hapus kamar?",
-        text: "Data kamar akan dihapus permanen!",
-        showCancelButton: true,
-        confirmButtonText: "Ya, Hapus!",
-        cancelButtonText: "Batal"
-      }).then(res => {
-
-        if (res.isConfirmed) {
-
-          $.ajax({
-            url: "<?= base_url('GHRooms/delete/') ?>" + id,
-            type: "GET",
-            dataType: "json",
-            success: function (res) {
-
-              if (res.status === "sukses_hapus") {
-                Swal.fire("Berhasil!", "Data berhasil dihapus.", "success")
-                  .then(() => location.reload());
-              }
-              else if (res.status === "gagal_hapus") {
-                Swal.fire("Gagal!", "Gagal menghapus data.", "error");
-              }
-            },
-            error: function () {
-              Swal.fire("Error!", "Terjadi kesalahan server.", "error");
-            }
-          });
-
-        }
-      });
-    });
-
+    // Hitung total pertama kali saat tabel dimuat
+    updateTotal();
   });
 
 </script>

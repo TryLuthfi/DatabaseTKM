@@ -16,7 +16,6 @@ $total = 1;
     <section class="content">
 
       <div class="row">
-
         <!-- Kamar Terisi -->
         <div class="col-md-3">
           <div class="small-box" style="background: linear-gradient(135deg, #6a11cb, #2575fc); color: #fff;">

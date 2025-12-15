@@ -48,17 +48,14 @@
 
         <!-- LIST PENGHUNI -->
         <div class="card">
-          <div class="card-header">
-            <button class="btn btn-primary float-right" id="btnAdd">+ Tambah Penghuni</button>
-          </div>
 
           <div class="card-body">
             <table id="tableTenantsRooms" class="table table-bordered table-striped">
               <thead>
                 <tr>
                   <th>No</th>
-                  <th>Nama Penghuni</th>
                   <th>Kamar</th>
+                  <th>Nama Penghuni</th>
                   <th>Contract Start</th>
                   <th>Contract End</th>
                   <th>Billing Day</th>
@@ -68,19 +65,51 @@
               </thead>
               <tbody id="bodyTenantsRooms">
                 <?php $no = 1;
-                foreach ($tenants_rooms as $row): ?>
+                foreach ($getAllTenantsRooms as $row): ?>
                   <tr>
                     <td><?= $no++; ?></td>
+                    <td><?= $row['code']; ?> (<?= $row['name']; ?>)</td>
                     <td><?= $row['fullname']; ?></td>
-                    <td><?= $row['room_name']; ?> (<?= $row['room_code']; ?>)</td>
                     <td><?= $row['contract_start']; ?></td>
-                    <td><?= $row['contract_end']; ?></td>
+                    <td><?= $row['contract_ends']; ?></td>
                     <td><?= $row['billing_day']; ?></td>
-                    <td><?= $row['active'] ? "Active" : "Ended"; ?></td>
                     <td>
-                      <button class="btn btn-warning btnEdit" data-id="<?= $row['id']; ?>">Edit</button>
-                      <button class="btn btn-danger btnDelete" data-id="<?= $row['id']; ?>">Delete</button>
-                    </td>
+                    <?php
+                    $active = strtolower($row['active']);
+                    $status_rooms_tenants = strtolower($row['active']);
+                    switch ($active) {
+                      case '1':
+                        $badgeClass = 'badge-success'; // Warna hijau untuk available
+                        $status_rooms_tenants = 'ACTIVE';
+                        break;
+                      case '0':
+                        $badgeClass = 'badge-danger'; // Warna merah untuk occupied
+                        $status_rooms_tenants = 'ENDED';
+                        break;
+                      case null:
+                        $badgeClass = 'badge-secondary'; // Warna abu-abu untuk unknown
+                        $status_rooms_tenants = 'EMPTY';
+                        break;
+                    }
+                    ?>
+                    <span class="badge <?= $badgeClass ?>"><?= strtoupper($status_rooms_tenants) ?></span>
+                  </td>
+                    <td>
+                    <?php
+                    if ($status_rooms_tenants == 'ACTIVE') {
+                      ?> <button class="btn btn-success tombol_detail ml-1" disabled><i class=" fas fa-plus"></i></a></button> <?php
+                      ?> <button class="btn btn-primary tombol_detail ml-1"><i class=" fas fa-eye"></i></a></button> <?php
+                    } else if ($status_rooms_tenants == 'ENDED') {
+                      ?> <button class="btn btn-success tombol_detail ml-1"><i class=" fas fa-plus"></i></a></button> <?php
+                      ?> <button class="btn btn-primary tombol_detail ml-1"><i class=" fas fa-eye"></i></a></button> <?php
+                    } else if ($status_rooms_tenants == 'EMPTY') {
+                      ?> <button class="btn btn-success tombol_detail ml-1"><i class=" fas fa-plus"></i></a></button> <?php
+                      ?> <button class="btn btn-primary tombol_detail ml-1"><i class=" fas fa-eye"></i></a></button> <?php
+                    } else {
+                      echo "-";
+                    }
+                    ?>
+                  </td>
                   </tr>
                 <?php endforeach; ?>
               </tbody>

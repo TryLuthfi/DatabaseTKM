@@ -17,13 +17,20 @@ $total = 1;
     <section class="content">
       <div class="card">
         <div class="card-header">
-          <button class="btn btn-primary float-right" id="btnAddTenants">
-            <i class="fas fa-plus"></i> Tambah Tenant
-          </button>
+          <div class="row">
+            <div class="col-6">
+              <h3 class="card-title">List Tenant</h3>
+            </div>
+            <div class="col-6">
+              <a href="#" class="btn btn-primary float-right text-bold" data-target="#modalTambahTenant"
+                data-toggle="modal">Tambah &nbsp;<i class="fas fa-plus"></i> </a>
+            </div>
+          </div>
         </div>
 
+
         <div class="card-body">
-          <table class="table table-bordered table-striped" id="roomsTable">
+          <table class="table table-bordered table-striped" id="tenantsTable">
             <thead>
               <tr>
                 <th>No</th>
@@ -33,24 +40,29 @@ $total = 1;
                 <th>Alamat</th>
                 <th>Tanggal Input</th>
                 <th>Aksi</th>
-            </tr>
+              </tr>
             </thead>
             <tbody>
-            <?php $no = 1; foreach ($tenants as $t): ?>
+              <?php $no = 1;
+              foreach ($getAllTenants as $tenants): ?>
                 <tr>
-                    <td><?= $no++ ?></td>
-                    <td><?= $t['fullname'] ?></td>
-                    <td><?= $t['phone'] ?></td>
-                    <td><?= $t['nik'] ?></td>
-                    <td><?= $t['address'] ?></td>
-                    <td><?= $t['created_at'] ?></td>
-                    <td class="text-center">
-                        <button class="btn btn-sm btn-warning btnEdit" data-id="<?= $t['id'] ?>">Edit</button>
-                        <button class="btn btn-sm btn-danger btnDelete" data-id="<?= $t['id'] ?>">Hapus</button>
-                    </td>
+                  <td><?= $no++ ?></td>
+                  <td><?= $tenants['fullname'] ?></td>
+                  <td><?= $tenants['phone'] ?></td>
+                  <td><?= $tenants['nik'] ?></td>
+                  <td><?= $tenants['address'] ?></td>
+                  <td><?= $tenants['created_at'] ?></td>
+                  <td>
+                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                      <a href="<?php echo site_url('GHTenants/hapusTenant/' . $tenants['id']); ?>" id="tombol_hapus"
+                        class="btn btn-danger tombol_hapus"><i class=" fas fa-trash"></i></a>
+                      <a href="#" class="btn btn-warning" data-target="#modalEditTenant<?= $tenants['id'] ?>"
+                        data-toggle="modal"><i class="fas fa-edit"></i></a>
+                    <?php } ?>
+                  </td>
                 </tr>
-            <?php endforeach; ?>
-        </tbody>
+              <?php endforeach; ?>
+            </tbody>
           </table>
         </div>
       </div>
@@ -59,169 +71,213 @@ $total = 1;
 
   </section>
 
-  <div class="modal fade" id="modalTenant">
-    <div class="modal-dialog modal-lg">
+  <form action="<?php echo site_url('GHTenants/tambahTenant/'); ?>" method="post">
+    <div class="modal fade" id="modalTambahTenant">
+      <div class="modal-dialog modal-lg">
         <div class="modal-content">
+          <form id="formTenant">
+            <div class="modal-header">
+              <h4 class="modal-title">Form Tenant</h4>
+              <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+              </button>
+            </div>
 
+            <div class="modal-body">
+
+              <div class="form-group">
+                <label>Nama Lengkap</label>
+                <input type="text" class="form-control" id="fullname" name="fullname">
+              </div>
+
+              <div class="form-group">
+                <label>Nomor Telephone</label>
+                <input type="text" class="form-control" id="phone" name="phone">
+              </div>
+
+              <div class="form-group">
+                <label>NIK</label>
+                <input type="text" class="form-control" id="nik" name="nik">
+              </div>
+
+              <div class="form-group">
+                <label>BANK</label>
+                <input type="text" class="form-control" id="bank" name="bank">
+              </div>
+
+              <div class="form-group">
+                <label>Nomor Rekening</label>
+                <input type="text" class="form-control" id="no_rekening" name="no_rekening">
+              </div>
+
+              <div class="form-group">
+                <label>Alamat</label>
+                <input type="text" class="form-control" id="address" name="address">
+              </div>
+
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+              <button type="submit" class="btn btn-primary">Simpan</button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <?php foreach ($getAllTenants as $tenants): ?>
+    <form action="<?php echo site_url('GHTenants/editTenant/') . $tenants['id']; ?>" method="post">
+      <div class="modal fade" id="modalEditTenant<?= $tenants['id'] ?>">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
             <form id="formTenant">
+              <div class="modal-header">
+                <h4 class="modal-title">Form Tenant</h4>
+                <button type="button" class="close" data-dismiss="modal">
+                  <span>&times;</span>
+                </button>
+              </div>
 
-                <div class="modal-header">
-                    <h4 class="modal-title">Form Tenant</h4>
+              <div class="modal-body">
+
+                <div class="form-group">
+                  <label>Nama Lengkap</label>
+                  <input type="text" class="form-control" id="fullname" name="fullname"
+                    value="<?= $tenants['fullname'] ?>">
                 </div>
 
-                <div class="modal-body">
-
-                    <input type="hidden" id="tenant_id">
-
-                    <div class="form-group">
-                    <label>Nama Lengkap</label>
-                    <input type="text" id="fullname" class="form-control" required>
-                    </div>
-
-                    <div class="form-group">
-                    <label>No HP</label>
-                    <input type="text" id="phone" class="form-control">
-                    </div>
-
-                    <div class="form-group">
-                    <label>NIK</label>
-                    <input type="text" id="nik" class="form-control">
-                    </div>
-
-                    <div class="form-group">
-                    <label>Alamat</label>
-                    <input type="text" id="address" class="form-control">
-                    </div>
-
+                <div class="form-group">
+                  <label>Nomor Telephone</label>
+                  <input type="text" class="form-control" id="phone" name="phone" value="<?= $tenants['phone'] ?>">
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success">Simpan</button>
+                <div class="form-group">
+                  <label>NIK</label>
+                  <input type="text" class="form-control" id="nik" name="nik" value="<?= $tenants['nik'] ?>">
                 </div>
+
+                <div class="form-group">
+                  <label>BANK</label>
+                  <input type="text" class="form-control" id="bank" name="bank" value="<?= $tenants['bank'] ?>">
+                </div>
+
+                <div class="form-group">
+                  <label>Nomor Rekening</label>
+                  <input type="text" class="form-control" id="no_rekening" name="no_rekening"
+                    value="<?= $tenants['no_rekening'] ?>">
+                </div>
+
+                <div class="form-group">
+                  <label>Alamat</label>
+                  <input type="text" class="form-control" id="address" name="address" value="<?= $tenants['address'] ?>">
+                </div>
+
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan</button>
+              </div>
 
             </form>
-
+          </div>
         </div>
-    </div>
-</div>
+      </div>
+    </form>
+  <?php endforeach; ?>
 
 </div>
 
 <?php $this->session->set_flashdata('status', 'kosong'); ?>
 
-
-<script>
-  $('#1').datepicker({
-    inputs: $('input[name=tanggal_berangkat]'),
-    format: 'dd/mm/yyyy'
-  })
-  $('#2').datepicker({
-    inputs: $('input[name=utanggal_berangkat]'),
-    format: 'dd/mm/yyyy'
-  })
-</script>
 <script type="text/javascript">
+
   $(function () {
 
-    // format angka rupiah
-    $('[data-mask]').inputmask("currency", {
-      prefix: " Rp. ",
-      digitsOptional: true
+
+    // notifikasi allert sukses atau tidak
+    <?php if ($status == 'sukses_tambah') { ?>
+      swal("Success!", "Berhasil Ditambah!", "success");
+    <?php } else if ($status == 'sukses_hapus') { ?>
+        swal("Success!", "Berhasil Dihapus!", "success");
+    <?php } else if ($status == 'sukses_edit') { ?>
+          swal("Success!", "Berhasil Edit Data!", "success");
+    <?php } else if ($status == 'gagal_tambah') { ?>
+            swal("Gagal!", "Gagal Menambah Data!", "warning");
+    <?php } else if ($status == 'gagal_edit') { ?>
+              swal("Gagal!", "Gagal Mengedit Data!", "warning");
+    <?php } else if ($status == 'gagal_hapus') { ?>
+                swal("Gagal!", "Gagal Menghapus Data!", "warning");
+    <?php } else { ?>
+    <?php } ?>
+  })
+
+
+  $('.tombol_hapus').on('click', function (e) {
+    e.preventDefault();
+    const href = $(this).attr('href');
+    swal({
+      title: 'Apakah anda yakin',
+      text: "data akan dihapus!",
+      type: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e74c3c',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Delete'
+    }).then((result) => {
+      if (result.value) {
+        document.location.href = href;
+      }
     })
 
   });
-</script>
-<script type="text/javascript">
+
   $(document).ready(function () {
-
-    // Format mata uang.
-    $('.nilai_po2').mask('000.000.000', { reverse: true });
-
-  })
-
-  $("#btnAddTenants").click(function () {
-    $("#formTenant")[0].reset();
-    $("#tenant_id").val("");
-    $("#modalTenant").modal("show");
-});
-
-// === EDIT DATA ===
-$(".btnEdit").click(function () {
-    let id = $(this).data("id");
-
-    $.get("<?= base_url('GHTenants/get/') ?>" + id, function (data) {
-        let t = JSON.parse(data);
-
-        $("#tenant_id").val(t.id);
-        $("#fullname").val(t.fullname);
-        $("#phone").val(t.phone);
-        $("#nik").val(t.nik);
-        $("#address").val(t.address);
-
-        $("#modalTenant").modal("show");
+    $('#tenantsTable').DataTable({
+      "paging": true, // Tetap gunakan pagination
+      "pageLength": 10, // Menampilkan 10 data per halaman
+      "info": true, // Menghilangkan "Showing 1 to X of X entries"
+      "searching": true, // Menghilangkan search bar
+      "lengthChange": true // Menghilangkan dropdown "Show entries"
     });
-});
+  });
 
-// === SUBMIT FORM ADD/EDIT ===
-$("#formTenant").submit(function (e) {
-    e.preventDefault();
-
-    let id = $("#tenant_id").val();
-    let url = id === "" 
-        ? "<?= base_url('GHTenants/add') ?>"
-        : "<?= base_url('GHTenants/update/') ?>" + id;
-
-    $.ajax({
-        url: url,
-        type: "POST",
-        data: {
-            fullname: $("#fullname").val(),
-            phone: $("#phone").val(),
-            nik: $("#nik").val(),
-            address: $("#address").val()
-        },
-        dataType: "json",
-        success: function (res) {
-
-            if (res.status === "sukses_tambah") {
-                Swal.fire("Berhasil!", "Tenant berhasil ditambahkan.", "success")
-                    .then(() => location.reload());
-            }
-
-            if (res.status === "sukses_edit") {
-                Swal.fire("Berhasil!", "Tenant berhasil diperbarui.", "success")
-                    .then(() => location.reload());
-            }
-        }
+  $(document).ready(function () {
+    $.fn.dataTable.ext.errMode = 'none';
+    const table = $('#tenantsTable').DataTable({
+      footerCallback: function () {
+        updateTotal();
+      },
+      columnDefs: [
+        { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+      ],
+      order: [[1, 'asc']] // Urut default kolom Kode Aset
     });
-});
 
-// === DELETE DATA ===
-$(".btnDelete").click(function () {
-    let id = $(this).data("id");
+    table.on('order.dt search.dt', function () {
+      table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+        cell.innerHTML = i + 1;
+      });
+    }).draw();
 
-    Swal.fire({
-        icon: "warning",
-        title: "Hapus Tenant?",
-        showCancelButton: true,
-        confirmButtonText: "Ya",
-    }).then(res => {
-        if (res.isConfirmed) {
+    // Fungsi untuk menghitung total dari data yang tampil
+    function updateTotal() {
+      const data = table.rows({ search: 'applied' }).data();
+      let totalTabelAset = data.length;
+      document.getElementById('totalTabelAset').innerText = totalTabelAset.toLocaleString('id-ID');
+    }
 
-            $.get("<?= base_url('GHTenants/delete/') ?>" + id, function (response) {
-                let resJson = JSON.parse(response);
-
-                if (resJson.status === "sukses_hapus") {
-                    Swal.fire("Berhasil!", "Tenant telah dihapus.", "success")
-                        .then(() => location.reload());
-                } else {
-                    Swal.fire("Gagal!", "Tidak dapat menghapus data.", "error");
-                }
-            });
-        }
+    // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+    table.on('draw', function () {
+      updateTotal();
     });
-});
+
+    // Hitung total pertama kali saat tabel dimuat
+    updateTotal();
+  });
 
 </script>
 

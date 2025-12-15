@@ -3,28 +3,28 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MGHTenants extends CI_Model
 {
-    public function getAll()
+    public function getAllTenants()
     {
-        return $this->db->order_by('id', 'ASC')->get('tenants')->result_array();
+        $data = $this->db->query('SELECT * FROM tenants')->result_array();
+        return $data;
     }
 
-    public function getById($id)
+    public function tambahTenant($data_array)
     {
-        return $this->db->get_where('tenants', ['id' => $id])->row_array();
+        $res = $this->db->insert("tenants", $data_array);
+        return $res;
     }
 
-    public function insert($data)
+    public function editTenant($data_array, $id)
     {
-        return $this->db->insert('tenants', $data);
+        $res = $this->db->update("tenants", $data_array, $id);
+        return $res;
     }
 
-    public function updateData($id, $data)
-    {
-        return $this->db->where('id', $id)->update('tenants', $data);
-    }
 
-    public function deleteData($id)
+    public function hapusTenant($id)
     {
-        return $this->db->delete('tenants', ['id' => $id]);
+        $res = $this->db->delete("tenants", $id);
+        return $res;
     }
 }

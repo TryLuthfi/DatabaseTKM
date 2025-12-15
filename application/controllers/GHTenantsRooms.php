@@ -21,7 +21,7 @@ class GHTenantsRooms extends CI_Controller
 
             $data['title'] = 'List Kamar GH';
             $data['judul'] = 'List Kamar GH';
-            $data['tenants_rooms'] = $this->MGHTenantsRooms->get_all();
+            $data['getAllTenantsRooms'] = $this->MGHTenantsRooms->getAllTenantsRooms();
             $data['tenants'] = $this->MGHTenantsRooms->get_tenants();
             $data['rooms'] = $this->MGHTenantsRooms->get_rooms();
 

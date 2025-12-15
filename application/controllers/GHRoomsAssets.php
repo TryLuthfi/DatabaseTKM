@@ -22,7 +22,7 @@ class GHRoomsAssets extends CI_Controller
 
             $data['title'] = 'List Kamar GH';
             $data['judul'] = 'List Kamar GH';
-            $data['rooms'] = $this->MGHRooms->get_all();
+            $data['rooms'] = $this->MGHRooms->getAllRooms();
             $data['asset_types'] = $this->MGHRoomsAssets->getAssetTypes();
 
             $this->load->view('Templates/01_Header', $data);

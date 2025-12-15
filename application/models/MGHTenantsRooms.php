@@ -4,14 +4,26 @@ defined('BASEPATH') or exit('No direct script access allowed');
 class MGHTenantsRooms extends CI_Model
 {
     // Ambil semua kamar
-    public function get_all()
+    public function getAllTenantsRooms()
     {
-        $this->db->select('ts.*, t.fullname, r.name AS room_name, r.code AS room_code');
-        $this->db->from('tenants_stay ts');
-        $this->db->join('tenants t', 't.id = ts.tenant_id');
-        $this->db->join('rooms r', 'r.id = ts.room_id');
-        $this->db->order_by('ts.id', 'DESC');
-        return $this->db->get()->result_array();
+        $data = $this->db->query('SELECT
+	rooms.*,
+	room_types.price_default,
+	room_types.name AS type_name,
+	tenants_stay.*,
+	tenants.*
+FROM
+	rooms
+join room_types ON
+	room_types.id = rooms.room_type_id
+	LEFT JOIN tenants_stay ON rooms.id = tenants_stay.room_id 
+	LEFT JOIN tenants ON tenants_stay.tenant_id = tenants.id
+ORDER BY
+	rooms.id ASC')->result_array();
+
+        log_message('error', 'query tenants rooms : ' . $this->db->last_query());
+
+        return $data;
     }
 
     public function get_tenants()

@@ -5,28 +5,28 @@ class MGHAssets extends CI_Model
 {
     private $table = "asset_types";
 
-    public function getAll()
+    public function getAllAssets()
     {
-        return $this->db->order_by("id","ASC")->get($this->table)->result_array();
+
+        $data = $this->db->query('SELECT * FROM asset_types')->result_array();
+        return $data;
     }
 
-    public function getById($id)
+    public function tambahAsset($data_array)
     {
-        return $this->db->get_where($this->table, ['id' => $id])->row_array();
+        $res = $this->db->insert("asset_types", $data_array);
+        return $res;
     }
 
-    public function insert($data)
+    public function editAsset($data_array, $id)
     {
-        return $this->db->insert($this->table, $data);
+        $res = $this->db->update("asset_types", $data_array, $id);
+        return $res;
     }
 
-    public function updateData($id, $data)
+    public function hapusAsset($id)
     {
-        return $this->db->update($this->table, $data, ['id' => $id]);
-    }
-
-    public function deleteData($id)
-    {
-        return $this->db->delete($this->table, ['id' => $id]);
+        $res = $this->db->delete("asset_types", $id);
+        return $res;
     }
 }

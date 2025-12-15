@@ -7,8 +7,8 @@ class GHTenants extends CI_Controller
     public function __construct()
     {
 
-        error_reporting(0);
-        ini_set('display_errors', 0);
+        // error_reporting(0);
+        // ini_set('display_errors', 0);
 
         parent::__construct();
         $this->load->library('form_validation');
@@ -21,7 +21,7 @@ class GHTenants extends CI_Controller
 
             $data['title'] = 'List Kamar GH';
             $data['judul'] = 'List Kamar GH';
-            $data['tenants'] = $this->MGHTenants->getAll();
+            $data['getAllTenants'] = $this->MGHTenants->getAllTenants();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -33,43 +33,72 @@ class GHTenants extends CI_Controller
         }
     }
 
-    public function get($id)
+    public function tambahTenant()
     {
-        echo json_encode($this->MGHTenants->getById($id));
+
+        // echo ("<pre>");
+        // print_r($_POST);
+        // echo ("</pre>");
+
+        $previousUrl = $this->input->server('HTTP_REFERER');
+
+        $hasil_data = array(
+            'fullname' => $_POST['fullname'],
+            'phone' => $_POST['phone'],
+            'nik' => $_POST['nik'],
+            'bank' => $_POST['bank'],
+            'no_rekening' => $_POST['no_rekening'],
+            'address' => $_POST['address']
+        );
+
+        $res = $this->MGHTenants->tambahTenant($hasil_data);
+
+        if ($res >= 1) {
+            $this->session->set_flashdata('status', 'sukses_tambah');
+            redirect($previousUrl);
+        } else {
+            $this->session->set_flashdata('status', 'gagal_tambah');
+            redirect($previousUrl);
+        }
     }
 
-    public function add()
+    public function editTenant($id)
     {
-        $data = [
-            'fullname' => $this->input->post('fullname'),
-            'phone' => $this->input->post('phone'),
-            'nik' => $this->input->post('nik'),
-            'address' => $this->input->post('address')
-        ];
+        $previousUrl = $this->input->server('HTTP_REFERER');
 
-        $this->MGHTenants->insert($data);
+        $hasil_data = array(
+            'fullname' => $_POST['fullname'],
+            'phone' => $_POST['phone'],
+            'nik' => $_POST['nik'],
+            'bank' => $_POST['bank'],
+            'no_rekening' => $_POST['no_rekening'],
+            'address' => $_POST['address']
+        );
 
-        echo json_encode(['status' => 'sukses_tambah']);
+        $res = $this->MGHTenants->editTenant($hasil_data, array('id' => $id));
+
+        if ($res >= 1) {
+            $this->session->set_flashdata('status', 'sukses_edit');
+            redirect($previousUrl);
+        } else {
+            $this->session->set_flashdata('status', 'gagal_edit');
+            redirect($previousUrl);
+        }
     }
 
-    public function update($id)
+    public function hapusTenant($id)
     {
-        $data = [
-            'fullname' => $this->input->post('fullname'),
-            'phone' => $this->input->post('phone'),
-            'nik' => $this->input->post('nik'),
-            'address' => $this->input->post('address')
-        ];
+        $previousUrl = $this->input->server('HTTP_REFERER');
 
-        $this->MGHTenants->updateData($id, $data);
+        $res = $this->MGHTenants->hapusTenant(array('id' => $id));
 
-        echo json_encode(['status' => 'sukses_edit']);
-    }
-
-    public function delete($id)
-    {
-        $delete = $this->MGHTenants->deleteData($id);
-        echo json_encode(['status' => $delete ? 'sukses_hapus' : 'gagal_hapus']);
-    }
+        if ($res >= 1) {
+            $this->session->set_flashdata('status', 'sukses_hapus');
+            redirect($previousUrl);
+        } else {
+            $this->session->set_flashdata('status', 'gagal_hapus');
+            redirect($previousUrl);
+        }
+    }   
 
 }

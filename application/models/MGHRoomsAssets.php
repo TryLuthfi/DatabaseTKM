@@ -19,7 +19,11 @@ class MGHRoomsAssets extends CI_Model
         $this->db->from("room_assets ra");
         $this->db->join("asset_types at", "ra.asset_type_id = at.id", "left");
         $this->db->where("ra.room_id", $room_id);
-        return $this->db->get()->result_array();
+        $data = $this->db->get()->result_array();
+
+        log_message('error', 'query ghroomsassets : ' . $this->db->last_query());
+
+        return $data;
     }
 
     public function insert($data)

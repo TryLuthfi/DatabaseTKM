@@ -98,14 +98,14 @@ ORDER BY
                          END 
                  END), 0) AS jumlah_Closure,
     COALESCE(SUM(CASE 
-                    WHEN ki.kategori_item = "FAT" 
+                    WHEN ki.kategori_item = "FAT / ODP" 
                     THEN CASE WHEN sm.status_sumber_material = "IN" THEN ls.jumlah_stok 
                               WHEN sm.status_sumber_material = "OUT" THEN -ls.jumlah_stok 
                               ELSE 0 
                          END 
                  END), 0) AS jumlah_FAT,
     COALESCE(SUM(CASE 
-                    WHEN ki.kategori_item = "FDT" 
+                    WHEN ki.kategori_item = "FDT | ODC" 
                     THEN CASE WHEN sm.status_sumber_material = "IN" THEN ls.jumlah_stok 
                               WHEN sm.status_sumber_material = "OUT" THEN -ls.jumlah_stok 
                               ELSE 0 
@@ -174,14 +174,14 @@ ORDER BY
                          END 
                  END), 0) AS jumlah_Closure,
     COALESCE(SUM(CASE 
-                    WHEN ki.kategori_item = "FAT" 
+                    WHEN ki.kategori_item = "FAT / ODP" 
                     THEN CASE WHEN sm.status_sumber_material = "IN" THEN ls.jumlah_stok 
                               WHEN sm.status_sumber_material = "OUT" THEN -ls.jumlah_stok 
                               ELSE 0 
                          END 
                  END), 0) AS jumlah_FAT,
     COALESCE(SUM(CASE 
-                    WHEN ki.kategori_item = "FDT" 
+                    WHEN ki.kategori_item = "FDT | ODC" 
                     THEN CASE WHEN sm.status_sumber_material = "IN" THEN ls.jumlah_stok 
                               WHEN sm.status_sumber_material = "OUT" THEN -ls.jumlah_stok 
                               ELSE 0 
@@ -328,14 +328,14 @@ ORDER BY
                          END 
                  END), 0) AS jumlah_Closure,
     COALESCE(SUM(CASE 
-                    WHEN ki.kategori_item = 'FAT' 
+                    WHEN ki.kategori_item = 'FAT / ODP' 
                     THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
                               WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
                               ELSE 0 
                          END 
                  END), 0) AS jumlah_FAT,
     COALESCE(SUM(CASE 
-                    WHEN ki.kategori_item = 'FDT' 
+                    WHEN ki.kategori_item = 'FDT | ODC' 
                     THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
                               WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
                               ELSE 0 
@@ -421,14 +421,14 @@ ORDER BY
                          END 
                  END), 0) AS jumlah_Closure,
                 COALESCE(SUM(CASE 
-                    WHEN ki.kategori_item = 'FAT' 
+                    WHEN ki.kategori_item = 'FAT / ODP' 
                     THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
                               WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
                               ELSE 0 
                          END 
                  END), 0) AS jumlah_FAT,
                 COALESCE(SUM(CASE 
-                    WHEN ki.kategori_item = 'FDT' 
+                    WHEN ki.kategori_item = 'FDT | ODC' 
                     THEN CASE WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok 
                               WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok 
                               ELSE 0 

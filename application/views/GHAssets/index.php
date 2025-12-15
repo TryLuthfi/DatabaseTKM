@@ -17,13 +17,19 @@ $total = 1;
     <section class="content">
       <div class="card">
         <div class="card-header">
-          <button class="btn btn-primary float-right" id="btnAddAssets">
-            <i class="fas fa-plus"></i> Tambah Assets
-          </button>
+          <div class="row">
+            <div class="col-6">
+              <h3 class="card-title">List Assets Kamar</h3>
+            </div>
+            <div class="col-6">
+              <a href="#" class="btn btn-primary float-right text-bold" data-target="#modalTambahAsset"
+                data-toggle="modal">Tambah &nbsp;<i class="fas fa-plus"></i> </a>
+            </div>
+          </div>
         </div>
 
         <div class="card-body">
-          <table class="table table-bordered table-striped">
+          <table class="table table-bordered table-striped" id="assetsTable">
             <thead>
               <tr>
                 <th>No</th>
@@ -34,15 +40,18 @@ $total = 1;
             </thead>
             <tbody>
               <?php $no = 1;
-              foreach ($assets as $a): ?>
+              foreach ($getAllAssets as $assets): ?>
                 <tr>
                   <td><?= $no++ ?></td>
-                  <td><?= $a['code'] ?></td>
-                  <td><?= $a['label'] ?></td>
+                  <td><?= $assets['code'] ?></td>
+                  <td><?= $assets['label'] ?></td>
                   <td>
-                    <button class="btn btn-warning btnEdit" data-id="<?= $a['id'] ?>">Edit</button>
-
-                    <button class="btn btn-danger btnDelete" data-id="<?= $a['id'] ?>">Hapus</button>
+                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                      <a href="<?php echo site_url('GHAssets/hapusAsset/' . $assets['id']); ?>" id="tombol_hapus"
+                        class="btn btn-danger tombol_hapus"><i class=" fas fa-trash"></i></a>
+                      <a href="#" class="btn btn-warning" data-target="#modalEditAsset<?= $assets['id'] ?>"
+                        data-toggle="modal"><i class="fas fa-edit"></i></a>
+                    <?php } ?>
                   </td>
                 </tr>
               <?php endforeach; ?>
@@ -51,151 +60,170 @@ $total = 1;
         </div>
       </div>
     </section>
-
-
   </section>
 
-  <div class="modal fade" id="modalForm" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+  <form action="<?php echo site_url('GHAssets/tambahAsset/'); ?>" method="post">
+    <div class="modal fade" id="modalTambahAsset">
+      <div class="modal-dialog modal-lg">
         <div class="modal-content">
+          <form id="formAsset">
+            <div class="modal-header">
+              <h4 class="modal-title">Form Asset</h4>
+              <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+              </button>
+            </div>
 
+            <div class="modal-body">
+
+              <div class="form-group">
+                <label>Code Asset</label>
+                <input type="text" class="form-control" id="code" name="code">
+              </div>
+
+              <div class="form-group">
+                <label>Jenis Asset</label>
+                <input type="text" class="form-control" id="label" name="label">
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+              <button type="submit" class="btn btn-primary">Simpan</button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <?php foreach ($getAllAssets as $assets): ?>
+    <form action="<?php echo site_url('GHAssets/editAsset/' . $assets['id']); ?>" method="post">
+      <div class="modal fade" id="modalEditAsset<?= $assets['id'] ?>">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
             <form id="formAsset">
-                <div class="modal-header">
-                    <h4 class="modal-title">Aset</h4>
+              <div class="modal-header">
+                <h4 class="modal-title">Form Asset</h4>
+                <button type="button" class="close" data-dismiss="modal">
+                  <span>&times;</span>
+                </button>
+              </div>
+
+              <div class="modal-body">
+
+                <div class="form-group">
+                  <label>Code Asset</label>
+                  <input type="text" class="form-control" id="code" name="code" value="<?= $assets['code'] ?>">
                 </div>
-                <div class="modal-body">
 
-                    <input type="hidden" id="asset_id">
-
-                    <div class="form-group">
-                        <label>Kategori</label>
-                        <input type="text" id="code" name="code" class="form-control">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Nama Assets</label>
-                        <input type="text" id="label" name="label"
-                               class="form-control">
-                    </div>
-
+                <div class="form-group">
+                  <label>Jenis Asset</label>
+                  <input type="text" class="form-control" id="label" name="label" value="<?= $assets['label'] ?>">
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary"
-                            data-dismiss="modal">Batal</button>
-                    <button class="btn btn-primary"
-                            type="submit">Simpan</button>
-                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan</button>
+              </div>
 
             </form>
-
+          </div>
         </div>
-    </div>
-</div>
+      </div>
+    </form>
+  <?php endforeach; ?>
 
 </div>
 
 <?php $this->session->set_flashdata('status', 'kosong'); ?>
 
-
 <script>
-  $('#1').datepicker({
-    inputs: $('input[name=tanggal_berangkat]'),
-    format: 'dd/mm/yyyy'
-  })
-  $('#2').datepicker({
-    inputs: $('input[name=utanggal_berangkat]'),
-    format: 'dd/mm/yyyy'
-  })
-</script>
-<script type="text/javascript">
+
   $(function () {
 
-    // format angka rupiah
-    $('[data-mask]').inputmask("currency", {
-      prefix: " Rp. ",
-      digitsOptional: true
+
+    // notifikasi allert sukses atau tidak
+    <?php if ($status == 'sukses_tambah') { ?>
+      swal("Success!", "Berhasil Ditambah!", "success");
+    <?php } else if ($status == 'sukses_hapus') { ?>
+        swal("Success!", "Berhasil Dihapus!", "success");
+    <?php } else if ($status == 'sukses_edit') { ?>
+          swal("Success!", "Berhasil Edit Data!", "success");
+    <?php } else if ($status == 'gagal_tambah') { ?>
+            swal("Gagal!", "Gagal Menambah Data!", "warning");
+    <?php } else if ($status == 'gagal_edit') { ?>
+              swal("Gagal!", "Gagal Mengedit Data!", "warning");
+    <?php } else if ($status == 'gagal_hapus') { ?>
+                swal("Gagal!", "Gagal Menghapus Data!", "warning");
+    <?php } else { ?>
+    <?php } ?>
+  })
+
+  $('.tombol_hapus').on('click', function (e) {
+    e.preventDefault();
+    const href = $(this).attr('href');
+    swal({
+      title: 'Apakah anda yakin',
+      text: "data akan dihapus!",
+      type: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e74c3c',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Delete'
+    }).then((result) => {
+      if (result.value) {
+        document.location.href = href;
+      }
     })
 
   });
-</script>
-<script type="text/javascript">
+
   $(document).ready(function () {
+    $('#assetsTable').DataTable({
+      "paging": true, // Tetap gunakan pagination
+      "pageLength": 10, // Menampilkan 10 data per halaman
+      "info": true, // Menghilangkan "Showing 1 to X of X entries"
+      "searching": true, // Menghilangkan search bar
+      "lengthChange": true // Menghilangkan dropdown "Show entries"
+    });
+  });
 
-    // Format mata uang.
-    $('.nilai_po2').mask('000.000.000', { reverse: true });
-
-  })
-
-  $(function () {
-
-    // === Tambah Aset ===
-    $("#btnAddAssets").click(function () {
-        $("#formAsset")[0].reset();
-        $("#asset_id").val("");
-        $("#modalForm").modal("show");
+  $(document).ready(function () {
+    $.fn.dataTable.ext.errMode = 'none';
+    const table = $('#assetsTable').DataTable({
+      footerCallback: function () {
+        updateTotal();
+      },
+      columnDefs: [
+        { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+      ],
+      order: [[1, 'asc']] // Urut default kolom Kode Aset
     });
 
-    // === Edit Aset ===
-    $(".btnEdit").click(function () {
-        let id = $(this).data("id");
+    table.on('order.dt search.dt', function () {
+      table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+        cell.innerHTML = i + 1;
+      });
+    }).draw();
 
-        $.get("<?= base_url('GHAssets/get/') ?>" + id, function (data) {
-            let a = JSON.parse(data);
+    // Fungsi untuk menghitung total dari data yang tampil
+    function updateTotal() {
+      const data = table.rows({ search: 'applied' }).data();
+      let totalTabelAset = data.length;
+      document.getElementById('totalTabelAset').innerText = totalTabelAset.toLocaleString('id-ID');
+    }
 
-            $("#asset_id").val(a.id);
-            $("#code").val(a.code);
-            $("#label").val(a.label);
-
-            $("#modalForm").modal("show");
-        });
+    // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
+    table.on('draw', function () {
+      updateTotal();
     });
 
-    // === Submit Form (Add / Edit) ===
-    $("#formAsset").submit(function (e) {
-        e.preventDefault();
-
-        let id = $("#asset_id").val();
-        let url = id === "" 
-            ? "<?= base_url('GHAssets/add') ?>"
-            : "<?= base_url('GHAssets/update/') ?>" + id;
-
-        $.post(url, $(this).serialize(), function (res) {
-            let r = JSON.parse(res);
-
-            Swal.fire({
-                icon: "success",
-                title: r.status.replace("_", " "),
-                timer: 1200
-            }).then(()=> location.reload());
-        });
-    });
-
-    // === Hapus ===
-    $(".btnDelete").click(function () {
-        let id = $(this).data("id");
-
-        Swal.fire({
-            icon: "warning",
-            title: "Hapus aset ini?",
-            showCancelButton: true,
-            confirmButtonText: "Ya"
-        }).then(res => {
-            if (res.isConfirmed) {
-                $.get("<?= base_url('GHAssets/delete/') ?>" + id, function (res) {
-                    let r = JSON.parse(res);
-
-                    Swal.fire(
-                        r.status,
-                        "",
-                        r.status === "sukses_hapus" ? "success" : "error"
-                    ).then(()=> location.reload());
-                });
-            }
-        });
-    });
-
-});
-
+    // Hitung total pertama kali saat tabel dimuat
+    updateTotal();
+  });
 </script>
 
 

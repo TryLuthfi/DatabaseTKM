@@ -371,9 +371,9 @@ $id_menu = $this->uri->segment('1');
                                 </ul>
 
                                 <ul class="nav nav-treeview">
-                                    <li class="nav-item" style="pointer-events: none">
-                                        <a href="<?= base_url('GA_Aset_Terminasi') ?>"
-                                            class="nav-link <?= ($id_menu == 'GA_Aset_Terminasi') ? 'active' : '' ?>">
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('GA_Seragam_Kantor') ?>"
+                                            class="nav-link <?= ($id_menu == 'GA_Seragam_Kantor') ? 'active' : '' ?>">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Seragam Kantor</p>
                                         </a>
@@ -554,6 +554,9 @@ $id_menu = $this->uri->segment('1');
                     </li>
                     <li class="nav-header">Gul House</li>
                     <li class="nav-item has-treeview <?php if (
+                        $id_menu == 'GHDashboard' ||
+                        $id_menu == 'GHRoomsAssets' ||
+                        $id_menu == 'GHTenantsRooms' ||
                         $id_menu == 'GHRooms' ||
                         $id_menu == 'GHAssets' ||
                         $id_menu == 'GHTenants'
@@ -562,6 +565,9 @@ $id_menu = $this->uri->segment('1');
                     } ?>">
 
                         <a href="#" class="nav-link <?php if (
+                            $id_menu == 'GHDashboard' ||
+                            $id_menu == 'GHRoomsAssets' ||
+                            $id_menu == 'GHTenantsRooms' ||
                             $id_menu == 'GHRooms' ||
                             $id_menu == 'GHAssets' ||
                             $id_menu == 'GHTenants'
@@ -615,18 +621,18 @@ $id_menu = $this->uri->segment('1');
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a href="<?= base_url('GHAssets') ?>" class="nav-link <?php if ($id_menu == 'GHAssets')
-                                              echo 'active'; ?>">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>Master Asets</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
                                         <a href="<?= base_url('GHTenants') ?>" class="nav-link <?php if ($id_menu == 'GHTenants')
                                               echo 'active'; ?>">
                                             <i class="far fa-circle nav-icon"></i>
                                             <p>Master Tenants
                                             </p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('GHAssets') ?>" class="nav-link <?php if ($id_menu == 'GHAssets')
+                                              echo 'active'; ?>">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master Asets</p>
                                         </a>
                                     </li>
                                 </ul>
