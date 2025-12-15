@@ -876,39 +876,6 @@ sort($unique_city, SORT_STRING | SORT_FLAG_CASE);
                             $('[name="target_invoice"]').val(formatRupiah(qtyTarget));
                             $('[name="achiev_invoice"]').val(formatRupiah(qtyAchiev));
 
-                            if (res.status === "not_found") {
-                                // Jika area tidak ditemukan, tampilkan alert konfirmasi
-                                Swal.fire({
-                                    icon: 'question',
-                                    title: 'Area belum terdaftar',
-                                    text: 'Project ini tidak memiliki area ini. Tambahkan area dan invoice?',
-                                    showCancelButton: true,
-                                    confirmButtonText: 'Ya, Tambahkan!',
-                                    cancelButtonText: 'Batal'
-                                }).then((result) => {
-                                    if (result.isConfirmed) {
-                                        // Kirim request untuk createNewTargetInvoice otomatis
-                                        $.ajax({
-                                            url: "<?= base_url('RincianInvoice/createNewTargetInvoice') ?>",
-                                            type: "POST",
-                                            dataType: "json",
-                                            data: { bowheer, area, month, week },
-                                            success: function (res2) {
-                                                Swal.fire({
-                                                    icon: res2.status ? 'success' : 'error',
-                                                    title: res2.status ? 'Berhasil' : 'Gagal',
-                                                    text: res2.message
-                                                });
-                                                loadTargetInvoice(); // reload data setelah tambah
-                                            },
-                                            error: function (xhr) {
-                                                console.log(xhr.responseText);
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-
                             if (qtyAchiev && qtyAchiev !== 0) {
                                 $('[name="achiev_invoice"]').prop('disabled', true);
                                 $('[name="tambahan_invoice"]').closest('.form-group').slideDown();

@@ -337,7 +337,11 @@ JOIN tb_master_bowheer_invoice tmb
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`
 FROM
     tb_target_invoice tti
     JOIN tb_master_bowheer_invoice tmb
@@ -397,7 +401,11 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`
 
 FROM
     tb_target_invoice tti
@@ -459,7 +467,11 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`
 
 FROM
     tb_target_invoice tti
@@ -522,7 +534,11 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`
 
 FROM
     tb_target_invoice tti
@@ -583,7 +599,11 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`
 
 FROM
     tb_target_invoice tti 
@@ -649,7 +669,11 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`
 
 FROM
     tb_target_invoice tti
@@ -716,7 +740,11 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`
 
 FROM
     tb_target_invoice tti

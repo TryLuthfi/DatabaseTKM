@@ -1534,7 +1534,7 @@ $total = 1;
                                                 <th rowspan="3"
                                                     style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
                                                     TOTAL TARGET</th>
-                                                <th colspan="4"
+                                                <th colspan="8"
                                                     style="text-align:center; background-color: aquamarine;">
                                                     DESEMBER</th>
                                                 <th rowspan="3"
@@ -1554,10 +1554,16 @@ $total = 1;
                                                 <th colspan="2"
                                                     style="text-align:center; background-color: aquamarine;">
                                                     WEEK 2</th>
+                                                    <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    WEEK 3</th>
+                                                    <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    WEEK 4</th>
                                             </tr>
                                             <tr>
                                                 <!-- DESEMBER -->
-                                                <?php for ($i = 0; $i < 2; $i++): ?>
+                                                <?php for ($i = 0; $i < 4; $i++): ?>
                                                     <th style="text-align:center; background-color: indianred;">TARGET</th>
                                                     <th style="text-align:center; background-color: darkseagreen;">ACHIEVED
                                                     </th>
@@ -1584,6 +1590,14 @@ $total = 1;
                                                     </td>
                                                     <td><?= ($data['RW2 DESEMBER'] != 0 ? number_format(floatval($data['RW2 DESEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
+                                                    <td><?= ($data['TW3 DESEMBER'] != 0 ? number_format(floatval($data['TW3 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW3 DESEMBER'] != 0 ? number_format(floatval($data['RW3 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW4 DESEMBER'] != 0 ? number_format(floatval($data['TW4 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW4 DESEMBER'] != 0 ? number_format(floatval($data['RW4 DESEMBER']), 0, ",", ".") : '-') ?>
+                                                    </td>
                                                     <td><?= ($data['TOTAL ACHIEVED DESEMBER'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED DESEMBER']), 0, ",", ".") : '-') ?>
                                                     </td>
                                                     <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
@@ -1594,7 +1608,7 @@ $total = 1;
                                         <tfoot>
                                             <tr>
                                                 <th colspan="2">Total</th>
-                                                <?php for ($i = 0; $i < 7; $i++): ?>
+                                                <?php for ($i = 0; $i < 11; $i++): ?>
                                                     <th>0</th>
                                                 <?php endfor; ?>
                                             </tr>
@@ -3794,10 +3808,10 @@ $total = 1;
             function updateTotal() {
                 const data = table.rows({ search: 'applied' }).data();
 
-                let totalKolom = Array(7).fill(0);
+                let totalKolom = Array(11).fill(0);
 
                 data.each(function (row) {
-                    for (let i = 2; i < 9; i++) { // misal kolom angka mulai dari index ke-2
+                    for (let i = 2; i < 13; i++) { // misal kolom angka mulai dari index ke-2
                         // Hapus titik dan koma dulu
                         let value = row[i]
                             .toString()
