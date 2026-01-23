@@ -241,7 +241,10 @@ ORDER BY total_target DESC;')
         $weeks_by_month = [
             'OKTOBER' => ['W1', 'W2', 'W3', 'W4', 'W4'],
             'NOVEMBER' => ['W1', 'W2', 'W3', 'W4'],
-            'DESEMBER' => ['W1', 'W2', 'W3', 'W4']
+            'DESEMBER' => ['W1', 'W2', 'W3', 'W4'],
+            'JANUARI' => ['W1', 'W2', 'W3', 'W4', 'W5'],
+            'FEBRUARI' => ['W1', 'W2', 'W3', 'W4', 'W5'],
+            'MARET' => ['W1', 'W2', 'W3', 'W4', 'W5']
         ];
 
         $data_insert = [];
