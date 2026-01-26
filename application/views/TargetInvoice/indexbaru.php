@@ -34,7 +34,7 @@ $total = 1;
                             <span class="info-box-icon bg-grey elevation-1"><i
                                     class="fas fa-file-invoice-dollar"></i></span>
                             <div class="info-box-content">
-                                <span class="info-box-text">TARGET INVOICE TW - 4</span>
+                                <span class="info-box-text">TARGET INVOICE</span>
                                 <span class="info-box-number" id="dashboardTargetInvoice">
                                 </span>
                             </div>
@@ -49,7 +49,7 @@ $total = 1;
                             <span class="info-box-icon bg-grey elevation-1"><i
                                     class="fas fa-file-invoice-dollar"></i></span>
                             <div class="info-box-content">
-                                <span class="info-box-text">ACHIEVED INVOICE TW - 4</span>
+                                <span class="info-box-text">ACHIEVED INVOICE</span>
                                 <h4 class="info-box-number" style="color: #33cc33;" id="dashboardAchievInvoice">
                                     Rp. 0
                                 </h4>
@@ -65,7 +65,7 @@ $total = 1;
                             <span class="info-box-icon bg-grey elevation-1"><i
                                     class="fas fa-money-check-alt"></i></span>
                             <div class="info-box-content">
-                                <span class="info-box-text">SISA INVOICE TW - 4</span>
+                                <span class="info-box-text">SISA INVOICE</span>
                                 <h4 class="info-box-number" style="color: #ce0808ff;" id="dashboardSisaInvoice">
                                     Rp. 0
                                 </h4>
@@ -81,7 +81,7 @@ $total = 1;
                             <span class="info-box-icon bg-grey elevation-1"><i
                                     class="fas fa-money-check-alt"></i></span>
                             <div class="info-box-content">
-                                <span class="info-box-text">PERSENTASE INVOICE TW - 4</span>
+                                <span class="info-box-text">PERSENTASE INVOICE</span>
                                 <h4 class="info-box-number" id="dashboardPersentaseInvoice">
                                     Rp. 0
                                 </h4>

@@ -239,7 +239,7 @@ ORDER BY total_target DESC;')
 
         // Struktur minggu per bulan
         $weeks_by_month = [
-            'OKTOBER' => ['W1', 'W2', 'W3', 'W4', 'W4'],
+            'OKTOBER' => ['W1', 'W2', 'W3', 'W4', 'W5'],
             'NOVEMBER' => ['W1', 'W2', 'W3', 'W4'],
             'DESEMBER' => ['W1', 'W2', 'W3', 'W4'],
             'JANUARI' => ['W1', 'W2', 'W3', 'W4', 'W5'],
