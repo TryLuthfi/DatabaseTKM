@@ -164,7 +164,22 @@ $total = 1;
                                                     $class = $real > $budget ? 'bg-danger' : 'bg-success';
                                                     ?>
                                                     <td><?= number_format($budget) ?></td>
-                                                    <td class="<?= $class ?>"><?= number_format($real) ?></td>
+                                                    <td class="<?= $class ?> text-center">
+
+                                                        <?php if ($real > 0): ?>
+                                                            <button type="button" class="btn btn-xs btn-light btn-detail-cashflow"
+                                                                data-id_mab="<?= $row['id_mab'] ?>" data-bulan="<?= $b ?>"
+                                                                data-tahun="2026" data-akun="<?= htmlspecialchars($row['akun']) ?>"
+                                                                style="width:100%">
+
+                                                                <?= number_format($real) ?>
+
+                                                            </button>
+                                                        <?php else: ?>
+                                                            0
+                                                        <?php endif; ?>
+
+                                                    </td>
                                                 <?php endfor; ?>
 
                                                 <td><b><?= number_format($row['total_budget']) ?></b></td>
@@ -193,6 +208,71 @@ $total = 1;
                         </div>
                     </div>
         </section>
+
+        <div class="modal fade" id="modalDetailCashflow" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            Detail Cashflow - <span id="judulBulan"></span>
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="col-form-label">Akun Utama</label>
+                                    <input type="text" class="form-control" name="akun_utama" id="detail_akun_utama"
+                                        disabled>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="col-form-label">Sub Akun</label>
+                                    <input type="text" class="form-control" name="sub_akun" id="detail_sub_akun"
+                                        disabled>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="col-form-label">Nomor Akun</label>
+                                    <input type="text" class="form-control" name="nomor_akun" id="detail_nomor_akun"
+                                        disabled>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="col-form-label">Deskripsi Akun</label>
+                                    <input type="text" class="form-control" name="deskripsi_akun"
+                                        id="detail_deskripsi_akun" disabled>
+                                </div>
+                            </div>
+                        </div>
+
+                        <table class="table table-bordered table-striped" id="tableDetailCashflow">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Tanggal</th>
+                                    <th>Project</th>
+                                    <th>Area</th>
+                                    <th class="text-right">Jumlah</th>
+                                    <th>Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
 
         <!-- /.content-wrapper -->
 
@@ -330,11 +410,6 @@ $total = 1;
             $('.card[data-card-widget="collapsed"]').addClass('card-tools');
         });
 
-        // document.addEventListener("DOMContentLoaded", function () {
-        //     let cardfilter = document.getElementById("cardfiltercollapse").closest(".card");
-        //     cardfilter.classList.add("collapsed-card");
-        // });
-
     </script>
 
     <script>
@@ -354,6 +429,66 @@ $total = 1;
             $('#editDeskripsiAkunBaru').val(btn.data('deskripsi'));
 
             $('#modal-lg-edit-masterakun').modal('show');
+        });
+
+        $(document).on('click', '.btn-detail-cashflow', function () {
+
+            let id_mab = $(this).data('id_mab');
+            let bulan = $(this).data('bulan');
+            let tahun = $(this).data('tahun');
+
+            const namaBulan = [
+                '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+
+
+            $('#modalDetailCashflow').modal('show');
+            $('#tableDetailCashflow tbody').html('<tr><td colspan="5">Loading...</td></tr>');
+
+            $.ajax({
+                url: "<?= site_url('Budget_Report/getDetailCashflow') ?>",
+                type: "POST",
+                data: {
+                    id_mab: id_mab,
+                    bulan: bulan,
+                    tahun: tahun
+                },
+                dataType: "json",
+                success: function (res) {
+
+                    document.getElementById('judulBulan').innerText = namaBulan[bulan];
+
+                    let html = '';
+                    let no = 1;
+
+                    if (res.length === 0) {
+                        html = '<tr><td colspan="5" class="text-center">Tidak ada data</td></tr>';
+                    } else {
+                        res.forEach(row => {
+                            html += `
+                        <tr>
+                            <td>${no++}</td>
+                            <td>${row.date_cashflow}</td>
+                            <td>${row.mab_nomor_akun}</td>
+                            <td>${row.mab_deskripsi_akun}</td>
+                            <td>${row.nama_bowheer}</td>
+                            <td>${row.area_cashflow}</td>
+                            <td class="text-right">${Number(row.jumlah_cashflow).toLocaleString()}</td>
+                            <td>${row.remarks_cashflow}</td>
+                        </tr>`;
+                        });
+
+                        document.getElementById('detail_akun_utama').value = res[0].mab_akun_utama;
+                        document.getElementById('detail_sub_akun').value = res[0].mab_sub_akun;
+                        document.getElementById('detail_nomor_akun').value = res[0].mab_nomor_akun;
+                        document.getElementById('detail_deskripsi_akun').value = res[0].mab_deskripsi_akun;
+                    }
+
+                    $('#tableDetailCashflow tbody').html(html);
+                }
+            });
+
         });
     </script>
 

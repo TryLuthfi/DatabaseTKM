@@ -4,6 +4,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
 class MBudget_Report extends CI_Model
 {
 
+
     public function getAllDataReport()
     {
         $data = $this->db->query('SELECT
@@ -67,60 +68,25 @@ ORDER BY
         return $query->result_array();
     }
 
-
-    public function tambahMasterAkun($data)
+    public function getDetailCashflow($id_mab, $bulan, $tahun)
     {
 
-        $akun_utama = !empty($data['addfilter_akun_utama'])
-            ? $data['addfilter_akun_utama']
-            : $data['inputAkunUtamaBaru'];
+        log_message('debug', 'TEST LOG MASUK');
+        $data = $this->db->query("SELECT
+	*
+FROM
+	budget_cashflow bc
+	JOIN tb_master_bowheer_invoice tmbi ON tmbi.id_bowheer = bc.project_cashflow
+	JOIN budget_masterakunbiaya bm ON bm.id_mab = bc.id_mab
+        WHERE bc.id_mab = ?
+          AND MONTH(bc.date_cashflow) = ?
+          AND YEAR(bc.date_cashflow) = ?
+        ORDER BY bc.date_cashflow
+    ", [$id_mab, $bulan, $tahun])->result_array();
 
-        $sub_akun = !empty($data['addfilter_sub_akun'])
-            ? $data['addfilter_sub_akun']
-            : $data['inputSubAkunBaru'];
+        log_message('debug', 'Last Query detail cashflow: ' . $this->db->last_query());
 
-        $divisi = !empty($data['addfilter_divisi'])
-            ? $data['addfilter_divisi']
-            : $data['inputDivisiBaru'];
-
-        $pic = !empty($data['addfilter_pic'])
-            ? $data['addfilter_pic']
-            : $data['inputPICBaru'];
-
-        $nomorakun = $data['inputNomorAkunBaru'];
-        $deskripsiakun = $data['inputDeskripsiAkunBaru'];
-
-        $hasil_data = array(
-            'mab_akun_utama' => $akun_utama,
-            'mab_sub_akun' => $sub_akun,
-            'mab_divisi' => $divisi,
-            'mab_pic' => $pic,
-            'mab_nomor_akun' => $nomorakun,
-            'mab_deskripsi_akun' => $deskripsiakun
-        );
-
-        $this->db->insert('Budget_Report', $hasil_data);
-        $nilai_update = $this->db->affected_rows();
-
-        if ($this->db->affected_rows() > 0) {
-            return ['status' => true, 'message' => 'Update berhasil', 'nilai_update' => $nilai_update];
-        } else {
-            return ['status' => false, 'message' => 'Tidak ada data yang diubah'];
-        }
-    }
-
-    public function deleteMasterAkun($id_mab)
-    {
-        $res = $this->db->delete("Budget_Report", $id_mab);
-        return $res;
-    }
-
-    public function updateMasterAkun($id_mab, $data)
-    {
-        $this->db->where('id_mab', $id_mab);
-        $this->db->update('master_akun_biaya', $data);
-
-        return $this->db->affected_rows();
+        return $data;
     }
 }
 

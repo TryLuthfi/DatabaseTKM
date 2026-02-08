@@ -562,7 +562,7 @@ $id_menu = $this->uri->segment('1');
                         $id_menu == 'GHTenants'
                     ) {
                         echo 'menu-open';
-                    } ?>">
+                    } ?>" style="pointer-events: none">
 
                         <a href="#" class="nav-link <?php if (
                             $id_menu == 'GHDashboard' ||
@@ -674,7 +674,7 @@ $id_menu = $this->uri->segment('1');
                         $id_menu == 'GHTenants'
                     ) {
                         echo 'menu-open';
-                    } ?>">
+                    } ?>" style="pointer-events: none">
 
                         <a href="#" class="nav-link <?php if (
                             $id_menu == 'GHDashboard' ||
