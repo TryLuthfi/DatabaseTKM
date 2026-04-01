@@ -664,21 +664,22 @@ $id_menu = $this->uri->segment('1');
                             </li>
                         </ul>
                     </li>
+                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                     <li class="nav-header">Budgeting</li>
                     <li class="nav-item has-treeview <?php if (
-                        $id_menu == 'GHDashboard' ||
-                        $id_menu == 'GHRoomsAssets' ||
+                        $id_menu == 'Budget_MasterAkunBiaya' ||
+                        $id_menu == 'Budget_MasterBudgetYears' ||
                         $id_menu == 'GHTenantsRooms' ||
                         $id_menu == 'GHRooms' ||
                         $id_menu == 'GHAssets' ||
                         $id_menu == 'GHTenants'
                     ) {
                         echo 'menu-open';
-                    } ?>" style="pointer-events: none">
+                    } ?>" >
 
                         <a href="#" class="nav-link <?php if (
-                            $id_menu == 'GHDashboard' ||
-                            $id_menu == 'GHRoomsAssets' ||
+                            $id_menu == 'Budget_MasterAkunBiaya' ||
+                            $id_menu == 'Budget_MasterBudgetYears' ||
                             $id_menu == 'GHTenantsRooms' ||
                             $id_menu == 'GHRooms' ||
                             $id_menu == 'GHAssets' ||
@@ -696,24 +697,16 @@ $id_menu = $this->uri->segment('1');
 
                         <ul class="nav nav-treeview">
 
-                            <li class="nav-item">
-                                <a href="<?= base_url('Budget_Cashflow') ?>" class="nav-link <?php if ($id_menu == 'Budget_Cashflow')
-                                      echo 'active'; ?>">
-                                    <i class="far fa-file nav-icon"></i>
-                                    <p>List Cashflow</p>
-                                </a>
-                            </li>
-                            <!-- Master Logistik -->
-                            <li class="nav-item has-treeview <?php if (
-                                $id_menu == 'GHRooms' ||
-                                $id_menu == 'GHAssets' ||
+                        <li class="nav-item has-treeview <?php if (
+                                $id_menu == 'Budget_MasterAkunBiaya' ||
+                                $id_menu == 'Budget_MasterBudgetYears' ||
                                 $id_menu == 'GHTenants'
                             ) {
                                 echo 'menu-open';
                             } ?>">
                                 <a href="#" class="nav-link <?php if (
-                                    $id_menu == 'GHRooms' ||
-                                    $id_menu == 'GHAssets' ||
+                                    $id_menu == 'Budget_MasterAkunBiaya' ||
+                                    $id_menu == 'Budget_MasterBudgetYears' ||
                                     $id_menu == 'GHTenants'
                                 ) {
                                     echo 'active';
@@ -733,22 +726,25 @@ $id_menu = $this->uri->segment('1');
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a href="<?= base_url('GHTenants') ?>" class="nav-link <?php if ($id_menu == 'GHTenants')
+                                        <a href="<?= base_url('Budget_MasterBudgetYears') ?>" class="nav-link <?php if ($id_menu == 'Budget_MasterBudgetYears')
                                               echo 'active'; ?>">
                                             <i class="far fa-circle nav-icon"></i>
-                                            <p>Master Tenants
+                                            <p>Master Budget
                                             </p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="<?= base_url('GHAssets') ?>" class="nav-link <?php if ($id_menu == 'GHAssets')
-                                              echo 'active'; ?>">
-                                            <i class="far fa-circle nav-icon"></i>
-                                            <p>Master Asets</p>
                                         </a>
                                     </li>
                                 </ul>
                             </li>
+
+                            <li class="nav-item">
+                                <a href="<?= base_url('Budget_Cashflow') ?>" class="nav-link <?php if ($id_menu == 'Budget_Cashflow')
+                                      echo 'active'; ?>">
+                                    <i class="far fa-file nav-icon"></i>
+                                    <p>List Cashflow</p>
+                                </a>
+                            </li>
+                            <!-- Master Logistik -->
+                            
 
                             <li class="nav-item">
                                 <a href="<?= base_url('Budget_Report') ?>" class="nav-link <?php if ($id_menu == 'Budget_Report')
@@ -776,6 +772,7 @@ $id_menu = $this->uri->segment('1');
                             </li>
                         </ul>
                     </li>
+                    <?php } ?>
 
                 </ul>
             </nav>

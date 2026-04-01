@@ -42,26 +42,55 @@ ORDER BY
     }
 
 
-    public function getFilteredBudget_Cashflow($akun_utama, $sub_akun, $nomor_akun, $deskripsi_akun)
+    public function getFilteredBudget_Cashflow($akun_utama = [], $sub_akun = [], $nomor_akun = [], $deskripsi_akun = [])
     {
-        $this->db->select('id_mab, mab_akun_utama, mab_sub_akun, mab_nomor_akun, mab_deskripsi_akun, mab_divisi, mab_pic
-    ');
-        $this->db->from('budget_cashflow');
+        $this->db->select("
+        bc.id_cashflow,
+        bc.date_cashflow,
+        mab.mab_nomor_akun,
+        mab.mab_akun_utama,
+        mab.mab_sub_akun,
+        mab.mab_deskripsi_akun,
+        bc.area_cashflow,
+        bc.project_cashflow,
+        tmbi.nama_bowheer,
+        bc.remarks_cashflow,
+        mab.mab_status,
+        CASE 
+            WHEN mab.mab_status = 'IN' THEN bc.jumlah_cashflow 
+            ELSE 0 
+        END AS cashflow_in,
+        CASE 
+            WHEN mab.mab_status = 'OUT' THEN bc.jumlah_cashflow 
+            ELSE 0 
+        END AS cashflow_out
+    ");
+
+        $this->db->from('budget_cashflow bc');
+
+        $this->db->join('budget_masterakunbiaya mab', 'mab.id_mab = bc.id_mab');
+        $this->db->join('tb_master_bowheer_invoice tmbi', 'tmbi.id_bowheer = bc.project_cashflow');
+
+        $this->db->where('mab.is_active', 1);
 
         // === FILTERS ===
         if (!empty($akun_utama))
-            $this->db->where_in('mab_akun_utama', $akun_utama);
+            $this->db->where_in('mab.mab_akun_utama', $akun_utama);
+
         if (!empty($sub_akun))
-            $this->db->where_in('mab_sub_akun', $sub_akun);
+            $this->db->where_in('mab.mab_sub_akun', $sub_akun);
+
         if (!empty($nomor_akun))
-            $this->db->where_in('mab_nomor_akun', $nomor_akun);
+            $this->db->where_in('mab.mab_nomor_akun', $nomor_akun);
+
         if (!empty($deskripsi_akun))
-            $this->db->where_in('mab_deskripsi_akun', $deskripsi_akun);
+            $this->db->where_in('mab.mab_deskripsi_akun', $deskripsi_akun);
+
+        $this->db->order_by('bc.date_cashflow', 'DESC');
 
         $query = $this->db->get();
 
-        // untuk debug query
-        log_message('debug', 'Last Query aa: ' . $this->db->last_query());
+        log_message('debug', 'Last Query: ' . $this->db->last_query());
 
         return $query->result_array();
     }

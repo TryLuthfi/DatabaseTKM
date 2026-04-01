@@ -2,6 +2,21 @@
 $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
+$bulan_order = [
+    'JANUARI',
+    'FEBRUARI',
+    'MARET',
+    'APRIL',
+    'MEI',
+    'JUNI',
+    'JULI',
+    'AGUSTUS',
+    'SEPTEMBER',
+    'OKTOBER',
+    'NOVEMBER',
+    'DESEMBER'
+];
+
 $total = 1;
 
 $unique_pic = array_unique(array_column($getAllData, 'pic_user'));
@@ -12,7 +27,9 @@ $unique_month = array_unique(array_column($getAllData, 'month_target'));
 $unique_week = array_unique(array_column($getAllData, 'week_target'));
 
 sort($unique_city, SORT_STRING | SORT_FLAG_CASE);
-
+usort($unique_month, function($a, $b) use ($bulan_order) {
+    return array_search($a, $bulan_order) - array_search($b, $bulan_order);
+});
 
 ?>
 

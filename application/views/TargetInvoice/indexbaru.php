@@ -230,8 +230,8 @@ $total = 1;
 
                             <li class="nav-item">
                                 <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
-                                    href="#custom-tabspic-month2026" role="tab" aria-controls="custom-tabs-two-profile"
-                                    aria-selected="false">MONTHLY 2026</a>
+                                    href="#custom-tabspic-month2026-tw1" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">2026 - TW1</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
@@ -247,6 +247,26 @@ $total = 1;
                                 <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
                                     href="#custom-tabspic-maret" role="tab" aria-controls="custom-tabs-two-profile"
                                     aria-selected="false">MARET</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
+                                    href="#custom-tabspic-month2026-tw2" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">2026 - TW2</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabspic-april" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">APRIL</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabspic-mei" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">MEI</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabspic-juni" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">JUNI</a>
                             </li>
                         </ul>
                     </div>
@@ -1002,8 +1022,8 @@ $total = 1;
                                     </table>
                                 </div>
                             </div>
-                            <!-- TAB NAV MONTHLY 2025 -->
-                            <div class="tab-pane fade" id="custom-tabspic-month2026" role="tabpanel"
+                            <!-- TAB NAV MONTHLY 2025 TW1 -->
+                            <div class="tab-pane fade" id="custom-tabspic-month2026-tw1" role="tabpanel"
                                 aria-labelledby="custom-tabs-three-profile-tab">
 
                                 <div class="container-fluid px-0">
@@ -1565,7 +1585,7 @@ $total = 1;
                                 </div>
                             </div>
 
-                            <!-- TAB NAV FEBRUARI -->
+                            <!-- TAB NAV MARET -->
                             <div class="tab-pane fade" id="custom-tabspic-maret" role="tabpanel"
                                 aria-labelledby="custom-tabs-three-profile-tab">
 
@@ -1766,6 +1786,771 @@ $total = 1;
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- TAB NAV MONTHLY 2025 TW2 -->
+                            <div class="tab-pane fade" id="custom-tabspic-month2026-tw2" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none w-full">
+                                        <div class="card-body table-responsive w-full" style="width:100%;">
+                                            <table id="tabel_targetpic_month2026"
+                                                class="table table-bordered table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="2"
+                                                            style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="2"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            PIC</th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            APRIL
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            MEI
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            JUNI
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            ACHIEVED ( % )
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI ( % )
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- OKTOBER -->
+                                                        <?php for ($i = 0; $i < 3; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                            <th style="text-align:center; background-color: blueviolet;">
+                                                                %
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterPIC as $data):
+                                                        $target = $data['GRAND TOTAL TARGET'];
+                                                        $achiev = $data['GRAND TOTAL ACHIEVED'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['pic_user'] ?></td>
+                                                            <td><?= ($data['GRAND TOTAL TARGET'] != 0 ? number_format(floatval($data['GRAND TOTAL TARGET']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- OKTOBER -->
+                                                            <td><?= ($data['TOTAL TARGET APRIL'] != 0 ? number_format(floatval($data['TOTAL TARGET APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED APRIL'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET APRIL'] > 0 && $data['TOTAL ACHIEVED APRIL'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED APRIL'] / $data['TOTAL TARGET APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL TARGET MEI'] != 0 ? number_format(floatval($data['TOTAL TARGET MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED MEI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET MEI'] > 0 && $data['TOTAL ACHIEVED MEI'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED MEI'] / $data['TOTAL TARGET MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL TARGET JUNI'] != 0 ? number_format(floatval($data['TOTAL TARGET JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED JUNI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET JUNI'] > 0 && $data['TOTAL ACHIEVED JUNI'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED JUNI'] / $data['TOTAL TARGET JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['GRAND TOTAL ACHIEVED'] != 0 ? number_format(floatval($data['GRAND TOTAL ACHIEVED']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['GRAND TOTAL ACHIEVED'] > 0 && $data['GRAND TOTAL TARGET'] > 0) {
+                                                                    $persentase = ($data['GRAND TOTAL ACHIEVED'] / $data['GRAND TOTAL TARGET']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= number_format(($deviasi / $data['GRAND TOTAL TARGET'] * 100), 0, ",", ".") . '%' ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="2">Total</th>
+                                                        <?php for ($i = 0; $i < 14; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                    <tr>
+                                                        <th colspan="3">Deviasi</th>
+                                                        <?php for ($i = 0; $i < 3; $i++): ?>
+                                                            <th colspan="3" style="text-align: end; font-">0</th>
+                                                        <?php endfor; ?>
+                                                        <th colspan="4"></th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV APRIL -->
+                            <div class="tab-pane fade" id="custom-tabspic-april" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0 table-responsive">
+                                            <table id="tabel_targetpic_april"
+                                                class="table table-bordered table-striped nowrap w-100">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            PIC</th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="15"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            APRIL
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            ACHIEVED ( % )
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI ( % )
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- APRIL -->
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            1
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            2
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            3
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            4
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            5
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- APRIL -->
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                            <th style="text-align:center; background-color: blueviolet;">
+                                                                %
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterPIC as $data):
+                                                        $target = $data['TOTAL TARGET APRIL'];
+                                                        $achiev = $data['TOTAL ACHIEVED APRIL'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['pic_user'] ?></td>
+                                                            <td><?= ($data['TOTAL TARGET APRIL'] != 0 ? number_format(floatval($data['TOTAL TARGET APRIL']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- APRIL -->
+                                                            <td><?= ($data['TW1 APRIL'] != 0 ? number_format(floatval($data['TW1 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW1 APRIL'] != 0 ? number_format(floatval($data['RW1 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW1 APRIL'] > 0 && $data['RW1 APRIL'] > 0) {
+                                                                    $persentase = ($data['RW1 APRIL'] / $data['TW1 APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW2 APRIL'] != 0 ? number_format(floatval($data['TW2 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW2 APRIL'] != 0 ? number_format(floatval($data['RW2 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW2 APRIL'] > 0 && $data['RW2 APRIL'] > 0) {
+                                                                    $persentase = ($data['RW2 APRIL'] / $data['TW2 APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW3 APRIL'] != 0 ? number_format(floatval($data['TW3 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW3 APRIL'] != 0 ? number_format(floatval($data['RW3 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW3 APRIL'] > 0 && $data['RW3 APRIL'] > 0) {
+                                                                    $persentase = ($data['RW3 APRIL'] / $data['TW3 APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW4 APRIL'] != 0 ? number_format(floatval($data['TW4 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW4 APRIL'] != 0 ? number_format(floatval($data['RW4 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW4 APRIL'] > 0 && $data['RW4 APRIL'] > 0) {
+                                                                    $persentase = ($data['RW4 APRIL'] / $data['TW4 APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW5 APRIL'] != 0 ? number_format(floatval($data['TW5 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW5 APRIL'] != 0 ? number_format(floatval($data['RW5 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW5 APRIL'] > 0 && $data['RW5 APRIL'] > 0) {
+                                                                    $persentase = ($data['RW5 APRIL'] / $data['TW5 APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED APRIL'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL ACHIEVED APRIL'] > 0 && $data['TOTAL TARGET APRIL'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED APRIL'] / $data['TOTAL TARGET APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL ACHIEVED APRIL'] > 0 && $data['TOTAL TARGET APRIL'] > 0) {
+                                                                    echo number_format(($deviasi / $data['TOTAL TARGET APRIL'] * 100), 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="2">Total</th>
+                                                        <?php for ($i = 0; $i < 20; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV MEI -->
+                            <div class="tab-pane fade" id="custom-tabspic-mei" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0 table-responsive">
+                                            <table id="tabel_targetpic_mei"
+                                                class="table table-bordered table-striped nowrap w-100">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            PIC</th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="15"
+                                                            style="text-align:center; background-color: blueviolet;">
+                                                            MEI
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            ACHIEVED ( % )
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI ( % )
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- MEI -->
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: blueviolet;">WEEK
+                                                            1
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: blueviolet;">WEEK
+                                                            2
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: blueviolet;">WEEK
+                                                            3
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: blueviolet;">WEEK
+                                                            4
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: blueviolet;">WEEK
+                                                            5
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- MEI -->
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                            <th style="text-align:center; background-color: blueviolet;">
+                                                                %
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterPIC as $data):
+                                                        $target = $data['TOTAL TARGET MEI'];
+                                                        $achiev = $data['TOTAL ACHIEVED MEI'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['pic_user'] ?></td>
+                                                            <td><?= ($data['TOTAL TARGET MEI'] != 0 ? number_format(floatval($data['TOTAL TARGET MEI']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- MEI -->
+                                                            <td><?= ($data['TW1 MEI'] != 0 ? number_format(floatval($data['TW1 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW1 MEI'] != 0 ? number_format(floatval($data['RW1 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW1 MEI'] > 0 && $data['RW1 MEI'] > 0) {
+                                                                    $persentase = ($data['RW1 MEI'] / $data['TW1 MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW2 MEI'] != 0 ? number_format(floatval($data['TW2 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW2 MEI'] != 0 ? number_format(floatval($data['RW2 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW2 MEI'] > 0 && $data['RW2 MEI'] > 0) {
+                                                                    $persentase = ($data['RW2 MEI'] / $data['TW2 MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW3 MEI'] != 0 ? number_format(floatval($data['TW3 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW3 MEI'] != 0 ? number_format(floatval($data['RW3 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW3 MEI'] > 0 && $data['RW3 MEI'] > 0) {
+                                                                    $persentase = ($data['RW3 MEI'] / $data['TW3 MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW4 MEI'] != 0 ? number_format(floatval($data['TW4 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW4 MEI'] != 0 ? number_format(floatval($data['RW4 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW4 MEI'] > 0 && $data['RW4 MEI'] > 0) {
+                                                                    $persentase = ($data['RW4 MEI'] / $data['TW4 MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW5 MEI'] != 0 ? number_format(floatval($data['TW5 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW5 MEI'] != 0 ? number_format(floatval($data['RW5 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW5 MEI'] > 0 && $data['RW5 MEI'] > 0) {
+                                                                    $persentase = ($data['RW5 MEI'] / $data['TW5 MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED MEI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL ACHIEVED MEI'] > 0 && $data['TOTAL TARGET MEI'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED MEI'] / $data['TOTAL TARGET MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL ACHIEVED MEI'] > 0 && $data['TOTAL TARGET MEI'] > 0) {
+                                                                    echo number_format(($deviasi / $data['TOTAL TARGET MEI'] * 100), 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="2">Total</th>
+                                                        <?php for ($i = 0; $i < 20; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV JUNI -->
+                            <div class="tab-pane fade" id="custom-tabspic-juni" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0 table-responsive">
+                                            <table id="tabel_targetpic_juni"
+                                                class="table table-bordered table-striped nowrap w-100">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            PIC</th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="15"
+                                                            style="text-align:center; background-color: aquamarine;">
+                                                            JUNI
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            ACHIEVED ( % )
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI ( % )
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- MARET -->
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aquamarine;">WEEK
+                                                            1
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aquamarine;">WEEK
+                                                            2
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aquamarine;">WEEK
+                                                            3
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aquamarine;">WEEK
+                                                            4
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aquamarine;">WEEK
+                                                            5
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- MARET -->
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                            <th style="text-align:center; background-color: blueviolet;">
+                                                                %
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterPIC as $data):
+                                                        $target = $data['TOTAL TARGET JUNI'];
+                                                        $achiev = $data['TOTAL ACHIEVED JUNI'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['pic_user'] ?></td>
+                                                            <td><?= ($data['TOTAL TARGET JUNI'] != 0 ? number_format(floatval($data['TOTAL TARGET JUNI']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- JUNI -->
+                                                            <td><?= ($data['TW1 JUNI'] != 0 ? number_format(floatval($data['TW1 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW1 JUNI'] != 0 ? number_format(floatval($data['RW1 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW1 JUNI'] > 0 && $data['RW1 JUNI'] > 0) {
+                                                                    $persentase = ($data['RW1 JUNI'] / $data['TW1 JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW2 JUNI'] != 0 ? number_format(floatval($data['TW2 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW2 JUNI'] != 0 ? number_format(floatval($data['RW2 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW2 JUNI'] > 0 && $data['RW2 JUNI'] > 0) {
+                                                                    $persentase = ($data['RW2 JUNI'] / $data['TW2 JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW3 JUNI'] != 0 ? number_format(floatval($data['TW3 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW3 JUNI'] != 0 ? number_format(floatval($data['RW3 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW3 JUNI'] > 0 && $data['RW3 JUNI'] > 0) {
+                                                                    $persentase = ($data['RW3 JUNI'] / $data['TW3 JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW4 JUNI'] != 0 ? number_format(floatval($data['TW4 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW4 JUNI'] != 0 ? number_format(floatval($data['RW4 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW4 JUNI'] > 0 && $data['RW4 JUNI'] > 0) {
+                                                                    $persentase = ($data['RW4 JUNI'] / $data['TW4 JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW5 JUNI'] != 0 ? number_format(floatval($data['TW5 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW5 JUNI'] != 0 ? number_format(floatval($data['RW5 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW5 JUNI'] > 0 && $data['RW5 JUNI'] > 0) {
+                                                                    $persentase = ($data['RW5 JUNI'] / $data['TW5 JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED JUNI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL ACHIEVED JUNI'] > 0 && $data['TOTAL TARGET JUNI'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED JUNI'] / $data['TOTAL TARGET JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL ACHIEVED JUNI'] > 0 && $data['TOTAL TARGET JUNI'] > 0) {
+                                                                    number_format(($deviasi / $data['TOTAL TARGET JUNI'] * 100), 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="2">Total</th>
+                                                        <?php for ($i = 0; $i < 20; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             
 
                         </div>
@@ -1820,8 +2605,8 @@ $total = 1;
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
-                                    href="#custom-tabsbowheer-month2026" role="tab" aria-controls="custom-tabs-two-profile"
-                                    aria-selected="false">MONTHLY 2026</a>
+                                    href="#custom-tabsbowheer-month2026-tw1" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">2026 - TW1</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
@@ -1837,6 +2622,26 @@ $total = 1;
                                 <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
                                     href="#custom-tabsbowheer-delapan" role="tab" aria-controls="custom-tabs-two-profile"
                                     aria-selected="false">MARET</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
+                                    href="#custom-tabsbowheer-month2026-tw2" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">2026 - TW2</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabsbowheer-april" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">APRIL</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabsbowheer-mei" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">MEI</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabsbowheer-juni" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">JUNI</a>
                             </li>
                         </ul>
                     </div>
@@ -2423,8 +3228,8 @@ $total = 1;
                                 </div>
                             </div>
 
-                            <!-- TAB NAV MONTH 2026 -->
-                            <div class="tab-pane fade" id="custom-tabsbowheer-month2026" role="tabpanel"
+                            <!-- TAB NAV MONTH 2026 TW1 -->
+                            <div class="tab-pane fade" id="custom-tabsbowheer-month2026-tw1" role="tabpanel"
                                 aria-labelledby="custom-tabs-three-profile-tab">
 
                                 <div class="container-fluid px-0">
@@ -2542,7 +3347,7 @@ $total = 1;
                                                                 }
                                                                 ?>
                                                             </td>
-                                                            <td><?= ($data['GRAND TOTAL ACHIEVED'] != 0 ? number_format(floatval($data['GRAND TOTAL ACHIEVED']), 0, ",", ".") : '-') ?>
+                                                            <td><?= ($data['GRAND TOTAL ACHIEVED 2026 TW1'] != 0 ? number_format(floatval($data['GRAND TOTAL ACHIEVED 2026 TW1']), 0, ",", ".") : '-') ?>
                                                             </td>
                                                             <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
                                                             </td>
@@ -2575,7 +3380,7 @@ $total = 1;
                                 </div>
                             </div>
 
-                            <!-- TAB NAV KELIMA -->
+                            <!-- TAB NAV JANUARI -->
                             <div class="tab-pane fade" id="custom-tabsbowheer-enam" role="tabpanel"
                                 aria-labelledby="custom-tabs-three-profile-tab">
 
@@ -2682,7 +3487,7 @@ $total = 1;
                                 </div>
                             </div>
 
-                            <!-- TAB NAV KELIMA -->
+                            <!-- TAB NAV FEBRUARI -->
                             <div class="tab-pane fade" id="custom-tabsbowheer-tujuh" role="tabpanel"
                                 aria-labelledby="custom-tabs-three-profile-tab">
 
@@ -2789,7 +3594,7 @@ $total = 1;
                                 </div>
                             </div>
 
-                            <!-- TAB NAV KELIMA -->
+                            <!-- TAB NAV MARET -->
                             <div class="tab-pane fade" id="custom-tabsbowheer-delapan" role="tabpanel"
                                 aria-labelledby="custom-tabs-three-profile-tab">
 
@@ -2896,6 +3701,479 @@ $total = 1;
                                 </div>
                             </div>
 
+                            <!-- TAB NAV MONTH 2026 TW2-->
+                            <div class="tab-pane fade" id="custom-tabsbowheer-month2026-tw2" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none w-full">
+                                        <div class="card-body table-responsive w-full" style="width:100%;">
+                                            <table id="tabel_targetbowheer_month2026"
+                                                class="table table-bordered table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="2"
+                                                            style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="2"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            PROJECT</th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            APRIL
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            MEI
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            JUNI
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            ACHIEVED ( % )
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI ( % )
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- OKTOBER -->
+                                                        <?php for ($i = 0; $i < 3; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                            <th style="text-align:center; background-color: blueviolet;">
+                                                                %
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterBowheer as $data):
+                                                        $target = $data['GRAND TOTAL TARGET'];
+                                                        $achiev = $data['GRAND TOTAL ACHIEVED'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['nama_bowheer'] ?></td>
+                                                            <td><?= ($data['GRAND TOTAL TARGET'] != 0 ? number_format(floatval($data['GRAND TOTAL TARGET']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- APRIL -->
+                                                            <td><?= ($data['TOTAL TARGET APRIL'] != 0 ? number_format(floatval($data['TOTAL TARGET APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED APRIL'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET APRIL'] > 0 && $data['TOTAL ACHIEVED APRIL'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED APRIL'] / $data['TOTAL TARGET APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL TARGET MEI'] != 0 ? number_format(floatval($data['TOTAL TARGET MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED MEI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET MEI'] > 0 && $data['TOTAL ACHIEVED MEI'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED MEI'] / $data['TOTAL TARGET MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL TARGET JUNI'] != 0 ? number_format(floatval($data['TOTAL TARGET JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED JUNI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET JUNI'] > 0 && $data['TOTAL ACHIEVED JUNI'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED JUNI'] / $data['TOTAL TARGET JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['GRAND TOTAL ACHIEVED 2026 TW2'] != 0 ? number_format(floatval($data['GRAND TOTAL ACHIEVED 2026 TW2']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['GRAND TOTAL ACHIEVED'] > 0 && $data['GRAND TOTAL TARGET'] > 0) {
+                                                                    $persentase = ($data['GRAND TOTAL ACHIEVED'] / $data['GRAND TOTAL TARGET']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= number_format(($deviasi / $data['GRAND TOTAL TARGET'] * 100), 0, ",", ".") . '%' ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="2">Total</th>
+                                                        <?php for ($i = 0; $i < 14; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV APRIL -->
+                            <div class="tab-pane fade" id="custom-tabsbowheer-april" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="card-body table-responsive" style="width:100%;">
+                                    <table id="tabel_targetbowheer_januari" class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    No</th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    PROJECT</th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL TARGET</th>
+                                                <th colspan="10"
+                                                    style="text-align:center; background-color: aqua;">
+                                                    APRIL</th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL ACHIEVED
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    DEVIASI
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <!-- APRIL -->
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aqua;">
+                                                    WEEK 1</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aqua;">
+                                                    WEEK 2</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aqua;">
+                                                    WEEK 3</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aqua;">
+                                                    WEEK 4</th>
+                                                    <th colspan="2"
+                                                    style="text-align:center; background-color: aqua;">
+                                                    WEEK 5</th>
+                                            </tr>
+                                            <tr>
+                                                <!-- JANUARI -->
+                                                <?php for ($i = 0; $i < 5; $i++): ?>
+                                                    <th style="text-align:center; background-color: indianred;">TARGET</th>
+                                                    <th style="text-align:center; background-color: darkseagreen;">ACHIEVED
+                                                    </th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php $no = 1;
+                                            foreach ($getTargetRincianFilterBowheer as $data):
+                                                $target = $data['TOTAL TARGET APRIL'];
+                                                $achiev = $data['TOTAL ACHIEVED APRIL'];
+                                                $deviasi = $target - $achiev;
+                                                ?>
+                                                <tr>
+                                                    <td><?= $no++ ?></td>
+                                                    <td><?= $data['nama_bowheer'] ?></td>
+                                                    <td><?= ($data['TOTAL TARGET APRIL'] != 0 ? number_format(floatval($data['TOTAL TARGET APRIL']), 0, ",", ".") : '-') ?>
+                                                        <!-- APRIL -->
+                                                    <td><?= ($data['TW1 APRIL'] != 0 ? number_format(floatval($data['TW1 APRIL']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW1 APRIL'] != 0 ? number_format(floatval($data['RW1 APRIL']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW2 APRIL'] != 0 ? number_format(floatval($data['TW2 APRIL']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW2 APRIL'] != 0 ? number_format(floatval($data['RW2 APRIL']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW3 APRIL'] != 0 ? number_format(floatval($data['TW3 APRIL']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW3 APRIL'] != 0 ? number_format(floatval($data['RW3 APRIL']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW4 APRIL'] != 0 ? number_format(floatval($data['TW4 APRIL']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW4 APRIL'] != 0 ? number_format(floatval($data['RW4 APRIL']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW5 APRIL'] != 0 ? number_format(floatval($data['TW5 APRIL']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW5 APRIL'] != 0 ? number_format(floatval($data['RW5 APRIL']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TOTAL ACHIEVED APRIL'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED APRIL']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="2">Total</th>
+                                                <?php for ($i = 0; $i < 13; $i++): ?>
+                                                    <th>0</th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV MEI -->
+                            <div class="tab-pane fade" id="custom-tabsbowheer-mei" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="card-body table-responsive" style="width:100%;">
+                                    <table id="tabel_targetbowheer_februari" class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    No</th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    PROJECT</th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL TARGET</th>
+                                                <th colspan="10"
+                                                    style="text-align:center; background-color: blueviolet;">
+                                                    MEI</th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL ACHIEVED
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    DEVIASI
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <!-- MEI -->
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet;">
+                                                    WEEK 1</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet;">
+                                                    WEEK 2</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet;">
+                                                    WEEK 3</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet;">
+                                                    WEEK 4</th>
+                                                    <th colspan="2"
+                                                    style="text-align:center; background-color: blueviolet;">
+                                                    WEEK 5</th>
+                                            </tr>
+                                            <tr>
+                                                <!-- FEBRUARI -->
+                                                <?php for ($i = 0; $i < 5; $i++): ?>
+                                                    <th style="text-align:center; background-color: indianred;">TARGET</th>
+                                                    <th style="text-align:center; background-color: darkseagreen;">ACHIEVED
+                                                    </th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php $no = 1;
+                                            foreach ($getTargetRincianFilterBowheer as $data):
+                                                $target = $data['TOTAL TARGET MEI'];
+                                                $achiev = $data['TOTAL ACHIEVED MEI'];
+                                                $deviasi = $target - $achiev;
+                                                ?>
+                                                <tr>
+                                                    <td><?= $no++ ?></td>
+                                                    <td><?= $data['nama_bowheer'] ?></td>
+                                                    <td><?= ($data['TOTAL TARGET MEI'] != 0 ? number_format(floatval($data['TOTAL TARGET MEI']), 0, ",", ".") : '-') ?>
+                                                        <!-- MEI -->
+                                                    <td><?= ($data['TW1 MEI'] != 0 ? number_format(floatval($data['TW1 MEI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW1 MEI'] != 0 ? number_format(floatval($data['RW1 MEI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW2 MEI'] != 0 ? number_format(floatval($data['TW2 MEI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW2 MEI'] != 0 ? number_format(floatval($data['RW2 MEI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW3 MEI'] != 0 ? number_format(floatval($data['TW3 MEI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW3 MEI'] != 0 ? number_format(floatval($data['RW3 MEI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW4 MEI'] != 0 ? number_format(floatval($data['TW4 MEI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW4 MEI'] != 0 ? number_format(floatval($data['RW4 MEI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW5 MEI'] != 0 ? number_format(floatval($data['TW5 MEI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW5 MEI'] != 0 ? number_format(floatval($data['RW5 MEI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TOTAL ACHIEVED MEI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED MEI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="2">Total</th>
+                                                <?php for ($i = 0; $i < 13; $i++): ?>
+                                                    <th>0</th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV JUNI -->
+                            <div class="tab-pane fade" id="custom-tabsbowheer-juni" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="card-body table-responsive" style="width:100%;">
+                                    <table id="tabel_targetbowheer_maret" class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    No</th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    PROJECT</th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL TARGET</th>
+                                                <th colspan="10"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    JUNI</th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    TOTAL ACHIEVED
+                                                </th>
+                                                <th rowspan="3"
+                                                    style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                    DEVIASI
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <!-- MARET -->
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    WEEK 1</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    WEEK 2</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    WEEK 3</th>
+                                                <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    WEEK 4</th>
+                                                    <th colspan="2"
+                                                    style="text-align:center; background-color: aquamarine;">
+                                                    WEEK 5</th>
+                                            </tr>
+                                            <tr>
+                                                <!-- MARET -->
+                                                <?php for ($i = 0; $i < 5; $i++): ?>
+                                                    <th style="text-align:center; background-color: indianred;">TARGET</th>
+                                                    <th style="text-align:center; background-color: darkseagreen;">ACHIEVED
+                                                    </th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php $no = 1;
+                                            foreach ($getTargetRincianFilterBowheer as $data):
+                                                $target = $data['TOTAL TARGET JUNI'];
+                                                $achiev = $data['TOTAL ACHIEVED JUNI'];
+                                                $deviasi = $target - $achiev;
+                                                ?>
+                                                <tr>
+                                                    <td><?= $no++ ?></td>
+                                                    <td><?= $data['nama_bowheer'] ?></td>
+                                                    <td><?= ($data['TOTAL TARGET JUNI'] != 0 ? number_format(floatval($data['TOTAL TARGET JUNI']), 0, ",", ".") : '-') ?>
+                                                        <!-- JUNI -->
+                                                    <td><?= ($data['TW1 JUNI'] != 0 ? number_format(floatval($data['TW1 JUNI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW1 JUNI'] != 0 ? number_format(floatval($data['RW1 JUNI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW2 JUNI'] != 0 ? number_format(floatval($data['TW2 JUNI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW2 JUNI'] != 0 ? number_format(floatval($data['RW2 JUNI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW3 JUNI'] != 0 ? number_format(floatval($data['TW3 JUNI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW3 JUNI'] != 0 ? number_format(floatval($data['RW3 JUNI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW4 JUNI'] != 0 ? number_format(floatval($data['TW4 JUNI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW4 JUNI'] != 0 ? number_format(floatval($data['RW4 JUNI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TW5 JUNI'] != 0 ? number_format(floatval($data['TW5 JUNI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['RW5 JUNI'] != 0 ? number_format(floatval($data['RW5 JUNI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($data['TOTAL ACHIEVED JUNI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED JUNI']), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                    <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="2">Total</th>
+                                                <?php for ($i = 0; $i < 13; $i++): ?>
+                                                    <th>0</th>
+                                                <?php endfor; ?>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                     <!-- /.card -->
@@ -2948,8 +4226,8 @@ $total = 1;
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
-                                    href="#custom-tabsregional-month2026" role="tab" aria-controls="custom-tabs-two-profile"
-                                    aria-selected="false">MONTHLY 2026</a>
+                                    href="#custom-tabsregional-month2026-tw1" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">2026 - TW1</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
@@ -2965,6 +4243,26 @@ $total = 1;
                                 <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
                                     href="#custom-tabsregional-maret" role="tab" aria-controls="custom-tabs-two-profile"
                                     aria-selected="false">MARET</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
+                                    href="#custom-tabsregional-month2026-tw2" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">2026 - TW2</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabsregional-april" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">APRIL</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabsregional-mei" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">MEI</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabsregional-juni" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">JUNI</a>
                             </li>
                         </ul>
                     </div>
@@ -3525,8 +4823,8 @@ $total = 1;
                                 </div>
                             </div>
 
-                            <!-- TAB NAV MONTH 2026 -->
-                            <div class="tab-pane fade" id="custom-tabsregional-month2026" role="tabpanel"
+                            <!-- TAB NAV MONTH 2026 TW 1-->
+                            <div class="tab-pane fade" id="custom-tabsregional-month2026-tw1" role="tabpanel"
                                 aria-labelledby="custom-tabs-three-profile-tab">
 
                                 <div class="container-fluid px-0">
@@ -4149,6 +5447,528 @@ $total = 1;
                                                             <td><?= ($data['RW5 MARET'] != 0 ? number_format(floatval($data['RW5 MARET']), 0, ",", ".") : '-') ?>
                                                             </td>
                                                             <td><?= ($data['TOTAL ACHIEVED MARET'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED MARET']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="2">Total</th>
+                                                        <?php for ($i = 0; $i < 13; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV MONTH 2026 TW 2-->
+                            <div class="tab-pane fade" id="custom-tabsregional-month2026-tw2" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none w-full">
+                                        <div class="card-body table-responsive w-full" style="width:100%;">
+                                            <table id="tabel_targetregional_month2026"
+                                                class="table table-bordered table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="2"
+                                                            style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="2"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            REGIONAL</th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            APRIL
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            MEI
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            JUNI
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            ACHIEVED ( % )
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI ( % )
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- OKTOBER -->
+                                                        <?php for ($i = 0; $i < 3; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                            <th style="text-align:center; background-color: blueviolet;">
+                                                                %
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterRegional as $data):
+                                                        $target = $data['GRAND TOTAL TARGET'];
+                                                        $achiev = $data['GRAND TOTAL ACHIEVED'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['regional_target'] ?></td>
+                                                            <td><?= ($data['GRAND TOTAL TARGET'] != 0 ? number_format(floatval($data['GRAND TOTAL TARGET']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- OKTOBER -->
+                                                            <td><?= ($data['TOTAL TARGET APRIL'] != 0 ? number_format(floatval($data['TOTAL TARGET APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED APRIL'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET APRIL'] > 0 && $data['TOTAL ACHIEVED APRIL'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED APRIL'] / $data['TOTAL TARGET APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL TARGET MEI'] != 0 ? number_format(floatval($data['TOTAL TARGET MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED MEI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET MEI'] > 0 && $data['TOTAL ACHIEVED MEI'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED MEI'] / $data['TOTAL TARGET MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL TARGET JUNI'] != 0 ? number_format(floatval($data['TOTAL TARGET JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED JUNI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET JUNI'] > 0 && $data['TOTAL ACHIEVED JUNI'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED JUNI'] / $data['TOTAL TARGET JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['GRAND TOTAL ACHIEVED'] != 0 ? number_format(floatval($data['GRAND TOTAL ACHIEVED']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['GRAND TOTAL ACHIEVED'] > 0 && $data['GRAND TOTAL TARGET'] > 0) {
+                                                                    $persentase = ($data['GRAND TOTAL ACHIEVED'] / $data['GRAND TOTAL TARGET']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?php if ($data['GRAND TOTAL TARGET'] > 0) {
+                                                                echo number_format((($deviasi / $data['GRAND TOTAL TARGET']) * 100), 0, ",", ".") . '%';
+                                                            } else {
+                                                                echo '-';
+                                                            } ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="2">Total</th>
+                                                        <?php for ($i = 0; $i < 14; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV APRIL -->
+                            <div class="tab-pane fade" id="custom-tabsregional-april" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0">
+                                            <table id="tabel_targetregional_januari"
+                                                class="table table-bordered table-striped nowrap w-100">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            REGIONAL</th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="10"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            APRIL
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- APRIL -->
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            1
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            2
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            3
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            4
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            5
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- APRIL -->
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterRegional as $data):
+                                                        $target = $data['TOTAL TARGET APRIL'];
+                                                        $achiev = $data['TOTAL ACHIEVED APRIL'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['regional_target'] ?></td>
+                                                            <td><?= ($data['TOTAL TARGET APRIL'] != 0 ? number_format(floatval($data['TOTAL TARGET APRIL']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- APRIL -->
+                                                            <td><?= ($data['TW1 APRIL'] != 0 ? number_format(floatval($data['TW1 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW1 APRIL'] != 0 ? number_format(floatval($data['RW1 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW2 APRIL'] != 0 ? number_format(floatval($data['TW2 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW2 APRIL'] != 0 ? number_format(floatval($data['RW2 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW3 APRIL'] != 0 ? number_format(floatval($data['TW3 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW3 APRIL'] != 0 ? number_format(floatval($data['RW3 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW4 APRIL'] != 0 ? number_format(floatval($data['TW4 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW4 APRIL'] != 0 ? number_format(floatval($data['RW4 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW5 APRIL'] != 0 ? number_format(floatval($data['TW5 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW5 APRIL'] != 0 ? number_format(floatval($data['RW5 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED APRIL'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="2">Total</th>
+                                                        <?php for ($i = 0; $i < 13; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV MEI -->
+                            <div class="tab-pane fade" id="custom-tabsregional-mei" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0">
+                                            <table id="tabel_targetregional_februari"
+                                                class="table table-bordered table-striped nowrap w-100">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            REGIONAL</th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="10"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            MEI
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- MEI -->
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            1
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            2
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            3
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            4
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            5
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- FEBRUARI -->
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterRegional as $data):
+                                                        $target = $data['TOTAL TARGET MEI'];
+                                                        $achiev = $data['TOTAL ACHIEVED MEI'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['regional_target'] ?></td>
+                                                            <td><?= ($data['TOTAL TARGET MEI'] != 0 ? number_format(floatval($data['TOTAL TARGET MEI']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- MEI -->
+                                                            <td><?= ($data['TW1 MEI'] != 0 ? number_format(floatval($data['TW1 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW1 MEI'] != 0 ? number_format(floatval($data['RW1 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW2 MEI'] != 0 ? number_format(floatval($data['TW2 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW2 MEI'] != 0 ? number_format(floatval($data['RW2 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW3 MEI'] != 0 ? number_format(floatval($data['TW3 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW3 MEI'] != 0 ? number_format(floatval($data['RW3 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW4 MEI'] != 0 ? number_format(floatval($data['TW4 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW4 MEI'] != 0 ? number_format(floatval($data['RW4 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW5 MEI'] != 0 ? number_format(floatval($data['TW5 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW5 MEI'] != 0 ? number_format(floatval($data['RW5 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED MEI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="2">Total</th>
+                                                        <?php for ($i = 0; $i < 13; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV JUNI -->
+                            <div class="tab-pane fade" id="custom-tabsregional-juni" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0">
+                                            <table id="tabel_targetregional_februari"
+                                                class="table table-bordered table-striped nowrap w-100">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            REGIONAL</th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="10"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            JUNI
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- JUNI -->
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            1
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            2
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            3
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            4
+                                                        </th>
+                                                        <th colspan="2"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            5
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- FEBRUARI -->
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterRegional as $data):
+                                                        $target = $data['TOTAL TARGET JUNI'];
+                                                        $achiev = $data['TOTAL ACHIEVED JUNI'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['regional_target'] ?></td>
+                                                            <td><?= ($data['TOTAL TARGET JUNI'] != 0 ? number_format(floatval($data['TOTAL TARGET JUNI']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- JUNI -->
+                                                            <td><?= ($data['TW1 JUNI'] != 0 ? number_format(floatval($data['TW1 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW1 JUNI'] != 0 ? number_format(floatval($data['RW1 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW2 JUNI'] != 0 ? number_format(floatval($data['TW2 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW2 JUNI'] != 0 ? number_format(floatval($data['RW2 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW3 JUNI'] != 0 ? number_format(floatval($data['TW3 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW3 JUNI'] != 0 ? number_format(floatval($data['RW3 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW4 JUNI'] != 0 ? number_format(floatval($data['TW4 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW4 JUNI'] != 0 ? number_format(floatval($data['RW4 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TW5 JUNI'] != 0 ? number_format(floatval($data['TW5 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW5 JUNI'] != 0 ? number_format(floatval($data['RW5 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED JUNI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED JUNI']), 0, ",", ".") : '-') ?>
                                                             </td>
                                                             <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
                                                             </td>

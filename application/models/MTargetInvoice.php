@@ -304,6 +304,12 @@ JOIN tb_master_bowheer_invoice tmb
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET SEPTEMBER`,
 
     -- Total achieved per bulan
     SUM(CASE WHEN tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED OKTOBER`,
@@ -312,20 +318,30 @@ JOIN tb_master_bowheer_invoice tmb
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED SEPTEMBER`,
     
     -- Grand Total tahun 2025
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET 2025`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2025`,
     
-    -- Grand Total tahun 2026
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026`,
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2-26`,
+    -- Grand Total tahun 2026 TW 1
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW1`,
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW1`,
+    
+    -- Grand Total tahun 2026 TW 2
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW2`,
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW2`,
 
     -- Grand Total seluruh bulan
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED`,
 
-    -- OKTOBER
+    -- OKTOBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW2 OKTOBER`,
@@ -337,7 +353,7 @@ JOIN tb_master_bowheer_invoice tmb
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW5 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 OKTOBER`,
 
-    -- NOVEMBER
+    -- NOVEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 NOVEMBER`,
@@ -347,7 +363,7 @@ JOIN tb_master_bowheer_invoice tmb
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 NOVEMBER`,
 
-    -- DESEMBER
+    -- DESEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
@@ -357,7 +373,7 @@ JOIN tb_master_bowheer_invoice tmb
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`,
 
-    -- JANUARI
+    -- JANUARI 2026
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
@@ -369,7 +385,7 @@ JOIN tb_master_bowheer_invoice tmb
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JANUARI`,
 
-    -- FEBRUARI
+    -- FEBRUARI 2026
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
@@ -381,7 +397,7 @@ JOIN tb_master_bowheer_invoice tmb
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 FEBRUARI`,
 
-    -- MARET
+    -- MARET 2026
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MARET`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
@@ -391,7 +407,80 @@ JOIN tb_master_bowheer_invoice tmb
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MARET`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`,
+    
+    -- APRIL 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW5 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 APRIL`,
+    
+    -- MEI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW5 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MEI`,
+    
+    -- JUNI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JUNI`,
+    
+    -- JULI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JULI`,
+    
+    -- AGUSTUS 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW5 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 AGUSTUS`,
+    
+    -- SEPTEMBER 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW5 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 SEPTEMBER`
+    
 FROM
     tb_target_invoice tti
     JOIN tb_master_bowheer_invoice tmb
@@ -418,6 +507,12 @@ GROUP BY
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET SEPTEMBER`,
 
     -- Total achieved per bulan
     SUM(CASE WHEN tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED OKTOBER`,
@@ -426,20 +521,30 @@ GROUP BY
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED SEPTEMBER`,
     
     -- Grand Total tahun 2025
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET 2025`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2025`,
     
-    -- Grand Total tahun 2026
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026`,
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2-26`,
+    -- Grand Total tahun 2026 TW 1
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW1`,
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW1`,
+    
+    -- Grand Total tahun 2026 TW 2
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW2`,
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW2`,
 
     -- Grand Total seluruh bulan
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED`,
 
-    -- OKTOBER
+    -- OKTOBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW2 OKTOBER`,
@@ -451,7 +556,7 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW5 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 OKTOBER`,
 
-    -- NOVEMBER
+    -- NOVEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 NOVEMBER`,
@@ -461,7 +566,7 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 NOVEMBER`,
 
-    -- DESEMBER
+    -- DESEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
@@ -471,41 +576,113 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`,
 
-    -- JANUARI
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
+    -- JANUARI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JANUARI`,
 
-    -- FEBRUARI
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
+    -- FEBRUARI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW3 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW4 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 FEBRUARI`,
 
-    -- MARET
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
+    -- MARET 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MARET`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MARET`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 MARET`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW3 MARET`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MARET`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`,
+    
+    -- APRIL 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW5 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 APRIL`,
+    
+    -- MEI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW5 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MEI`,
+    
+    -- JUNI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JUNI`,
+    
+    -- JULI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JULI`,
+    
+    -- AGUSTUS 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW5 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 AGUSTUS`,
+    
+    -- SEPTEMBER 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW5 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 SEPTEMBER`
 
 FROM
     tb_target_invoice tti
@@ -534,6 +711,12 @@ GROUP BY
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET SEPTEMBER`,
 
     -- Total achieved per bulan
     SUM(CASE WHEN tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED OKTOBER`,
@@ -542,20 +725,30 @@ GROUP BY
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED SEPTEMBER`,
     
     -- Grand Total tahun 2025
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET 2025`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2025`,
     
-    -- Grand Total tahun 2026
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026`,
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2-26`,
+    -- Grand Total tahun 2026 TW 1
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW1`,
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW1`,
+    
+    -- Grand Total tahun 2026 TW 2
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW2`,
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW2`,
 
     -- Grand Total seluruh bulan
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED`,
 
-    -- OKTOBER
+    -- OKTOBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW2 OKTOBER`,
@@ -567,7 +760,7 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW5 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 OKTOBER`,
 
-    -- NOVEMBER
+    -- NOVEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 NOVEMBER`,
@@ -577,7 +770,7 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 NOVEMBER`,
 
-    -- DESEMBER
+    -- DESEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
@@ -587,41 +780,113 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`,
 
-    -- JANUARI
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
+    -- JANUARI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JANUARI`,
 
-    -- FEBRUARI
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
+    -- FEBRUARI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW3 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW4 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 FEBRUARI`,
 
-    -- MARET
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
+    -- MARET 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MARET`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MARET`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 MARET`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW3 MARET`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MARET`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`,
+    
+    -- APRIL 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW5 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 APRIL`,
+    
+    -- MEI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW5 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MEI`,
+    
+    -- JUNI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JUNI`,
+    
+    -- JULI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JULI`,
+    
+    -- AGUSTUS 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW5 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 AGUSTUS`,
+    
+    -- SEPTEMBER 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW5 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 SEPTEMBER`
 
 FROM
     tb_target_invoice tti
@@ -651,6 +916,12 @@ GROUP BY
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET SEPTEMBER`,
 
     -- Total achieved per bulan
     SUM(CASE WHEN tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED OKTOBER`,
@@ -659,20 +930,30 @@ GROUP BY
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED SEPTEMBER`,
     
     -- Grand Total tahun 2025
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET 2025`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2025`,
     
-    -- Grand Total tahun 2026
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026`,
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2-26`,
+    -- Grand Total tahun 2026 TW 1
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW1`,
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW1`,
+    
+    -- Grand Total tahun 2026 TW 2
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW2`,
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW2`,
 
     -- Grand Total seluruh bulan
-    SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET`,
+    SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED`,
 
-    -- OKTOBER
+    -- OKTOBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW2 OKTOBER`,
@@ -684,7 +965,7 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW5 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 OKTOBER`,
 
-    -- NOVEMBER
+    -- NOVEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 NOVEMBER`,
@@ -694,7 +975,7 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 NOVEMBER`,
 
-    -- DESEMBER
+    -- DESEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
@@ -704,41 +985,113 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`,
 
-    -- JANUARI
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
+    -- JANUARI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JANUARI`,
 
-    -- FEBRUARI
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
+    -- FEBRUARI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW3 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW4 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 FEBRUARI`,
 
-    -- MARET
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
+    -- MARET 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MARET`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MARET`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 MARET`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW3 MARET`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MARET`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`,
+    
+    -- APRIL 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW5 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 APRIL`,
+    
+    -- MEI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW5 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MEI`,
+    
+    -- JUNI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JUNI`,
+    
+    -- JULI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JULI`,
+    
+    -- AGUSTUS 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW5 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 AGUSTUS`,
+    
+    -- SEPTEMBER 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW5 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 SEPTEMBER`
 
 FROM
     tb_target_invoice tti
@@ -766,6 +1119,12 @@ GROUP BY
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET SEPTEMBER`,
 
     -- Total achieved per bulan
     SUM(CASE WHEN tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED OKTOBER`,
@@ -774,20 +1133,30 @@ GROUP BY
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED SEPTEMBER`,
     
     -- Grand Total tahun 2025
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET 2025`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2025`,
     
-    -- Grand Total tahun 2026
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026`,
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2-26`,
+    -- Grand Total tahun 2026 TW 1
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW1`,
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW1`,
+    
+    -- Grand Total tahun 2026 TW 2
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW2`,
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW2`,
 
     -- Grand Total seluruh bulan
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED`,
 
-    -- OKTOBER
+    -- OKTOBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW2 OKTOBER`,
@@ -799,7 +1168,7 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW5 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 OKTOBER`,
 
-    -- NOVEMBER
+    -- NOVEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 NOVEMBER`,
@@ -809,7 +1178,7 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 NOVEMBER`,
 
-    -- DESEMBER
+    -- DESEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
@@ -819,41 +1188,113 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`,
 
-    -- JANUARI
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
+    -- JANUARI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JANUARI`,
 
-    -- FEBRUARI
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
+    -- FEBRUARI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW3 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW4 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 FEBRUARI`,
 
-    -- MARET
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
+    -- MARET 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MARET`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MARET`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 MARET`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW3 MARET`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MARET`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`,
+    
+    -- APRIL 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW5 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 APRIL`,
+    
+    -- MEI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW5 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MEI`,
+    
+    -- JUNI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JUNI`,
+    
+    -- JULI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JULI`,
+    
+    -- AGUSTUS 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW5 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 AGUSTUS`,
+    
+    -- SEPTEMBER 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW5 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 SEPTEMBER`
 FROM
     tb_target_invoice tti 
 JOIN tb_master_bowheer_invoice tmb 
@@ -885,6 +1326,12 @@ GROUP BY
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET SEPTEMBER`,
 
     -- Total achieved per bulan
     SUM(CASE WHEN tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED OKTOBER`,
@@ -893,20 +1340,30 @@ GROUP BY
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED SEPTEMBER`,
     
     -- Grand Total tahun 2025
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET 2025`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2025`,
     
-    -- Grand Total tahun 2026
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026`,
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2-26`,
+    -- Grand Total tahun 2026 TW 1
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW1`,
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW1`,
+    
+    -- Grand Total tahun 2026 TW 2
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW2`,
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW2`,
 
     -- Grand Total seluruh bulan
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED`,
 
-    -- OKTOBER
+    -- OKTOBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW2 OKTOBER`,
@@ -918,7 +1375,7 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW5 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 OKTOBER`,
 
-    -- NOVEMBER
+    -- NOVEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 NOVEMBER`,
@@ -928,7 +1385,7 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 NOVEMBER`,
 
-    -- DESEMBER
+    -- DESEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
@@ -938,41 +1395,113 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`,
 
-    -- JANUARI
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
+    -- JANUARI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JANUARI`,
 
-    -- FEBRUARI
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
+    -- FEBRUARI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW3 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW4 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 FEBRUARI`,
 
-    -- MARET
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
+    -- MARET 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MARET`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MARET`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 MARET`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW3 MARET`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MARET`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`,
+    
+    -- APRIL 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW5 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 APRIL`,
+    
+    -- MEI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW5 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MEI`,
+    
+    -- JUNI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JUNI`,
+    
+    -- JULI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JULI`,
+    
+    -- AGUSTUS 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW5 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 AGUSTUS`,
+    
+    -- SEPTEMBER 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW5 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 SEPTEMBER`
 
 FROM
     tb_target_invoice tti
@@ -1006,6 +1535,12 @@ GROUP BY
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_target_ghost ELSE 0 END) AS `TOTAL TARGET SEPTEMBER`,
 
     -- Total achieved per bulan
     SUM(CASE WHEN tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED OKTOBER`,
@@ -1014,20 +1549,30 @@ GROUP BY
     SUM(CASE WHEN tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JANUARI`,
     SUM(CASE WHEN tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED FEBRUARI`,
     SUM(CASE WHEN tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MARET`,
+    SUM(CASE WHEN tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED APRIL`,
+    SUM(CASE WHEN tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED MEI`,
+    SUM(CASE WHEN tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JUNI`,
+    SUM(CASE WHEN tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED JULI`,
+    SUM(CASE WHEN tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED AGUSTUS`,
+    SUM(CASE WHEN tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `TOTAL ACHIEVED SEPTEMBER`,
     
     -- Grand Total tahun 2025
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET 2025`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2025`,
     
-    -- Grand Total tahun 2026
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026`,
-    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2-26`,
+    -- Grand Total tahun 2026 TW 1
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW1`,
+    SUM(CASE WHEN tti.month_target IN ("JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW1`,
+    
+    -- Grand Total tahun 2026 TW 2
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_target_ghost ELSE 0 END) AS `GRAND TOTAL TARGET 2026 TW2`,
+    SUM(CASE WHEN tti.month_target IN ("APRIL", "MEI", "JUNI") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED 2026 TW2`,
 
     -- Grand Total seluruh bulan
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_target ELSE 0 END) AS `GRAND TOTAL TARGET`,
     SUM(CASE WHEN tti.month_target IN ("OKTOBER", "NOVEMBER", "DESEMBER", "JANUARI", "FEBRUARI", "MARET") THEN tti.qty_achiev_target ELSE 0 END) AS `GRAND TOTAL ACHIEVED`,
 
-    -- OKTOBER
+    -- OKTOBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW2 OKTOBER`,
@@ -1039,7 +1584,7 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_target ELSE 0 END) AS `TW5 OKTOBER`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "OKTOBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 OKTOBER`,
 
-    -- NOVEMBER
+    -- NOVEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 NOVEMBER`,
@@ -1049,7 +1594,7 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 NOVEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "NOVEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 NOVEMBER`,
 
-    -- DESEMBER
+    -- DESEMBER 2025
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW2 DESEMBER`,
@@ -1059,41 +1604,113 @@ GROUP BY
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_target ELSE 0 END) AS `TW4 DESEMBER`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "DESEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 DESEMBER`,
 
-    -- JANUARI
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
+    -- JANUARI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JANUARI`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JANUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JANUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JANUARI`,
 
-    -- FEBRUARI
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
+    -- FEBRUARI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW1 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW2 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW3 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW4 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 FEBRUARI`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN qty_target_ghost ELSE 0 END) AS `TW5 FEBRUARI`,
     SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "FEBRUARI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 FEBRUARI`,
 
-    -- MARET
-    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
+    -- MARET 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW1 MARET`,
     SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MARET`,
-    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW2 MARET`,
     SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MARET`,
-    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW3 MARET`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW3 MARET`,
     SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MARET`,
-    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW4 MARET`,
     SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
-    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN qty_target_ghost ELSE 0 END) AS `TW5 MARET`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MARET" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MARET`,
+    
+    -- APRIL 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN qty_target_ghost ELSE 0 END) AS `TW5 APRIL`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "APRIL" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 APRIL`,
+    
+    -- MEI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN qty_target_ghost ELSE 0 END) AS `TW5 MEI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "MEI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 MEI`,
+    
+    -- JUNI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JUNI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JUNI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JUNI`,
+    
+    -- JULI 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN qty_target_ghost ELSE 0 END) AS `TW5 JULI`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "JULI" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 JULI`,
+    
+    -- AGUSTUS 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN qty_target_ghost ELSE 0 END) AS `TW5 AGUSTUS`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "AGUSTUS" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 AGUSTUS`,
+    
+    -- SEPTEMBER 2026
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W1" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW1 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W2" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW2 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W3" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW3 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W4" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW4 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN qty_target_ghost ELSE 0 END) AS `TW5 SEPTEMBER`,
+    SUM(CASE WHEN tti.week_target = "W5" AND tti.month_target = "SEPTEMBER" THEN tti.qty_achiev_target ELSE 0 END) AS `RW5 SEPTEMBER`
 
 FROM
     tb_target_invoice tti

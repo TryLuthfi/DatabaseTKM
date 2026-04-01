@@ -3,6 +3,17 @@ $status = $this->session->flashdata('status');
 $error_log = $this->session->flashdata('error_log');
 
 $total = 1;
+
+$unique_akun_utama = array_unique(array_column($getAllData, 'mab_akun_utama'));
+$unique_sub_akun = array_unique(array_column($getAllData, 'mab_sub_akun'));
+$unique_nomor_akun = array_unique(array_column($getAllData, 'mab_nomor_akun'));
+$unique_deskripsi_akun = array_unique(array_column($getAllData, 'mab_deskripsi_akun'));
+$unique_divisi = array_unique(array_column($getAllData, 'mab_divisi'));
+$unique_pic = array_unique(array_column($getAllData, 'mab_pic'));
+
+// sort($unique_akun_utama, SORT_STRING | SORT_FLAG_CASE);
+
+
 ?>
 
 
@@ -13,7 +24,7 @@ $total = 1;
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12 ">
-                    <h1 class="m-0 text-dark" style="text-align: center;">REPORT BUDGET VS CASHFLOW</h1>
+                    <h1 class="m-0 text-dark" style="text-align: center;">MASTER ANNUAL BUDGET</h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
@@ -103,23 +114,28 @@ $total = 1;
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> 
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-12 ">
-                    <h1 class="m-0 text-dark" style="text-align: center;">ANNUAL REPORT</h1>
-                </div><!-- /.col -->
-            </div><!-- /.row -->
-        </div><!-- /.container-fluid -->
-    </div>
-
     <div class="content">
+
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2 justify-content-center">
+                    <div class="col-sm-6 text-center">
+                        <button type="button" class="btn btn-gradient-primary btn-lg shadow pulse" data-toggle="modal"
+                            data-target="#modal-lg-tambah-masterakun">
+                            <i class="fas fa-plus-circle mr-2"></i>
+                            <strong>TAMBAH MASTER</strong>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <section class="content">
 
             <div class="container-fluid">
@@ -130,78 +146,32 @@ $total = 1;
 
                     <div class="col-12">
                         <div class="card">
-                            <div class="card-header">
-                            </div>
                             <!-- /.card-header -->
                             <div class="card-body table-responsive text-nowrap">
-                                <table id="table_cashflow" class="table table-bordered table-striped">
-                                    <thead>
+                                <table id="tabel_budget_monthly" class="table table-bordered table-hover">
+                                    <thead class="bg-info">
                                         <tr>
                                             <th>No</th>
-                                            <th>Akun</th>
-                                            <?php for ($b = 1; $b <= 12; $b++): ?>
-                                                <th>
-                                                    <?= date('M', mktime(0, 0, 0, $b, 1)) ?><br>Budget
-                                                </th>
-                                                <th>
-                                                    <?= date('M', mktime(0, 0, 0, $b, 1)) ?><br>Real
-                                                </th>
-                                            <?php endfor; ?>
-                                            <th>Total Budget</th>
-                                            <th>Total Real</th>
+                                            <th>Akun Utama</th>
+                                            <th>Sub Akun</th>
+                                            <th>Nomor Akun</th>
+                                            <th>Deskripsi Akun</th>
+                                            <th>Budget Tahunan</th>
+                                            <th>Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <?php $no = 1;
-                                        foreach ($report as $row): ?>
-                                            <tr>
-                                                <td><?= $no++ ?></td>
-                                                <td><?= $row['akun'] ?></td>
-
-                                                <?php for ($b = 1; $b <= 12; $b++):
-                                                    $budget = $row['bulan'][$b]['budget'] ?? 0;
-                                                    $real = $row['bulan'][$b]['real'] ?? 0;
-                                                    $class = $real > $budget ? 'bg-danger' : 'bg-success';
-                                                    ?>
-                                                    <td><?= number_format($budget) ?></td>
-                                                    <td class="<?= $class ?> text-center">
-
-                                                        <?php if ($real > 0): ?>
-                                                            <button type="button" class="btn btn-xs btn-light btn-detail-cashflow"
-                                                                data-id_mab="<?= $row['id_mab'] ?>" data-bulan="<?= $b ?>"
-                                                                data-tahun="2026" data-akun="<?= htmlspecialchars($row['akun']) ?>"
-                                                                style="width:100%">
-
-                                                                <?= number_format($real) ?>
-
-                                                            </button>
-                                                        <?php else: ?>
-                                                            0
-                                                        <?php endif; ?>
-
-                                                    </td>
-                                                <?php endfor; ?>
-
-                                                <td><b><?= number_format($row['total_budget']) ?></b></td>
-                                                <td><b><?= number_format($row['total_real']) ?></b></td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
+                                    <tbody></tbody>
                                     <tfoot>
                                         <tr>
-                                            <th colspan="2">TOTAL</th>
-
-                                            <?php for ($b = 1; $b <= 12; $b++): ?>
-                                                <th class="text-right total-budget-bulan">0</th>
-                                                <th class="text-right total-real-bulan">0</th>
-                                            <?php endfor; ?>
-
-                                            <th class="text-right" id="totalBudgetAll">0</th>
-                                            <th class="text-right" id="totalRealAll">0</th>
+                                            <th colspan="2" style="text-align:right">TOTAL :</th>
+                                            <th id="total_tahunan"></th>
+                                            <th id="total_monthly"></th>
+                                            <th id="total_selisih"></th>
                                         </tr>
                                     </tfoot>
                                 </table>
                             </div>
+                            <!-- /.card-body -->
                         </div>
                         <div class="row">
                             <!-- ISI -->
@@ -209,70 +179,308 @@ $total = 1;
                     </div>
         </section>
 
-        <div class="modal fade" id="modalDetailCashflow" tabindex="-1">
+        <div class="modal fade" id="modalMonthly" tabindex="-1">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
 
-                    <div class="modal-header">
+                    <div class="modal-header bg-primary">
                         <h5 class="modal-title">
-                            Detail Cashflow - <span id="judulBulan"></span>
+                            Detail Budget Bulanan - <span id="judulTahun"></span>
                         </h5>
-                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
                     </div>
 
                     <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-form-label">Akun Utama</label>
-                                    <input type="text" class="form-control" name="akun_utama" id="detail_akun_utama"
-                                        disabled>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-form-label">Sub Akun</label>
-                                    <input type="text" class="form-control" name="sub_akun" id="detail_sub_akun"
-                                        disabled>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-form-label">Nomor Akun</label>
-                                    <input type="text" class="form-control" name="nomor_akun" id="detail_nomor_akun"
-                                        disabled>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-form-label">Deskripsi Akun</label>
-                                    <input type="text" class="form-control" name="deskripsi_akun"
-                                        id="detail_deskripsi_akun" disabled>
-                                </div>
-                            </div>
-                        </div>
 
-                        <table class="table table-bordered table-striped" id="tableDetailCashflow">
-                            <thead>
+                        <table class="table table-bordered table-striped">
+                            <thead class="bg-info">
                                 <tr>
-                                    <th>No</th>
-                                    <th>Tanggal</th>
-                                    <th>Project</th>
-                                    <th>Area</th>
-                                    <th class="text-right">Jumlah</th>
-                                    <th>Keterangan</th>
+                                    <th width="5%">No</th>
+                                    <th width="20%">Bulan</th>
+                                    <th width="25%">Budget</th>
                                 </tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody id="tableMonthlyBody">
+                                <tr>
+                                    <td colspan="5" class="text-center">Loading...</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr class="bg-light">
+                                    <th colspan="2" class="text-right">TOTAL</th>
+                                    <th id="totalBudget" class="text-right">0</th>
+                                </tr>
+                            </tfoot>
                         </table>
 
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" id="btnSaveMonthly">
+                            <i class="fa fa-save"></i> Save All
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            Close
+                        </button>
                     </div>
 
                 </div>
             </div>
         </div>
+
+        <form action="<?php echo site_url('Budget_MasterBudgetYears/addMasterBudget'); ?>" method="post">
+            <div class="modal fade" id="modal-lg-tambah-masterakun">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">🧾 TAMBAH MASTER AKUN BIAYA</h4>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="form-group col-md-12">
+                                    <label>Akun Utama</label>
+                                    <select id="addfilter_akun_utama" name="addfilter_akun_utama" class="form-control"
+                                        style="width:100%;">
+                                        <option value="" selected disabled hidden>Pilih Akun Utama</option>
+                                        <?php foreach ($unique_akun_utama as $akun_utama): ?>
+                                            <option value="<?= $akun_utama ?>"><?= $akun_utama ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="text-right mt-2">
+                                        <button type="button" id="btnTambahAkunUtamaBaru"
+                                            class="btn btn-link text-primary p-0" style="font-weight:600;">
+                                            + Tambah Akun Utama Baru
+                                        </button>
+                                    </div>
+                                    <div id="inputAkunUtamaBaruContainer" style="display:none; margin-top:10px;">
+                                        <input type="text" id="inputAkunUtamaBaru" name="inputAkunUtamaBaru"
+                                            class="form-control" placeholder="Ketik Akun Utama baru..."
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="form-group col-md-12">
+                                    <label class="col-form-label">Sub Akun</label>
+                                    <select id="addfilter_sub_akun" name="addfilter_sub_akun"
+                                        class="form-control area-dropdown" data-placeholder="Pilih Sub Akun"
+                                        style="width: 100%;">
+                                        <option value="" selected disabled hidden>Pilih Sub Akun</option>
+                                        <?php foreach ($unique_sub_akun as $sub_akun): ?>
+                                            <option value="<?= $sub_akun ?>"><?= $sub_akun ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+
+                                    <!-- Tombol tambah kota -->
+                                    <div class="text-right mt-2">
+                                        <button type="button" id="btnTambahSubAkunBaru"
+                                            class="btn btn-link text-primary p-0" style="font-weight:600;">
+                                            + Tambah Sub Akun Baru
+                                        </button>
+                                    </div>
+
+                                    <div id="inputSubAkunBaruContainer" style="display:none; margin-top:10px;">
+                                        <input type="text" id="inputSubAkunBaru" name="inputSubAkunBaru"
+                                            class="form-control" placeholder="Ketik Sub Akun baru..."
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="form-group col-md-6">
+                                    <label class="col-form-label">Nomor Akun</label>
+                                    <div id="inputNomorAkunBaruContainer">
+                                        <input type="text" id="inputNomorAkunBaru" name="inputNomorAkunBaru"
+                                            class="form-control" placeholder="Ketik Nomor Akun baru..."
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+
+                                <div class="form-group col-md-6">
+                                    <label class="col-form-label">Deskripsi Akun</label>
+                                    <div id="inputDeskripsiAkunBaruContainer">
+                                        <input type="text" id="inputDeskripsiAkunBaru" name="inputDeskripsiAkunBaru"
+                                            class="form-control" placeholder="Ketik Deskripsi Akun baru..."
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="form-group col-md-12">
+                                    <label class="col-form-label">Divisi</label>
+                                    <select id="addfilter_divisi" name="addfilter_divisi"
+                                        class="form-control area-dropdown" data-placeholder="Pilih Area"
+                                        style="width: 100%;">
+                                        <option value="" selected disabled hidden>Pilih Divisi</option>
+                                        <?php foreach ($unique_divisi as $divisi): ?>
+                                            <option value="<?= $divisi ?>"><?= $divisi ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+
+                                    <!-- Tombol tambah kota -->
+                                    <div class="text-right mt-2">
+                                        <button type="button" id="btnTambahDivisiBaru"
+                                            class="btn btn-link text-primary p-0" style="font-weight:600;">
+                                            + Tambah Divisi Baru
+                                        </button>
+                                    </div>
+
+                                    <div id="inputDivisiBaruContainer" style="display:none; margin-top:10px;">
+                                        <input type="text" id="inputDivisiBaru" name="inputDivisiBaru"
+                                            class="form-control" placeholder="Ketik Divisi baru..." autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="form-group col-md-12">
+                                    <label class="col-form-label">PIC</label>
+                                    <select id="addfilter_pic" name="addfilter_pic" class="form-control area-dropdown"
+                                        data-placeholder="Pilih Area" style="width: 100%;">
+                                        <option value="" selected disabled hidden>Pilih PIC</option>
+                                        <?php foreach ($unique_pic as $pic): ?>
+                                            <option value="<?= $pic ?>"><?= $pic ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+
+                                    <!-- Tombol tambah kota -->
+                                    <div class="text-right mt-2">
+                                        <button type="button" id="btnTambahPICBaru"
+                                            class="btn btn-link text-primary p-0" style="font-weight:600;">
+                                            + Tambah PIC Baru
+                                        </button>
+                                    </div>
+
+                                    <div id="inputPICBaruContainer" style="display:none; margin-top:10px;">
+                                        <input type="text" id="inputPICBaru" name="inputPICBaru" class="form-control"
+                                            placeholder="Ketik PIC baru..." autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                            <button type="submit" name="btnEdit" class="btn btn-primary">
+                                <i class="fa fa-spinner fa-spin loading" style="display:none"></i>
+                                Simpan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <form action="<?php echo site_url('Budget_MasterBudgetYears/editMasterBudget'); ?>" method="post">
+            <div class="modal fade" id="modal-lg-edit-masterakun">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">🧾 EDIT MASTER AKUN BIAYA</h4>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <div class="modal-body">
+                            <input type="hidden" name="id_mab" id="edit_id_mab">
+                            <div class="row">
+                                <div class="form-group col-md-12">
+                                    <label>Akun Utama</label>
+                                    <select id="editfilter_akun_utama" name="editfilter_akun_utama" class="form-control"
+                                        style="width:100%;">
+                                        <option value="" selected disabled hidden>Pilih Akun Utama</option>
+                                        <?php foreach ($unique_akun_utama as $akun_utama): ?>
+                                            <option value="<?= $akun_utama ?>"><?= $akun_utama ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="form-group col-md-12">
+                                    <label class="col-form-label">Sub Akun</label>
+                                    <select id="editfilter_sub_akun" name="editfilter_sub_akun"
+                                        class="form-control area-dropdown" data-placeholder="Pilih Sub Akun"
+                                        style="width: 100%;">
+                                        <option value="" selected disabled hidden>Pilih Sub Akun</option>
+                                        <?php foreach ($unique_sub_akun as $sub_akun): ?>
+                                            <option value="<?= $sub_akun ?>"><?= $sub_akun ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="form-group col-md-6">
+                                    <label class="col-form-label">Nomor Akun</label>
+                                    <div id="editNomorAkunBaruContainer">
+                                        <input type="text" id="editNomorAkunBaru" name="editNomorAkunBaru"
+                                            class="form-control" placeholder="Ketik Nomor Akun baru..."
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+
+                                <div class="form-group col-md-6">
+                                    <label class="col-form-label">Deskripsi Akun</label>
+                                    <div id="editDeskripsiAkunBaruContainer">
+                                        <input type="text" id="editDeskripsiAkunBaru" name="editDeskripsiAkunBaru"
+                                            class="form-control" placeholder="Ketik Deskripsi Akun baru..."
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="form-group col-md-12">
+                                    <label class="col-form-label">Divisi</label>
+                                    <select id="editfilter_divisi" name="editfilter_divisi"
+                                        class="form-control area-dropdown" data-placeholder="Pilih Area"
+                                        style="width: 100%;">
+                                        <option value="" selected disabled hidden>Pilih Divisi</option>
+                                        <?php foreach ($unique_divisi as $divisi): ?>
+                                            <option value="<?= $divisi ?>"><?= $divisi ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="form-group col-md-12">
+                                    <label class="col-form-label">PIC</label>
+                                    <select id="editfilter_pic" name="editfilter_pic" class="form-control area-dropdown"
+                                        data-placeholder="Pilih Area" style="width: 100%;">
+                                        <option value="" selected disabled hidden>Pilih PIC</option>
+                                        <?php foreach ($unique_pic as $pic): ?>
+                                            <option value="<?= $pic ?>"><?= $pic ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                                <button type="submit" name="btnEdit" class="btn btn-primary">
+                                    <i class="fa fa-spinner fa-spin loading" style="display:none"></i>
+                                    Simpan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </form>
+
+
 
         <!-- /.content-wrapper -->
 
@@ -287,77 +495,6 @@ $total = 1;
 
     <script>
         const userLevel = "<?= $this->session->userdata('nama_level'); ?>";
-    </script>
-
-    <script>
-        $(document).ready(function () {
-
-            let table = $('#table_cashflow').DataTable({
-                scrollX: false,
-                paging: true,
-                searching: true,
-                ordering: false,
-                autoWidth: false,
-                responsive: false,
-
-                initComplete: function () {
-                    let api = this.api();
-                    setTimeout(() => {
-                        api.columns.adjust().draw(false);
-                    }, 100);
-                },
-
-                footerCallback: function (row, data, start, end, display) {
-
-                    let api = this.api();
-
-                    // helper convert string → number
-                    let intVal = function (i) {
-                        if (typeof i === 'string') {
-                            return parseInt(i.replace(/[^\d]/g, '')) || 0;
-                        }
-                        return typeof i === 'number' ? i : 0;
-                    };
-
-                    let totalBudgetAll = 0;
-                    let totalRealAll = 0;
-
-                    // kolom mulai dari index ke-2 (No, Akun)
-                    let colIndex = 2;
-
-                    for (let b = 1; b <= 12; b++) {
-
-                        let budgetCol = colIndex;
-                        let realCol = colIndex + 1;
-
-                        let totalBudgetBulan = api
-                            .column(budgetCol, { search: 'applied' })
-                            .data()
-                            .reduce((a, b) => intVal(a) + intVal(b), 0);
-
-                        let totalRealBulan = api
-                            .column(realCol, { search: 'applied' })
-                            .data()
-                            .reduce((a, b) => intVal(a) + intVal(b), 0);
-
-                        $(api.column(budgetCol).footer())
-                            .html(totalBudgetBulan.toLocaleString());
-
-                        $(api.column(realCol).footer())
-                            .html(totalRealBulan.toLocaleString());
-
-                        totalBudgetAll += totalBudgetBulan;
-                        totalRealAll += totalRealBulan;
-
-                        colIndex += 2;
-                    }
-
-                    $('#totalBudgetAll').html(totalBudgetAll.toLocaleString());
-                    $('#totalRealAll').html(totalRealAll.toLocaleString());
-                }
-            });
-
-        });
     </script>
 
     <script>
@@ -389,7 +526,7 @@ $total = 1;
         })
 
         $(document).ready(function () {
-            $('#tabel_targetpic_summary').DataTable({
+            $('#tabel_budget_monthly').DataTable({
                 paging: true,
                 pageLength: 10,
                 info: true,
@@ -410,6 +547,11 @@ $total = 1;
             $('.card[data-card-widget="collapsed"]').addClass('card-tools');
         });
 
+        // document.addEventListener("DOMContentLoaded", function () {
+        //     let cardfilter = document.getElementById("cardfiltercollapse").closest(".card");
+        //     cardfilter.classList.add("collapsed-card");
+        // });
+
     </script>
 
     <script>
@@ -429,64 +571,6 @@ $total = 1;
             $('#editDeskripsiAkunBaru').val(btn.data('deskripsi'));
 
             $('#modal-lg-edit-masterakun').modal('show');
-        });
-
-        $(document).on('click', '.btn-detail-cashflow', function () {
-
-            let id_mab = $(this).data('id_mab');
-            let bulan = $(this).data('bulan');
-            let tahun = $(this).data('tahun');
-
-            const namaBulan = [
-                '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-            ];
-
-
-            $('#modalDetailCashflow').modal('show');
-            $('#tableDetailCashflow tbody').html('<tr><td colspan="5">Loading...</td></tr>');
-
-            $.ajax({
-                url: "<?= site_url('Budget_Report/getDetailCashflow') ?>",
-                type: "POST",
-                data: {
-                    id_mab: id_mab,
-                    bulan: bulan,
-                    tahun: tahun
-                },
-                dataType: "json",
-                success: function (res) {
-
-                    document.getElementById('judulBulan').innerText = namaBulan[bulan];
-
-                    let html = '';
-                    let no = 1;
-
-                    if (res.length === 0) {
-                        html = '<tr><td colspan="5" class="text-center">Tidak ada data</td></tr>';
-                    } else {
-                        res.forEach(row => {
-                            html += `
-                        <tr>
-                            <td>${no++}</td>
-                            <td>${row.date_cashflow}</td>
-                            <td>${row.nama_bowheer}</td>
-                            <td>${row.area_cashflow}</td>
-                            <td class="text-right">${Number(row.jumlah_cashflow).toLocaleString()}</td>
-                            <td>${row.remarks_cashflow}</td>
-                        </tr>`;
-                        });
-
-                        document.getElementById('detail_akun_utama').value = res[0].mab_akun_utama;
-                        document.getElementById('detail_sub_akun').value = res[0].mab_sub_akun;
-                        document.getElementById('detail_nomor_akun').value = res[0].mab_nomor_akun;
-                        document.getElementById('detail_deskripsi_akun').value = res[0].mab_deskripsi_akun;
-                    }
-
-                    $('#tableDetailCashflow tbody').html(html);
-                }
-            });
-
         });
     </script>
 
@@ -571,7 +655,7 @@ $total = 1;
                 };
 
                 $.ajax({
-                    url: '<?= base_url("Budget_Report/getFilteredBudget_ReportAjax") ?>',
+                    url: '<?= base_url("Budget_MasterBudgetYears/getFilteredBudget_MasterBudgetYearsAjax") ?>',
                     type: 'POST',
                     data: filters,
                     dataType: 'json',
@@ -579,33 +663,44 @@ $total = 1;
                         $('#btnFilterDataProject i.loading').show();
                     },
                     success: function (response) {
-                        if ($.fn.DataTable.isDataTable('#tabel_targetpic_summary')) {
-                            $('#tabel_targetpic_summary').DataTable().clear().destroy();
+                        if ($.fn.DataTable.isDataTable('#tabel_budget_monthly')) {
+                            $('#tabel_budget_monthly').DataTable().clear().destroy();
                         }
 
                         // === HEADER ===
                         let theadHtml = '<tr>';
                         response.columns.forEach(col => theadHtml += `<th>${col}</th>`);
                         theadHtml += '</tr>';
-                        $('#tabel_targetpic_summary thead').html(theadHtml);
+                        $('#tabel_budget_monthly thead').html(theadHtml);
 
                         // === FOOTER ===
                         let tfootHtml = '<tr>';
                         response.columns.forEach((col, index) => {
-                            if (['Target', 'Achieved', 'Sisa', 'Target %', 'Achieved %'].includes(col)) {
-                                tfootHtml += `<th id="footer_${col.replace(/\s+/g, '_')}">0</th>`;
-                            } else if (index === 0) {
-                                tfootHtml += `<th style="text-align:right">Total:</th>`;
-                            } else {
+
+                            if (col === 'Budget Tahunan') {
+                                tfootHtml += `<th id="total_tahunan">0</th>`;
+                            }
+                            else if (col === 'Budget Monthly') {
+                                tfootHtml += `<th id="total_monthly">0</th>`;
+                            }
+                            else if (col === 'Selisih') {
+                                tfootHtml += `<th id="total_selisih">0</th>`;
+                            }
+                            else if (index === 0) {
+                                tfootHtml += `<th style="text-align:right">Total :</th>`;
+                            }
+                            else {
                                 tfootHtml += `<th></th>`;
                             }
+
                         });
+
                         tfootHtml += '</tr>';
-                        $('#tabel_targetpic_summary tfoot').html(tfootHtml);
+                        $('#tabel_budget_monthly tfoot').html(tfootHtml);
 
                         // === BODY ===
                         if (!response.data || response.data.length === 0) {
-                            $('#tabel_targetpic_summary tbody').html(
+                            $('#tabel_budget_monthly tbody').html(
                                 `<tr><td colspan="${response.columns.length}" class="text-center">No data available</td></tr>`
                             );
                         } else {
@@ -637,12 +732,29 @@ $total = 1;
                                             tbodyHtml += `<td>${row.mab_deskripsi_akun || '-'}</td>`;
                                             break;
 
-                                        case 'Divisi':
-                                            tbodyHtml += `<td>${row.mab_divisi || '-'}</td>`;
+                                        case 'Budget Tahunan':
+                                            tbodyHtml += `<td>${row.total_budget
+                                                ? Number(row.total_budget).toLocaleString('id-ID')
+                                                : '-'}</td>`;
+                                            break;
+                                        case 'Budget Monthly':
+                                            tbodyHtml += `<td>${row.total_monthly
+                                                ? Number(row.total_monthly).toLocaleString('id-ID')
+                                                : '0'
+                                                }</td>`;
                                             break;
 
-                                        case 'PIC':
-                                            tbodyHtml += `<td>${row.mab_pic || '-'}</td>`;
+                                        case 'Selisih':
+
+                                            let selisih = Number(row.selisih || 0);
+
+                                            let warna = selisih == 0
+                                                ? 'text-success'
+                                                : 'text-danger';
+
+                                            tbodyHtml += `<td class="${warna}">
+        ${selisih.toLocaleString('id-ID')}
+    </td>`;
                                             break;
                                     }
                                 });
@@ -650,7 +762,12 @@ $total = 1;
                                 if (userLevel === 'Super Admin') {
                                     tbodyHtml += `
                         <td class="text-center">
-                            <a href="<?= site_url('Budget_Report/hapusMasterBudget/') ?>${row.id_mab}"
+                        <a 
+                               class="btn btn-primary btn-sm tombol_detail" data-id="${row.id_budget_years}">
+                                <i class="fas fa-eye"></i>
+                            </a>
+
+                            <a href="<?= site_url('Budget_MasterBudgetYears/hapusMasterBudget/') ?>${row.id_mab}"
                                class="btn btn-danger btn-sm tombol_hapus">
                                 <i class="fas fa-trash"></i>
                             </a>
@@ -677,51 +794,60 @@ $total = 1;
                                 tbodyHtml += `</tr>`;
                             });
 
-                            $('#tabel_targetpic_summary tbody').html(tbodyHtml);
+                            $('#tabel_budget_monthly tbody').html(tbodyHtml);
                             console.log('userLevel =', userLevel);
                         }
 
                         // === DATATABLE ===
-                        const table = $('#tabel_targetpic_summary').DataTable({
+                        const table = $('#tabel_budget_monthly').DataTable({
                             responsive: true,
                             autoWidth: false,
                             pageLength: 10,
                             ordering: true,
                             order: [[1, 'desc']],
                             footerCallback: function (row, data, start, end, display) {
-                                const api = this.api();
-                                const parseValue = val => {
-                                    return typeof val === 'string'
-                                        ? parseFloat(val.replace(/\./g, '').replace(/[^0-9.-]/g, '')) || 0
-                                        : typeof val === 'number' ? val : 0;
-                                };
-                                const colIndex = name => response.columns.indexOf(name);
-                                let totalTarget = 0, totalAchieved = 0, totalSisa = 0;
 
-                                if (colIndex('Target') > -1)
-                                    totalTarget = api.column(colIndex('Target'), { search: 'applied' }).data().reduce((a, b) => a + parseValue(b), 0);
-                                if (colIndex('Achieved') > -1)
-                                    totalAchieved = api.column(colIndex('Achieved'), { search: 'applied' }).data().reduce((a, b) => a + parseValue(b), 0);
-                                if (colIndex('Sisa') > -1)
-                                    totalSisa = api.column(colIndex('Sisa'), { search: 'applied' }).data().reduce((a, b) => a + parseValue(b), 0);
+                                let api = this.api();
 
-                                const persenAchieved = totalTarget > 0 ? (totalAchieved / totalTarget) * 100 : 0;
-                                const persenSisa = totalTarget > 0 ? (totalSisa / totalTarget) * 100 : 0;
+                                function convertAngka(i) {
+                                    return typeof i === 'string'
+                                        ? Number(i.replace(/\./g, ''))
+                                        : typeof i === 'number'
+                                            ? i
+                                            : 0;
+                                }
 
-                                if (colIndex('Target') > -1)
-                                    $(api.column(colIndex('Target')).footer()).html(formatTitik(totalTarget));
-                                if (colIndex('Achieved') > -1)
-                                    $(api.column(colIndex('Achieved')).footer()).html(formatTitik(totalAchieved));
-                                if (colIndex('Sisa') > -1)
-                                    $(api.column(colIndex('Sisa')).footer()).html(formatTitik(totalSisa));
-                                if (colIndex('Target %') > -1)
-                                    $(api.column(colIndex('Target %')).footer()).html(persenSisa.toFixed(0) + '%');
-                                if (colIndex('Achieved %') > -1)
-                                    $(api.column(colIndex('Achieved %')).footer()).html(persenAchieved.toFixed(0) + '%');
+                                // ===== TOTAL BUDGET TAHUNAN =====
+                                let totalTahunan = api
+                                    .column(5, { search: 'applied' })
+                                    .data()
+                                    .reduce(function (a, b) {
+                                        return convertAngka(a) + convertAngka(b);
+                                    }, 0);
 
-                                updateDashboardFromFooter();
-                                highlightCells();
+                                // ===== TOTAL MONTHLY =====
+                                let totalMonthly = api
+                                    .column(6, { search: 'applied' })
+                                    .data()
+                                    .reduce(function (a, b) {
+                                        return convertAngka(a) + convertAngka(b);
+                                    }, 0);
+
+                                // ===== TOTAL SELISIH =====
+                                let totalSelisih = api
+                                    .column(7, { search: 'applied' })
+                                    .data()
+                                    .reduce(function (a, b) {
+                                        return convertAngka(a) + convertAngka(b);
+                                    }, 0);
+
+                                // ===== TAMPILKAN DI FOOTER =====
+                                $('#total_tahunan').html(totalTahunan.toLocaleString('id-ID'));
+                                $('#total_monthly').html(totalMonthly.toLocaleString('id-ID'));
+                                $('#total_selisih').html(totalSelisih.toLocaleString('id-ID'));
+
                             }
+
                         });
 
                         // === Nomor Otomatis ===
@@ -771,60 +897,118 @@ $total = 1;
             });
         });
 
+        const namaBulan = [
+            '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
 
-        // === ANIMASI ANGKA DASHBOARD ===
-        function animateValue(id, start, end, duration, isRupiah = false) {
-            const element = document.getElementById(id);
-            if (!element) return;
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                const currentValue = Math.floor(progress * (end - start) + start);
-                element.innerText = isRupiah
-                    ? formatRupiah(currentValue)
-                    : formatTitik(currentValue) + (id === 'dashboardPersentaseInvoice' ? '%' : '');
-                if (progress < 1) window.requestAnimationFrame(step);
-            };
-            window.requestAnimationFrame(step);
-        }
+        $(document).on('click', '.tombol_detail', function () {
 
-        // === UPDATE DASHBOARD DARI FOOTER ===
-        function updateDashboardFromFooter() {
-            const totalTarget = parseFloat($('#tabel_targetpic_summary tfoot th#footer_Target').text().replace(/[^\d]/g, '')) || 0;
-            const totalAchieved = parseFloat($('#tabel_targetpic_summary tfoot th#footer_Achieved').text().replace(/[^\d]/g, '')) || 0;
-            const totalSisa = parseFloat($('#tabel_targetpic_summary tfoot th#footer_Sisa').text().replace(/[^\d]/g, '')) || 0;
-            const totalPersen = totalTarget > 0 ? (totalAchieved / totalTarget) * 100 : 0;
+            let id = $(this).data('id');
 
-            animateValue('dashboardBudget_Report', 0, totalTarget, 600, true);
-            animateValue('dashboardAchievInvoice', 0, totalAchieved, 600, true);
-            animateValue('dashboardSisaInvoice', 0, totalSisa, 600, true);
-            animateValue('dashboardPersentaseInvoice', 0, totalPersen, 600, false);
-        }
+            $('#modalMonthly').modal('show');
+            $('#tableMonthlyBody').html('<tr><td colspan="5" class="text-center">Loading...</td></tr>');
 
-        function highlightCells() {
-            $('#tabel_targetpic_summary tbody tr').each(function () {
-                const cell = $(this).find('td:contains("%")').last();
-                let persenText = cell.text().trim();
-                persenText = persenText.replace(/<[^>]+>/g, '').replace(/[\u2191\u2193✅❌]/g, '');
-                const persen = parseFloat(persenText.replace('%', '').replace(',', '.')) || 0;
+            $.ajax({
+                url: "<?= site_url('Budget_MasterBudgetYears/getMonthlyDetail') ?>",
+                type: "POST",
+                data: { id_budget_years: id },
+                dataType: "json",
+                success: function (res) {
 
-                let icon = '';
-                if (persen < 100) {
-                    icon = ' <i class="fas fa-arrow-down text-danger"></i>'; // merah turun
-                    cell.addClass('cell-red');
-                } else if (persen === 100) {
-                    icon = ' <i class="fas fa-check-circle text-success"></i>'; // hijau centang
-                    cell.addClass('cell-green-light');
-                } else if (persen > 100) {
-                    icon = ' <i class="fas fa-arrow-up text-success"></i>'; // hijau naik
-                    cell.addClass('cell-green-dark');
+                    let html = '';
+                    let totalBudget = 0;
+
+                    res.forEach((row, index) => {
+
+                        totalBudget += Number(row.budget_bulan || 0);
+
+                        html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${namaBulan[row.bulan]}</td>
+                        <td>
+        <input type="text"
+            class="form-control budget-input"
+            data-id_budget_monthly="${row.id_budget_monthly}"
+            value="${Number(row.budget_bulan).toLocaleString('id-ID')}">
+    </td>
+                    </tr>
+                `;
+                    });
+
+                    $('#tableMonthlyBody').html(html);
+
+                    $('#totalBudget').text(
+                        totalBudget.toLocaleString('id-ID')
+                    );
+
+                    $('#id_budget_years').val(id);
+
+
                 }
-
-                cell.html(`${persenText}${icon}`);
             });
+        });
+
+        $(document).on('input', '.budget-input', function () {
+
+            let posisi = this.selectionStart;
+
+            let angka = $(this).val().replace(/\D/g, '');
+            let formatted = Number(angka).toLocaleString('id-ID');
+
+            $(this).val(formatted);
+
+            this.setSelectionRange(posisi, posisi);
+
+            hitungTotal();
+        });
+
+        function hitungTotal() {
+
+            let total = 0;
+
+            $('.budget-input').each(function () {
+
+                let angka = $(this).val().replace(/\./g, '');
+                total += parseInt(angka || 0);
+
+            });
+
+            $('#totalBudget').text(
+                total.toLocaleString('id-ID')
+            );
         }
 
+        $('#btnSaveMonthly').click(function () {
+
+            let data = [];
+
+            $('.budget-input').each(function () {
+
+                let rawValue = $(this).val().replace(/\./g, '');
+
+                data.push({
+                    id_budget_monthly: $(this).data('id_budget_monthly'),
+                    budget_bulan: parseInt(rawValue || 0)
+                });
+
+            });
+
+            console.log("Data yang dikirim:", data);
+
+            $.ajax({
+                url: "<?= site_url('Budget_MasterBudgetYears/updateMonthly') ?>",
+                type: "POST",
+                data: { data: data },
+                success: function () {
+                    alert('Budget berhasil diupdate!');
+                    $('#modalMonthly').modal('hide');
+                    location.reload();
+                }
+            });
+
+        });
 
         $(document).ready(function () {
             // === VALIDASI SAAT SIMPAN ===
@@ -939,7 +1123,7 @@ $total = 1;
                         const formData = $("form").serialize();
 
                         $.ajax({
-                            url: "<?= base_url('Budget_Report/addMasterBudget') ?>",
+                            url: "<?= base_url('Budget_MasterBudgetYears/addMasterBudget') ?>",
                             type: "POST",
                             data: formData,
                             dataType: "json",
@@ -957,7 +1141,7 @@ $total = 1;
                                     }).then((r) => {
                                         if (r.isConfirmed) {
                                             $.ajax({
-                                                url: "<?= base_url('Budget_Report/createNewTargetInvoice') ?>",
+                                                url: "<?= base_url('Budget_MasterBudgetYears/createNewTargetInvoice') ?>",
                                                 type: "POST",
                                                 dataType: "json",
                                                 data: res,
@@ -1156,7 +1340,7 @@ $total = 1;
 
 
     <style>
-        #tabel_targetpic_summary tfoot th {
+        #tabel_budget_monthly tfoot th {
             text-align: right;
             background-color: #f8f9fa;
             font-weight: bold;

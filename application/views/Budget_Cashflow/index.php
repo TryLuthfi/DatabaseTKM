@@ -176,7 +176,7 @@ $unique_pic = array_unique(array_column($getAllDataCashflow, 'mab_pic'));
                             </div>
                             <!-- /.card-header -->
                             <div class="card-body table-responsive text-nowrap">
-                                <table id="table_cashflow" class="table table-bordered table-striped">
+                                <table id="tabel_targetpic_summary" class="table table-bordered table-striped">
                                     <thead>
                                         <tr>
                                             <th>No</th>
@@ -265,94 +265,6 @@ $unique_pic = array_unique(array_column($getAllDataCashflow, 'mab_pic'));
     </script>
 
     <script>
-        $(function () {
-            $('#table_cashflow').DataTable({
-                paging: true,
-                pageLength: 10,
-                info: true,
-                searching: true,
-                lengthChange: true,
-                autoWidth: false,     // aktifkan scroll horizontal otomatis
-                responsive: false,   // matikan agar kolom tetap sejajar
-                ordering: true,
-                initComplete: function () {
-                    // pastikan wrapper scroll ikut lebar layar
-                    $('.dataTables_scrollHead, .dataTables_scrollBody')
-                        .css('width', '100%');
-                }
-            });
-        });
-
-        $(document).ready(function () {
-            $.fn.dataTable.ext.errMode = 'none';
-            const table = $('#table_cashflow').DataTable({
-                footerCallback: function () {
-                    updateTotal();
-                },
-                columnDefs: [
-                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
-                ],
-                order: [[1, 'asc']] // Urut default kolom Kode Aset
-            });
-
-            table.on('order.dt search.dt', function () {
-                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
-                    cell.innerHTML = i + 1;
-                });
-            }).draw();
-
-            // Fungsi untuk menghitung total dari data yang tampil
-            function updateTotal() {
-
-                const data = table.rows({
-                    search: 'applied'
-                }).data();
-
-
-
-                // Hitung total dari kolom Value (index 2)
-                let totalCashFlowIN = 0;
-                let totalCashFlowOUT = 0;
-
-                data.each(function (row) {
-
-                    totalCashFlowIN += parseFloat(row[9].replace(/\./g, '')) || 0;
-                    totalCashFlowOUT += parseFloat(row[10].replace(/\./g, '')) || 0;
-                });
-
-                document.getElementById('totalCashFlowIN').innerText = totalCashFlowIN.toLocaleString('id-ID');
-                document.getElementById('totalCashFlowOUT').innerText = totalCashFlowOUT.toLocaleString('id-ID');
-            }
-
-            function highlightCells() {
-                $('#table_cashflow tbody tr').each(function () {
-                    const cellIN = $(this).find('td:eq(9)'); // kolom ke-6 (ACHIEVED %)
-                    const cellOUT = $(this).find('td:eq(10)'); // kolom ke-7 (ACHIEVED %)
-                    let persenTextIN = cellIN.text().trim();
-                    let persenTextOUT = cellOUT.text().trim();
-
-                    cellIN.addClass('cell-green-dark');
-                    cellOUT.addClass('cell-red');
-
-                    // Update isi cell
-                    cellIN.html(`${persenTextIN}`);
-                    cellOUT.html(`${persenTextOUT}`);
-                });
-            }
-
-            // Hitung ulang total setiap kali tabel berubah (misalnya, pencarian atau paginasi)
-            table.on('draw', function () {
-                updateTotal();
-                highlightCells();
-            });
-
-            // Hitung total pertama kali saat tabel dimuat
-            updateTotal();
-            highlightCells();
-        });
-    </script>
-
-    <script>
 
         $(function () {
             //Initialize Select2 Elements
@@ -430,7 +342,7 @@ $unique_pic = array_unique(array_column($getAllDataCashflow, 'mab_pic'));
     </script>
 
     <script>
-        var allData = <?= json_encode($getAllData) ?>;
+        var allData = <?= json_encode($getAllDataCashflow) ?>;
 
         $(document).ready(function () {
             // === PETA KOLOM DAN FILTER ===
@@ -560,6 +472,14 @@ $unique_pic = array_unique(array_column($getAllDataCashflow, 'mab_pic'));
                                             tbodyHtml += `<td>${i + 1}</td>`;
                                             break;
 
+                                        case 'Tanggal':
+                                            tbodyHtml += `<td>${row.date_cashflow || '-'}</td>`;
+                                            break;
+
+                                        case 'Nomor Akun':
+                                            tbodyHtml += `<td>${row.mab_nomor_akun || '-'}</td>`;
+                                            break;
+
                                         case 'Akun Utama':
                                             tbodyHtml += `<td>${row.mab_akun_utama || '-'}</td>`;
                                             break;
@@ -568,21 +488,32 @@ $unique_pic = array_unique(array_column($getAllDataCashflow, 'mab_pic'));
                                             tbodyHtml += `<td>${row.mab_sub_akun || '-'}</td>`;
                                             break;
 
-                                        case 'Nomor Akun':
-                                            tbodyHtml += `<td>${row.mab_nomor_akun || '-'}</td>`;
-                                            break;
-
                                         case 'Deskripsi Akun':
                                             tbodyHtml += `<td>${row.mab_deskripsi_akun || '-'}</td>`;
                                             break;
 
-                                        case 'Divisi':
-                                            tbodyHtml += `<td>${row.mab_divisi || '-'}</td>`;
+                                            case 'Area':
+                                            tbodyHtml += `<td>${row.area_cashflow || '-'}</td>`;
                                             break;
 
-                                        case 'PIC':
-                                            tbodyHtml += `<td>${row.mab_pic || '-'}</td>`;
+                                            case 'Project':
+                                            tbodyHtml += `<td>${row.nama_bowheer || '-'}</td>`;
                                             break;
+
+                                            case 'Remarks':
+                                            tbodyHtml += `<td>${row.remarks_cashflow || '-'}</td>`;
+                                            break;
+
+                                            case 'IN':
+    tbodyHtml += `<td>${row.cashflow_in
+        ? Number(row.cashflow_in).toLocaleString('id-ID') 
+        : '-'}</td>`;
+
+                                            case 'OUT':
+    tbodyHtml += `<td>${row.cashflow_out 
+        ? Number(row.cashflow_out).toLocaleString('id-ID') 
+        : '-'}</td>`;
+    break;
                                     }
                                 });
 
