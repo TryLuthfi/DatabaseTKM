@@ -19,17 +19,11 @@ $bulan_order = [
 
 $total = 1;
 
-$unique_pic = array_unique(array_column($getAllData, 'pic_user'));
 $unique_bowheer = array_unique(array_column($getAllData, 'nama_bowheer'));
-$unique_regional = array_unique(array_column($getAllData, 'regional_target'));
-$unique_city = array_unique(array_column($getAllData, 'area_target'));
-$unique_month = array_unique(array_column($getAllData, 'month_target'));
-$unique_week = array_unique(array_column($getAllData, 'week_target'));
+$unique_regional = array_unique(array_column($getAllData, 'regional_payment'));
+$unique_city = array_unique(array_column($getAllData, 'area_payment'));
+$unique_priority = array_unique(array_column($getAllData, 'priority'));
 
-sort($unique_city, SORT_STRING | SORT_FLAG_CASE);
-usort($unique_month, function ($a, $b) use ($bulan_order) {
-    return array_search($a, $bulan_order) - array_search($b, $bulan_order);
-});
 
 ?>
 
@@ -40,7 +34,7 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12 ">
-                    <h1 class="m-0 text-dark" style="text-align: center;">RINCIAN INVOICE ( ALL PROJECT )</h1>
+                    <h1 class="m-0 text-dark" style="text-align: center;">MONITORING JATUH TEMPO PEMBAYARAN</h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
@@ -69,24 +63,11 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                             <div class="row">
                                 <div class="col-sm-3">
                                     <div class="form-group">
-                                        <label style="display: flex; justify-content: center; align-items: center;">PIC
-                                            HO
-                                        </label>
-                                        <select id="filter_pic" class="select2" multiple="multiple"
-                                            data-placeholder="Pilih pic" style="width: 100%;">
-                                            <?php foreach ($unique_pic as $pic): ?>
-                                                <option value="<?= $pic ?>"><?= $pic ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-sm-3">
-                                    <div class="form-group">
                                         <label
                                             style="display: flex; justify-content: center; align-items: center;">PROJECT
                                             / BOWHEER
                                         </label>
-                                        <select id="filter_bowheer" class="select2" multiple="multiple"
+                                        <select id="filter_bowheer_up" class="select2" multiple="multiple"
                                             data-placeholder="Pilih bowheer" style="width: 100%;">
                                             <?php foreach ($unique_bowheer as $bowheer): ?>
                                                 <option value="<?= $bowheer ?>"><?= $bowheer ?></option>
@@ -99,8 +80,8 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                                         <label
                                             style="display: flex; justify-content: center; align-items: center;">REGIONAL
                                         </label>
-                                        <select id="filter_regional" class="select2" multiple="multiple"
-                                            data-placeholder="Pilih regional" style="width: 100%;">
+                                        <select id="filter_regional_up" class="select2" multiple="multiple"
+                                            data-placeholder="Pilih bowheer" style="width: 100%;">
                                             <?php foreach ($unique_regional as $regional): ?>
                                                 <option value="<?= $regional ?>"><?= $regional ?></option>
                                             <?php endforeach; ?>
@@ -110,9 +91,10 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                                 <div class="col-sm-3">
                                     <div class="form-group">
                                         <label
-                                            style="display: flex; justify-content: center; align-items: center;">KOTA</label>
-                                        <select id="filter_city" class="select2" multiple="multiple"
-                                            data-placeholder="Pilih city" style="width: 100%;">
+                                            style="display: flex; justify-content: center; align-items: center;">KOTA
+                                        </label>
+                                        <select id="filter_city_up" class="select2" multiple="multiple"
+                                            data-placeholder="Pilih bowheer" style="width: 100%;">
                                             <?php foreach ($unique_city as $city): ?>
                                                 <option value="<?= $city ?>"><?= $city ?></option>
                                             <?php endforeach; ?>
@@ -122,23 +104,11 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                                 <div class="col-sm-3">
                                     <div class="form-group">
                                         <label
-                                            style="display: flex; justify-content: center; align-items: center;">BULAN</label>
-                                        <select id="filter_month" class="select2" multiple="multiple"
-                                            data-placeholder="Pilih month" style="width: 100%;">
-                                            <?php foreach ($unique_month as $month): ?>
-                                                <option value="<?= $month ?>"><?= $month ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-sm-3">
-                                    <div class="form-group">
-                                        <label
-                                            style="display: flex; justify-content: center; align-items: center;">WEEK</label>
-                                        <select id="filter_week" class="select2" multiple="multiple"
-                                            data-placeholder="Pilih week" style="width: 100%;">
-                                            <?php foreach ($unique_week as $week): ?>
-                                                <option value="<?= $week ?>"><?= $week ?></option>
+                                            style="display: flex; justify-content: center; align-items: center;">PRIORITY</label>
+                                        <select id="filter_priority_up" class="select2" multiple="multiple"
+                                            data-placeholder="Pilih Prioritas" style="width: 100%;">
+                                            <?php foreach ($unique_priority as $priority): ?>
+                                                <option value="<?= $priority ?>"><?= $priority ?></option>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
@@ -171,7 +141,7 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                                     class="fas fa-file-invoice-dollar"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">TARGET INVOICE</span>
-                                <span class="info-box-number" id="dashboardRincianInvoice">Rp. 0
+                                <span class="info-box-number" id="dashboardBillingPayment">Rp. 0
                                 </span>
                             </div>
                             <!-- /.info-box-content -->
@@ -260,15 +230,16 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                                     <thead class="bg-info">
                                         <tr>
                                             <th>No</th>
-                                            <th>PIC</th>
                                             <th>Bowheer</th>
+                                            <th>Invoice</th>
+                                            <th>Price</th>
                                             <th>Regional</th>
-                                            <th>Kota</th>
-                                            <th>Target</th>
-                                            <th>Achieved</th>
-                                            <th>Sisa</th>
-                                            <th>Target %</th>
-                                            <th>Achieved %</th>
+                                            <th>Area</th>
+                                            <th>Date Submit</th>
+                                            <th>Due Date</th>
+                                            <th>Agging</th>
+                                            <th>Priority</th>
+                                            <th>PO Number</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
@@ -292,7 +263,7 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                     </div>
         </section>
 
-        <form action="<?php echo site_url('RincianInvoice/addInvoice'); ?>" method="post">
+        <form action="<?php echo site_url('BillingPayment/addInvoice'); ?>" method="post">
             <div class="modal fade" id="modal-lg-tambah-invoice">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
@@ -574,7 +545,7 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                 };
 
                 $.ajax({
-                    url: '<?= base_url("RincianInvoice/getFilteredRincianInvoiceAjax") ?>',
+                    url: '<?= base_url("BillingPayment/getFilteredBillingPaymentAjax") ?>',
                     type: 'POST',
                     data: filters,
                     dataType: 'json',
@@ -618,15 +589,19 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                                 response.columns.forEach(col => {
                                     switch (col) {
                                         case 'No': tbodyHtml += `<td>${i + 1}</td>`; break;
-                                        case 'PIC': tbodyHtml += `<td>${row.pic_user || '-'}</td>`; break;
                                         case 'Bowheer': tbodyHtml += `<td>${row.nama_bowheer || '-'}</td>`; break;
-                                        case 'Regional': tbodyHtml += `<td>${row.regional_target || '-'}</td>`; break;
-                                        case 'Kota': tbodyHtml += `<td>${row.area_target || '-'}</td>`; break;
-                                        case 'Target': tbodyHtml += `<td>${row.total_target ? formatTitik(parseInt(row.total_target)) : '-'}</td>`; break;
-                                        case 'Achieved': tbodyHtml += `<td>${row.total_achieved ? formatTitik(parseInt(row.total_achieved)) : '-'}</td>`; break;
-                                        case 'Sisa': tbodyHtml += `<td>${row.sisa ? formatTitik(parseInt(row.sisa)) : '-'}</td>`; break;
-                                        case 'Target %': tbodyHtml += `<td>${row.persen_sisa ? Number(row.persen_sisa).toFixed(0) + '%' : '-'}</td>`; break;
-                                        case 'Achieved %': tbodyHtml += `<td>${row.persen_achieved ? Number(row.persen_achieved).toFixed(0) + '%' : '-'}</td>`; break;
+                                        case 'Invoice': tbodyHtml += `<td>${row.no_invoice || '-'}</td>`; break;
+                                        case 'Price': tbodyHtml += `<td>${row.invoice_price_nett || '-'}</td>`; break;
+                                        case 'Regional': tbodyHtml += `<td>${row.regional_payment || '-'}</td>`; break;
+                                        case 'Area': tbodyHtml += `<td>${row.area_payment || '-'}</td>`; break;
+                                        case 'Date Submit': tbodyHtml += `<td>${row.tgl_submit_invoice|| '-'}</td>`; break;
+                                        case 'Due Date': tbodyHtml += `<td>${row.tgl_jatuh_tempo || '-'}</td>`; break;
+                                        case 'Agging': tbodyHtml += `<td>${row.umur_invoice || '-'}</td>`; break;
+                                        case 'Priority': tbodyHtml += `<td>${row.priority || '-'}</td>`; break;
+                                        case 'PO Number': tbodyHtml += `<td>${row.po_number || '-'}</td>`; break;
+                                        
+                                        // case 'Due Date': tbodyHtml += `<td>${row.sisa ? formatTitik(parseInt(row.sisa)) : '-'}</td>`; break;
+                                        // case 'PO Number': tbodyHtml += `<td>${row.persen_achieved ? Number(row.persen_achieved).toFixed(0) + '%' : '-'}</td>`; break;
                                         default: tbodyHtml += `<td>-</td>`;
                                     }
                                 });
@@ -762,7 +737,7 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
 
             const totalPersen = totalTarget > 0 ? (totalAchieved / totalTarget) * 100 : 0;
 
-            animateValue('dashboardRincianInvoice', 0, totalTarget, 600, true);
+            animateValue('dashboardBillingPayment', 0, totalTarget, 600, true);
             animateValue('dashboardAchievInvoice', 0, totalAchieved, 600, true);
             animateValue('dashboardSisaInvoice', 0, totalSisa, 600, true);
             animateValue('dashboardPersentaseInvoice', 0, totalPersen, 600, false);
@@ -804,7 +779,7 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                 // Pastikan semua filter sudah dipilih
                 if (bowheer && area && month && week) {
                     $.ajax({
-                        url: "<?= base_url('RincianInvoice/get_target_invoice') ?>",
+                        url: "<?= base_url('BillingPayment/get_target_invoice') ?>",
                         type: "POST",
                         dataType: "json",
                         data: {
@@ -904,7 +879,7 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
 
                 if (bowheer && area && month && week) {
                     $.ajax({
-                        url: "<?= base_url('RincianInvoice/get_target_invoice') ?>",
+                        url: "<?= base_url('BillingPayment/get_target_invoice') ?>",
                         type: "POST",
                         dataType: "json",
                         data: { bowheer, area, month, week },
@@ -1003,7 +978,7 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                         const formData = $("form").serialize();
 
                         $.ajax({
-                            url: "<?= base_url('RincianInvoice/addInvoice') ?>",
+                            url: "<?= base_url('BillingPayment/addInvoice') ?>",
                             type: "POST",
                             data: formData,
                             dataType: "json",
@@ -1021,7 +996,7 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                                     }).then((r) => {
                                         if (r.isConfirmed) {
                                             $.ajax({
-                                                url: "<?= base_url('RincianInvoice/createNewTargetInvoice') ?>",
+                                                url: "<?= base_url('BillingPayment/createNewTargetInvoice') ?>",
                                                 type: "POST",
                                                 dataType: "json",
                                                 data: res,

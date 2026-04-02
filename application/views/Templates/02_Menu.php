@@ -774,6 +774,20 @@ $id_menu = $this->uri->segment('1');
                     </li>
                     <?php } ?>
 
+                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                    <li class="nav-header">Billing & Collection</li>
+                    <li class="nav-item">
+                        <a href="<?= base_url('BillingPayment') ?>" class="nav-link <?php if ($id_menu == 'BillingPayment') {
+                              echo "active";
+                          } ?>">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                BILLING PAYMENT
+                            </p>
+                        </a>
+                    </li>
+                    <?php } ?>
+
                 </ul>
             </nav>
             <!-- /.sidebar-menu -->

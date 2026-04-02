@@ -1030,7 +1030,7 @@ $total = 1;
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
                                     <div class="card border-0 shadow-none w-full">
                                         <div class="card-body table-responsive w-full" style="width:100%;">
-                                            <table id="tabel_targetpic_month2026"
+                                            <table id="tabel_targetpic_month2026-tw1"
                                                 class="table table-bordered table-striped">
                                                 <thead>
                                                     <tr>
@@ -1795,7 +1795,7 @@ $total = 1;
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
                                     <div class="card border-0 shadow-none w-full">
                                         <div class="card-body table-responsive w-full" style="width:100%;">
-                                            <table id="tabel_targetpic_month2026"
+                                            <table id="tabel_targetpic_month2026-tw2"
                                                 class="table table-bordered table-striped">
                                                 <thead>
                                                     <tr>
@@ -3236,7 +3236,7 @@ $total = 1;
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
                                     <div class="card border-0 shadow-none w-full">
                                         <div class="card-body table-responsive w-full" style="width:100%;">
-                                            <table id="tabel_targetbowheer_month2026"
+                                            <table id="tabel_targetbowheer_month2026-tw1"
                                                 class="table table-bordered table-striped">
                                                 <thead>
                                                     <tr>
@@ -3709,7 +3709,7 @@ $total = 1;
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
                                     <div class="card border-0 shadow-none w-full">
                                         <div class="card-body table-responsive w-full" style="width:100%;">
-                                            <table id="tabel_targetbowheer_month2026"
+                                            <table id="tabel_targetbowheer_month2026-tw2"
                                                 class="table table-bordered table-striped">
                                                 <thead>
                                                     <tr>
@@ -3858,7 +3858,7 @@ $total = 1;
                                 aria-labelledby="custom-tabs-three-profile-tab">
 
                                 <div class="card-body table-responsive" style="width:100%;">
-                                    <table id="tabel_targetbowheer_januari" class="table table-bordered table-striped">
+                                    <table id="tabel_targetbowheer_april" class="table table-bordered table-striped">
                                         <thead>
                                             <tr>
                                                 <th rowspan="3"
@@ -3965,7 +3965,7 @@ $total = 1;
                                 aria-labelledby="custom-tabs-three-profile-tab">
 
                                 <div class="card-body table-responsive" style="width:100%;">
-                                    <table id="tabel_targetbowheer_februari" class="table table-bordered table-striped">
+                                    <table id="tabel_targetbowheer_mei" class="table table-bordered table-striped">
                                         <thead>
                                             <tr>
                                                 <th rowspan="3"
@@ -4072,7 +4072,7 @@ $total = 1;
                                 aria-labelledby="custom-tabs-three-profile-tab">
 
                                 <div class="card-body table-responsive" style="width:100%;">
-                                    <table id="tabel_targetbowheer_maret" class="table table-bordered table-striped">
+                                    <table id="tabel_targetbowheer_juni" class="table table-bordered table-striped">
                                         <thead>
                                             <tr>
                                                 <th rowspan="3"
@@ -4831,7 +4831,7 @@ $total = 1;
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
                                     <div class="card border-0 shadow-none w-full">
                                         <div class="card-body table-responsive w-full" style="width:100%;">
-                                            <table id="tabel_targetregional_month2026"
+                                            <table id="tabel_targetregional_month2026-tw1"
                                                 class="table table-bordered table-striped">
                                                 <thead>
                                                     <tr>
@@ -5475,7 +5475,7 @@ $total = 1;
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
                                     <div class="card border-0 shadow-none w-full">
                                         <div class="card-body table-responsive w-full" style="width:100%;">
-                                            <table id="tabel_targetregional_month2026"
+                                            <table id="tabel_targetregional_month2026-tw2"
                                                 class="table table-bordered table-striped">
                                                 <thead>
                                                     <tr>
@@ -5631,7 +5631,7 @@ $total = 1;
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
                                     <div class="card border-0 shadow-none">
                                         <div class="card-body p-0">
-                                            <table id="tabel_targetregional_januari"
+                                            <table id="tabel_targetregional_april"
                                                 class="table table-bordered table-striped nowrap w-100">
                                                 <thead>
                                                     <tr>
@@ -5753,7 +5753,7 @@ $total = 1;
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
                                     <div class="card border-0 shadow-none">
                                         <div class="card-body p-0">
-                                            <table id="tabel_targetregional_februari"
+                                            <table id="tabel_targetregional_mei"
                                                 class="table table-bordered table-striped nowrap w-100">
                                                 <thead>
                                                     <tr>
@@ -5875,7 +5875,7 @@ $total = 1;
                                     <!-- Hilangkan card atau minimal hilangkan padding-nya -->
                                     <div class="card border-0 shadow-none">
                                         <div class="card-body p-0">
-                                            <table id="tabel_targetregional_februari"
+                                            <table id="tabel_targetregional_juni"
                                                 class="table table-bordered table-striped nowrap w-100">
                                                 <thead>
                                                     <tr>
@@ -6042,8 +6042,8 @@ $total = 1;
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
-                                    href="#custom-tabscity-month2026" role="tab" aria-controls="custom-tabs-two-profile"
-                                    aria-selected="false">MONTHLY</a>
+                                    href="#custom-tabscity-month2026-tw1" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">2026 - TW1</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
@@ -6059,6 +6059,26 @@ $total = 1;
                                 <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
                                     href="#custom-tabscity-maret" role="tab" aria-controls="custom-tabs-two-profile"
                                     aria-selected="false">MARET</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-two-profile-tab" data-toggle="pill"
+                                    href="#custom-tabscity-month2026-tw2" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">2026 - TW2</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabscity-april" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">APRIL</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabscity-mei" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">MEI</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="custom-tabs-three-profile-tab" data-toggle="pill"
+                                    href="#custom-tabscity-juni" role="tab" aria-controls="custom-tabs-two-profile"
+                                    aria-selected="false">JUNI</a>
                             </li>
                         </ul>
                     </div>
@@ -6841,8 +6861,8 @@ $total = 1;
                                 </div>
                             </div>
 
-                            <!-- TAB NAV MONTH 2025 -->
-                            <div class="tab-pane fade" id="custom-tabscity-month2026" role="tabpanel"
+                            <!-- TAB NAV MONTH 2025 TW1 -->
+                            <div class="tab-pane fade" id="custom-tabscity-month2026-tw1" role="tabpanel"
                                 aria-labelledby="custom-tabs-three-profile-tab">
 
                                 <div class="container-fluid px-0">
@@ -6867,15 +6887,15 @@ $total = 1;
                                                             TOTAL TARGET</th>
                                                         <th colspan="3"
                                                             style="text-align:center; background-color: aqua;">
-                                                            OKTOBER
+                                                            JANUARI
                                                         </th>
                                                         <th colspan="3"
                                                             style="text-align:center; background-color: aqua;">
-                                                            NOVEMBER
+                                                            FEBRUARI
                                                         </th>
                                                         <th colspan="3"
                                                             style="text-align:center; background-color: aqua;">
-                                                            DESEMBER
+                                                            MARET
                                                         </th>
                                                         <th rowspan="2"
                                                             style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
@@ -7622,6 +7642,787 @@ $total = 1;
                                 </div>
                             </div>
 
+                            <!-- TAB NAV MONTH 2025 TW2 -->
+                            <div class="tab-pane fade" id="custom-tabscity-month2026-tw2" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0 table-responsive">
+                                            <table id="tabel_targetcity_month2026"
+                                                class="table table-bordered table-striped nowrap w-100">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="2"
+                                                            style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="2"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            KOTA</th>
+                                                        <th rowspan="2"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            PIC AREA</th>
+                                                        <th rowspan="2"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            APRIL
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            MEI
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            JUNI
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            ACHIEVED ( % )
+                                                        </th>
+                                                        <th rowspan="2"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI ( % )
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- OKTOBER -->
+                                                        <?php for ($i = 0; $i < 3; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                            <th style="text-align:center; background-color: blueviolet;">
+                                                                %
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterCity as $data):
+                                                        $target = $data['GRAND TOTAL TARGET'];
+                                                        $achiev = $data['GRAND TOTAL ACHIEVED'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['area_target'] ?></td>
+                                                            <td><?= $data['pic_target'] ?></td>
+                                                            <td><?= ($data['GRAND TOTAL TARGET'] != 0 ? number_format(floatval($data['GRAND TOTAL TARGET']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- OKTOBER -->
+                                                            <td><?= ($data['TOTAL TARGET APRIL'] != 0 ? number_format(floatval($data['TOTAL TARGET APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED APRIL'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET APRIL'] > 0 && $data['TOTAL ACHIEVED APRIL'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED APRIL'] / $data['TOTAL TARGET APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL TARGET MEI'] != 0 ? number_format(floatval($data['TOTAL TARGET MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED MEI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET MEI'] > 0 && $data['TOTAL ACHIEVED MEI'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED MEI'] / $data['TOTAL TARGET MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL TARGET JUNI'] != 0 ? number_format(floatval($data['TOTAL TARGET JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED JUNI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL TARGET JUNI'] > 0 && $data['TOTAL ACHIEVED JUNI'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED JUNI'] / $data['TOTAL TARGET JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['GRAND TOTAL ACHIEVED'] != 0 ? number_format(floatval($data['GRAND TOTAL ACHIEVED']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['GRAND TOTAL ACHIEVED'] > 0 && $data['GRAND TOTAL TARGET'] > 0) {
+                                                                    $persentase = ($data['GRAND TOTAL ACHIEVED'] / $data['GRAND TOTAL TARGET']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if (!empty($data['GRAND TOTAL TARGET']) && $data['GRAND TOTAL TARGET'] != 0) {
+                                                                    echo number_format(($deviasi / $data['GRAND TOTAL TARGET'] * 100), 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="3">Total</th>
+                                                        <?php for ($i = 0; $i < 14; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV APRIL -->
+                            <div class="tab-pane fade" id="custom-tabscity-april" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0 table-responsive md:w-auto">
+                                            <table id="tabel_targetcity_januari"
+                                                class="table table-bordered table-striped nowrap w-100">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="3"
+                                                            style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            KOTA</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            PIC AREA</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="15"
+                                                            style="text-align:center; background-color: aqua;">
+                                                            APRIL
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            ACHIEVED ( % )
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI ( % )
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- APRIL -->
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            1
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            2
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            3
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            4
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aqua;">WEEK
+                                                            5
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- JANUARI -->
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                            <th style="text-align:center; background-color: blueviolet;">
+                                                                %
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterCity as $data):
+                                                        $target = $data['TOTAL TARGET APRIL'];
+                                                        $achiev = $data['TOTAL ACHIEVED APRIL'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['area_target'] ?></td>
+                                                            <td><?= $data['pic_target'] ?></td>
+                                                            <td><?= ($data['TOTAL TARGET APRIL'] != 0 ? number_format(floatval($data['TOTAL TARGET APRIL']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- APRIL -->
+                                                            <td><?= ($data['TW1 APRIL'] != 0 ? number_format(floatval($data['TW1 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW1 APRIL'] != 0 ? number_format(floatval($data['RW1 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW1 APRIL'] > 0 && $data['RW1 APRIL'] > 0) {
+                                                                    $persentase = ($data['RW1 APRIL'] / $data['TW1 APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW2 APRIL'] != 0 ? number_format(floatval($data['TW2 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW2 APRIL'] != 0 ? number_format(floatval($data['RW2 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW2 APRIL'] > 0 && $data['RW2 APRIL'] > 0) {
+                                                                    $persentase = ($data['RW2 APRIL'] / $data['TW2 APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW3 APRIL'] != 0 ? number_format(floatval($data['TW3 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW3 APRIL'] != 0 ? number_format(floatval($data['RW3 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW3 APRIL'] > 0 && $data['RW3 APRIL'] > 0) {
+                                                                    $persentase = ($data['RW3 APRIL'] / $data['TW3 APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW4 APRIL'] != 0 ? number_format(floatval($data['TW4 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW4 APRIL'] != 0 ? number_format(floatval($data['RW4 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW4 APRIL'] > 0 && $data['RW4 APRIL'] > 0) {
+                                                                    $persentase = ($data['RW4 APRIL'] / $data['TW4 APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW5 APRIL'] != 0 ? number_format(floatval($data['TW5 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW5 APRIL'] != 0 ? number_format(floatval($data['RW5 APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW5 APRIL'] > 0 && $data['RW5 APRIL'] > 0) {
+                                                                    $persentase = ($data['RW5 APRIL'] / $data['TW5 APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED APRIL'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED APRIL']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL ACHIEVED APRIL'] > 0 && $data['TOTAL TARGET APRIL'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED APRIL'] / $data['TOTAL TARGET APRIL']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if (!empty($data['TOTAL TARGET APRIL']) && $data['TOTAL TARGET APRIL'] != 0) {
+                                                                    echo number_format(($deviasi / $data['TOTAL TARGET APRIL'] * 100), 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="3">Total</th>
+                                                        <?php for ($i = 0; $i < 20; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV MEI -->
+                            <div class="tab-pane fade" id="custom-tabscity-mei" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0 table-responsive md:w-auto">
+                                            <table id="tabel_targetcity_februari"
+                                                class="table table-bordered table-striped nowrap w-100">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="3"
+                                                            style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            KOTA</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            PIC AREA</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="15"
+                                                            style="text-align:center; background-color: blueviolet;">
+                                                            MEI
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            ACHIEVED ( % )
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI ( % )
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- FEBRUARI -->
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: blueviolet;">WEEK
+                                                            1
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: blueviolet;">WEEK
+                                                            2
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: blueviolet;">WEEK
+                                                            3
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: blueviolet;">WEEK
+                                                            4
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: blueviolet;">WEEK
+                                                            5
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- MEI -->
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                            <th style="text-align:center; background-color: blueviolet;">
+                                                                %
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterCity as $data):
+                                                        $target = $data['TOTAL TARGET MEI'];
+                                                        $achiev = $data['TOTAL ACHIEVED MEI'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['area_target'] ?></td>
+                                                            <td><?= $data['pic_target'] ?></td>
+                                                            <td><?= ($data['TOTAL TARGET MEI'] != 0 ? number_format(floatval($data['TOTAL TARGET MEI']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- MEI -->
+                                                            <td><?= ($data['TW1 MEI'] != 0 ? number_format(floatval($data['TW1 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW1 MEI'] != 0 ? number_format(floatval($data['RW1 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW1 MEI'] > 0 && $data['RW1 MEI'] > 0) {
+                                                                    $persentase = ($data['RW1 MEI'] / $data['TW1 MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW2 MEI'] != 0 ? number_format(floatval($data['TW2 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW2 MEI'] != 0 ? number_format(floatval($data['RW2 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW2 MEI'] > 0 && $data['RW2 MEI'] > 0) {
+                                                                    $persentase = ($data['RW2 MEI'] / $data['TW2 MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW3 MEI'] != 0 ? number_format(floatval($data['TW3 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW3 MEI'] != 0 ? number_format(floatval($data['RW3 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW3 MEI'] > 0 && $data['RW3 MEI'] > 0) {
+                                                                    $persentase = ($data['RW3 MEI'] / $data['TW3 MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW4 MEI'] != 0 ? number_format(floatval($data['TW4 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW4 MEI'] != 0 ? number_format(floatval($data['RW4 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW4 MEI'] > 0 && $data['RW4 MEI'] > 0) {
+                                                                    $persentase = ($data['RW4 MEI'] / $data['TW4 MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW5 MEI'] != 0 ? number_format(floatval($data['TW5 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW5 MEI'] != 0 ? number_format(floatval($data['RW5 MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW5 MEI'] > 0 && $data['RW5 MEI'] > 0) {
+                                                                    $persentase = ($data['RW5 MEI'] / $data['TW5 MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED MEI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED MEI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL ACHIEVED MEI'] > 0 && $data['TOTAL TARGET MEI'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED MEI'] / $data['TOTAL TARGET MEI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if (!empty($data['TOTAL TARGET MEI']) && $data['TOTAL TARGET MEI'] != 0) {
+                                                                    echo number_format(($deviasi / $data['TOTAL TARGET MEI'] * 100), 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="3">Total</th>
+                                                        <?php for ($i = 0; $i < 20; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB NAV JUNI -->
+                            <div class="tab-pane fade" id="custom-tabscity-juni" role="tabpanel"
+                                aria-labelledby="custom-tabs-three-profile-tab">
+
+                                <div class="container-fluid px-0">
+                                    <!-- Hilangkan card atau minimal hilangkan padding-nya -->
+                                    <div class="card border-0 shadow-none">
+                                        <div class="card-body p-0 table-responsive md:w-auto">
+                                            <table id="tabel_targetcity_maret"
+                                                class="table table-bordered table-striped nowrap w-100">
+                                                <thead>
+                                                    <tr>
+                                                        <th rowspan="3"
+                                                            style="width: 60px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            No</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            KOTA</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            PIC AREA</th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 150px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL TARGET</th>
+                                                        <th colspan="15"
+                                                            style="text-align:center; background-color: aquamarine;">
+                                                            JUNI
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            TOTAL ACHIEVED
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="min-width: 200px; text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            ACHIEVED ( % )
+                                                        </th>
+                                                        <th rowspan="3"
+                                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                                            DEVIASI ( % )
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- JUNI -->
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aquamarine;">WEEK
+                                                            1
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aquamarine;">WEEK
+                                                            2
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aquamarine;">WEEK
+                                                            3
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aquamarine;">WEEK
+                                                            4
+                                                        </th>
+                                                        <th colspan="3"
+                                                            style="text-align:center; background-color: aquamarine;">WEEK
+                                                            5
+                                                        </th>
+                                                    </tr>
+                                                    <tr>
+                                                        <!-- MARET -->
+                                                        <?php for ($i = 0; $i < 5; $i++): ?>
+                                                            <th style="text-align:center; background-color: indianred;">
+                                                                TARGET</th>
+                                                            <th style="text-align:center; background-color: darkseagreen;">
+                                                                ACHIEVED
+                                                            </th>
+                                                            <th style="text-align:center; background-color: blueviolet;">
+                                                                %
+                                                            </th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $no = 1;
+                                                    foreach ($getTargetRincianFilterCity as $data):
+                                                        $target = $data['TOTAL TARGET JUNI'];
+                                                        $achiev = $data['TOTAL ACHIEVED JUNI'];
+                                                        $deviasi = $target - $achiev;
+                                                        ?>
+                                                        <tr>
+                                                            <td><?= $no++ ?></td>
+                                                            <td><?= $data['area_target'] ?></td>
+                                                            <td><?= $data['pic_target'] ?></td>
+                                                            <td><?= ($data['TOTAL TARGET JUNI'] != 0 ? number_format(floatval($data['TOTAL TARGET JUNI']), 0, ",", ".") : '-') ?>
+
+                                                                <!-- JUNI -->
+                                                            <td><?= ($data['TW1 JUNI'] != 0 ? number_format(floatval($data['TW1 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW1 JUNI'] != 0 ? number_format(floatval($data['RW1 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW1 JUNI'] > 0 && $data['RW1 JUNI'] > 0) {
+                                                                    $persentase = ($data['RW1 JUNI'] / $data['TW1 JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW2 JUNI'] != 0 ? number_format(floatval($data['TW2 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW2 JUNI'] != 0 ? number_format(floatval($data['RW2 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW2 JUNI'] > 0 && $data['RW2 JUNI'] > 0) {
+                                                                    $persentase = ($data['RW2 JUNI'] / $data['TW2 JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW3 JUNI'] != 0 ? number_format(floatval($data['TW3 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW3 JUNI'] != 0 ? number_format(floatval($data['RW3 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW3 JUNI'] > 0 && $data['RW3 JUNI'] > 0) {
+                                                                    $persentase = ($data['RW3 JUNI'] / $data['TW3 JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW4 JUNI'] != 0 ? number_format(floatval($data['TW4 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW4 JUNI'] != 0 ? number_format(floatval($data['RW4 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW4 JUNI'] > 0 && $data['RW4 JUNI'] > 0) {
+                                                                    $persentase = ($data['RW4 JUNI'] / $data['TW4 JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TW5 JUNI'] != 0 ? number_format(floatval($data['TW5 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($data['RW5 JUNI'] != 0 ? number_format(floatval($data['RW5 JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TW5 JUNI'] > 0 && $data['RW5 JUNI'] > 0) {
+                                                                    $persentase = ($data['RW5 JUNI'] / $data['TW5 JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td><?= ($data['TOTAL ACHIEVED JUNI'] != 0 ? number_format(floatval($data['TOTAL ACHIEVED JUNI']), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td><?= ($deviasi != 0 ? number_format(floatval($deviasi), 0, ",", ".") : '-') ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if ($data['TOTAL ACHIEVED JUNI'] > 0 && $data['TOTAL TARGET JUNI'] > 0) {
+                                                                    $persentase = ($data['TOTAL ACHIEVED JUNI'] / $data['TOTAL TARGET JUNI']) * 100;
+                                                                    echo number_format($persentase, 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php
+                                                                if (!empty($data['TOTAL TARGET JUNI']) && $data['TOTAL TARGET JUNI'] != 0) {
+                                                                    echo number_format(($deviasi / $data['TOTAL TARGET JUNI'] * 100), 0, ",", ".") . '%';
+                                                                } else {
+                                                                    echo '-';
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="3">Total</th>
+                                                        <?php for ($i = 0; $i < 20; $i++): ?>
+                                                            <th>0</th>
+                                                        <?php endfor; ?>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
 
                         </div>
                     </div>
@@ -7697,7 +8498,22 @@ $total = 1;
                         .css('width', '100%');
                 }
             });
-            $('#tabel_targetbowheer_month2026').DataTable({
+            $('#tabel_targetbowheer_month2026-tw1').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
+            $('#tabel_targetbowheer_month2026-tw2').DataTable({
                 paging: true,
                 pageLength: 10,
                 info: true,
@@ -7788,6 +8604,51 @@ $total = 1;
                 }
             });
             $('#tabel_targetbowheer_maret').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
+            $('#tabel_targetbowheer_april').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
+            $('#tabel_targetbowheer_mei').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
+            $('#tabel_targetbowheer_juni').DataTable({
                 paging: true,
                 pageLength: 10,
                 info: true,
@@ -7967,7 +8828,22 @@ $total = 1;
                         .css('width', '100%');
                 }
             });
-            $('#tabel_targetpic_month2026').DataTable({
+            $('#tabel_targetpic_month2026-tw1').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
+            $('#tabel_targetpic_month2026-tw2').DataTable({
                 paging: true,
                 pageLength: 10,
                 info: true,
@@ -8072,6 +8948,51 @@ $total = 1;
                         .css('width', '100%');
                 }
             });
+            $('#tabel_targetpic_april').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
+            $('#tabel_targetpic_mei').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
+            $('#tabel_targetpic_juni').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
 
             $('#tabel_targetregional_summary').DataTable({
                 paging: true,
@@ -8103,7 +9024,22 @@ $total = 1;
                         .css('width', '100%');
                 }
             });
-            $('#tabel_targetregional_month2026').DataTable({
+            $('#tabel_targetregional_month2026-tw1').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
+            $('#tabel_targetregional_month2026-tw2').DataTable({
                 paging: true,
                 pageLength: 10,
                 info: true,
@@ -8194,6 +9130,51 @@ $total = 1;
                 }
             });
             $('#tabel_targetregional_maret').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
+            $('#tabel_targetregional_april').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
+            $('#tabel_targetregional_mei').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
+            $('#tabel_targetregional_juni').DataTable({
                 paging: true,
                 pageLength: 10,
                 info: true,
@@ -8437,7 +9418,79 @@ $total = 1;
         $(document).ready(function () {
             $.fn.dataTable.ext.errMode = 'none';
 
-            const table = $('#tabel_targetbowheer_month2026').DataTable({
+            const table = $('#tabel_targetbowheer_month2026-tw1').DataTable({
+                footerCallback: function () {
+                    updateTotalDanPersentase();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 }
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Nomor urut otomatis
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi total + persentase
+            function updateTotalDanPersentase() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                // jumlah kolom numerik (Total target sampai deviasi)
+                let totalKolom = Array(12).fill(0);
+
+                data.each(function (row) {
+                    for (let i = 2; i < 14; i++) { // mulai dari kolom ke-2 (Total Target)
+                        let value = row[i]
+                            .toString()
+                            .replace(/\./g, '')   // hapus titik ribuan
+                            .replace(/,/g, '')    // hapus koma
+                            .replace(/[^0-9-]/g, ''); // hapus selain angka
+                        totalKolom[i - 2] += parseFloat(value) || 0;
+                    }
+                });
+
+                // Tulis total ke baris footer
+                for (let i = 0; i < totalKolom.length; i++) {
+                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    $(table.column(i + 2).footer()).text(totalFormatted);
+                }
+
+                // === Hitung persentase ===
+                // urutan: [1]=Okt Target, [2]=Okt Achieved, [4]=Nov Target, [5]=Nov Achieved, [7]=Des Target, [8]=Des Achieved
+                function hitungPersen(target, achieved) {
+                    if (target === 0 && achieved > 0) return 100;
+                    if (target === 0 && achieved === 0) return 0;
+                    return (achieved / target) * 100;
+                }
+
+                const persenOktober = hitungPersen(totalKolom[1], totalKolom[2]);
+                const persenNovember = hitungPersen(totalKolom[4], totalKolom[5]);
+                const persenDesember = hitungPersen(totalKolom[7], totalKolom[8]);
+                const persenGrand = hitungPersen(totalKolom[0], totalKolom[10]);
+                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[11]);
+
+                $(table.column(5).footer()).text(persenOktober.toFixed(0) + ' %');
+                $(table.column(8).footer()).text(persenNovember.toFixed(0) + ' %');
+                $(table.column(11).footer()).text(persenDesember.toFixed(0) + ' %');
+                $(table.column(14).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(15).footer()).text(persenDeviasi.toFixed(0) + ' %');
+            }
+
+            table.on('draw', function () {
+                updateTotalDanPersentase();
+            });
+
+            updateTotalDanPersentase();
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetbowheer_month2026-tw2').DataTable({
                 footerCallback: function () {
                     updateTotalDanPersentase();
                 },
@@ -8768,6 +9821,168 @@ $total = 1;
             // Hitung total pertama kali
             updateTotal();
         });
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetbowheer_april').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Tambah nomor otomatis di kolom pertama
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi utama untuk hitung total otomatis
+            function updateTotal() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                let totalKolom = Array(11).fill(0);
+
+                data.each(function (row) {
+                    for (let i = 2; i < 13; i++) { // misal kolom angka mulai dari index ke-2
+                        // Hapus titik dan koma dulu
+                        let value = row[i]
+                            .toString()
+                            .replace(/\./g, '')   // hapus titik
+                            .replace(/,/g, '')    // hapus koma
+                            .replace(/[^0-9-]/g, ''); // hapus selain angka
+                        totalKolom[i - 2] += parseFloat(value) || 0;
+                    }
+                });
+
+                for (let i = 0; i < totalKolom.length; i++) {
+                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    $(table.column(i + 2).footer()).text(totalFormatted);
+                }
+
+            }
+
+            // Jalankan ulang total setiap kali tabel berubah
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali
+            updateTotal();
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetbowheer_mei').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Tambah nomor otomatis di kolom pertama
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi utama untuk hitung total otomatis
+            function updateTotal() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                let totalKolom = Array(11).fill(0);
+
+                data.each(function (row) {
+                    for (let i = 2; i < 13; i++) { // misal kolom angka mulai dari index ke-2
+                        // Hapus titik dan koma dulu
+                        let value = row[i]
+                            .toString()
+                            .replace(/\./g, '')   // hapus titik
+                            .replace(/,/g, '')    // hapus koma
+                            .replace(/[^0-9-]/g, ''); // hapus selain angka
+                        totalKolom[i - 2] += parseFloat(value) || 0;
+                    }
+                });
+
+                for (let i = 0; i < totalKolom.length; i++) {
+                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    $(table.column(i + 2).footer()).text(totalFormatted);
+                }
+
+            }
+
+            // Jalankan ulang total setiap kali tabel berubah
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali
+            updateTotal();
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetbowheer_juni').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Tambah nomor otomatis di kolom pertama
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi utama untuk hitung total otomatis
+            function updateTotal() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                let totalKolom = Array(11).fill(0);
+
+                data.each(function (row) {
+                    for (let i = 2; i < 13; i++) { // misal kolom angka mulai dari index ke-2
+                        // Hapus titik dan koma dulu
+                        let value = row[i]
+                            .toString()
+                            .replace(/\./g, '')   // hapus titik
+                            .replace(/,/g, '')    // hapus koma
+                            .replace(/[^0-9-]/g, ''); // hapus selain angka
+                        totalKolom[i - 2] += parseFloat(value) || 0;
+                    }
+                });
+
+                for (let i = 0; i < totalKolom.length; i++) {
+                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    $(table.column(i + 2).footer()).text(totalFormatted);
+                }
+
+            }
+
+            // Jalankan ulang total setiap kali tabel berubah
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali
+            updateTotal();
+        });
+
         $(document).ready(function () {
             $.fn.dataTable.ext.errMode = 'none';
 
@@ -9671,7 +10886,7 @@ $total = 1;
         $(document).ready(function () {
             $.fn.dataTable.ext.errMode = 'none';
 
-            const table = $('#tabel_targetpic_month2026').DataTable({
+            const table = $('#tabel_targetpic_month2026-tw1').DataTable({
                 footerCallback: function () {
                     updateTotal();
                 },
@@ -9733,7 +10948,89 @@ $total = 1;
                 const deviasiNovDes = totalKolom[4] - totalKolom[5];
                 const deviasiDesTotal = totalKolom[7] - totalKolom[8];
 
-                const footerRows = $('#tabel_targetpic_month2026 tfoot tr');
+                const footerRows = $('#tabel_targetpic_month2026-tw1 tfoot tr');
+                const barisDeviasi = $(footerRows[1]).find('th');
+
+                barisDeviasi.eq(1).text(deviasiOktNov.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                barisDeviasi.eq(2).text(deviasiNovDes.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                barisDeviasi.eq(3).text(deviasiDesTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+
+            }
+
+            // Jalankan ulang total setiap kali tabel berubah
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali
+            updateTotal();
+        });
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetpic_month2026-tw2').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Tambah nomor otomatis di kolom pertama
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi utama untuk hitung total otomatis
+            function updateTotal() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                let totalKolom = Array(14).fill(0);
+
+                data.each(function (row) {
+                    for (let i = 2; i < 16; i++) { // misal kolom angka mulai dari index ke-2
+                        // Hapus titik dan koma dulu
+                        let value = row[i]
+                            .toString()
+                            .replace(/\./g, '')   // hapus titik
+                            .replace(/,/g, '')    // hapus koma
+                            .replace(/[^0-9-]/g, ''); // hapus selain angka
+                        totalKolom[i - 2] += parseFloat(value) || 0;
+                    }
+                });
+
+                for (let i = 0; i < totalKolom.length; i++) {
+                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    $(table.column(i + 2).footer()).text(totalFormatted);
+                }
+
+                function hitungPersen(target, achieved) {
+                    if (target === 0 && achieved > 0) return 100;
+                    if (target === 0 && achieved === 0) return 0;
+                    return (achieved / target) * 100;
+                }
+
+                const persenOktober = hitungPersen(totalKolom[1], totalKolom[2]);
+                const persenNovember = hitungPersen(totalKolom[4], totalKolom[5]);
+                const persenDesember = hitungPersen(totalKolom[7], totalKolom[8]);
+                const persenGrand = hitungPersen(totalKolom[0], totalKolom[10]);
+                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[11]);
+
+                $(table.column(5).footer()).text(persenOktober.toFixed(0) + ' %');
+                $(table.column(8).footer()).text(persenNovember.toFixed(0) + ' %');
+                $(table.column(11).footer()).text(persenDesember.toFixed(0) + ' %');
+                $(table.column(14).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(15).footer()).text(persenDeviasi.toFixed(0) + ' %');
+
+                const deviasiOktNov = totalKolom[1] - totalKolom[2];
+                const deviasiNovDes = totalKolom[4] - totalKolom[5];
+                const deviasiDesTotal = totalKolom[7] - totalKolom[8];
+
+                const footerRows = $('#tabel_targetpic_month2026-tw2 tfoot tr');
                 const barisDeviasi = $(footerRows[1]).find('th');
 
                 barisDeviasi.eq(1).text(deviasiOktNov.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
@@ -10184,6 +11481,216 @@ $total = 1;
 
         $(document).ready(function () {
             $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetpic_april').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Tambah nomor otomatis di kolom pertama
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi utama untuk hitung total otomatis
+            function updateTotal() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                let totalKolom = Array(9).fill(0);
+
+                data.each(function (row) {
+                    for (let i = 2; i < 11; i++) { // misal kolom angka mulai dari index ke-2
+                        // Hapus titik dan koma dulu
+                        let value = row[i]
+                            .toString()
+                            .replace(/\./g, '')   // hapus titik
+                            .replace(/,/g, '')    // hapus koma
+                            .replace(/[^0-9-]/g, ''); // hapus selain angka
+                        totalKolom[i - 2] += parseFloat(value) || 0;
+                    }
+                });
+
+                for (let i = 0; i < totalKolom.length; i++) {
+                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    $(table.column(i + 2).footer()).text(totalFormatted);
+                }
+
+                function hitungPersen(target, achieved) {
+                    if (target === 0 && achieved > 0) return 100;
+                    if (target === 0 && achieved === 0) return 0;
+                    return (achieved / target) * 100;
+                }
+
+                const persenW1Desember = hitungPersen(totalKolom[1], totalKolom[2]);
+                const persenW2Desember = hitungPersen(totalKolom[4], totalKolom[5]);
+                const persenGrand = hitungPersen(totalKolom[0], totalKolom[7]);
+                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[8]);
+
+                $(table.column(5).footer()).text(persenW1Desember.toFixed(0) + ' %');
+                $(table.column(8).footer()).text(persenW2Desember.toFixed(0) + ' %');
+                $(table.column(11).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(12).footer()).text(persenDeviasi.toFixed(0) + ' %');
+
+            }
+
+            // Jalankan ulang total setiap kali tabel berubah
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali
+            updateTotal();
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetpic_mei').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Tambah nomor otomatis di kolom pertama
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi utama untuk hitung total otomatis
+            function updateTotal() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                let totalKolom = Array(9).fill(0);
+
+                data.each(function (row) {
+                    for (let i = 2; i < 11; i++) { // misal kolom angka mulai dari index ke-2
+                        // Hapus titik dan koma dulu
+                        let value = row[i]
+                            .toString()
+                            .replace(/\./g, '')   // hapus titik
+                            .replace(/,/g, '')    // hapus koma
+                            .replace(/[^0-9-]/g, ''); // hapus selain angka
+                        totalKolom[i - 2] += parseFloat(value) || 0;
+                    }
+                });
+
+                for (let i = 0; i < totalKolom.length; i++) {
+                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    $(table.column(i + 2).footer()).text(totalFormatted);
+                }
+
+                function hitungPersen(target, achieved) {
+                    if (target === 0 && achieved > 0) return 100;
+                    if (target === 0 && achieved === 0) return 0;
+                    return (achieved / target) * 100;
+                }
+
+                const persenW1Desember = hitungPersen(totalKolom[1], totalKolom[2]);
+                const persenW2Desember = hitungPersen(totalKolom[4], totalKolom[5]);
+                const persenGrand = hitungPersen(totalKolom[0], totalKolom[7]);
+                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[8]);
+
+                $(table.column(5).footer()).text(persenW1Desember.toFixed(0) + ' %');
+                $(table.column(8).footer()).text(persenW2Desember.toFixed(0) + ' %');
+                $(table.column(11).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(12).footer()).text(persenDeviasi.toFixed(0) + ' %');
+
+            }
+
+            // Jalankan ulang total setiap kali tabel berubah
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali
+            updateTotal();
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetpic_juni').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Tambah nomor otomatis di kolom pertama
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi utama untuk hitung total otomatis
+            function updateTotal() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                let totalKolom = Array(9).fill(0);
+
+                data.each(function (row) {
+                    for (let i = 2; i < 11; i++) { // misal kolom angka mulai dari index ke-2
+                        // Hapus titik dan koma dulu
+                        let value = row[i]
+                            .toString()
+                            .replace(/\./g, '')   // hapus titik
+                            .replace(/,/g, '')    // hapus koma
+                            .replace(/[^0-9-]/g, ''); // hapus selain angka
+                        totalKolom[i - 2] += parseFloat(value) || 0;
+                    }
+                });
+
+                for (let i = 0; i < totalKolom.length; i++) {
+                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    $(table.column(i + 2).footer()).text(totalFormatted);
+                }
+
+                function hitungPersen(target, achieved) {
+                    if (target === 0 && achieved > 0) return 100;
+                    if (target === 0 && achieved === 0) return 0;
+                    return (achieved / target) * 100;
+                }
+
+                const persenW1Desember = hitungPersen(totalKolom[1], totalKolom[2]);
+                const persenW2Desember = hitungPersen(totalKolom[4], totalKolom[5]);
+                const persenGrand = hitungPersen(totalKolom[0], totalKolom[7]);
+                const persenDeviasi = hitungPersen(totalKolom[0], totalKolom[8]);
+
+                $(table.column(5).footer()).text(persenW1Desember.toFixed(0) + ' %');
+                $(table.column(8).footer()).text(persenW2Desember.toFixed(0) + ' %');
+                $(table.column(11).footer()).text(persenGrand.toFixed(0) + ' %');
+                $(table.column(12).footer()).text(persenDeviasi.toFixed(0) + ' %');
+
+            }
+
+            // Jalankan ulang total setiap kali tabel berubah
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali
+            updateTotal();
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
             const table = $('#tabel_targetregional_summary').DataTable({
                 footerCallback: function () {
                     updateTotal();
@@ -10328,7 +11835,61 @@ $total = 1;
         $(document).ready(function () {
             $.fn.dataTable.ext.errMode = 'none';
 
-            const table = $('#tabel_targetregional_month2026').DataTable({
+            const table = $('#tabel_targetregional_month2026-tw1').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Tambah nomor otomatis di kolom pertama
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            // Fungsi utama untuk hitung total otomatis
+            function updateTotal() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                let totalKolom = Array(14).fill(0);
+
+                data.each(function (row) {
+                    for (let i = 2; i < 16; i++) { // misal kolom angka mulai dari index ke-2
+                        // Hapus titik dan koma dulu
+                        let value = row[i]
+                            .toString()
+                            .replace(/\./g, '')   // hapus titik
+                            .replace(/,/g, '')    // hapus koma
+                            .replace(/[^0-9-]/g, ''); // hapus selain angka
+                        totalKolom[i - 2] += parseFloat(value) || 0;
+                    }
+                });
+
+                for (let i = 0; i < totalKolom.length; i++) {
+                    let totalFormatted = totalKolom[i].toLocaleString('id-ID', { maximumFractionDigits: 0 });
+                    $(table.column(i + 2).footer()).text(totalFormatted);
+                }
+
+            }
+
+            // Jalankan ulang total setiap kali tabel berubah
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali
+            updateTotal();
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetregional_month2026-tw2').DataTable({
                 footerCallback: function () {
                     updateTotal();
                 },
