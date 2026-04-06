@@ -17,7 +17,7 @@ class BillingPayment extends CI_Controller
 
             $data['title'] = 'RINCIAN INVOICE';
             $data['judul'] = 'RINCIAN INVOICE';
-            $data['getTargetAllPIC'] = $this->MBillingPayment->getTargetAllPIC();
+            $data['getTargetPriorityBowheer'] = $this->MBillingPayment->getTargetPriorityBowheer();
             $data['getAllData'] = $this->MBillingPayment->getAllData();
 
             $this->load->view('Templates/01_Header', $data);
@@ -39,12 +39,12 @@ class BillingPayment extends CI_Controller
         $bowheer = $this->input->post('bowheer');
         $regional = $this->input->post('regional');
         $city = $this->input->post('city');
-        $month = $this->input->post('priority');
+        $priority = $this->input->post('priority');
 
-        $data = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $month);
+        $data = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $priority);
 
         // Tentukan kolom yang tampil berdasarkan filter
-            $columns = ['No', 'Bowheer', 'Invoice', 'Price', 'Regional', 'Area', 'Date Submit', 'Due Date', 'Agging', "Priority", "PO Number"];
+            $columns = ['No', 'Bowheer', 'Invoice', 'Price', 'Regional', 'Area', 'Date Submit', 'Due Date', 'Aging', "Priority", "PO Number", "Status Invoice", "Action"];
 
         echo json_encode([
             'columns' => $columns,

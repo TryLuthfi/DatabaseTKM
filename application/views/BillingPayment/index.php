@@ -23,11 +23,17 @@ $unique_bowheer = array_unique(array_column($getAllData, 'nama_bowheer'));
 $unique_regional = array_unique(array_column($getAllData, 'regional_payment'));
 $unique_city = array_unique(array_column($getAllData, 'area_payment'));
 $unique_priority = array_unique(array_column($getAllData, 'priority'));
-
+$unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
 ?>
 
 <meta name="format-detection" content="telephone=no">
+<div id="globalLoader">
+        <div class="loader-content">
+            <div class="spinner"></div>
+            <div class="text">Loading...</div>
+        </div>
+    </div>
 
 <div class="content-wrapper">
     <div class="content-header">
@@ -90,8 +96,7 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
                                 </div>
                                 <div class="col-sm-3">
                                     <div class="form-group">
-                                        <label
-                                            style="display: flex; justify-content: center; align-items: center;">KOTA
+                                        <label style="display: flex; justify-content: center; align-items: center;">KOTA
                                         </label>
                                         <select id="filter_city_up" class="select2" multiple="multiple"
                                             data-placeholder="Pilih bowheer" style="width: 100%;">
@@ -129,279 +134,388 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
         </div>
     </div>
 
-    <div class="content">
-        <section class="content">
-            <div class="container-fluid">
-                <!-- Info boxes -->
-                <div class="row">
-                    <!-- /.col -->
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3">
-                            <span class="info-box-icon bg-grey elevation-1"><i
-                                    class="fas fa-file-invoice-dollar"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">TARGET INVOICE</span>
-                                <span class="info-box-number" id="dashboardBillingPayment">Rp. 0
-                                </span>
-                            </div>
-                            <!-- /.info-box-content -->
+    <section class="content">
+        <div class="container-fluid">
+            <!-- Info boxes -->
+            <div class="row">
+                <!-- /.col -->
+                <div class="col-12 col-sm-6 col-md-3">
+                    <div class="info-box mb-3">
+                        <span class="info-box-icon bg-grey elevation-1"><i
+                                class="fas fa-file-invoice-dollar"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">TOTAL BILLING</span>
+                            <span class="info-box-number" id="dashboardTotalBilling">Rp. 0
+                            </span>
                         </div>
-                        </a>
-                        <!-- /.info-box -->
+                        <!-- /.info-box-content -->
                     </div>
+                    </a>
+                    <!-- /.info-box -->
+                </div>
 
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3 glow-green">
-                            <span class="info-box-icon bg-grey elevation-1"><i
-                                    class="fas fa-file-invoice-dollar"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">ACHIEVED INVOICE</span>
-                                <h4 class="info-box-number" style="color: #33cc33;" id="dashboardAchievInvoice">
-                                    Rp. 0
-                                </h4>
-                            </div>
-                            <!-- /.info-box-content -->
+                <div class="col-12 col-sm-6 col-md-3">
+                    <div class="info-box mb-3 glow-green">
+                        <span class="info-box-icon bg-grey elevation-1"><i
+                                class="fas fa-file-invoice-dollar"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">BILLING ( P1 )</span>
+                            <h4 class="info-box-number" style="color: #33cc33;" id="dashboardBillingP1">
+                                Rp. 0
+                            </h4>
                         </div>
-                        </a>
-                        <!-- /.info-box -->
+                        <!-- /.info-box-content -->
                     </div>
+                    </a>
+                    <!-- /.info-box -->
+                </div>
 
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3 glow-red">
-                            <span class="info-box-icon bg-grey elevation-1"><i
-                                    class="fas fa-money-check-alt"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">SISA INVOICE</span>
-                                <h4 class="info-box-number" style="color: #ce0808ff;" id="dashboardSisaInvoice">
-                                    Rp. 0
-                                </h4>
-                            </div>
-                            <!-- /.info-box-content -->
+                <div class="col-12 col-sm-6 col-md-3">
+                    <div class="info-box mb-3 glow-red">
+                        <span class="info-box-icon bg-grey elevation-1"><i class="fas fa-money-check-alt"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">BILLING ( P2 )</span>
+                            <h4 class="info-box-number" style="color: #ce0808ff;" id="dashboardBillingP2">
+                                Rp. 0
+                            </h4>
                         </div>
-                        </a>
-                        <!-- /.info-box -->
+                        <!-- /.info-box-content -->
                     </div>
+                    </a>
+                    <!-- /.info-box -->
+                </div>
 
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3">
-                            <span class="info-box-icon bg-grey elevation-1"><i
-                                    class="fas fa-money-check-alt"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">PERSENTASE INVOICE</span>
-                                <span class="info-box-number" id="dashboardPersentaseInvoice">
-                                    0%
-                                </span>
-                            </div>
-                            <!-- /.info-box-content -->
+                <div class="col-12 col-sm-6 col-md-3">
+                    <div class="info-box mb-3">
+                        <span class="info-box-icon bg-grey elevation-1"><i class="fas fa-money-check-alt"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">BILLING ( P3 )</span>
+                            <span class="info-box-number" id="dashboardBillingP3">
+                                0%
+                            </span>
                         </div>
-                        </a>
-                        <!-- /.info-box -->
+                        <!-- /.info-box-content -->
+                    </div>
+                    </a>
+                    <!-- /.info-box -->
+                </div>
+            </div>
+    </section>
+
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-12">
+                    <h1 class="m-0 text-dark" style="text-align: center;">RINCIAN PRIORITAS</h1>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <!-- Info boxes -->
+            <div class="row">
+
+                <div class="col-12">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title">RINCIAN</h3>
+
+                            <div class="card-tools">
+                                <button id="cardfiltercollapse" type="button" class="btn btn-tool"
+                                    data-card-widget="collapse">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body table-responsive text-nowrap">
+                            <table id="tabel_targetpriority_bowheer" class="table table-bordered table-striped">
+                                <thead style="text-align: center;" class="bg-info">
+                                    <tr>
+                                        <th rowspan="2"
+                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                            No</th>
+                                        <th rowspan="2"
+                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                            BOWHEER</th>
+                                        <th colspan="3"
+                                            style="text-align:center; background-color: aqua; color: #000000;">RINCIAN
+                                            TAGIHAN</th>
+                                        <th rowspan="2"
+                                            style="text-align:center; vertical-align: middle; background-color: darkslategray; color: #ffffff;">
+                                            GRAND TOTAL</th>
+                                    </tr>
+                                    <tr>
+                                        <th style="color: #000000;">TAGIHAN ( P1 )<br>>= 75 HK</th>
+                                        <th style="color: #000000;">TAGIHAN ( P2 )<br>>= 45 HK</th>
+                                        <th style="color: #000000;">TAGIHAN ( P3 )<br>
+                                            < 45 HK</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    foreach ($getTargetPriorityBowheer as $data):
+                                        ?>
+                                        <tr>
+                                            <td><?= $total++ ?></td>
+                                            <td><?= $data['nama_bowheer'] ?></td>
+                                            <td><?php if ($data['total_p1'] == "0") {
+                                                echo "-";
+                                            } else {
+                                                echo number_format(floatval($data['total_p1']), 0, ",", ".");
+                                            } ?></td>
+                                            </td>
+                                            <td><?php
+                                            if ($data['total_p2'] == "0") {
+                                                echo "-";
+                                            } else {
+                                                echo number_format(floatval($data['total_p2']), 0, ",", ".");
+                                            }
+                                            ?></td>
+                                            <td><?php
+                                            if ($data['total_p3'] == "0") {
+                                                echo "-";
+                                            } else {
+                                                echo number_format(floatval($data['total_p3']), 0, ",", ".");
+                                            }
+                                            ?></td>
+                                            <td><?php
+                                            if ($data['total_all'] == "0") {
+                                                echo "-";
+                                            } else {
+                                                echo number_format(floatval($data['total_all']), 0, ",", ".");
+                                            }
+                                            ?></td>
+                                        </tr>
+
+                                        <?php
+                                    endforeach; ?>
+
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="2">Total</th>
+                                        <th id="totalP1"></th>
+                                        <th id="totalP2"></th>
+                                        <th id="totalP3"></th>
+                                        <th id="totalAll"></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
                 </div>
-        </section>
+            </div>
+        </div>
+    </section>
 
-        <div class="content-header">
-            <div class="container-fluid">
-                <div class="row mb-2 justify-content-center">
-                    <div class="col-sm-6 text-center">
-                        <button type="button" class="btn btn-gradient-primary btn-lg shadow pulse" data-toggle="modal"
-                            data-target="#modal-lg-tambah-invoice">
-                            <i class="fas fa-plus-circle mr-2"></i>
-                            <strong>TAMBAH INVOICE</strong>
+
+
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2 justify-content-center">
+                <div class="col-sm-6 text-center">
+                    <button type="button" class="btn btn-gradient-primary btn-lg shadow pulse" data-toggle="modal"
+                        data-target="#modal-lg-tambah-invoice">
+                        <i class="fas fa-plus-circle mr-2"></i>
+                        <strong>TAMBAH INVOICE</strong>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+
+        <div class="container-fluid">
+            <!-- Info boxes -->
+            <div class="row">
+                <!-- fix for small devices only -->
+                <div class="clearfix hidden-md-up"></div>
+
+                <div class="col-12">
+                    <div class="card">
+                        <!-- /.card-header -->
+                        <div class="card-body table-responsive text-nowrap">
+                            <table id="tabel_targetpic_summary" class="table table-bordered table-hover">
+                                <thead class="bg-info">
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Bowheer</th>
+                                        <th>Invoice</th>
+                                        <th>Price</th>
+                                        <th>Regional</th>
+                                        <th>Area</th>
+                                        <th>Date Submit</th>
+                                        <th>Due Date</th>
+                                        <th>Agging</th>
+                                        <th>Priority</th>
+                                        <th>PO Number</th>
+                                        <th>Status Invoice</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="8" style="text-align:right">Total:</th>
+                                        <th id="totalTarget">0</th>
+                                        <th id="totalAchieved">0</th>
+                                        <th id="totalSisa">0</th>
+                                        <th id="totalTargetPercent">0%</th>
+                                        <th id="totalAchievedPercent">0%</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                    <div class="row">
+                        <!-- ISI -->
+                    </div>
+                </div>
+    </section>
+
+    <form action="<?php echo site_url('BillingPayment/addInvoice'); ?>" method="post">
+        <div class="modal fade" id="modal-lg-tambah-invoice">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">🧾 TAMBAH INVOICE</h4>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="form-group col-md-12">
+                                <label>Bowheer / Project</label>
+                                <select id="addfilter_bowheer" name="addfilter_bowheer" class="form-control"
+                                    style="width:100%;">
+                                    <option value="" selected disabled hidden>Pilih Bowheer</option>
+                                    <?php foreach ($unique_bowheer as $bowheer): ?>
+                                        <option value="<?= $bowheer ?>"><?= $bowheer ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-group col-md-12">
+                                <label class="col-form-label">Area</label>
+                                <select id="addfilter_area" name="addfilter_area" class="form-control area-dropdown"
+                                    data-placeholder="Pilih Area" style="width: 100%;">
+                                    <option value="" selected disabled hidden>Pilih Area</option>
+                                    <?php foreach ($unique_city as $area): ?>
+                                        <option value="<?= $area ?>"><?= $area ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+
+                                <!-- Tombol tambah kota -->
+                                <div class="text-right mt-2">
+                                    <button type="button" id="btnTambahKota" class="btn btn-link text-primary p-0"
+                                        style="font-weight:600;">
+                                        + Tambah Kota Baru
+                                    </button>
+                                </div>
+
+                                <!-- Input kota baru (disembunyikan dulu) -->
+
+                                <select id="inputRegionalBaru" name="inputRegionalBaru"
+                                    class="form-control area-dropdown" data-placeholder="Pilih Regional Baru"
+                                    style="width: 100%; display:none; margin-top:10px;">
+                                    <option value="" selected disabled hidden>Pilih Regional Baru</option>
+                                    <?php foreach ($unique_regional as $regional): ?>
+                                        <option value="<?= $regional ?>"><?= $regional ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+
+                                <div id="inputKotaBaruContainer" style="display:none; margin-top:10px;">
+                                    <input type="text" id="inputKotaBaru" name="inputKotaBaru" class="form-control"
+                                        placeholder="Ketik nama kota baru..." autocomplete="off">
+                                </div>
+
+                                <div id="inputPICBaruContainer" style="display:none; margin-top:10px;">
+                                    <input type="text" id="inputPICBaru" name="inputPICBaru" class="form-control"
+                                        placeholder="Ketik PIC baru..." autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-group col-md-6">
+                                <label>Bulan</label>
+                                <select id="addfilter_month" name="addfilter_month" class="form-control"
+                                    style="width:100%;">
+                                    <option value="" selected disabled hidden>Pilih Bulan Invoice</option>
+                                    <?php foreach ($unique_month as $month): ?>
+                                        <option value="<?= $month ?>"><?= $month ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Week</label>
+                                <select id="addfilter_week" name="addfilter_week" class="form-control"
+                                    style="width:100%;">
+                                    <option value="" selected disabled hidden>Pilih Minggu Invoice</option>
+                                    <?php foreach ($unique_week as $week): ?>
+                                        <option value="<?= $week ?>"><?= $week ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Target Invoice</label>
+                            <input type="text" class="form-control" name="target_invoice" autocomplete="off"
+                                placeholder="0" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Realisasi Invoice</label>
+                            <input type="text" class="form-control" name="achiev_invoice" autocomplete="off"
+                                placeholder="0">
+                        </div>
+
+                        <div class="form-group" style="display:none">
+                            <label>Tambahan Invoice</label>
+                            <input type="text" class="form-control" name="tambahan_invoice" autocomplete="off"
+                                placeholder="0">
+                        </div>
+
+                        <div class="form-group" style="display:none">
+                            <label>Total Invoice</label>
+                            <input type="text" class="form-control" name="total_invoice" autocomplete="off"
+                                placeholder="0" readonly>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                        <button type="submit" name="btnEdit" class="btn btn-primary">
+                            <i class="fa fa-spinner fa-spin loading" style="display:none"></i>
+                            Simpan
                         </button>
                     </div>
                 </div>
             </div>
         </div>
+    </form>
 
-        <section class="content">
-
-            <div class="container-fluid">
-                <!-- Info boxes -->
-                <div class="row">
-                    <!-- fix for small devices only -->
-                    <div class="clearfix hidden-md-up"></div>
-
-                    <div class="col-12">
-                        <div class="card">
-                            <!-- /.card-header -->
-                            <div class="card-body table-responsive text-nowrap">
-                                <table id="tabel_targetpic_summary" class="table table-bordered table-hover">
-                                    <thead class="bg-info">
-                                        <tr>
-                                            <th>No</th>
-                                            <th>Bowheer</th>
-                                            <th>Invoice</th>
-                                            <th>Price</th>
-                                            <th>Regional</th>
-                                            <th>Area</th>
-                                            <th>Date Submit</th>
-                                            <th>Due Date</th>
-                                            <th>Agging</th>
-                                            <th>Priority</th>
-                                            <th>PO Number</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th colspan="5" style="text-align:right">Total:</th>
-                                            <th id="totalTarget">0</th>
-                                            <th id="totalAchieved">0</th>
-                                            <th id="totalSisa">0</th>
-                                            <th id="totalTargetPercent">0%</th>
-                                            <th id="totalAchievedPercent">0%</th>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            <!-- /.card-body -->
-                        </div>
-                        <div class="row">
-                            <!-- ISI -->
-                        </div>
-                    </div>
-        </section>
-
-        <form action="<?php echo site_url('BillingPayment/addInvoice'); ?>" method="post">
-            <div class="modal fade" id="modal-lg-tambah-invoice">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h4 class="modal-title">🧾 TAMBAH INVOICE</h4>
-                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-
-                        <div class="modal-body">
-                            <div class="row">
-                                <div class="form-group col-md-12">
-                                    <label>Bowheer / Project</label>
-                                    <select id="addfilter_bowheer" name="addfilter_bowheer" class="form-control"
-                                        style="width:100%;">
-                                        <option value="" selected disabled hidden>Pilih Bowheer</option>
-                                        <?php foreach ($unique_bowheer as $bowheer): ?>
-                                            <option value="<?= $bowheer ?>"><?= $bowheer ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="form-group col-md-12">
-                                    <label class="col-form-label">Area</label>
-                                    <select id="addfilter_area" name="addfilter_area" class="form-control area-dropdown"
-                                        data-placeholder="Pilih Area" style="width: 100%;">
-                                        <option value="" selected disabled hidden>Pilih Area</option>
-                                        <?php foreach ($unique_city as $area): ?>
-                                            <option value="<?= $area ?>"><?= $area ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-
-                                    <!-- Tombol tambah kota -->
-                                    <div class="text-right mt-2">
-                                        <button type="button" id="btnTambahKota" class="btn btn-link text-primary p-0"
-                                            style="font-weight:600;">
-                                            + Tambah Kota Baru
-                                        </button>
-                                    </div>
-
-                                    <!-- Input kota baru (disembunyikan dulu) -->
-
-                                    <select id="inputRegionalBaru" name="inputRegionalBaru"
-                                        class="form-control area-dropdown" data-placeholder="Pilih Regional Baru"
-                                        style="width: 100%; display:none; margin-top:10px;">
-                                        <option value="" selected disabled hidden>Pilih Regional Baru</option>
-                                        <?php foreach ($unique_regional as $regional): ?>
-                                            <option value="<?= $regional ?>"><?= $regional ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-
-                                    <div id="inputKotaBaruContainer" style="display:none; margin-top:10px;">
-                                        <input type="text" id="inputKotaBaru" name="inputKotaBaru" class="form-control"
-                                            placeholder="Ketik nama kota baru..." autocomplete="off">
-                                    </div>
-
-                                    <div id="inputPICBaruContainer" style="display:none; margin-top:10px;">
-                                        <input type="text" id="inputPICBaru" name="inputPICBaru" class="form-control"
-                                            placeholder="Ketik PIC baru..." autocomplete="off">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="form-group col-md-6">
-                                    <label>Bulan</label>
-                                    <select id="addfilter_month" name="addfilter_month" class="form-control"
-                                        style="width:100%;">
-                                        <option value="" selected disabled hidden>Pilih Bulan Invoice</option>
-                                        <?php foreach ($unique_month as $month): ?>
-                                            <option value="<?= $month ?>"><?= $month ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="form-group col-md-6">
-                                    <label>Week</label>
-                                    <select id="addfilter_week" name="addfilter_week" class="form-control"
-                                        style="width:100%;">
-                                        <option value="" selected disabled hidden>Pilih Minggu Invoice</option>
-                                        <?php foreach ($unique_week as $week): ?>
-                                            <option value="<?= $week ?>"><?= $week ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Target Invoice</label>
-                                <input type="text" class="form-control" name="target_invoice" autocomplete="off"
-                                    placeholder="0" readonly>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Realisasi Invoice</label>
-                                <input type="text" class="form-control" name="achiev_invoice" autocomplete="off"
-                                    placeholder="0">
-                            </div>
-
-                            <div class="form-group" style="display:none">
-                                <label>Tambahan Invoice</label>
-                                <input type="text" class="form-control" name="tambahan_invoice" autocomplete="off"
-                                    placeholder="0">
-                            </div>
-
-                            <div class="form-group" style="display:none">
-                                <label>Total Invoice</label>
-                                <input type="text" class="form-control" name="total_invoice" autocomplete="off"
-                                    placeholder="0" readonly>
-                            </div>
-                        </div>
-
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-                            <button type="submit" name="btnEdit" class="btn btn-primary">
-                                <i class="fa fa-spinner fa-spin loading" style="display:none"></i>
-                                Simpan
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </form>
+    
 
 
 
-        <!-- /.content-wrapper -->
+    <!-- /.content-wrapper -->
 
-        <?php $this->session->set_flashdata('status', 'kosong'); ?>
+    <?php $this->session->set_flashdata('status', 'kosong'); ?>
 
-        <!-- Control Sidebar -->
-        <aside class="control-sidebar control-sidebar-dark">
-            <!-- Control sidebar content goes here -->
-        </aside>
-
-    </div>
+    <!-- Control Sidebar -->
+    <aside class="control-sidebar control-sidebar-dark">
+        <!-- Control sidebar content goes here -->
+    </aside>
 
     <script>
 
@@ -445,17 +559,88 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
                         .css('width', '100%');
                 }
             });
+            $('#tabel_targetpriority_bowheer').DataTable({
+                paging: true,
+                pageLength: 10,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,     // aktifkan scroll horizontal otomatis
+                responsive: false,   // matikan agar kolom tetap sejajar
+                ordering: true,
+                initComplete: function () {
+                    // pastikan wrapper scroll ikut lebar layar
+                    $('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
+        });
+
+        $(document).ready(function () {
+            $.fn.dataTable.ext.errMode = 'none';
+
+            const table = $('#tabel_targetpriority_bowheer').DataTable({
+                footerCallback: function () {
+                    updateTotal();
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
+                ],
+                order: [[1, 'asc']]
+            });
+
+            // Tambah nomor otomatis di kolom pertama
+            table.on('order.dt search.dt', function () {
+                table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
+
+            function parseValue(val) {
+                if (!val) return 0;
+
+                return parseFloat(
+                    val.toString()
+                        .replace(/\./g, '')   // hapus titik ribuan
+                        .replace(',', '.')    // jaga kalau ada desimal
+                ) || 0;
+            }
+
+            // Fungsi utama untuk hitung total otomatis
+            function updateTotal() {
+                const data = table.rows({ search: 'applied' }).data();
+
+                let totalP1 = 0;
+                let totalP2 = 0;
+                let totalP3 = 0;
+                let totalAll = 0;
+
+                data.each(function (row) {
+                    totalP1 += parseValue(row[2]);
+                    totalP2 += parseValue(row[3]);
+                    totalP3 += parseValue(row[4]);
+                    totalAll += parseValue(row[5]);
+                });
+
+                // isi footer sesuai kolom
+                $(table.column(2).footer()).text(formatTitik(totalP1));
+                $(table.column(3).footer()).text(formatTitik(totalP2));
+                $(table.column(4).footer()).text(formatTitik(totalP3));
+                $(table.column(5).footer()).text(formatTitik(totalAll));
+            }
+
+            // Jalankan ulang total setiap kali tabel berubah
+            table.on('draw', function () {
+                updateTotal();
+            });
+
+            // Hitung total pertama kali
+            updateTotal();
         });
 
         $(document).ready(function () {
             $('.card[data-card-widget="collapsed"]').addClass('card-tools');
         });
-
-        // document.addEventListener("DOMContentLoaded", function () {
-        //     let cardfilter = document.getElementById("cardfiltercollapse").closest(".card");
-        //     cardfilter.classList.add("collapsed-card");
-        // });
-
     </script>
 
     <script>
@@ -536,12 +721,10 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
                 e.preventDefault();
 
                 const filters = {
-                    pic: $('#filter_pic').val(),
-                    bowheer: $('#filter_bowheer').val(),
-                    regional: $('#filter_regional').val(),
-                    city: $('#filter_city').val(),
-                    month: $('#filter_month').val(),
-                    week: $('#filter_week').val(),
+                    bowheer: $('#filter_bowheer_up').val(),
+                    regional: $('#filter_regional_up').val(),
+                    city: $('#filter_city_up').val(),
+                    priority: $('#filter_priority_up').val()
                 };
 
                 $.ajax({
@@ -550,7 +733,8 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
                     data: filters,
                     dataType: 'json',
                     beforeSend: function () {
-                        $('#btnFilterDataProject i.loading').show();
+                        // $('#btnFilterDataProject i.loading').show();
+                        showLoader();
                     },
                     success: function (response) {
                         if ($.fn.DataTable.isDataTable('#tabel_targetpic_summary')) {
@@ -566,7 +750,7 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
                         // === FOOTER ===
                         let tfootHtml = '<tr>';
                         response.columns.forEach((col, index) => {
-                            if (['Target', 'Achieved', 'Sisa', 'Target %', 'Achieved %'].includes(col)) {
+                            if (['Price'].includes(col)) {
                                 tfootHtml += `<th id="footer_${col.replace(/\s+/g, '_')}">0</th>`;
                             } else if (index === 0) {
                                 tfootHtml += `<th style="text-align:right">Total:</th>`;
@@ -591,15 +775,22 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
                                         case 'No': tbodyHtml += `<td>${i + 1}</td>`; break;
                                         case 'Bowheer': tbodyHtml += `<td>${row.nama_bowheer || '-'}</td>`; break;
                                         case 'Invoice': tbodyHtml += `<td>${row.no_invoice || '-'}</td>`; break;
-                                        case 'Price': tbodyHtml += `<td>${row.invoice_price_nett || '-'}</td>`; break;
+                                        case 'Price':
+                                            tbodyHtml += `<td style="text-align: right;">${formatTitik(row.invoice_price_nett, 2)}</td>`;
+                                            break;
                                         case 'Regional': tbodyHtml += `<td>${row.regional_payment || '-'}</td>`; break;
                                         case 'Area': tbodyHtml += `<td>${row.area_payment || '-'}</td>`; break;
-                                        case 'Date Submit': tbodyHtml += `<td>${row.tgl_submit_invoice|| '-'}</td>`; break;
+                                        case 'Date Submit': tbodyHtml += `<td>${row.tgl_submit_invoice || '-'}</td>`; break;
                                         case 'Due Date': tbodyHtml += `<td>${row.tgl_jatuh_tempo || '-'}</td>`; break;
-                                        case 'Agging': tbodyHtml += `<td>${row.umur_invoice || '-'}</td>`; break;
+                                        case 'Aging': tbodyHtml += `<td>${row.umur_invoice || '-'}</td>`; break;
                                         case 'Priority': tbodyHtml += `<td>${row.priority || '-'}</td>`; break;
                                         case 'PO Number': tbodyHtml += `<td>${row.po_number || '-'}</td>`; break;
-                                        
+                                        case 'Status Invoice': tbodyHtml += `<td>${row.status_invoice || '-'}</td>`; break;
+                                        case 'Action': tbodyHtml += `<td>
+                                        <button type="button" class="btn btn-primary detail-item" data-id="${row.id}"><i class="fa fa-eye"></i></button>
+                                        <button type="button" class="btn btn-danger hapus-item" data-id="${row.id}"><i class="fa fa-trash"></i></button>
+                                        </td>`; break;
+
                                         // case 'Due Date': tbodyHtml += `<td>${row.sisa ? formatTitik(parseInt(row.sisa)) : '-'}</td>`; break;
                                         // case 'PO Number': tbodyHtml += `<td>${row.persen_achieved ? Number(row.persen_achieved).toFixed(0) + '%' : '-'}</td>`; break;
                                         default: tbodyHtml += `<td>-</td>`;
@@ -620,48 +811,59 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
                                 autoWidth: false,
                                 pageLength: 10,
                                 ordering: true,
-                                order: [[1, 'asc']],
                                 footerCallback: function (row, data, start, end, display) {
                                     const api = this.api();
 
-                                    const parseValue = val => {
-                                        return typeof val === 'string'
-                                            ? parseFloat(val.replace(/\./g, '').replace(/[^0-9.-]/g, '')) || 0
-                                            : typeof val === 'number' ? val : 0;
-                                    };
-
                                     const colIndex = name => response.columns.indexOf(name);
 
-                                    let totalTarget = 0, totalAchieved = 0, totalSisa = 0;
+                                    const parseValue = val => {
+                                        if (!val) return 0;
 
-                                    if (colIndex('Target') > -1)
-                                        totalTarget = api.column(colIndex('Target'), { search: 'applied' }).data().reduce((a, b) => a + parseValue(b), 0);
+                                        // kalau sudah number
+                                        if (typeof val === 'number') return val;
 
-                                    if (colIndex('Achieved') > -1)
-                                        totalAchieved = api.column(colIndex('Achieved'), { search: 'applied' }).data().reduce((a, b) => a + parseValue(b), 0);
+                                        // kalau string format indonesia
+                                        if (typeof val === 'string') {
+                                            return parseFloat(
+                                                val
+                                                    .replace(/\./g, '')   // hapus ribuan
+                                                    .replace(',', '.')    // ubah desimal
+                                            ) || 0;
+                                        }
 
-                                    if (colIndex('Sisa') > -1)
-                                        totalSisa = api.column(colIndex('Sisa'), { search: 'applied' }).data().reduce((a, b) => a + parseValue(b), 0);
+                                        return 0;
+                                    };
 
-                                    const persenAchieved = totalTarget > 0 ? (totalAchieved / totalTarget) * 100 : 0;
-                                    const persenSisa = totalTarget > 0 ? (totalSisa / totalTarget) * 100 : 0;
+                                    let totalAll = 0;
+                                    let totalP1 = 0;
+                                    let totalP2 = 0;
+                                    let totalP3 = 0;
 
-                                    if (colIndex('Target') > -1)
-                                        $(api.column(colIndex('Target')).footer()).html(formatTitik(totalTarget));
+                                    const priceIdx = colIndex('Price');
+                                    const priorityIdx = colIndex('Priority');
 
-                                    if (colIndex('Achieved') > -1)
-                                        $(api.column(colIndex('Achieved')).footer()).html(formatTitik(totalAchieved));
+                                    api.rows({ search: 'applied' }).every(function () {
+                                        const row = this.data();
 
-                                    if (colIndex('Sisa') > -1)
-                                        $(api.column(colIndex('Sisa')).footer()).html(formatTitik(totalSisa));
+                                        const price = parseValue(row[priceIdx]);
+                                        const priority = row[priorityIdx];
 
-                                    if (colIndex('Target %') > -1)
-                                        $(api.column(colIndex('Target %')).footer()).html(persenSisa.toFixed(0) + '%');
+                                        totalAll += price;
 
-                                    if (colIndex('Achieved %') > -1)
-                                        $(api.column(colIndex('Achieved %')).footer()).html(persenAchieved.toFixed(0) + '%');
+                                        if (priority === 'P1') totalP1 += price;
+                                        else if (priority === 'P2') totalP2 += price;
+                                        else if (priority === 'P3') totalP3 += price;
+                                    });
 
-                                    updateDashboardFromFooter();
+                                    if (priceIdx > -1) {
+                                        $(api.column(priceIdx).footer()).html(formatTitik(totalAll, 2));
+                                    }
+
+                                    animateValue('dashboardTotalBilling', 0, totalAll, 600, true);
+                                    animateValue('dashboardBillingP1', 0, totalP1, 600, true);
+                                    animateValue('dashboardBillingP2', 0, totalP2, 600, true);
+                                    animateValue('dashboardBillingP3', 0, totalP3, 600, true);
+
                                     highlightCells();
                                 }
                             });
@@ -681,7 +883,8 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
                         console.error('Error:', xhr.responseText);
                     },
                     complete: function () {
-                        $('#btnFilterDataProject i.loading').hide();
+                        // $('#btnFilterDataProject i.loading').hide();
+                        hideLoader();
                     }
                 });
             });
@@ -693,15 +896,28 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
 
             // === RESET FILTER ===
             $('#reset_filter').on('click', function () {
-                $('#filter_pic, #filter_bowheer, #filter_regional, #filter_city, #filter_month, #filter_week').val(null).trigger('change');
+                $('#filter_bowheer_up, #filter_regional_up, #filter_city_up, #filter_priority_up').val(null).trigger('change');
                 setTimeout(() => $('#btnFilterDataProject').trigger('click'), 300);
             });
         });
 
+        function parseNumber(val) {
+            if (!val) return 0;
+
+            return parseFloat(
+                val
+                    .toString()
+                    .replace(/\./g, '')   // hapus ribuan
+                    .replace('.', ',')    // ubah desimal ke format JS
+            ) || 0;
+        }
+
         // === FORMAT ANGKA PAKAI TITIK ===
-        function formatTitik(value) {
-            if (isNaN(value) || value === null) return '0';
-            return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        function formatTitik(num, decimalPlaces = 2) {
+            return Number(num).toLocaleString('id-ID', {
+                minimumFractionDigits: decimalPlaces,
+                maximumFractionDigits: decimalPlaces
+            });
         }
 
         function formatRupiah(value) {
@@ -726,22 +942,6 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
             window.requestAnimationFrame(step);
         }
 
-        // === UPDATE DASHBOARD DARI FOOTER ===
-        function updateDashboardFromFooter() {
-            const targetEl = $('#tabel_targetpic_summary tfoot th#footer_Target');
-            if (!targetEl.length) return;
-
-            const totalTarget = parseFloat(targetEl.text().replace(/[^\d]/g, '')) || 0;
-            const totalAchieved = parseFloat($('#footer_Achieved').text().replace(/[^\d]/g, '')) || 0;
-            const totalSisa = parseFloat($('#footer_Sisa').text().replace(/[^\d]/g, '')) || 0;
-
-            const totalPersen = totalTarget > 0 ? (totalAchieved / totalTarget) * 100 : 0;
-
-            animateValue('dashboardBillingPayment', 0, totalTarget, 600, true);
-            animateValue('dashboardAchievInvoice', 0, totalAchieved, 600, true);
-            animateValue('dashboardSisaInvoice', 0, totalSisa, 600, true);
-            animateValue('dashboardPersentaseInvoice', 0, totalPersen, 600, false);
-        }
 
         function highlightCells() {
             $('#tabel_targetpic_summary tbody tr').each(function () {
@@ -1137,6 +1337,15 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
             });
         });
     </script>
+    <script>
+        function showLoader() {
+            $('#globalLoader').fadeIn(200);
+        }
+
+        function hideLoader() {
+            $('#globalLoader').fadeOut(200);
+        }
+    </script>
 
 
 
@@ -1341,5 +1550,41 @@ $unique_priority = array_unique(array_column($getAllData, 'priority'));
         #btnTambahKota:hover {
             text-decoration: underline;
             transform: scale(1.05);
+        }
+
+        #globalLoader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            /* gelap transparan */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loader-content {
+            text-align: center;
+            align-items: center;
+            color: #fff;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #ddd;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>

@@ -34,8 +34,9 @@ class MBillingPayment extends CI_Model
 END AS status_monitor
 
 FROM tb_billingpayment tbp
-JOIN tb_master_bowheer_invoice tmbi 
-    ON tbp.id_bowheer = tmbi.id_bowheer')
+JOIN tb_master_bowheer_bilco tmbi 
+    ON tbp.id_bowheer = tmbi.id_bowheer
+    ORDER BY umur_invoice DESC')
             ->result_array();
         return $data;
     }
@@ -47,43 +48,62 @@ JOIN tb_master_bowheer_invoice tmbi
         return $data;
     }
 
-    public function getTargetAllPIC()
+    public function getTargetPriorityBowheer()
     {
         $data = $this->db->query('SELECT
-	tti.regional_target,
-	tti.area_target,
-	tmb.id_bowheer,
-    tmb.nama_bowheer,
-    tmb.pic_user,
-    SUM(tti.qty_target) AS total_target,
-    SUM(tti.qty_achiev_target) AS total_achiev,
-    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi,
+	tmbi.nama_bowheer,
+    -- TOTAL SEMUA
+    SUM(tbp.invoice_price_nett) AS total_all,
 
-    ROUND(
+    -- P1
+    SUM(
         CASE 
-            WHEN SUM(tti.qty_target) = 0 THEN 0
-            ELSE (SUM(tti.qty_achiev_target) / SUM(tti.qty_target)) * 100
-        END, 2
-    ) AS persen_achiev,
+            WHEN DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 75 
+            THEN tbp.invoice_price_nett 
+            ELSE 0 
+        END
+    ) AS total_p1,
 
-    -- Persentase Deviasi (berapa % sisa dari target yang belum tercapai)
-    ROUND(
+    -- P2
+    SUM(
         CASE 
-            WHEN SUM(tti.qty_target) = 0 THEN 0
-            ELSE ((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) / SUM(tti.qty_target)) * 100
-        END, 2
-    ) AS persen_deviasi
-FROM tb_target_invoice tti
-JOIN tb_master_bowheer_invoice tmb
-    ON tti.id_bowheer = tmb.id_bowheer
-GROUP BY tmb.pic_user
-ORDER BY total_target DESC;')
+            WHEN DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 45
+             AND DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) < 75
+            THEN tbp.invoice_price_nett 
+            ELSE 0 
+        END
+    ) AS total_p2,
+
+    -- P3
+    SUM(
+        CASE 
+            WHEN DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) < 45
+            THEN tbp.invoice_price_nett 
+            ELSE 0 
+        END
+    ) AS total_p3
+
+FROM tb_billingpayment tbp
+JOIN tb_master_bowheer_bilco tmbi 
+    ON tbp.id_bowheer = tmbi.id_bowheer
+    GROUP BY tmbi.id_bowheer
+    ORDER BY total_p1 DESC')
             ->result_array();
         return $data;
     }
 
-    public function getFilteredBillingPayment($bowheer, $regional, $city, $month)
+    public function getFilteredBillingPayment($bowheer, $regional, $city, $priority)
     {
+        if ($priority == "P1") {
+            $priorityCondition = 'DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 75';
+        } elseif ($priority == "P2") {
+            $priorityCondition = 'DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 45 AND DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) < 75';
+        } elseif ($priority == "P3") {
+            $priorityCondition = 'DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) < 45';
+        } else {
+            $priorityCondition = '1=1'; // Jika tidak ada filter priority, tampilkan semua
+        }
+
         $this->db->select('tbp.*,
         tmbi.*,
 
@@ -110,17 +130,35 @@ ORDER BY total_target DESC;')
     ELSE "AMAN"
 END AS status_monitor');
         $this->db->from('tb_billingpayment tbp');
-        $this->db->join('tb_master_bowheer_invoice tmbi', 'tbp.id_bowheer = tmbi.id_bowheer');
+        $this->db->join('tb_master_bowheer_bilco tmbi', 'tbp.id_bowheer = tmbi.id_bowheer');
 
         // === FILTERS ===
         if (!empty($bowheer))
             $this->db->where_in('nama_bowheer', $bowheer);
         if (!empty($regional))
-            $this->db->where_in('regional_target', $regional);
+            $this->db->where_in('regional_payment', $regional);
         if (!empty($city))
-            $this->db->where_in('area_target', $city);
-        if (!empty($month))
-            $this->db->where_in('month_target', $month);
+            $this->db->where_in('area_payment', $city);
+        if (!empty($priority)) {
+
+            $conditions = [];
+
+            foreach ($priority as $p) {
+                if ($p == "P1") {
+                    $conditions[] = 'DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 75';
+                } elseif ($p == "P2") {
+                    $conditions[] = '(DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 45 AND DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) < 75)';
+                } elseif ($p == "P3") {
+                    $conditions[] = 'DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) < 45';
+                }
+            }
+
+            if (!empty($conditions)) {
+                $this->db->where('(' . implode(' OR ', $conditions) . ')', null, false);
+            }
+        }
+
+        $this->db->order_by('umur_invoice', 'DESC');
 
         $query = $this->db->get();
 
