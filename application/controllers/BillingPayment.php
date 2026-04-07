@@ -44,7 +44,7 @@ class BillingPayment extends CI_Controller
         $data = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $priority);
 
         // Tentukan kolom yang tampil berdasarkan filter
-            $columns = ['No', 'Bowheer', 'Invoice', 'Price', 'Regional', 'Area', 'Date Submit', 'Due Date', 'Aging', "Priority", "PO Number", "Status Invoice", "Action"];
+        $columns = ['No', 'Bowheer', 'Invoice', 'Price', 'Regional', 'Area', 'Date Submit', 'Due Date', 'Aging', "Priority", "PO Number", "Status Invoice", "Action"];
 
         echo json_encode([
             'columns' => $columns,
@@ -54,63 +54,97 @@ class BillingPayment extends CI_Controller
         log_message('debug', 'Last Query: ' . $this->db->last_query());
     }
 
-    public function get_target_invoice()
+    public function getOpenInvoices()
     {
-        $bowheer = $this->input->post('bowheer');
-        $area = $this->input->post('area');
-        $month = $this->input->post('month');
-        $week = $this->input->post('week');
+        error_reporting(0);
+        ini_set('display_errors', 0);
 
-        log_message('debug', 'FILTER BOWHEER: ' . print_r($bowheer, true));
+        $keyword = $this->input->get('q');
 
-        // Ambil data dari model
-        $this->load->model('MBillingPayment');
-        $result = $this->MBillingPayment->getTargetInvoice($bowheer, $area, $month, $week);
-        echo json_encode($result);
-        exit;
+        $this->db->select('tbp.id_billing, tbp.no_invoice, tbp.po_number, tbp.invoice_price_nett, tmbi.nama_bowheer');
+        $this->db->from('tb_billingpayment tbp');
+        $this->db->join('tb_master_bowheer_bilco tmbi', 'tbp.id_bowheer = tmbi.id_bowheer', 'left');
+        $this->db->where('tbp.status_invoice', 'open');
+
+        if (!empty($keyword)) {
+            $this->db->group_start();
+            $this->db->like('tbp.no_invoice', $keyword);
+            $this->db->or_like('tbp.po_number', $keyword);
+            $this->db->or_like('tmbi.nama_bowheer', $keyword);
+            $this->db->group_end();
+        }
+
+        $this->db->order_by('tbp.no_invoice', 'ASC');
+        $this->db->limit(20);
+
+        $query = $this->db->get()->result_array();
+
+        $results = [];
+        foreach ($query as $row) {
+            $results[] = [
+                'id' => $row['id_billing'],
+                'text' => $row['no_invoice'],
+                'no_invoice' => $row['no_invoice'],
+                'po_number' => $row['po_number'],
+                'nama_bowheer' => $row['nama_bowheer'],
+                'invoice_price_nett' => $row['invoice_price_nett']
+            ];
+        }
+
+        echo json_encode(['results' => $results]);
     }
 
-    public function addInvoice()
+    public function saveBatchPayment()
     {
 
         error_reporting(0);
         ini_set('display_errors', 0);
 
-        $data = $this->input->post();
-        $this->load->model('MBillingPayment');
+        $idBilling = $this->input->post('id_billing');
+        $paymentPrice = $this->input->post('invoice_price_payment');
+        $paymentDate = $this->input->post('tgl_payment_invoice');
 
-        $result = $this->MBillingPayment->updateAchievInvoice($data);
-
-        // Jika area belum ada
-        if ($result['status'] === 'not_found') {
+        if (empty($idBilling) || !is_array($idBilling)) {
             echo json_encode([
-                'status' => 'not_found',
-                'message' => 'Project tidak memiliki area ini',
-                'id_bowheer' => $result['id_bowheer'],
-                'area_target' => $result['area_target'],
-                'month' => $result['month'],
-                'week' => $result['week'],
-                'regional' => $result['regional'],
-                'pic' => $result['pic'],
-                'nilai_update' => $result['nilai_update']
+                'status' => false,
+                'message' => 'Data invoice tidak ditemukan'
             ]);
             return;
         }
 
-        echo json_encode($result);
-    }
+        $this->db->trans_start();
 
+        for ($i = 0; $i < count($idBilling); $i++) {
+            $id = (int) $idBilling[$i];
+            $price = preg_replace('/[^\d]/', '', $paymentPrice[$i]);
+            $date = $paymentDate[$i];
 
-    public function createNewTargetInvoice()
-    {
+            if (empty($id) || empty($price) || empty($date)) {
+                continue;
+            }
 
-        error_reporting(0);
-        ini_set('display_errors', 0);
+            $this->db->where('id_billing', $id);
+            $this->db->where('status_invoice', 'open');
+            $this->db->update('tb_billingpayment', [
+                'status_invoice' => 'paid',
+                'invoice_price_payment' => $price,
+                'tgl_payment_invoice' => $date
+            ]);
+        }
 
-        $data = $this->input->post();
-        $this->load->model('MBillingPayment');
-        $result = $this->MBillingPayment->createNewTargetInvoice($data);
-        echo json_encode($result);
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status()) {
+            echo json_encode([
+                'status' => true,
+                'message' => 'Pembayaran berhasil disimpan'
+            ]);
+        } else {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Gagal menyimpan pembayaran'
+            ]);
+        }
     }
 
 }
