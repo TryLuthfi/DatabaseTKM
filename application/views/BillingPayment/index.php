@@ -323,13 +323,13 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     <button type="button" class="btn btn-gradient-primary btn-lg shadow pulse mr-2" data-toggle="modal"
                         data-target="#modal-download-report">
                         <i class="fas fa-plus-circle mr-2"></i>
-                        <strong>TAMBAH INVOICE</strong>
+                        <strong>ADD INVOICE</strong>
                     </button>
 
                     <button type="button" class="btn btn-gradient-success btn-lg shadow pulse mr-2" data-toggle="modal"
                         data-target="#modal-payment">
                         <i class="fas fa-money-bill mr-2"></i>
-                        <strong>TAMBAH PEMBAYARAN</strong>
+                        <strong>ADD PAYMENT</strong>
                     </button>
 
                 </div>
