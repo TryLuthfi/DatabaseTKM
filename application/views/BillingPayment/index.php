@@ -19,6 +19,17 @@ $bulan_order = [
 
 $total = 1;
 
+$bowheer_options = [];
+foreach ($getAllData as $row) {
+    if (!empty($row['id_bowheer']) && !isset($bowheer_options[$row['id_bowheer']])) {
+        $bowheer_options[$row['id_bowheer']] = [
+            'id' => $row['id_bowheer'],
+            'text' => $row['nama_bowheer']
+        ];
+    }
+}
+$bowheer_options = array_values($bowheer_options);
+
 $unique_bowheer = array_unique(array_column($getAllData, 'nama_bowheer'));
 $unique_regional = array_unique(array_column($getAllData, 'regional_payment'));
 $unique_city = array_unique(array_column($getAllData, 'area_payment'));
@@ -348,50 +359,70 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 <div class="col-12">
                     <div class="card">
                         <!-- /.card-header -->
-                        <div class="card-body table-responsive text-nowrap">
-                            <table id="tabel_targetpic_summary" class="table table-bordered table-hover">
-                                <thead class="bg-info">
-                                    <tr>
-                                        <th>No</th>
-                                        <th>Bowheer</th>
-                                        <th>Invoice</th>
-                                        <th>Price</th>
-                                        <th>Regional</th>
-                                        <th>Area</th>
-                                        <th>Date Submit</th>
-                                        <th>Due Date</th>
-                                        <th>Agging</th>
-                                        <th>Priority</th>
-                                        <th>PO Number</th>
-                                        <th>Status Invoice</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="8" style="text-align:right">Total:</th>
-                                        <th id="totalTarget">0</th>
-                                        <th id="totalAchieved">0</th>
-                                        <th id="totalSisa">0</th>
-                                        <th id="totalTargetPercent">0%</th>
-                                        <th id="totalAchievedPercent">0%</th>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                        <div class="card-header p-0 pt-1">
+                            <ul class="nav nav-tabs" id="invoice-status-tab" role="tablist">
+                                <li class="pt-2 px-3">
+                                    <h3 class="card-title">DETAIL</h3>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active tab-status-invoice" data-status="open"
+                                        href="javascript:void(0)">OPEN INVOICE</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link tab-status-invoice" data-status="partial"
+                                        href="javascript:void(0)">PARTIAL PAYMENT</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link tab-status-invoice" data-status="paid"
+                                        href="javascript:void(0)">PAID PAYMENT</a>
+                                </li>
+                            </ul>
                         </div>
-                        <!-- /.card-body -->
+
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table id="tabel_list_open_invoice" class="table table-bordered table-hover">
+                                    <thead class="bg-info">
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Bowheer</th>
+                                            <th>Invoice</th>
+                                            <th>Price</th>
+                                            <th>Regional</th>
+                                            <th>Area</th>
+                                            <th>Date Submit</th>
+                                            <th>Due Date</th>
+                                            <th>Agging</th>
+                                            <th>Priority</th>
+                                            <th>PO Number</th>
+                                            <th>Status Invoice</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="8" style="text-align:right">Total:</th>
+                                            <th id="totalTarget">0</th>
+                                            <th id="totalAchieved">0</th>
+                                            <th id="totalSisa">0</th>
+                                            <th id="totalTargetPercent">0%</th>
+                                            <th id="totalAchievedPercent">0%</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <!-- ISI -->
+                        </div>
                     </div>
-                    <div class="row">
-                        <!-- ISI -->
-                    </div>
-                </div>
     </section>
 
-    <!-- MODAL DOWNLOAD REPORT DATA -->
+    <!-- MODAL TAMBAH INVOICE -->
     <div class="modal fade" id="modal-download-report" data-backdrop="static" tabindex="-1" role="dialog"
         aria-labelledby="exampleModalLongTitle" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalTitle">TAMBAH INVOICE</h5>
@@ -400,162 +431,133 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <button class="btn btn-secondary btn-block" id="report_stok_logistik">📋 UPLOAD
-                                    MANUAL</button>
-                            </div>
+                    <ul class="nav nav-tabs" id="invoiceUploadTab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="tab-manual-invoice-link" data-toggle="tab"
+                                href="#tab-manual-invoice" role="tab">Upload Manual Batch</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-excel-invoice-link" data-toggle="tab"
+                                href="#tab-excel-invoice" role="tab">Upload Excel Drag & Drop</a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content pt-3">
+                        <div class="tab-pane fade show active" id="tab-manual-invoice" role="tabpanel">
+                            <form id="formManualInvoiceBatch">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <p class="mb-0 text-muted">Tambah beberapa invoice sekaligus, lalu simpan dalam satu
+                                        proses.</p>
+                                    <button type="button" class="btn btn-primary" id="btnAddManualInvoiceRow">
+                                        Tambah Baris
+                                    </button>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-striped" id="table_manual_invoice">
+                                        <thead>
+                                            <tr class="text-center">
+                                                <th>No</th>
+                                                <th>Bowheer</th>
+                                                <th>No Invoice</th>
+                                                <th>Tgl Create</th>
+                                                <th>Tgl Submit</th>
+                                                <th>PO Number</th>
+                                                <th>PO Date</th>
+                                                <th>Invoice Est</th>
+                                                <th>Invoice Nett</th>
+                                                <th>Regional</th>
+                                                <th>Area</th>
+                                                <th>Deskripsi</th>
+                                                <th>Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr id="emptyManualInvoiceRow">
+                                                <td colspan="13" class="text-center text-muted">Belum ada invoice
+                                                    ditambahkan</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="7" class="text-right">Total</th>
+                                                <th id="manualInvoiceEstTotal" class="text-right">0,00</th>
+                                                <th id="manualInvoiceNettTotal" class="text-right">0,00</th>
+                                                <th colspan="4"></th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button type="submit" class="btn btn-success">Simpan Invoice Manual</button>
+                                </div>
+                            </form>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <button class="btn btn-warning btn-block" id="report_in_out_logistik">📂 UPLOAD
-                                    BATCH</button>
-                            </div>
-                        </div>
 
-                        <div class="col-md-12 mt-3" id="report_judul">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="flex-grow-1 border-top"></div>
-                                <h5 class="mx-3">PILIH MENU EXPORT</h5>
-                                <div class="flex-grow-1 border-top"></div>
-                            </div>
-                        </div>
-                    </div>
-
-
-                    <!-- Form Input Batch (Hidden by Default) -->
-                    <div id="isi_report_in_out_logistik" class="mt-3 d-none">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label class="col-form-label">Regional Gudang</label>
-                                    <select id="report_in_out_regional_gudang" class="form-control">
-                                        <option value="">Pilih Regional</option>
-                                    </select>
+                        <div class="tab-pane fade" id="tab-excel-invoice" role="tabpanel">
+                            <form id="formPreviewInvoiceImport" enctype="multipart/form-data">
+                                <div class="d-flex justify-content-end mb-3">
+                                    <a href="<?= base_url('BillingPayment/downloadInvoiceImportTemplate') ?>"
+                                        class="btn btn-outline-success">
+                                        Download Format Excel
+                                    </a>
                                 </div>
+
+                                <div id="invoiceDropzone" class="invoice-dropzone text-center">
+                                    <input type="file" id="invoiceExcelFile" name="file_excel" accept=".xls,.xlsx"
+                                        hidden>
+                                    <h5 class="mb-2">Drop file Excel di sini</h5>
+                                    <p class="text-muted mb-3">atau klik area ini untuk memilih file `.xls` / `.xlsx`
+                                    </p>
+                                    <button type="button" class="btn btn-outline-primary" id="btnChooseInvoiceExcel">
+                                        Pilih File Excel
+                                    </button>
+                                </div>
+
+                                <div class="alert alert-light border mt-3 mb-3">
+                                    <strong>Header yang didukung:</strong>
+                                    `id_bowheer` atau `nama_bowheer`, `no_invoice`, `tgl_create_invoice`,
+                                    `tgl_submit_invoice`, `po_number`, `po_tgl`, `invoice_price_est`,
+                                    `invoice_price_nett`, `regional_payment`, `area_payment`, `deskripsi_payment`.
+                                </div>
+                            </form>
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div id="invoiceImportSummary" class="text-muted">Belum ada file dipreview</div>
+                                <button type="button" class="btn btn-success" id="btnSaveImportedInvoice" disabled>
+                                    Import ke Database
+                                </button>
                             </div>
 
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label class="col-form-label">Lokasi Gudang (Kota)</label>
-                                    <select id="report_in_out_lokasi_gudang" class="form-control">
-                                        <option value="">Pilih Kota</option>
-                                    </select>
-                                </div>
-                            </div>
+                            <input type="hidden" id="invoiceImportRowsJson">
 
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label class="col-form-label">Bowheer</label>
-                                    <select id="report_in_out_nama_bowheer" class="form-control">
-                                        <option value="">Pilih Bowheer</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-form-label">Kategori Item</label>
-                                    <select id="report_in_out_kategori_item" class="form-control">
-                                        <option value="">Pilih Kategori</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-form-label">Nama Item</label>
-                                    <select id="report_in_out_nama_item" class="form-control">
-                                        <option value="">Pilih Item</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-form-label">Submitted Date Start</label>
-                                    <input type="date" class="form-control float-right" id="report_in_out_date_start">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-form-label">Submitted Date End</label>
-                                    <input type="date" class="form-control float-right" id="report_in_out_data_end">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-12 mt-3 d-flex justify-content-end">
-                            <div class="form-group">
-                                <button id="downloadReportInOutLogistik" class="btn btn-primary mt-2">Download
-                                    Excel 🚀</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="isi_report_stok_logistik" class="mt-3 d-none">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label class="col-form-label">Regional Gudang</label>
-                                    <select id="report_stok_regional_gudang" class="form-control">
-                                        <option value="">Pilih Regional</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label class="col-form-label">Lokasi Gudang (Kota)</label>
-                                    <select id="report_stok_lokasi_gudang" class="form-control">
-                                        <option value="">Pilih Kota</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label class="col-form-label">Bowheer</label>
-                                    <select id="report_stok_nama_bowheer" class="form-control">
-                                        <option value="">Pilih Bowheer</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-form-label">Kategori Item</label>
-                                    <select id="report_stok_kategori_item" class="form-control">
-                                        <option value="">Pilih Kategori</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label class="col-form-label">Nama Item</label>
-                                    <select id="report_stok_nama_item" class="form-control">
-                                        <option value="">Pilih Item</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label class="col-form-label">Tanggal Stok</label>
-                                    <input type="date" class="form-control float-right" id="report_stok_date">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-12 mt-3 d-flex justify-content-end">
-                            <div class="form-group">
-                                <button id="downloadReportStokLogistik" class="btn btn-primary mt-2">Download Report
-                                    🚀</button>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped" id="table_invoice_import_preview">
+                                    <thead>
+                                        <tr class="text-center">
+                                            <th>Row</th>
+                                            <th>Bowheer ID</th>
+                                            <th>No Invoice</th>
+                                            <th>Tgl Submit</th>
+                                            <th>PO Number</th>
+                                            <th>Invoice Nett</th>
+                                            <th>Regional</th>
+                                            <th>Area</th>
+                                            <th>Status</th>
+                                            <th>Keterangan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr id="emptyImportPreviewRow">
+                                            <td colspan="10" class="text-center text-muted">Preview import akan tampil
+                                                di sini</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
-
-
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
@@ -566,11 +568,11 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
     <div class="modal fade" id="modal-payment" tabindex="-1" role="dialog" aria-labelledby="modalPaymentLabel"
         aria-hidden="true">
-        <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content">
                 <form id="formBatchPayment">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="modalPaymentLabel">Tambah Pembayaran</h5>
+                        <h5 class="modal-title" id="modalPaymentLabel">Tambah Pencairan Invoice</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span>&times;</span>
                         </button>
@@ -594,6 +596,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         <th style="width: 180px;">Invoice Price</th>
                                         <th style="width: 180px;">Payment Price</th>
                                         <th style="width: 180px;">Date Payment</th>
+                                        <th style="width: 140px;">Status Payment</th>
                                         <th style="width: 80px;">Aksi</th>
                                     </tr>
                                 </thead>
@@ -607,7 +610,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         <th colspan="4" class="text-right">Total</th>
                                         <th id="totalInvoicePrice" class="text-right">0</th>
                                         <th id="totalPaymentPrice" class="text-right">0</th>
-                                        <th colspan="2"></th>
+                                        <th colspan="3"></th>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -617,6 +620,69 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
                         <button type="submit" class="btn btn-success">Simpan Pembayaran</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-edit-partial-payment" tabindex="-1" role="dialog"
+        aria-labelledby="modalEditPartialPaymentLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <form id="formEditPartialPayment">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalEditPartialPaymentLabel">Edit Partial Payment</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="id_billing" id="edit_partial_id_billing">
+
+                        <div class="form-group">
+                            <label>Nama Bowheer</label>
+                            <input type="text" class="form-control" id="edit_partial_bowheer" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label>No Invoice</label>
+                            <input type="text" class="form-control" id="edit_partial_no_invoice" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Nilai Invoice</label>
+                            <input type="text" class="form-control text-right" id="edit_partial_invoice_price" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Total Pembayaran</label>
+                            <input type="text" class="form-control text-right" name="invoice_price_payment"
+                                id="edit_partial_payment_price" autocomplete="off">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Sisa Invoice</label>
+                            <input type="text" class="form-control text-right" id="edit_partial_remaining" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Tanggal Payment</label>
+                            <input type="date" class="form-control" name="tgl_payment_invoice"
+                                id="edit_partial_payment_date">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status Payment</label>
+                            <select class="form-control" name="status_invoice" id="edit_partial_status_invoice">
+                                <option value="partial">Partial</option>
+                                <option value="paid">Paid</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                        <button type="submit" class="btn btn-primary">Update Payment</button>
                     </div>
                 </form>
             </div>
@@ -633,42 +699,18 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     <!-- Control sidebar content goes here -->
 </aside>
 
-<script type="text/javascript">
+<script>
+    let activeStatus = 'open';
+    let latestBillingRows = {};
+    const bowheerOptions = <?= json_encode($bowheer_options) ?>;
 
-    document.getElementById("report_in_out_logistik").addEventListener("click", function () {
-        let inOutDiv = document.getElementById("isi_report_in_out_logistik");
-        let stokDiv = document.getElementById("isi_report_stok_logistik");
-        let inOutBtn = document.getElementById("report_in_out_logistik");
-        let stokBtn = document.getElementById("report_stok_logistik");
-        let judulDiv = document.getElementById("report_judul");
+    $(document).on('click', '.tab-status-invoice', function () {
+        $('.tab-status-invoice').removeClass('active');
+        $(this).addClass('active');
 
-        stokDiv.classList.add("d-none");
-        judulDiv.classList.add("d-none");
-        inOutDiv.classList.remove("d-none", "fade-in");
-        void inOutDiv.offsetWidth;
-        inOutDiv.classList.add("fade-in");
+        activeStatus = $(this).data('status');
 
-        // Tambahkan efek neon pada tombol aktif
-        stokBtn.classList.remove("active-tab");
-        inOutBtn.classList.add("active-tab");
-    });
-
-    document.getElementById("report_stok_logistik").addEventListener("click", function () {
-        let inOutDiv = document.getElementById("isi_report_in_out_logistik");
-        let stokDiv = document.getElementById("isi_report_stok_logistik");
-        let inOutBtn = document.getElementById("report_in_out_logistik");
-        let stokBtn = document.getElementById("report_stok_logistik");
-        let judulDiv = document.getElementById("report_judul");
-
-        inOutDiv.classList.add("d-none");
-        judulDiv.classList.add("d-none");
-        stokDiv.classList.remove("d-none", "fade-in");
-        void stokDiv.offsetWidth;
-        stokDiv.classList.add("fade-in");
-
-        // Tambahkan efek neon pada tombol aktif
-        inOutBtn.classList.remove("active-tab");
-        stokBtn.classList.add("active-tab");
+        $('#btnFilterDataProject').trigger('click');
     });
 </script>
 
@@ -699,7 +741,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     })
 
     $(document).ready(function () {
-        $('#tabel_targetpic_summary').DataTable({
+        $('#tabel_list_open_invoice').DataTable({
             paging: true,
             pageLength: 10,
             info: true,
@@ -880,7 +922,8 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 bowheer: $('#filter_bowheer_up').val(),
                 regional: $('#filter_regional_up').val(),
                 city: $('#filter_city_up').val(),
-                priority: $('#filter_priority_up').val()
+                priority: $('#filter_priority_up').val(),
+                status_invoice: activeStatus
             };
 
             $.ajax({
@@ -893,15 +936,15 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     showLoader();
                 },
                 success: function (response) {
-                    if ($.fn.DataTable.isDataTable('#tabel_targetpic_summary')) {
-                        $('#tabel_targetpic_summary').DataTable().clear().destroy();
+                    if ($.fn.DataTable.isDataTable('#tabel_list_open_invoice')) {
+                        $('#tabel_list_open_invoice').DataTable().clear().destroy();
                     }
 
                     // === HEADER ===
                     let theadHtml = '<tr>';
                     response.columns.forEach(col => theadHtml += `<th>${col}</th>`);
                     theadHtml += '</tr>';
-                    $('#tabel_targetpic_summary thead').html(theadHtml);
+                    $('#tabel_list_open_invoice thead').html(theadHtml);
 
                     // === FOOTER ===
                     let tfootHtml = '<tr>';
@@ -915,46 +958,81 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                         }
                     });
                     tfootHtml += '</tr>';
-                    $('#tabel_targetpic_summary tfoot').html(tfootHtml);
+                    $('#tabel_list_open_invoice tfoot').html(tfootHtml);
+
+                    const filteredData = response.data || [];
+                    latestBillingRows = {};
+
+                    filteredData.forEach(row => {
+                        latestBillingRows[row.id_billing] = row;
+                    });
 
                     // === BODY ===
-                    if (!response.data || response.data.length === 0) {
-                        $('#tabel_targetpic_summary tbody').html(
+                    if (!filteredData || filteredData.length === 0) {
+                        $('#tabel_list_open_invoice tbody').html(
                             `<tr><td colspan="${response.columns.length}" class="text-center">No data available</td></tr>`
                         );
                     } else {
                         let tbodyHtml = '';
-                        response.data.forEach((row, i) => {
+                        filteredData.forEach((row, i) => {
                             tbodyHtml += `<tr>`;
                             response.columns.forEach(col => {
                                 switch (col) {
-                                    case 'No': tbodyHtml += `<td>${i + 1}</td>`; break;
-                                    case 'Bowheer': tbodyHtml += `<td>${row.nama_bowheer || '-'}</td>`; break;
-                                    case 'Invoice': tbodyHtml += `<td>${row.no_invoice || '-'}</td>`; break;
+                                    case 'No':
+                                        tbodyHtml += `<td>${i + 1}</td>`;
+                                        break;
+                                    case 'Bowheer':
+                                        tbodyHtml += `<td>${row.nama_bowheer || '-'}</td>`;
+                                        break;
+                                    case 'Invoice':
+                                        tbodyHtml += `<td>${row.no_invoice || '-'}</td>`;
+                                        break;
                                     case 'Price':
                                         tbodyHtml += `<td style="text-align: right;">${formatTitik(row.invoice_price_nett, 2)}</td>`;
                                         break;
-                                    case 'Regional': tbodyHtml += `<td>${row.regional_payment || '-'}</td>`; break;
-                                    case 'Area': tbodyHtml += `<td>${row.area_payment || '-'}</td>`; break;
-                                    case 'Date Submit': tbodyHtml += `<td>${row.tgl_submit_invoice || '-'}</td>`; break;
-                                    case 'Due Date': tbodyHtml += `<td>${row.tgl_jatuh_tempo || '-'}</td>`; break;
-                                    case 'Aging': tbodyHtml += `<td>${row.umur_invoice || '-'}</td>`; break;
-                                    case 'Priority': tbodyHtml += `<td>${row.priority || '-'}</td>`; break;
-                                    case 'PO Number': tbodyHtml += `<td>${row.po_number || '-'}</td>`; break;
-                                    case 'Status Invoice': tbodyHtml += `<td>${row.status_invoice || '-'}</td>`; break;
-                                    case 'Action': tbodyHtml += `<td>
-                                        <button type="button" class="btn btn-primary detail-item" data-id="${row.id}"><i class="fa fa-eye"></i></button>
-                                        <button type="button" class="btn btn-danger hapus-item" data-id="${row.id}"><i class="fa fa-trash"></i></button>
-                                        </td>`; break;
-
-                                    // case 'Due Date': tbodyHtml += `<td>${row.sisa ? formatTitik(parseInt(row.sisa)) : '-'}</td>`; break;
-                                    // case 'PO Number': tbodyHtml += `<td>${row.persen_achieved ? Number(row.persen_achieved).toFixed(0) + '%' : '-'}</td>`; break;
-                                    default: tbodyHtml += `<td>-</td>`;
+                                    case 'Regional':
+                                        tbodyHtml += `<td>${row.regional_payment || '-'}</td>`;
+                                        break;
+                                    case 'Area':
+                                        tbodyHtml += `<td>${row.area_payment || '-'}</td>`;
+                                        break;
+                                    case 'Date Submit':
+                                        tbodyHtml += `<td>${row.tgl_submit_invoice || '-'}</td>`;
+                                        break;
+                                    case 'Due Date':
+                                        tbodyHtml += `<td>${row.tgl_jatuh_tempo || '-'}</td>`;
+                                        break;
+                                    case 'Aging':
+                                        tbodyHtml += `<td>${row.umur_invoice || '-'}</td>`;
+                                        break;
+                                    case 'Priority':
+                                        tbodyHtml += `<td>${row.priority || '-'}</td>`;
+                                        break;
+                                    case 'PO Number':
+                                        tbodyHtml += `<td>${row.po_number || '-'}</td>`;
+                                        break;
+                                    case 'Status Invoice':
+                                        tbodyHtml += `<td>${row.status_invoice || '-'}</td>`;
+                                        break;
+                                    case 'Action':
+                                        if (activeStatus === 'partial') {
+                                            tbodyHtml += `<td class="text-center">
+                        <button type="button" class="btn btn-warning edit-partial-item" data-id="${row.id_billing}"><i class="fa fa-edit"></i></button>
+                    </td>`;
+                                        } else {
+                                            tbodyHtml += `<td>
+                        <button type="button" class="btn btn-primary detail-item" data-id="${row.id_billing}"><i class="fa fa-eye"></i></button>
+                        <button type="button" class="btn btn-danger hapus-item" data-id="${row.id_billing}"><i class="fa fa-trash"></i></button>
+                    </td>`;
+                                        }
+                                        break;
+                                    default:
+                                        tbodyHtml += `<td>-</td>`;
                                 }
                             });
                             tbodyHtml += `</tr>`;
                         });
-                        $('#tabel_targetpic_summary tbody').html(tbodyHtml);
+                        $('#tabel_list_open_invoice tbody').html(tbodyHtml);
                     }
 
                     // === DATATABLE ===
@@ -962,7 +1040,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     let table = null;
 
                     if (response.data && response.data.length > 0) {
-                        table = $('#tabel_targetpic_summary').DataTable({
+                        table = $('#tabel_list_open_invoice').DataTable({
                             responsive: true,
                             autoWidth: false,
                             pageLength: 10,
@@ -1015,10 +1093,12 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                     $(api.column(priceIdx).footer()).html(formatTitik(totalAll, 2));
                                 }
 
-                                animateValue('dashboardTotalBilling', 0, totalAll, 600, true);
-                                animateValue('dashboardBillingP1', 0, totalP1, 600, true);
-                                animateValue('dashboardBillingP2', 0, totalP2, 600, true);
-                                animateValue('dashboardBillingP3', 0, totalP3, 600, true);
+                                if (activeStatus === 'open') {
+                                    animateValue('dashboardTotalBilling', 0, totalAll, 600, true);
+                                    animateValue('dashboardBillingP1', 0, totalP1, 600, true);
+                                    animateValue('dashboardBillingP2', 0, totalP2, 600, true);
+                                    animateValue('dashboardBillingP3', 0, totalP3, 600, true);
+                                }
 
                                 highlightCells();
                             }
@@ -1068,6 +1148,36 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         return parseInt(value) || 0;
     }
 
+    function parseAmount(value) {
+        if (value === null || value === undefined || value === '') return 0;
+
+        if (typeof value === 'number') return value;
+
+        let normalized = value.toString().trim().replace(/\s/g, '');
+
+        const lastDot = normalized.lastIndexOf('.');
+        const lastComma = normalized.lastIndexOf(',');
+
+        if (lastDot > -1 && lastComma > -1) {
+            if (lastDot > lastComma) {
+                normalized = normalized.replace(/,/g, '');
+            } else {
+                normalized = normalized.replace(/\./g, '').replace(',', '.');
+            }
+        } else if (lastComma > -1) {
+            normalized = normalized.replace(/\./g, '').replace(',', '.');
+        } else {
+            const parts = normalized.split('.');
+            if (parts.length > 2) {
+                const decimalPart = parts.pop();
+                normalized = `${parts.join('')}.${decimalPart}`;
+            }
+        }
+
+        normalized = normalized.replace(/[^\d.-]/g, '');
+        return parseFloat(normalized) || 0;
+    }
+
     function formatTitik(num, decimalPlaces = 0) {
         return Number(num || 0).toLocaleString('id-ID', {
             minimumFractionDigits: decimalPlaces,
@@ -1105,7 +1215,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
 
     function highlightCells() {
-        $('#tabel_targetpic_summary tbody tr').each(function () {
+        $('#tabel_list_open_invoice tbody tr').each(function () {
             const cell = $(this).find('td:contains("%")').last();
             if (!cell.length) return;
 
@@ -1199,6 +1309,351 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     });
 
     $(document).ready(function () {
+        function getTodayDate() {
+            const d = new Date();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${d.getFullYear()}-${month}-${day}`;
+        }
+
+        function getBowheerSelectOptions(selectedId = '') {
+            let options = '<option value="">Pilih Bowheer</option>';
+            bowheerOptions.forEach(item => {
+                const isSelected = String(item.id) === String(selectedId) ? 'selected' : '';
+                options += `<option value="${item.id}" ${isSelected}>${item.text}</option>`;
+            });
+            return options;
+        }
+
+        function refreshManualInvoiceNumbers() {
+            $('#table_manual_invoice tbody tr.manual-invoice-row').each(function (index) {
+                $(this).find('.manual-row-no').text(index + 1);
+            });
+
+            if ($('#table_manual_invoice tbody tr.manual-invoice-row').length === 0) {
+                $('#table_manual_invoice tbody').html(`
+                    <tr id="emptyManualInvoiceRow">
+                        <td colspan="13" class="text-center text-muted">Belum ada invoice ditambahkan</td>
+                    </tr>
+                `);
+            }
+        }
+
+        function updateManualInvoiceTotals() {
+            let totalEst = 0;
+            let totalNett = 0;
+
+            $('#table_manual_invoice tbody tr.manual-invoice-row').each(function () {
+                totalEst += parseAmount($(this).find('.manual-invoice-est').val());
+                totalNett += parseAmount($(this).find('.manual-invoice-nett').val());
+            });
+
+            $('#manualInvoiceEstTotal').text(formatTitik(totalEst, 2));
+            $('#manualInvoiceNettTotal').text(formatTitik(totalNett, 2));
+        }
+
+        function addManualInvoiceRow(data = {}) {
+            $('#emptyManualInvoiceRow').remove();
+
+            const html = `
+                <tr class="manual-invoice-row">
+                    <td class="text-center manual-row-no"></td>
+                    <td>
+                        <select class="form-control manual-bowheer-select" name="id_bowheer[]">
+                            ${getBowheerSelectOptions(data.id_bowheer || '')}
+                        </select>
+                    </td>
+                    <td><input type="text" class="form-control" name="no_invoice[]" value="${data.no_invoice || ''}"></td>
+                    <td><input type="date" class="form-control" name="tgl_create_invoice[]" value="${data.tgl_create_invoice || getTodayDate()}"></td>
+                    <td><input type="date" class="form-control" name="tgl_submit_invoice[]" value="${data.tgl_submit_invoice || getTodayDate()}"></td>
+                    <td><input type="text" class="form-control" name="po_number[]" value="${data.po_number || ''}"></td>
+                    <td><input type="date" class="form-control" name="po_tgl[]" value="${data.po_tgl || ''}"></td>
+                    <td><input type="text" class="form-control text-right manual-invoice-amount manual-invoice-est" name="invoice_price_est[]" value="${data.invoice_price_est ? formatTitik(parseAmount(data.invoice_price_est), 2) : ''}"></td>
+                    <td><input type="text" class="form-control text-right manual-invoice-amount manual-invoice-nett" name="invoice_price_nett[]" value="${data.invoice_price_nett ? formatTitik(parseAmount(data.invoice_price_nett), 2) : ''}"></td>
+                    <td><input type="text" class="form-control" name="regional_payment[]" value="${data.regional_payment || ''}"></td>
+                    <td><input type="text" class="form-control" name="area_payment[]" value="${data.area_payment || ''}"></td>
+                    <td><textarea class="form-control" name="deskripsi_payment[]" rows="2">${data.deskripsi_payment || ''}</textarea></td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-danger btn-sm btn-remove-manual-invoice">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+
+            $('#table_manual_invoice tbody').append(html);
+            refreshManualInvoiceNumbers();
+            updateManualInvoiceTotals();
+        }
+
+        function resetManualInvoiceForm() {
+            $('#formManualInvoiceBatch')[0].reset();
+            $('#table_manual_invoice tbody').html(`
+                <tr id="emptyManualInvoiceRow">
+                    <td colspan="13" class="text-center text-muted">Belum ada invoice ditambahkan</td>
+                </tr>
+            `);
+            updateManualInvoiceTotals();
+        }
+
+        function resetImportPreview() {
+            $('#invoiceImportRowsJson').val('');
+            $('#invoiceImportSummary').text('Belum ada file dipreview');
+            $('#btnSaveImportedInvoice').prop('disabled', true);
+            $('#table_invoice_import_preview tbody').html(`
+                <tr id="emptyImportPreviewRow">
+                    <td colspan="10" class="text-center text-muted">Preview import akan tampil di sini</td>
+                </tr>
+            `);
+        }
+
+        function renderImportPreview(rows, validRows) {
+            if (!rows || rows.length === 0) {
+                resetImportPreview();
+                return;
+            }
+
+            let html = '';
+            rows.forEach(row => {
+                const badgeClass = row.status === 'valid' ? 'badge-success' : 'badge-danger';
+                html += `
+                    <tr>
+                        <td>${row.row_number}</td>
+                        <td>${row.id_bowheer || '-'}</td>
+                        <td>${row.no_invoice || '-'}</td>
+                        <td>${row.tgl_submit_invoice || '-'}</td>
+                        <td>${row.po_number || '-'}</td>
+                        <td class="text-right">${formatTitik(parseAmount(row.invoice_price_nett || 0), 2)}</td>
+                        <td>${row.regional_payment || '-'}</td>
+                        <td>${row.area_payment || '-'}</td>
+                        <td class="text-center"><span class="badge ${badgeClass}">${row.status}</span></td>
+                        <td>${row.message || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            $('#table_invoice_import_preview tbody').html(html);
+            $('#invoiceImportRowsJson').val(JSON.stringify(validRows || []));
+            $('#invoiceImportSummary').text(`${validRows.length} data valid dari ${rows.length} baris`);
+            $('#btnSaveImportedInvoice').prop('disabled', !validRows.length);
+        }
+
+        $('#btnAddManualInvoiceRow').on('click', function () {
+            addManualInvoiceRow();
+        });
+
+        $(document).on('click', '.btn-remove-manual-invoice', function () {
+            $(this).closest('tr').remove();
+            refreshManualInvoiceNumbers();
+            updateManualInvoiceTotals();
+        });
+
+        $(document).on('input', '.manual-invoice-amount', function () {
+            const value = parseAmount($(this).val());
+            $(this).val(value ? formatTitik(value, 2) : '');
+            updateManualInvoiceTotals();
+        });
+
+        $('#modal-download-report').on('shown.bs.modal', function () {
+            if ($('#table_manual_invoice tbody tr.manual-invoice-row').length === 0) {
+                addManualInvoiceRow();
+            }
+        });
+
+        $('#modal-download-report').on('hidden.bs.modal', function () {
+            resetManualInvoiceForm();
+            resetImportPreview();
+            $('#invoiceExcelFile').val('');
+            $('#tab-manual-invoice-link').tab('show');
+        });
+
+        $('#formManualInvoiceBatch').on('submit', function (e) {
+            e.preventDefault();
+
+            const rowCount = $('#table_manual_invoice tbody tr.manual-invoice-row').length;
+            if (!rowCount) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Belum ada data',
+                    text: 'Tambahkan minimal satu invoice.'
+                });
+                return;
+            }
+
+            $.ajax({
+                url: '<?= base_url("BillingPayment/saveManualBatchInvoice") ?>',
+                type: 'POST',
+                data: $(this).serialize(),
+                dataType: 'json',
+                beforeSend: function () {
+                    showLoader();
+                },
+                success: function (response) {
+                    if (response.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: response.message
+                        });
+                        resetManualInvoiceForm();
+                        $('#modal-download-report').modal('hide');
+                        $('#btnFilterDataProject').trigger('click');
+                    } else {
+                        const errorText = response.errors && response.errors.length
+                            ? response.errors.map(item => `Baris ${item.row}: ${item.message}`).join('\n')
+                            : (response.message || 'Gagal menyimpan invoice manual');
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: errorText
+                        });
+                    }
+                },
+                error: function () {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: 'Terjadi kesalahan saat menyimpan invoice manual'
+                    });
+                },
+                complete: function () {
+                    hideLoader();
+                }
+            });
+        });
+
+        $('#btnChooseInvoiceExcel').on('click', function (e) {
+            e.preventDefault();
+            $('#invoiceExcelFile').trigger('click');
+        });
+
+        $('#invoiceDropzone').on('click', function () {
+            $('#invoiceExcelFile').trigger('click');
+        });
+
+        $('#invoiceDropzone').on('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).addClass('dragover');
+        });
+
+        $('#invoiceDropzone').on('dragleave', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('dragover');
+        });
+
+        $('#invoiceDropzone').on('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('dragover');
+
+            const files = e.originalEvent.dataTransfer.files;
+            if (files && files.length) {
+                $('#invoiceExcelFile')[0].files = files;
+                $('#invoiceExcelFile').trigger('change');
+            }
+        });
+
+        $('#invoiceExcelFile').on('change', function () {
+            const file = this.files[0];
+            if (!file) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file_excel', file);
+
+            $.ajax({
+                url: '<?= base_url("BillingPayment/previewInvoiceImport") ?>',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                beforeSend: function () {
+                    showLoader();
+                    resetImportPreview();
+                },
+                success: function (response) {
+                    if (response.status) {
+                        renderImportPreview(response.rows || [], response.valid_rows || []);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Preview',
+                            text: response.message || 'File Excel tidak valid'
+                        });
+                    }
+                },
+                error: function () {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Preview',
+                        text: 'Terjadi kesalahan saat membaca file Excel'
+                    });
+                },
+                complete: function () {
+                    hideLoader();
+                }
+            });
+        });
+
+        $('#btnSaveImportedInvoice').on('click', function () {
+            const rowsJson = $('#invoiceImportRowsJson').val();
+
+            if (!rowsJson) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Belum ada data',
+                    text: 'Preview file Excel terlebih dahulu.'
+                });
+                return;
+            }
+
+            $.ajax({
+                url: '<?= base_url("BillingPayment/saveImportedInvoices") ?>',
+                type: 'POST',
+                data: { rows_json: rowsJson },
+                dataType: 'json',
+                beforeSend: function () {
+                    showLoader();
+                },
+                success: function (response) {
+                    if (response.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Import Berhasil',
+                            text: response.message
+                        });
+                        resetImportPreview();
+                        $('#invoiceExcelFile').val('');
+                        $('#modal-download-report').modal('hide');
+                        $('#btnFilterDataProject').trigger('click');
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Import Gagal',
+                            text: response.message || 'Gagal menyimpan hasil import'
+                        });
+                    }
+                },
+                error: function () {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Import Gagal',
+                        text: 'Terjadi kesalahan saat menyimpan hasil import'
+                    });
+                },
+                complete: function () {
+                    hideLoader();
+                }
+            });
+        });
+    });
+
+    $(document).ready(function () {
 
         $('#formBatchPayment').on('submit', function (e) {
             e.preventDefault();
@@ -1214,8 +1669,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             $('#table_selected_invoice tbody tr.data-row').each(function () {
                 const price = $(this).find('input[name="invoice_price_payment[]"]').val().trim();
                 const date = $(this).find('input[name="tgl_payment_invoice[]"]').val().trim();
+                const status = $(this).find('select[name="status_invoice[]"]').val();
 
-                if (price === '' || date === '') {
+                if (price === '' || date === '' || status === '') {
                     valid = false;
                     return false;
                 }
@@ -1242,18 +1698,11 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                         alert(response.message);
                         hideLoader();
 
-                        $('#formBatchPayment')[0].reset();
-                        $('#select_invoice_payment').val(null).trigger('change');
-                        $('#table_selected_invoice tbody').html(`
-                    <tr id="emptyRow">
-                        <td colspan="7" class="text-center text-muted">Belum ada invoice dipilih</td>
-                    </tr>
-                `);
-
+                        resetBatchPaymentTable();
                         $('#modal-payment').modal('hide');
 
-                        if ($.fn.DataTable.isDataTable('#tabel_targetpic_summary')) {
-                            $('#tabel_targetpic_summary').DataTable().ajax.reload(null, false);
+                        if ($.fn.DataTable.isDataTable('#tabel_list_open_invoice')) {
+                            $('#btnFilterDataProject').trigger('click');
                         }
                     } else {
                         alert(response.message);
@@ -1274,16 +1723,15 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         });
 
         $(document).on('input', '.payment-price', function () {
-            const cursorPos = this.selectionStart;
-            let raw = $(this).val().replace(/[^\d]/g, '');
+            let raw = parseAmount($(this).val());
 
-            if (raw === '') {
+            if (!raw) {
                 $(this).val('');
                 updatePaymentSummary();
                 return;
             }
 
-            $(this).val(formatTitik(raw, 0));
+            $(this).val(formatTitik(raw, 2));
             updatePaymentSummary();
         });
 
@@ -1350,15 +1798,15 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             let totalPayment = 0;
 
             $('#table_selected_invoice tbody tr.data-row').each(function () {
-                const invoiceVal = parseNumber($(this).find('.invoice-price-raw').val());
-                const paymentVal = parseNumber($(this).find('.payment-price').val());
+                const invoiceVal = parseAmount($(this).find('.invoice-price-raw').val());
+                const paymentVal = parseAmount($(this).find('.payment-price').val());
 
                 totalInvoice += invoiceVal;
                 totalPayment += paymentVal;
             });
 
-            $('#totalInvoicePrice').text(formatTitik(totalInvoice, 0));
-            $('#totalPaymentPrice').text(formatTitik(totalPayment, 0));
+            $('#totalInvoicePrice').text(formatTitik(totalInvoice, 2));
+            $('#totalPaymentPrice').text(formatTitik(totalPayment, 2));
         }
 
         function getToday() {
@@ -1377,7 +1825,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
             $('#emptyRow').remove();
 
-            const invoicePrice = parseNumber(item.invoice_price_nett);
+            const invoicePrice = parseAmount(item.invoice_price_nett);
 
             const html = `
         <tr class="data-row" id="${rowId}" data-id="${item.id}">
@@ -1389,14 +1837,20 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             <td>${item.no_invoice || '-'}</td>
             <td>${item.po_number || '-'}</td>
             <td class="text-right">
-                ${formatTitik(invoicePrice, 0)}
+                ${formatTitik(invoicePrice, 2)}
                 <input type="hidden" class="invoice-price-raw" value="${invoicePrice}">
             </td>
             <td>
-                <input type="text" class="form-control text-right payment-price" name="invoice_price_payment[]" value="${formatTitik(invoicePrice, 0)}" placeholder="Input payment price" autocomplete="off">
+                <input type="text" class="form-control text-right payment-price" name="invoice_price_payment[]" value="${formatTitik(invoicePrice, 2)}" placeholder="Input payment price" autocomplete="off">
             </td>
             <td>
                 <input type="date" class="form-control" name="tgl_payment_invoice[]" value="${getToday()}">
+            </td>
+            <td>
+                <select class="form-control payment-status" name="status_invoice[]">
+                    <option value="paid" selected>Paid</option>
+                    <option value="partial">Partial</option>
+                </select>
             </td>
             <td class="text-center">
                 <button type="button" class="btn btn-danger btn-sm btn-remove-row">
@@ -1410,6 +1864,218 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             reindexTableRows();
             updatePaymentSummary();
         }
+
+        function resetBatchPaymentTable() {
+            $('#formBatchPayment')[0].reset();
+            $('#select_invoice_payment').val(null).trigger('change');
+            $('#table_selected_invoice tbody').html(`
+                <tr id="emptyRow">
+                    <td colspan="9" class="text-center text-muted">Belum ada invoice dipilih</td>
+                </tr>
+            `);
+            updatePaymentSummary();
+        }
+
+        function openPaymentModalWithInvoice(row) {
+            if (!row) {
+                return;
+            }
+
+            resetBatchPaymentTable();
+
+            addInvoiceRow({
+                id: row.id_billing,
+                no_invoice: row.no_invoice,
+                po_number: row.po_number,
+                nama_bowheer: row.nama_bowheer,
+                invoice_price_nett: row.invoice_price_nett
+            });
+
+            $('#table_selected_invoice tbody tr.data-row').first().find('input[name="tgl_payment_invoice[]"]').val(getToday());
+            $('#modal-payment').modal('show');
+        }
+
+        $(document).on('click', '.detail-item', function () {
+            const id = $(this).data('id');
+            const row = latestBillingRows[id];
+
+            if (!row) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data tidak ditemukan',
+                    text: 'Invoice yang dipilih tidak tersedia.'
+                });
+                return;
+            }
+
+            if (activeStatus === 'open') {
+                openPaymentModalWithInvoice(row);
+                return;
+            }
+
+            Swal.fire({
+                icon: 'info',
+                title: 'Informasi',
+                text: 'Aksi detail belum tersedia untuk status ini.'
+            });
+        });
+
+        $(document).on('click', '.hapus-item', function () {
+            const id = $(this).data('id');
+            const row = latestBillingRows[id];
+            const invoiceNumber = row && row.no_invoice ? row.no_invoice : 'invoice ini';
+
+            Swal.fire({
+                icon: 'warning',
+                title: 'Hapus invoice?',
+                text: `Data ${invoiceNumber} akan dihapus permanen.`,
+                showCancelButton: true,
+                confirmButtonText: 'Ya, hapus',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                $.ajax({
+                    url: '<?= base_url("BillingPayment/deleteBilling") ?>',
+                    type: 'POST',
+                    data: { id_billing: id },
+                    dataType: 'json',
+                    beforeSend: function () {
+                        showLoader();
+                    },
+                    success: function (response) {
+                        if (response.status) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: response.message
+                            });
+                            $('#btnFilterDataProject').trigger('click');
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: response.message || 'Gagal menghapus invoice'
+                            });
+                        }
+                    },
+                    error: function () {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: 'Terjadi kesalahan saat menghapus invoice'
+                        });
+                    },
+                    complete: function () {
+                        hideLoader();
+                    }
+                });
+            });
+        });
+
+        function updateEditPartialSummary() {
+            const invoiceValue = parseAmount($('#edit_partial_invoice_price').val());
+            let paymentValue = parseAmount($('#edit_partial_payment_price').val());
+
+            if (paymentValue > invoiceValue) {
+                paymentValue = invoiceValue;
+                $('#edit_partial_payment_price').val(formatTitik(paymentValue, 2));
+            }
+
+            const remaining = Math.max(invoiceValue - paymentValue, 0);
+            $('#edit_partial_remaining').val(formatTitik(remaining, 2));
+
+            if (paymentValue >= invoiceValue && invoiceValue > 0) {
+                $('#edit_partial_status_invoice').val('paid');
+            } else {
+                $('#edit_partial_status_invoice').val('partial');
+            }
+        }
+
+        $(document).on('click', '.edit-partial-item', function () {
+            const id = $(this).data('id');
+            const row = latestBillingRows[id];
+
+            if (!row) {
+                alert('Data partial payment tidak ditemukan');
+                return;
+            }
+
+            $('#edit_partial_id_billing').val(row.id_billing);
+            $('#edit_partial_bowheer').val(row.nama_bowheer || '-');
+            $('#edit_partial_no_invoice').val(row.no_invoice || '-');
+            $('#edit_partial_invoice_price').val(formatTitik(parseAmount(row.invoice_price_nett || 0), 2));
+            $('#edit_partial_payment_price').val(formatTitik(parseAmount(row.invoice_price_payment || 0), 2));
+            $('#edit_partial_payment_date').val(row.tgl_payment_invoice || '');
+            $('#edit_partial_status_invoice').val(row.status_invoice || 'partial');
+
+            updateEditPartialSummary();
+            $('#modal-edit-partial-payment').modal('show');
+        });
+
+        $('#edit_partial_payment_price').on('input', function () {
+            const raw = parseAmount($(this).val());
+            $(this).val(raw ? formatTitik(raw, 2) : '');
+            updateEditPartialSummary();
+        });
+
+        $('#edit_partial_status_invoice').on('change', function () {
+            const status = $(this).val();
+            const invoiceValue = parseAmount($('#edit_partial_invoice_price').val());
+
+            if (status === 'paid') {
+                $('#edit_partial_payment_price').val(formatTitik(invoiceValue, 2));
+            }
+
+            updateEditPartialSummary();
+        });
+
+        $('#formEditPartialPayment').on('submit', function (e) {
+            e.preventDefault();
+
+            const invoiceValue = parseAmount($('#edit_partial_invoice_price').val());
+            const paymentValue = parseAmount($('#edit_partial_payment_price').val());
+            const paymentDate = $('#edit_partial_payment_date').val();
+
+            if (!paymentValue || !paymentDate) {
+                alert('Total pembayaran dan tanggal payment wajib diisi');
+                return;
+            }
+
+            if (paymentValue > invoiceValue) {
+                alert('Total pembayaran tidak boleh melebihi nilai invoice');
+                return;
+            }
+
+            $.ajax({
+                url: '<?= base_url("BillingPayment/updatePartialPayment") ?>',
+                type: 'POST',
+                data: $(this).serialize(),
+                dataType: 'json',
+                beforeSend: function () {
+                    showLoader();
+                },
+                success: function (response) {
+                    if (response.status) {
+                        alert(response.message);
+                        $('#modal-edit-partial-payment').modal('hide');
+                        $('#btnFilterDataProject').trigger('click');
+                    } else {
+                        alert(response.message || 'Gagal memperbarui partial payment');
+                    }
+                },
+                error: function () {
+                    alert('Terjadi kesalahan saat update partial payment');
+                },
+                complete: function () {
+                    hideLoader();
+                }
+            });
+        });
     });
 
     $(document).ready(function () {
@@ -1729,7 +2395,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
 
 <style>
-    #tabel_targetpic_summary tfoot th {
+    #tabel_list_open_invoice tfoot th {
         text-align: right;
         background-color: #f8f9fa;
         font-weight: bold;
@@ -2010,5 +2676,34 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         /* Warna hijau neon */
         box-shadow: 0 0 10px rgb(12, 127, 180), 0 0 20px rgb(12, 127, 180);
         border-radius: 2px;
+    }
+
+    .modal-xxl {
+        max-width: 75% !important;
+    }
+
+    .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .invoice-dropzone {
+        border: 2px dashed #17a2b8;
+        border-radius: 12px;
+        padding: 36px 24px;
+        background: #f7fcfd;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .invoice-dropzone.dragover {
+        border-color: #007bff;
+        background: #eef6ff;
+        transform: scale(1.01);
+    }
+
+    #table_manual_invoice .form-control,
+    #table_invoice_import_preview .form-control {
+        min-width: 120px;
     }
 </style>

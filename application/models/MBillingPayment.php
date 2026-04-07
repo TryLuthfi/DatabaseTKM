@@ -86,13 +86,14 @@ JOIN tb_master_bowheer_bilco tmbi
 FROM tb_billingpayment tbp
 JOIN tb_master_bowheer_bilco tmbi 
     ON tbp.id_bowheer = tmbi.id_bowheer
+WHERE tbp.status_invoice = "open"
     GROUP BY tmbi.id_bowheer
     ORDER BY total_p1 DESC')
             ->result_array();
         return $data;
     }
 
-    public function getFilteredBillingPayment($bowheer, $regional, $city, $priority)
+    public function getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice = 'open')
     {
         if ($priority == "P1") {
             $priorityCondition = 'DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 75';
@@ -139,6 +140,8 @@ END AS status_monitor');
             $this->db->where_in('regional_payment', $regional);
         if (!empty($city))
             $this->db->where_in('area_payment', $city);
+        if (!empty($statusInvoice))
+        $this->db->where('tbp.status_invoice', $statusInvoice);
         if (!empty($priority)) {
 
             $conditions = [];
