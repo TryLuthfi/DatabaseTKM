@@ -136,7 +136,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                             class="fa fa-spinner fa-spin loading" style="display:none"></i> Cari
                                     </button>
                                     <button type="button" class="btn btn-success"
-                                        data-target="#modal-download-reportasd" data-toggle="modal">
+                                        data-target="#modal-download-billing-report" data-toggle="modal">
                                         Download Report &nbsp; <i class="fas fa-print"></i>
                                     </button>
                                 </div>
@@ -498,21 +498,25 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                         <div class="tab-pane fade" id="tab-excel-invoice" role="tabpanel">
                             <form id="formPreviewInvoiceImport" enctype="multipart/form-data">
                                 <div class="d-flex justify-content-end mb-3">
+                                    <a href="<?= base_url('BillingPayment/downloadBowheerReference') ?>"
+                                        class="btn btn-outline-info mr-2">
+                                        Download Referensi Bowheer
+                                    </a>
                                     <a href="<?= base_url('BillingPayment/downloadInvoiceImportTemplate') ?>"
                                         class="btn btn-outline-success">
-                                        Download Format Excel
+                                        Download Format CSV
                                     </a>
                                 </div>
 
                                 <div id="invoiceDropzone" class="invoice-dropzone text-center">
-                                    <input type="file" id="invoiceExcelFile" name="file_excel" accept=".xls,.xlsx"
+                                    <input type="file" id="invoiceExcelFile" name="file_excel" accept=".xls,.xlsx,.csv"
                                         hidden>
-                                    <h5 class="mb-2">Drop file Excel di sini</h5>
-                                    <p class="text-muted mb-3">atau klik area ini untuk memilih file `.xls` / `.xlsx`
+                                    <h5 class="mb-2">Drop file Excel atau CSV di sini</h5>
+                                    <p class="text-muted mb-3">atau klik tombol berikut untuk memilih file `.xls`, `.xlsx`, atau `.csv`
                                     </p>
-                                    <button type="button" class="btn btn-outline-primary" id="btnChooseInvoiceExcel">
+                                    <label for="invoiceExcelFile" class="btn btn-outline-primary mb-0" id="btnChooseInvoiceExcel">
                                         Pilih File Excel
-                                    </button>
+                                    </label>
                                 </div>
 
                                 <div class="alert alert-light border mt-3 mb-3">
@@ -520,6 +524,10 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                     `id_bowheer` atau `nama_bowheer`, `no_invoice`, `tgl_create_invoice`,
                                     `tgl_submit_invoice`, `po_number`, `po_tgl`, `invoice_price_est`,
                                     `invoice_price_nett`, `regional_payment`, `area_payment`, `deskripsi_payment`.
+                                    <br>
+                                    <strong>Saran:</strong> gunakan `id_bowheer` dari file referensi agar mapping
+                                    bowheer selalu tepat. Jika memakai `nama_bowheer`, nama harus sama persis dengan data
+                                    master.
                                 </div>
                             </form>
 
@@ -562,6 +570,86 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-download-billing-report" data-backdrop="static" tabindex="-1" role="dialog"
+        aria-labelledby="modalBillingReportLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <form id="formDownloadBillingReport" method="GET" target="_blank"
+                    action="<?= base_url('BillingPayment/downloadBillingReport') ?>">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalBillingReportLabel">Download Billing Report</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Bowheer</label>
+                                    <select name="bowheer[]" id="report_filter_bowheer" class="select2" multiple="multiple"
+                                        data-placeholder="Pilih bowheer" style="width: 100%;">
+                                        <?php foreach ($unique_bowheer as $bowheer): ?>
+                                            <option value="<?= $bowheer ?>"><?= $bowheer ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Regional</label>
+                                    <select name="regional[]" id="report_filter_regional" class="select2"
+                                        multiple="multiple" data-placeholder="Pilih regional" style="width: 100%;">
+                                        <?php foreach ($unique_regional as $regional): ?>
+                                            <option value="<?= $regional ?>"><?= $regional ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Area</label>
+                                    <select name="city[]" id="report_filter_city" class="select2" multiple="multiple"
+                                        data-placeholder="Pilih area" style="width: 100%;">
+                                        <?php foreach ($unique_city as $city): ?>
+                                            <option value="<?= $city ?>"><?= $city ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Priority</label>
+                                    <select name="priority[]" id="report_filter_priority" class="select2"
+                                        multiple="multiple" data-placeholder="Pilih priority" style="width: 100%;">
+                                        <?php foreach ($unique_priority as $priority): ?>
+                                            <option value="<?= $priority ?>"><?= $priority ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>Status Invoice</label>
+                                    <select name="status_invoice" id="report_filter_status" class="form-control">
+                                        <option value="open">Open</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="all">Semua Status</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Download Excel</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -1523,11 +1611,6 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             });
         });
 
-        $('#btnChooseInvoiceExcel').on('click', function (e) {
-            e.preventDefault();
-            $('#invoiceExcelFile').trigger('click');
-        });
-
         $('#invoiceDropzone').on('click', function () {
             $('#invoiceExcelFile').trigger('click');
         });
@@ -1583,7 +1666,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                         Swal.fire({
                             icon: 'error',
                             title: 'Gagal Preview',
-                            text: response.message || 'File Excel tidak valid'
+                            text: response.message || 'File import tidak valid'
                         });
                     }
                 },
@@ -1591,7 +1674,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     Swal.fire({
                         icon: 'error',
                         title: 'Gagal Preview',
-                        text: 'Terjadi kesalahan saat membaca file Excel'
+                        text: 'Terjadi kesalahan saat membaca file import'
                     });
                 },
                 complete: function () {
@@ -1650,6 +1733,14 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     hideLoader();
                 }
             });
+        });
+
+        $('#modal-download-billing-report').on('show.bs.modal', function () {
+            $('#report_filter_bowheer').val($('#filter_bowheer_up').val()).trigger('change');
+            $('#report_filter_regional').val($('#filter_regional_up').val()).trigger('change');
+            $('#report_filter_city').val($('#filter_city_up').val()).trigger('change');
+            $('#report_filter_priority').val($('#filter_priority_up').val()).trigger('change');
+            $('#report_filter_status').val(activeStatus || 'open');
         });
     });
 
@@ -2159,6 +2250,12 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
         // === VALIDASI SAAT SIMPAN ===
         $("form").on("submit", function (e) {
+            const currentForm = $(this);
+
+            if (!currentForm.find('#addfilter_bowheer').length) {
+                return true;
+            }
+
             e.preventDefault();
 
             // 🔹 Validasi tetap dipertahankan (jangan dihapus)

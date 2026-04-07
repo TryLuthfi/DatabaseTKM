@@ -238,6 +238,55 @@ class BillingPayment extends CI_Controller
         return null;
     }
 
+    private function loadPHPExcel()
+    {
+        if (!class_exists('PHPExcel')) {
+            require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        }
+    }
+
+    private function readCsvSheetData($filePath)
+    {
+        $rows = [];
+        $handle = fopen($filePath, 'r');
+
+        if ($handle === false) {
+            return $rows;
+        }
+
+        $firstLine = fgets($handle);
+        if ($firstLine === false) {
+            fclose($handle);
+            return $rows;
+        }
+
+        $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
+        rewind($handle);
+
+        while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
+            if (!empty($data)) {
+                if (isset($data[0])) {
+                    $data[0] = preg_replace('/^\xEF\xBB\xBF/', '', $data[0]);
+                }
+                $rows[] = $data;
+            }
+        }
+
+        fclose($handle);
+
+        $sheetData = [];
+        foreach ($rows as $rowIndex => $row) {
+            $sheetRow = [];
+            foreach ($row as $colIndex => $value) {
+                $columnLetter = PHPExcel_Cell::stringFromColumnIndex($colIndex);
+                $sheetRow[$columnLetter] = $value;
+            }
+            $sheetData[$rowIndex + 1] = $sheetRow;
+        }
+
+        return $sheetData;
+    }
+
     public function index()
     {
         if (!empty($this->session->userdata('id_user'))) {
@@ -320,6 +369,81 @@ class BillingPayment extends CI_Controller
         }
 
         echo json_encode(['results' => $results]);
+    }
+
+    public function downloadBillingReport()
+    {
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        $bowheer = $this->input->get('bowheer');
+        $regional = $this->input->get('regional');
+        $city = $this->input->get('city');
+        $priority = $this->input->get('priority');
+        $statusInvoice = $this->input->get('status_invoice');
+
+        if ($statusInvoice === 'all') {
+            $statusInvoice = null;
+        }
+
+        $rows = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice);
+        $filename = 'billing_report_' . date('Ymd_His') . '.xls';
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        echo '<html><head><meta charset="UTF-8"></head><body>';
+        echo '<table border="1">';
+        echo '<tr><th colspan="12" style="font-weight:bold;font-size:16px;">Billing Payment Report</th></tr>';
+        echo '<tr><th colspan="12">Generated At: ' . date('Y-m-d H:i:s') . '</th></tr>';
+        echo '<tr>';
+        echo '<th>No</th>';
+        echo '<th>Bowheer</th>';
+        echo '<th>No Invoice</th>';
+        echo '<th>Invoice Price</th>';
+        echo '<th>Regional</th>';
+        echo '<th>Area</th>';
+        echo '<th>Date Submit</th>';
+        echo '<th>Due Date</th>';
+        echo '<th>Aging</th>';
+        echo '<th>Priority</th>';
+        echo '<th>PO Number</th>';
+        echo '<th>Status Invoice</th>';
+        echo '</tr>';
+
+        $total = 0;
+        foreach ($rows as $index => $row) {
+            $total += (float) $row['invoice_price_nett'];
+            echo '<tr>';
+            echo '<td>' . ($index + 1) . '</td>';
+            echo '<td>' . htmlspecialchars((string) $row['nama_bowheer']) . '</td>';
+            echo '<td>' . htmlspecialchars((string) $row['no_invoice']) . '</td>';
+            echo '<td style="mso-number-format:\'#,##0.00\'">' . number_format((float) $row['invoice_price_nett'], 2, '.', '') . '</td>';
+            echo '<td>' . htmlspecialchars((string) $row['regional_payment']) . '</td>';
+            echo '<td>' . htmlspecialchars((string) $row['area_payment']) . '</td>';
+            echo '<td>' . htmlspecialchars((string) $row['tgl_submit_invoice']) . '</td>';
+            echo '<td>' . htmlspecialchars((string) $row['tgl_jatuh_tempo']) . '</td>';
+            echo '<td>' . htmlspecialchars((string) $row['umur_invoice']) . '</td>';
+            echo '<td>' . htmlspecialchars((string) $row['priority']) . '</td>';
+            echo '<td>' . htmlspecialchars((string) $row['po_number']) . '</td>';
+            echo '<td>' . htmlspecialchars((string) $row['status_invoice']) . '</td>';
+            echo '</tr>';
+        }
+
+        echo '<tr>';
+        echo '<th colspan="3" style="text-align:right;">Total</th>';
+        echo '<th style="mso-number-format:\'#,##0.00\'">' . number_format($total, 2, '.', '') . '</th>';
+        echo '<th colspan="8"></th>';
+        echo '</tr>';
+        echo '</table>';
+        echo '</body></html>';
+        exit;
     }
 
     public function saveBatchPayment()
@@ -606,7 +730,7 @@ class BillingPayment extends CI_Controller
         ini_set('display_errors', 0);
 
         $config['upload_path'] = './uploads/';
-        $config['allowed_types'] = 'xls|xlsx';
+        $config['allowed_types'] = 'xls|xlsx|csv';
         $config['max_size'] = 4096;
         $config['encrypt_name'] = true;
 
@@ -627,16 +751,22 @@ class BillingPayment extends CI_Controller
         $fileData = $this->upload->data();
         $filePath = $fileData['full_path'];
 
-        include APPPATH . 'third_party/PHPExcel/PHPExcel.php';
-
         try {
-            $objPHPExcel = PHPExcel_IOFactory::load($filePath);
-            $sheetData = $objPHPExcel->getActiveSheet()->toArray(null, true, true, true);
+            $extension = strtolower(pathinfo($fileData['file_name'], PATHINFO_EXTENSION));
+
+            if ($extension === 'csv') {
+                $this->loadPHPExcel();
+                $sheetData = $this->readCsvSheetData($filePath);
+            } else {
+                $this->loadPHPExcel();
+                $objPHPExcel = PHPExcel_IOFactory::load($filePath);
+                $sheetData = $objPHPExcel->getActiveSheet()->toArray(null, true, true, true);
+            }
         } catch (Exception $e) {
             @unlink($filePath);
             echo json_encode([
                 'status' => false,
-                'message' => 'File Excel tidak bisa dibaca'
+                'message' => 'File import tidak bisa dibaca'
             ]);
             return;
         }
@@ -646,7 +776,7 @@ class BillingPayment extends CI_Controller
         if (count($sheetData) < 2) {
             echo json_encode([
                 'status' => false,
-                'message' => 'File Excel tidak memiliki data'
+                'message' => 'File import tidak memiliki data'
             ]);
             return;
         }
@@ -665,7 +795,7 @@ class BillingPayment extends CI_Controller
             if (!in_array($requiredField, $headerMap, true)) {
                 echo json_encode([
                     'status' => false,
-                    'message' => 'Header Excel wajib memuat ' . $requiredField
+                    'message' => 'Header file wajib memuat ' . $requiredField
                 ]);
                 return;
             }
@@ -674,7 +804,7 @@ class BillingPayment extends CI_Controller
         if (!in_array('id_bowheer', $headerMap, true) && !in_array('nama_bowheer', $headerMap, true)) {
             echo json_encode([
                 'status' => false,
-                'message' => 'Header Excel wajib memuat id_bowheer atau nama_bowheer'
+                'message' => 'Header file wajib memuat id_bowheer atau nama_bowheer'
             ]);
             return;
         }
@@ -780,61 +910,85 @@ class BillingPayment extends CI_Controller
 
     public function downloadInvoiceImportTemplate()
     {
-        include APPPATH . 'third_party/PHPExcel/PHPExcel.php';
-
-        $excel = new PHPExcel();
-        $sheet = $excel->setActiveSheetIndex(0);
-        $sheet->setTitle('Format Invoice');
-
+        $filename = 'format_import_invoice_' . date('Ymd_His') . '.csv';
         $headers = [
-            'A1' => 'nama_bowheer',
-            'B1' => 'no_invoice',
-            'C1' => 'tgl_create_invoice',
-            'D1' => 'tgl_submit_invoice',
-            'E1' => 'po_number',
-            'F1' => 'po_tgl',
-            'G1' => 'invoice_price_est',
-            'H1' => 'invoice_price_nett',
-            'I1' => 'regional_payment',
-            'J1' => 'area_payment',
-            'K1' => 'deskripsi_payment'
+            'id_bowheer',
+            'nama_bowheer',
+            'no_invoice',
+            'tgl_create_invoice',
+            'tgl_submit_invoice',
+            'po_number',
+            'po_tgl',
+            'invoice_price_est',
+            'invoice_price_nett',
+            'regional_payment',
+            'area_payment',
+            'deskripsi_payment'
         ];
-
-        foreach ($headers as $cell => $value) {
-            $sheet->setCellValue($cell, $value);
-            $sheet->getStyle($cell)->getFont()->setBold(true);
-        }
 
         $exampleRow = [
-            'A2' => 'Contoh Bowheer',
-            'B2' => 'INV-001',
-            'C2' => date('Y-m-d H:i:s'),
-            'D2' => date('Y-m-d H:i:s'),
-            'E2' => 'PO-001',
-            'F2' => date('Y-m-d H:i:s'),
-            'G2' => '30000000',
-            'H2' => '29195703.95',
-            'I2' => 'JABODETABEK',
-            'J2' => 'JAKARTA',
-            'K2' => 'Contoh deskripsi invoice'
+            '1',
+            'Contoh Bowheer',
+            'INV-001',
+            date('Y-m-d H:i:s'),
+            date('Y-m-d H:i:s'),
+            'PO-001',
+            date('Y-m-d H:i:s'),
+            '30000000',
+            '29195703.95',
+            'JABODETABEK',
+            'JAKARTA',
+            'Contoh deskripsi invoice'
         ];
 
-        foreach ($exampleRow as $cell => $value) {
-            $sheet->setCellValueExplicit($cell, $value, PHPExcel_Cell_DataType::TYPE_STRING);
+        if (ob_get_length()) {
+            ob_end_clean();
         }
 
-        foreach (range('A', 'K') as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, $headers);
+        fputcsv($output, $exampleRow);
+        fclose($output);
+        exit;
+    }
+
+    public function downloadBowheerReference()
+    {
+        $filename = 'referensi_bowheer_' . date('Ymd_His') . '.csv';
+        $bowheerList = $this->db
+            ->select('id_bowheer, nama_bowheer')
+            ->from('tb_master_bowheer_bilco')
+            ->order_by('nama_bowheer', 'ASC')
+            ->get()
+            ->result_array();
+
+        if (ob_get_length()) {
+            ob_end_clean();
         }
 
-        $filename = 'format_import_invoice_' . date('Ymd_His') . '.xlsx';
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
 
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="' . $filename . '"');
-        header('Cache-Control: max-age=0');
+        $output = fopen('php://output', 'w');
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, ['id_bowheer', 'nama_bowheer']);
 
-        $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
-        $writer->save('php://output');
+        foreach ($bowheerList as $row) {
+            fputcsv($output, [
+                $row['id_bowheer'],
+                $row['nama_bowheer']
+            ]);
+        }
+
+        fclose($output);
         exit;
     }
 
