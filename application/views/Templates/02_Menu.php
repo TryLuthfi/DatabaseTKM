@@ -782,7 +782,7 @@ $id_menu = $this->uri->segment('1');
                           } ?>">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
-                                BILLING PAYMENT
+                                Account Receivable
                             </p>
                         </a>
                     </li>

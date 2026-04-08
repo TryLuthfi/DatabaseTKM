@@ -366,7 +366,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link active tab-status-invoice" data-status="open"
-                                        href="javascript:void(0)">OPEN INVOICE</a>
+                                        href="javascript:void(0)">OUTSTANDING</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link tab-status-invoice" data-status="partial"
@@ -374,11 +374,15 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link tab-status-invoice" data-status="paid"
-                                        href="javascript:void(0)">PAID PAYMENT</a>
+                                        href="javascript:void(0)">FULL PAYMENT</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link tab-status-invoice" data-status="all"
                                         href="javascript:void(0)">ALL INVOICE</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link tab-status-invoice" data-status="reject"
+                                        href="javascript:void(0)">REJECT PAYMENT</a>
                                 </li>
                             </ul>
                         </div>
@@ -643,6 +647,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         <option value="open">Open</option>
                                         <option value="partial">Partial</option>
                                         <option value="paid">Paid</option>
+                                        <option value="reject">Reject</option>
                                         <option value="all">Semua Status</option>
                                     </select>
                                 </div>
@@ -769,6 +774,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                             <select class="form-control" name="status_invoice" id="edit_partial_status_invoice">
                                 <option value="partial">Partial</option>
                                 <option value="paid">Paid</option>
+                                <option value="reject">Reject</option>
                             </select>
                         </div>
                     </div>
@@ -901,6 +907,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         <option value="open">Open</option>
                                         <option value="partial">Partial</option>
                                         <option value="paid">Paid</option>
+                                        <option value="reject">Reject</option>
                                     </select>
                                 </div>
                             </div>
@@ -1193,7 +1200,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     // === FOOTER ===
                     let tfootHtml = '<tr>';
                     response.columns.forEach((col, index) => {
-                        if (['Price'].includes(col)) {
+                        if (['Price', 'Outstanding Balance'].includes(col)) {
                             tfootHtml += `<th id="footer_${col.replace(/\s+/g, '_')}">0</th>`;
                         } else if (index === 0) {
                             tfootHtml += `<th style="text-align:right">Total:</th>`;
@@ -1240,6 +1247,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         tbodyHtml += `<td>${row.no_invoice || '-'}</td>`;
                                         break;
                                     case 'Price':
+                                    case 'Outstanding Balance':
                                         const displayPrice = activeStatus === 'partial'
                                             ? getOutstandingAmount(row)
                                             : parseAmount(row.invoice_price_nett || 0);
@@ -1319,7 +1327,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                 let totalP2 = 0;
                                 let totalP3 = 0;
 
-                                const priceIdx = colIndex('Price');
+                                const priceIdx = colIndex('Outstanding Balance') > -1
+                                    ? colIndex('Outstanding Balance')
+                                    : colIndex('Price');
                                 const priorityIdx = colIndex('Priority');
 
                                 api.rows({ search: 'applied' }).every(function () {
@@ -1635,6 +1645,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 buttons.push(`<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`);
                 buttons.push(`<button type="button" class="btn btn-success payment-item" data-id="${id}" title="Payment"><i class="fas fa-dollar-sign"></i></button>`);
                 buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
+            } else if (activeStatus === 'reject') {
+                buttons.push(`<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`);
+                buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
             } else {
                 buttons.push(`<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`);
                 buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
@@ -1688,6 +1701,12 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             let payment = parseAmount($('#edit_billing_invoice_payment').val());
 
             if (status === 'open') {
+                $('#edit_billing_invoice_payment').val('');
+                $('#edit_billing_tgl_payment').val('');
+                return;
+            }
+
+            if (status === 'reject') {
                 $('#edit_billing_invoice_payment').val('');
                 $('#edit_billing_tgl_payment').val('');
                 return;
@@ -2099,14 +2118,23 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 const date = $(this).find('input[name="tgl_payment_invoice[]"]').val().trim();
                 const status = $(this).find('select[name="status_invoice[]"]').val();
 
-                if (price === '' || date === '' || status === '') {
+                if (status === '') {
+                    valid = false;
+                    return false;
+                }
+
+                if (status === 'reject') {
+                    return true;
+                }
+
+                if (price === '' || date === '') {
                     valid = false;
                     return false;
                 }
             });
 
             if (!valid) {
-                alert('Payment Price dan Date Payment wajib diisi semua');
+                alert('Payment Price dan Date Payment wajib diisi semua, kecuali status reject');
                 return;
             }
 
@@ -2169,6 +2197,22 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         $(document).on('blur', '.payment-price', function () {
             const raw = parseAmount($(this).val());
             $(this).val(raw ? formatTitik(raw, 2) : '');
+            updatePaymentSummary();
+        });
+
+        $(document).on('change', '.payment-status', function () {
+            const $row = $(this).closest('tr');
+            const invoicePrice = parseAmount($row.find('.invoice-price-raw').val());
+            const status = $(this).val();
+
+            if (status === 'paid') {
+                $row.find('.payment-price').val(formatTitik(invoicePrice, 2));
+                $row.find('input[name="tgl_payment_invoice[]"]').val(getToday());
+            } else if (status === 'reject') {
+                $row.find('.payment-price').val('');
+                $row.find('input[name="tgl_payment_invoice[]"]').val('');
+            }
+
             updatePaymentSummary();
         });
 
@@ -2287,6 +2331,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 <select class="form-control payment-status" name="status_invoice[]">
                     <option value="paid" selected>Paid</option>
                     <option value="partial">Partial</option>
+                    <option value="reject">Reject</option>
                 </select>
             </td>
             <td class="text-center">
@@ -2439,6 +2484,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         window.updateEditPartialSummary = function () {
             const invoiceValue = parseAmount($('#edit_partial_invoice_price').val());
             let paymentValue = parseAmount($('#edit_partial_payment_price').val());
+            const selectedStatus = $('#edit_partial_status_invoice').val();
 
             if (paymentValue > invoiceValue) {
                 paymentValue = invoiceValue;
@@ -2447,6 +2493,10 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
             const remaining = Math.max(invoiceValue - paymentValue, 0);
             $('#edit_partial_remaining').val(formatTitik(remaining, 2));
+
+            if (selectedStatus === 'reject') {
+                return;
+            }
 
             if (paymentValue >= invoiceValue && invoiceValue > 0) {
                 $('#edit_partial_status_invoice').val('paid');
@@ -2486,6 +2536,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
             if (status === 'paid') {
                 $('#edit_partial_payment_price').val(formatTitik(invoiceValue, 2));
+            } else if (status === 'reject') {
+                $('#edit_partial_payment_price').val('');
+                $('#edit_partial_payment_date').val('');
             }
 
             updateEditPartialSummary();

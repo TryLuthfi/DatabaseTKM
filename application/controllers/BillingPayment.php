@@ -326,7 +326,8 @@ class BillingPayment extends CI_Controller
         $summary = $this->MBillingPayment->getOutstandingSummary($bowheer, $regional, $city, $priority);
 
         // Tentukan kolom yang tampil berdasarkan filter
-        $columns = ['No', 'Bowheer', 'Invoice', 'Price', 'Regional', 'Area', 'Date Submit', 'Due Date', 'Aging', "Priority", "PO Number", "Status Invoice", "Action"];
+        $priceHeader = $statusInvoice === 'partial' ? 'Outstanding Balance' : 'Price';
+        $columns = ['No', 'Bowheer', 'Invoice', $priceHeader, 'Regional', 'Area', 'Date Submit', 'Due Date', 'Aging', "Priority", "PO Number", "Status Invoice", "Action"];
 
         echo json_encode([
             'columns' => $columns,
@@ -435,7 +436,7 @@ class BillingPayment extends CI_Controller
             return;
         }
 
-        if (!in_array($statusInvoice, ['open', 'partial', 'paid'], true)) {
+        if (!in_array($statusInvoice, ['open', 'partial', 'paid', 'reject'], true)) {
             if ($invoicePricePayment <= 0) {
                 $statusInvoice = 'open';
             } elseif ($invoicePricePayment < $invoicePriceNett) {
@@ -446,6 +447,9 @@ class BillingPayment extends CI_Controller
         }
 
         if ($statusInvoice === 'open') {
+            $invoicePricePayment = null;
+            $tglPaymentInvoice = null;
+        } elseif ($statusInvoice === 'reject') {
             $invoicePricePayment = null;
             $tglPaymentInvoice = null;
         } elseif ($statusInvoice === 'partial') {
@@ -662,7 +666,7 @@ class BillingPayment extends CI_Controller
             $date = $paymentDate[$i];
             $status = $statusInvoice[$i];
 
-            if (empty($id) || empty($price) || empty($date) || empty($status)) {
+            if (empty($id) || empty($status)) {
                 continue;
             }
 
@@ -681,7 +685,22 @@ class BillingPayment extends CI_Controller
                 $price = $invoicePrice;
             }
 
-            if (!in_array($status, ['partial', 'paid'])) {
+            if ($status === 'reject') {
+                $this->db->where('id_billing', $id);
+                $this->db->where('status_invoice', 'open');
+                $this->db->update('tb_billingpayment', [
+                    'invoice_price_payment' => null,
+                    'tgl_payment_invoice' => null,
+                    'status_invoice' => 'reject'
+                ]);
+                continue;
+            }
+
+            if (empty($price) || empty($date)) {
+                continue;
+            }
+
+            if (!in_array($status, ['partial', 'paid'], true)) {
                 $status = 'paid';
             }
 
@@ -758,8 +777,31 @@ class BillingPayment extends CI_Controller
             return;
         }
 
-        if (!in_array($statusInvoice, ['partial', 'paid'])) {
+        if (!in_array($statusInvoice, ['partial', 'paid', 'reject'])) {
             $statusInvoice = 'partial';
+        }
+
+        if ($statusInvoice === 'reject') {
+            $this->db->where('id_billing', $idBilling);
+            $updated = $this->db->update('tb_billingpayment', [
+                'invoice_price_payment' => null,
+                'tgl_payment_invoice' => null,
+                'status_invoice' => 'reject'
+            ]);
+
+            if ($updated) {
+                echo json_encode([
+                    'status' => true,
+                    'message' => 'Data partial payment berhasil diubah menjadi reject'
+                ]);
+                return;
+            }
+
+            echo json_encode([
+                'status' => false,
+                'message' => 'Gagal memperbarui data partial payment'
+            ]);
+            return;
         }
 
         if ($paymentPrice >= $invoicePrice) {
