@@ -52,14 +52,28 @@ JOIN tb_master_bowheer_bilco tmbi
     {
         $data = $this->db->query('SELECT
 	tmbi.nama_bowheer,
-    -- TOTAL SEMUA
-    SUM(tbp.invoice_price_nett) AS total_all,
+    -- TOTAL SEMUA OUTSTANDING
+    SUM(
+        CASE
+            WHEN tbp.status_invoice = "partial" THEN GREATEST(
+                tbp.invoice_price_nett - CAST(COALESCE(NULLIF(tbp.invoice_price_payment, ""), "0") AS DECIMAL(18,2)),
+                0
+            )
+            ELSE tbp.invoice_price_nett
+        END
+    ) AS total_all,
 
     -- P1
     SUM(
         CASE 
             WHEN DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 75 
-            THEN tbp.invoice_price_nett 
+            THEN CASE
+                WHEN tbp.status_invoice = "partial" THEN GREATEST(
+                    tbp.invoice_price_nett - CAST(COALESCE(NULLIF(tbp.invoice_price_payment, ""), "0") AS DECIMAL(18,2)),
+                    0
+                )
+                ELSE tbp.invoice_price_nett
+            END
             ELSE 0 
         END
     ) AS total_p1,
@@ -69,7 +83,13 @@ JOIN tb_master_bowheer_bilco tmbi
         CASE 
             WHEN DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 45
              AND DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) < 75
-            THEN tbp.invoice_price_nett 
+            THEN CASE
+                WHEN tbp.status_invoice = "partial" THEN GREATEST(
+                    tbp.invoice_price_nett - CAST(COALESCE(NULLIF(tbp.invoice_price_payment, ""), "0") AS DECIMAL(18,2)),
+                    0
+                )
+                ELSE tbp.invoice_price_nett
+            END
             ELSE 0 
         END
     ) AS total_p2,
@@ -78,7 +98,13 @@ JOIN tb_master_bowheer_bilco tmbi
     SUM(
         CASE 
             WHEN DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) < 45
-            THEN tbp.invoice_price_nett 
+            THEN CASE
+                WHEN tbp.status_invoice = "partial" THEN GREATEST(
+                    tbp.invoice_price_nett - CAST(COALESCE(NULLIF(tbp.invoice_price_payment, ""), "0") AS DECIMAL(18,2)),
+                    0
+                )
+                ELSE tbp.invoice_price_nett
+            END
             ELSE 0 
         END
     ) AS total_p3
@@ -86,11 +112,58 @@ JOIN tb_master_bowheer_bilco tmbi
 FROM tb_billingpayment tbp
 JOIN tb_master_bowheer_bilco tmbi 
     ON tbp.id_bowheer = tmbi.id_bowheer
-WHERE tbp.status_invoice = "open"
+WHERE tbp.status_invoice IN ("open", "partial")
     GROUP BY tmbi.id_bowheer
     ORDER BY total_p1 DESC')
             ->result_array();
         return $data;
+    }
+
+    public function getOutstandingSummary($bowheer, $regional, $city, $priority)
+    {
+        $outstandingSql = 'CASE
+            WHEN tbp.status_invoice = "partial" THEN GREATEST(
+                tbp.invoice_price_nett - CAST(COALESCE(NULLIF(tbp.invoice_price_payment, ""), "0") AS DECIMAL(18,2)),
+                0
+            )
+            ELSE tbp.invoice_price_nett
+        END';
+
+        $this->db->select("
+            SUM($outstandingSql) AS total_all,
+            SUM(CASE WHEN DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 75 THEN $outstandingSql ELSE 0 END) AS total_p1,
+            SUM(CASE WHEN DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 45 AND DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) < 75 THEN $outstandingSql ELSE 0 END) AS total_p2,
+            SUM(CASE WHEN DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) < 45 THEN $outstandingSql ELSE 0 END) AS total_p3
+        ", false);
+        $this->db->from('tb_billingpayment tbp');
+        $this->db->join('tb_master_bowheer_bilco tmbi', 'tbp.id_bowheer = tmbi.id_bowheer');
+        $this->db->where_in('tbp.status_invoice', ['open', 'partial']);
+
+        if (!empty($bowheer))
+            $this->db->where_in('nama_bowheer', $bowheer);
+        if (!empty($regional))
+            $this->db->where_in('regional_payment', $regional);
+        if (!empty($city))
+            $this->db->where_in('area_payment', $city);
+        if (!empty($priority)) {
+            $conditions = [];
+
+            foreach ($priority as $p) {
+                if ($p == "P1") {
+                    $conditions[] = 'DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 75';
+                } elseif ($p == "P2") {
+                    $conditions[] = '(DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) >= 45 AND DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) < 75)';
+                } elseif ($p == "P3") {
+                    $conditions[] = 'DATEDIFF(CURDATE(), tbp.tgl_submit_invoice) < 45';
+                }
+            }
+
+            if (!empty($conditions)) {
+                $this->db->where('(' . implode(' OR ', $conditions) . ')', null, false);
+            }
+        }
+
+        return $this->db->get()->row_array();
     }
 
     public function getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice = 'open')
@@ -140,8 +213,8 @@ END AS status_monitor');
             $this->db->where_in('regional_payment', $regional);
         if (!empty($city))
             $this->db->where_in('area_payment', $city);
-        if (!empty($statusInvoice))
-        $this->db->where('tbp.status_invoice', $statusInvoice);
+        if (!empty($statusInvoice) && $statusInvoice !== 'all')
+            $this->db->where('tbp.status_invoice', $statusInvoice);
         if (!empty($priority)) {
 
             $conditions = [];

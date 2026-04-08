@@ -376,6 +376,10 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                     <a class="nav-link tab-status-invoice" data-status="paid"
                                         href="javascript:void(0)">PAID PAYMENT</a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link tab-status-invoice" data-status="all"
+                                        href="javascript:void(0)">ALL INVOICE</a>
+                                </li>
                             </ul>
                         </div>
 
@@ -776,6 +780,119 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="modal-edit-billing" tabindex="-1" role="dialog"
+        aria-labelledby="modalEditBillingLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <form id="formEditBillingInvoice">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalEditBillingLabel">Edit Invoice</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="id_billing" id="edit_billing_id">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Bowheer</label>
+                                    <select class="form-control" name="id_bowheer" id="edit_billing_bowheer"></select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>No Invoice</label>
+                                    <input type="text" class="form-control" name="no_invoice" id="edit_billing_no_invoice">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Tgl Create Invoice</label>
+                                    <input type="date" class="form-control" name="tgl_create_invoice" id="edit_billing_tgl_create">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Tgl Submit Invoice</label>
+                                    <input type="date" class="form-control" name="tgl_submit_invoice" id="edit_billing_tgl_submit">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Tgl Payment</label>
+                                    <input type="date" class="form-control" name="tgl_payment_invoice" id="edit_billing_tgl_payment">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>No PO</label>
+                                    <input type="text" class="form-control" name="po_number" id="edit_billing_po_number">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Tgl PO</label>
+                                    <input type="date" class="form-control" name="po_tgl" id="edit_billing_po_tgl">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Invoice Est</label>
+                                    <input type="text" class="form-control text-right edit-billing-amount" name="invoice_price_est" id="edit_billing_invoice_est" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Invoice Nett</label>
+                                    <input type="text" class="form-control text-right edit-billing-amount" name="invoice_price_nett" id="edit_billing_invoice_nett" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Payment Price</label>
+                                    <input type="text" class="form-control text-right edit-billing-amount" name="invoice_price_payment" id="edit_billing_invoice_payment" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Status Invoice</label>
+                                    <select class="form-control" name="status_invoice" id="edit_billing_status_invoice">
+                                        <option value="open">Open</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="paid">Paid</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Regional Payment</label>
+                                    <input type="text" class="form-control" name="regional_payment" id="edit_billing_regional">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Area Payment</label>
+                                    <input type="text" class="form-control" name="area_payment" id="edit_billing_area">
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>Deskripsi Payment</label>
+                                    <textarea class="form-control" name="deskripsi_payment" id="edit_billing_deskripsi" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Invoice</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- /.content-wrapper -->
@@ -1049,11 +1166,19 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     $('#tabel_list_open_invoice tfoot').html(tfootHtml);
 
                     const filteredData = response.data || [];
+                    const outstandingSummary = response.summary || {};
                     latestBillingRows = {};
 
                     filteredData.forEach(row => {
                         latestBillingRows[row.id_billing] = row;
                     });
+
+                    if (activeStatus === 'open') {
+                        animateValue('dashboardTotalBilling', 0, parseFloat(outstandingSummary.total_all || 0), 600, true);
+                        animateValue('dashboardBillingP1', 0, parseFloat(outstandingSummary.total_p1 || 0), 600, true);
+                        animateValue('dashboardBillingP2', 0, parseFloat(outstandingSummary.total_p2 || 0), 600, true);
+                        animateValue('dashboardBillingP3', 0, parseFloat(outstandingSummary.total_p3 || 0), 600, true);
+                    }
 
                     // === BODY ===
                     if (!filteredData || filteredData.length === 0) {
@@ -1103,16 +1228,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         tbodyHtml += `<td>${row.status_invoice || '-'}</td>`;
                                         break;
                                     case 'Action':
-                                        if (activeStatus === 'partial') {
-                                            tbodyHtml += `<td class="text-center">
-                        <button type="button" class="btn btn-warning edit-partial-item" data-id="${row.id_billing}"><i class="fa fa-edit"></i></button>
-                    </td>`;
-                                        } else {
-                                            tbodyHtml += `<td>
-                        <button type="button" class="btn btn-primary detail-item" data-id="${row.id_billing}"><i class="fa fa-eye"></i></button>
-                        <button type="button" class="btn btn-danger hapus-item" data-id="${row.id_billing}"><i class="fa fa-trash"></i></button>
-                    </td>`;
-                                        }
+                                        tbodyHtml += buildActionButtons(row);
                                         break;
                                     default:
                                         tbodyHtml += `<td>-</td>`;
@@ -1179,13 +1295,6 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
                                 if (priceIdx > -1) {
                                     $(api.column(priceIdx).footer()).html(formatTitik(totalAll, 2));
-                                }
-
-                                if (activeStatus === 'open') {
-                                    animateValue('dashboardTotalBilling', 0, totalAll, 600, true);
-                                    animateValue('dashboardBillingP1', 0, totalP1, 600, true);
-                                    animateValue('dashboardBillingP2', 0, totalP2, 600, true);
-                                    animateValue('dashboardBillingP3', 0, totalP3, 600, true);
                                 }
 
                                 highlightCells();
@@ -1271,6 +1380,28 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             minimumFractionDigits: decimalPlaces,
             maximumFractionDigits: decimalPlaces
         });
+    }
+
+    function formatDateForInput(value) {
+        if (!value) {
+            return '';
+        }
+
+        const stringValue = value.toString().trim();
+        const match = stringValue.match(/^(\d{4}-\d{2}-\d{2})/);
+
+        if (match) {
+            return match[1];
+        }
+
+        const parsedDate = new Date(stringValue);
+        if (Number.isNaN(parsedDate.getTime())) {
+            return '';
+        }
+
+        const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(parsedDate.getDate()).padStart(2, '0');
+        return `${parsedDate.getFullYear()}-${month}-${day}`;
     }
 
     function formatInputRupiah(value) {
@@ -1440,6 +1571,122 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             $('#manualInvoiceNettTotal').text(formatTitik(totalNett, 2));
         }
 
+        window.buildActionButtons = function (row) {
+            const id = row.id_billing;
+            const buttons = [];
+
+            if (activeStatus === 'open') {
+                buttons.push(`<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`);
+                buttons.push(`<button type="button" class="btn btn-success payment-item" data-id="${id}" title="Add Payment"><i class="fas fa-dollar-sign"></i></button>`);
+                buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
+            } else if (activeStatus === 'partial') {
+                buttons.push(`<button type="button" class="btn btn-warning edit-partial-item" data-id="${id}" title="Edit Partial"><i class="fa fa-edit"></i></button>`);
+                buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
+            } else if (activeStatus === 'all') {
+                buttons.push(`<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`);
+                buttons.push(`<button type="button" class="btn btn-success payment-item" data-id="${id}" title="Payment"><i class="fas fa-dollar-sign"></i></button>`);
+                buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
+            } else {
+                buttons.push(`<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`);
+                buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
+            }
+
+            return `<td class="text-center action-buttons">${buttons.join(' ')}</td>`;
+        };
+
+        window.reloadBillingPage = function () {
+            window.location.reload();
+        };
+
+        window.populateEditBillingBowheer = function (selectedId = '') {
+            const $select = $('#edit_billing_bowheer');
+            $select.empty().append('<option value="">Pilih Bowheer</option>');
+
+            bowheerOptions.forEach(item => {
+                const selected = String(item.id) === String(selectedId) ? 'selected' : '';
+                $select.append(`<option value="${item.id}" ${selected}>${item.text}</option>`);
+            });
+        };
+
+        window.openBillingEditModal = function (row) {
+            if (!row) {
+                return;
+            }
+
+            populateEditBillingBowheer(row.id_bowheer || '');
+            $('#edit_billing_id').val(row.id_billing || '');
+            $('#edit_billing_no_invoice').val(row.no_invoice || '');
+            $('#edit_billing_tgl_create').val(formatDateForInput(row.tgl_create_invoice));
+            $('#edit_billing_tgl_submit').val(formatDateForInput(row.tgl_submit_invoice));
+            $('#edit_billing_tgl_payment').val(formatDateForInput(row.tgl_payment_invoice));
+            $('#edit_billing_po_number').val(row.po_number || '');
+            $('#edit_billing_po_tgl').val(formatDateForInput(row.po_tgl));
+            $('#edit_billing_invoice_est').val(row.invoice_price_est ? formatTitik(parseAmount(row.invoice_price_est), 2) : '');
+            $('#edit_billing_invoice_nett').val(row.invoice_price_nett ? formatTitik(parseAmount(row.invoice_price_nett), 2) : '');
+            $('#edit_billing_invoice_payment').val(row.invoice_price_payment ? formatTitik(parseAmount(row.invoice_price_payment), 2) : '');
+            $('#edit_billing_status_invoice').val(row.status_invoice || 'open');
+            $('#edit_billing_regional').val(row.regional_payment || '');
+            $('#edit_billing_area').val(row.area_payment || '');
+            $('#edit_billing_deskripsi').val(row.deskripsi_payment || '');
+
+            syncEditBillingStatus();
+            $('#modal-edit-billing').modal('show');
+        };
+
+        window.syncEditBillingStatus = function () {
+            const status = $('#edit_billing_status_invoice').val();
+            const invoiceNett = parseAmount($('#edit_billing_invoice_nett').val());
+            let payment = parseAmount($('#edit_billing_invoice_payment').val());
+
+            if (status === 'open') {
+                $('#edit_billing_invoice_payment').val('');
+                $('#edit_billing_tgl_payment').val('');
+                return;
+            }
+
+            if (status === 'paid') {
+                payment = invoiceNett;
+                $('#edit_billing_invoice_payment').val(payment ? formatTitik(payment, 2) : '');
+                if (!$('#edit_billing_tgl_payment').val()) {
+                    $('#edit_billing_tgl_payment').val(getToday());
+                }
+                return;
+            }
+
+            if (status === 'partial') {
+                if (payment >= invoiceNett && invoiceNett > 0) {
+                    payment = '';
+                }
+
+                $('#edit_billing_invoice_payment').val(payment ? formatTitik(payment, 2) : '');
+                if (!$('#edit_billing_tgl_payment').val()) {
+                    $('#edit_billing_tgl_payment').val(getToday());
+                }
+            }
+        };
+
+        window.openPartialEditModal = function (row) {
+            if (!row) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data tidak ditemukan',
+                    text: 'Data partial payment tidak tersedia.'
+                });
+                return;
+            }
+
+            $('#edit_partial_id_billing').val(row.id_billing);
+            $('#edit_partial_bowheer').val(row.nama_bowheer || '-');
+            $('#edit_partial_no_invoice').val(row.no_invoice || '-');
+            $('#edit_partial_invoice_price').val(formatTitik(parseAmount(row.invoice_price_nett || 0), 2));
+            $('#edit_partial_payment_price').val(formatTitik(parseAmount(row.invoice_price_payment || 0), 2));
+            $('#edit_partial_payment_date').val(formatDateForInput(row.tgl_payment_invoice) || getToday());
+            $('#edit_partial_status_invoice').val(row.status_invoice || 'partial');
+
+            updateEditPartialSummary();
+            $('#modal-edit-partial-payment').modal('show');
+        };
+
         function addManualInvoiceRow(data = {}) {
             $('#emptyManualInvoiceRow').remove();
 
@@ -1536,10 +1783,27 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             updateManualInvoiceTotals();
         });
 
+        $(document).on('focus', '.manual-invoice-amount, .edit-billing-amount', function () {
+            const value = parseAmount($(this).val());
+            $(this).val(value ? value : '');
+        });
+
         $(document).on('input', '.manual-invoice-amount', function () {
+            updateManualInvoiceTotals();
+        });
+
+        $(document).on('blur', '.manual-invoice-amount, .edit-billing-amount', function () {
             const value = parseAmount($(this).val());
             $(this).val(value ? formatTitik(value, 2) : '');
             updateManualInvoiceTotals();
+        });
+
+        $('#edit_billing_status_invoice').on('change', function () {
+            syncEditBillingStatus();
+        });
+
+        $('#edit_billing_invoice_nett, #edit_billing_invoice_payment').on('blur', function () {
+            syncEditBillingStatus();
         });
 
         $('#modal-download-report').on('shown.bs.modal', function () {
@@ -1582,10 +1846,11 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                             icon: 'success',
                             title: 'Berhasil',
                             text: response.message
+                        }).then(() => {
+                            resetManualInvoiceForm();
+                            $('#modal-download-report').modal('hide');
+                            reloadBillingPage();
                         });
-                        resetManualInvoiceForm();
-                        $('#modal-download-report').modal('hide');
-                        $('#btnFilterDataProject').trigger('click');
                     } else {
                         const errorText = response.errors && response.errors.length
                             ? response.errors.map(item => `Baris ${item.row}: ${item.message}`).join('\n')
@@ -1709,11 +1974,12 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                             icon: 'success',
                             title: 'Import Berhasil',
                             text: response.message
+                        }).then(() => {
+                            resetImportPreview();
+                            $('#invoiceExcelFile').val('');
+                            $('#modal-download-report').modal('hide');
+                            reloadBillingPage();
                         });
-                        resetImportPreview();
-                        $('#invoiceExcelFile').val('');
-                        $('#modal-download-report').modal('hide');
-                        $('#btnFilterDataProject').trigger('click');
                     } else {
                         Swal.fire({
                             icon: 'error',
@@ -1785,22 +2051,29 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 },
                 success: function (response) {
                     if (response.status) {
-
-                        alert(response.message);
-                        hideLoader();
-
-                        resetBatchPaymentTable();
-                        $('#modal-payment').modal('hide');
-
-                        if ($.fn.DataTable.isDataTable('#tabel_list_open_invoice')) {
-                            $('#btnFilterDataProject').trigger('click');
-                        }
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: response.message
+                        }).then(() => {
+                            resetBatchPaymentTable();
+                            $('#modal-payment').modal('hide');
+                            reloadBillingPage();
+                        });
                     } else {
-                        alert(response.message);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: response.message || 'Gagal menyimpan pembayaran'
+                        });
                     }
                 },
                 error: function () {
-                    alert('Terjadi kesalahan saat menyimpan pembayaran');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: 'Terjadi kesalahan saat menyimpan pembayaran'
+                    });
                 },
                 complete: function () {
                     hideLoader();
@@ -1813,16 +2086,18 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             updatePaymentSummary();
         });
 
+        $(document).on('focus', '.payment-price', function () {
+            const raw = parseAmount($(this).val());
+            $(this).val(raw ? raw : '');
+        });
+
         $(document).on('input', '.payment-price', function () {
-            let raw = parseAmount($(this).val());
+            updatePaymentSummary();
+        });
 
-            if (!raw) {
-                $(this).val('');
-                updatePaymentSummary();
-                return;
-            }
-
-            $(this).val(formatTitik(raw, 2));
+        $(document).on('blur', '.payment-price', function () {
+            const raw = parseAmount($(this).val());
+            $(this).val(raw ? formatTitik(raw, 2) : '');
             updatePaymentSummary();
         });
 
@@ -1986,7 +2261,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             $('#modal-payment').modal('show');
         }
 
-        $(document).on('click', '.detail-item', function () {
+        $(document).on('click', '.payment-item', function () {
             const id = $(this).data('id');
             const row = latestBillingRows[id];
 
@@ -1999,16 +2274,37 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 return;
             }
 
-            if (activeStatus === 'open') {
+            if (row.status_invoice === 'open') {
                 openPaymentModalWithInvoice(row);
+                return;
+            }
+
+            if (row.status_invoice === 'partial') {
+                openPartialEditModal(row);
                 return;
             }
 
             Swal.fire({
                 icon: 'info',
                 title: 'Informasi',
-                text: 'Aksi detail belum tersedia untuk status ini.'
+                text: 'Invoice ini sudah paid. Gunakan menu edit jika ingin mengubah data.'
             });
+        });
+
+        $(document).on('click', '.edit-billing-item', function () {
+            const id = $(this).data('id');
+            const row = latestBillingRows[id];
+
+            if (!row) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data tidak ditemukan',
+                    text: 'Invoice yang dipilih tidak tersedia.'
+                });
+                return;
+            }
+
+            openBillingEditModal(row);
         });
 
         $(document).on('click', '.hapus-item', function () {
@@ -2044,8 +2340,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                 icon: 'success',
                                 title: 'Berhasil',
                                 text: response.message
+                            }).then(() => {
+                                reloadBillingPage();
                             });
-                            $('#btnFilterDataProject').trigger('click');
                         } else {
                             Swal.fire({
                                 icon: 'error',
@@ -2089,23 +2386,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
         $(document).on('click', '.edit-partial-item', function () {
             const id = $(this).data('id');
-            const row = latestBillingRows[id];
-
-            if (!row) {
-                alert('Data partial payment tidak ditemukan');
-                return;
-            }
-
-            $('#edit_partial_id_billing').val(row.id_billing);
-            $('#edit_partial_bowheer').val(row.nama_bowheer || '-');
-            $('#edit_partial_no_invoice').val(row.no_invoice || '-');
-            $('#edit_partial_invoice_price').val(formatTitik(parseAmount(row.invoice_price_nett || 0), 2));
-            $('#edit_partial_payment_price').val(formatTitik(parseAmount(row.invoice_price_payment || 0), 2));
-            $('#edit_partial_payment_date').val(row.tgl_payment_invoice || '');
-            $('#edit_partial_status_invoice').val(row.status_invoice || 'partial');
-
-            updateEditPartialSummary();
-            $('#modal-edit-partial-payment').modal('show');
+            openPartialEditModal(latestBillingRows[id]);
         });
 
         $('#edit_partial_payment_price').on('input', function () {
@@ -2152,15 +2433,70 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 },
                 success: function (response) {
                     if (response.status) {
-                        alert(response.message);
-                        $('#modal-edit-partial-payment').modal('hide');
-                        $('#btnFilterDataProject').trigger('click');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: response.message
+                        }).then(() => {
+                            $('#modal-edit-partial-payment').modal('hide');
+                            reloadBillingPage();
+                        });
                     } else {
-                        alert(response.message || 'Gagal memperbarui partial payment');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: response.message || 'Gagal memperbarui partial payment'
+                        });
                     }
                 },
                 error: function () {
-                    alert('Terjadi kesalahan saat update partial payment');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: 'Terjadi kesalahan saat update partial payment'
+                    });
+                },
+                complete: function () {
+                    hideLoader();
+                }
+            });
+        });
+
+        $('#formEditBillingInvoice').on('submit', function (e) {
+            e.preventDefault();
+
+            $.ajax({
+                url: '<?= base_url("BillingPayment/updateBillingInvoice") ?>',
+                type: 'POST',
+                data: $(this).serialize(),
+                dataType: 'json',
+                beforeSend: function () {
+                    showLoader();
+                },
+                success: function (response) {
+                    if (response.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: response.message
+                        }).then(() => {
+                            $('#modal-edit-billing').modal('hide');
+                            reloadBillingPage();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: response.message || 'Gagal memperbarui invoice'
+                        });
+                    }
+                },
+                error: function () {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: 'Terjadi kesalahan saat update invoice'
+                    });
                 },
                 complete: function () {
                     hideLoader();

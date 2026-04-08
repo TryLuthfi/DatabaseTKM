@@ -318,17 +318,206 @@ class BillingPayment extends CI_Controller
         $priority = $this->input->post('priority');
         $statusInvoice = $this->input->post('status_invoice');
 
+        if ($statusInvoice === 'all') {
+            $statusInvoice = null;
+        }
+
         $data = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice);
+        $summary = $this->MBillingPayment->getOutstandingSummary($bowheer, $regional, $city, $priority);
 
         // Tentukan kolom yang tampil berdasarkan filter
         $columns = ['No', 'Bowheer', 'Invoice', 'Price', 'Regional', 'Area', 'Date Submit', 'Due Date', 'Aging', "Priority", "PO Number", "Status Invoice", "Action"];
 
         echo json_encode([
             'columns' => $columns,
-            'data' => $data
+            'data' => $data,
+            'summary' => $summary
         ]);
 
         log_message('debug', 'Last Query: ' . $this->db->last_query());
+    }
+
+    public function updateBillingInvoice()
+    {
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        $idBilling = (int) $this->input->post('id_billing');
+        $idBowheer = (int) $this->input->post('id_bowheer');
+        $noInvoice = trim((string) $this->input->post('no_invoice'));
+        $tglCreateInvoice = $this->normalizeDateTime($this->input->post('tgl_create_invoice'));
+        $tglSubmitInvoice = $this->normalizeDateTime($this->input->post('tgl_submit_invoice'));
+        $tglPaymentInvoice = $this->normalizeDateTime($this->input->post('tgl_payment_invoice'));
+        $poNumber = trim((string) $this->input->post('po_number'));
+        $poTgl = $this->normalizeDateTime($this->input->post('po_tgl'));
+        $invoicePriceEst = $this->normalizeAmount($this->input->post('invoice_price_est'));
+        $invoicePriceNett = $this->normalizeAmount($this->input->post('invoice_price_nett'));
+        $invoicePricePayment = $this->normalizeAmount($this->input->post('invoice_price_payment'));
+        $statusInvoice = trim((string) $this->input->post('status_invoice'));
+        $areaPayment = trim((string) $this->input->post('area_payment'));
+        $regionalPayment = trim((string) $this->input->post('regional_payment'));
+        $deskripsiPayment = trim((string) $this->input->post('deskripsi_payment'));
+
+        if ($idBilling <= 0) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'ID invoice tidak valid'
+            ]);
+            return;
+        }
+
+        $existing = $this->db
+            ->select('id_billing, status_invoice')
+            ->get_where('tb_billingpayment', ['id_billing' => $idBilling])
+            ->row_array();
+
+        if (!$existing) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Data invoice tidak ditemukan'
+            ]);
+            return;
+        }
+
+        if ($idBowheer <= 0) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Bowheer wajib dipilih'
+            ]);
+            return;
+        }
+
+        if ($noInvoice === '') {
+            echo json_encode([
+                'status' => false,
+                'message' => 'No invoice wajib diisi'
+            ]);
+            return;
+        }
+
+        if ($tglSubmitInvoice === null) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Tanggal submit invoice tidak valid'
+            ]);
+            return;
+        }
+
+        if ($invoicePriceNett <= 0) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Invoice nett harus lebih besar dari 0'
+            ]);
+            return;
+        }
+
+        $duplicate = $this->db
+            ->select('id_billing')
+            ->from('tb_billingpayment')
+            ->where("LOWER(no_invoice) = " . $this->db->escape(strtolower($noInvoice)), null, false)
+            ->where('id_billing !=', $idBilling)
+            ->get()
+            ->row_array();
+
+        if ($duplicate) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'No invoice sudah ada di database'
+            ]);
+            return;
+        }
+
+        if ($invoicePricePayment > $invoicePriceNett) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Payment tidak boleh melebihi invoice nett'
+            ]);
+            return;
+        }
+
+        if (!in_array($statusInvoice, ['open', 'partial', 'paid'], true)) {
+            if ($invoicePricePayment <= 0) {
+                $statusInvoice = 'open';
+            } elseif ($invoicePricePayment < $invoicePriceNett) {
+                $statusInvoice = 'partial';
+            } else {
+                $statusInvoice = 'paid';
+            }
+        }
+
+        if ($statusInvoice === 'open') {
+            $invoicePricePayment = null;
+            $tglPaymentInvoice = null;
+        } elseif ($statusInvoice === 'partial') {
+            if ($invoicePricePayment <= 0 || $invoicePricePayment >= $invoicePriceNett) {
+                echo json_encode([
+                    'status' => false,
+                    'message' => 'Status partial harus memiliki payment lebih dari 0 dan kurang dari invoice nett'
+                ]);
+                return;
+            }
+
+            if ($tglPaymentInvoice === null) {
+                echo json_encode([
+                    'status' => false,
+                    'message' => 'Tanggal payment wajib diisi untuk status partial'
+                ]);
+                return;
+            }
+        } elseif ($statusInvoice === 'paid') {
+            if ($invoicePricePayment <= 0) {
+                $invoicePricePayment = $invoicePriceNett;
+            }
+
+            if ((float) $invoicePricePayment !== (float) $invoicePriceNett) {
+                echo json_encode([
+                    'status' => false,
+                    'message' => 'Status paid harus memiliki payment yang sama dengan invoice nett'
+                ]);
+                return;
+            }
+
+            if ($tglPaymentInvoice === null) {
+                echo json_encode([
+                    'status' => false,
+                    'message' => 'Tanggal payment wajib diisi untuk status paid'
+                ]);
+                return;
+            }
+        }
+
+        $payload = [
+            'id_bowheer' => $idBowheer,
+            'no_invoice' => $noInvoice,
+            'tgl_create_invoice' => $tglCreateInvoice ?: $tglSubmitInvoice,
+            'tgl_submit_invoice' => $tglSubmitInvoice,
+            'tgl_payment_invoice' => $tglPaymentInvoice,
+            'po_number' => $poNumber,
+            'po_tgl' => $poTgl,
+            'invoice_price_est' => $invoicePriceEst,
+            'invoice_price_nett' => $invoicePriceNett,
+            'invoice_price_payment' => $invoicePricePayment,
+            'status_invoice' => $statusInvoice,
+            'area_payment' => $areaPayment,
+            'regional_payment' => $regionalPayment,
+            'deskripsi_payment' => $deskripsiPayment
+        ];
+
+        $this->db->where('id_billing', $idBilling);
+        $updated = $this->db->update('tb_billingpayment', $payload);
+
+        if ($updated) {
+            echo json_encode([
+                'status' => true,
+                'message' => 'Invoice berhasil diperbarui'
+            ]);
+            return;
+        }
+
+        echo json_encode([
+            'status' => false,
+            'message' => 'Gagal memperbarui invoice'
+        ]);
     }
 
     public function getOpenInvoices()
