@@ -781,6 +781,45 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         </div>
     </div>
 
+    <div class="modal fade" id="modal-detail-partial-payment" tabindex="-1" role="dialog"
+        aria-labelledby="modalDetailPartialPaymentLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalDetailPartialPaymentLabel">Detail Partial Payment</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Nama Bowheer</label>
+                        <input type="text" class="form-control" id="detail_partial_bowheer" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>No Invoice</label>
+                        <input type="text" class="form-control" id="detail_partial_no_invoice" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Invoice Nett</label>
+                        <input type="text" class="form-control text-right" id="detail_partial_invoice_nett" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Payment</label>
+                        <input type="text" class="form-control text-right" id="detail_partial_payment" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Sisa</label>
+                        <input type="text" class="form-control text-right" id="detail_partial_remaining" readonly>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modal-edit-billing" tabindex="-1" role="dialog"
         aria-labelledby="modalEditBillingLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
@@ -1201,7 +1240,10 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         tbodyHtml += `<td>${row.no_invoice || '-'}</td>`;
                                         break;
                                     case 'Price':
-                                        tbodyHtml += `<td style="text-align: right;">${formatTitik(row.invoice_price_nett, 2)}</td>`;
+                                        const displayPrice = activeStatus === 'partial'
+                                            ? getOutstandingAmount(row)
+                                            : parseAmount(row.invoice_price_nett || 0);
+                                        tbodyHtml += `<td style="text-align: right;">${formatTitik(displayPrice, 2)}</td>`;
                                         break;
                                     case 'Regional':
                                         tbodyHtml += `<td>${row.regional_payment || '-'}</td>`;
@@ -1410,6 +1452,12 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         return formatTitik(num, 0);
     }
 
+    function getOutstandingAmount(row) {
+        const nett = parseAmount(row && row.invoice_price_nett ? row.invoice_price_nett : 0);
+        const payment = parseAmount(row && row.invoice_price_payment ? row.invoice_price_payment : 0);
+        return Math.max(nett - payment, 0);
+    }
+
     function formatRupiah(value) {
         let num = parseFloat(value.toString().replace(/[^\d]/g, '')) || 0;
         return '' + formatTitik(num);
@@ -1580,6 +1628,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 buttons.push(`<button type="button" class="btn btn-success payment-item" data-id="${id}" title="Add Payment"><i class="fas fa-dollar-sign"></i></button>`);
                 buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
             } else if (activeStatus === 'partial') {
+                buttons.push(`<button type="button" class="btn btn-info detail-partial-item" data-id="${id}" title="Detail Partial"><i class="fa fa-list-alt"></i></button>`);
                 buttons.push(`<button type="button" class="btn btn-warning edit-partial-item" data-id="${id}" title="Edit Partial"><i class="fa fa-edit"></i></button>`);
                 buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
             } else if (activeStatus === 'all') {
@@ -1591,7 +1640,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
             }
 
-            return `<td class="text-center action-buttons">${buttons.join(' ')}</td>`;
+            return `<td class="text-center action-buttons"><div class="btn-group btn-group-sm" role="group">${buttons.join('')}</div></td>`;
         };
 
         window.reloadBillingPage = function () {
@@ -1685,6 +1734,28 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
             updateEditPartialSummary();
             $('#modal-edit-partial-payment').modal('show');
+        };
+
+        window.openPartialDetailModal = function (row) {
+            if (!row) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data tidak ditemukan',
+                    text: 'Data partial payment tidak tersedia.'
+                });
+                return;
+            }
+
+            const nett = parseAmount(row.invoice_price_nett || 0);
+            const payment = parseAmount(row.invoice_price_payment || 0);
+            const remaining = getOutstandingAmount(row);
+
+            $('#detail_partial_bowheer').val(row.nama_bowheer || '-');
+            $('#detail_partial_no_invoice').val(row.no_invoice || '-');
+            $('#detail_partial_invoice_nett').val(formatTitik(nett, 2));
+            $('#detail_partial_payment').val(formatTitik(payment, 2));
+            $('#detail_partial_remaining').val(formatTitik(remaining, 2));
+            $('#modal-detail-partial-payment').modal('show');
         };
 
         function addManualInvoiceRow(data = {}) {
@@ -2365,7 +2436,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             });
         });
 
-        function updateEditPartialSummary() {
+        window.updateEditPartialSummary = function () {
             const invoiceValue = parseAmount($('#edit_partial_invoice_price').val());
             let paymentValue = parseAmount($('#edit_partial_payment_price').val());
 
@@ -2382,14 +2453,28 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             } else {
                 $('#edit_partial_status_invoice').val('partial');
             }
-        }
+        };
 
         $(document).on('click', '.edit-partial-item', function () {
             const id = $(this).data('id');
             openPartialEditModal(latestBillingRows[id]);
         });
 
+        $(document).on('click', '.detail-partial-item', function () {
+            const id = $(this).data('id');
+            openPartialDetailModal(latestBillingRows[id]);
+        });
+
+        $('#edit_partial_payment_price').on('focus', function () {
+            const raw = parseAmount($(this).val());
+            $(this).val(raw ? raw : '');
+        });
+
         $('#edit_partial_payment_price').on('input', function () {
+            updateEditPartialSummary();
+        });
+
+        $('#edit_partial_payment_price').on('blur', function () {
             const raw = parseAmount($(this).val());
             $(this).val(raw ? formatTitik(raw, 2) : '');
             updateEditPartialSummary();
