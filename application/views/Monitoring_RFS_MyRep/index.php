@@ -1,5 +1,6 @@
 <?php
 $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session->userdata('nama_level') === 'Super Admin';
+$monthColumnCount = count($monthColumns);
 
 if (!function_exists('monitoring_rfs_badge_class')) {
     function monitoring_rfs_badge_class($status)
@@ -84,17 +85,38 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <input type="number" class="form-control" name="year" value="<?= (int) $selectedYear ?>"
                                     min="2024" max="2100">
                             </div>
-                            <div class="col-md-4">
-                                <label>Bulan</label>
-                                <select class="form-control" name="month">
+                            <div class="col-md-3">
+                                <label>Bulan Awal</label>
+                                <select class="form-control" name="start_month">
                                     <?php foreach ($monthLabels as $monthNumber => $monthName) { ?>
-                                        <option value="<?= $monthNumber ?>" <?= ((int) $selectedMonth === (int) $monthNumber) ? 'selected' : '' ?>>
+                                        <option value="<?= $monthNumber ?>" <?= ((int) $selectedStartMonth === (int) $monthNumber) ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($monthName) ?>
                                         </option>
                                     <?php } ?>
                                 </select>
                             </div>
-                            <div class="col-md-4 d-flex align-items-end">
+                            <div class="col-md-3">
+                                <label>Bulan Akhir</label>
+                                <select class="form-control" name="end_month">
+                                    <?php foreach ($monthLabels as $monthNumber => $monthName) { ?>
+                                        <option value="<?= $monthNumber ?>" <?= ((int) $selectedEndMonth === (int) $monthNumber) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($monthName) ?>
+                                        </option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label>Kota</label>
+                                <select class="form-control" name="city">
+                                    <option value="">Semua Kota</option>
+                                    <?php foreach ($cityOptions as $city) { ?>
+                                        <option value="<?= htmlspecialchars($city) ?>" <?= ($selectedCity === $city) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($city) ?>
+                                        </option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
                                 <button type="submit" class="btn btn-primary btn-block">Tampilkan</button>
                             </div>
                         </div>
@@ -115,6 +137,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             <div class="card card-outline card-primary">
                 <div class="card-header">
                     <h3 class="card-title">1. Annual Target vs Realisasi</h3>
+                    <div class="card-tools">
+                        <span class="badge badge-light">Januari - Desember | Semua Kota</span>
+                    </div>
                 </div>
                 <div class="card-body table-responsive">
                     <table id="table_rfs_annual_summary" class="table table-bordered text-center">
@@ -261,7 +286,10 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                             </div>
                             <div class="modal-body">
                                 <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
-                                <input type="hidden" name="month" value="<?= (int) $selectedMonth ?>">
+                                <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
+                                <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
+                                <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
+                                <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
                                 <div class="form-group">
                                     <label>Kota</label>
                                     <input list="city_options" name="city" class="form-control"
@@ -301,7 +329,10 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                             </div>
                             <div class="modal-body">
                                 <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
-                                <input type="hidden" name="month" value="<?= (int) $selectedMonth ?>">
+                                <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
+                                <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
+                                <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
+                                <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
                                 <div class="form-group">
                                     <label>Kota</label>
                                     <input list="city_options" name="city" class="form-control"
@@ -432,9 +463,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                             <tr>
                                 <th rowspan="2" class="rfs-header-fixed">NO</th>
                                 <th rowspan="2" class="rfs-header-fixed">KOTA</th>
-                                <th colspan="3" class="rfs-header-rkap">RKAP</th>
-                                <th colspan="3" class="rfs-header-realistis">REALISTIS</th>
-                                <th colspan="3" class="rfs-header-pencapaian">PENCAPAIAN</th>
+                                <th colspan="<?= $monthColumnCount ?>" class="rfs-header-rkap">RKAP</th>
+                                <th colspan="<?= $monthColumnCount ?>" class="rfs-header-realistis">REALISTIS</th>
+                                <th colspan="<?= $monthColumnCount ?>" class="rfs-header-pencapaian">PENCAPAIAN</th>
                             </tr>
                             <tr>
                                 <?php foreach ($monthColumns as $column) { ?>
@@ -470,7 +501,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <?php } ?>
                             <?php } else { ?>
                                 <tr>
-                                    <td colspan="11" class="text-center">Belum ada data summary 3 bulan.</td>
+                                    <td colspan="<?= 2 + ($monthColumnCount * 3) ?>" class="text-center">Belum ada data summary 3 bulan.</td>
                                 </tr>
                             <?php } ?>
                         </tbody>
@@ -478,15 +509,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                             <tr>
                                 <th>-</th>
                                 <th>TOTAL</th>
-                                <th>0</th>
-                                <th>0</th>
-                                <th>0</th>
-                                <th>0</th>
-                                <th>0</th>
-                                <th>0</th>
-                                <th>0</th>
-                                <th>0</th>
-                                <th>0</th>
+                                <?php for ($i = 0; $i < ($monthColumnCount * 3); $i++) { ?>
+                                    <th>0</th>
+                                <?php } ?>
                             </tr>
                         </tfoot>
                     </table>
@@ -537,7 +562,10 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                             <form method="post" action="<?= base_url('Monitoring_RFS_MyRep/saveClusterPlan') ?>"
                                                 class="form-inline">
                                                 <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
-                                                <input type="hidden" name="month" value="<?= (int) $selectedMonth ?>">
+                                                <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
+                                                <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
+                                                <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
+                                                <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
                                                 <input type="hidden" name="cluster_id"
                                                     value="<?= (int) $cluster['id_cluster'] ?>">
                                                 <input type="number" min="0" name="optimistic_target"
@@ -569,7 +597,10 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                     </div>
                                                     <div class="modal-body">
                                                         <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
-                                                        <input type="hidden" name="month" value="<?= (int) $selectedMonth ?>">
+                                                        <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
+                                                        <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
+                                                        <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
+                                                        <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
                                                         <input type="hidden" name="cluster_id"
                                                             value="<?= (int) $cluster['id_cluster'] ?>">
                                                         <div class="form-group">
@@ -667,7 +698,10 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                 <form method="post"
                                                     action="<?= base_url('Monitoring_RFS_MyRep/updateClaimStatus') ?>">
                                                     <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
-                                                    <input type="hidden" name="month" value="<?= (int) $selectedMonth ?>">
+                                                    <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
+                                                    <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
+                                                    <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
+                                                    <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
                                                     <input type="hidden" name="claim_id" value="<?= (int) $claim['id_claim'] ?>">
                                                     <div class="form-group mb-2">
                                                         <select name="status_claim" class="form-control form-control-sm">
@@ -901,7 +935,8 @@ if (!function_exists('monitoring_rfs_badge_class')) {
 
         initAdminLteTable('#table_rfs_three_month_summary', [[1, 'asc']], function() {
             var api = this.api();
-            for (var i = 2; i <= 10; i++) {
+            var lastColumnIndex = api.columns().count() - 1;
+            for (var i = 2; i <= lastColumnIndex; i++) {
                 setFooterValue(api, i, sumColumn(api, i), 0);
             }
         });

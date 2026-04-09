@@ -26,27 +26,43 @@ class Monitoring_RFS_MyRep extends CI_Controller
         }
 
         $selectedYear = (int) $this->input->get('year');
-        $selectedMonth = (int) $this->input->get('month');
+        $selectedStartMonth = (int) $this->input->get('start_month');
+        $selectedEndMonth = (int) $this->input->get('end_month');
+        $selectedCity = strtoupper(trim((string) $this->input->get('city')));
 
         if ($selectedYear <= 0) {
             $selectedYear = (int) date('Y');
         }
 
-        if ($selectedMonth < 1 || $selectedMonth > 12) {
-            $selectedMonth = (int) date('n');
+        if ($selectedStartMonth < 1 || $selectedStartMonth > 12) {
+            $selectedStartMonth = (int) date('n');
+        }
+
+        if ($selectedEndMonth < 1 || $selectedEndMonth > 12) {
+            $selectedEndMonth = (int) date('n');
+        }
+
+        if ($selectedStartMonth > $selectedEndMonth) {
+            $temp = $selectedStartMonth;
+            $selectedStartMonth = $selectedEndMonth;
+            $selectedEndMonth = $temp;
         }
 
         $data['title'] = 'Monitoring RFS MYREP';
         $data['selectedYear'] = $selectedYear;
-        $data['selectedMonth'] = $selectedMonth;
+        $data['selectedStartMonth'] = $selectedStartMonth;
+        $data['selectedEndMonth'] = $selectedEndMonth;
+        $data['selectedMonth'] = $selectedEndMonth;
+        $data['selectedCity'] = $selectedCity;
         $data['monthLabels'] = $this->getMonthLabels();
-        $data['monthColumns'] = $this->MMonitoring_RFS_MyRep->getThreeMonthColumns($selectedYear, $selectedMonth);
-        $data['annualSummary'] = $this->MMonitoring_RFS_MyRep->getAnnualSummary($selectedYear);
-        $data['annualCitySummary'] = $this->MMonitoring_RFS_MyRep->getAnnualCitySummary($selectedYear);
-        $data['monthlySummary'] = $this->MMonitoring_RFS_MyRep->getMonthlySummary($selectedYear, $selectedMonth);
-        $data['threeMonthSummary'] = $this->MMonitoring_RFS_MyRep->getThreeMonthSummary($selectedYear, $selectedMonth);
-        $data['clusterList'] = $this->MMonitoring_RFS_MyRep->getClustersWithPlan($selectedYear, $selectedMonth);
-        $data['claimList'] = $this->MMonitoring_RFS_MyRep->getClaims($selectedYear, $selectedMonth);
+        $data['selectedPeriodLabel'] = $this->buildPeriodLabel($selectedStartMonth, $selectedEndMonth);
+        $data['monthColumns'] = $this->MMonitoring_RFS_MyRep->getMonthColumnsInRange($selectedYear, $selectedStartMonth, $selectedEndMonth);
+        $data['annualSummary'] = $this->MMonitoring_RFS_MyRep->getAnnualSummary($selectedYear, 1, 12, '');
+        $data['annualCitySummary'] = $this->MMonitoring_RFS_MyRep->getAnnualCitySummary($selectedYear, 1, 12, '');
+        $data['monthlySummary'] = $this->MMonitoring_RFS_MyRep->getMonthlySummary($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
+        $data['threeMonthSummary'] = $this->MMonitoring_RFS_MyRep->getThreeMonthSummary($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
+        $data['clusterList'] = $this->MMonitoring_RFS_MyRep->getClustersWithPlan($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
+        $data['claimList'] = $this->MMonitoring_RFS_MyRep->getClaims($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
         $data['cityOptions'] = $this->MMonitoring_RFS_MyRep->getCityOptions();
         $data['flashMessage'] = $this->session->flashdata('monitoring_rfs_myrep_message');
         $data['flashError'] = $this->session->flashdata('monitoring_rfs_myrep_error');
@@ -69,10 +85,13 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $year = (int) $this->input->post('year');
         $month = (int) $this->input->post('month');
         $city = trim((string) $this->input->post('city'));
+        $filterCity = strtoupper(trim((string) $this->input->post('filter_city')));
+        $filterStartMonth = (int) $this->input->post('filter_start_month');
+        $filterEndMonth = (int) $this->input->post('filter_end_month');
 
         if ($year <= 0 || $month < 1 || $month > 12 || $city === '') {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Data target bulanan belum lengkap.');
-            redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
@@ -89,7 +108,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $this->MMonitoring_RFS_MyRep->upsertMonthlyTarget($payload);
         $this->session->set_flashdata('monitoring_rfs_myrep_message', 'Target dan realisasi MyRep berhasil disimpan.');
 
-        redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+        redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
     }
 
     public function saveCluster()
@@ -103,10 +122,13 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $month = (int) $this->input->post('month');
         $city = trim((string) $this->input->post('city'));
         $clusterName = trim((string) $this->input->post('cluster_name'));
+        $filterCity = strtoupper(trim((string) $this->input->post('filter_city')));
+        $filterStartMonth = (int) $this->input->post('filter_start_month');
+        $filterEndMonth = (int) $this->input->post('filter_end_month');
 
         if ($city === '' || $clusterName === '') {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Kota dan nama cluster wajib diisi.');
-            redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
@@ -133,7 +155,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         }
 
         $this->session->set_flashdata('monitoring_rfs_myrep_message', 'Cluster baru berhasil ditambahkan.');
-        redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+        redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
     }
 
     public function saveClusterPlan()
@@ -146,10 +168,13 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $year = (int) $this->input->post('year');
         $month = (int) $this->input->post('month');
         $clusterId = (int) $this->input->post('cluster_id');
+        $filterCity = strtoupper(trim((string) $this->input->post('filter_city')));
+        $filterStartMonth = (int) $this->input->post('filter_start_month');
+        $filterEndMonth = (int) $this->input->post('filter_end_month');
 
         if ($clusterId <= 0 || $year <= 0 || $month < 1 || $month > 12) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Data target realistis cluster tidak valid.');
-            redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
@@ -162,7 +187,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         ]);
 
         $this->session->set_flashdata('monitoring_rfs_myrep_message', 'Target realistis cluster berhasil disimpan.');
-        redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+        redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
     }
 
     public function submitClaim()
@@ -176,37 +201,40 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $month = (int) $this->input->post('month');
         $clusterId = (int) $this->input->post('cluster_id');
         $claimQty = (int) $this->normalizeNumber($this->input->post('claim_qty'));
+        $filterCity = strtoupper(trim((string) $this->input->post('filter_city')));
+        $filterStartMonth = (int) $this->input->post('filter_start_month');
+        $filterEndMonth = (int) $this->input->post('filter_end_month');
 
         if ($clusterId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $claimQty <= 0) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Data claim RFS belum lengkap.');
-            redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
         if (empty($_FILES['claim_photo']['name'])) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Foto claim RFS wajib dilampirkan.');
-            redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
         $cluster = $this->MMonitoring_RFS_MyRep->getClusterById($clusterId);
         if (!$cluster) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Cluster tidak ditemukan.');
-            redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
         $claimedQty = $this->MMonitoring_RFS_MyRep->getClusterClaimedQty($clusterId);
         if (($claimedQty + $claimQty) > (int) $cluster['homepass']) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Total claim melebihi homepass cluster.');
-            redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
         $uploadResult = $this->uploadClaimPhoto();
         if (!$uploadResult['status']) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', $uploadResult['message']);
-            redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
@@ -225,7 +253,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $this->MMonitoring_RFS_MyRep->createClaim($payload);
         $this->session->set_flashdata('monitoring_rfs_myrep_message', 'Claim RFS berhasil dikirim dan menunggu approval HO.');
 
-        redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+        redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
     }
 
     public function updateClaimStatus()
@@ -239,16 +267,19 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $month = (int) $this->input->post('month');
         $claimId = (int) $this->input->post('claim_id');
         $status = strtoupper(trim((string) $this->input->post('status_claim')));
+        $filterCity = strtoupper(trim((string) $this->input->post('filter_city')));
+        $filterStartMonth = (int) $this->input->post('filter_start_month');
+        $filterEndMonth = (int) $this->input->post('filter_end_month');
 
         if (!$this->isHoApprover()) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Approval claim hanya bisa dilakukan PIC HO.');
-            redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
         if (!in_array($status, ['APPROVED', 'REJECTED'], true) || $claimId <= 0) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Status approval tidak valid.');
-            redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
@@ -259,7 +290,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         ]);
 
         $this->session->set_flashdata('monitoring_rfs_myrep_message', 'Status claim berhasil diperbarui.');
-        redirect('Monitoring_RFS_MyRep?year=' . $year . '&month=' . $month);
+        redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
     }
 
     private function uploadClaimPhoto()
@@ -331,5 +362,38 @@ class Monitoring_RFS_MyRep extends CI_Controller
             11 => 'November',
             12 => 'Desember'
         ];
+    }
+
+    private function buildPeriodLabel($startMonth, $endMonth)
+    {
+        $monthLabels = $this->getMonthLabels();
+        if ($startMonth === $endMonth) {
+            return $monthLabels[$startMonth];
+        }
+
+        return $monthLabels[$startMonth] . ' - ' . $monthLabels[$endMonth];
+    }
+
+    private function buildRedirectUrl($year, $startMonth, $endMonth, $city = '')
+    {
+        if ($startMonth < 1 || $startMonth > 12) {
+            $startMonth = 1;
+        }
+        if ($endMonth < 1 || $endMonth > 12) {
+            $endMonth = $startMonth;
+        }
+        if ($startMonth > $endMonth) {
+            $tmp = $startMonth;
+            $startMonth = $endMonth;
+            $endMonth = $tmp;
+        }
+
+        $url = 'Monitoring_RFS_MyRep?year=' . (int) $year . '&start_month=' . (int) $startMonth . '&end_month=' . (int) $endMonth;
+
+        if ($city !== '') {
+            $url .= '&city=' . urlencode($city);
+        }
+
+        return $url;
     }
 }
