@@ -487,17 +487,19 @@ $id_menu = $this->uri->segment('1');
                             <!-- My Republik -->
                             <li class="nav-item has-treeview <?= (
                                 $id_menu == 'MyRepublik_Project' ||
-                                $id_menu == 'MyRepublik_PO'
+                                $id_menu == 'MyRepublik_PO' ||
+                                $id_menu == 'Monitoring_RFS_MyRep'
                             ) ? 'menu-open' : '' ?>">
                                 <a href="#" class="nav-link <?= (
                                     $id_menu == 'MyRepublik_Project' ||
-                                    $id_menu == 'MyRepublik_PO'
+                                    $id_menu == 'MyRepublik_PO' ||
+                                    $id_menu == 'Monitoring_RFS_MyRep'
                                 ) ? 'active' : '' ?>">
                                     <i class="nav-icon fas fa-file-invoice-dollar"></i>
                                     <p>
                                         My Republik
                                         <i class="fas fa-angle-left right"></i>
-                                        <span class="badge badge-info right">2</span>
+                                        <span class="badge badge-info right">3</span>
                                     </p>
                                 </a>
                                 <ul class="nav nav-treeview">
@@ -506,6 +508,13 @@ $id_menu = $this->uri->segment('1');
                                             class="nav-link <?= ($id_menu == 'MyRepublik_Project') ? 'active' : '' ?>">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>List Project</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Monitoring_RFS_MyRep') ?>"
+                                            class="nav-link <?= ($id_menu == 'Monitoring_RFS_MyRep') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Monitoring RFS MYREP</p>
                                         </a>
                                     </li>
                                     <li class="nav-item" style="pointer-events: none;">
