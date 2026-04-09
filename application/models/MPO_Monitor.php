@@ -57,6 +57,23 @@ class MPO_Monitor extends CI_Model
         FROM tb_po p
         LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
         LEFT JOIN tb_po_term t ON p.id_po = t.id_po
+            AND (
+                t.id_amend = (
+                    SELECT a.id_amend
+                    FROM tb_po_amend a
+                    WHERE a.id_po = p.id_po
+                    ORDER BY a.amend_no DESC
+                    LIMIT 1
+                )
+                OR (
+                    t.id_amend IS NULL
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM tb_po_amend a2
+                        WHERE a2.id_po = p.id_po
+                    )
+                )
+            )
         LEFT JOIN tb_po_term_invoice ti ON t.id_term = ti.id_term
         GROUP BY COALESCE(b.id_bowheer, 0), COALESCE(b.nama_bowheer, 'Tanpa Bowheer'), t.term_index
         ORDER BY nama_bowheer ASC, t.term_index ASC";
@@ -107,10 +124,26 @@ class MPO_Monitor extends CI_Model
 
     public function getPOTerms($id_po)
     {
+        $latestAmend = $this->db
+            ->select('id_amend')
+            ->from('tb_po_amend')
+            ->where('id_po', (int) $id_po)
+            ->order_by('amend_no', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+
         $this->db->select('t.*, COALESCE(SUM(ti.invoice_amount),0) AS invoiced_amount', false);
         $this->db->from('tb_po_term t');
         $this->db->join('tb_po_term_invoice ti', 't.id_term = ti.id_term', 'left');
         $this->db->where('t.id_po', (int) $id_po);
+
+        if (!empty($latestAmend['id_amend'])) {
+            $this->db->where('t.id_amend', (int) $latestAmend['id_amend']);
+        } else {
+            $this->db->where('t.id_amend IS NULL', null, false);
+        }
+
         $this->db->group_by('t.id_term');
         $this->db->order_by('t.term_index', 'ASC');
 
