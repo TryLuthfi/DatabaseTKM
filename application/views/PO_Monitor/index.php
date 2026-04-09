@@ -19,18 +19,6 @@ $error_log = $this->session->flashdata('error_log');
         <section class="content">
             <div class="container-fluid">
                 <?php
-                $chartLabels = [];
-                $chartRelease = [];
-                $chartInvoiced = [];
-                $chartRemaining = [];
-
-                foreach ($bowheerSummary as $summary) {
-                    $chartLabels[] = $summary['nama_bowheer'];
-                    $chartRelease[] = (float) $summary['current_release_value'];
-                    $chartInvoiced[] = (float) $summary['total_invoiced'];
-                    $chartRemaining[] = (float) $summary['remaining'];
-                }
-
                 $bowheerSummaryMap = [];
                 foreach ($bowheerSummary as $summary) {
                     $bowheerSummaryMap[(string) $summary['id_bowheer']] = $summary;
@@ -126,17 +114,6 @@ $error_log = $this->session->flashdata('error_log');
                             <div class="icon">
                                 <i class="fas fa-hourglass-half"></i>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Grafik Bedah PO Group By Bowheer</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart" style="height: 380px;">
-                            <canvas id="po_monitor_bowheer_chart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -420,108 +397,56 @@ $error_log = $this->session->flashdata('error_log');
     </div>
 </div>
 
-<script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
 <script>
-    (function($){
-        function initAdminLteTable(selector, orderConfig) {
-            if (!$.fn.DataTable || !$(selector).length) {
+    (function() {
+        function initAdminLteTable($, selector, orderConfig) {
+            if (!$.fn.DataTable || !$(selector).length || $.fn.DataTable.isDataTable(selector)) {
                 return;
             }
 
             $(selector).DataTable({
-                responsive: true,
-                autoWidth: false,
-                ordering: true,
                 paging: true,
+                pageLength: 10,
                 searching: true,
                 info: true,
                 lengthChange: true,
+                autoWidth: false,
+                responsive: false,
+                ordering: true,
                 order: orderConfig || []
             });
         }
 
-        var chartCanvas = document.getElementById('po_monitor_bowheer_chart');
+        function bootstrapPOMonitor() {
+            if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable) {
+                window.setTimeout(bootstrapPOMonitor, 150);
+                return;
+            }
 
-        if (chartCanvas && typeof Chart !== 'undefined') {
-            new Chart(chartCanvas.getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: <?= json_encode($chartLabels) ?>,
-                    datasets: [
-                        {
-                            label: 'Current Release',
-                            backgroundColor: '#1f77b4',
-                            borderColor: '#1f77b4',
-                            borderWidth: 1,
-                            data: <?= json_encode($chartRelease) ?>
-                        },
-                        {
-                            label: 'Total Invoiced',
-                            backgroundColor: '#2ca02c',
-                            borderColor: '#2ca02c',
-                            borderWidth: 1,
-                            data: <?= json_encode($chartInvoiced) ?>
-                        },
-                        {
-                            label: 'Remaining',
-                            backgroundColor: '#ff7f0e',
-                            borderColor: '#ff7f0e',
-                            borderWidth: 1,
-                            data: <?= json_encode($chartRemaining) ?>
+            var $ = window.jQuery;
+
+            initAdminLteTable($, '#table_po_bowheer_summary', [[1, 'asc']]);
+            initAdminLteTable($, '#table_po_bowheer_matrix', [[1, 'asc']]);
+            initAdminLteTable($, '#table_po_bowheer_term_detail', [[1, 'asc']]);
+            initAdminLteTable($, '#table_po_monitor_list', [[2, 'desc']]);
+
+            $(document)
+                .off('click.poMonitorAllocate')
+                .on('click.poMonitorAllocate', '.btn-allocate', function() {
+                    var id = $(this).data('id');
+                    if (!confirm('Auto-allocate invoices to terms for this PO?')) return;
+                    $.post('<?= site_url('PO_Monitor/allocate') ?>', { id_po: id }, function(resp) {
+                        try { resp = JSON.parse(resp); } catch (e) {}
+                        if (resp && resp.status) {
+                            alert('Allocation completed. Inserted: ' + (resp.allocations_inserted || 0));
+                            location.reload();
+                        } else {
+                            alert('Error: ' + ((resp && resp.message) || 'unknown'));
                         }
-                    ]
-                },
-                options: {
-                    maintainAspectRatio: false,
-                    responsive: true,
-                    legend: {
-                        display: true
-                    },
-                    scales: {
-                        xAxes: [{
-                            ticks: {
-                                autoSkip: false
-                            }
-                        }],
-                        yAxes: [{
-                            ticks: {
-                                beginAtZero: true,
-                                callback: function(value) {
-                                    return value.toLocaleString('id-ID');
-                                }
-                            }
-                        }]
-                    },
-                    tooltips: {
-                        callbacks: {
-                            label: function(tooltipItem, data) {
-                                var datasetLabel = data.datasets[tooltipItem.datasetIndex].label || '';
-                                var value = tooltipItem.yLabel || 0;
-                                return datasetLabel + ': ' + Number(value).toLocaleString('id-ID');
-                            }
-                        }
-                    }
-                }
-            });
+                    });
+                });
         }
 
-        initAdminLteTable('#table_po_bowheer_summary', [[1, 'asc']]);
-        initAdminLteTable('#table_po_bowheer_matrix', [[1, 'asc']]);
-        initAdminLteTable('#table_po_bowheer_term_detail', [[1, 'asc']]);
-        initAdminLteTable('#table_po_monitor_list', [[2, 'desc']]);
-
-        $(document).on('click', '.btn-allocate', function(){
-            var id = $(this).data('id');
-            if (!confirm('Auto-allocate invoices to terms for this PO?')) return;
-            $.post('<?= site_url('PO_Monitor/allocate') ?>', {id_po: id}, function(resp){
-                try { resp = JSON.parse(resp); } catch(e) {}
-                if (resp && resp.status) {
-                    alert('Allocation completed. Inserted: ' + (resp.allocations_inserted||0));
-                    location.reload();
-                } else {
-                    alert('Error: ' + (resp.message||'unknown'));
-                }
-            });
-        });
-    })(jQuery);
+        bootstrapPOMonitor();
+    })();
 </script>
