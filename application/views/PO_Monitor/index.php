@@ -24,6 +24,13 @@ $error_log = $this->session->flashdata('error_log');
                     $bowheerSummaryMap[(string) $summary['id_bowheer']] = $summary;
                 }
 
+                $uniqueBowheer = [];
+                foreach ($poList as $po) {
+                    $bowheerName = !empty($po['nama_bowheer']) ? $po['nama_bowheer'] : 'Tanpa Bowheer';
+                    $uniqueBowheer[$bowheerName] = $bowheerName;
+                }
+                ksort($uniqueBowheer);
+
                 $dashboardTotalPo = 0;
                 $dashboardDoneInvoice = 0;
                 $dashboardNyInvoice = 0;
@@ -82,11 +89,54 @@ $error_log = $this->session->flashdata('error_log');
                 }
                 ?>
 
+                <form method="get" action="<?= site_url('PO_Monitor') ?>">
+                <div class="card card-primary direct-chat direct-chat-primary shadow-lg">
+                    <div class="card-header">
+                        <h3 class="card-title">FILTER DATA</h3>
+                        <div class="card-tools">
+                            <button id="cardfiltercollapse" type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row p-3">
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label style="display: flex; justify-content: center; align-items: center;">PROJECT / BOWHEER</label>
+                                    <select id="filter_bowheer_up" name="bowheer[]" class="select2" multiple="multiple" data-placeholder="Pilih bowheer" style="width: 100%;">
+                                        <?php foreach ($uniqueBowheer as $bowheerName): ?>
+                                            <option value="<?= htmlspecialchars($bowheerName) ?>" <?= in_array($bowheerName, $selectedBowheer ?? [], true) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($bowheerName) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label style="display: flex; justify-content: center; align-items: center;">SLA STATUS</label>
+                                    <select id="filter_sla_up" name="sla[]" class="select2" multiple="multiple" data-placeholder="Pilih SLA status" style="width: 100%;">
+                                        <option value="AMAN" <?= in_array('AMAN', $selectedSla ?? [], true) ? 'selected' : '' ?>>AMAN</option>
+                                        <option value="WARNING" <?= in_array('WARNING', $selectedSla ?? [], true) ? 'selected' : '' ?>>WARNING</option>
+                                        <option value="OVERDUE" <?= in_array('OVERDUE', $selectedSla ?? [], true) ? 'selected' : '' ?>>OVERDUE</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-12 text-right">
+                                <a href="<?= site_url('PO_Monitor') ?>" id="reset_filter_po_monitor" class="btn btn-danger">Delete</a>
+                                <button type="submit" id="btnFilterPOMonitor" class="btn btn-primary">Search</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                </form>
+
                 <div class="row">
                     <div class="col-lg-4 col-md-6 col-sm-12">
                         <div class="small-box bg-info">
                             <div class="inner">
-                                <h3><?= number_format($dashboardTotalPo, 0, ',', '.') ?></h3>
+                                <h3 id="summary_total_po"><?= number_format($dashboardTotalPo, 0, ',', '.') ?></h3>
                                 <p>Total PO</p>
                             </div>
                             <div class="icon">
@@ -97,7 +147,7 @@ $error_log = $this->session->flashdata('error_log');
                     <div class="col-lg-4 col-md-6 col-sm-12">
                         <div class="small-box bg-success">
                             <div class="inner">
-                                <h3><?= number_format($dashboardDoneInvoice, 0, ',', '.') ?></h3>
+                                <h3 id="summary_done_invoice"><?= number_format($dashboardDoneInvoice, 0, ',', '.') ?></h3>
                                 <p>Done Invoice</p>
                             </div>
                             <div class="icon">
@@ -108,7 +158,7 @@ $error_log = $this->session->flashdata('error_log');
                     <div class="col-lg-4 col-md-12 col-sm-12">
                         <div class="small-box bg-warning">
                             <div class="inner">
-                                <h3><?= number_format($dashboardNyInvoice, 0, ',', '.') ?></h3>
+                                <h3 id="summary_ny_invoice"><?= number_format($dashboardNyInvoice, 0, ',', '.') ?></h3>
                                 <p>NY Invoice</p>
                             </div>
                             <div class="icon">
@@ -137,7 +187,7 @@ $error_log = $this->session->flashdata('error_log');
                             <tbody>
                                 <?php if (!empty($bowheerSummary)): ?>
                                     <?php $noBowheer = 1; foreach ($bowheerSummary as $summary): ?>
-                                        <tr>
+                                        <tr data-bowheer="<?= htmlspecialchars($summary['nama_bowheer']) ?>">
                                             <td><?= $noBowheer++ ?></td>
                                             <td><?= htmlspecialchars($summary['nama_bowheer']) ?></td>
                                             <td><?= number_format((float) $summary['total_po'], 0, ',', '.') ?></td>
@@ -147,7 +197,8 @@ $error_log = $this->session->flashdata('error_log');
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <tr>
+                                    <tr data-bowheer="<?= htmlspecialchars(!empty($po['nama_bowheer']) ? $po['nama_bowheer'] : 'Tanpa Bowheer') ?>"
+                                        data-sla="<?= $sla ?>">
                                         <td colspan="6" class="text-center">Belum ada data PO per bowheer.</td>
                                     </tr>
                                 <?php endif; ?>
@@ -211,7 +262,7 @@ $error_log = $this->session->flashdata('error_log');
                                             $matrixTotals['termint'][$termIndex] += isset($termRemainingMap[$termIndex]) ? $termRemainingMap[$termIndex] : 0;
                                         }
                                         ?>
-                                        <tr>
+                                        <tr data-bowheer="<?= htmlspecialchars($bowheer['nama_bowheer']) ?>">
                                             <td><?= $noMatrix++ ?></td>
                                             <td><?= htmlspecialchars($bowheer['nama_bowheer']) ?></td>
                                             <td><?= number_format($totalPo, 0, ',', '.') ?></td>
@@ -257,7 +308,7 @@ $error_log = $this->session->flashdata('error_log');
                             <tbody>
                                 <?php if (!empty($bowheerTermBreakdown)): ?>
                                     <?php $noBreakdown = 1; foreach ($bowheerTermBreakdown as $bowheer): ?>
-                                        <tr>
+                                        <tr data-bowheer="<?= htmlspecialchars($bowheer['nama_bowheer']) ?>">
                                             <td><?= $noBreakdown++ ?></td>
                                             <td>
                                                 <strong><?= htmlspecialchars($bowheer['nama_bowheer']) ?></strong>
@@ -349,23 +400,10 @@ $error_log = $this->session->flashdata('error_log');
                                 <?php $no = 1; foreach ($poList as $po):
                                     $remaining = floatval($po['current_release_value']) - floatval($po['total_invoiced']);
                                     if ($remaining < 0) $remaining = 0;
-                                    // basic SLA: if any term overdue -> OVERDUE else if any term within 7 days -> WARNING else AMAN
-                                    $terms = $this->MPO_Monitor->getPOTerms($po['id_po']);
-                                    $sla = 'AMAN';
-                                    foreach ($terms as $t) {
-                                        $termRemain = floatval($t['value']) - floatval($t['invoiced_amount']);
-                                        if ($termRemain > 0) {
-                                            if (!empty($t['due_date']) && strtotime($t['due_date']) < strtotime(date('Y-m-d'))) {
-                                                $sla = 'OVERDUE';
-                                                break;
-                                            }
-                                            if (!empty($t['due_date']) && strtotime($t['due_date']) <= strtotime('+7 days')) {
-                                                $sla = 'WARNING';
-                                            }
-                                        }
-                                    }
+                                    $sla = !empty($po['sla']) ? $po['sla'] : 'AMAN';
                                     ?>
-                                    <tr>
+                                    <tr data-bowheer="<?= htmlspecialchars(!empty($po['nama_bowheer']) ? $po['nama_bowheer'] : 'Tanpa Bowheer') ?>"
+                                        data-sla="<?= htmlspecialchars($sla) ?>">
                                         <td><?= $no++ ?></td>
                                         <td><?= htmlspecialchars($po['po_number']) ?></td>
                                         <td><?= $po['po_date'] ?></td>
@@ -399,7 +437,39 @@ $error_log = $this->session->flashdata('error_log');
 
 <script>
     (function() {
-        function initAdminLteTable($, selector, orderConfig) {
+        function parseLocaleNumber(value) {
+            if (typeof value === 'number') {
+                return value;
+            }
+
+            if (value === null || value === undefined) {
+                return 0;
+            }
+
+            var normalized = String(value).replace(/<[^>]*>/g, '').trim();
+            if (normalized === '' || normalized === '-') {
+                return 0;
+            }
+
+            normalized = normalized.replace(/\./g, '').replace(/,/g, '.').replace(/[^\d.-]/g, '');
+            var parsed = parseFloat(normalized);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        function formatLocaleNumber(value) {
+            return Number(value || 0).toLocaleString('id-ID');
+        }
+
+        function sumColumn(api, columnIndex) {
+            return api
+                .column(columnIndex, { search: 'applied' })
+                .data()
+                .reduce(function(total, value) {
+                    return total + parseLocaleNumber(value);
+                }, 0);
+        }
+
+        function initAdminLteTable($, selector, orderConfig, footerCallback) {
             if (!$.fn.DataTable || !$(selector).length || $.fn.DataTable.isDataTable(selector)) {
                 return;
             }
@@ -413,22 +483,73 @@ $error_log = $this->session->flashdata('error_log');
                 autoWidth: false,
                 responsive: false,
                 ordering: true,
-                order: orderConfig || []
+                order: orderConfig || [],
+                footerCallback: footerCallback || null
             });
         }
 
         function bootstrapPOMonitor() {
-            if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable) {
+            if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable || !window.jQuery.fn.select2) {
                 window.setTimeout(bootstrapPOMonitor, 150);
                 return;
             }
 
             var $ = window.jQuery;
 
-            initAdminLteTable($, '#table_po_bowheer_summary', [[1, 'asc']]);
-            initAdminLteTable($, '#table_po_bowheer_matrix', [[1, 'asc']]);
-            initAdminLteTable($, '#table_po_bowheer_term_detail', [[1, 'asc']]);
-            initAdminLteTable($, '#table_po_monitor_list', [[2, 'desc']]);
+            $('#filter_bowheer_up, #filter_sla_up').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                closeOnSelect: false
+            });
+
+            initAdminLteTable($, '#table_po_bowheer_summary', [[1, 'asc']], function() {
+                var api = this.api();
+                $(api.column(2).footer()).html(formatLocaleNumber(sumColumn(api, 2)));
+                $(api.column(3).footer()).html(formatLocaleNumber(sumColumn(api, 3)));
+                $(api.column(4).footer()).html(formatLocaleNumber(sumColumn(api, 4)));
+                $(api.column(5).footer()).html(formatLocaleNumber(sumColumn(api, 5)));
+            });
+
+            initAdminLteTable($, '#table_po_bowheer_matrix', [[1, 'asc']], function() {
+                var api = this.api();
+                $(api.column(2).footer()).html(formatLocaleNumber(sumColumn(api, 2)));
+                $(api.column(3).footer()).html(formatLocaleNumber(sumColumn(api, 3)));
+                $(api.column(4).footer()).html(formatLocaleNumber(sumColumn(api, 4)));
+                $(api.column(5).footer()).html(formatLocaleNumber(sumColumn(api, 5)));
+                $(api.column(6).footer()).html(formatLocaleNumber(sumColumn(api, 6)));
+                $(api.column(7).footer()).html(formatLocaleNumber(sumColumn(api, 7)));
+                $(api.column(8).footer()).html(formatLocaleNumber(sumColumn(api, 8)));
+                $(api.column(9).footer()).html(formatLocaleNumber(sumColumn(api, 9)));
+            });
+
+            initAdminLteTable($, '#table_po_bowheer_term_detail', [[1, 'asc']], function() {
+                var api = this.api();
+                var totalTermValue = 0;
+                var totalInvoiced = 0;
+                var totalRemaining = 0;
+
+                api.rows({ search: 'applied' }).nodes().to$().each(function() {
+                    $(this).find('table tbody tr').each(function() {
+                        var $cells = $(this).find('td');
+                        totalTermValue += parseLocaleNumber($cells.eq(1).text());
+                        totalInvoiced += parseLocaleNumber($cells.eq(2).text());
+                        totalRemaining += parseLocaleNumber($cells.eq(3).text());
+                    });
+                });
+
+                $(api.column(2).footer()).html(
+                    'Nilai Term: ' + formatLocaleNumber(totalTermValue) +
+                    ' | Sudah Ditagihkan: ' + formatLocaleNumber(totalInvoiced) +
+                    ' | Sisa: ' + formatLocaleNumber(totalRemaining)
+                );
+            });
+
+            initAdminLteTable($, '#table_po_monitor_list', [[2, 'desc']], function() {
+                var api = this.api();
+                $(api.column(3).footer()).html(formatLocaleNumber(sumColumn(api, 3)));
+                $(api.column(4).footer()).html(formatLocaleNumber(sumColumn(api, 4)));
+                $(api.column(5).footer()).html(formatLocaleNumber(sumColumn(api, 5)));
+            });
 
             $(document)
                 .off('click.poMonitorAllocate')

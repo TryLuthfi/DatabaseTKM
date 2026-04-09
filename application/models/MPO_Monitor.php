@@ -9,10 +9,13 @@ class MPO_Monitor extends CI_Model
             p.id_po,
             p.po_number,
             p.po_date,
+            p.id_bowheer,
+            COALESCE(b.nama_bowheer, 'Tanpa Bowheer') AS nama_bowheer,
             p.total_value,
             COALESCE((SELECT release_value FROM tb_po_amend a WHERE a.id_po = p.id_po ORDER BY a.amend_no DESC LIMIT 1), p.total_value) AS current_release_value,
             COALESCE((SELECT SUM(ti.invoice_amount) FROM tb_po_term_invoice ti JOIN tb_po_term t ON ti.id_term = t.id_term WHERE t.id_po = p.id_po), 0) AS total_invoiced
         FROM tb_po p
+        LEFT JOIN tb_master_bowheer_bilco b ON p.id_bowheer = b.id_bowheer
         ORDER BY p.po_date DESC";
 
         return $this->db->query($sql)->result_array();

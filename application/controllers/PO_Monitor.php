@@ -16,16 +16,155 @@ class PO_Monitor extends CI_Controller
             return;
         }
 
+        $selectedBowheer = $this->input->get('bowheer');
+        $selectedSla = $this->input->get('sla');
+
+        if (!is_array($selectedBowheer)) {
+            $selectedBowheer = empty($selectedBowheer) ? [] : [$selectedBowheer];
+        }
+
+        if (!is_array($selectedSla)) {
+            $selectedSla = empty($selectedSla) ? [] : [$selectedSla];
+        }
+
+        $poList = $this->MPO_Monitor->getPOsSummary();
+        $filteredPoList = [];
+        $bowheerSummaryMap = [];
+        $bowheerTermMap = [];
+
+        foreach ($poList as $po) {
+            $terms = $this->MPO_Monitor->getPOTerms((int) $po['id_po']);
+            $sla = $this->resolveSlaStatus($terms);
+            $namaBowheer = !empty($po['nama_bowheer']) ? $po['nama_bowheer'] : 'Tanpa Bowheer';
+
+            if (!empty($selectedBowheer) && !in_array($namaBowheer, $selectedBowheer, true)) {
+                continue;
+            }
+
+            if (!empty($selectedSla) && !in_array($sla, $selectedSla, true)) {
+                continue;
+            }
+
+            $po['nama_bowheer'] = $namaBowheer;
+            $po['sla'] = $sla;
+            $po['terms'] = $terms;
+            $filteredPoList[] = $po;
+
+            if (!isset($bowheerSummaryMap[$namaBowheer])) {
+                $bowheerSummaryMap[$namaBowheer] = [
+                    'id_bowheer' => $po['id_bowheer'] ?: 0,
+                    'nama_bowheer' => $namaBowheer,
+                    'total_po' => 0,
+                    'current_release_value' => 0,
+                    'total_invoiced' => 0,
+                    'remaining' => 0
+                ];
+            }
+
+            $remaining = (float) $po['current_release_value'] - (float) $po['total_invoiced'];
+            if ($remaining < 0) {
+                $remaining = 0;
+            }
+
+            $bowheerSummaryMap[$namaBowheer]['total_po'] += 1;
+            $bowheerSummaryMap[$namaBowheer]['current_release_value'] += (float) $po['current_release_value'];
+            $bowheerSummaryMap[$namaBowheer]['total_invoiced'] += (float) $po['total_invoiced'];
+            $bowheerSummaryMap[$namaBowheer]['remaining'] += $remaining;
+
+            if (!isset($bowheerTermMap[$namaBowheer])) {
+                $bowheerTermMap[$namaBowheer] = [
+                    'id_bowheer' => $po['id_bowheer'] ?: 0,
+                    'nama_bowheer' => $namaBowheer,
+                    'total_po' => 0,
+                    'terms' => []
+                ];
+            }
+
+            $bowheerTermMap[$namaBowheer]['total_po'] += 1;
+
+            foreach ($terms as $term) {
+                $termIndex = (int) $term['term_index'];
+
+                if (!isset($bowheerTermMap[$namaBowheer]['terms'][$termIndex])) {
+                    $bowheerTermMap[$namaBowheer]['terms'][$termIndex] = [
+                        'term_index' => $termIndex,
+                        'term_value' => 0,
+                        'invoiced_amount' => 0,
+                        'remaining' => 0
+                    ];
+                }
+
+                $termValue = (float) $term['value'];
+                $invoicedAmount = (float) $term['invoiced_amount'];
+                $termRemaining = $termValue - $invoicedAmount;
+                if ($termRemaining < 0) {
+                    $termRemaining = 0;
+                }
+
+                $bowheerTermMap[$namaBowheer]['terms'][$termIndex]['term_value'] += $termValue;
+                $bowheerTermMap[$namaBowheer]['terms'][$termIndex]['invoiced_amount'] += $invoicedAmount;
+                $bowheerTermMap[$namaBowheer]['terms'][$termIndex]['remaining'] += $termRemaining;
+            }
+        }
+
+        foreach ($bowheerTermMap as &$bowheerTerm) {
+            ksort($bowheerTerm['terms']);
+            $bowheerTerm['terms'] = array_values($bowheerTerm['terms']);
+        }
+        unset($bowheerTerm);
+
+        usort($filteredPoList, function ($a, $b) {
+            return strcmp((string) $b['po_date'], (string) $a['po_date']);
+        });
+
+        $bowheerSummary = array_values($bowheerSummaryMap);
+        usort($bowheerSummary, function ($a, $b) {
+            if ((float) $a['current_release_value'] === (float) $b['current_release_value']) {
+                return strcmp($a['nama_bowheer'], $b['nama_bowheer']);
+            }
+
+            return ((float) $a['current_release_value'] < (float) $b['current_release_value']) ? 1 : -1;
+        });
+
+        $bowheerTermBreakdown = array_values($bowheerTermMap);
+        usort($bowheerTermBreakdown, function ($a, $b) {
+            return strcmp($a['nama_bowheer'], $b['nama_bowheer']);
+        });
+
         $data['title'] = 'PO Monitoring';
-        $data['poList'] = $this->MPO_Monitor->getPOsSummary();
-        $data['bowheerSummary'] = $this->MPO_Monitor->getPOSummaryByBowheer();
-        $data['bowheerTermBreakdown'] = $this->MPO_Monitor->getBowheerTermBreakdown();
+        $data['poList'] = $filteredPoList;
+        $data['bowheerSummary'] = $bowheerSummary;
+        $data['bowheerTermBreakdown'] = $bowheerTermBreakdown;
+        $data['selectedBowheer'] = $selectedBowheer;
+        $data['selectedSla'] = $selectedSla;
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
         $this->load->view('PO_Monitor/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    private function resolveSlaStatus($terms)
+    {
+        $sla = 'AMAN';
+
+        foreach ($terms as $term) {
+            $termRemain = (float) $term['value'] - (float) $term['invoiced_amount'];
+            if ($termRemain <= 0) {
+                continue;
+            }
+
+            if (!empty($term['due_date']) && strtotime($term['due_date']) < strtotime(date('Y-m-d'))) {
+                return 'OVERDUE';
+            }
+
+            if (!empty($term['due_date']) && strtotime($term['due_date']) <= strtotime('+7 days')) {
+                $sla = 'WARNING';
+            }
+        }
+
+        return $sla;
     }
 
     public function detail($id_po = 0)
