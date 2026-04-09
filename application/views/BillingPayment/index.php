@@ -50,7 +50,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12 ">
-                    <h1 class="m-0 text-dark" style="text-align: center;">MONITORING JATUH TEMPO PEMBAYARAN</h1>
+                    <h1 class="m-0 text-dark" style="text-align: center;">INVOICE DUE DATE TRACKING</h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
@@ -131,9 +131,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
                                 <div class="modal-footer col-sm-12">
                                     <button type="button" id="reset_filter" class="btn btn-danger"
-                                        data-dismiss="modal">Hapus</button>
+                                        data-dismiss="modal">Delete</button>
                                     <button id="btnFilterDataProject" class="btn btn-primary"><i
-                                            class="fa fa-spinner fa-spin loading" style="display:none"></i> Cari
+                                            class="fa fa-spinner fa-spin loading" style="display:none"></i> Search
                                     </button>
                                     <button type="button" class="btn btn-success"
                                         data-target="#modal-download-billing-report" data-toggle="modal">
@@ -220,7 +220,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-12">
-                    <h1 class="m-0 text-dark" style="text-align: center;">RINCIAN PRIORITAS</h1>
+                    <h1 class="m-0 text-dark" style="text-align: center;">INVOICE PRIORITY DETAILS</h1>
                 </div><!-- /.col -->
             </div><!-- /.row -->
         </div><!-- /.container-fluid -->
@@ -234,7 +234,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 <div class="col-12">
                     <div class="card card-primary">
                         <div class="card-header">
-                            <h3 class="card-title">RINCIAN</h3>
+                            <h3 class="card-title">DETAILS</h3>
 
                             <div class="card-tools">
                                 <button id="cardfiltercollapse" type="button" class="btn btn-tool"

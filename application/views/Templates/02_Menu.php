@@ -786,6 +786,16 @@ $id_menu = $this->uri->segment('1');
                             </p>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="<?= base_url('PO_Monitor') ?>" class="nav-link <?php if ($id_menu == 'PO_Monitor') {
+                              echo "active";
+                          } ?>">
+                            <i class="nav-icon fas fa-clipboard-list"></i>
+                            <p>
+                                PO Monitor
+                            </p>
+                        </a>
+                    </li>
                     <?php } ?>
 
                 </ul>
