@@ -452,16 +452,47 @@ class MMonitoring_RFS_MyRep extends CI_Model
             'city_name' => $data['city_name']
         ])->row_array();
 
+        $targetMyrep = array_key_exists('target_myrep', $data)
+            ? (float) $data['target_myrep']
+            : ($existing ? (float) $existing['target_myrep'] : 0);
+        $targetRkap = array_key_exists('target_rkap', $data)
+            ? (float) $data['target_rkap']
+            : ($existing ? (float) $existing['target_rkap'] : 0);
+        $realizationBase = array_key_exists('realization_myrep', $data)
+            ? (float) $data['realization_myrep']
+            : ($existing ? (float) $existing['realization_myrep'] : 0);
+        $realizationAdditional = array_key_exists('realization_myrep_additional', $data)
+            ? (float) $data['realization_myrep_additional']
+            : 0;
+
+        if ($existing && $realizationAdditional > 0) {
+            $realizationMyrep = (float) $existing['realization_myrep'] + $realizationAdditional;
+        } else {
+            $realizationMyrep = $realizationBase + $realizationAdditional;
+        }
+
         $payload = [
-            'regional_name' => $data['regional_name'],
-            'province_name' => $data['province_name'],
-            'target_myrep' => $data['target_myrep'],
-            'target_rkap' => $data['target_rkap'],
-            'realization_myrep' => $data['realization_myrep'],
-            'chief' => $data['chief'],
-            'rpm' => $data['rpm'],
-            'sm' => $data['sm'],
-            'spv' => $data['spv'],
+            'regional_name' => array_key_exists('regional_name', $data)
+                ? $data['regional_name']
+                : ($existing['regional_name'] ?? null),
+            'province_name' => array_key_exists('province_name', $data)
+                ? $data['province_name']
+                : ($existing['province_name'] ?? null),
+            'target_myrep' => $targetMyrep,
+            'target_rkap' => $targetRkap,
+            'realization_myrep' => $realizationMyrep,
+            'chief' => array_key_exists('chief', $data)
+                ? $data['chief']
+                : ($existing['chief'] ?? null),
+            'rpm' => array_key_exists('rpm', $data)
+                ? $data['rpm']
+                : ($existing['rpm'] ?? null),
+            'sm' => array_key_exists('sm', $data)
+                ? $data['sm']
+                : ($existing['sm'] ?? null),
+            'spv' => array_key_exists('spv', $data)
+                ? $data['spv']
+                : ($existing['spv'] ?? null),
             'updated_by' => $data['updated_by'],
             'updated_at' => date('Y-m-d H:i:s')
         ];
@@ -574,7 +605,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
     public function getTargetOptions($year, $startMonth, $endMonth, $city = '')
     {
         $this->db
-            ->select('id_target, year_num, month_num, regional_name, province_name, city_name, chief, rpm, sm, spv')
+            ->select('id_target, year_num, month_num, regional_name, province_name, city_name, chief, rpm, sm, spv, target_myrep, realization_myrep, target_rkap')
             ->from('tb_rfs_myrep_monthly_target')
             ->where('year_num', $year)
             ->where('month_num >=', $startMonth)

@@ -1,6 +1,53 @@
 <?php
 $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session->userdata('nama_level') === 'Super Admin';
 $monthColumnCount = count($monthColumns);
+$clusterTargetCityMap = [];
+$monthlyTargetCityMap = [];
+
+if (!empty($targetOptions)) {
+    foreach ($targetOptions as $targetOption) {
+        $cityKey = strtoupper(trim((string) ($targetOption['city_name'] ?? '')));
+        if ($cityKey === '') {
+            continue;
+        }
+
+        if (
+            (int) ($targetOption['year_num'] ?? 0) === (int) $selectedYear &&
+            (int) ($targetOption['month_num'] ?? 0) === (int) $selectedEndMonth
+        ) {
+            $monthlyTargetCityMap[$cityKey] = [
+                'city_name' => (string) ($targetOption['city_name'] ?? ''),
+                'regional_name' => (string) ($targetOption['regional_name'] ?? ''),
+                'province_name' => (string) ($targetOption['province_name'] ?? ''),
+                'chief' => (string) ($targetOption['chief'] ?? ''),
+                'rpm' => (string) ($targetOption['rpm'] ?? ''),
+                'sm' => (string) ($targetOption['sm'] ?? ''),
+                'spv' => (string) ($targetOption['spv'] ?? ''),
+                'target_myrep' => (float) ($targetOption['target_myrep'] ?? 0),
+                'realization_myrep' => (float) ($targetOption['realization_myrep'] ?? 0),
+                'target_rkap' => (float) ($targetOption['target_rkap'] ?? 0)
+            ];
+        }
+
+        if (
+            !isset($clusterTargetCityMap[$cityKey]) ||
+            (int) ($targetOption['month_num'] ?? 0) > (int) ($clusterTargetCityMap[$cityKey]['month_num'] ?? 0)
+        ) {
+            $clusterTargetCityMap[$cityKey] = [
+                'id_target' => (int) ($targetOption['id_target'] ?? 0),
+                'city_name' => (string) ($targetOption['city_name'] ?? ''),
+                'month_num' => (int) ($targetOption['month_num'] ?? 0),
+                'year_num' => (int) ($targetOption['year_num'] ?? 0),
+                'rpm' => (string) ($targetOption['rpm'] ?? ''),
+                'sm' => (string) ($targetOption['sm'] ?? ''),
+                'spv' => (string) ($targetOption['spv'] ?? '')
+            ];
+        }
+    }
+
+    ksort($clusterTargetCityMap);
+    ksort($monthlyTargetCityMap);
+}
 
 if (!function_exists('monitoring_rfs_badge_class')) {
     function monitoring_rfs_badge_class($status)
@@ -20,6 +67,63 @@ if (!function_exists('monitoring_rfs_badge_class')) {
 <style>
     .table thead th[rowspan] {
         vertical-align: middle !important;
+    }
+
+    #modal-cluster-baru .modal-content {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    }
+
+    #modal-target-bulanan .modal-content {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    }
+
+    #modal-target-bulanan .modal-header {
+        background: linear-gradient(135deg, #007bff, #6610f2);
+        color: #fff;
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+    }
+
+    #modal-target-bulanan .modal-body {
+        background-color: #f9fafc;
+    }
+
+    #modal-target-bulanan .modal-footer {
+        background: #f1f3f6;
+        border-top: 1px solid #dee2e6;
+        border-bottom-left-radius: 15px;
+        border-bottom-right-radius: 15px;
+    }
+
+    #modal-cluster-baru .modal-header {
+        background: linear-gradient(135deg, #28a745, #138496);
+        color: #fff;
+        border-top-left-radius: 15px;
+        border-top-right-radius: 15px;
+    }
+
+    #modal-cluster-baru .modal-body {
+        background-color: #f9fafc;
+    }
+
+    #modal-cluster-baru .modal-footer {
+        background: #f1f3f6;
+        border-top: 1px solid #dee2e6;
+        border-bottom-left-radius: 15px;
+        border-bottom-right-radius: 15px;
+    }
+
+    #table_manual_cluster_input .form-control {
+        min-width: 120px;
+    }
+
+    #table_manual_city_master .form-control,
+    #table_manual_target_batch .form-control {
+        min-width: 120px;
     }
 
     .rfs-header-myrep {
@@ -51,6 +155,55 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         background-color: #e2e3e5;
         color: #383d41;
     }
+
+    .btn-gradient-success {
+        background: linear-gradient(45deg, #28a745, #5cd65c);
+        border: none;
+        color: #fff;
+        border-radius: 50px;
+        transition: all 0.3s ease-in-out;
+        padding: 12px 25px;
+        letter-spacing: 1px;
+    }
+
+    /* Efek hover */
+    .btn-gradient-success:hover {
+        background: linear-gradient(45deg, #1e7e34, #3cbf3c);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+    }
+
+    /* Efek glowing lembut */
+    .btn-gradient-success:focus,
+    .btn-gradient-success:active {
+        box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+        outline: none;
+    }
+
+    /* Gradien biru menarik */
+    .btn-gradient-primary {
+        background: linear-gradient(45deg, #007bff, #00c6ff);
+        border: none;
+        color: #fff;
+        border-radius: 50px;
+        transition: all 0.3s ease-in-out;
+        padding: 12px 25px;
+        letter-spacing: 1px;
+    }
+
+    /* Efek hover */
+    .btn-gradient-primary:hover {
+        background: linear-gradient(45deg, #0056b3, #0099cc);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+    }
+
+    /* Efek glowing lembut */
+    .btn-gradient-primary:focus,
+    .btn-gradient-primary:active {
+        box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        outline: none;
+    }
 </style>
 
 <div class="content-wrapper">
@@ -76,6 +229,11 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             <div class="card card-primary shadow-sm">
                 <div class="card-header">
                     <h3 class="card-title">Filter Periode</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <form method="get" action="<?= base_url('Monitoring_RFS_MyRep') ?>">
@@ -139,6 +297,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                     <h3 class="card-title">1. Annual Target vs Realisasi</h3>
                     <div class="card-tools">
                         <span class="badge badge-light">Januari - Desember | Semua Kota</span>
+                        <button type="button" class="btn btn-tool ml-1" data-card-widget="collapse" title="Collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
                     </div>
                 </div>
                 <div class="card-body table-responsive">
@@ -164,11 +325,13 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                             <tr>
                                 <td><?= number_format((float) $annualSummary['target_myrep'], 0, ',', '.') ?></td>
                                 <td><?= number_format((float) $annualSummary['realization_myrep'], 0, ',', '.') ?></td>
-                                <td><?= number_format((float) $annualSummary['target_myrep'] - (float) $annualSummary['realization_myrep'], 0, ',', '.') ?></td>
+                                <td><?= number_format((float) $annualSummary['target_myrep'] - (float) $annualSummary['realization_myrep'], 0, ',', '.') ?>
+                                </td>
                                 <td><?= number_format((float) $annualSummary['pct_myrep'], 2, ',', '.') ?>%</td>
                                 <td><?= number_format((float) $annualSummary['target_tkm'], 0, ',', '.') ?></td>
                                 <td><?= number_format((float) $annualSummary['realization_tkm'], 0, ',', '.') ?></td>
-                                <td><?= number_format((float) $annualSummary['target_tkm'] - (float) $annualSummary['realization_tkm'], 0, ',', '.') ?></td>
+                                <td><?= number_format((float) $annualSummary['target_tkm'] - (float) $annualSummary['realization_tkm'], 0, ',', '.') ?>
+                                </td>
                                 <td><?= number_format((float) $annualSummary['pct_tkm'], 2, ',', '.') ?>%</td>
                                 <td><?= number_format((float) $annualSummary['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
                             </tr>
@@ -190,7 +353,8 @@ if (!function_exists('monitoring_rfs_badge_class')) {
 
                     <div class="mt-4">
                         <h5 class="mb-3">Breakdown Per Kota</h5>
-                        <table id="table_rfs_annual_city_summary" class="table table-bordered table-striped text-center">
+                        <table id="table_rfs_annual_city_summary"
+                            class="table table-bordered table-striped text-center">
                             <thead>
                                 <tr>
                                     <th rowspan="2" class="rfs-header-fixed">NO</th>
@@ -218,11 +382,13 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                             <td><?= htmlspecialchars($row['city_name']) ?></td>
                                             <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['realization_myrep'], 0, ',', '.') ?></td>
-                                            <td><?= number_format((float) $row['target_myrep'] - (float) $row['realization_myrep'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['target_myrep'] - (float) $row['realization_myrep'], 0, ',', '.') ?>
+                                            </td>
                                             <td><?= number_format((float) $row['pct_myrep'], 2, ',', '.') ?>%</td>
                                             <td><?= number_format((float) $row['target_tkm'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['realization_tkm'], 0, ',', '.') ?></td>
-                                            <td><?= number_format((float) $row['target_tkm'] - (float) $row['realization_tkm'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['target_tkm'] - (float) $row['realization_tkm'], 0, ',', '.') ?>
+                                            </td>
                                             <td><?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%</td>
                                             <td><?= number_format((float) $row['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
                                         </tr>
@@ -253,18 +419,25 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                 </div>
             </div>
 
-            <div class="row mb-3">
-                <div class="col-md-6 mb-2 mb-md-0">
-                    <button type="button" class="btn btn-gradient-primary btn-lg shadow btn-block" data-toggle="modal"
-                        data-target="#modal-target-bulanan">
-                        Input Target Bulanan & Realisasi MyRep
-                    </button>
-                </div>
-                <div class="col-md-6">
-                    <button type="button" class="btn btn-gradient-success btn-lg shadow btn-block" data-toggle="modal"
-                        data-target="#modal-cluster-baru">
-                        Input Cluster Baru
-                    </button>
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2 justify-content-center">
+                        <div class="d-flex gap-3">
+
+                            <button type="button" class="btn btn-gradient-primary btn-lg shadow pulse mr-2"
+                                data-toggle="modal" data-target="#modal-target-bulanan">
+                                <i class="fas fa-plus-circle mr-2"></i>
+                                <strong>ADD TARGET REALISASI</strong>
+                            </button>
+
+                            <button type="button" class="btn btn-gradient-success btn-lg shadow pulse mr-2"
+                                data-toggle="modal" data-target="#modal-cluster-baru">
+                                <i class="fas fa-plus-circle mr-2"></i>
+                                <strong>ADD NEW CLUSTER</strong>
+                            </button>
+
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -275,78 +448,148 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             </datalist>
 
             <div class="modal fade" id="modal-target-bulanan" tabindex="-1" role="dialog" aria-hidden="true">
-                <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-dialog modal-xl" role="document">
                     <div class="modal-content">
-                        <form method="post" action="<?= base_url('Monitoring_RFS_MyRep/saveMonthlyTarget') ?>">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Input Target Bulanan & Realisasi MyRep</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
+                        <div class="modal-header">
+                            <h5 class="modal-title">Input Target Bulanan & Realisasi MyRep</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <ul class="nav nav-tabs" id="targetMyrepTab" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="tab-kota-baru-link" data-toggle="tab"
+                                        href="#tab-kota-baru" role="tab">INPUT KOTA BARU</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="tab-input-target-link" data-toggle="tab"
+                                        href="#tab-input-target" role="tab">INPUT TARGET</a>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content pt-3">
+                                <div class="tab-pane fade show active" id="tab-kota-baru" role="tabpanel">
+                                    <form method="post" action="<?= base_url('Monitoring_RFS_MyRep/saveCityMaster') ?>" id="formCityMasterBatch">
+                                        <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
+                                        <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
+                                        <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
+                                        <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
+                                        <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
+
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-striped mb-0" id="table_manual_city_master">
+                                                <thead>
+                                                    <tr class="text-center">
+                                                        <th style="width: 5%;">No</th>
+                                                        <th style="width: 18%;">Kota</th>
+                                                        <th>Regional</th>
+                                                        <th>Provinsi</th>
+                                                        <th>Chief</th>
+                                                        <th>RPM</th>
+                                                        <th>SM</th>
+                                                        <th>SPV</th>
+                                                        <th style="width: 8%;">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="manualCityMasterBody">
+                                                    <tr class="manual-city-row">
+                                                        <td class="text-center city-row-number">1</td>
+                                                        <td>
+                                                            <input list="city_options" name="city[]" class="form-control city-master-input" placeholder="Contoh: MALANG" required>
+                                                            <small class="text-muted d-block mt-2 city-master-info">Jika kota sudah ada, data akan otomatis terisi.</small>
+                                                        </td>
+                                                        <td><input type="text" name="regional_name[]" class="form-control city-master-regional"></td>
+                                                        <td><input type="text" name="province_name[]" class="form-control city-master-province"></td>
+                                                        <td><input type="text" name="chief[]" class="form-control city-master-chief"></td>
+                                                        <td><input type="text" name="rpm[]" class="form-control city-master-rpm"></td>
+                                                        <td><input type="text" name="sm[]" class="form-control city-master-sm"></td>
+                                                        <td><input type="text" name="spv[]" class="form-control city-master-spv"></td>
+                                                        <td class="text-center">
+                                                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-city-row">Hapus</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <small class="text-muted">Jika kota belum ada, sistem akan buat baru. Jika sudah ada, data lama akan tampil dan bisa diedit.</small>
+                                            <button type="button" class="btn btn-primary" id="btnAddCityMasterRow">Tambah Baris</button>
+                                        </div>
+
+                                        <div class="d-flex justify-content-end mt-3">
+                                            <button type="submit" class="btn btn-primary">Simpan Kota</button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <div class="tab-pane fade" id="tab-input-target" role="tabpanel">
+                                    <form method="post" action="<?= base_url('Monitoring_RFS_MyRep/saveMonthlyTarget') ?>" id="formMonthlyTargetBatch">
+                                        <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
+                                        <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
+                                        <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
+                                        <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
+                                        <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
+
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-striped mb-0" id="table_manual_target_batch">
+                                                <thead>
+                                                    <tr class="text-center">
+                                                        <th style="width: 5%;">No</th>
+                                                        <th style="width: 22%;">Kota</th>
+                                                        <th style="width: 18%;">Target MyRep</th>
+                                                        <th style="width: 22%;">Realisasi MyRep</th>
+                                                        <th style="width: 18%;">Target RKAP</th>
+                                                        <th style="width: 8%;">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="manualTargetBatchBody">
+                                                    <tr class="manual-target-row">
+                                                        <td class="text-center target-row-number">1</td>
+                                                        <td>
+                                                            <input list="city_options" name="city[]" class="form-control monthly-target-city-input" placeholder="Contoh: MALANG" required>
+                                                            <small class="text-muted d-block mt-2 monthly-target-info">Pilih / ketik kota untuk memunculkan data existing.</small>
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" min="0" name="target_myrep[]" class="form-control monthly-target-myrep" placeholder="0" required>
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" min="0" name="realization_myrep[]" class="form-control monthly-target-realization-current mb-2" placeholder="0" readonly>
+                                                            <input type="number" min="0" name="realization_myrep_additional[]" class="form-control monthly-target-realization-additional" placeholder="Realisasi Tambahan">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number" min="0" name="target_rkap[]" class="form-control monthly-target-rkap" placeholder="0" required>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-target-row">Hapus</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <small class="text-muted">Jika realisasi sudah ada, isi di kolom <strong>Realisasi Tambahan</strong> agar otomatis dijumlahkan ke data existing.</small>
+                                            <button type="button" class="btn btn-primary" id="btnAddMonthlyTargetRow">Tambah Baris</button>
+                                        </div>
+
+                                        <div class="d-flex justify-content-end mt-3">
+                                            <button type="submit" class="btn btn-success">Simpan Target Bulanan</button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
-                            <div class="modal-body">
-                                <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
-                                <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
-                                <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
-                                <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
-                                <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
-                                <div class="form-group">
-                                    <label>Kota</label>
-                                    <input list="city_options" name="city" class="form-control"
-                                        placeholder="Contoh: MALANG" required>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group col-md-6">
-                                        <label>Regional</label>
-                                        <input type="text" name="regional_name" class="form-control">
-                                    </div>
-                                    <div class="form-group col-md-6">
-                                        <label>Provinsi</label>
-                                        <input type="text" name="province_name" class="form-control">
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group col-md-3">
-                                        <label>Chief</label>
-                                        <input type="text" name="chief" class="form-control">
-                                    </div>
-                                    <div class="form-group col-md-3">
-                                        <label>RPM</label>
-                                        <input type="text" name="rpm" class="form-control">
-                                    </div>
-                                    <div class="form-group col-md-3">
-                                        <label>SM</label>
-                                        <input type="text" name="sm" class="form-control">
-                                    </div>
-                                    <div class="form-group col-md-3">
-                                        <label>SPV</label>
-                                        <input type="text" name="spv" class="form-control">
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label>Target MyRep</label>
-                                    <input type="number" min="0" name="target_myrep" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Realisasi MyRep</label>
-                                    <input type="number" min="0" name="realization_myrep" class="form-control" required>
-                                </div>
-                                <div class="form-group mb-0">
-                                    <label>Target RKAP / TKM</label>
-                                    <input type="number" min="0" name="target_rkap" class="form-control" required>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-                                <button type="submit" class="btn btn-primary">Simpan Target Bulanan</button>
-                            </div>
-                        </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="modal fade" id="modal-cluster-baru" tabindex="-1" role="dialog" aria-hidden="true">
-                <div class="modal-dialog modal-lg" role="document">
+            <div class="modal fade" id="modal-cluster-baru" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-xl" role="document">
                     <div class="modal-content">
                         <form method="post" action="<?= base_url('Monitoring_RFS_MyRep/saveCluster') ?>">
                             <div class="modal-header">
@@ -361,32 +604,60 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
                                 <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
                                 <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
-                                <div class="form-group">
-                                    <label>Target Bulanan</label>
-                                    <select name="id_target" class="form-control" required>
-                                        <option value="">Pilih Target Bulanan</option>
-                                        <?php foreach ($targetOptions as $targetOption) { ?>
-                                            <option value="<?= (int) $targetOption['id_target'] ?>">
-                                                <?= htmlspecialchars($targetOption['city_name']) ?> |
-                                                <?= htmlspecialchars($monthLabels[(int) $targetOption['month_num']] ?? $targetOption['month_num']) ?> |
-                                                <?= htmlspecialchars(trim(($targetOption['rpm'] ?? '') . ' / ' . ($targetOption['sm'] ?? '') . ' / ' . ($targetOption['spv'] ?? ''), ' /')) ?>
-                                            </option>
-                                        <?php } ?>
-                                    </select>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-striped mb-0" id="table_manual_cluster_input">
+                                        <thead>
+                                            <tr class="text-center">
+                                                <th style="width: 5%;">No</th>
+                                                <th style="width: 35%;">Kota</th>
+                                                <th>Nama Cluster</th>
+                                                <th style="width: 18%;">Homepass</th>
+                                                <th style="width: 12%;">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="manualClusterTableBody">
+                                            <tr class="manual-cluster-row">
+                                                <td class="text-center cluster-row-number">1</td>
+                                                <td>
+                                                    <input type="hidden" name="id_target[]" class="cluster-id-target" value="">
+                                                    <select name="cluster_city[]" class="form-control cluster-city-selector" required>
+                                                        <option value="">Pilih Kota</option>
+                                                        <?php foreach ($clusterTargetCityMap as $cityKey => $targetCity) { ?>
+                                                            <option value="<?= htmlspecialchars($cityKey) ?>">
+                                                                <?= htmlspecialchars($targetCity['city_name']) ?>
+                                                            </option>
+                                                        <?php } ?>
+                                                    </select>
+                                                    <small class="text-muted d-block mt-2 cluster-target-info">
+                                                        Pilih kota terlebih dulu.
+                                                    </small>
+                                                </td>
+                                                <td>
+                                                    <input type="text" name="cluster_name[]" class="form-control"
+                                                        placeholder="Contoh: Cluster A" required>
+                                                </td>
+                                                <td>
+                                                    <input type="number" min="0" name="homepass[]" class="form-control"
+                                                        placeholder="0" required>
+                                                </td>
+                                                <td class="text-center">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-cluster-row">
+                                                        Hapus
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <div class="form-group">
-                                    <label>Nama Cluster</label>
-                                    <input type="text" name="cluster_name" class="form-control" required>
+
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <small class="text-muted">Kamu bisa tambah beberapa cluster sekaligus lalu simpan dalam satu proses.</small>
+                                    <button type="button" class="btn btn-primary" id="btnAddManualClusterRow">Tambah Baris</button>
                                 </div>
-                                <div class="form-row mb-0">
-                                    <div class="form-group col-md-6">
-                                        <label>Homepass</label>
-                                        <input type="number" min="0" name="homepass" class="form-control" required>
-                                    </div>
-                                    <div class="form-group col-md-6">
-                                        <label>Target Realistis Bulan Ini</label>
-                                        <input type="number" min="0" name="optimistic_target" class="form-control">
-                                    </div>
+
+                                <div class="alert alert-light border mt-3 mb-0">
+                                    <strong>Alur input:</strong> pilih kota dulu, lalu isi nama cluster dan jumlah homepass.
+                                    Sistem akan otomatis menghubungkan cluster ke target bulanan aktif dari kota tersebut.
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -399,18 +670,23 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             </div>
 
             <div class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-12">
-                    <h1 class="m-0 text-dark text-center">MONTHLY TARGET VS REALISASI</h1>
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-12">
+                            <h1 class="m-0 text-dark text-center">MONTHLY TARGET VS REALISASI</h1>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
             <div class="card card-outline card-primary">
                 <div class="card-header">
                     <h3 class="card-title">2. Monthly Target vs Realisasi</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body table-responsive">
                     <table id="table_rfs_monthly_summary" class="table table-bordered table-striped text-center">
@@ -470,18 +746,23 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             </div>
 
             <div class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-12">
-                    <h1 class="m-0 text-dark text-center">RKAP VS REALISTIS VS ACHIEVEMENT</h1>
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-12">
+                            <h1 class="m-0 text-dark text-center">RKAP VS REALISTIS VS ACHIEVEMENT</h1>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
             <div class="card card-outline card-primary">
                 <div class="card-header">
                     <h3 class="card-title">3. RKAP vs Realistis vs Realisasi TKM</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body table-responsive">
                     <table id="table_rfs_three_month_summary" class="table table-bordered text-center">
@@ -527,7 +808,8 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <?php } ?>
                             <?php } else { ?>
                                 <tr>
-                                    <td colspan="<?= 2 + ($monthColumnCount * 3) ?>" class="text-center">Belum ada data summary 3 bulan.</td>
+                                    <td colspan="<?= 2 + ($monthColumnCount * 3) ?>" class="text-center">Belum ada data
+                                        summary 3 bulan.</td>
                                 </tr>
                             <?php } ?>
                         </tbody>
@@ -545,18 +827,23 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             </div>
 
             <div class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-12">
-                    <h1 class="m-0 text-dark text-center">LIST CLUSTER</h1>
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-12">
+                            <h1 class="m-0 text-dark text-center">LIST CLUSTER</h1>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
             <div class="card card-outline card-secondary">
                 <div class="card-header">
                     <h3 class="card-title">4. List Cluster</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body table-responsive">
                     <table id="table_rfs_cluster_list" class="table table-bordered table-striped">
@@ -591,9 +878,12 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                 class="form-inline">
                                                 <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
                                                 <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
-                                                <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
-                                                <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
-                                                <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
+                                                <input type="hidden" name="filter_city"
+                                                    value="<?= htmlspecialchars($selectedCity) ?>">
+                                                <input type="hidden" name="filter_start_month"
+                                                    value="<?= (int) $selectedStartMonth ?>">
+                                                <input type="hidden" name="filter_end_month"
+                                                    value="<?= (int) $selectedEndMonth ?>">
                                                 <input type="hidden" name="cluster_id"
                                                     value="<?= (int) $cluster['id_cluster'] ?>">
                                                 <input type="number" min="0" name="optimistic_target"
@@ -603,7 +893,8 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                             </form>
                                         </td>
                                         <td class="text-right">
-                                            <?= number_format((float) $cluster['claimed_qty'], 0, ',', '.') ?></td>
+                                            <?= number_format((float) $cluster['claimed_qty'], 0, ',', '.') ?>
+                                        </td>
                                         <td>
                                             <button type="button" class="btn btn-sm btn-success" data-toggle="modal"
                                                 data-target="#claimModal<?= (int) $cluster['id_cluster'] ?>">
@@ -619,16 +910,21 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                     enctype="multipart/form-data">
                                                     <div class="modal-header">
                                                         <h4 class="modal-title">Claim RFS -
-                                                            <?= htmlspecialchars($cluster['cluster_name'] ?? '') ?></h4>
+                                                            <?= htmlspecialchars($cluster['cluster_name'] ?? '') ?>
+                                                        </h4>
                                                         <button type="button" class="close"
                                                             data-dismiss="modal">&times;</button>
                                                     </div>
                                                     <div class="modal-body">
                                                         <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
-                                                        <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
-                                                        <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
-                                                        <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
-                                                        <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
+                                                        <input type="hidden" name="month"
+                                                            value="<?= (int) $selectedEndMonth ?>">
+                                                        <input type="hidden" name="filter_city"
+                                                            value="<?= htmlspecialchars($selectedCity) ?>">
+                                                        <input type="hidden" name="filter_start_month"
+                                                            value="<?= (int) $selectedStartMonth ?>">
+                                                        <input type="hidden" name="filter_end_month"
+                                                            value="<?= (int) $selectedEndMonth ?>">
                                                         <input type="hidden" name="cluster_id"
                                                             value="<?= (int) $cluster['id_cluster'] ?>">
                                                         <div class="form-group">
@@ -684,6 +980,11 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             <div class="card card-outline card-warning">
                 <div class="card-header">
                     <h3 class="card-title">5. Claim RFS & Approval HO</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body table-responsive">
                     <table id="table_rfs_claim_list" class="table table-bordered table-striped">
@@ -731,9 +1032,12 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                     action="<?= base_url('Monitoring_RFS_MyRep/updateClaimStatus') ?>">
                                                     <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
                                                     <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
-                                                    <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
-                                                    <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
-                                                    <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
+                                                    <input type="hidden" name="filter_city"
+                                                        value="<?= htmlspecialchars($selectedCity) ?>">
+                                                    <input type="hidden" name="filter_start_month"
+                                                        value="<?= (int) $selectedStartMonth ?>">
+                                                    <input type="hidden" name="filter_end_month"
+                                                        value="<?= (int) $selectedEndMonth ?>">
                                                     <input type="hidden" name="claim_id" value="<?= (int) $claim['id_claim'] ?>">
                                                     <div class="form-group mb-2">
                                                         <select name="status_claim" class="form-control form-control-sm">
@@ -786,6 +1090,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
 
 <script>
     (function bootstrapMonitoringRfsMyRep() {
+        var clusterTargetCityMap = <?= json_encode($clusterTargetCityMap) ?>;
+        var monthLabels = <?= json_encode($monthLabels) ?>;
+        var monthlyTargetCityMap = <?= json_encode($monthlyTargetCityMap) ?>;
         var clusterListDebugQuery = <?= json_encode($clusterListLastQuery ?? '') ?>;
         var clusterListDebugData = <?= json_encode($clusterListDebugData ?? []) ?>;
 
@@ -800,6 +1107,162 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         }
 
         var $ = window.jQuery;
+
+        function syncClusterTargetSelection($row) {
+            var selectedCity = String($row.find('.cluster-city-selector').val() || '').toUpperCase();
+            var targetData = clusterTargetCityMap[selectedCity] || null;
+            var $targetInput = $row.find('.cluster-id-target');
+            var $info = $row.find('.cluster-target-info');
+
+            if (!targetData || !targetData.id_target) {
+                $targetInput.val('');
+                $info
+                    .text('Target bulanan aktif untuk kota ini belum tersedia pada periode filter.')
+                    .removeClass('text-muted')
+                    .addClass('text-danger');
+                return;
+            }
+
+            var picLabel = [targetData.rpm || '', targetData.sm || '', targetData.spv || '']
+                .filter(Boolean)
+                .join(' / ');
+            var periodLabel = (monthLabels[targetData.month_num] || targetData.month_num) + ' ' + targetData.year_num;
+
+            $targetInput.val(targetData.id_target);
+            $info
+                .text('Target aktif: ' + periodLabel + (picLabel ? ' | ' + picLabel : ''))
+                .removeClass('text-danger')
+                .addClass('text-muted');
+        }
+
+        function refreshManualClusterRowNumbers() {
+            $('#manualClusterTableBody').find('.manual-cluster-row').each(function(index) {
+                $(this).find('.cluster-row-number').text(index + 1);
+            });
+        }
+
+        function refreshCityMasterRowNumbers() {
+            $('#manualCityMasterBody').find('.manual-city-row').each(function(index) {
+                $(this).find('.city-row-number').text(index + 1);
+            });
+        }
+
+        function refreshMonthlyTargetRowNumbers() {
+            $('#manualTargetBatchBody').find('.manual-target-row').each(function(index) {
+                $(this).find('.target-row-number').text(index + 1);
+            });
+        }
+
+        function buildManualClusterRow() {
+            var optionsHtml = '<option value="">Pilih Kota</option>';
+
+            Object.keys(clusterTargetCityMap).forEach(function(cityKey) {
+                var targetData = clusterTargetCityMap[cityKey] || {};
+                optionsHtml += '<option value="' + cityKey.replace(/"/g, '&quot;') + '">' + (targetData.city_name || cityKey) + '</option>';
+            });
+
+            return '' +
+                '<tr class="manual-cluster-row">' +
+                    '<td class="text-center cluster-row-number"></td>' +
+                    '<td>' +
+                        '<input type="hidden" name="id_target[]" class="cluster-id-target" value="">' +
+                        '<select name="cluster_city[]" class="form-control cluster-city-selector" required>' +
+                            optionsHtml +
+                        '</select>' +
+                        '<small class="text-muted d-block mt-2 cluster-target-info">Pilih kota terlebih dulu.</small>' +
+                    '</td>' +
+                    '<td>' +
+                        '<input type="text" name="cluster_name[]" class="form-control" placeholder="Contoh: Cluster A" required>' +
+                    '</td>' +
+                    '<td>' +
+                        '<input type="number" min="0" name="homepass[]" class="form-control" placeholder="0" required>' +
+                    '</td>' +
+                    '<td class="text-center">' +
+                        '<button type="button" class="btn btn-sm btn-outline-danger btn-remove-cluster-row">Hapus</button>' +
+                    '</td>' +
+                '</tr>';
+        }
+
+        function buildCityMasterRow() {
+            return '' +
+                '<tr class="manual-city-row">' +
+                    '<td class="text-center city-row-number"></td>' +
+                    '<td>' +
+                        '<input list="city_options" name="city[]" class="form-control city-master-input" placeholder="Contoh: MALANG" required>' +
+                        '<small class="text-muted d-block mt-2 city-master-info">Jika kota sudah ada, data akan otomatis terisi.</small>' +
+                    '</td>' +
+                    '<td><input type="text" name="regional_name[]" class="form-control city-master-regional"></td>' +
+                    '<td><input type="text" name="province_name[]" class="form-control city-master-province"></td>' +
+                    '<td><input type="text" name="chief[]" class="form-control city-master-chief"></td>' +
+                    '<td><input type="text" name="rpm[]" class="form-control city-master-rpm"></td>' +
+                    '<td><input type="text" name="sm[]" class="form-control city-master-sm"></td>' +
+                    '<td><input type="text" name="spv[]" class="form-control city-master-spv"></td>' +
+                    '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger btn-remove-city-row">Hapus</button></td>' +
+                '</tr>';
+        }
+
+        function buildMonthlyTargetRow() {
+            return '' +
+                '<tr class="manual-target-row">' +
+                    '<td class="text-center target-row-number"></td>' +
+                    '<td>' +
+                        '<input list="city_options" name="city[]" class="form-control monthly-target-city-input" placeholder="Contoh: MALANG" required>' +
+                        '<small class="text-muted d-block mt-2 monthly-target-info">Pilih / ketik kota untuk memunculkan data existing.</small>' +
+                    '</td>' +
+                    '<td><input type="number" min="0" name="target_myrep[]" class="form-control monthly-target-myrep" placeholder="0" required></td>' +
+                    '<td>' +
+                        '<input type="number" min="0" name="realization_myrep[]" class="form-control monthly-target-realization-current mb-2" placeholder="0" readonly>' +
+                        '<input type="number" min="0" name="realization_myrep_additional[]" class="form-control monthly-target-realization-additional" placeholder="Realisasi Tambahan">' +
+                    '</td>' +
+                    '<td><input type="number" min="0" name="target_rkap[]" class="form-control monthly-target-rkap" placeholder="0" required></td>' +
+                    '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger btn-remove-target-row">Hapus</button></td>' +
+                '</tr>';
+        }
+
+        function syncCityMasterRow($row) {
+            var cityKey = String($row.find('.city-master-input').val() || '').trim().toUpperCase();
+            var data = monthlyTargetCityMap[cityKey] || null;
+            var $info = $row.find('.city-master-info');
+
+            if (!data) {
+                $row.find('.city-master-regional, .city-master-province, .city-master-chief, .city-master-rpm, .city-master-sm, .city-master-spv').each(function() {
+                    if (!$(this).data('userEdited')) {
+                        $(this).val('');
+                    }
+                });
+                $info.text('Kota baru. Data akan dibuat jika belum ada di database.');
+                return;
+            }
+
+            $row.find('.city-master-regional').val(data.regional_name || '');
+            $row.find('.city-master-province').val(data.province_name || '');
+            $row.find('.city-master-chief').val(data.chief || '');
+            $row.find('.city-master-rpm').val(data.rpm || '');
+            $row.find('.city-master-sm').val(data.sm || '');
+            $row.find('.city-master-spv').val(data.spv || '');
+            $info.text('Data existing ditemukan. Kamu bisa edit langsung.');
+        }
+
+        function syncMonthlyTargetRow($row) {
+            var cityKey = String($row.find('.monthly-target-city-input').val() || '').trim().toUpperCase();
+            var data = monthlyTargetCityMap[cityKey] || null;
+            var $info = $row.find('.monthly-target-info');
+
+            if (!data) {
+                $row.find('.monthly-target-myrep').val(0);
+                $row.find('.monthly-target-realization-current').val(0);
+                $row.find('.monthly-target-rkap').val(0);
+                $row.find('.monthly-target-realization-additional').val('');
+                $info.text('Kota belum ada di periode ini. Data target akan dibuat baru.');
+                return;
+            }
+
+            $row.find('.monthly-target-myrep').val(data.target_myrep || 0);
+            $row.find('.monthly-target-realization-current').val(data.realization_myrep || 0);
+            $row.find('.monthly-target-rkap').val(data.target_rkap || 0);
+            $row.find('.monthly-target-realization-additional').val('');
+            $info.text('Data existing ditemukan. Realisasi tambahan akan dijumlahkan ke realisasi saat ini.');
+        }
 
         function parseLocaleNumber(value) {
             if (value === null || value === undefined) {
@@ -817,7 +1280,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             } else {
                 var parts = text.split('.');
                 if (parts.length > 1) {
-                    var isThousandsFormat = parts.slice(1).every(function(part) {
+                    var isThousandsFormat = parts.slice(1).every(function (part) {
                         return /^\d{3}$/.test(part);
                     });
 
@@ -846,7 +1309,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                 .cells(null, columnIndex, { search: 'applied' })
                 .nodes()
                 .toArray()
-                .reduce(function(total, cell) {
+                .reduce(function (total, cell) {
                     var rawValue = '';
 
                     if (useInputValue) {
@@ -897,7 +1360,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                 order: orderConfig || [],
                 scrollX: true,
                 footerCallback: footerCallback || null,
-                initComplete: function() {
+                initComplete: function () {
                     $(this.api().table().container())
                         .find('.dataTables_scrollHead, .dataTables_scrollBody')
                         .css('width', '100%');
@@ -908,14 +1371,14 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         function addRowNumbers(selector, columnIndex) {
             var table = $(selector).DataTable();
 
-            table.on('order.dt search.dt draw.dt', function() {
-                table.column(columnIndex, { search: 'applied', order: 'applied' }).nodes().each(function(cell, i) {
+            table.on('order.dt search.dt draw.dt', function () {
+                table.column(columnIndex, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
                     cell.innerHTML = i + 1;
                 });
             }).draw();
         }
 
-        initAdminLteTable('#table_rfs_annual_summary', [], function() {
+        initAdminLteTable('#table_rfs_annual_summary', [], function () {
             var api = this.api();
             var totalTargetMyrep = sumColumn(api, 0);
             var totalRealisasiMyrep = sumColumn(api, 1);
@@ -935,7 +1398,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             setFooterValue(api, 8, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
         });
 
-        initAdminLteTable('#table_rfs_annual_city_summary', [[1, 'asc']], function() {
+        initAdminLteTable('#table_rfs_annual_city_summary', [[1, 'asc']], function () {
             var api = this.api();
             var totalTargetMyrep = sumColumn(api, 2);
             var totalRealisasiMyrep = sumColumn(api, 3);
@@ -956,7 +1419,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         });
         addRowNumbers('#table_rfs_annual_city_summary', 0);
 
-        initAdminLteTable('#table_rfs_monthly_summary', [[1, 'asc']], function() {
+        initAdminLteTable('#table_rfs_monthly_summary', [[1, 'asc']], function () {
             var api = this.api();
             var totalTargetMyrep = sumColumn(api, 2);
             var totalRealisasiMyrep = sumColumn(api, 3);
@@ -973,7 +1436,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         });
         addRowNumbers('#table_rfs_monthly_summary', 0);
 
-        initAdminLteTable('#table_rfs_three_month_summary', [[1, 'asc']], function() {
+        initAdminLteTable('#table_rfs_three_month_summary', [[1, 'asc']], function () {
             var api = this.api();
             var lastColumnIndex = api.columns().count() - 1;
             for (var i = 2; i <= lastColumnIndex; i++) {
@@ -982,7 +1445,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         });
         addRowNumbers('#table_rfs_three_month_summary', 0);
 
-        initAdminLteTable('#table_rfs_cluster_list', [[1, 'asc'], [2, 'asc']], function() {
+        initAdminLteTable('#table_rfs_cluster_list', [[1, 'asc'], [2, 'asc']], function () {
             var api = this.api();
             setFooterValue(api, 6, sumColumn(api, 6), 0);
             setFooterValue(api, 7, sumColumn(api, 7, true), 0);
@@ -990,10 +1453,96 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         });
         addRowNumbers('#table_rfs_cluster_list', 0);
 
-        initAdminLteTable('#table_rfs_claim_list', [[1, 'desc']], function() {
+        initAdminLteTable('#table_rfs_claim_list', [[1, 'desc']], function () {
             var api = this.api();
             setFooterValue(api, 4, sumColumn(api, 4), 0);
         });
         addRowNumbers('#table_rfs_claim_list', 0);
+
+        $(document).on('change', '.cluster-city-selector', function () {
+            syncClusterTargetSelection($(this).closest('.manual-cluster-row'));
+        });
+
+        $('#btnAddManualClusterRow').on('click', function () {
+            $('#manualClusterTableBody').append(buildManualClusterRow());
+            refreshManualClusterRowNumbers();
+        });
+
+        $(document).on('click', '.btn-remove-cluster-row', function () {
+            var $rows = $('#manualClusterTableBody').find('.manual-cluster-row');
+            if ($rows.length <= 1) {
+                var $row = $rows.first();
+                $row.find('input[type="hidden"], input[type="text"], input[type="number"]').val('');
+                $row.find('.cluster-city-selector').val('');
+                syncClusterTargetSelection($row);
+                return;
+            }
+
+            $(this).closest('.manual-cluster-row').remove();
+            refreshManualClusterRowNumbers();
+        });
+
+        $(document).on('input change', '.city-master-input', function () {
+            syncCityMasterRow($(this).closest('.manual-city-row'));
+        });
+
+        $(document).on('input change', '.monthly-target-city-input', function () {
+            syncMonthlyTargetRow($(this).closest('.manual-target-row'));
+        });
+
+        $('#btnAddCityMasterRow').on('click', function () {
+            $('#manualCityMasterBody').append(buildCityMasterRow());
+            refreshCityMasterRowNumbers();
+        });
+
+        $('#btnAddMonthlyTargetRow').on('click', function () {
+            $('#manualTargetBatchBody').append(buildMonthlyTargetRow());
+            refreshMonthlyTargetRowNumbers();
+        });
+
+        $(document).on('click', '.btn-remove-city-row', function () {
+            var $rows = $('#manualCityMasterBody').find('.manual-city-row');
+            if ($rows.length <= 1) {
+                $rows.first().find('input').val('');
+                $rows.first().find('.city-master-info').text('Jika kota sudah ada, data akan otomatis terisi.');
+                return;
+            }
+
+            $(this).closest('.manual-city-row').remove();
+            refreshCityMasterRowNumbers();
+        });
+
+        $(document).on('click', '.btn-remove-target-row', function () {
+            var $rows = $('#manualTargetBatchBody').find('.manual-target-row');
+            if ($rows.length <= 1) {
+                $rows.first().find('input').val('');
+                $rows.first().find('.monthly-target-realization-current').val(0);
+                $rows.first().find('.monthly-target-info').text('Pilih / ketik kota untuk memunculkan data existing.');
+                return;
+            }
+
+            $(this).closest('.manual-target-row').remove();
+            refreshMonthlyTargetRowNumbers();
+        });
+
+        $('#modal-cluster-baru').on('shown.bs.modal', function () {
+            refreshManualClusterRowNumbers();
+            $('#manualClusterTableBody').find('.manual-cluster-row').each(function () {
+                syncClusterTargetSelection($(this));
+            });
+        });
+
+        $('#modal-target-bulanan').on('shown.bs.modal', function () {
+            refreshCityMasterRowNumbers();
+            refreshMonthlyTargetRowNumbers();
+
+            $('#manualCityMasterBody').find('.manual-city-row').each(function () {
+                syncCityMasterRow($(this));
+            });
+
+            $('#manualTargetBatchBody').find('.manual-target-row').each(function () {
+                syncMonthlyTargetRow($(this));
+            });
+        });
     })();
 </script>

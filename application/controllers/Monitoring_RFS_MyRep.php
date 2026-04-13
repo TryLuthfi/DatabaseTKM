@@ -100,36 +100,139 @@ class Monitoring_RFS_MyRep extends CI_Controller
 
         $year = (int) $this->input->post('year');
         $month = (int) $this->input->post('month');
-        $city = trim((string) $this->input->post('city'));
+        $cities = $this->input->post('city');
+        $targetMyrepRows = $this->input->post('target_myrep');
+        $targetRkapRows = $this->input->post('target_rkap');
+        $realizationRows = $this->input->post('realization_myrep');
+        $realizationAdditionalRows = $this->input->post('realization_myrep_additional');
         $filterCity = strtoupper(trim((string) $this->input->post('filter_city')));
         $filterStartMonth = (int) $this->input->post('filter_start_month');
         $filterEndMonth = (int) $this->input->post('filter_end_month');
 
-        if ($year <= 0 || $month < 1 || $month > 12 || $city === '') {
-            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Data target bulanan belum lengkap.');
+        if ($year <= 0 || $month < 1 || $month > 12 || !is_array($cities)) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Data target bulanan batch belum lengkap.');
             redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
-        $payload = [
-            'year_num' => $year,
-            'month_num' => $month,
-            'city_name' => strtoupper($city),
-            'regional_name' => trim((string) $this->input->post('regional_name')),
-            'province_name' => trim((string) $this->input->post('province_name')),
-            'chief' => trim((string) $this->input->post('chief')),
-            'rpm' => trim((string) $this->input->post('rpm')),
-            'sm' => trim((string) $this->input->post('sm')),
-            'spv' => trim((string) $this->input->post('spv')),
-            'target_myrep' => $this->normalizeNumber($this->input->post('target_myrep')),
-            'target_rkap' => $this->normalizeNumber($this->input->post('target_rkap')),
-            'realization_myrep' => $this->normalizeNumber($this->input->post('realization_myrep')),
-            'updated_by' => (int) $this->session->userdata('id_user')
-        ];
+        $savedCount = 0;
+        $totalRows = max(
+            count($cities),
+            is_array($targetMyrepRows) ? count($targetMyrepRows) : 0,
+            is_array($targetRkapRows) ? count($targetRkapRows) : 0,
+            is_array($realizationRows) ? count($realizationRows) : 0,
+            is_array($realizationAdditionalRows) ? count($realizationAdditionalRows) : 0
+        );
 
-        $this->MMonitoring_RFS_MyRep->upsertMonthlyTarget($payload);
-        $this->session->set_flashdata('monitoring_rfs_myrep_message', 'Target dan realisasi MyRep berhasil disimpan.');
+        for ($i = 0; $i < $totalRows; $i++) {
+            $city = strtoupper(trim((string) ($cities[$i] ?? '')));
+            $targetMyrep = $this->normalizeNumber($targetMyrepRows[$i] ?? 0);
+            $targetRkap = $this->normalizeNumber($targetRkapRows[$i] ?? 0);
+            $realization = $this->normalizeNumber($realizationRows[$i] ?? 0);
+            $realizationAdditional = $this->normalizeNumber($realizationAdditionalRows[$i] ?? 0);
 
+            if ($city === '' && $targetMyrep <= 0 && $targetRkap <= 0 && $realization <= 0 && $realizationAdditional <= 0) {
+                continue;
+            }
+
+            if ($city === '') {
+                continue;
+            }
+
+            $payload = [
+                'year_num' => $year,
+                'month_num' => $month,
+                'city_name' => $city,
+                'target_myrep' => $targetMyrep,
+                'target_rkap' => $targetRkap,
+                'realization_myrep' => $realization,
+                'realization_myrep_additional' => $realizationAdditional,
+                'updated_by' => (int) $this->session->userdata('id_user')
+            ];
+
+            $this->MMonitoring_RFS_MyRep->upsertMonthlyTarget($payload);
+            $savedCount++;
+        }
+
+        if ($savedCount <= 0) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Tidak ada target yang berhasil disimpan.');
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+            return;
+        }
+
+        $this->session->set_flashdata('monitoring_rfs_myrep_message', $savedCount . ' data target dan realisasi MyRep berhasil disimpan.');
+
+        redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+    }
+
+    public function saveCityMaster()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $year = (int) $this->input->post('year');
+        $month = (int) $this->input->post('month');
+        $cities = $this->input->post('city');
+        $regionalRows = $this->input->post('regional_name');
+        $provinceRows = $this->input->post('province_name');
+        $chiefRows = $this->input->post('chief');
+        $rpmRows = $this->input->post('rpm');
+        $smRows = $this->input->post('sm');
+        $spvRows = $this->input->post('spv');
+        $filterCity = strtoupper(trim((string) $this->input->post('filter_city')));
+        $filterStartMonth = (int) $this->input->post('filter_start_month');
+        $filterEndMonth = (int) $this->input->post('filter_end_month');
+
+        if ($year <= 0 || $month < 1 || $month > 12 || !is_array($cities)) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Data kota batch tidak valid.');
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+            return;
+        }
+
+        $savedCount = 0;
+        $totalRows = max(
+            count($cities),
+            is_array($regionalRows) ? count($regionalRows) : 0,
+            is_array($provinceRows) ? count($provinceRows) : 0,
+            is_array($chiefRows) ? count($chiefRows) : 0,
+            is_array($rpmRows) ? count($rpmRows) : 0,
+            is_array($smRows) ? count($smRows) : 0,
+            is_array($spvRows) ? count($spvRows) : 0
+        );
+
+        for ($i = 0; $i < $totalRows; $i++) {
+            $city = strtoupper(trim((string) ($cities[$i] ?? '')));
+
+            if ($city === '') {
+                continue;
+            }
+
+            $payload = [
+                'year_num' => $year,
+                'month_num' => $month,
+                'city_name' => $city,
+                'regional_name' => trim((string) ($regionalRows[$i] ?? '')),
+                'province_name' => trim((string) ($provinceRows[$i] ?? '')),
+                'chief' => trim((string) ($chiefRows[$i] ?? '')),
+                'rpm' => trim((string) ($rpmRows[$i] ?? '')),
+                'sm' => trim((string) ($smRows[$i] ?? '')),
+                'spv' => trim((string) ($spvRows[$i] ?? '')),
+                'updated_by' => (int) $this->session->userdata('id_user')
+            ];
+
+            $this->MMonitoring_RFS_MyRep->upsertMonthlyTarget($payload);
+            $savedCount++;
+        }
+
+        if ($savedCount <= 0) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Tidak ada data kota yang berhasil disimpan.');
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+            return;
+        }
+
+        $this->session->set_flashdata('monitoring_rfs_myrep_message', $savedCount . ' data kota berhasil disimpan.');
         redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
     }
 
@@ -142,46 +245,60 @@ class Monitoring_RFS_MyRep extends CI_Controller
 
         $year = (int) $this->input->post('year');
         $month = (int) $this->input->post('month');
-        $idTarget = (int) $this->input->post('id_target');
-        $clusterName = trim((string) $this->input->post('cluster_name'));
+        $idTargets = $this->input->post('id_target');
+        $clusterNames = $this->input->post('cluster_name');
+        $homepasses = $this->input->post('homepass');
         $filterCity = strtoupper(trim((string) $this->input->post('filter_city')));
         $filterStartMonth = (int) $this->input->post('filter_start_month');
         $filterEndMonth = (int) $this->input->post('filter_end_month');
 
-        if ($idTarget <= 0 || $clusterName === '') {
-            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Target bulanan dan nama cluster wajib diisi.');
+        if (!is_array($idTargets) || !is_array($clusterNames) || !is_array($homepasses)) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Data cluster batch tidak valid.');
             redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
-        $payload = [
-            'id_target' => $idTarget,
-            'cluster_name' => $clusterName,
-            'homepass' => (int) $this->normalizeNumber($this->input->post('homepass')),
-            'created_by' => (int) $this->session->userdata('id_user')
-        ];
+        $createdCount = 0;
+        $totalRows = max(count($idTargets), count($clusterNames), count($homepasses));
 
-        $selectedTarget = $this->MMonitoring_RFS_MyRep->getTargetById($idTarget);
-        if (!$selectedTarget) {
-            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Target bulanan yang dipilih tidak ditemukan.');
+        for ($i = 0; $i < $totalRows; $i++) {
+            $idTarget = (int) ($idTargets[$i] ?? 0);
+            $clusterName = trim((string) ($clusterNames[$i] ?? ''));
+            $homepass = (int) $this->normalizeNumber($homepasses[$i] ?? 0);
+
+            if ($idTarget <= 0 && $clusterName === '' && $homepass <= 0) {
+                continue;
+            }
+
+            if ($idTarget <= 0 || $clusterName === '') {
+                continue;
+            }
+
+            $selectedTarget = $this->MMonitoring_RFS_MyRep->getTargetById($idTarget);
+            if (!$selectedTarget) {
+                continue;
+            }
+
+            $payload = [
+                'id_target' => $idTarget,
+                'cluster_name' => $clusterName,
+                'homepass' => $homepass,
+                'created_by' => (int) $this->session->userdata('id_user')
+            ];
+
+            $clusterId = $this->MMonitoring_RFS_MyRep->createCluster($payload);
+            if ($clusterId) {
+                $createdCount++;
+            }
+        }
+
+        if ($createdCount <= 0) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Tidak ada cluster yang berhasil disimpan. Pastikan kota, nama cluster, dan homepass sudah terisi.');
             redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
-        $clusterId = $this->MMonitoring_RFS_MyRep->createCluster($payload);
-
-        $optimisticTarget = $this->normalizeNumber($this->input->post('optimistic_target'));
-        if ($clusterId && $optimisticTarget > 0) {
-            $this->MMonitoring_RFS_MyRep->upsertClusterPlan([
-                'cluster_id' => $clusterId,
-                'year_num' => (int) $selectedTarget['year_num'],
-                'month_num' => (int) $selectedTarget['month_num'],
-                'optimistic_target' => $optimisticTarget,
-                'updated_by' => (int) $this->session->userdata('id_user')
-            ]);
-        }
-
-        $this->session->set_flashdata('monitoring_rfs_myrep_message', 'Cluster baru berhasil ditambahkan.');
+        $this->session->set_flashdata('monitoring_rfs_myrep_message', $createdCount . ' cluster berhasil ditambahkan.');
         redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
     }
 
