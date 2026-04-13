@@ -15,13 +15,14 @@ class MMonitoring_RFS_MyRep extends CI_Model
                         SELECT SUM(c.claim_qty)
                         FROM tb_rfs_myrep_claim c
                         INNER JOIN tb_rfs_myrep_cluster cl ON cl.id_cluster = c.cluster_id
+                        INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = cl.id_target
                         WHERE c.claim_year = ?
                         AND c.claim_month BETWEEN ? AND ?
                         AND c.status_claim = 'APPROVED'
                 ";
 
         if ($city !== '') {
-            $sql .= " AND UPPER(cl.city_name) = ? ";
+            $sql .= " AND UPPER(mt.city_name) = ? ";
             $params[] = $city;
         }
 
@@ -74,18 +75,19 @@ class MMonitoring_RFS_MyRep extends CI_Model
             ->get()
             ->result_array();
 
-        $claimSql = "SELECT cl.city_name, COALESCE(SUM(c.claim_qty), 0) AS realization_tkm
+        $claimSql = "SELECT mt.city_name, COALESCE(SUM(c.claim_qty), 0) AS realization_tkm
              FROM tb_rfs_myrep_claim c
              INNER JOIN tb_rfs_myrep_cluster cl ON cl.id_cluster = c.cluster_id
+             INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = cl.id_target
              WHERE c.claim_year = ? AND c.claim_month BETWEEN ? AND ? AND c.status_claim = 'APPROVED'";
         $claimParams = [$year, $startMonth, $endMonth];
 
         if ($city !== '') {
-            $claimSql .= " AND UPPER(cl.city_name) = ? ";
+            $claimSql .= " AND UPPER(mt.city_name) = ? ";
             $claimParams[] = $city;
         }
 
-        $claimSql .= " GROUP BY cl.city_name";
+        $claimSql .= " GROUP BY mt.city_name";
 
         $claims = $this->db->query(
             $claimSql,
@@ -148,18 +150,19 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
         $targets = $this->db->group_by('city_name')->get()->result_array();
 
-        $claimSql = "SELECT cl.city_name, COALESCE(SUM(c.claim_qty), 0) AS realization_tkm
+        $claimSql = "SELECT mt.city_name, COALESCE(SUM(c.claim_qty), 0) AS realization_tkm
              FROM tb_rfs_myrep_claim c
              INNER JOIN tb_rfs_myrep_cluster cl ON cl.id_cluster = c.cluster_id
+             INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = cl.id_target
              WHERE c.claim_year = ? AND c.claim_month BETWEEN ? AND ? AND c.status_claim = 'APPROVED'";
         $claimParams = [$year, $startMonth, $endMonth];
 
         if ($city !== '') {
-            $claimSql .= " AND UPPER(cl.city_name) = ? ";
+            $claimSql .= " AND UPPER(mt.city_name) = ? ";
             $claimParams[] = $city;
         }
 
-        $claimSql .= " GROUP BY cl.city_name";
+        $claimSql .= " GROUP BY mt.city_name";
 
         $claims = $this->db->query($claimSql, $claimParams)->result_array();
 
@@ -276,18 +279,19 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 $result[$city]['rkap'][$column['month_num']] = (float) $row['target_rkap'];
             }
 
-            $planSql = "SELECT c.city_name, COALESCE(SUM(p.optimistic_target), 0) AS realistis
+            $planSql = "SELECT mt.city_name, COALESCE(SUM(p.optimistic_target), 0) AS realistis
                  FROM tb_rfs_myrep_cluster_plan p
                  INNER JOIN tb_rfs_myrep_cluster c ON c.id_cluster = p.cluster_id
+                 INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
                  WHERE p.year_num = ? AND p.month_num = ?";
             $planParams = [$column['year_num'], $column['month_num']];
 
             if ($filterCity !== '') {
-                $planSql .= " AND UPPER(c.city_name) = ? ";
+                $planSql .= " AND UPPER(mt.city_name) = ? ";
                 $planParams[] = $filterCity;
             }
 
-            $planSql .= " GROUP BY c.city_name";
+            $planSql .= " GROUP BY mt.city_name";
 
             $planRows = $this->db->query(
                 $planSql,
@@ -308,18 +312,19 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 $result[$city]['realistis'][$column['month_num']] = (float) $row['realistis'];
             }
 
-            $claimSql = "SELECT c.city_name, COALESCE(SUM(cl.claim_qty), 0) AS pencapaian
+            $claimSql = "SELECT mt.city_name, COALESCE(SUM(cl.claim_qty), 0) AS pencapaian
                  FROM tb_rfs_myrep_claim cl
                  INNER JOIN tb_rfs_myrep_cluster c ON c.id_cluster = cl.cluster_id
+                 INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
                  WHERE cl.claim_year = ? AND cl.claim_month = ? AND cl.status_claim = 'APPROVED'";
             $claimParams = [$column['year_num'], $column['month_num']];
 
             if ($filterCity !== '') {
-                $claimSql .= " AND UPPER(c.city_name) = ? ";
+                $claimSql .= " AND UPPER(mt.city_name) = ? ";
                 $claimParams[] = $filterCity;
             }
 
-            $claimSql .= " GROUP BY c.city_name";
+            $claimSql .= " GROUP BY mt.city_name";
 
             $claimRows = $this->db->query(
                 $claimSql,
@@ -353,6 +358,16 @@ class MMonitoring_RFS_MyRep extends CI_Model
     {
         $sql = "SELECT
                 c.*,
+                mt.id_target,
+                mt.year_num,
+                mt.month_num,
+                mt.regional_name,
+                mt.province_name,
+                mt.city_name,
+                mt.chief,
+                mt.rpm,
+                mt.sm,
+                mt.spv,
                 COALESCE(p.optimistic_target, 0) AS optimistic_target,
                 COALESCE((
                     SELECT SUM(claim_qty)
@@ -363,6 +378,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
                     AND cl.status_claim IN ('PENDING', 'APPROVED')
                 ), 0) AS claimed_qty
              FROM tb_rfs_myrep_cluster c
+             INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
              LEFT JOIN tb_rfs_myrep_cluster_plan p
                ON p.cluster_id = c.id_cluster
                AND p.year_num = ?
@@ -372,11 +388,11 @@ class MMonitoring_RFS_MyRep extends CI_Model
         $params = [$year, $startMonth, $endMonth, $year, $endMonth];
 
         if ($city !== '') {
-            $sql .= " AND UPPER(c.city_name) = ? ";
+            $sql .= " AND UPPER(mt.city_name) = ? ";
             $params[] = $city;
         }
 
-        $sql .= " ORDER BY c.city_name ASC, c.cluster_name ASC";
+        $sql .= " ORDER BY mt.city_name ASC, c.cluster_name ASC";
 
         return $this->db->query($sql, $params)->result_array();
     }
@@ -385,16 +401,17 @@ class MMonitoring_RFS_MyRep extends CI_Model
     {
         $sql = "SELECT
                 cl.*,
-                c.city_name,
+                mt.city_name,
                 c.cluster_name,
                 c.homepass,
-                c.rpm,
-                c.sm,
-                c.spv,
+                mt.rpm,
+                mt.sm,
+                mt.spv,
                 su.nama_user AS submitted_name,
                 au.nama_user AS approved_name
              FROM tb_rfs_myrep_claim cl
              INNER JOIN tb_rfs_myrep_cluster c ON c.id_cluster = cl.cluster_id
+             INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
              LEFT JOIN tb_master_user su ON su.id_user = cl.submitted_by
              LEFT JOIN tb_master_user au ON au.id_user = cl.approved_by
              WHERE cl.claim_year = ? AND cl.claim_month BETWEEN ? AND ?";
@@ -402,7 +419,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
         $params = [$year, $startMonth, $endMonth];
 
         if ($city !== '') {
-            $sql .= " AND UPPER(c.city_name) = ? ";
+            $sql .= " AND UPPER(mt.city_name) = ? ";
             $params[] = $city;
         }
 
@@ -416,9 +433,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
         $cities = [];
 
         $targetRows = $this->db->distinct()->select('city_name')->from('tb_rfs_myrep_monthly_target')->order_by('city_name', 'ASC')->get()->result_array();
-        $clusterRows = $this->db->distinct()->select('city_name')->from('tb_rfs_myrep_cluster')->order_by('city_name', 'ASC')->get()->result_array();
-
-        foreach (array_merge($targetRows, $clusterRows) as $row) {
+        foreach ($targetRows as $row) {
             $city = strtoupper(trim((string) $row['city_name']));
             if ($city !== '') {
                 $cities[$city] = $city;
@@ -438,9 +453,15 @@ class MMonitoring_RFS_MyRep extends CI_Model
         ])->row_array();
 
         $payload = [
+            'regional_name' => $data['regional_name'],
+            'province_name' => $data['province_name'],
             'target_myrep' => $data['target_myrep'],
             'target_rkap' => $data['target_rkap'],
             'realization_myrep' => $data['realization_myrep'],
+            'chief' => $data['chief'],
+            'rpm' => $data['rpm'],
+            'sm' => $data['sm'],
+            'spv' => $data['spv'],
             'updated_by' => $data['updated_by'],
             'updated_at' => date('Y-m-d H:i:s')
         ];
@@ -462,11 +483,8 @@ class MMonitoring_RFS_MyRep extends CI_Model
     public function createCluster($data)
     {
         $payload = [
-            'city_name' => $data['city_name'],
+            'id_target' => $data['id_target'],
             'cluster_name' => $data['cluster_name'],
-            'rpm' => $data['rpm'],
-            'sm' => $data['sm'],
-            'spv' => $data['spv'],
             'homepass' => $data['homepass'],
             'created_by' => $data['created_by'],
             'created_at' => date('Y-m-d H:i:s')
@@ -537,7 +555,40 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     public function getClusterById($clusterId)
     {
-        return $this->db->get_where('tb_rfs_myrep_cluster', ['id_cluster' => $clusterId])->row_array();
+        return $this->db
+            ->select('c.*, mt.year_num, mt.month_num, mt.city_name, mt.regional_name, mt.province_name, mt.chief, mt.rpm, mt.sm, mt.spv')
+            ->from('tb_rfs_myrep_cluster c')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
+            ->where('c.id_cluster', $clusterId)
+            ->get()
+            ->row_array();
+    }
+
+    public function getTargetById($idTarget)
+    {
+        return $this->db
+            ->get_where('tb_rfs_myrep_monthly_target', ['id_target' => $idTarget])
+            ->row_array();
+    }
+
+    public function getTargetOptions($year, $startMonth, $endMonth, $city = '')
+    {
+        $this->db
+            ->select('id_target, year_num, month_num, regional_name, province_name, city_name, chief, rpm, sm, spv')
+            ->from('tb_rfs_myrep_monthly_target')
+            ->where('year_num', $year)
+            ->where('month_num >=', $startMonth)
+            ->where('month_num <=', $endMonth);
+
+        if ($city !== '') {
+            $this->db->where('UPPER(city_name)', $city);
+        }
+
+        return $this->db
+            ->order_by('month_num', 'ASC')
+            ->order_by('city_name', 'ASC')
+            ->get()
+            ->result_array();
     }
 
     public function getClusterClaimedQty($clusterId)

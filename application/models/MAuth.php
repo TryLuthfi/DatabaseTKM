@@ -56,7 +56,7 @@ class MAuth extends CI_Model
                 $validation_user = implode(", ", $dataSessionUser);
                 $this->session->set_userdata('validation_user', $validation_user);
                 
-                redirect('Dashboard_Logistik_Stok');
+                redirect('Dashboard');
             } else {
                 $this->session->set_flashdata('error_log', 'salah');
                 redirect('Auth');

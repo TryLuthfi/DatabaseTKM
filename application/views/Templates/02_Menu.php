@@ -420,7 +420,8 @@ $id_menu = $this->uri->segment('1');
                         $id_menu == 'Fiberstar_Project_Detail' ||
                         $id_menu == 'Fiberstar_Kompensasi' ||
                         $id_menu == 'MyRepublik_PO' ||
-                        $id_menu == 'MyRepublik_Project'
+                        $id_menu == 'MyRepublik_Project' ||
+                        $id_menu == 'Monitoring_RFS_MyRep'
                     ) ? 'menu-open' : '' ?>">
                         <a href="#" class="nav-link <?= (
                             $id_menu == 'Fiberstar_PO' ||
@@ -428,7 +429,8 @@ $id_menu = $this->uri->segment('1');
                             $id_menu == 'Fiberstar_Project_Detail' ||
                             $id_menu == 'Fiberstar_Kompensasi' ||
                             $id_menu == 'MyRepublik_PO' ||
-                            $id_menu == 'MyRepublik_Project'
+                            $id_menu == 'MyRepublik_Project' ||
+                            $id_menu == 'Monitoring_RFS_MyRep'
                         ) ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-project-diagram"></i>
                             <p>

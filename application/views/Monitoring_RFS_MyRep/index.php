@@ -295,6 +295,34 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                     <input list="city_options" name="city" class="form-control"
                                         placeholder="Contoh: MALANG" required>
                                 </div>
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        <label>Regional</label>
+                                        <input type="text" name="regional_name" class="form-control">
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        <label>Provinsi</label>
+                                        <input type="text" name="province_name" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group col-md-3">
+                                        <label>Chief</label>
+                                        <input type="text" name="chief" class="form-control">
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label>RPM</label>
+                                        <input type="text" name="rpm" class="form-control">
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label>SM</label>
+                                        <input type="text" name="sm" class="form-control">
+                                    </div>
+                                    <div class="form-group col-md-3">
+                                        <label>SPV</label>
+                                        <input type="text" name="spv" class="form-control">
+                                    </div>
+                                </div>
                                 <div class="form-group">
                                     <label>Target MyRep</label>
                                     <input type="number" min="0" name="target_myrep" class="form-control" required>
@@ -334,27 +362,21 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
                                 <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
                                 <div class="form-group">
-                                    <label>Kota</label>
-                                    <input list="city_options" name="city" class="form-control"
-                                        placeholder="Contoh: BLITAR" required>
+                                    <label>Target Bulanan</label>
+                                    <select name="id_target" class="form-control" required>
+                                        <option value="">Pilih Target Bulanan</option>
+                                        <?php foreach ($targetOptions as $targetOption) { ?>
+                                            <option value="<?= (int) $targetOption['id_target'] ?>">
+                                                <?= htmlspecialchars($targetOption['city_name']) ?> |
+                                                <?= htmlspecialchars($monthLabels[(int) $targetOption['month_num']] ?? $targetOption['month_num']) ?> |
+                                                <?= htmlspecialchars(trim(($targetOption['rpm'] ?? '') . ' / ' . ($targetOption['sm'] ?? '') . ' / ' . ($targetOption['spv'] ?? ''), ' /')) ?>
+                                            </option>
+                                        <?php } ?>
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label>Nama Cluster</label>
                                     <input type="text" name="cluster_name" class="form-control" required>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group col-md-4">
-                                        <label>RPM</label>
-                                        <input type="text" name="rpm" class="form-control">
-                                    </div>
-                                    <div class="form-group col-md-4">
-                                        <label>SM</label>
-                                        <input type="text" name="sm" class="form-control">
-                                    </div>
-                                    <div class="form-group col-md-4">
-                                        <label>SPV</label>
-                                        <input type="text" name="spv" class="form-control">
-                                    </div>
                                 </div>
                                 <div class="form-row mb-0">
                                     <div class="form-group col-md-6">
@@ -764,6 +786,14 @@ if (!function_exists('monitoring_rfs_badge_class')) {
 
 <script>
     (function bootstrapMonitoringRfsMyRep() {
+        var clusterListDebugQuery = <?= json_encode($clusterListLastQuery ?? '') ?>;
+        var clusterListDebugData = <?= json_encode($clusterListDebugData ?? []) ?>;
+
+        if (window.console && typeof window.console.log === 'function') {
+            console.log('[Monitoring_RFS_MyRep] List Cluster Last Query:', clusterListDebugQuery);
+            console.log('[Monitoring_RFS_MyRep] List Cluster Data:', clusterListDebugData);
+        }
+
         if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable) {
             window.setTimeout(bootstrapMonitoringRfsMyRep, 150);
             return;
