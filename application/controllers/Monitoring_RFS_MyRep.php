@@ -201,15 +201,26 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $month = (int) $this->input->post('month');
         $clusterId = (int) $this->input->post('cluster_id');
         $claimQty = (int) $this->normalizeNumber($this->input->post('claim_qty'));
+        $claimDate = trim((string) $this->input->post('claim_date'));
         $filterCity = strtoupper(trim((string) $this->input->post('filter_city')));
         $filterStartMonth = (int) $this->input->post('filter_start_month');
         $filterEndMonth = (int) $this->input->post('filter_end_month');
 
-        if ($clusterId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $claimQty <= 0) {
+        if ($clusterId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $claimQty <= 0 || $claimDate === '') {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Data claim RFS belum lengkap.');
             redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
+
+        $claimDateTs = strtotime($claimDate);
+        if ($claimDateTs === false) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Tanggal RFS tidak valid.');
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+            return;
+        }
+
+        $claimYear = (int) date('Y', $claimDateTs);
+        $claimMonth = (int) date('n', $claimDateTs);
 
         if (empty($_FILES['claim_photo']['name'])) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Foto claim RFS wajib dilampirkan.');
@@ -240,9 +251,9 @@ class Monitoring_RFS_MyRep extends CI_Controller
 
         $payload = [
             'cluster_id' => $clusterId,
-            'claim_year' => $year,
-            'claim_month' => $month,
-            'claim_date' => date('Y-m-d'),
+            'claim_year' => $claimYear,
+            'claim_month' => $claimMonth,
+            'claim_date' => date('Y-m-d', $claimDateTs),
             'claim_qty' => $claimQty,
             'photo_path' => $uploadResult['file_path'],
             'claim_note' => trim((string) $this->input->post('claim_note')),

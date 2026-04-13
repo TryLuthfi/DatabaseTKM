@@ -388,8 +388,9 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 c.city_name,
                 c.cluster_name,
                 c.homepass,
-                c.pic_1,
-                c.pic_2,
+                c.rpm,
+                c.sm,
+                c.spv,
                 su.nama_user AS submitted_name,
                 au.nama_user AS approved_name
              FROM tb_rfs_myrep_claim cl
@@ -463,8 +464,9 @@ class MMonitoring_RFS_MyRep extends CI_Model
         $payload = [
             'city_name' => $data['city_name'],
             'cluster_name' => $data['cluster_name'],
-            'pic_1' => $data['pic_1'],
-            'pic_2' => $data['pic_2'],
+            'rpm' => $data['rpm'],
+            'sm' => $data['sm'],
+            'spv' => $data['spv'],
             'homepass' => $data['homepass'],
             'created_by' => $data['created_by'],
             'created_at' => date('Y-m-d H:i:s')

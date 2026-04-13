@@ -88,6 +88,11 @@ class BillingPayment extends CI_Controller
         return $row ? (int) $row['id_bowheer'] : null;
     }
 
+    private function getLastUpdateValue()
+    {
+        return date('Y-m-d');
+    }
+
     private function validateInvoiceRows($rawRows)
     {
         $preparedRows = [];
@@ -155,6 +160,7 @@ class BillingPayment extends CI_Controller
                 'invoice_price_payment' => null,
                 'status_invoice' => 'open',
                 'date_insert' => date('Y-m-d'),
+                'last_update' => $this->getLastUpdateValue(),
                 'id_user' => $currentUserId ?: null,
                 'area_payment' => $areaPayment,
                 'regional_payment' => $regionalPayment,
@@ -502,6 +508,7 @@ class BillingPayment extends CI_Controller
             'invoice_price_nett' => $invoicePriceNett,
             'invoice_price_payment' => $invoicePricePayment,
             'status_invoice' => $statusInvoice,
+            'last_update' => $this->getLastUpdateValue(),
             'area_payment' => $areaPayment,
             'regional_payment' => $regionalPayment,
             'deskripsi_payment' => $deskripsiPayment
@@ -691,7 +698,8 @@ class BillingPayment extends CI_Controller
                 $this->db->update('tb_billingpayment', [
                     'invoice_price_payment' => null,
                     'tgl_payment_invoice' => null,
-                    'status_invoice' => 'reject'
+                    'status_invoice' => 'reject',
+                    'last_update' => $this->getLastUpdateValue()
                 ]);
                 continue;
             }
@@ -714,7 +722,8 @@ class BillingPayment extends CI_Controller
             $this->db->update('tb_billingpayment', [
                 'invoice_price_payment' => $price,
                 'tgl_payment_invoice' => $date,
-                'status_invoice' => $status
+                'status_invoice' => $status,
+                'last_update' => $this->getLastUpdateValue()
             ]);
         }
 
@@ -786,7 +795,8 @@ class BillingPayment extends CI_Controller
             $updated = $this->db->update('tb_billingpayment', [
                 'invoice_price_payment' => null,
                 'tgl_payment_invoice' => null,
-                'status_invoice' => 'reject'
+                'status_invoice' => 'reject',
+                'last_update' => $this->getLastUpdateValue()
             ]);
 
             if ($updated) {
@@ -821,7 +831,8 @@ class BillingPayment extends CI_Controller
         $updated = $this->db->update('tb_billingpayment', [
             'invoice_price_payment' => $paymentPrice,
             'tgl_payment_invoice' => $paymentDate,
-            'status_invoice' => $statusInvoice
+            'status_invoice' => $statusInvoice,
+            'last_update' => $this->getLastUpdateValue()
         ]);
 
         if ($updated) {

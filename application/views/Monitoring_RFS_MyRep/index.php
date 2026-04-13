@@ -343,13 +343,17 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                     <input type="text" name="cluster_name" class="form-control" required>
                                 </div>
                                 <div class="form-row">
-                                    <div class="form-group col-md-6">
-                                        <label>PIC 1</label>
-                                        <input type="text" name="pic_1" class="form-control">
+                                    <div class="form-group col-md-4">
+                                        <label>RPM</label>
+                                        <input type="text" name="rpm" class="form-control">
                                     </div>
-                                    <div class="form-group col-md-6">
-                                        <label>PIC 2</label>
-                                        <input type="text" name="pic_2" class="form-control">
+                                    <div class="form-group col-md-4">
+                                        <label>SM</label>
+                                        <input type="text" name="sm" class="form-control">
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>SPV</label>
+                                        <input type="text" name="spv" class="form-control">
                                     </div>
                                 </div>
                                 <div class="form-row mb-0">
@@ -539,8 +543,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <th>No</th>
                                 <th>Kota</th>
                                 <th>Nama Cluster</th>
-                                <th>PIC 1</th>
-                                <th>PIC 2</th>
+                                <th>RPM</th>
+                                <th>SM</th>
+                                <th>SPV</th>
                                 <th>Homepass</th>
                                 <th>Target Realistis</th>
                                 <th>Claim Masuk</th>
@@ -554,8 +559,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                         <td></td>
                                         <td><?= htmlspecialchars($cluster['city_name']) ?></td>
                                         <td><?= htmlspecialchars($cluster['cluster_name']) ?></td>
-                                        <td><?= htmlspecialchars($cluster['pic_1'] ?? '') ?></td>
-                                        <td><?= htmlspecialchars($cluster['pic_2'] ?? '') ?></td>
+                                        <td><?= htmlspecialchars($cluster['rpm'] ?? '') ?></td>
+                                        <td><?= htmlspecialchars($cluster['sm'] ?? '') ?></td>
+                                        <td><?= htmlspecialchars($cluster['spv'] ?? '') ?></td>
                                         <td class="text-right"><?= number_format((float) $cluster['homepass'], 0, ',', '.') ?>
                                         </td>
                                         <td style="min-width: 220px;">
@@ -604,6 +610,10 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                         <input type="hidden" name="cluster_id"
                                                             value="<?= (int) $cluster['id_cluster'] ?>">
                                                         <div class="form-group">
+                                                            <label>Tanggal RFS</label>
+                                                            <input type="date" name="claim_date" class="form-control" required>
+                                                        </div>
+                                                        <div class="form-group">
                                                             <label>Qty Claim</label>
                                                             <input type="number" min="1" max="<?= (int) $cluster['homepass'] ?>"
                                                                 name="claim_qty" class="form-control" required>
@@ -631,14 +641,14 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <?php } ?>
                             <?php } else { ?>
                                 <tr>
-                                    <td colspan="9" class="text-center">Belum ada master cluster.</td>
+                                    <td colspan="10" class="text-center">Belum ada master cluster.</td>
                                 </tr>
                             <?php } ?>
                         </tbody>
                         <tfoot>
                             <tr>
                                 <th>-</th>
-                                <th colspan="4" class="text-center">TOTAL</th>
+                                <th colspan="5" class="text-center">TOTAL</th>
                                 <th>0</th>
                                 <th>0</th>
                                 <th>0</th>
@@ -690,7 +700,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                             </span>
                                         </td>
                                         <td>
-                                            <?= htmlspecialchars(trim(($claim['pic_1'] ?? '') . ' / ' . ($claim['pic_2'] ?? ''), ' /')) ?><br>
+                                            <?= htmlspecialchars(trim(($claim['rpm'] ?? '') . ' / ' . ($claim['sm'] ?? '') . ' / ' . ($claim['spv'] ?? ''), ' /')) ?><br>
                                             <small>Submitter: <?= htmlspecialchars($claim['submitted_name'] ?? '') ?></small>
                                         </td>
                                         <td style="min-width: 280px;">
@@ -944,9 +954,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
 
         initAdminLteTable('#table_rfs_cluster_list', [[1, 'asc'], [2, 'asc']], function() {
             var api = this.api();
-            setFooterValue(api, 5, sumColumn(api, 5), 0);
-            setFooterValue(api, 6, sumColumn(api, 6, true), 0);
-            setFooterValue(api, 7, sumColumn(api, 7), 0);
+            setFooterValue(api, 6, sumColumn(api, 6), 0);
+            setFooterValue(api, 7, sumColumn(api, 7, true), 0);
+            setFooterValue(api, 8, sumColumn(api, 8), 0);
         });
         addRowNumbers('#table_rfs_cluster_list', 0);
 
