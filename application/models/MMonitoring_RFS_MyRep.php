@@ -602,6 +602,17 @@ class MMonitoring_RFS_MyRep extends CI_Model
             ->row_array();
     }
 
+    public function getTargetByPeriodCity($year, $month, $cityName)
+    {
+        return $this->db
+            ->get_where('tb_rfs_myrep_monthly_target', [
+                'year_num' => (int) $year,
+                'month_num' => (int) $month,
+                'city_name' => strtoupper(trim((string) $cityName))
+            ])
+            ->row_array();
+    }
+
     public function getTargetOptions($year, $startMonth, $endMonth, $city = '')
     {
         $this->db

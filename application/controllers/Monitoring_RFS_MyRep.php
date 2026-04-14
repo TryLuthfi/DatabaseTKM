@@ -80,6 +80,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $data['claimList'] = $this->MMonitoring_RFS_MyRep->getClaims($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
         $data['cityOptions'] = $this->MMonitoring_RFS_MyRep->getCityOptions();
         $data['targetOptions'] = $this->MMonitoring_RFS_MyRep->getTargetOptions($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
+        $data['allTargetOptions'] = $this->MMonitoring_RFS_MyRep->getTargetOptions($selectedYear, 1, 12, '');
         $data['flashMessage'] = $this->session->flashdata('monitoring_rfs_myrep_message');
         $data['flashError'] = $this->session->flashdata('monitoring_rfs_myrep_error');
 
@@ -302,6 +303,265 @@ class Monitoring_RFS_MyRep extends CI_Controller
         redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
     }
 
+    public function previewClusterImport()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Session login tidak ditemukan'
+            ]);
+            return;
+        }
+
+        $year = (int) $this->input->post('year');
+        $month = (int) $this->input->post('month');
+
+        if ($year <= 0 || $month < 1 || $month > 12) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Periode import cluster tidak valid'
+            ]);
+            return;
+        }
+
+        $config['upload_path'] = './uploads/monitoring_rfs_myrep/imports/';
+        $config['allowed_types'] = 'xls|xlsx|csv';
+        $config['max_size'] = 4096;
+        $config['encrypt_name'] = true;
+
+        if (!is_dir($config['upload_path'])) {
+            @mkdir($config['upload_path'], 0777, true);
+        }
+
+        $this->upload->initialize($config);
+
+        if (!$this->upload->do_upload('file_excel')) {
+            echo json_encode([
+                'status' => false,
+                'message' => strip_tags($this->upload->display_errors('', ''))
+            ]);
+            return;
+        }
+
+        $fileData = $this->upload->data();
+        $filePath = $fileData['full_path'];
+
+        try {
+            $extension = strtolower(pathinfo($fileData['file_name'], PATHINFO_EXTENSION));
+
+            if ($extension === 'csv') {
+                $this->loadPHPExcel();
+                $sheetData = $this->readCsvSheetData($filePath);
+            } else {
+                $this->loadPHPExcel();
+                $objPHPExcel = PHPExcel_IOFactory::load($filePath);
+                $sheetData = $objPHPExcel->getActiveSheet()->toArray(null, true, true, true);
+            }
+        } catch (Exception $e) {
+            @unlink($filePath);
+            echo json_encode([
+                'status' => false,
+                'message' => 'File import cluster tidak bisa dibaca'
+            ]);
+            return;
+        }
+
+        @unlink($filePath);
+
+        if (count($sheetData) < 2) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'File import cluster tidak memiliki data'
+            ]);
+            return;
+        }
+
+        $headerRow = reset($sheetData);
+        $headerMap = [];
+        foreach ($headerRow as $column => $header) {
+            $mappedField = $this->parseClusterExcelHeader($header);
+            if ($mappedField) {
+                $headerMap[$column] = $mappedField;
+            }
+        }
+
+        foreach (['city_name', 'cluster_name', 'homepass'] as $requiredField) {
+            if (!in_array($requiredField, $headerMap, true)) {
+                echo json_encode([
+                    'status' => false,
+                    'message' => 'Header file wajib memuat ' . $requiredField
+                ]);
+                return;
+            }
+        }
+
+        $previewRows = [];
+        $validRows = [];
+        $errorRows = [];
+
+        foreach ($sheetData as $rowIndex => $excelRow) {
+            if ($rowIndex === 1) {
+                continue;
+            }
+
+            $row = [];
+            foreach ($headerMap as $column => $field) {
+                $row[$field] = isset($excelRow[$column]) ? trim((string) $excelRow[$column]) : '';
+            }
+
+            $isBlank = true;
+            foreach ($row as $value) {
+                if (trim((string) $value) !== '') {
+                    $isBlank = false;
+                    break;
+                }
+            }
+
+            if ($isBlank) {
+                continue;
+            }
+
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            $clusterName = trim((string) ($row['cluster_name'] ?? ''));
+            $homepass = (int) $this->normalizeNumber($row['homepass'] ?? 0);
+            $errors = [];
+
+            if ($cityName === '') {
+                $errors[] = 'Kota wajib diisi';
+            }
+
+            if ($clusterName === '') {
+                $errors[] = 'Nama cluster wajib diisi';
+            }
+
+            if ($homepass < 0) {
+                $errors[] = 'Homepass tidak valid';
+            }
+
+            $target = null;
+            if ($cityName !== '') {
+                $target = $this->MMonitoring_RFS_MyRep->getTargetByPeriodCity($year, $month, $cityName);
+                if (!$target) {
+                    $errors[] = 'Target bulanan kota belum tersedia untuk periode ini';
+                }
+            }
+
+            $prepared = [
+                'city_name' => $cityName,
+                'cluster_name' => $clusterName,
+                'homepass' => $homepass,
+                'id_target' => $target['id_target'] ?? 0
+            ];
+
+            $previewRows[] = [
+                'row_number' => $rowIndex,
+                'city_name' => $cityName,
+                'cluster_name' => $clusterName,
+                'homepass' => $homepass,
+                'status' => empty($errors) ? 'valid' : 'invalid',
+                'message' => empty($errors) ? 'Siap diimport' : implode(', ', array_unique($errors))
+            ];
+
+            if (empty($errors)) {
+                $validRows[] = $prepared;
+            } else {
+                $errorRows[] = [
+                    'row_number' => $rowIndex,
+                    'errors' => array_values(array_unique($errors))
+                ];
+            }
+        }
+
+        echo json_encode([
+            'status' => true,
+            'message' => count($validRows) . ' data valid dari ' . count($previewRows) . ' baris',
+            'rows' => $previewRows,
+            'valid_rows' => $validRows,
+            'error_rows' => $errorRows
+        ]);
+    }
+
+    public function saveImportedClusters()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Session login tidak ditemukan'
+            ]);
+            return;
+        }
+
+        $rowsJson = $this->input->post('rows_json');
+        $rows = json_decode($rowsJson, true);
+
+        if (empty($rows) || !is_array($rows)) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Tidak ada data import cluster yang siap disimpan'
+            ]);
+            return;
+        }
+
+        $inserted = 0;
+
+        foreach ($rows as $row) {
+            $idTarget = (int) ($row['id_target'] ?? 0);
+            $clusterName = trim((string) ($row['cluster_name'] ?? ''));
+            $homepass = (int) $this->normalizeNumber($row['homepass'] ?? 0);
+
+            if ($idTarget <= 0 || $clusterName === '') {
+                continue;
+            }
+
+            $clusterId = $this->MMonitoring_RFS_MyRep->createCluster([
+                'id_target' => $idTarget,
+                'cluster_name' => $clusterName,
+                'homepass' => $homepass,
+                'created_by' => (int) $this->session->userdata('id_user')
+            ]);
+
+            if ($clusterId) {
+                $inserted++;
+            }
+        }
+
+        if ($inserted <= 0) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Gagal menyimpan hasil import cluster'
+            ]);
+            return;
+        }
+
+        echo json_encode([
+            'status' => true,
+            'message' => $inserted . ' cluster berhasil diimport'
+        ]);
+    }
+
+    public function downloadClusterImportTemplate()
+    {
+        $filename = 'format_import_cluster_myrep_' . date('Ymd_His') . '.csv';
+        $headers = ['city_name', 'cluster_name', 'homepass'];
+        $exampleRow = ['MALANG', 'Cluster A', '1000'];
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename=' . $filename);
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, $headers);
+        fputcsv($output, $exampleRow);
+        fclose($output);
+        exit;
+    }
+
     public function saveClusterPlan()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -477,6 +737,76 @@ class Monitoring_RFS_MyRep extends CI_Controller
             'status' => true,
             'file_path' => 'uploads/monitoring_rfs_myrep/' . $fileData['file_name']
         ];
+    }
+
+    private function parseClusterExcelHeader($header)
+    {
+        $header = strtolower(trim((string) $header));
+        $header = preg_replace('/[^a-z0-9]+/', '_', $header);
+        $header = trim($header, '_');
+
+        $aliases = [
+            'city_name' => ['city_name', 'city', 'kota', 'nama_kota'],
+            'cluster_name' => ['cluster_name', 'nama_cluster', 'cluster'],
+            'homepass' => ['homepass', 'jumlah_homepass', 'hp']
+        ];
+
+        foreach ($aliases as $field => $options) {
+            if (in_array($header, $options, true)) {
+                return $field;
+            }
+        }
+
+        return null;
+    }
+
+    private function loadPHPExcel()
+    {
+        if (!class_exists('PHPExcel')) {
+            require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        }
+    }
+
+    private function readCsvSheetData($filePath)
+    {
+        $rows = [];
+        $handle = fopen($filePath, 'r');
+
+        if ($handle === false) {
+            return $rows;
+        }
+
+        $firstLine = fgets($handle);
+        if ($firstLine === false) {
+            fclose($handle);
+            return $rows;
+        }
+
+        $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
+        rewind($handle);
+
+        while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
+            if (!empty($data)) {
+                if (isset($data[0])) {
+                    $data[0] = preg_replace('/^\xEF\xBB\xBF/', '', $data[0]);
+                }
+                $rows[] = $data;
+            }
+        }
+
+        fclose($handle);
+
+        $sheetData = [];
+        foreach ($rows as $rowIndex => $row) {
+            $sheetRow = [];
+            foreach ($row as $colIndex => $value) {
+                $columnLetter = PHPExcel_Cell::stringFromColumnIndex($colIndex);
+                $sheetRow[$columnLetter] = $value;
+            }
+            $sheetData[$rowIndex + 1] = $sheetRow;
+        }
+
+        return $sheetData;
     }
 
     private function normalizeNumber($value)
