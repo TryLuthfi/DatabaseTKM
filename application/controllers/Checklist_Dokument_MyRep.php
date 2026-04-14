@@ -151,6 +151,83 @@ class Checklist_Dokument_MyRep extends CI_Controller
         redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
     }
 
+    public function bulkUploadDocuments()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $packageId = (int) $this->input->post('id_doc_package');
+        $itemIds = $this->input->post('id_doc_item');
+        $docNames = $this->input->post('doc_name');
+
+        if ($clusterId <= 0 || $packageId <= 0 || !is_array($itemIds)) {
+            $this->session->set_flashdata('error', 'Data bulk upload tidak valid.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $uploadDir = './uploads/checklist_myrep/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $successCount = 0;
+
+        foreach ($itemIds as $index => $itemId) {
+            $itemId = (int) $itemId;
+            $docName = trim((string) ($docNames[$index] ?? ''));
+            $inputName = 'bulk_file_' . $itemId;
+
+            if ($itemId <= 0 || empty($_FILES[$inputName]['name'])) {
+                continue;
+            }
+
+            $extension = pathinfo($_FILES[$inputName]['name'], PATHINFO_EXTENSION);
+            $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $docName);
+            $fileName = 'DOC_' . $clusterId . '_' . $packageId . '_' . $itemId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+
+            $config = [
+                'upload_path' => $uploadDir,
+                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
+                'max_size' => 10240,
+                'file_name' => $fileName,
+                'overwrite' => true,
+            ];
+
+            $_FILES['single_bulk_file'] = $_FILES[$inputName];
+            $this->upload->initialize($config);
+
+            if (!$this->upload->do_upload('single_bulk_file')) {
+                continue;
+            }
+
+            $fileData = $this->upload->data();
+            $payload = [
+                'id_doc_package' => $packageId,
+                'id_doc_item' => $itemId,
+                'file_name' => $fileData['file_name'],
+                'file_path' => 'uploads/checklist_myrep/' . $fileData['file_name'],
+                'status_file' => 'UPLOADED',
+                'remark' => '',
+                'uploaded_by' => (int) $this->session->userdata('id_user'),
+            ];
+
+            $this->MChecklist_Dokument_MyRep->saveFileUpload($payload);
+            $successCount++;
+        }
+
+        if ($successCount > 0) {
+            $this->session->set_flashdata('success', $successCount . ' dokumen berhasil diupload.');
+        } else {
+            $this->session->set_flashdata('error', 'Tidak ada file yang berhasil diupload.');
+        }
+
+        redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+    }
+
     public function approveDocument($fileId = 0, $clusterId = 0)
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -204,6 +281,46 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
         $this->session->set_flashdata('success', 'Dokumen berhasil di-reject.');
         redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+    }
+
+    public function previewDocument($fileId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $file = $this->MChecklist_Dokument_MyRep->getFileById((int) $fileId);
+        if (empty($file) || empty($file['file_path'])) {
+            show_404();
+            return;
+        }
+
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file['file_path']);
+        if (!is_file($fullPath)) {
+            show_404();
+            return;
+        }
+
+        $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        $mimeMap = [
+            'pdf' => 'application/pdf',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ];
+        $mimeType = isset($mimeMap[$extension]) ? $mimeMap[$extension] : 'application/octet-stream';
+
+        header('Content-Type: ' . $mimeType);
+        header('Content-Length: ' . filesize($fullPath));
+        header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
+        header('X-Content-Type-Options: nosniff');
+        readfile($fullPath);
+        exit;
     }
 
     private function normalizeDateInput($date)

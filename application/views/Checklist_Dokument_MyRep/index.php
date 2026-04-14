@@ -30,6 +30,18 @@ if (!function_exists('checklist_doc_aging_badge')) {
 }
 
 $totalCluster = count($clusterList);
+$clusterDoneRfsBelumAtp = 0;
+$clusterDoneAtpBelumDokument = 0;
+
+foreach ($clusterList as $cluster) {
+    if (!empty($cluster['tanggal_rfs']) && empty($cluster['actual_atp_date'])) {
+        $clusterDoneRfsBelumAtp++;
+    }
+
+    if (!empty($cluster['actual_atp_date']) && empty($cluster['actual_submit_doc_date'])) {
+        $clusterDoneAtpBelumDokument++;
+    }
+}
 ?>
 
 <div class="content-wrapper">
@@ -46,7 +58,12 @@ $totalCluster = count($clusterList);
     <section class="content">
         <div class="container-fluid">
             <?php if ($this->session->flashdata('error')): ?>
-                <div class="alert alert-danger"><?= $this->session->flashdata('error') ?></div>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <?= $this->session->flashdata('error') ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
             <?php endif; ?>
 
             <div class="row">
@@ -58,6 +75,28 @@ $totalCluster = count($clusterList);
                         </div>
                         <div class="icon">
                             <i class="fas fa-network-wired"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h3><?= $clusterDoneRfsBelumAtp ?></h3>
+                            <p>Done RFS Belum ATP</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3><?= $clusterDoneAtpBelumDokument ?></h3>
+                            <p>Done ATP Belum Full Dokument</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-file-upload"></i>
                         </div>
                     </div>
                 </div>
@@ -94,8 +133,8 @@ $totalCluster = count($clusterList);
                 <div class="card-header">
                     <h3 class="card-title">List Cluster FULL RFS</h3>
                 </div>
-                <div class="card-body table-responsive">
-                    <table class="table table-bordered table-hover">
+                <div class="card-body">
+                    <table id="table-checklist-dokument" class="table table-bordered table-striped table-hover">
                         <thead class="thead-dark">
                             <tr>
                                 <th>No</th>
@@ -168,3 +207,22 @@ $totalCluster = count($clusterList);
         </div>
     </section>
 </div>
+
+<script>
+    $(function() {
+        $('#table-checklist-dokument').DataTable({
+            "paging": true,
+            "lengthChange": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": true,
+            "pageLength": 10,
+            "lengthMenu": [
+                [10, 25, 50, 100],
+                [10, 25, 50, 100]
+            ]
+        });
+    });
+</script>

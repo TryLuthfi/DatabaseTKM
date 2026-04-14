@@ -676,6 +676,15 @@ class Monitoring_RFS_MyRep extends CI_Controller
 
         $this->MMonitoring_RFS_MyRep->createClaim($payload);
         $this->MMonitoring_RFS_MyRep->updateClusterStatusRfs($clusterId, $statusRfs);
+
+        if ($statusRfs === 'FULL RFS') {
+            $this->MMonitoring_RFS_MyRep->ensureChecklistPackagesForCluster(
+                $clusterId,
+                date('Y-m-d', $claimDateTs),
+                (int) $this->session->userdata('id_user')
+            );
+        }
+
         $this->session->set_flashdata('monitoring_rfs_myrep_message', 'Claim RFS berhasil dikirim dan menunggu approval HO.');
 
         redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
@@ -713,6 +722,20 @@ class Monitoring_RFS_MyRep extends CI_Controller
             'approval_note' => trim((string) $this->input->post('approval_note')),
             'approved_by' => (int) $this->session->userdata('id_user')
         ]);
+
+        if ($status === 'APPROVED') {
+            $claim = $this->MMonitoring_RFS_MyRep->getClaimById($claimId);
+            if (!empty($claim)) {
+                $cluster = $this->MMonitoring_RFS_MyRep->getClusterById((int) $claim['cluster_id']);
+                if (!empty($cluster) && strtoupper((string) $cluster['status_rfs']) === 'FULL RFS') {
+                    $this->MMonitoring_RFS_MyRep->ensureChecklistPackagesForCluster(
+                        (int) $claim['cluster_id'],
+                        !empty($claim['claim_date']) ? $claim['claim_date'] : null,
+                        (int) $this->session->userdata('id_user')
+                    );
+                }
+            }
+        }
 
         $this->session->set_flashdata('monitoring_rfs_myrep_message', 'Status claim berhasil diperbarui.');
         redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));

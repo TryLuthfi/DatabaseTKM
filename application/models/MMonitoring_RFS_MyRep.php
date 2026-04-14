@@ -594,6 +594,63 @@ class MMonitoring_RFS_MyRep extends CI_Model
             ]);
     }
 
+    public function getClaimById($claimId)
+    {
+        return $this->db
+            ->get_where('tb_rfs_myrep_claim', ['id_claim' => (int) $claimId])
+            ->row_array();
+    }
+
+    public function ensureChecklistPackagesForCluster($clusterId, $tanggalRfs = null, $userId = null)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return;
+        }
+
+        $groups = $this->db
+            ->select('id_doc_group')
+            ->from('md_rfs_myrep_doc_group')
+            ->where('is_active', 1)
+            ->order_by('sort_no', 'ASC')
+            ->order_by('id_doc_group', 'ASC')
+            ->get()
+            ->result_array();
+
+        foreach ($groups as $group) {
+            $groupId = (int) $group['id_doc_group'];
+            $existing = $this->db->get_where('tb_rfs_myrep_doc_package', [
+                'cluster_id' => $clusterId,
+                'id_doc_group' => $groupId,
+            ])->row_array();
+
+            $planAtp = $tanggalRfs ? $this->addBusinessDays($tanggalRfs, 7) : null;
+
+            if ($existing) {
+                if (!empty($tanggalRfs) && empty($existing['tanggal_rfs'])) {
+                    $this->db
+                        ->where('id_doc_package', (int) $existing['id_doc_package'])
+                        ->update('tb_rfs_myrep_doc_package', [
+                            'tanggal_rfs' => $tanggalRfs,
+                            'plan_atp_date' => $planAtp,
+                            'updated_by' => $userId ? (int) $userId : null,
+                        ]);
+                }
+                continue;
+            }
+
+            $this->db->insert('tb_rfs_myrep_doc_package', [
+                'cluster_id' => $clusterId,
+                'id_doc_group' => $groupId,
+                'tanggal_rfs' => $tanggalRfs,
+                'plan_atp_date' => $planAtp,
+                'status_package' => 'NOT STARTED',
+                'created_by' => $userId ? (int) $userId : null,
+                'updated_by' => $userId ? (int) $userId : null,
+            ]);
+        }
+    }
+
     public function getClusterById($clusterId)
     {
         return $this->db
@@ -664,5 +721,24 @@ class MMonitoring_RFS_MyRep extends CI_Model
         }
 
         return round(((float) $numerator / $denominator) * 100, 2);
+    }
+
+    private function addBusinessDays($date, $days)
+    {
+        if (empty($date)) {
+            return null;
+        }
+
+        $dateTime = new DateTime($date);
+        $remaining = (int) $days;
+
+        while ($remaining > 0) {
+            $dateTime->modify('+1 day');
+            if ((int) $dateTime->format('N') < 6) {
+                $remaining--;
+            }
+        }
+
+        return $dateTime->format('Y-m-d');
     }
 }

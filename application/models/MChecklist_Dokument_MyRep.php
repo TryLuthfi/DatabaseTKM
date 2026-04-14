@@ -219,8 +219,12 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 $planAtp = $this->addBusinessDays($tanggalRfs, 7);
             }
 
-            if (!$planDoc && $actualAtp) {
-                $planDoc = $this->addBusinessDays($actualAtp, 7);
+            if (!$planDoc) {
+                if ($actualAtp) {
+                    $planDoc = $this->addBusinessDays($actualAtp, 7);
+                } elseif ($planAtp) {
+                    $planDoc = $this->addBusinessDays($planAtp, 7);
+                }
             }
 
             if (!$actualDoc && $requiredDocs > 0 && $uploadedDocs >= $requiredDocs) {
@@ -264,7 +268,12 @@ class MChecklist_Dokument_MyRep extends CI_Model
         $tanggalRfs = !empty($data['tanggal_rfs']) ? $data['tanggal_rfs'] : $this->normalizeDate($package['tanggal_rfs'] ?? null);
         $actualAtp = !empty($data['actual_atp_date']) ? $data['actual_atp_date'] : null;
         $planAtp = $tanggalRfs ? $this->addBusinessDays($tanggalRfs, 7) : null;
-        $planDoc = $actualAtp ? $this->addBusinessDays($actualAtp, 7) : null;
+        $planDoc = null;
+        if ($actualAtp) {
+            $planDoc = $this->addBusinessDays($actualAtp, 7);
+        } elseif ($planAtp) {
+            $planDoc = $this->addBusinessDays($planAtp, 7);
+        }
 
         return $this->db
             ->where('id_doc_package', (int) $packageId)
@@ -333,6 +342,15 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
         $this->refreshPackageStatus((int) $file['id_doc_package']);
         return $result;
+    }
+
+    public function getFileById($fileId)
+    {
+        return $this->db
+            ->get_where('tb_rfs_myrep_doc_file', [
+                'id_doc_file' => (int) $fileId,
+            ])
+            ->row_array();
     }
 
     private function enrichClusterRows($rows)
@@ -406,7 +424,15 @@ class MChecklist_Dokument_MyRep extends CI_Model
             $tanggalRfs = $this->normalizeDate($row['rfs_date'] ?? null);
             $summaryPlanAtp = !empty($planAtpDates) ? max($planAtpDates) : ($tanggalRfs ? $this->addBusinessDays($tanggalRfs, 7) : null);
             $summaryActualAtp = !empty($actualAtpDates) ? max($actualAtpDates) : null;
-            $summaryPlanDoc = !empty($planDocDates) ? max($planDocDates) : ($summaryActualAtp ? $this->addBusinessDays($summaryActualAtp, 7) : null);
+            if (!empty($planDocDates)) {
+                $summaryPlanDoc = max($planDocDates);
+            } elseif ($summaryActualAtp) {
+                $summaryPlanDoc = $this->addBusinessDays($summaryActualAtp, 7);
+            } elseif ($summaryPlanAtp) {
+                $summaryPlanDoc = $this->addBusinessDays($summaryPlanAtp, 7);
+            } else {
+                $summaryPlanDoc = null;
+            }
             $summaryActualDoc = !empty($actualDocDates) ? max($actualDocDates) : null;
 
             $row['tanggal_rfs'] = $tanggalRfs;
