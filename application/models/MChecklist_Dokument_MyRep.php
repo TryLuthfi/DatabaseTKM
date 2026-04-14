@@ -204,7 +204,9 @@ class MChecklist_Dokument_MyRep extends CI_Model
                         'file_path' => (string) ($itemFile['file_path'] ?? ''),
                         'remark' => (string) ($itemFile['remark'] ?? ''),
                         'uploaded_at' => $this->normalizeDateTime($itemFile['uploaded_at'] ?? null),
+                        'reviewed_at' => $this->normalizeDateTime($itemFile['reviewed_at'] ?? null),
                         'approved_at' => $this->normalizeDateTime($itemFile['approved_at'] ?? null),
+                        'history' => [],
                     ];
                 }
             }
@@ -251,6 +253,32 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 'items' => $groupItems,
             ];
         }
+
+        $fileIds = [];
+        foreach ($scopes as $scopeRows) {
+            foreach ($scopeRows as $groupRow) {
+                foreach ($groupRow['items'] as $itemRow) {
+                    if (!empty($itemRow['id_doc_file'])) {
+                        $fileIds[] = (int) $itemRow['id_doc_file'];
+                    }
+                }
+            }
+        }
+
+        $historyByFileId = $this->getFileLogsByFileIds(array_values(array_unique($fileIds)));
+
+        foreach ($scopes as &$scopeRows) {
+            foreach ($scopeRows as &$groupRow) {
+                foreach ($groupRow['items'] as &$itemRow) {
+                    $itemRow['history'] = !empty($itemRow['id_doc_file']) && isset($historyByFileId[(int) $itemRow['id_doc_file']])
+                        ? $historyByFileId[(int) $itemRow['id_doc_file']]
+                        : [];
+                }
+                unset($itemRow);
+            }
+            unset($groupRow);
+        }
+        unset($scopeRows);
 
         return $scopes;
     }
@@ -304,15 +332,36 @@ class MChecklist_Dokument_MyRep extends CI_Model
         ];
 
         if ($existing) {
+            $this->deletePhysicalFile($existing['file_path'] ?? '');
             $this->db
                 ->where('id_doc_file', (int) $existing['id_doc_file'])
                 ->update('tb_rfs_myrep_doc_file', $payload);
             $fileId = (int) $existing['id_doc_file'];
+            $this->createFileLog([
+                'id_doc_file' => $fileId,
+                'id_doc_package' => (int) $data['id_doc_package'],
+                'id_doc_item' => (int) $data['id_doc_item'],
+                'action_type' => 'REUPLOADED',
+                'status_after' => $data['status_file'],
+                'file_name' => $data['file_name'],
+                'remark' => $data['remark'],
+                'action_by' => (int) $data['uploaded_by'],
+            ]);
         } else {
             $payload['id_doc_package'] = (int) $data['id_doc_package'];
             $payload['id_doc_item'] = (int) $data['id_doc_item'];
             $this->db->insert('tb_rfs_myrep_doc_file', $payload);
             $fileId = (int) $this->db->insert_id();
+            $this->createFileLog([
+                'id_doc_file' => $fileId,
+                'id_doc_package' => (int) $data['id_doc_package'],
+                'id_doc_item' => (int) $data['id_doc_item'],
+                'action_type' => 'UPLOADED',
+                'status_after' => $data['status_file'],
+                'file_name' => $data['file_name'],
+                'remark' => $data['remark'],
+                'action_by' => (int) $data['uploaded_by'],
+            ]);
         }
 
         $this->refreshPackageStatus((int) $data['id_doc_package']);
@@ -333,12 +382,24 @@ class MChecklist_Dokument_MyRep extends CI_Model
             'status_file' => $data['status_file'],
             'remark' => $data['remark'],
             'approved_by' => (int) $data['approved_by'],
-            'approved_at' => date('Y-m-d H:i:s'),
+            'reviewed_at' => date('Y-m-d H:i:s'),
+            'approved_at' => $data['status_file'] === 'APPROVED' ? date('Y-m-d H:i:s') : null,
         ];
 
         $result = $this->db
             ->where('id_doc_file', (int) $fileId)
             ->update('tb_rfs_myrep_doc_file', $payload);
+
+        $this->createFileLog([
+            'id_doc_file' => (int) $fileId,
+            'id_doc_package' => (int) $file['id_doc_package'],
+            'id_doc_item' => (int) $file['id_doc_item'],
+            'action_type' => $data['status_file'],
+            'status_after' => $data['status_file'],
+            'file_name' => (string) ($file['file_name'] ?? ''),
+            'remark' => $data['remark'],
+            'action_by' => (int) $data['approved_by'],
+        ]);
 
         $this->refreshPackageStatus((int) $file['id_doc_package']);
         return $result;
@@ -351,6 +412,30 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 'id_doc_file' => (int) $fileId,
             ])
             ->row_array();
+    }
+
+    public function getFileLogsByFileIds($fileIds)
+    {
+        if (empty($fileIds)) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('l.*, u.nama_user')
+            ->from('tb_rfs_myrep_doc_file_log l')
+            ->join('tb_master_user u', 'u.id_user = l.action_by', 'left')
+            ->where_in('l.id_doc_file', $fileIds)
+            ->order_by('l.action_at', 'DESC')
+            ->order_by('l.id_doc_file_log', 'DESC')
+            ->get()
+            ->result_array();
+
+        $logs = [];
+        foreach ($rows as $row) {
+            $logs[(int) $row['id_doc_file']][] = $row;
+        }
+
+        return $logs;
     }
 
     private function enrichClusterRows($rows)
@@ -547,11 +632,38 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         return $this->db
-            ->select('id_doc_file, id_doc_package, id_doc_item, file_name, file_path, status_file, remark, uploaded_at, approved_at')
+            ->select('id_doc_file, id_doc_package, id_doc_item, file_name, file_path, status_file, remark, uploaded_at, reviewed_at, approved_at')
             ->from('tb_rfs_myrep_doc_file')
             ->where_in('id_doc_package', $packageIds)
             ->get()
             ->result_array();
+    }
+
+    private function createFileLog($data)
+    {
+        $this->db->insert('tb_rfs_myrep_doc_file_log', [
+            'id_doc_file' => (int) $data['id_doc_file'],
+            'id_doc_package' => (int) $data['id_doc_package'],
+            'id_doc_item' => (int) $data['id_doc_item'],
+            'action_type' => $data['action_type'],
+            'status_after' => $data['status_after'],
+            'file_name' => $data['file_name'],
+            'remark' => $data['remark'],
+            'action_by' => (int) $data['action_by'],
+            'action_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    private function deletePhysicalFile($relativePath)
+    {
+        if (empty($relativePath)) {
+            return;
+        }
+
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativePath);
+        if (is_file($fullPath)) {
+            @unlink($fullPath);
+        }
     }
 
     private function refreshPackageStatus($packageId)

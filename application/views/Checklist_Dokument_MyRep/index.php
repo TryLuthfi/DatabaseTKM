@@ -65,6 +65,9 @@ foreach ($clusterList as $cluster) {
                     </button>
                 </div>
             <?php endif; ?>
+            <?php
+            $this->session->unset_userdata('error');
+            ?>
 
             <div class="row">
                 <div class="col-md-3">

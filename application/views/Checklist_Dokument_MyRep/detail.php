@@ -51,6 +51,24 @@ if (!function_exists('checklist_doc_percent')) {
     }
 }
 
+if (!function_exists('checklist_doc_history_label')) {
+    function checklist_doc_history_label($actionType)
+    {
+        switch ($actionType) {
+            case 'UPLOADED':
+                return 'Uploaded';
+            case 'REUPLOADED':
+                return 'Re-uploaded';
+            case 'REJECTED':
+                return 'Rejected';
+            case 'APPROVED':
+                return 'Approved';
+            default:
+                return $actionType;
+        }
+    }
+}
+
 $clusterTabRows = isset($scopeTabs['CLUSTER']) ? $scopeTabs['CLUSTER'] : [];
 $subfeederTabRows = isset($scopeTabs['SUBFEEDER']) ? $scopeTabs['SUBFEEDER'] : [];
 $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session->userdata('nama_level') === 'Super Admin';
@@ -90,6 +108,10 @@ $clusterProgressPercent = checklist_doc_percent(
 
     .doc-modal-upload .modal-header {
         background: linear-gradient(135deg, #198754, #34c38f);
+    }
+
+    .doc-modal-timeline .modal-header {
+        background: linear-gradient(135deg, #1d4ed8, #2563eb);
     }
 
     .doc-modal-panel {
@@ -255,6 +277,96 @@ $clusterProgressPercent = checklist_doc_percent(
         font-weight: 600;
         font-size: .88rem;
     }
+
+    .doc-history-list {
+        position: relative;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .doc-history-item {
+        position: relative;
+        padding-left: 1.5rem;
+        padding-bottom: 1rem;
+        border-left: 2px solid #d8e3ee;
+        margin-left: .5rem;
+    }
+
+    .doc-history-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .doc-history-dot {
+        position: absolute;
+        left: -8px;
+        top: 0;
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        background: #17a2b8;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px #d8e3ee;
+    }
+
+    .doc-history-title {
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: .2rem;
+    }
+
+    .doc-history-meta {
+        color: #6b7280;
+        font-size: .86rem;
+        margin-bottom: .25rem;
+    }
+
+    .doc-history-note {
+        color: #374151;
+        font-size: .9rem;
+        margin-bottom: 0;
+    }
+
+    .timeline-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .timeline-summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .75rem;
+    }
+
+    .timeline-summary-card {
+        background: linear-gradient(135deg, #eff6ff, #f8fbff);
+        border: 1px solid #dbeafe;
+        border-radius: 14px;
+        padding: .9rem 1rem;
+    }
+
+    .timeline-summary-label {
+        color: #6b7280;
+        font-size: .8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: .35rem;
+    }
+
+    .timeline-summary-value {
+        color: #1e3a8a;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    @media (max-width: 767.98px) {
+        .timeline-grid,
+        .timeline-summary {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 
 <div class="content-wrapper">
@@ -289,6 +401,10 @@ $clusterProgressPercent = checklist_doc_percent(
                     </button>
                 </div>
             <?php endif; ?>
+            <?php
+            $this->session->unset_userdata('success');
+            $this->session->unset_userdata('error');
+            ?>
 
             <div class="card card-primary card-outline">
                 <div class="card-header">
@@ -296,11 +412,19 @@ $clusterProgressPercent = checklist_doc_percent(
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
+                            <strong>Regional</strong>
+                            <div><?= !empty($cluster['regional_name']) ? $cluster['regional_name'] : '-' ?></div>
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Provinsi</strong>
+                            <div><?= !empty($cluster['province_name']) ? $cluster['province_name'] : '-' ?></div>
+                        </div>
+                        <div class="col-md-2">
                             <strong>Kota</strong>
                             <div><?= $cluster['city_name'] ?></div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <strong>Cluster</strong>
                             <div><?= $cluster['cluster_name'] ?></div>
                         </div>
@@ -308,6 +432,8 @@ $clusterProgressPercent = checklist_doc_percent(
                             <strong>Homepass</strong>
                             <div><?= number_format((float) $cluster['homepass'], 0, ',', '.') ?></div>
                         </div>
+                    </div>
+                    <div class="row mt-3">
                         <div class="col-md-2">
                             <strong>Status RFS</strong>
                             <div><span class="badge badge-success"><?= $cluster['status_rfs'] ?></span></div>
@@ -315,6 +441,20 @@ $clusterProgressPercent = checklist_doc_percent(
                         <div class="col-md-2">
                             <strong>RFS Date</strong>
                             <div><?= checklist_doc_detail_date($cluster['tanggal_rfs']) ?></div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <strong>RPM</strong>
+                            <div><?= !empty($cluster['rpm']) ? $cluster['rpm'] : '-' ?></div>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>SM</strong>
+                            <div><?= !empty($cluster['sm']) ? $cluster['sm'] : '-' ?></div>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>SPV</strong>
+                            <div><?= !empty($cluster['spv']) ? $cluster['spv'] : '-' ?></div>
                         </div>
                     </div>
                     <hr>
@@ -499,6 +639,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                         <th>Status</th>
                                                         <th>File</th>
                                                         <th>Uploaded At</th>
+                                                        <th>Reviewed At</th>
                                                         <th>Approved At</th>
                                                         <th>Remark</th>
                                                         <th>Aksi</th>
@@ -507,7 +648,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                 <tbody>
                                                     <?php if (empty($group['items'])): ?>
                                                         <tr>
-                                                            <td colspan="8" class="text-center">Belum ada master dokumen.</td>
+                                                            <td colspan="9" class="text-center">Belum ada master dokumen.</td>
                                                         </tr>
                                                     <?php else: ?>
                                                         <?php $no = 1; ?>
@@ -526,6 +667,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                     <?php endif; ?>
                                                                 </td>
                                                                 <td><?= checklist_doc_detail_date($item['uploaded_at']) ?></td>
+                                                                <td><?= checklist_doc_detail_date($item['reviewed_at']) ?></td>
                                                                 <td><?= checklist_doc_detail_date($item['approved_at']) ?></td>
                                                                 <td><?= $item['remark'] !== '' ? $item['remark'] : '-' ?></td>
                                                                 <td>
@@ -543,6 +685,16 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                     <?php endif; ?>
                                                                     <?php if (!empty($item['file_path'])): ?>
                                                                         <a href="<?= base_url('Checklist_Dokument_MyRep/previewDocument/' . (int) $item['id_doc_file']) ?>" target="_blank" class="btn btn-sm btn-warning">View</a>
+                                                                    <?php endif; ?>
+                                                                    <?php if ((int) $item['id_doc_file'] > 0): ?>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-info btn-history-doc"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modalHistoryDocument"
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                            data-history='<?= htmlspecialchars(json_encode($item["history"]), ENT_QUOTES, "UTF-8") ?>'>
+                                                                            Detail
+                                                                        </button>
                                                                     <?php endif; ?>
                                                                     <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
                                                                         <a href="<?= base_url('Checklist_Dokument_MyRep/approveDocument/' . (int) $item['id_doc_file'] . '/' . (int) $cluster['id_cluster']) ?>"
@@ -694,6 +846,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                         <th>Status</th>
                                                         <th>File</th>
                                                         <th>Uploaded At</th>
+                                                        <th>Reviewed At</th>
                                                         <th>Approved At</th>
                                                         <th>Remark</th>
                                                         <th>Aksi</th>
@@ -702,7 +855,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                 <tbody>
                                                     <?php if (empty($group['items'])): ?>
                                                         <tr>
-                                                            <td colspan="8" class="text-center">Belum ada master dokumen.</td>
+                                                            <td colspan="9" class="text-center">Belum ada master dokumen.</td>
                                                         </tr>
                                                     <?php else: ?>
                                                         <?php $no = 1; ?>
@@ -721,6 +874,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                     <?php endif; ?>
                                                                 </td>
                                                                 <td><?= checklist_doc_detail_date($item['uploaded_at']) ?></td>
+                                                                <td><?= checklist_doc_detail_date($item['reviewed_at']) ?></td>
                                                                 <td><?= checklist_doc_detail_date($item['approved_at']) ?></td>
                                                                 <td><?= $item['remark'] !== '' ? $item['remark'] : '-' ?></td>
                                                                 <td>
@@ -738,6 +892,16 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                     <?php endif; ?>
                                                                     <?php if (!empty($item['file_path'])): ?>
                                                                         <a href="<?= base_url('Checklist_Dokument_MyRep/previewDocument/' . (int) $item['id_doc_file']) ?>" target="_blank" class="btn btn-sm btn-warning">View</a>
+                                                                    <?php endif; ?>
+                                                                    <?php if ((int) $item['id_doc_file'] > 0): ?>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-info btn-history-doc"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modalHistoryDocument"
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                            data-history='<?= htmlspecialchars(json_encode($item["history"]), ENT_QUOTES, "UTF-8") ?>'>
+                                                                            Detail
+                                                                        </button>
                                                                     <?php endif; ?>
                                                                     <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
                                                                         <a href="<?= base_url('Checklist_Dokument_MyRep/approveDocument/' . (int) $item['id_doc_file'] . '/' . (int) $cluster['id_cluster']) ?>"
@@ -836,32 +1000,63 @@ $clusterProgressPercent = checklist_doc_percent(
     </section>
 </div>
 
-<div class="modal fade" id="modalTimeline">
+<div class="modal fade doc-modal doc-modal-timeline" id="modalTimeline">
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/saveTimeline') ?>">
                 <div class="modal-header">
-                    <h4 class="modal-title">Edit Timeline <span id="timeline-group-label"></span></h4>
+                    <div>
+                        <h4 class="modal-title mb-1">Edit Timeline</h4>
+                        <p class="mb-0" style="opacity:.9;" id="timeline-group-label"></p>
+                    </div>
                     <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="cluster_id" id="timeline-cluster-id">
                     <input type="hidden" name="id_doc_package" id="timeline-package-id">
-                    <div class="form-group">
-                        <label>Tanggal RFS</label>
-                        <input type="date" name="tanggal_rfs" id="timeline-tanggal-rfs" class="form-control">
+                    <div class="doc-modal-panel">
+                        <div class="doc-modal-title">Ringkasan SLA</div>
+                        <p class="doc-modal-subtitle">Isi tanggal real ATP bila sudah selesai. Plan dokumen akan dihitung otomatis sesuai rule SLA.</p>
+                        <div class="timeline-summary mt-3">
+                            <div class="timeline-summary-card">
+                                <div class="timeline-summary-label">Rule 1</div>
+                                <div class="timeline-summary-value">RFS + 7 HK</div>
+                            </div>
+                            <div class="timeline-summary-card">
+                                <div class="timeline-summary-label">Rule 2</div>
+                                <div class="timeline-summary-value">ATP + 7 HK</div>
+                            </div>
+                            <div class="timeline-summary-card">
+                                <div class="timeline-summary-label">Output</div>
+                                <div class="timeline-summary-value">Plan Dokument Auto</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Realisasi ATP</label>
-                        <input type="date" name="actual_atp_date" id="timeline-actual-atp" class="form-control">
+                    <div class="timeline-grid">
+                        <div class="doc-modal-panel">
+                            <div class="form-group mb-0">
+                                <label class="font-weight-bold">Tanggal RFS</label>
+                                <input type="date" name="tanggal_rfs" id="timeline-tanggal-rfs" class="form-control">
+                                <small class="form-text text-muted">Menjadi dasar perhitungan `Plan ATP`.</small>
+                            </div>
+                        </div>
+                        <div class="doc-modal-panel">
+                            <div class="form-group mb-0">
+                                <label class="font-weight-bold">Realisasi ATP</label>
+                                <input type="date" name="actual_atp_date" id="timeline-actual-atp" class="form-control">
+                                <small class="form-text text-muted">Jika kosong, sistem tetap menghitung target dokumen dari `Plan ATP`.</small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Remarks</label>
-                        <textarea name="remarks" id="timeline-remarks" class="form-control"></textarea>
+                    <div class="doc-modal-panel">
+                        <div class="form-group mb-0">
+                            <label class="font-weight-bold">Remarks</label>
+                            <textarea name="remarks" id="timeline-remarks" class="form-control" rows="3" placeholder="Tambahkan catatan timeline jika diperlukan"></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
                     <button type="submit" class="btn btn-primary">Simpan</button>
                 </div>
             </form>
@@ -945,6 +1140,34 @@ $clusterProgressPercent = checklist_doc_percent(
     </div>
 </div>
 
+<div class="modal fade doc-modal" id="modalHistoryDocument">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+                <div>
+                    <h4 class="modal-title mb-1">History Dokumen</h4>
+                    <p class="mb-0" style="opacity:.9;">Riwayat upload, reject, dan approve untuk dokumen terpilih.</p>
+                </div>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="doc-modal-panel">
+                    <div class="doc-modal-title" id="history-doc-title">-</div>
+                    <p class="doc-modal-subtitle">File lama otomatis dihapus dari storage. History hanya menyimpan jejak prosesnya.</p>
+                </div>
+                <div class="doc-modal-panel mb-0">
+                    <ul class="doc-history-list" id="history-doc-list">
+                        <li class="text-muted">Belum ada history.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
         var dropzone = document.querySelector(dropzoneSelector);
@@ -1007,6 +1230,49 @@ $clusterProgressPercent = checklist_doc_percent(
         $('#reject-cluster-id').val($(this).data('cluster-id'));
         $('#reject-file-id').val($(this).data('file-id'));
         $('#reject-remark').val('');
+    });
+
+    $(document).on('click', '.btn-history-doc', function() {
+        var docName = $(this).data('doc-name');
+        var rawHistory = $(this).attr('data-history');
+        var history = [];
+
+        try {
+            history = rawHistory ? JSON.parse(rawHistory) : [];
+        } catch (e) {
+            history = [];
+        }
+
+        $('#history-doc-title').text(docName);
+
+        if (!history.length) {
+            $('#history-doc-list').html('<li class="text-muted">Belum ada history.</li>');
+            return;
+        }
+
+        var html = '';
+        history.forEach(function(entry) {
+            var actionLabel = entry.action_type || '-';
+            if (actionLabel === 'UPLOADED') actionLabel = 'Uploaded';
+            if (actionLabel === 'REUPLOADED') actionLabel = 'Re-uploaded';
+            if (actionLabel === 'REJECTED') actionLabel = 'Rejected';
+            if (actionLabel === 'APPROVED') actionLabel = 'Approved';
+
+            var actionAt = entry.action_at || '-';
+            var actor = entry.nama_user || 'System';
+            var fileName = entry.file_name || '-';
+            var remark = entry.remark ? entry.remark : '-';
+
+            html += '<li class="doc-history-item">' +
+                '<span class="doc-history-dot"></span>' +
+                '<div class="doc-history-title">' + actionLabel + '</div>' +
+                '<div class="doc-history-meta">' + actionAt + ' | ' + actor + '</div>' +
+                '<p class="doc-history-note"><strong>File:</strong> ' + fileName + '</p>' +
+                '<p class="doc-history-note"><strong>Remark:</strong> ' + remark + '</p>' +
+                '</li>';
+        });
+
+        $('#history-doc-list').html(html);
     });
 
     bindDropzone('#upload-dropzone', '#upload-file-input', '#upload-file-name');
