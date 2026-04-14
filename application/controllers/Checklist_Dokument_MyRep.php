@@ -18,11 +18,14 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         $selectedCity = strtoupper(trim((string) $this->input->get('city')));
+        $selectedRegional = strtoupper(trim((string) $this->input->get('regional')));
 
         $data['title'] = 'Checklist Dokument';
         $data['selectedCity'] = $selectedCity;
+        $data['selectedRegional'] = $selectedRegional;
         $data['cityOptions'] = $this->MChecklist_Dokument_MyRep->getCityOptions();
-        $data['clusterList'] = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity);
+        $data['regionalOptions'] = $this->MChecklist_Dokument_MyRep->getRegionalOptions();
+        $data['clusterList'] = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional);
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');

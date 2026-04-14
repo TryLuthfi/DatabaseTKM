@@ -66,7 +66,30 @@ class MChecklist_Dokument_MyRep extends CI_Model
         return array_values($cities);
     }
 
-    public function getFullRfsClusters($city = '')
+    public function getRegionalOptions()
+    {
+        $rows = $this->db
+            ->distinct()
+            ->select('mt.regional_name')
+            ->from('tb_rfs_myrep_cluster c')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
+            ->where('c.status_rfs', 'FULL RFS')
+            ->order_by('mt.regional_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $regionals = [];
+        foreach ($rows as $row) {
+            $regional = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            if ($regional !== '') {
+                $regionals[$regional] = $regional;
+            }
+        }
+
+        return array_values($regionals);
+    }
+
+    public function getFullRfsClusters($city = '', $regional = '')
     {
         $query = $this->db
             ->select("
@@ -95,6 +118,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
         if ($city !== '') {
             $query->where('UPPER(mt.city_name)', strtoupper($city));
+        }
+
+        if ($regional !== '') {
+            $query->where('UPPER(mt.regional_name)', strtoupper($regional));
         }
 
         $rows = $query

@@ -113,6 +113,17 @@ foreach ($clusterList as $cluster) {
                     <form method="get" action="<?= base_url('Checklist_Dokument_MyRep') ?>">
                         <div class="row">
                             <div class="col-md-4">
+                                <label>Regional</label>
+                                <select name="regional" class="form-control">
+                                    <option value="">Semua Regional</option>
+                                    <?php foreach ($regionalOptions as $regionalOption): ?>
+                                        <option value="<?= $regionalOption ?>" <?= ($selectedRegional === $regionalOption) ? 'selected' : '' ?>>
+                                            <?= $regionalOption ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
                                 <label>Kota</label>
                                 <select name="city" class="form-control">
                                     <option value="">Semua Kota</option>
@@ -141,6 +152,7 @@ foreach ($clusterList as $cluster) {
                         <thead class="thead-dark">
                             <tr>
                                 <th>No</th>
+                                <th>Regional</th>
                                 <th>Kota</th>
                                 <th>Cluster</th>
                                 <th>HP</th>
@@ -160,13 +172,14 @@ foreach ($clusterList as $cluster) {
                         <tbody>
                             <?php if (empty($clusterList)): ?>
                                 <tr>
-                                    <td colspan="15" class="text-center">Belum ada cluster FULL RFS.</td>
+                                    <td colspan="16" class="text-center">Belum ada cluster FULL RFS.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php $no = 1; ?>
                                 <?php foreach ($clusterList as $cluster): ?>
                                     <tr>
                                         <td><?= $no++ ?></td>
+                                        <td><?= !empty($cluster['regional_name']) ? $cluster['regional_name'] : '-' ?></td>
                                         <td><?= $cluster['city_name'] ?></td>
                                         <td><?= $cluster['cluster_name'] ?></td>
                                         <td><?= number_format((float) $cluster['homepass'], 0, ',', '.') ?></td>
