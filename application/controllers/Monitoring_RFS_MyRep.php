@@ -283,6 +283,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
             $payload = [
                 'id_target' => $idTarget,
                 'cluster_name' => $clusterName,
+                'status_rfs' => 'NY RFS',
                 'homepass' => $homepass,
                 'created_by' => (int) $this->session->userdata('id_user')
             ];
@@ -516,6 +517,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
             $clusterId = $this->MMonitoring_RFS_MyRep->createCluster([
                 'id_target' => $idTarget,
                 'cluster_name' => $clusterName,
+                'status_rfs' => 'NY RFS',
                 'homepass' => $homepass,
                 'created_by' => (int) $this->session->userdata('id_user')
             ]);
@@ -606,12 +608,19 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $clusterId = (int) $this->input->post('cluster_id');
         $claimQty = (int) $this->normalizeNumber($this->input->post('claim_qty'));
         $claimDate = trim((string) $this->input->post('claim_date'));
+        $statusRfs = strtoupper(trim((string) $this->input->post('status_rfs')));
         $filterCity = strtoupper(trim((string) $this->input->post('filter_city')));
         $filterStartMonth = (int) $this->input->post('filter_start_month');
         $filterEndMonth = (int) $this->input->post('filter_end_month');
 
         if ($clusterId <= 0 || $year <= 0 || $month < 1 || $month > 12 || $claimQty <= 0 || $claimDate === '') {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Data claim RFS belum lengkap.');
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+            return;
+        }
+
+        if (!in_array($statusRfs, ['PARTIAL', 'FULL RFS'], true)) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Status RFS claim wajib dipilih.');
             redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
@@ -666,6 +675,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         ];
 
         $this->MMonitoring_RFS_MyRep->createClaim($payload);
+        $this->MMonitoring_RFS_MyRep->updateClusterStatusRfs($clusterId, $statusRfs);
         $this->session->set_flashdata('monitoring_rfs_myrep_message', 'Claim RFS berhasil dikirim dan menunggu approval HO.');
 
         redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));

@@ -978,6 +978,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <th>No</th>
                                 <th>Kota</th>
                                 <th>Nama Cluster</th>
+                                <th>Status RFS</th>
                                 <th>RPM</th>
                                 <th>SM</th>
                                 <th>SPV</th>
@@ -994,6 +995,12 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                         <td></td>
                                         <td><?= htmlspecialchars($cluster['city_name']) ?></td>
                                         <td><?= htmlspecialchars($cluster['cluster_name']) ?></td>
+                                        <td class="text-center">
+                                            <?php $statusRfs = (string) ($cluster['status_rfs'] ?? 'NY RFS'); ?>
+                                            <span class="badge badge-<?= $statusRfs === 'FULL RFS' ? 'success' : ($statusRfs === 'PARTIAL' ? 'warning' : 'secondary') ?>">
+                                                <?= htmlspecialchars($statusRfs) ?>
+                                            </span>
+                                        </td>
                                         <td><?= htmlspecialchars($cluster['rpm'] ?? '') ?></td>
                                         <td><?= htmlspecialchars($cluster['sm'] ?? '') ?></td>
                                         <td><?= htmlspecialchars($cluster['spv'] ?? '') ?></td>
@@ -1065,6 +1072,15 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                                 mengikuti homepass cluster.</small>
                                                         </div>
                                                         <div class="form-group">
+                                                            <label>Status RFS</label>
+                                                            <select name="status_rfs" class="form-control" required>
+                                                                <option value="">Pilih Status RFS</option>
+                                                                <option value="PARTIAL" <?= (($cluster['status_rfs'] ?? '') === 'PARTIAL') ? 'selected' : '' ?>>PARTIAL</option>
+                                                                <option value="FULL RFS" <?= (($cluster['status_rfs'] ?? '') === 'FULL RFS') ? 'selected' : '' ?>>FULL RFS</option>
+                                                            </select>
+                                                            <small class="text-muted">Gunakan untuk membedakan partial claim dengan reduce homepass.</small>
+                                                        </div>
+                                                        <div class="form-group">
                                                             <label>Foto Claim</label>
                                                             <input type="file" name="claim_photo" class="form-control"
                                                                 accept=".jpg,.jpeg,.png,.webp" required>
@@ -1085,14 +1101,14 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <?php } ?>
                             <?php } else { ?>
                                 <tr>
-                                    <td colspan="10" class="text-center">Belum ada master cluster.</td>
+                                    <td colspan="11" class="text-center">Belum ada master cluster.</td>
                                 </tr>
                             <?php } ?>
                         </tbody>
                         <tfoot>
                             <tr>
                                 <th>-</th>
-                                <th colspan="5" class="text-center">TOTAL</th>
+                                <th colspan="6" class="text-center">TOTAL</th>
                                 <th>0</th>
                                 <th>0</th>
                                 <th>0</th>
@@ -1661,9 +1677,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
 
         initAdminLteTable('#table_rfs_cluster_list', [[1, 'asc'], [2, 'asc']], function () {
             var api = this.api();
-            setFooterValue(api, 6, sumColumn(api, 6), 0);
-            setFooterValue(api, 7, sumColumn(api, 7, true), 0);
-            setFooterValue(api, 8, sumColumn(api, 8), 0);
+            setFooterValue(api, 7, sumColumn(api, 7), 0);
+            setFooterValue(api, 8, sumColumn(api, 8, true), 0);
+            setFooterValue(api, 9, sumColumn(api, 9), 0);
         });
         addRowNumbers('#table_rfs_cluster_list', 0);
 

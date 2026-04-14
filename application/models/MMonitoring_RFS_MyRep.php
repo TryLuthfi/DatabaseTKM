@@ -516,6 +516,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
         $payload = [
             'id_target' => $data['id_target'],
             'cluster_name' => $data['cluster_name'],
+            'status_rfs' => $data['status_rfs'],
             'homepass' => $data['homepass'],
             'created_by' => $data['created_by'],
             'created_at' => date('Y-m-d H:i:s')
@@ -570,6 +571,15 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
         $this->db->insert('tb_rfs_myrep_claim', $payload);
         return $this->db->insert_id();
+    }
+
+    public function updateClusterStatusRfs($clusterId, $statusRfs)
+    {
+        return $this->db
+            ->where('id_cluster', $clusterId)
+            ->update('tb_rfs_myrep_cluster', [
+                'status_rfs' => $statusRfs
+            ]);
     }
 
     public function updateClaimStatus($claimId, $data)
