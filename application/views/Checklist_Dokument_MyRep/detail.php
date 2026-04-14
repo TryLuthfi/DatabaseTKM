@@ -39,9 +39,25 @@ if (!function_exists('checklist_doc_status_label')) {
     }
 }
 
+if (!function_exists('checklist_doc_percent')) {
+    function checklist_doc_percent($uploaded, $required)
+    {
+        $required = (int) $required;
+        if ($required <= 0) {
+            return 0;
+        }
+
+        return min(100, round((((int) $uploaded) / $required) * 100));
+    }
+}
+
 $clusterTabRows = isset($scopeTabs['CLUSTER']) ? $scopeTabs['CLUSTER'] : [];
 $subfeederTabRows = isset($scopeTabs['SUBFEEDER']) ? $scopeTabs['SUBFEEDER'] : [];
 $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session->userdata('nama_level') === 'Super Admin';
+$clusterProgressPercent = checklist_doc_percent(
+    ((int) $cluster['doc_cw_atp_uploaded']) + ((int) $cluster['doc_full_opm_uploaded']) + ((int) $cluster['doc_rfs_uploaded']),
+    ((int) $cluster['doc_cw_atp_required']) + ((int) $cluster['doc_full_opm_required']) + ((int) $cluster['doc_rfs_required'])
+);
 ?>
 
 <style>
@@ -151,6 +167,94 @@ $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session
     .doc-bulk-input {
         min-width: 220px;
     }
+
+    .doc-progress-wrap {
+        margin-top: .75rem;
+    }
+
+    .doc-progress-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: .35rem;
+        font-size: .88rem;
+        color: #4b5563;
+        font-weight: 600;
+    }
+
+    .doc-progress {
+        width: 100%;
+        height: 12px;
+        background: #e9eef5;
+        border-radius: 999px;
+        overflow: hidden;
+    }
+
+    .doc-progress-bar {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #17a2b8, #28a745);
+    }
+
+    .doc-progress-bar.warning {
+        background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    }
+
+    .doc-progress-bar.success {
+        background: linear-gradient(90deg, #10b981, #34d399);
+    }
+
+    .upload-dropzone {
+        position: relative;
+        background: linear-gradient(135deg, #f0fdf4, #ecfeff);
+        border: 2px dashed #60c7a0;
+        border-radius: 16px;
+        padding: 1.1rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .upload-dropzone.dragover {
+        border-color: #198754;
+        background: linear-gradient(135deg, #dcfce7, #d1fae5);
+        transform: scale(1.01);
+    }
+
+    .upload-dropzone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .upload-dropzone-content {
+        pointer-events: none;
+        text-align: center;
+    }
+
+    .upload-dropzone-icon {
+        font-size: 2rem;
+        color: #198754;
+        margin-bottom: .5rem;
+    }
+
+    .upload-dropzone-title {
+        font-weight: 700;
+        color: #166534;
+        margin-bottom: .25rem;
+    }
+
+    .upload-dropzone-text {
+        color: #4b5563;
+        font-size: .9rem;
+        margin-bottom: .35rem;
+    }
+
+    .upload-dropzone-file {
+        color: #0f766e;
+        font-weight: 600;
+        font-size: .88rem;
+    }
 </style>
 
 <div class="content-wrapper">
@@ -220,6 +324,12 @@ $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session
                                 <div class="inner">
                                     <h4><?= (int) $cluster['doc_cw_atp_uploaded'] ?>/<?= (int) $cluster['doc_cw_atp_required'] ?></h4>
                                     <p>Summary CW ATP</p>
+                                    <div class="doc-progress-wrap">
+                                        <div class="doc-progress">
+                                            <div class="doc-progress-bar <?= checklist_doc_percent((int) $cluster['doc_cw_atp_uploaded'], (int) $cluster['doc_cw_atp_required']) >= 100 ? 'success' : 'warning' ?>"
+                                                style="width: <?= checklist_doc_percent((int) $cluster['doc_cw_atp_uploaded'], (int) $cluster['doc_cw_atp_required']) ?>%"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -228,6 +338,12 @@ $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session
                                 <div class="inner">
                                     <h4><?= (int) $cluster['doc_full_opm_uploaded'] ?>/<?= (int) $cluster['doc_full_opm_required'] ?></h4>
                                     <p>Summary Full OPM</p>
+                                    <div class="doc-progress-wrap">
+                                        <div class="doc-progress">
+                                            <div class="doc-progress-bar <?= checklist_doc_percent((int) $cluster['doc_full_opm_uploaded'], (int) $cluster['doc_full_opm_required']) >= 100 ? 'success' : 'warning' ?>"
+                                                style="width: <?= checklist_doc_percent((int) $cluster['doc_full_opm_uploaded'], (int) $cluster['doc_full_opm_required']) ?>%"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -236,8 +352,23 @@ $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session
                                 <div class="inner">
                                     <h4><?= (int) $cluster['doc_rfs_uploaded'] ?>/<?= (int) $cluster['doc_rfs_required'] ?></h4>
                                     <p>Summary RFS</p>
+                                    <div class="doc-progress-wrap">
+                                        <div class="doc-progress">
+                                            <div class="doc-progress-bar <?= checklist_doc_percent((int) $cluster['doc_rfs_uploaded'], (int) $cluster['doc_rfs_required']) >= 100 ? 'success' : 'warning' ?>"
+                                                style="width: <?= checklist_doc_percent((int) $cluster['doc_rfs_uploaded'], (int) $cluster['doc_rfs_required']) ?>%"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    <div class="doc-modal-panel mt-3">
+                        <div class="doc-progress-meta">
+                            <span>Progress Checklist Cluster</span>
+                            <span><?= $clusterProgressPercent ?>%</span>
+                        </div>
+                        <div class="doc-progress">
+                            <div class="doc-progress-bar <?= $clusterProgressPercent >= 100 ? 'success' : 'warning' ?>" style="width: <?= $clusterProgressPercent ?>%"></div>
                         </div>
                     </div>
                     <div class="row">
@@ -341,6 +472,16 @@ $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session
                                         </div>
                                     </div>
                                     <div class="card-body">
+                                        <?php $groupPercent = checklist_doc_percent((int) $group['uploaded_docs'], (int) $group['required_docs']); ?>
+                                        <div class="doc-progress-wrap mb-3">
+                                            <div class="doc-progress-meta">
+                                                <span>Progress Grup</span>
+                                                <span><?= $groupPercent ?>% (<?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?>)</span>
+                                            </div>
+                                            <div class="doc-progress">
+                                                <div class="doc-progress-bar <?= $groupPercent >= 100 ? 'success' : 'warning' ?>" style="width: <?= $groupPercent ?>%"></div>
+                                            </div>
+                                        </div>
                                         <div class="row mb-3">
                                             <div class="col-md-2"><strong>RFS</strong><br><?= checklist_doc_detail_date($group['tanggal_rfs']) ?></div>
                                             <div class="col-md-2"><strong>Plan ATP</strong><br><?= checklist_doc_detail_date($group['plan_atp_date']) ?></div>
@@ -526,6 +667,16 @@ $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session
                                         </div>
                                     </div>
                                     <div class="card-body">
+                                        <?php $groupPercent = checklist_doc_percent((int) $group['uploaded_docs'], (int) $group['required_docs']); ?>
+                                        <div class="doc-progress-wrap mb-3">
+                                            <div class="doc-progress-meta">
+                                                <span>Progress Grup</span>
+                                                <span><?= $groupPercent ?>% (<?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?>)</span>
+                                            </div>
+                                            <div class="doc-progress">
+                                                <div class="doc-progress-bar <?= $groupPercent >= 100 ? 'success' : 'warning' ?>" style="width: <?= $groupPercent ?>%"></div>
+                                            </div>
+                                        </div>
                                         <div class="row mb-3">
                                             <div class="col-md-2"><strong>RFS</strong><br><?= checklist_doc_detail_date($group['tanggal_rfs']) ?></div>
                                             <div class="col-md-2"><strong>Plan ATP</strong><br><?= checklist_doc_detail_date($group['plan_atp_date']) ?></div>
@@ -741,7 +892,15 @@ $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session
                     <div class="doc-modal-panel">
                         <div class="form-group mb-0">
                             <label class="font-weight-bold">Pilih File</label>
-                            <input type="file" name="file" class="form-control" required>
+                            <div class="upload-dropzone" id="upload-dropzone">
+                                <input type="file" name="file" id="upload-file-input" required>
+                                <div class="upload-dropzone-content">
+                                    <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                    <div class="upload-dropzone-title">Drag & drop file di sini</div>
+                                    <div class="upload-dropzone-text">atau klik area ini untuk memilih file dari perangkat</div>
+                                    <div class="upload-dropzone-file" id="upload-file-name">Belum ada file dipilih</div>
+                                </div>
+                            </div>
                             <small class="form-text text-muted">Format yang didukung: PDF, Word, Excel, JPG, JPEG, PNG.</small>
                         </div>
                     </div>
@@ -787,6 +946,43 @@ $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session
 </div>
 
 <script>
+    function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
+        var dropzone = document.querySelector(dropzoneSelector);
+        var input = document.querySelector(inputSelector);
+        var label = document.querySelector(labelSelector);
+
+        if (!dropzone || !input || !label) {
+            return;
+        }
+
+        ['dragenter', 'dragover'].forEach(function(eventName) {
+            dropzone.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(function(eventName) {
+            dropzone.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('dragover');
+            });
+        });
+
+        dropzone.addEventListener('drop', function(e) {
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                input.files = e.dataTransfer.files;
+                label.textContent = e.dataTransfer.files[0].name;
+            }
+        });
+
+        input.addEventListener('change', function() {
+            label.textContent = (input.files && input.files.length > 0) ? input.files[0].name : 'Belum ada file dipilih';
+        });
+    }
+
     $(document).on('click', '.btn-edit-timeline', function() {
         $('#timeline-group-label').text($(this).data('group-label'));
         $('#timeline-cluster-id').val($(this).data('cluster-id'));
@@ -802,6 +998,8 @@ $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session
         $('#upload-package-id').val($(this).data('package-id'));
         $('#upload-item-id').val($(this).data('item-id'));
         $('#upload-doc-name-input').val($(this).data('doc-name'));
+        $('#upload-file-name').text('Belum ada file dipilih');
+        $('#upload-file-input').val('');
     });
 
     $(document).on('click', '.btn-reject-doc', function() {
@@ -810,4 +1008,6 @@ $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session
         $('#reject-file-id').val($(this).data('file-id'));
         $('#reject-remark').val('');
     });
+
+    bindDropzone('#upload-dropzone', '#upload-file-input', '#upload-file-name');
 </script>
