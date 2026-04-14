@@ -697,8 +697,15 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                         </button>
                                                                     <?php endif; ?>
                                                                     <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
-                                                                        <a href="<?= base_url('Checklist_Dokument_MyRep/approveDocument/' . (int) $item['id_doc_file'] . '/' . (int) $cluster['id_cluster']) ?>"
-                                                                            class="btn btn-sm btn-primary">Approve</a>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-primary btn-approve-doc"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modalApproveDocument"
+                                                                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>"
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">
+                                                                            Approve
+                                                                        </button>
                                                                     <?php endif; ?>
                                                                     <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'APPROVED'], true)): ?>
                                                                         <button type="button"
@@ -904,8 +911,15 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                         </button>
                                                                     <?php endif; ?>
                                                                     <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
-                                                                        <a href="<?= base_url('Checklist_Dokument_MyRep/approveDocument/' . (int) $item['id_doc_file'] . '/' . (int) $cluster['id_cluster']) ?>"
-                                                                            class="btn btn-sm btn-primary">Approve</a>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-primary btn-approve-doc"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modalApproveDocument"
+                                                                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>"
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">
+                                                                            Approve
+                                                                        </button>
                                                                     <?php endif; ?>
                                                                     <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'APPROVED'], true)): ?>
                                                                         <button type="button"
@@ -1168,6 +1182,40 @@ $clusterProgressPercent = checklist_doc_percent(
     </div>
 </div>
 
+<div class="modal fade doc-modal" id="modalApproveDocument">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/approveDocument') ?>">
+                <div class="modal-header" style="background: linear-gradient(135deg, #15803d, #16a34a);">
+                    <div>
+                        <h4 class="modal-title mb-1">Approve Dokumen</h4>
+                        <p class="mb-0" style="opacity:.9;" id="approve-doc-name"></p>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="cluster_id" id="approve-cluster-id">
+                    <input type="hidden" name="id_doc_file" id="approve-file-id">
+                    <div class="doc-modal-panel">
+                        <div class="doc-modal-title">Konfirmasi Approval</div>
+                        <p class="doc-modal-subtitle">Remarks bersifat opsional. Bisa diisi jika ingin memberi catatan saat approve.</p>
+                    </div>
+                    <div class="doc-modal-panel mb-0">
+                        <div class="form-group mb-0">
+                            <label class="font-weight-bold">Remarks</label>
+                            <textarea name="remark" id="approve-remark" class="form-control" rows="3" placeholder="Isi remarks approval jika diperlukan"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-success">Approve Dokumen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
         var dropzone = document.querySelector(dropzoneSelector);
@@ -1230,6 +1278,13 @@ $clusterProgressPercent = checklist_doc_percent(
         $('#reject-cluster-id').val($(this).data('cluster-id'));
         $('#reject-file-id').val($(this).data('file-id'));
         $('#reject-remark').val('');
+    });
+
+    $(document).on('click', '.btn-approve-doc', function() {
+        $('#approve-doc-name').text($(this).data('doc-name'));
+        $('#approve-cluster-id').val($(this).data('cluster-id'));
+        $('#approve-file-id').val($(this).data('file-id'));
+        $('#approve-remark').val('');
     });
 
     $(document).on('click', '.btn-history-doc', function() {

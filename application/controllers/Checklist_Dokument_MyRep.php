@@ -228,27 +228,36 @@ class Checklist_Dokument_MyRep extends CI_Controller
         redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
     }
 
-    public function approveDocument($fileId = 0, $clusterId = 0)
+    public function approveDocument()
     {
         if (empty($this->session->userdata('id_user'))) {
             redirect('Auth');
             return;
         }
 
+        $fileId = (int) $this->input->post('id_doc_file');
+        $clusterId = (int) $this->input->post('cluster_id');
+
         if (!$this->isApprover()) {
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses approve dokumen.');
-            redirect('Checklist_Dokument_MyRep/detail/' . (int) $clusterId);
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
         }
 
-        $this->MChecklist_Dokument_MyRep->updateFileStatus((int) $fileId, [
+        if ($fileId <= 0 || $clusterId <= 0) {
+            $this->session->set_flashdata('error', 'Dokumen tidak ditemukan.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $this->MChecklist_Dokument_MyRep->updateFileStatus($fileId, [
             'status_file' => 'APPROVED',
-            'remark' => '',
+            'remark' => trim((string) $this->input->post('remark')),
             'approved_by' => (int) $this->session->userdata('id_user'),
         ]);
 
         $this->session->set_flashdata('success', 'Dokumen berhasil di-approve.');
-        redirect('Checklist_Dokument_MyRep/detail/' . (int) $clusterId);
+        redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
     }
 
     public function rejectDocument()
