@@ -175,6 +175,63 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         transform: scale(1.01);
     }
 
+    .claim-rfs-modal .modal-content {
+        border-radius: 18px;
+        border: none;
+        overflow: hidden;
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+    }
+
+    .claim-rfs-modal .modal-header {
+        background: linear-gradient(135deg, #0f766e, #0ea5e9);
+        color: #fff;
+    }
+
+    .claim-rfs-modal .modal-body {
+        background: linear-gradient(180deg, #f8fbff, #f4f7fb);
+    }
+
+    .claim-summary-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 14px 16px;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        margin-bottom: 16px;
+    }
+
+    .claim-summary-card .summary-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: #6b7280;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+
+    .claim-summary-card .summary-value {
+        font-size: 24px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .claim-photo-dropzone {
+        border: 2px dashed #38bdf8;
+        border-radius: 14px;
+        background: #f0f9ff;
+        padding: 24px 18px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .claim-photo-dropzone.dragover {
+        border-color: #0284c7;
+        background: #e0f2fe;
+        transform: translateY(-1px);
+    }
+
     .rfs-header-myrep {
         background-color: #d9edf7;
         color: #0c5460;
@@ -982,9 +1039,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <th>RPM</th>
                                 <th>SM</th>
                                 <th>SPV</th>
-                                <th>Homepass</th>
-                                <th>Target Realistis</th>
-                                <th>Claim Masuk</th>
+                                <th>HP DRM</th>
+                                <th>HP RFS</th>
+                                <th>Deviasi</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -1006,27 +1063,11 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                         <td><?= htmlspecialchars($cluster['spv'] ?? '') ?></td>
                                         <td class="text-right"><?= number_format((float) $cluster['homepass'], 0, ',', '.') ?>
                                         </td>
-                                        <td style="min-width: 220px;">
-                                            <form method="post" action="<?= base_url('Monitoring_RFS_MyRep/saveClusterPlan') ?>"
-                                                class="form-inline">
-                                                <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
-                                                <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
-                                                <input type="hidden" name="filter_city"
-                                                    value="<?= htmlspecialchars($selectedCity) ?>">
-                                                <input type="hidden" name="filter_start_month"
-                                                    value="<?= (int) $selectedStartMonth ?>">
-                                                <input type="hidden" name="filter_end_month"
-                                                    value="<?= (int) $selectedEndMonth ?>">
-                                                <input type="hidden" name="cluster_id"
-                                                    value="<?= (int) $cluster['id_cluster'] ?>">
-                                                <input type="number" min="0" name="optimistic_target"
-                                                    value="<?= (float) $cluster['optimistic_target'] ?>"
-                                                    class="form-control form-control-sm mr-2" style="width: 110px;">
-                                                <button type="submit" class="btn btn-sm btn-primary">Simpan</button>
-                                            </form>
-                                        </td>
                                         <td class="text-right">
                                             <?= number_format((float) $cluster['claimed_qty'], 0, ',', '.') ?>
+                                        </td>
+                                        <td class="text-right">
+                                            <?= number_format((float) $cluster['homepass'] - (float) $cluster['claimed_qty'], 0, ',', '.') ?>
                                         </td>
                                         <td>
                                             <button type="button" class="btn btn-sm btn-success" data-toggle="modal"
@@ -1036,8 +1077,8 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                         </td>
                                     </tr>
 
-                                    <div class="modal fade" id="claimModal<?= (int) $cluster['id_cluster'] ?>">
-                                        <div class="modal-dialog">
+                                    <div class="modal fade claim-rfs-modal" id="claimModal<?= (int) $cluster['id_cluster'] ?>">
+                                        <div class="modal-dialog modal-xl">
                                             <div class="modal-content">
                                                 <form method="post" action="<?= base_url('Monitoring_RFS_MyRep/submitClaim') ?>"
                                                     enctype="multipart/form-data">
@@ -1060,16 +1101,31 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                             value="<?= (int) $selectedEndMonth ?>">
                                                         <input type="hidden" name="cluster_id"
                                                             value="<?= (int) $cluster['id_cluster'] ?>">
-                                                        <div class="form-group">
-                                                            <label>Tanggal RFS</label>
-                                                            <input type="date" name="claim_date" class="form-control" required>
+                                                        <div class="claim-summary-card">
+                                                            <span class="summary-label">HP DRM</span>
+                                                            <div class="summary-value">
+                                                                <?= number_format((float) $cluster['homepass'], 0, ',', '.') ?>
+                                                            </div>
                                                         </div>
                                                         <div class="form-group">
-                                                            <label>Qty Claim</label>
+                                                            <label>Tanggal RFS</label>
+                                                            <input type="date" name="claim_date" class="form-control"
+                                                                value="<?= date('Y-m-d') ?>" required>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>HP RFS</label>
                                                             <input type="number" min="1" max="<?= (int) $cluster['homepass'] ?>"
-                                                                name="claim_qty" class="form-control" required>
-                                                            <small class="text-muted">Bisa partial claim, total maksimal
-                                                                mengikuti homepass cluster.</small>
+                                                                name="claim_qty" class="form-control claim-rfs-qty-input"
+                                                                data-homepass="<?= (int) $cluster['homepass'] ?>"
+                                                                data-deviasi-target="#claim_rfs_deviasi_<?= (int) $cluster['id_cluster'] ?>"
+                                                                required>
+                                                            <small class="text-muted">Isi sesuai HP RFS actual pada cluster ini.</small>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Deviasi</label>
+                                                            <input type="text" id="claim_rfs_deviasi_<?= (int) $cluster['id_cluster'] ?>" class="form-control claim-rfs-deviasi-output"
+                                                                value="<?= number_format((float) $cluster['homepass'], 0, ',', '.') ?>" readonly>
+                                                            <small class="text-muted">Deviasi = HP DRM - HP RFS</small>
                                                         </div>
                                                         <div class="form-group">
                                                             <label>Status RFS</label>
@@ -1082,8 +1138,13 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                         </div>
                                                         <div class="form-group">
                                                             <label>Foto Claim</label>
-                                                            <input type="file" name="claim_photo" class="form-control"
-                                                                accept=".jpg,.jpeg,.png,.webp" required>
+                                                            <div class="claim-photo-dropzone">
+                                                                <input type="file" name="claim_photo" class="claim-photo-input" accept=".jpg,.jpeg,.png,.webp" hidden required>
+                                                                <h6 class="mb-2">Drop foto claim di sini</h6>
+                                                                <p class="text-muted mb-2">atau klik area ini untuk pilih file gambar</p>
+                                                                <span class="btn btn-outline-primary btn-sm">Pilih Foto</span>
+                                                                <div class="small text-muted mt-2 claim-photo-filename">Belum ada file dipilih</div>
+                                                            </div>
                                                         </div>
                                                         <div class="form-group">
                                                             <label>Keterangan</label>
@@ -1678,7 +1739,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         initAdminLteTable('#table_rfs_cluster_list', [[1, 'asc'], [2, 'asc']], function () {
             var api = this.api();
             setFooterValue(api, 7, sumColumn(api, 7), 0);
-            setFooterValue(api, 8, sumColumn(api, 8, true), 0);
+            setFooterValue(api, 8, sumColumn(api, 8), 0);
             setFooterValue(api, 9, sumColumn(api, 9), 0);
         });
         addRowNumbers('#table_rfs_cluster_list', 0);
@@ -1871,6 +1932,75 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                 error: function () {
                     alert('Terjadi kesalahan saat menyimpan import cluster');
                 }
+            });
+        });
+
+        function updateClaimRfsDeviasi($input) {
+            var homepass = parseLocaleNumber($input.data('homepass') || 0);
+            var claimQty = parseLocaleNumber($input.val() || 0);
+            var targetSelector = String($input.data('deviasi-target') || '');
+            var deviasi = homepass - claimQty;
+            if (deviasi < 0) {
+                deviasi = 0;
+            }
+
+            if (targetSelector) {
+                $(targetSelector).val(formatLocaleNumber(deviasi, 0));
+                return;
+            }
+
+            $input.closest('.modal-content').find('.claim-rfs-deviasi-output').first().val(formatLocaleNumber(deviasi, 0));
+        }
+
+        $(document).on('input keyup change paste', '.claim-rfs-qty-input', function () {
+            updateClaimRfsDeviasi($(this));
+        });
+
+        $(document).on('click', '.claim-photo-dropzone', function (e) {
+            if ($(e.target).is('.claim-photo-input')) {
+                return;
+            }
+
+            $(this).find('.claim-photo-input').trigger('click');
+        });
+
+        $(document).on('dragover', '.claim-photo-dropzone', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).addClass('dragover');
+        });
+
+        $(document).on('dragleave', '.claim-photo-dropzone', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('dragover');
+        });
+
+        $(document).on('drop', '.claim-photo-dropzone', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('dragover');
+
+            var files = e.originalEvent.dataTransfer.files;
+            if (files && files.length) {
+                $(this).find('.claim-photo-input')[0].files = files;
+                $(this).find('.claim-photo-input').trigger('change');
+            }
+        });
+
+        $(document).on('change', '.claim-photo-input', function () {
+            var file = this.files && this.files[0] ? this.files[0] : null;
+            var fileName = file ? file.name : 'Belum ada file dipilih';
+            $(this).closest('.claim-photo-dropzone').find('.claim-photo-filename').text(fileName);
+        });
+
+        $('.claim-rfs-qty-input').each(function () {
+            updateClaimRfsDeviasi($(this));
+        });
+
+        $(document).on('shown.bs.modal', '.claim-rfs-modal', function () {
+            $(this).find('.claim-rfs-qty-input').each(function () {
+                updateClaimRfsDeviasi($(this));
             });
         });
 

@@ -84,7 +84,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         $payload = [
-            'tanggal_rfs' => $this->normalizeDateInput($this->input->post('tanggal_rfs')),
+            'tanggal_rfs' => null,
             'actual_atp_date' => $this->normalizeDateInput($this->input->post('actual_atp_date')),
             'remarks' => trim((string) $this->input->post('remarks')),
             'updated_by' => (int) $this->session->userdata('id_user'),

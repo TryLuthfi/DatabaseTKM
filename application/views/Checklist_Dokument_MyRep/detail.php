@@ -1126,8 +1126,8 @@ $clusterProgressPercent = checklist_doc_percent(
                         <div class="doc-modal-panel">
                             <div class="form-group mb-0">
                                 <label class="font-weight-bold">Tanggal RFS</label>
-                                <input type="date" name="tanggal_rfs" id="timeline-tanggal-rfs" class="form-control">
-                                <small class="form-text text-muted">Menjadi dasar perhitungan `Plan ATP`.</small>
+                                <input type="date" name="tanggal_rfs_display" id="timeline-tanggal-rfs" class="form-control" readonly disabled>
+                                <small class="form-text text-muted">Tanggal RFS dikunci dan menjadi dasar perhitungan `Plan ATP`.</small>
                             </div>
                         </div>
                         <div class="doc-modal-panel">
@@ -1254,6 +1254,18 @@ $clusterProgressPercent = checklist_doc_percent(
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
             <div class="modal-body">
+                <div class="doc-modal-panel">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="doc-modal-title mb-1">Kota</div>
+                            <p class="doc-modal-subtitle mb-0"><?= !empty($cluster['city_name']) ? $cluster['city_name'] : '-' ?></p>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="doc-modal-title mb-1">Cluster</div>
+                            <p class="doc-modal-subtitle mb-0"><?= !empty($cluster['cluster_name']) ? $cluster['cluster_name'] : '-' ?></p>
+                        </div>
+                    </div>
+                </div>
                 <div class="doc-modal-panel">
                     <div class="doc-modal-title" id="history-doc-title">-</div>
                     <p class="doc-modal-subtitle">File lama otomatis dihapus dari storage. History hanya menyimpan jejak prosesnya.</p>
