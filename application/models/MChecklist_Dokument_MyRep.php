@@ -490,15 +490,16 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         $fileSummary = $this->getFileSummaryByPackageIds($packageIds);
+        $fileStatusSummary = $this->getFileStatusSummaryByPackageIds($packageIds);
         $result = [];
 
         foreach ($rows as $row) {
             $clusterId = (int) $row['id_cluster'];
             $clusterPackages = isset($packagesByCluster[$clusterId]) ? $packagesByCluster[$clusterId] : [];
             $docSummary = [
-                'CW ATP' => ['uploaded' => 0, 'required' => 0],
-                'FULL OPM' => ['uploaded' => 0, 'required' => 0],
-                'RFS' => ['uploaded' => 0, 'required' => 0],
+                'CW ATP' => ['uploaded' => 0, 'required' => 0, 'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'ny' => 0],
+                'FULL OPM' => ['uploaded' => 0, 'required' => 0, 'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'ny' => 0],
+                'RFS' => ['uploaded' => 0, 'required' => 0, 'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'ny' => 0],
             ];
             $planAtpDates = [];
             $actualAtpDates = [];
@@ -512,9 +513,19 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 $required = (int) $group['required_docs'];
                 $uploaded = ($packageId > 0 && isset($fileSummary[$packageId])) ? (int) $fileSummary[$packageId]['uploaded_docs'] : 0;
                 $sowType = (string) $group['sow_type'];
+                $statusSummary = ($packageId > 0 && isset($fileStatusSummary[$packageId])) ? $fileStatusSummary[$packageId] : [
+                    'approved' => 0,
+                    'on_review' => 0,
+                    'rejected' => 0,
+                    'existing' => 0,
+                ];
 
                 $docSummary[$sowType]['required'] += $required;
                 $docSummary[$sowType]['uploaded'] += min($uploaded, $required);
+                $docSummary[$sowType]['approved'] += (int) $statusSummary['approved'];
+                $docSummary[$sowType]['on_review'] += (int) $statusSummary['on_review'];
+                $docSummary[$sowType]['rejected'] += (int) $statusSummary['rejected'];
+                $docSummary[$sowType]['ny'] += max(0, $required - (int) $statusSummary['existing']);
 
                 $planAtp = $this->normalizeDate($package['plan_atp_date'] ?? null);
                 $actualAtp = $this->normalizeDate($package['actual_atp_date'] ?? null);
@@ -558,10 +569,22 @@ class MChecklist_Dokument_MyRep extends CI_Model
             $row['aging_doc_days'] = $this->calculateAgingDays($summaryPlanDoc, $summaryActualDoc);
             $row['doc_cw_atp_uploaded'] = $docSummary['CW ATP']['uploaded'];
             $row['doc_cw_atp_required'] = $docSummary['CW ATP']['required'];
+            $row['doc_cw_atp_approved'] = $docSummary['CW ATP']['approved'];
+            $row['doc_cw_atp_on_review'] = $docSummary['CW ATP']['on_review'];
+            $row['doc_cw_atp_rejected'] = $docSummary['CW ATP']['rejected'];
+            $row['doc_cw_atp_ny'] = $docSummary['CW ATP']['ny'];
             $row['doc_full_opm_uploaded'] = $docSummary['FULL OPM']['uploaded'];
             $row['doc_full_opm_required'] = $docSummary['FULL OPM']['required'];
+            $row['doc_full_opm_approved'] = $docSummary['FULL OPM']['approved'];
+            $row['doc_full_opm_on_review'] = $docSummary['FULL OPM']['on_review'];
+            $row['doc_full_opm_rejected'] = $docSummary['FULL OPM']['rejected'];
+            $row['doc_full_opm_ny'] = $docSummary['FULL OPM']['ny'];
             $row['doc_rfs_uploaded'] = $docSummary['RFS']['uploaded'];
             $row['doc_rfs_required'] = $docSummary['RFS']['required'];
+            $row['doc_rfs_approved'] = $docSummary['RFS']['approved'];
+            $row['doc_rfs_on_review'] = $docSummary['RFS']['on_review'];
+            $row['doc_rfs_rejected'] = $docSummary['RFS']['rejected'];
+            $row['doc_rfs_ny'] = $docSummary['RFS']['ny'];
 
             $result[] = $row;
         }
@@ -648,6 +671,39 @@ class MChecklist_Dokument_MyRep extends CI_Model
             $summary[(int) $row['id_doc_package']] = [
                 'uploaded_docs' => (int) $row['uploaded_docs'],
                 'approved_docs' => (int) $row['approved_docs'],
+            ];
+        }
+
+        return $summary;
+    }
+
+    private function getFileStatusSummaryByPackageIds($packageIds)
+    {
+        if (empty($packageIds)) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select("
+                id_doc_package,
+                SUM(CASE WHEN status_file = 'APPROVED' THEN 1 ELSE 0 END) AS approved,
+                SUM(CASE WHEN status_file = 'UPLOADED' THEN 1 ELSE 0 END) AS on_review,
+                SUM(CASE WHEN status_file = 'REJECTED' THEN 1 ELSE 0 END) AS rejected,
+                COUNT(*) AS existing
+            ", false)
+            ->from('tb_rfs_myrep_doc_file')
+            ->where_in('id_doc_package', $packageIds)
+            ->group_by('id_doc_package')
+            ->get()
+            ->result_array();
+
+        $summary = [];
+        foreach ($rows as $row) {
+            $summary[(int) $row['id_doc_package']] = [
+                'approved' => (int) $row['approved'],
+                'on_review' => (int) $row['on_review'],
+                'rejected' => (int) $row['rejected'],
+                'existing' => (int) $row['existing'],
             ];
         }
 
