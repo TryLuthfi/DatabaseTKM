@@ -407,13 +407,17 @@ foreach ($clusterList as $cluster) {
                                 <th>CW ATP</th>
                                 <th>FULL OPM</th>
                                 <th>FULL RFS</th>
+                                <th>Timeline Astri</th>
+                                <th>ASTRI CW ATP</th>
+                                <th>ASTRI FULL OPM</th>
+                                <th>ASTRI FULL RFS</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($clusterList)): ?>
                                 <tr>
-                                    <td colspan="9" class="text-center">Belum ada cluster FULL RFS.</td>
+                                    <td colspan="13" class="text-center">Belum ada cluster FULL RFS.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php $no = 1; ?>
@@ -425,6 +429,12 @@ foreach ($clusterList as $cluster) {
                                     $opmTheme = checklist_doc_progress_theme($cluster['doc_full_opm_uploaded'], $cluster['doc_full_opm_required']);
                                     $rfsPercent = checklist_doc_progress_percent($cluster['doc_rfs_uploaded'], $cluster['doc_rfs_required']);
                                     $rfsTheme = checklist_doc_progress_theme($cluster['doc_rfs_uploaded'], $cluster['doc_rfs_required']);
+                                    $astriCwPercent = checklist_doc_progress_percent($cluster['astri_doc_cw_atp_submitted'], $cluster['doc_cw_atp_required']);
+                                    $astriCwTheme = checklist_doc_progress_theme($cluster['astri_doc_cw_atp_submitted'], $cluster['doc_cw_atp_required']);
+                                    $astriOpmPercent = checklist_doc_progress_percent($cluster['astri_doc_full_opm_submitted'], $cluster['doc_full_opm_required']);
+                                    $astriOpmTheme = checklist_doc_progress_theme($cluster['astri_doc_full_opm_submitted'], $cluster['doc_full_opm_required']);
+                                    $astriRfsPercent = checklist_doc_progress_percent($cluster['astri_doc_rfs_submitted'], $cluster['doc_rfs_required']);
+                                    $astriRfsTheme = checklist_doc_progress_theme($cluster['astri_doc_rfs_submitted'], $cluster['doc_rfs_required']);
                                     ?>
                                     <tr>
                                         <td><?= $no++ ?></td>
@@ -569,6 +579,131 @@ foreach ($clusterList as $cluster) {
                                                     <div class="doc-status-item">
                                                         <span class="doc-status-label">Approved</span>
                                                         <span class="doc-status-value"><?= (int) $cluster['doc_rfs_approved'] ?></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="timeline-stack">
+                                                <div class="timeline-item">
+                                                    <span class="timeline-label">Submit Astri</span>
+                                                    <div class="timeline-value"><?= checklist_doc_format_date($cluster['submit_astri_date']) ?></div>
+                                                </div>
+                                                <div class="timeline-item">
+                                                    <span class="timeline-label">Approved Astri</span>
+                                                    <div class="timeline-value"><?= checklist_doc_format_date($cluster['approved_astri_date']) ?></div>
+                                                    <?php
+                                                    $astriAgingDays = null;
+                                                    if (!empty($cluster['submit_astri_date'])) {
+                                                        $start = new DateTime($cluster['submit_astri_date']);
+                                                        $end = new DateTime(!empty($cluster['approved_astri_date']) ? $cluster['approved_astri_date'] : date('Y-m-d'));
+                                                        $invert = $start > $end ? -1 : 1;
+                                                        $diff = $start->diff($end);
+                                                        $astriAgingDays = $diff->days * $invert;
+                                                    }
+                                                    ?>
+                                                    <?php if ($astriAgingDays === null): ?>
+                                                        <span class="badge badge-secondary">Aging -</span>
+                                                    <?php else: ?>
+                                                        <span class="badge badge-<?= checklist_doc_aging_badge($astriAgingDays) ?>">
+                                                            Aging <?= (int) $astriAgingDays ?> hari
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="doc-card <?= $astriCwTheme['box'] ?>">
+                                                <div class="doc-card-head">
+                                                    <div>
+                                                        <div class="doc-card-title">ASTRI CW ATP</div>
+                                                        <div class="doc-card-subtitle">Submit <?= (int) $cluster['astri_doc_cw_atp_submitted'] ?>/<?= (int) $cluster['doc_cw_atp_required'] ?></div>
+                                                    </div>
+                                                    <div class="doc-card-progress <?= $astriCwTheme['tone'] ?>"><?= $astriCwPercent ?>%</div>
+                                                </div>
+                                                <div class="doc-progress-track">
+                                                    <div class="doc-progress-bar <?= $astriCwTheme['bar'] ?>" style="width: <?= $astriCwPercent ?>%;"></div>
+                                                </div>
+                                                <div class="doc-status-grid">
+                                                    <div class="doc-status-item">
+                                                        <span class="doc-status-label">NY</span>
+                                                        <span class="doc-status-value"><?= (int) $cluster['astri_doc_cw_atp_ny'] ?></span>
+                                                    </div>
+                                                    <div class="doc-status-item">
+                                                        <span class="doc-status-label">On Review</span>
+                                                        <span class="doc-status-value"><?= (int) $cluster['astri_doc_cw_atp_on_review'] ?></span>
+                                                    </div>
+                                                    <div class="doc-status-item">
+                                                        <span class="doc-status-label">Reject</span>
+                                                        <span class="doc-status-value"><?= (int) $cluster['astri_doc_cw_atp_rejected'] ?></span>
+                                                    </div>
+                                                    <div class="doc-status-item">
+                                                        <span class="doc-status-label">Approved</span>
+                                                        <span class="doc-status-value"><?= (int) $cluster['astri_doc_cw_atp_approved'] ?></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="doc-card <?= $astriOpmTheme['box'] ?>">
+                                                <div class="doc-card-head">
+                                                    <div>
+                                                        <div class="doc-card-title">ASTRI FULL OPM</div>
+                                                        <div class="doc-card-subtitle">Submit <?= (int) $cluster['astri_doc_full_opm_submitted'] ?>/<?= (int) $cluster['doc_full_opm_required'] ?></div>
+                                                    </div>
+                                                    <div class="doc-card-progress <?= $astriOpmTheme['tone'] ?>"><?= $astriOpmPercent ?>%</div>
+                                                </div>
+                                                <div class="doc-progress-track">
+                                                    <div class="doc-progress-bar <?= $astriOpmTheme['bar'] ?>" style="width: <?= $astriOpmPercent ?>%;"></div>
+                                                </div>
+                                                <div class="doc-status-grid">
+                                                    <div class="doc-status-item">
+                                                        <span class="doc-status-label">NY</span>
+                                                        <span class="doc-status-value"><?= (int) $cluster['astri_doc_full_opm_ny'] ?></span>
+                                                    </div>
+                                                    <div class="doc-status-item">
+                                                        <span class="doc-status-label">On Review</span>
+                                                        <span class="doc-status-value"><?= (int) $cluster['astri_doc_full_opm_on_review'] ?></span>
+                                                    </div>
+                                                    <div class="doc-status-item">
+                                                        <span class="doc-status-label">Reject</span>
+                                                        <span class="doc-status-value"><?= (int) $cluster['astri_doc_full_opm_rejected'] ?></span>
+                                                    </div>
+                                                    <div class="doc-status-item">
+                                                        <span class="doc-status-label">Approved</span>
+                                                        <span class="doc-status-value"><?= (int) $cluster['astri_doc_full_opm_approved'] ?></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="doc-card <?= $astriRfsTheme['box'] ?>">
+                                                <div class="doc-card-head">
+                                                    <div>
+                                                        <div class="doc-card-title">ASTRI FULL RFS</div>
+                                                        <div class="doc-card-subtitle">Submit <?= (int) $cluster['astri_doc_rfs_submitted'] ?>/<?= (int) $cluster['doc_rfs_required'] ?></div>
+                                                    </div>
+                                                    <div class="doc-card-progress <?= $astriRfsTheme['tone'] ?>"><?= $astriRfsPercent ?>%</div>
+                                                </div>
+                                                <div class="doc-progress-track">
+                                                    <div class="doc-progress-bar <?= $astriRfsTheme['bar'] ?>" style="width: <?= $astriRfsPercent ?>%;"></div>
+                                                </div>
+                                                <div class="doc-status-grid">
+                                                    <div class="doc-status-item">
+                                                        <span class="doc-status-label">NY</span>
+                                                        <span class="doc-status-value"><?= (int) $cluster['astri_doc_rfs_ny'] ?></span>
+                                                    </div>
+                                                    <div class="doc-status-item">
+                                                        <span class="doc-status-label">On Review</span>
+                                                        <span class="doc-status-value"><?= (int) $cluster['astri_doc_rfs_on_review'] ?></span>
+                                                    </div>
+                                                    <div class="doc-status-item">
+                                                        <span class="doc-status-label">Reject</span>
+                                                        <span class="doc-status-value"><?= (int) $cluster['astri_doc_rfs_rejected'] ?></span>
+                                                    </div>
+                                                    <div class="doc-status-item">
+                                                        <span class="doc-status-label">Approved</span>
+                                                        <span class="doc-status-value"><?= (int) $cluster['astri_doc_rfs_approved'] ?></span>
                                                     </div>
                                                 </div>
                                             </div>

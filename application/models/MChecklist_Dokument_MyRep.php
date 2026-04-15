@@ -234,6 +234,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
                         'uploaded_at' => $this->normalizeDateTime($itemFile['uploaded_at'] ?? null),
                         'reviewed_at' => $this->normalizeDateTime($itemFile['reviewed_at'] ?? null),
                         'approved_at' => $this->normalizeDateTime($itemFile['approved_at'] ?? null),
+                        'astri_submitted_date' => $this->normalizeDate($itemFile['astri_submitted_date'] ?? null),
+                        'astri_status' => (string) ($itemFile['astri_status'] ?? 'NY'),
+                        'astri_status_updated_at' => $this->normalizeDateTime($itemFile['astri_status_updated_at'] ?? null),
+                        'astri_remark' => (string) ($itemFile['astri_remark'] ?? ''),
                         'history' => [],
                     ];
                 }
@@ -434,6 +438,30 @@ class MChecklist_Dokument_MyRep extends CI_Model
         return $result;
     }
 
+    public function updateAstriStatus($fileId, $data)
+    {
+        $file = $this->db->get_where('tb_rfs_myrep_doc_file', [
+            'id_doc_file' => (int) $fileId,
+        ])->row_array();
+
+        if (!$file) {
+            return false;
+        }
+
+        $status = (string) $data['astri_status'];
+        $submittedDate = !empty($data['astri_submitted_date']) ? $data['astri_submitted_date'] : null;
+        $updatedAt = $status === 'NY' ? null : date('Y-m-d H:i:s');
+
+        return $this->db
+            ->where('id_doc_file', (int) $fileId)
+            ->update('tb_rfs_myrep_doc_file', [
+                'astri_submitted_date' => $submittedDate,
+                'astri_status' => $status,
+                'astri_status_updated_at' => $updatedAt,
+                'astri_remark' => (string) $data['astri_remark'],
+            ]);
+    }
+
     public function getFileById($fileId)
     {
         return $this->db
@@ -497,14 +525,19 @@ class MChecklist_Dokument_MyRep extends CI_Model
             $clusterId = (int) $row['id_cluster'];
             $clusterPackages = isset($packagesByCluster[$clusterId]) ? $packagesByCluster[$clusterId] : [];
             $docSummary = [
-                'CW ATP' => ['uploaded' => 0, 'required' => 0, 'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'ny' => 0],
-                'FULL OPM' => ['uploaded' => 0, 'required' => 0, 'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'ny' => 0],
-                'RFS' => ['uploaded' => 0, 'required' => 0, 'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'ny' => 0],
+                'CW ATP' => ['uploaded' => 0, 'required' => 0, 'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'ny' => 0, 'astri_submitted' => 0, 'astri_approved' => 0, 'astri_on_review' => 0, 'astri_rejected' => 0, 'astri_ny' => 0],
+                'FULL OPM' => ['uploaded' => 0, 'required' => 0, 'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'ny' => 0, 'astri_submitted' => 0, 'astri_approved' => 0, 'astri_on_review' => 0, 'astri_rejected' => 0, 'astri_ny' => 0],
+                'RFS' => ['uploaded' => 0, 'required' => 0, 'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'ny' => 0, 'astri_submitted' => 0, 'astri_approved' => 0, 'astri_on_review' => 0, 'astri_rejected' => 0, 'astri_ny' => 0],
             ];
             $planAtpDates = [];
             $actualAtpDates = [];
             $planDocDates = [];
             $actualDocDates = [];
+            $astriSubmittedDates = [];
+            $astriApprovedDates = [];
+            $totalRequiredDocs = 0;
+            $totalAstriSubmittedDocs = 0;
+            $totalAstriApprovedDocs = 0;
 
             foreach ($groups as $group) {
                 $groupId = (int) $group['id_doc_group'];
@@ -518,6 +551,12 @@ class MChecklist_Dokument_MyRep extends CI_Model
                     'on_review' => 0,
                     'rejected' => 0,
                     'existing' => 0,
+                    'astri_approved' => 0,
+                    'astri_on_review' => 0,
+                    'astri_rejected' => 0,
+                    'astri_submitted' => 0,
+                    'astri_latest_submitted_date' => null,
+                    'astri_latest_approved_date' => null,
                 ];
 
                 $docSummary[$sowType]['required'] += $required;
@@ -526,6 +565,22 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 $docSummary[$sowType]['on_review'] += (int) $statusSummary['on_review'];
                 $docSummary[$sowType]['rejected'] += (int) $statusSummary['rejected'];
                 $docSummary[$sowType]['ny'] += max(0, $required - (int) $statusSummary['existing']);
+                $docSummary[$sowType]['astri_submitted'] += (int) $statusSummary['astri_submitted'];
+                $docSummary[$sowType]['astri_approved'] += (int) $statusSummary['astri_approved'];
+                $docSummary[$sowType]['astri_on_review'] += (int) $statusSummary['astri_on_review'];
+                $docSummary[$sowType]['astri_rejected'] += (int) $statusSummary['astri_rejected'];
+                $docSummary[$sowType]['astri_ny'] += max(0, $required - (int) $statusSummary['astri_submitted']);
+                $totalRequiredDocs += $required;
+                $totalAstriSubmittedDocs += (int) $statusSummary['astri_submitted'];
+                $totalAstriApprovedDocs += (int) $statusSummary['astri_approved'];
+
+                if (!empty($statusSummary['astri_latest_submitted_date'])) {
+                    $astriSubmittedDates[] = $statusSummary['astri_latest_submitted_date'];
+                }
+
+                if (!empty($statusSummary['astri_latest_approved_date'])) {
+                    $astriApprovedDates[] = $statusSummary['astri_latest_approved_date'];
+                }
 
                 $planAtp = $this->normalizeDate($package['plan_atp_date'] ?? null);
                 $actualAtp = $this->normalizeDate($package['actual_atp_date'] ?? null);
@@ -559,12 +614,20 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 $summaryPlanDoc = null;
             }
             $summaryActualDoc = !empty($actualDocDates) ? max($actualDocDates) : null;
+            $summarySubmitAstri = ($totalRequiredDocs > 0 && $totalAstriSubmittedDocs >= $totalRequiredDocs && !empty($astriSubmittedDates))
+                ? max($astriSubmittedDates)
+                : null;
+            $summaryApprovedAstri = ($totalRequiredDocs > 0 && $totalAstriApprovedDocs >= $totalRequiredDocs && !empty($astriApprovedDates))
+                ? max($astriApprovedDates)
+                : null;
 
             $row['tanggal_rfs'] = $tanggalRfs;
             $row['plan_atp_date'] = $summaryPlanAtp;
             $row['actual_atp_date'] = $summaryActualAtp;
             $row['plan_submit_doc_date'] = $summaryPlanDoc;
             $row['actual_submit_doc_date'] = $summaryActualDoc;
+            $row['submit_astri_date'] = $summarySubmitAstri;
+            $row['approved_astri_date'] = $summaryApprovedAstri;
             $row['aging_atp_days'] = $this->calculateAgingDays($summaryPlanAtp, $summaryActualAtp);
             $row['aging_doc_days'] = $this->calculateAgingDays($summaryPlanDoc, $summaryActualDoc);
             $row['doc_cw_atp_uploaded'] = $docSummary['CW ATP']['uploaded'];
@@ -573,18 +636,33 @@ class MChecklist_Dokument_MyRep extends CI_Model
             $row['doc_cw_atp_on_review'] = $docSummary['CW ATP']['on_review'];
             $row['doc_cw_atp_rejected'] = $docSummary['CW ATP']['rejected'];
             $row['doc_cw_atp_ny'] = $docSummary['CW ATP']['ny'];
+            $row['astri_doc_cw_atp_submitted'] = $docSummary['CW ATP']['astri_submitted'];
+            $row['astri_doc_cw_atp_approved'] = $docSummary['CW ATP']['astri_approved'];
+            $row['astri_doc_cw_atp_on_review'] = $docSummary['CW ATP']['astri_on_review'];
+            $row['astri_doc_cw_atp_rejected'] = $docSummary['CW ATP']['astri_rejected'];
+            $row['astri_doc_cw_atp_ny'] = $docSummary['CW ATP']['astri_ny'];
             $row['doc_full_opm_uploaded'] = $docSummary['FULL OPM']['uploaded'];
             $row['doc_full_opm_required'] = $docSummary['FULL OPM']['required'];
             $row['doc_full_opm_approved'] = $docSummary['FULL OPM']['approved'];
             $row['doc_full_opm_on_review'] = $docSummary['FULL OPM']['on_review'];
             $row['doc_full_opm_rejected'] = $docSummary['FULL OPM']['rejected'];
             $row['doc_full_opm_ny'] = $docSummary['FULL OPM']['ny'];
+            $row['astri_doc_full_opm_submitted'] = $docSummary['FULL OPM']['astri_submitted'];
+            $row['astri_doc_full_opm_approved'] = $docSummary['FULL OPM']['astri_approved'];
+            $row['astri_doc_full_opm_on_review'] = $docSummary['FULL OPM']['astri_on_review'];
+            $row['astri_doc_full_opm_rejected'] = $docSummary['FULL OPM']['astri_rejected'];
+            $row['astri_doc_full_opm_ny'] = $docSummary['FULL OPM']['astri_ny'];
             $row['doc_rfs_uploaded'] = $docSummary['RFS']['uploaded'];
             $row['doc_rfs_required'] = $docSummary['RFS']['required'];
             $row['doc_rfs_approved'] = $docSummary['RFS']['approved'];
             $row['doc_rfs_on_review'] = $docSummary['RFS']['on_review'];
             $row['doc_rfs_rejected'] = $docSummary['RFS']['rejected'];
             $row['doc_rfs_ny'] = $docSummary['RFS']['ny'];
+            $row['astri_doc_rfs_submitted'] = $docSummary['RFS']['astri_submitted'];
+            $row['astri_doc_rfs_approved'] = $docSummary['RFS']['astri_approved'];
+            $row['astri_doc_rfs_on_review'] = $docSummary['RFS']['astri_on_review'];
+            $row['astri_doc_rfs_rejected'] = $docSummary['RFS']['astri_rejected'];
+            $row['astri_doc_rfs_ny'] = $docSummary['RFS']['astri_ny'];
 
             $result[] = $row;
         }
@@ -689,7 +767,13 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 SUM(CASE WHEN status_file = 'APPROVED' THEN 1 ELSE 0 END) AS approved,
                 SUM(CASE WHEN status_file = 'UPLOADED' THEN 1 ELSE 0 END) AS on_review,
                 SUM(CASE WHEN status_file = 'REJECTED' THEN 1 ELSE 0 END) AS rejected,
-                COUNT(*) AS existing
+                COUNT(*) AS existing,
+                SUM(CASE WHEN astri_status = 'APPROVED' THEN 1 ELSE 0 END) AS astri_approved,
+                SUM(CASE WHEN astri_status = 'ON REVIEW' THEN 1 ELSE 0 END) AS astri_on_review,
+                SUM(CASE WHEN astri_status = 'REJECTED' THEN 1 ELSE 0 END) AS astri_rejected,
+                SUM(CASE WHEN astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED') THEN 1 ELSE 0 END) AS astri_submitted,
+                MAX(CASE WHEN astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED') AND astri_submitted_date IS NOT NULL THEN astri_submitted_date ELSE NULL END) AS astri_latest_submitted_date,
+                MAX(CASE WHEN astri_status = 'APPROVED' AND astri_status_updated_at IS NOT NULL THEN DATE(astri_status_updated_at) ELSE NULL END) AS astri_latest_approved_date
             ", false)
             ->from('tb_rfs_myrep_doc_file')
             ->where_in('id_doc_package', $packageIds)
@@ -704,6 +788,12 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 'on_review' => (int) $row['on_review'],
                 'rejected' => (int) $row['rejected'],
                 'existing' => (int) $row['existing'],
+                'astri_approved' => (int) $row['astri_approved'],
+                'astri_on_review' => (int) $row['astri_on_review'],
+                'astri_rejected' => (int) $row['astri_rejected'],
+                'astri_submitted' => (int) $row['astri_submitted'],
+                'astri_latest_submitted_date' => $this->normalizeDate($row['astri_latest_submitted_date'] ?? null),
+                'astri_latest_approved_date' => $this->normalizeDate($row['astri_latest_approved_date'] ?? null),
             ];
         }
 
@@ -717,7 +807,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         return $this->db
-            ->select('id_doc_file, id_doc_package, id_doc_item, file_name, file_path, is_document_not_required, status_file, remark, uploaded_at, reviewed_at, approved_at')
+            ->select('id_doc_file, id_doc_package, id_doc_item, file_name, file_path, is_document_not_required, status_file, remark, uploaded_at, reviewed_at, approved_at, astri_submitted_date, astri_status, astri_status_updated_at, astri_remark')
             ->from('tb_rfs_myrep_doc_file')
             ->where_in('id_doc_package', $packageIds)
             ->get()

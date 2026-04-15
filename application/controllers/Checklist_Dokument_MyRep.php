@@ -310,6 +310,67 @@ class Checklist_Dokument_MyRep extends CI_Controller
         redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
     }
 
+    public function saveAstriStatus()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $fileId = (int) $this->input->post('id_doc_file');
+        $astriStatus = trim((string) $this->input->post('astri_status'));
+        $astriSubmittedDate = $this->normalizeDateInput($this->input->post('astri_submitted_date'));
+        $astriRemark = trim((string) $this->input->post('astri_remark'));
+
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses update status ASTRI.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        if ($clusterId <= 0 || $fileId <= 0) {
+            $this->session->set_flashdata('error', 'Data ASTRI tidak valid.');
+            redirect('Checklist_Dokument_MyRep');
+            return;
+        }
+
+        $allowedStatuses = ['NY', 'ON REVIEW', 'REJECTED', 'APPROVED'];
+        if (!in_array($astriStatus, $allowedStatuses, true)) {
+            $this->session->set_flashdata('error', 'Status ASTRI tidak dikenali.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $file = $this->MChecklist_Dokument_MyRep->getFileById($fileId);
+        if (empty($file)) {
+            $this->session->set_flashdata('error', 'Dokumen tidak ditemukan.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        if ($file['status_file'] !== 'APPROVED' && $astriStatus !== 'NY') {
+            $this->session->set_flashdata('error', 'Dokumen internal harus APPROVED sebelum di-submit ke ASTRI.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        if ($astriStatus !== 'NY' && empty($astriSubmittedDate)) {
+            $this->session->set_flashdata('error', 'Tanggal submit ASTRI wajib diisi untuk status selain NY.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $this->MChecklist_Dokument_MyRep->updateAstriStatus($fileId, [
+            'astri_submitted_date' => $astriStatus === 'NY' ? null : $astriSubmittedDate,
+            'astri_status' => $astriStatus,
+            'astri_remark' => $astriRemark,
+        ]);
+
+        $this->session->set_flashdata('success', 'Status ASTRI berhasil diperbarui.');
+        redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+    }
+
     public function previewDocument($fileId = 0)
     {
         if (empty($this->session->userdata('id_user'))) {

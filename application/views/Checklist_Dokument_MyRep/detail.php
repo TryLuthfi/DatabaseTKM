@@ -20,6 +20,7 @@ if (!function_exists('checklist_doc_status_badge')) {
             case 'REJECTED':
                 return 'danger';
             case 'UPLOADED':
+            case 'ON REVIEW':
             case 'ON PROGRESS':
                 return 'warning';
             default:
@@ -660,24 +661,26 @@ $clusterProgressPercent = checklist_doc_percent(
                                         <div class="table-responsive">
                                             <table class="table table-bordered table-hover">
                                                 <thead class="thead-dark">
-                                                    <tr>
-                                                        <th>No</th>
-                                                        <th>Nama Dokumen</th>
-                                                        <th>Status</th>
-                                                        <th>File</th>
-                                                        <th>Uploaded At</th>
-                                                        <th>Reviewed At</th>
-                                                        <th>Approved At</th>
-                                                        <th>Remark</th>
-                                                        <th>Aksi</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <?php if (empty($group['items'])): ?>
-                                                        <tr>
-                                                            <td colspan="9" class="text-center">Belum ada master dokumen.</td>
-                                                        </tr>
-                                                    <?php else: ?>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Dokumen</th>
+                                <th>Status</th>
+                                <th>File</th>
+                                <th>Uploaded At</th>
+                                <th>Reviewed At</th>
+                                <th>Approved At</th>
+                                <th>Submit Astri</th>
+                                <th>Status Astri</th>
+                                <th>Remark</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($group['items'])): ?>
+                                <tr>
+                                    <td colspan="11" class="text-center">Belum ada master dokumen.</td>
+                                </tr>
+                            <?php else: ?>
                                                         <?php $no = 1; ?>
                                                         <?php foreach ($group['items'] as $item): ?>
                                                             <tr>
@@ -699,7 +702,12 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                 <td><?= checklist_doc_detail_date($item['uploaded_at']) ?></td>
                                                                 <td><?= checklist_doc_detail_date($item['reviewed_at']) ?></td>
                                                                 <td><?= checklist_doc_detail_date($item['approved_at']) ?></td>
-                                                                <td><?= $item['remark'] !== '' ? $item['remark'] : '-' ?></td>
+                                                                <td><?= checklist_doc_detail_date($item['astri_submitted_date']) ?></td>
+                                                                <td><span class="badge badge-<?= checklist_doc_status_badge($item['astri_status']) ?>"><?= $item['astri_status'] !== '' ? $item['astri_status'] : 'NY' ?></span></td>
+                                                                <td>
+                                                                    <div><strong>Internal:</strong> <?= $item['remark'] !== '' ? $item['remark'] : '-' ?></div>
+                                                                    <div><strong>ASTRI:</strong> <?= $item['astri_remark'] !== '' ? $item['astri_remark'] : '-' ?></div>
+                                                                </td>
                                                                 <td>
                                                                     <?php if (in_array($item['status_file'], ['NOT UPLOADED', 'REJECTED'], true)): ?>
                                                                         <button type="button"
@@ -724,6 +732,20 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
                                                                             data-history='<?= htmlspecialchars(json_encode($item["history"]), ENT_QUOTES, "UTF-8") ?>'>
                                                                             Detail
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-secondary btn-astri-doc"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modalAstriDocument"
+                                                                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>"
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                            data-astri-submitted-date="<?= htmlspecialchars((string) $item['astri_submitted_date'], ENT_QUOTES) ?>"
+                                                                            data-astri-status="<?= htmlspecialchars((string) $item['astri_status'], ENT_QUOTES) ?>"
+                                                                            data-astri-remark="<?= htmlspecialchars((string) $item['astri_remark'], ENT_QUOTES) ?>">
+                                                                            ASTRI
                                                                         </button>
                                                                     <?php endif; ?>
                                                                     <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
@@ -877,24 +899,26 @@ $clusterProgressPercent = checklist_doc_percent(
                                         <div class="table-responsive">
                                             <table class="table table-bordered table-hover">
                                                 <thead class="thead-dark">
-                                                    <tr>
-                                                        <th>No</th>
-                                                        <th>Nama Dokumen</th>
-                                                        <th>Status</th>
-                                                        <th>File</th>
-                                                        <th>Uploaded At</th>
-                                                        <th>Reviewed At</th>
-                                                        <th>Approved At</th>
-                                                        <th>Remark</th>
-                                                        <th>Aksi</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <?php if (empty($group['items'])): ?>
-                                                        <tr>
-                                                            <td colspan="9" class="text-center">Belum ada master dokumen.</td>
-                                                        </tr>
-                                                    <?php else: ?>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Dokumen</th>
+                                <th>Status</th>
+                                <th>File</th>
+                                <th>Uploaded At</th>
+                                <th>Reviewed At</th>
+                                <th>Approved At</th>
+                                <th>Submit Astri</th>
+                                <th>Status Astri</th>
+                                <th>Remark</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($group['items'])): ?>
+                                <tr>
+                                    <td colspan="11" class="text-center">Belum ada master dokumen.</td>
+                                </tr>
+                            <?php else: ?>
                                                         <?php $no = 1; ?>
                                                         <?php foreach ($group['items'] as $item): ?>
                                                             <tr>
@@ -916,7 +940,12 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                 <td><?= checklist_doc_detail_date($item['uploaded_at']) ?></td>
                                                                 <td><?= checklist_doc_detail_date($item['reviewed_at']) ?></td>
                                                                 <td><?= checklist_doc_detail_date($item['approved_at']) ?></td>
-                                                                <td><?= $item['remark'] !== '' ? $item['remark'] : '-' ?></td>
+                                                                <td><?= checklist_doc_detail_date($item['astri_submitted_date']) ?></td>
+                                                                <td><span class="badge badge-<?= checklist_doc_status_badge($item['astri_status']) ?>"><?= $item['astri_status'] !== '' ? $item['astri_status'] : 'NY' ?></span></td>
+                                                                <td>
+                                                                    <div><strong>Internal:</strong> <?= $item['remark'] !== '' ? $item['remark'] : '-' ?></div>
+                                                                    <div><strong>ASTRI:</strong> <?= $item['astri_remark'] !== '' ? $item['astri_remark'] : '-' ?></div>
+                                                                </td>
                                                                 <td>
                                                                     <?php if (in_array($item['status_file'], ['NOT UPLOADED', 'REJECTED'], true)): ?>
                                                                         <button type="button"
@@ -941,6 +970,20 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
                                                                             data-history='<?= htmlspecialchars(json_encode($item["history"]), ENT_QUOTES, "UTF-8") ?>'>
                                                                             Detail
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-secondary btn-astri-doc"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modalAstriDocument"
+                                                                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>"
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                            data-astri-submitted-date="<?= htmlspecialchars((string) $item['astri_submitted_date'], ENT_QUOTES) ?>"
+                                                                            data-astri-status="<?= htmlspecialchars((string) $item['astri_status'], ENT_QUOTES) ?>"
+                                                                            data-astri-remark="<?= htmlspecialchars((string) $item['astri_remark'], ENT_QUOTES) ?>">
+                                                                            ASTRI
                                                                         </button>
                                                                     <?php endif; ?>
                                                                     <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
@@ -1262,6 +1305,60 @@ $clusterProgressPercent = checklist_doc_percent(
     </div>
 </div>
 
+<div class="modal fade doc-modal" id="modalAstriDocument">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/saveAstriStatus') ?>">
+                <div class="modal-header" style="background: linear-gradient(135deg, #374151, #111827);">
+                    <div>
+                        <h4 class="modal-title mb-1">Update Status ASTRI</h4>
+                        <p class="mb-0" style="opacity:.9;" id="astri-doc-name"></p>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="cluster_id" id="astri-cluster-id">
+                    <input type="hidden" name="id_doc_file" id="astri-file-id">
+                    <div class="doc-modal-panel">
+                        <div class="doc-modal-title">Sinkronisasi Submit ke ASTRI</div>
+                        <p class="doc-modal-subtitle">Isi tanggal submit saat dokumen sudah dikirim ke ASTRI, lalu update status sesuai review di sana.</p>
+                    </div>
+                    <div class="timeline-grid">
+                        <div class="doc-modal-panel">
+                            <div class="form-group mb-0">
+                                <label class="font-weight-bold">Tanggal Submit ASTRI</label>
+                                <input type="date" name="astri_submitted_date" id="astri-submitted-date" class="form-control">
+                                <small class="form-text text-muted">Wajib diisi jika status ASTRI bukan `NY`.</small>
+                            </div>
+                        </div>
+                        <div class="doc-modal-panel">
+                            <div class="form-group mb-0">
+                                <label class="font-weight-bold">Status ASTRI</label>
+                                <select name="astri_status" id="astri-status" class="form-control">
+                                    <option value="NY">NY</option>
+                                    <option value="ON REVIEW">ON REVIEW</option>
+                                    <option value="REJECTED">REJECTED</option>
+                                    <option value="APPROVED">APPROVED</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="doc-modal-panel mb-0">
+                        <div class="form-group mb-0">
+                            <label class="font-weight-bold">Remark ASTRI</label>
+                            <textarea name="astri_remark" id="astri-remark" class="form-control" rows="3" placeholder="Catatan submit / review ASTRI jika diperlukan"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-dark">Simpan ASTRI</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
         var dropzone = document.querySelector(dropzoneSelector);
@@ -1335,6 +1432,17 @@ $clusterProgressPercent = checklist_doc_percent(
         $('#approve-remark').val('');
     });
 
+    $(document).on('click', '.btn-astri-doc', function() {
+        var astriStatus = $(this).data('astri-status') || 'NY';
+        $('#astri-doc-name').text($(this).data('doc-name'));
+        $('#astri-cluster-id').val($(this).data('cluster-id'));
+        $('#astri-file-id').val($(this).data('file-id'));
+        $('#astri-submitted-date').val($(this).data('astri-submitted-date'));
+        $('#astri-status').val(astriStatus);
+        $('#astri-remark').val($(this).data('astri-remark') || '');
+        $('#astri-submitted-date').prop('required', astriStatus !== 'NY');
+    });
+
     $(document).on('click', '.btn-history-doc', function() {
         var docName = $(this).data('doc-name');
         var rawHistory = $(this).attr('data-history');
@@ -1387,6 +1495,14 @@ $clusterProgressPercent = checklist_doc_percent(
             $('#upload-file-name').text('File tidak diperlukan untuk item ini');
         } else {
             $('#upload-file-name').text('Belum ada file dipilih');
+        }
+    });
+
+    $(document).on('change', '#astri-status', function() {
+        var isNy = $(this).val() === 'NY';
+        $('#astri-submitted-date').prop('required', !isNy);
+        if (isNy) {
+            $('#astri-submitted-date').val('');
         }
     });
 
