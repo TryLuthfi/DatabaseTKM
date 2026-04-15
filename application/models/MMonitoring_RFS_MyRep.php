@@ -730,15 +730,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
         }
 
         $dateTime = new DateTime($date);
-        $remaining = (int) $days;
-
-        while ($remaining > 0) {
-            $dateTime->modify('+1 day');
-            if ((int) $dateTime->format('N') < 6) {
-                $remaining--;
-            }
-        }
-
+        $dateTime->modify('+' . (int) $days . ' day');
         return $dateTime->format('Y-m-d');
     }
 }

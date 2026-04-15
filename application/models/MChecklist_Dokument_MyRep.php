@@ -229,6 +229,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                         'status_file' => (string) ($itemFile['status_file'] ?? 'NOT UPLOADED'),
                         'file_name' => (string) ($itemFile['file_name'] ?? ''),
                         'file_path' => (string) ($itemFile['file_path'] ?? ''),
+                        'is_document_not_required' => (int) ($itemFile['is_document_not_required'] ?? 0),
                         'remark' => (string) ($itemFile['remark'] ?? ''),
                         'uploaded_at' => $this->normalizeDateTime($itemFile['uploaded_at'] ?? null),
                         'reviewed_at' => $this->normalizeDateTime($itemFile['reviewed_at'] ?? null),
@@ -352,6 +353,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         $payload = [
             'file_name' => $data['file_name'],
             'file_path' => $data['file_path'],
+            'is_document_not_required' => !empty($data['is_document_not_required']) ? 1 : 0,
             'status_file' => $data['status_file'],
             'remark' => $data['remark'],
             'uploaded_by' => (int) $data['uploaded_by'],
@@ -370,7 +372,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 'id_doc_item' => (int) $data['id_doc_item'],
                 'action_type' => 'REUPLOADED',
                 'status_after' => $data['status_file'],
-                'file_name' => $data['file_name'],
+                'file_name' => $data['file_name'] !== '' ? $data['file_name'] : '[Tanpa Dokumen]',
                 'remark' => $data['remark'],
                 'action_by' => (int) $data['uploaded_by'],
             ]);
@@ -385,7 +387,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 'id_doc_item' => (int) $data['id_doc_item'],
                 'action_type' => 'UPLOADED',
                 'status_after' => $data['status_file'],
-                'file_name' => $data['file_name'],
+                'file_name' => $data['file_name'] !== '' ? $data['file_name'] : '[Tanpa Dokumen]',
                 'remark' => $data['remark'],
                 'action_by' => (int) $data['uploaded_by'],
             ]);
@@ -632,7 +634,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         $rows = $this->db
             ->select("
                 id_doc_package,
-                SUM(CASE WHEN file_path IS NOT NULL AND file_path <> '' AND status_file IN ('UPLOADED','APPROVED') THEN 1 ELSE 0 END) AS uploaded_docs,
+                SUM(CASE WHEN ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1) AND status_file IN ('UPLOADED','APPROVED') THEN 1 ELSE 0 END) AS uploaded_docs,
                 SUM(CASE WHEN status_file = 'APPROVED' THEN 1 ELSE 0 END) AS approved_docs
             ", false)
             ->from('tb_rfs_myrep_doc_file')
@@ -659,7 +661,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         return $this->db
-            ->select('id_doc_file, id_doc_package, id_doc_item, file_name, file_path, status_file, remark, uploaded_at, reviewed_at, approved_at')
+            ->select('id_doc_file, id_doc_package, id_doc_item, file_name, file_path, is_document_not_required, status_file, remark, uploaded_at, reviewed_at, approved_at')
             ->from('tb_rfs_myrep_doc_file')
             ->where_in('id_doc_package', $packageIds)
             ->get()
@@ -714,8 +716,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             "SELECT COUNT(*) AS total
              FROM tb_rfs_myrep_doc_file
              WHERE id_doc_package = ?
-             AND file_path IS NOT NULL
-             AND file_path <> ''
+             AND ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1)
              AND status_file IN ('UPLOADED','APPROVED')",
             [(int) $packageId]
         )->row()->total;
@@ -724,8 +725,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             "SELECT MAX(uploaded_at) AS latest_uploaded
              FROM tb_rfs_myrep_doc_file
              WHERE id_doc_package = ?
-             AND file_path IS NOT NULL
-             AND file_path <> ''
+             AND ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1)
              AND status_file IN ('UPLOADED','APPROVED')",
             [(int) $packageId]
         )->row_array();
@@ -770,15 +770,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         $dateTime = new DateTime($date);
-        $remaining = (int) $days;
-
-        while ($remaining > 0) {
-            $dateTime->modify('+1 day');
-            if ((int) $dateTime->format('N') < 6) {
-                $remaining--;
-            }
-        }
-
+        $dateTime->modify('+' . (int) $days . ' day');
         return $dateTime->format('Y-m-d');
     }
 
@@ -825,7 +817,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
     private function isUploadedRow($row)
     {
         return !empty($row)
-            && !empty($row['file_path'])
+            && (
+                !empty($row['file_path'])
+                || !empty($row['is_document_not_required'])
+            )
             && in_array((string) ($row['status_file'] ?? ''), ['UPLOADED', 'APPROVED'], true);
     }
 }

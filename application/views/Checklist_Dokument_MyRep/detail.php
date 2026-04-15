@@ -223,7 +223,22 @@ $clusterProgressPercent = checklist_doc_percent(
     }
 
     .doc-progress-bar.success {
-        background: linear-gradient(90deg, #10b981, #34d399);
+        background: linear-gradient(90deg, #065f46, #10b981);
+    }
+
+    .doc-progress-summary-box {
+        background: linear-gradient(135deg, #1f2937, #111827) !important;
+        color: #fff !important;
+    }
+
+    .doc-progress-summary-box h4,
+    .doc-progress-summary-box p,
+    .doc-progress-summary-box .icon {
+        color: #fff !important;
+    }
+
+    .doc-progress-summary-box .icon {
+        opacity: .18;
     }
 
     .upload-dropzone {
@@ -276,6 +291,18 @@ $clusterProgressPercent = checklist_doc_percent(
         color: #0f766e;
         font-weight: 600;
         font-size: .88rem;
+    }
+
+    .doc-flag-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: .2rem .55rem;
+        border-radius: 999px;
+        font-size: .78rem;
+        font-weight: 700;
+        background: #dbeafe;
+        color: #1d4ed8;
+        margin-top: .35rem;
     }
 
     .doc-history-list {
@@ -460,7 +487,7 @@ $clusterProgressPercent = checklist_doc_percent(
                     <hr>
                     <div class="row">
                         <div class="col-md-4">
-                            <div class="small-box bg-success">
+                            <div class="small-box doc-progress-summary-box">
                                 <div class="inner">
                                     <h4><?= (int) $cluster['doc_cw_atp_uploaded'] ?>/<?= (int) $cluster['doc_cw_atp_required'] ?></h4>
                                     <p>Summary CW ATP</p>
@@ -474,7 +501,7 @@ $clusterProgressPercent = checklist_doc_percent(
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="small-box bg-success">
+                            <div class="small-box doc-progress-summary-box">
                                 <div class="inner">
                                     <h4><?= (int) $cluster['doc_full_opm_uploaded'] ?>/<?= (int) $cluster['doc_full_opm_required'] ?></h4>
                                     <p>Summary Full OPM</p>
@@ -488,7 +515,7 @@ $clusterProgressPercent = checklist_doc_percent(
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="small-box bg-success">
+                            <div class="small-box doc-progress-summary-box">
                                 <div class="inner">
                                     <h4><?= (int) $cluster['doc_rfs_uploaded'] ?>/<?= (int) $cluster['doc_rfs_required'] ?></h4>
                                     <p>Summary RFS</p>
@@ -662,6 +689,9 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                         <a href="<?= base_url($item['file_path']) ?>" target="_blank">
                                                                             <?= !empty($item['file_name']) ? $item['file_name'] : basename($item['file_path']) ?>
                                                                         </a>
+                                                                    <?php elseif (!empty($item['is_document_not_required'])): ?>
+                                                                        <span class="text-muted">Tanpa file</span>
+                                                                        <div class="doc-flag-chip">Tidak dibutuhkan dokument</div>
                                                                     <?php else: ?>
                                                                         -
                                                                     <?php endif; ?>
@@ -876,6 +906,9 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                         <a href="<?= base_url($item['file_path']) ?>" target="_blank">
                                                                             <?= !empty($item['file_name']) ? $item['file_name'] : basename($item['file_path']) ?>
                                                                         </a>
+                                                                    <?php elseif (!empty($item['is_document_not_required'])): ?>
+                                                                        <span class="text-muted">Tanpa file</span>
+                                                                        <div class="doc-flag-chip">Tidak dibutuhkan dokument</div>
                                                                     <?php else: ?>
                                                                         -
                                                                     <?php endif; ?>
@@ -1034,11 +1067,11 @@ $clusterProgressPercent = checklist_doc_percent(
                         <div class="timeline-summary mt-3">
                             <div class="timeline-summary-card">
                                 <div class="timeline-summary-label">Rule 1</div>
-                                <div class="timeline-summary-value">RFS + 7 HK</div>
+                                <div class="timeline-summary-value">RFS + 7 Hari</div>
                             </div>
                             <div class="timeline-summary-card">
                                 <div class="timeline-summary-label">Rule 2</div>
-                                <div class="timeline-summary-value">ATP + 7 HK</div>
+                                <div class="timeline-summary-value">ATP + 7 Hari</div>
                             </div>
                             <div class="timeline-summary-card">
                                 <div class="timeline-summary-label">Output</div>
@@ -1111,6 +1144,19 @@ $clusterProgressPercent = checklist_doc_percent(
                                 </div>
                             </div>
                             <small class="form-text text-muted">Format yang didukung: PDF, Word, Excel, JPG, JPEG, PNG.</small>
+                        </div>
+                    </div>
+                    <div class="doc-modal-panel">
+                        <div class="form-group mb-0">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="is-document-not-required" name="is_document_not_required" value="1">
+                                <label class="custom-control-label font-weight-bold" for="is-document-not-required">
+                                    Tidak dibutuhkan dokument
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">
+                                Jika dicentang, item tetap dihitung submitted dan tetap melalui proses reject/approve HO.
+                            </small>
                         </div>
                     </div>
                     <div class="doc-modal-panel">
@@ -1271,6 +1317,8 @@ $clusterProgressPercent = checklist_doc_percent(
         $('#upload-doc-name-input').val($(this).data('doc-name'));
         $('#upload-file-name').text('Belum ada file dipilih');
         $('#upload-file-input').val('');
+        $('#is-document-not-required').prop('checked', false);
+        $('#upload-file-input').prop('disabled', false).prop('required', true);
     });
 
     $(document).on('click', '.btn-reject-doc', function() {
@@ -1328,6 +1376,18 @@ $clusterProgressPercent = checklist_doc_percent(
         });
 
         $('#history-doc-list').html(html);
+    });
+
+    $(document).on('change', '#is-document-not-required', function() {
+        var checked = $(this).is(':checked');
+        $('#upload-file-input').prop('disabled', checked);
+        $('#upload-file-input').prop('required', !checked);
+        if (checked) {
+            $('#upload-file-input').val('');
+            $('#upload-file-name').text('File tidak diperlukan untuk item ini');
+        } else {
+            $('#upload-file-name').text('Belum ada file dipilih');
+        }
     });
 
     bindDropzone('#upload-dropzone', '#upload-file-input', '#upload-file-name');

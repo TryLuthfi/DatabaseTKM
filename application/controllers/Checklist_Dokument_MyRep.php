@@ -106,9 +106,16 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $packageId = (int) $this->input->post('id_doc_package');
         $itemId = (int) $this->input->post('id_doc_item');
         $docName = trim((string) $this->input->post('doc_name'));
+        $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
 
-        if ($clusterId <= 0 || $packageId <= 0 || $itemId <= 0 || empty($_FILES['file']['name'])) {
+        if ($clusterId <= 0 || $packageId <= 0 || $itemId <= 0) {
             $this->session->set_flashdata('error', 'Data upload dokumen belum lengkap.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        if (!$isNoDocumentRequired && empty($_FILES['file']['name'])) {
+            $this->session->set_flashdata('error', 'File wajib dipilih jika dokumen dibutuhkan.');
             redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
         }
@@ -117,40 +124,48 @@ class Checklist_Dokument_MyRep extends CI_Controller
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }
+        $fileName = '';
+        $filePath = '';
 
-        $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
-        $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $docName);
-        $fileName = 'DOC_' . $clusterId . '_' . $packageId . '_' . $itemId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+        if (!$isNoDocumentRequired) {
+            $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
+            $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $docName);
+            $fileName = 'DOC_' . $clusterId . '_' . $packageId . '_' . $itemId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
 
-        $config = [
-            'upload_path' => $uploadDir,
-            'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
-            'max_size' => 10240,
-            'file_name' => $fileName,
-            'overwrite' => true,
-        ];
+            $config = [
+                'upload_path' => $uploadDir,
+                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
+                'max_size' => 10240,
+                'file_name' => $fileName,
+                'overwrite' => true,
+            ];
 
-        $this->upload->initialize($config);
+            $this->upload->initialize($config);
 
-        if (!$this->upload->do_upload('file')) {
-            $this->session->set_flashdata('error', strip_tags($this->upload->display_errors()));
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
-            return;
+            if (!$this->upload->do_upload('file')) {
+                $this->session->set_flashdata('error', strip_tags($this->upload->display_errors()));
+                redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+                return;
+            }
+
+            $fileData = $this->upload->data();
+            $fileName = $fileData['file_name'];
+            $filePath = 'uploads/checklist_myrep/' . $fileData['file_name'];
         }
 
-        $fileData = $this->upload->data();
         $payload = [
             'id_doc_package' => $packageId,
             'id_doc_item' => $itemId,
-            'file_name' => $fileData['file_name'],
-            'file_path' => 'uploads/checklist_myrep/' . $fileData['file_name'],
+            'file_name' => $fileName,
+            'file_path' => $filePath,
             'status_file' => 'UPLOADED',
             'remark' => trim((string) $this->input->post('remark')),
             'uploaded_by' => (int) $this->session->userdata('id_user'),
+            'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
         ];
 
         $this->MChecklist_Dokument_MyRep->saveFileUpload($payload);
-        $this->session->set_flashdata('success', 'Dokumen berhasil diupload.');
+        $this->session->set_flashdata('success', $isNoDocumentRequired ? 'Dokumen ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen berhasil diupload.');
         redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
     }
 
