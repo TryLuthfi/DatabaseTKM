@@ -495,6 +495,623 @@ class MChecklist_Dokument_MyRep extends CI_Model
         return $logs;
     }
 
+    public function getTargetOptions($city = '', $regional = '')
+    {
+        $query = $this->db
+            ->select('MAX(id_target) AS id_target, city_name, regional_name, province_name', false)
+            ->from('tb_rfs_myrep_monthly_target');
+
+        if ($city !== '') {
+            $query->where('UPPER(city_name)', strtoupper($city));
+        }
+
+        if ($regional !== '') {
+            $query->where('UPPER(regional_name)', strtoupper($regional));
+        }
+
+        return $query
+            ->group_by(['city_name', 'regional_name', 'province_name'])
+            ->order_by('regional_name', 'ASC')
+            ->order_by('city_name', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+    public function saveMainfeeder($data)
+    {
+        $this->db->insert('tb_rfs_myrep_mainfeeder', [
+            'id_target' => (int) $data['id_target'],
+            'mainfeeder_name' => $data['mainfeeder_name'],
+            'length_meter' => (float) $data['length_meter'],
+            'atp_date' => $data['atp_date'],
+            'created_by' => (int) $data['created_by'],
+            'updated_by' => (int) $data['updated_by'],
+        ]);
+
+        $mainfeederId = (int) $this->db->insert_id();
+        $this->ensureMainfeederPackages($mainfeederId, $data['atp_date']);
+
+        return $mainfeederId;
+    }
+
+    public function getMainfeederList($city = '', $regional = '')
+    {
+        $query = $this->db
+            ->select('
+                mf.id_mainfeeder,
+                mf.id_target,
+                mf.mainfeeder_name,
+                mf.length_meter,
+                mf.atp_date,
+                mt.city_name,
+                mt.regional_name,
+                mt.province_name
+            ')
+            ->from('tb_rfs_myrep_mainfeeder mf')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'inner');
+
+        if ($city !== '') {
+            $query->where('UPPER(mt.city_name)', strtoupper($city));
+        }
+
+        if ($regional !== '') {
+            $query->where('UPPER(mt.regional_name)', strtoupper($regional));
+        }
+
+        $rows = $query
+            ->order_by('mt.city_name', 'ASC')
+            ->order_by('mf.mainfeeder_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        return $this->enrichMainfeederRows($rows);
+    }
+
+    public function getMainfeederDetail($mainfeederId)
+    {
+        $row = $this->db
+            ->select('
+                mf.id_mainfeeder,
+                mf.id_target,
+                mf.mainfeeder_name,
+                mf.length_meter,
+                mf.atp_date,
+                mt.city_name,
+                mt.regional_name,
+                mt.province_name
+            ')
+            ->from('tb_rfs_myrep_mainfeeder mf')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'inner')
+            ->where('mf.id_mainfeeder', (int) $mainfeederId)
+            ->get()
+            ->row_array();
+
+        if (!$row) {
+            return [];
+        }
+
+        $rows = $this->enrichMainfeederRows([$row]);
+        return empty($rows) ? [] : $rows[0];
+    }
+
+    public function ensureMainfeederPackages($mainfeederId, $atpDate = null)
+    {
+        $groups = $this->getMainfeederDocumentGroups();
+        foreach ($groups as $group) {
+            $existing = $this->db->get_where('tb_rfs_myrep_mainfeeder_doc_package', [
+                'id_mainfeeder' => (int) $mainfeederId,
+                'id_doc_group_mainfeeder' => (int) $group['id_doc_group_mainfeeder'],
+            ])->row_array();
+
+            if ($existing) {
+                continue;
+            }
+
+            $planDoc = !empty($atpDate) ? $this->addBusinessDays($atpDate, 7) : null;
+            $this->db->insert('tb_rfs_myrep_mainfeeder_doc_package', [
+                'id_mainfeeder' => (int) $mainfeederId,
+                'id_doc_group_mainfeeder' => (int) $group['id_doc_group_mainfeeder'],
+                'atp_date' => $atpDate,
+                'plan_submit_doc_date' => $planDoc,
+                'status_package' => 'NOT STARTED',
+                'created_by' => (int) $this->session->userdata('id_user'),
+                'updated_by' => (int) $this->session->userdata('id_user'),
+            ]);
+        }
+    }
+
+    public function getMainfeederGroupRows($mainfeederId)
+    {
+        $groups = $this->getMainfeederDocumentGroups();
+        $items = $this->getMainfeederDocumentItems();
+        $packages = $this->getMainfeederPackagesByIds([(int) $mainfeederId]);
+        $mainfeederPackages = isset($packages[(int) $mainfeederId]) ? $packages[(int) $mainfeederId] : [];
+        $packageIds = [];
+
+        foreach ($mainfeederPackages as $package) {
+            $packageIds[] = (int) $package['id_doc_package_mainfeeder'];
+        }
+
+        $files = $this->getMainfeederFilesByPackageIds($packageIds);
+        $fileMap = [];
+        foreach ($files as $file) {
+            $fileMap[(int) $file['id_doc_package_mainfeeder']][(int) $file['id_doc_item_mainfeeder']] = $file;
+        }
+
+        $fileIds = [];
+        $rows = [];
+
+        foreach ($groups as $group) {
+            $groupId = (int) $group['id_doc_group_mainfeeder'];
+            $package = isset($mainfeederPackages[$groupId]) ? $mainfeederPackages[$groupId] : [];
+            $packageId = (int) ($package['id_doc_package_mainfeeder'] ?? 0);
+            $groupItems = [];
+            $requiredDocs = isset($items[$groupId]) ? count($items[$groupId]) : 0;
+            $uploadedDocs = 0;
+
+            foreach ($items[$groupId] ?? [] as $item) {
+                $itemFile = ($packageId > 0 && isset($fileMap[$packageId][(int) $item['id_doc_item_mainfeeder']]))
+                    ? $fileMap[$packageId][(int) $item['id_doc_item_mainfeeder']]
+                    : [];
+
+                if ($this->isUploadedRow($itemFile)) {
+                    $uploadedDocs++;
+                }
+
+                if (!empty($itemFile['id_doc_file_mainfeeder'])) {
+                    $fileIds[] = (int) $itemFile['id_doc_file_mainfeeder'];
+                }
+
+                $groupItems[] = [
+                    'id_doc_file_mainfeeder' => (int) ($itemFile['id_doc_file_mainfeeder'] ?? 0),
+                    'id_doc_package_mainfeeder' => $packageId,
+                    'id_doc_item_mainfeeder' => (int) $item['id_doc_item_mainfeeder'],
+                    'doc_name' => (string) $item['doc_name'],
+                    'status_file' => (string) ($itemFile['status_file'] ?? 'NOT UPLOADED'),
+                    'file_name' => (string) ($itemFile['file_name'] ?? ''),
+                    'file_path' => (string) ($itemFile['file_path'] ?? ''),
+                    'is_document_not_required' => (int) ($itemFile['is_document_not_required'] ?? 0),
+                    'remark' => (string) ($itemFile['remark'] ?? ''),
+                    'uploaded_at' => $this->normalizeDateTime($itemFile['uploaded_at'] ?? null),
+                    'reviewed_at' => $this->normalizeDateTime($itemFile['reviewed_at'] ?? null),
+                    'approved_at' => $this->normalizeDateTime($itemFile['approved_at'] ?? null),
+                    'astri_submitted_date' => $this->normalizeDate($itemFile['astri_submitted_date'] ?? null),
+                    'astri_status' => (string) ($itemFile['astri_status'] ?? 'NY'),
+                    'astri_status_updated_at' => $this->normalizeDateTime($itemFile['astri_status_updated_at'] ?? null),
+                    'astri_remark' => (string) ($itemFile['astri_remark'] ?? ''),
+                    'history' => [],
+                ];
+            }
+
+            $actualDoc = $this->normalizeDate($package['actual_submit_doc_date'] ?? null);
+            if (!$actualDoc && $requiredDocs > 0 && $uploadedDocs >= $requiredDocs) {
+                $actualDoc = $this->extractLatestUploadedDate($groupItems);
+            }
+
+            $rows[] = [
+                'id_doc_package_mainfeeder' => $packageId,
+                'group_label' => (string) $group['group_label'],
+                'sow_type' => (string) $group['sow_type'],
+                'atp_date' => $this->normalizeDate($package['atp_date'] ?? null),
+                'plan_submit_doc_date' => $this->normalizeDate($package['plan_submit_doc_date'] ?? null),
+                'actual_submit_doc_date' => $actualDoc,
+                'aging_doc_days' => $this->calculateAgingDays($package['plan_submit_doc_date'] ?? null, $actualDoc),
+                'required_docs' => $requiredDocs,
+                'uploaded_docs' => $uploadedDocs,
+                'items' => $groupItems,
+            ];
+        }
+
+        $historyByFileId = $this->getMainfeederFileLogsByFileIds(array_values(array_unique($fileIds)));
+        foreach ($rows as &$row) {
+            foreach ($row['items'] as &$item) {
+                $item['history'] = !empty($item['id_doc_file_mainfeeder']) && isset($historyByFileId[(int) $item['id_doc_file_mainfeeder']])
+                    ? $historyByFileId[(int) $item['id_doc_file_mainfeeder']]
+                    : [];
+            }
+            unset($item);
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    public function saveMainfeederFileUpload($data)
+    {
+        $existing = $this->db->get_where('tb_rfs_myrep_mainfeeder_doc_file', [
+            'id_doc_package_mainfeeder' => (int) $data['id_doc_package_mainfeeder'],
+            'id_doc_item_mainfeeder' => (int) $data['id_doc_item_mainfeeder'],
+        ])->row_array();
+
+        $payload = [
+            'file_name' => $data['file_name'],
+            'file_path' => $data['file_path'],
+            'is_document_not_required' => !empty($data['is_document_not_required']) ? 1 : 0,
+            'status_file' => $data['status_file'],
+            'remark' => $data['remark'],
+            'uploaded_by' => (int) $data['uploaded_by'],
+            'uploaded_at' => date('Y-m-d H:i:s'),
+        ];
+
+        if ($existing) {
+            $this->deletePhysicalFile($existing['file_path'] ?? '');
+            $this->db->where('id_doc_file_mainfeeder', (int) $existing['id_doc_file_mainfeeder'])
+                ->update('tb_rfs_myrep_mainfeeder_doc_file', $payload);
+            $fileId = (int) $existing['id_doc_file_mainfeeder'];
+            $actionType = 'REUPLOADED';
+        } else {
+            $payload['id_doc_package_mainfeeder'] = (int) $data['id_doc_package_mainfeeder'];
+            $payload['id_doc_item_mainfeeder'] = (int) $data['id_doc_item_mainfeeder'];
+            $this->db->insert('tb_rfs_myrep_mainfeeder_doc_file', $payload);
+            $fileId = (int) $this->db->insert_id();
+            $actionType = 'UPLOADED';
+        }
+
+        $this->db->insert('tb_rfs_myrep_mainfeeder_doc_file_log', [
+            'id_doc_file_mainfeeder' => $fileId,
+            'id_doc_package_mainfeeder' => (int) $data['id_doc_package_mainfeeder'],
+            'id_doc_item_mainfeeder' => (int) $data['id_doc_item_mainfeeder'],
+            'action_type' => $actionType,
+            'status_after' => $data['status_file'],
+            'file_name' => $data['file_name'] !== '' ? $data['file_name'] : '[Tanpa Dokumen]',
+            'remark' => $data['remark'],
+            'action_by' => (int) $data['uploaded_by'],
+            'action_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $this->refreshMainfeederPackageStatus((int) $data['id_doc_package_mainfeeder']);
+        return $fileId;
+    }
+
+    public function updateMainfeederFileStatus($fileId, $data)
+    {
+        $file = $this->db->get_where('tb_rfs_myrep_mainfeeder_doc_file', [
+            'id_doc_file_mainfeeder' => (int) $fileId,
+        ])->row_array();
+
+        if (!$file) {
+            return false;
+        }
+
+        $this->db->where('id_doc_file_mainfeeder', (int) $fileId)
+            ->update('tb_rfs_myrep_mainfeeder_doc_file', [
+                'status_file' => $data['status_file'],
+                'remark' => $data['remark'],
+                'approved_by' => (int) $data['approved_by'],
+                'reviewed_at' => date('Y-m-d H:i:s'),
+                'approved_at' => $data['status_file'] === 'APPROVED' ? date('Y-m-d H:i:s') : null,
+            ]);
+
+        $this->db->insert('tb_rfs_myrep_mainfeeder_doc_file_log', [
+            'id_doc_file_mainfeeder' => (int) $fileId,
+            'id_doc_package_mainfeeder' => (int) $file['id_doc_package_mainfeeder'],
+            'id_doc_item_mainfeeder' => (int) $file['id_doc_item_mainfeeder'],
+            'action_type' => $data['status_file'],
+            'status_after' => $data['status_file'],
+            'file_name' => (string) ($file['file_name'] ?? ''),
+            'remark' => $data['remark'],
+            'action_by' => (int) $data['approved_by'],
+            'action_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $this->refreshMainfeederPackageStatus((int) $file['id_doc_package_mainfeeder']);
+        return true;
+    }
+
+    public function updateMainfeederAstriStatus($fileId, $data)
+    {
+        return $this->db
+            ->where('id_doc_file_mainfeeder', (int) $fileId)
+            ->update('tb_rfs_myrep_mainfeeder_doc_file', [
+                'astri_submitted_date' => $data['astri_submitted_date'],
+                'astri_status' => $data['astri_status'],
+                'astri_status_updated_at' => $data['astri_status'] === 'NY' ? null : date('Y-m-d H:i:s'),
+                'astri_remark' => $data['astri_remark'],
+            ]);
+    }
+
+    public function getMainfeederFileById($fileId)
+    {
+        return $this->db->get_where('tb_rfs_myrep_mainfeeder_doc_file', [
+            'id_doc_file_mainfeeder' => (int) $fileId,
+        ])->row_array();
+    }
+
+    public function getMainfeederFileLogsByFileIds($fileIds)
+    {
+        if (empty($fileIds)) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('l.*, u.nama_user')
+            ->from('tb_rfs_myrep_mainfeeder_doc_file_log l')
+            ->join('tb_master_user u', 'u.id_user = l.action_by', 'left')
+            ->where_in('l.id_doc_file_mainfeeder', $fileIds)
+            ->order_by('l.action_at', 'DESC')
+            ->order_by('l.id_doc_file_log_mainfeeder', 'DESC')
+            ->get()
+            ->result_array();
+
+        $logs = [];
+        foreach ($rows as $row) {
+            $logs[(int) $row['id_doc_file_mainfeeder']][] = $row;
+        }
+
+        return $logs;
+    }
+
+    private function enrichMainfeederRows($rows)
+    {
+        if (empty($rows)) {
+            return [];
+        }
+
+        $ids = array_map(function ($row) {
+            return (int) $row['id_mainfeeder'];
+        }, $rows);
+
+        $groups = $this->getMainfeederDocumentGroups();
+        $packages = $this->getMainfeederPackagesByIds($ids);
+        $packageIds = [];
+        foreach ($packages as $mfPackages) {
+            foreach ($mfPackages as $package) {
+                $packageIds[] = (int) $package['id_doc_package_mainfeeder'];
+            }
+        }
+
+        $fileSummary = $this->getMainfeederFileSummaryByPackageIds($packageIds);
+        $fileStatusSummary = $this->getMainfeederFileStatusSummaryByPackageIds($packageIds);
+        $result = [];
+
+        foreach ($rows as $row) {
+            $mfId = (int) $row['id_mainfeeder'];
+            $mfPackages = isset($packages[$mfId]) ? $packages[$mfId] : [];
+            $docSummary = [
+                'CW ATP' => ['uploaded' => 0, 'required' => 0, 'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'ny' => 0, 'astri_submitted' => 0, 'astri_approved' => 0, 'astri_on_review' => 0, 'astri_rejected' => 0, 'astri_ny' => 0],
+                'FULL OPM' => ['uploaded' => 0, 'required' => 0, 'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'ny' => 0, 'astri_submitted' => 0, 'astri_approved' => 0, 'astri_on_review' => 0, 'astri_rejected' => 0, 'astri_ny' => 0],
+                'RFS' => ['uploaded' => 0, 'required' => 0, 'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'ny' => 0, 'astri_submitted' => 0, 'astri_approved' => 0, 'astri_on_review' => 0, 'astri_rejected' => 0, 'astri_ny' => 0],
+            ];
+            $planDocDates = [];
+            $actualDocDates = [];
+            $astriSubmittedDates = [];
+            $astriApprovedDates = [];
+            $totalRequired = 0;
+            $totalAstriSubmitted = 0;
+            $totalAstriApproved = 0;
+
+            foreach ($groups as $group) {
+                $groupId = (int) $group['id_doc_group_mainfeeder'];
+                $package = isset($mfPackages[$groupId]) ? $mfPackages[$groupId] : [];
+                $packageId = (int) ($package['id_doc_package_mainfeeder'] ?? 0);
+                $required = (int) $group['required_docs'];
+                $uploaded = ($packageId > 0 && isset($fileSummary[$packageId])) ? (int) $fileSummary[$packageId]['uploaded_docs'] : 0;
+                $statusSummary = ($packageId > 0 && isset($fileStatusSummary[$packageId])) ? $fileStatusSummary[$packageId] : [
+                    'approved' => 0, 'on_review' => 0, 'rejected' => 0, 'existing' => 0,
+                    'astri_approved' => 0, 'astri_on_review' => 0, 'astri_rejected' => 0, 'astri_submitted' => 0,
+                    'astri_latest_submitted_date' => null, 'astri_latest_approved_date' => null,
+                ];
+                $sowType = (string) $group['sow_type'];
+
+                $docSummary[$sowType]['required'] += $required;
+                $docSummary[$sowType]['uploaded'] += min($uploaded, $required);
+                $docSummary[$sowType]['approved'] += (int) $statusSummary['approved'];
+                $docSummary[$sowType]['on_review'] += (int) $statusSummary['on_review'];
+                $docSummary[$sowType]['rejected'] += (int) $statusSummary['rejected'];
+                $docSummary[$sowType]['ny'] += max(0, $required - (int) $statusSummary['existing']);
+                $docSummary[$sowType]['astri_submitted'] += (int) $statusSummary['astri_submitted'];
+                $docSummary[$sowType]['astri_approved'] += (int) $statusSummary['astri_approved'];
+                $docSummary[$sowType]['astri_on_review'] += (int) $statusSummary['astri_on_review'];
+                $docSummary[$sowType]['astri_rejected'] += (int) $statusSummary['astri_rejected'];
+                $docSummary[$sowType]['astri_ny'] += max(0, $required - (int) $statusSummary['astri_submitted']);
+
+                $totalRequired += $required;
+                $totalAstriSubmitted += (int) $statusSummary['astri_submitted'];
+                $totalAstriApproved += (int) $statusSummary['astri_approved'];
+                if (!empty($package['plan_submit_doc_date'])) {
+                    $planDocDates[] = $package['plan_submit_doc_date'];
+                }
+                if (!empty($package['actual_submit_doc_date'])) {
+                    $actualDocDates[] = $package['actual_submit_doc_date'];
+                }
+                if (!empty($statusSummary['astri_latest_submitted_date'])) {
+                    $astriSubmittedDates[] = $statusSummary['astri_latest_submitted_date'];
+                }
+                if (!empty($statusSummary['astri_latest_approved_date'])) {
+                    $astriApprovedDates[] = $statusSummary['astri_latest_approved_date'];
+                }
+            }
+
+            $row['plan_submit_doc_date'] = !empty($planDocDates) ? max($planDocDates) : ($row['atp_date'] ? $this->addBusinessDays($row['atp_date'], 7) : null);
+            $row['actual_submit_doc_date'] = !empty($actualDocDates) ? max($actualDocDates) : null;
+            $row['aging_doc_days'] = $this->calculateAgingDays($row['plan_submit_doc_date'], $row['actual_submit_doc_date']);
+            $row['submit_astri_date'] = ($totalRequired > 0 && $totalAstriSubmitted >= $totalRequired && !empty($astriSubmittedDates)) ? max($astriSubmittedDates) : null;
+            $row['approved_astri_date'] = ($totalRequired > 0 && $totalAstriApproved >= $totalRequired && !empty($astriApprovedDates)) ? max($astriApprovedDates) : null;
+
+            foreach (['cw_atp' => 'CW ATP', 'full_opm' => 'FULL OPM', 'rfs' => 'RFS'] as $prefix => $sowType) {
+                $row['doc_' . $prefix . '_uploaded'] = $docSummary[$sowType]['uploaded'];
+                $row['doc_' . $prefix . '_required'] = $docSummary[$sowType]['required'];
+                $row['doc_' . $prefix . '_approved'] = $docSummary[$sowType]['approved'];
+                $row['doc_' . $prefix . '_on_review'] = $docSummary[$sowType]['on_review'];
+                $row['doc_' . $prefix . '_rejected'] = $docSummary[$sowType]['rejected'];
+                $row['doc_' . $prefix . '_ny'] = $docSummary[$sowType]['ny'];
+                $row['astri_doc_' . $prefix . '_submitted'] = $docSummary[$sowType]['astri_submitted'];
+                $row['astri_doc_' . $prefix . '_approved'] = $docSummary[$sowType]['astri_approved'];
+                $row['astri_doc_' . $prefix . '_on_review'] = $docSummary[$sowType]['astri_on_review'];
+                $row['astri_doc_' . $prefix . '_rejected'] = $docSummary[$sowType]['astri_rejected'];
+                $row['astri_doc_' . $prefix . '_ny'] = $docSummary[$sowType]['astri_ny'];
+            }
+
+            $result[] = $row;
+        }
+
+        return $result;
+    }
+
+    private function getMainfeederDocumentGroups()
+    {
+        return $this->db
+            ->select('g.id_doc_group_mainfeeder, g.sow_type, g.group_label, g.sort_no, COUNT(i.id_doc_item_mainfeeder) AS required_docs', false)
+            ->from('md_rfs_myrep_mainfeeder_doc_group g')
+            ->join('md_rfs_myrep_mainfeeder_doc_item i', 'i.id_doc_group_mainfeeder = g.id_doc_group_mainfeeder AND i.is_active = 1 AND i.is_required = 1', 'left')
+            ->where('g.is_active', 1)
+            ->group_by(['g.id_doc_group_mainfeeder', 'g.sow_type', 'g.group_label', 'g.sort_no'])
+            ->order_by('g.sort_no', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+    private function getMainfeederDocumentItems()
+    {
+        $rows = $this->db->select('id_doc_item_mainfeeder, id_doc_group_mainfeeder, doc_name, sort_no')
+            ->from('md_rfs_myrep_mainfeeder_doc_item')
+            ->where('is_active', 1)
+            ->where('is_required', 1)
+            ->order_by('sort_no', 'ASC')
+            ->get()
+            ->result_array();
+        $items = [];
+        foreach ($rows as $row) {
+            $items[(int) $row['id_doc_group_mainfeeder']][] = $row;
+        }
+        return $items;
+    }
+
+    private function getMainfeederPackagesByIds($ids)
+    {
+        if (empty($ids)) {
+            return [];
+        }
+        $rows = $this->db->select('p.*, g.sow_type, g.group_label')
+            ->from('tb_rfs_myrep_mainfeeder_doc_package p')
+            ->join('md_rfs_myrep_mainfeeder_doc_group g', 'g.id_doc_group_mainfeeder = p.id_doc_group_mainfeeder', 'inner')
+            ->where_in('p.id_mainfeeder', $ids)
+            ->get()
+            ->result_array();
+        $packages = [];
+        foreach ($rows as $row) {
+            $packages[(int) $row['id_mainfeeder']][(int) $row['id_doc_group_mainfeeder']] = $row;
+        }
+        return $packages;
+    }
+
+    private function getMainfeederFilesByPackageIds($packageIds)
+    {
+        if (empty($packageIds)) {
+            return [];
+        }
+        return $this->db->select('*')
+            ->from('tb_rfs_myrep_mainfeeder_doc_file')
+            ->where_in('id_doc_package_mainfeeder', $packageIds)
+            ->get()
+            ->result_array();
+    }
+
+    private function getMainfeederFileSummaryByPackageIds($packageIds)
+    {
+        if (empty($packageIds)) {
+            return [];
+        }
+        $rows = $this->db->select("
+                id_doc_package_mainfeeder,
+                SUM(CASE WHEN ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1) AND status_file IN ('UPLOADED','APPROVED') THEN 1 ELSE 0 END) AS uploaded_docs
+            ", false)
+            ->from('tb_rfs_myrep_mainfeeder_doc_file')
+            ->where_in('id_doc_package_mainfeeder', $packageIds)
+            ->group_by('id_doc_package_mainfeeder')
+            ->get()
+            ->result_array();
+        $summary = [];
+        foreach ($rows as $row) {
+            $summary[(int) $row['id_doc_package_mainfeeder']] = ['uploaded_docs' => (int) $row['uploaded_docs']];
+        }
+        return $summary;
+    }
+
+    private function getMainfeederFileStatusSummaryByPackageIds($packageIds)
+    {
+        if (empty($packageIds)) {
+            return [];
+        }
+        $rows = $this->db->select("
+                id_doc_package_mainfeeder,
+                SUM(CASE WHEN status_file = 'APPROVED' THEN 1 ELSE 0 END) AS approved,
+                SUM(CASE WHEN status_file = 'UPLOADED' THEN 1 ELSE 0 END) AS on_review,
+                SUM(CASE WHEN status_file = 'REJECTED' THEN 1 ELSE 0 END) AS rejected,
+                COUNT(*) AS existing,
+                SUM(CASE WHEN astri_status = 'APPROVED' THEN 1 ELSE 0 END) AS astri_approved,
+                SUM(CASE WHEN astri_status = 'ON REVIEW' THEN 1 ELSE 0 END) AS astri_on_review,
+                SUM(CASE WHEN astri_status = 'REJECTED' THEN 1 ELSE 0 END) AS astri_rejected,
+                SUM(CASE WHEN astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED') THEN 1 ELSE 0 END) AS astri_submitted,
+                MAX(CASE WHEN astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED') AND astri_submitted_date IS NOT NULL THEN astri_submitted_date ELSE NULL END) AS astri_latest_submitted_date,
+                MAX(CASE WHEN astri_status = 'APPROVED' AND astri_status_updated_at IS NOT NULL THEN DATE(astri_status_updated_at) ELSE NULL END) AS astri_latest_approved_date
+            ", false)
+            ->from('tb_rfs_myrep_mainfeeder_doc_file')
+            ->where_in('id_doc_package_mainfeeder', $packageIds)
+            ->group_by('id_doc_package_mainfeeder')
+            ->get()
+            ->result_array();
+        $summary = [];
+        foreach ($rows as $row) {
+            $summary[(int) $row['id_doc_package_mainfeeder']] = [
+                'approved' => (int) $row['approved'],
+                'on_review' => (int) $row['on_review'],
+                'rejected' => (int) $row['rejected'],
+                'existing' => (int) $row['existing'],
+                'astri_approved' => (int) $row['astri_approved'],
+                'astri_on_review' => (int) $row['astri_on_review'],
+                'astri_rejected' => (int) $row['astri_rejected'],
+                'astri_submitted' => (int) $row['astri_submitted'],
+                'astri_latest_submitted_date' => $this->normalizeDate($row['astri_latest_submitted_date'] ?? null),
+                'astri_latest_approved_date' => $this->normalizeDate($row['astri_latest_approved_date'] ?? null),
+            ];
+        }
+        return $summary;
+    }
+
+    private function refreshMainfeederPackageStatus($packageId)
+    {
+        $package = $this->db->get_where('tb_rfs_myrep_mainfeeder_doc_package', [
+            'id_doc_package_mainfeeder' => (int) $packageId,
+        ])->row_array();
+        if (!$package) {
+            return;
+        }
+        $required = (int) $this->db->from('md_rfs_myrep_mainfeeder_doc_item')
+            ->where('id_doc_group_mainfeeder', (int) $package['id_doc_group_mainfeeder'])
+            ->where('is_active', 1)
+            ->where('is_required', 1)
+            ->count_all_results();
+        $uploaded = (int) $this->db->query(
+            "SELECT COUNT(*) AS total
+             FROM tb_rfs_myrep_mainfeeder_doc_file
+             WHERE id_doc_package_mainfeeder = ?
+             AND ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1)
+             AND status_file IN ('UPLOADED','APPROVED')",
+            [(int) $packageId]
+        )->row()->total;
+        $latestUploaded = $this->db->query(
+            "SELECT MAX(uploaded_at) AS latest_uploaded
+             FROM tb_rfs_myrep_mainfeeder_doc_file
+             WHERE id_doc_package_mainfeeder = ?
+             AND ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1)
+             AND status_file IN ('UPLOADED','APPROVED')",
+            [(int) $packageId]
+        )->row_array();
+
+        $actualSubmit = null;
+        if ($required > 0 && $uploaded >= $required && !empty($latestUploaded['latest_uploaded'])) {
+            $actualSubmit = substr((string) $latestUploaded['latest_uploaded'], 0, 10);
+        }
+
+        $this->db->where('id_doc_package_mainfeeder', (int) $packageId)
+            ->update('tb_rfs_myrep_mainfeeder_doc_package', [
+                'status_package' => $this->derivePackageStatus($uploaded, $required),
+                'actual_submit_doc_date' => $actualSubmit,
+                'updated_by' => (int) $this->session->userdata('id_user'),
+            ]);
+    }
+
     private function enrichClusterRows($rows)
     {
         if (empty($rows)) {

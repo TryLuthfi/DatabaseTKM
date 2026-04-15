@@ -308,6 +308,12 @@ foreach ($clusterList as $cluster) {
 
     <section class="content">
         <div class="container-fluid checklist-board">
+            <div class="mb-3">
+                <div class="btn-group">
+                    <a href="<?= base_url('Checklist_Dokument_MyRep') ?>" class="btn btn-dark">Monitoring Cluster</a>
+                    <a href="<?= base_url('Checklist_Dokument_MyRep/mainfeeder') ?>" class="btn btn-outline-dark">Monitoring Mainfeeder</a>
+                </div>
+            </div>
             <?php if ($this->session->flashdata('error')): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     <?= $this->session->flashdata('error') ?>

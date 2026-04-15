@@ -68,6 +68,285 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $this->load->view('Templates/99_JS');
     }
 
+    public function mainfeeder()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->get('city')));
+        $selectedRegional = strtoupper(trim((string) $this->input->get('regional')));
+
+        $data['title'] = 'Checklist Dokument Mainfeeder';
+        $data['selectedCity'] = $selectedCity;
+        $data['selectedRegional'] = $selectedRegional;
+        $data['cityOptions'] = $this->MChecklist_Dokument_MyRep->getCityOptions();
+        $data['regionalOptions'] = $this->MChecklist_Dokument_MyRep->getRegionalOptions();
+        $data['targetOptions'] = $this->MChecklist_Dokument_MyRep->getTargetOptions($selectedCity, $selectedRegional);
+        $data['mainfeederList'] = $this->MChecklist_Dokument_MyRep->getMainfeederList($selectedCity, $selectedRegional);
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('Checklist_Dokument_MyRep/mainfeeder_index', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
+    }
+
+    public function saveMainfeeder()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $idTarget = (int) $this->input->post('id_target');
+        $mainfeederName = trim((string) $this->input->post('mainfeeder_name'));
+        $lengthMeter = (float) $this->input->post('length_meter');
+        $atpDate = $this->normalizeDateInput($this->input->post('atp_date'));
+
+        if ($idTarget <= 0 || $mainfeederName === '' || !$atpDate) {
+            $this->session->set_flashdata('error', 'Data mainfeeder wajib diisi lengkap.');
+            redirect('Checklist_Dokument_MyRep/mainfeeder');
+            return;
+        }
+
+        $this->MChecklist_Dokument_MyRep->saveMainfeeder([
+            'id_target' => $idTarget,
+            'mainfeeder_name' => $mainfeederName,
+            'length_meter' => $lengthMeter,
+            'atp_date' => $atpDate,
+            'created_by' => (int) $this->session->userdata('id_user'),
+            'updated_by' => (int) $this->session->userdata('id_user'),
+        ]);
+
+        $this->session->set_flashdata('success', 'Mainfeeder berhasil ditambahkan.');
+        redirect('Checklist_Dokument_MyRep/mainfeeder');
+    }
+
+    public function detailMainfeeder($mainfeederId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $mainfeederId = (int) $mainfeederId;
+        if ($mainfeederId <= 0) {
+            redirect('Checklist_Dokument_MyRep/mainfeeder');
+            return;
+        }
+
+        $mainfeeder = $this->MChecklist_Dokument_MyRep->getMainfeederDetail($mainfeederId);
+        if (empty($mainfeeder)) {
+            $this->session->set_flashdata('error', 'Data mainfeeder tidak ditemukan.');
+            redirect('Checklist_Dokument_MyRep/mainfeeder');
+            return;
+        }
+
+        $this->MChecklist_Dokument_MyRep->ensureMainfeederPackages($mainfeederId, $mainfeeder['atp_date'] ?? null);
+        $mainfeeder = $this->MChecklist_Dokument_MyRep->getMainfeederDetail($mainfeederId);
+
+        $data['title'] = 'Detail Mainfeeder';
+        $data['mainfeeder'] = $mainfeeder;
+        $data['groupRows'] = $this->MChecklist_Dokument_MyRep->getMainfeederGroupRows($mainfeederId);
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('Checklist_Dokument_MyRep/mainfeeder_detail', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
+    }
+
+    public function uploadMainfeederDocument()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $mainfeederId = (int) $this->input->post('mainfeeder_id');
+        $packageId = (int) $this->input->post('id_doc_package_mainfeeder');
+        $itemId = (int) $this->input->post('id_doc_item_mainfeeder');
+        $docName = trim((string) $this->input->post('doc_name'));
+        $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
+
+        if ($mainfeederId <= 0 || $packageId <= 0 || $itemId <= 0) {
+            $this->session->set_flashdata('error', 'Data upload mainfeeder belum lengkap.');
+            redirect('Checklist_Dokument_MyRep/mainfeeder');
+            return;
+        }
+
+        if (!$isNoDocumentRequired && empty($_FILES['file']['name'])) {
+            $this->session->set_flashdata('error', 'File wajib dipilih jika dokumen dibutuhkan.');
+            redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $uploadDir = './uploads/checklist_myrep_mainfeeder/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $fileName = '';
+        $filePath = '';
+        if (!$isNoDocumentRequired) {
+            $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
+            $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $docName);
+            $fileName = 'MF_' . $mainfeederId . '_' . $packageId . '_' . $itemId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+            $config = [
+                'upload_path' => $uploadDir,
+                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
+                'max_size' => 10240,
+                'file_name' => $fileName,
+                'overwrite' => true,
+            ];
+            $this->upload->initialize($config);
+            if (!$this->upload->do_upload('file')) {
+                $this->session->set_flashdata('error', strip_tags($this->upload->display_errors()));
+                redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+                return;
+            }
+            $fileData = $this->upload->data();
+            $fileName = $fileData['file_name'];
+            $filePath = 'uploads/checklist_myrep_mainfeeder/' . $fileData['file_name'];
+        }
+
+        $this->MChecklist_Dokument_MyRep->saveMainfeederFileUpload([
+            'id_doc_package_mainfeeder' => $packageId,
+            'id_doc_item_mainfeeder' => $itemId,
+            'file_name' => $fileName,
+            'file_path' => $filePath,
+            'status_file' => 'UPLOADED',
+            'remark' => trim((string) $this->input->post('remark')),
+            'uploaded_by' => (int) $this->session->userdata('id_user'),
+            'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
+        ]);
+
+        $this->session->set_flashdata('success', 'Dokumen mainfeeder berhasil diupload.');
+        redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+    }
+
+    public function approveMainfeederDocument()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+        $mainfeederId = (int) $this->input->post('mainfeeder_id');
+        $fileId = (int) $this->input->post('id_doc_file_mainfeeder');
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses approve dokumen.');
+            redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+            return;
+        }
+        $this->MChecklist_Dokument_MyRep->updateMainfeederFileStatus($fileId, [
+            'status_file' => 'APPROVED',
+            'remark' => trim((string) $this->input->post('remark')),
+            'approved_by' => (int) $this->session->userdata('id_user'),
+        ]);
+        $this->session->set_flashdata('success', 'Dokumen berhasil di-approve.');
+        redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+    }
+
+    public function rejectMainfeederDocument()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+        $mainfeederId = (int) $this->input->post('mainfeeder_id');
+        $fileId = (int) $this->input->post('id_doc_file_mainfeeder');
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses reject dokumen.');
+            redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+            return;
+        }
+        $this->MChecklist_Dokument_MyRep->updateMainfeederFileStatus($fileId, [
+            'status_file' => 'REJECTED',
+            'remark' => trim((string) $this->input->post('remark')),
+            'approved_by' => (int) $this->session->userdata('id_user'),
+        ]);
+        $this->session->set_flashdata('success', 'Dokumen berhasil di-reject.');
+        redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+    }
+
+    public function saveMainfeederAstriStatus()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $mainfeederId = (int) $this->input->post('mainfeeder_id');
+        $fileId = (int) $this->input->post('id_doc_file_mainfeeder');
+        $astriStatus = trim((string) $this->input->post('astri_status'));
+        $astriSubmittedDate = $this->normalizeDateInput($this->input->post('astri_submitted_date'));
+
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses update status ASTRI.');
+            redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $file = $this->MChecklist_Dokument_MyRep->getMainfeederFileById($fileId);
+        if (empty($file)) {
+            $this->session->set_flashdata('error', 'Dokumen tidak ditemukan.');
+            redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        if ($file['status_file'] !== 'APPROVED' && $astriStatus !== 'NY') {
+            $this->session->set_flashdata('error', 'Dokumen internal harus APPROVED sebelum di-submit ke ASTRI.');
+            redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+            return;
+        }
+
+        $this->MChecklist_Dokument_MyRep->updateMainfeederAstriStatus($fileId, [
+            'astri_submitted_date' => $astriStatus === 'NY' ? null : $astriSubmittedDate,
+            'astri_status' => $astriStatus,
+            'astri_remark' => trim((string) $this->input->post('astri_remark')),
+        ]);
+
+        $this->session->set_flashdata('success', 'Status ASTRI berhasil diperbarui.');
+        redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+    }
+
+    public function previewMainfeederDocument($fileId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+        $file = $this->MChecklist_Dokument_MyRep->getMainfeederFileById((int) $fileId);
+        if (empty($file) || empty($file['file_path'])) {
+            show_404();
+            return;
+        }
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file['file_path']);
+        if (!is_file($fullPath)) {
+            show_404();
+            return;
+        }
+        $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        $mimeMap = [
+            'pdf' => 'application/pdf',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ];
+        header('Content-Type: ' . ($mimeMap[$extension] ?? 'application/octet-stream'));
+        header('Content-Length: ' . filesize($fullPath));
+        header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
+        header('X-Content-Type-Options: nosniff');
+        readfile($fullPath);
+        exit;
+    }
+
     public function saveTimeline()
     {
         if (empty($this->session->userdata('id_user'))) {
