@@ -62,21 +62,6 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $data['monthlySummary'] = $this->MMonitoring_RFS_MyRep->getMonthlySummary($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
         $data['threeMonthSummary'] = $this->MMonitoring_RFS_MyRep->getThreeMonthSummary($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
         $data['clusterList'] = $this->MMonitoring_RFS_MyRep->getClustersWithPlan($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
-        $data['clusterListLastQuery'] = $this->db->last_query();
-        $data['clusterListDebugData'] = $data['clusterList'];
-        log_message(
-            'error',
-            '[Monitoring_RFS_MyRep] List Cluster Debug | filters=' . json_encode([
-                'year' => $selectedYear,
-                'start_month' => $selectedStartMonth,
-                'end_month' => $selectedEndMonth,
-                'city' => $selectedCity
-            ]) . ' | rows=' . count($data['clusterList']) . ' | query=' . $data['clusterListLastQuery']
-        );
-        log_message(
-            'error',
-            '[Monitoring_RFS_MyRep] List Cluster Data | ' . json_encode($data['clusterList'])
-        );
         $data['claimList'] = $this->MMonitoring_RFS_MyRep->getClaims($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
         $data['cityOptions'] = $this->MMonitoring_RFS_MyRep->getCityOptions();
         $data['targetOptions'] = $this->MMonitoring_RFS_MyRep->getTargetOptions($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
@@ -260,6 +245,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         }
 
         $createdCount = 0;
+        $duplicateClusters = [];
         $totalRows = max(count($idTargets), count($clusterNames), count($homepasses));
 
         for ($i = 0; $i < $totalRows; $i++) {
@@ -280,6 +266,11 @@ class Monitoring_RFS_MyRep extends CI_Controller
                 continue;
             }
 
+            if ($this->MMonitoring_RFS_MyRep->clusterExistsForTarget($idTarget, $clusterName)) {
+                $duplicateClusters[] = strtoupper(trim(($selectedTarget['city_name'] ?? '') . ' - ' . $clusterName));
+                continue;
+            }
+
             $payload = [
                 'id_target' => $idTarget,
                 'cluster_name' => $clusterName,
@@ -295,12 +286,20 @@ class Monitoring_RFS_MyRep extends CI_Controller
         }
 
         if ($createdCount <= 0) {
-            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Tidak ada cluster yang berhasil disimpan. Pastikan kota, nama cluster, dan homepass sudah terisi.');
+            $message = 'Tidak ada cluster yang berhasil disimpan. Pastikan kota, nama cluster, dan homepass sudah terisi.';
+            if (!empty($duplicateClusters)) {
+                $message .= ' Duplicate: ' . implode(', ', array_unique($duplicateClusters));
+            }
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', $message);
             redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
 
-        $this->session->set_flashdata('monitoring_rfs_myrep_message', $createdCount . ' cluster berhasil ditambahkan.');
+        $message = $createdCount . ' cluster berhasil ditambahkan.';
+        if (!empty($duplicateClusters)) {
+            $message .= ' Duplicate dilewati: ' . implode(', ', array_unique($duplicateClusters));
+        }
+        $this->session->set_flashdata('monitoring_rfs_myrep_message', $message);
         redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
     }
 
@@ -445,6 +444,10 @@ class Monitoring_RFS_MyRep extends CI_Controller
                 if (!$target) {
                     $errors[] = 'Target bulanan kota belum tersedia untuk periode ini';
                 }
+            }
+
+            if ($target && $this->MMonitoring_RFS_MyRep->clusterExistsForTarget((int) $target['id_target'], $clusterName)) {
+                $errors[] = 'Duplicate cluster pada target bulan ini';
             }
 
             $prepared = [
@@ -668,6 +671,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
             'claim_month' => $claimMonth,
             'claim_date' => date('Y-m-d', $claimDateTs),
             'claim_qty' => $claimQty,
+            'status_rfs' => $statusRfs,
             'photo_path' => $uploadResult['file_path'],
             'claim_note' => trim((string) $this->input->post('claim_note')),
             'status_claim' => 'PENDING',
@@ -675,15 +679,6 @@ class Monitoring_RFS_MyRep extends CI_Controller
         ];
 
         $this->MMonitoring_RFS_MyRep->createClaim($payload);
-        $this->MMonitoring_RFS_MyRep->updateClusterStatusRfs($clusterId, $statusRfs);
-
-        if ($statusRfs === 'FULL RFS') {
-            $this->MMonitoring_RFS_MyRep->ensureChecklistPackagesForCluster(
-                $clusterId,
-                date('Y-m-d', $claimDateTs),
-                (int) $this->session->userdata('id_user')
-            );
-        }
 
         $this->session->set_flashdata('monitoring_rfs_myrep_message', 'Claim RFS berhasil dikirim dan menunggu approval HO.');
 
@@ -726,8 +721,14 @@ class Monitoring_RFS_MyRep extends CI_Controller
         if ($status === 'APPROVED') {
             $claim = $this->MMonitoring_RFS_MyRep->getClaimById($claimId);
             if (!empty($claim)) {
+                if (!empty($claim['status_rfs'])) {
+                    $this->MMonitoring_RFS_MyRep->updateClusterStatusRfs(
+                        (int) $claim['cluster_id'],
+                        strtoupper((string) $claim['status_rfs'])
+                    );
+                }
                 $cluster = $this->MMonitoring_RFS_MyRep->getClusterById((int) $claim['cluster_id']);
-                if (!empty($cluster) && strtoupper((string) $cluster['status_rfs']) === 'FULL RFS') {
+                if (!empty($cluster) && strtoupper((string) ($claim['status_rfs'] ?? '')) === 'FULL RFS') {
                     $this->MMonitoring_RFS_MyRep->ensureChecklistPackagesForCluster(
                         (int) $claim['cluster_id'],
                         !empty($claim['claim_date']) ? $claim['claim_date'] : null,

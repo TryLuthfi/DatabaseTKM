@@ -1053,9 +1053,18 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                         <td><?= htmlspecialchars($cluster['city_name']) ?></td>
                                         <td><?= htmlspecialchars($cluster['cluster_name']) ?></td>
                                         <td class="text-center">
-                                            <?php $statusRfs = (string) ($cluster['status_rfs'] ?? 'NY RFS'); ?>
-                                            <span class="badge badge-<?= $statusRfs === 'FULL RFS' ? 'success' : ($statusRfs === 'PARTIAL' ? 'warning' : 'secondary') ?>">
-                                                <?= htmlspecialchars($statusRfs) ?>
+                                            <?php
+                                            $statusRfs = (string) ($cluster['status_rfs'] ?? 'NY RFS');
+                                            $hasPendingClaim = (int) ($cluster['pending_claim_count'] ?? 0) > 0;
+                                            $displayStatusRfs = $hasPendingClaim ? 'WAITING APPROVAL' : $statusRfs;
+                                            $displayBadgeClass = $displayStatusRfs === 'FULL RFS'
+                                                ? 'success'
+                                                : ($displayStatusRfs === 'PARTIAL'
+                                                    ? 'warning'
+                                                    : ($displayStatusRfs === 'WAITING APPROVAL' ? 'info' : 'secondary'));
+                                            ?>
+                                            <span class="badge badge-<?= $displayBadgeClass ?>">
+                                                <?= htmlspecialchars($displayStatusRfs) ?>
                                             </span>
                                         </td>
                                         <td><?= htmlspecialchars($cluster['rpm'] ?? '') ?></td>
@@ -1194,7 +1203,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                         <thead class="text-center">
                             <tr>
                                 <th>No</th>
-                                <th>Tanggal</th>
+                                <th>Tanggal RFS</th>
                                 <th>Kota</th>
                                 <th>Cluster</th>
                                 <th>Qty Claim</th>
@@ -1297,14 +1306,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         var monthLabels = <?= json_encode($monthLabels) ?>;
         var monthlyTargetCityMap = <?= json_encode($monthlyTargetCityMap) ?>;
         var monthlyTargetPeriodCityMap = <?= json_encode($monthlyTargetPeriodCityMap) ?>;
-        var clusterListDebugQuery = <?= json_encode($clusterListLastQuery ?? '') ?>;
-        var clusterListDebugData = <?= json_encode($clusterListDebugData ?? []) ?>;
         var importedClusterRows = [];
-
-        if (window.console && typeof window.console.log === 'function') {
-            console.log('[Monitoring_RFS_MyRep] List Cluster Last Query:', clusterListDebugQuery);
-            console.log('[Monitoring_RFS_MyRep] List Cluster Data:', clusterListDebugData);
-        }
 
         if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable) {
             window.setTimeout(bootstrapMonitoringRfsMyRep, 150);
@@ -1472,14 +1474,6 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             var monthBucket = monthlyTargetPeriodCityMap[selectedMonth] || {};
             var data = monthBucket[cityKey] || null;
             var $info = $row.find('.monthly-target-info');
-
-            if (window.console && typeof window.console.log === 'function') {
-                console.log('[Monitoring_RFS_MyRep] syncMonthlyTargetRow', {
-                    selectedMonth: selectedMonth,
-                    cityKey: cityKey,
-                    data: data
-                });
-            }
 
             if (!data) {
                 $row.find('.monthly-target-myrep').val(0);
@@ -1782,12 +1776,6 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         });
 
         $('#monthly_target_selected_month').on('change', function () {
-            if (window.console && typeof window.console.log === 'function') {
-                console.log('[Monitoring_RFS_MyRep] selected target month changed', {
-                    month: Number($(this).val() || 0),
-                    monthBucket: monthlyTargetPeriodCityMap[Number($(this).val() || 0)] || {}
-                });
-            }
             syncAllMonthlyTargetRows();
         });
 

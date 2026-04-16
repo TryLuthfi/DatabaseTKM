@@ -368,6 +368,12 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 mt.rpm,
                 mt.sm,
                 mt.spv,
+                COALESCE((
+                    SELECT COUNT(1)
+                    FROM tb_rfs_myrep_claim cl_pending
+                    WHERE cl_pending.cluster_id = c.id_cluster
+                    AND cl_pending.status_claim = 'PENDING'
+                ), 0) AS pending_claim_count,
                 COALESCE(p.optimistic_target, 0) AS optimistic_target,
                 COALESCE((
                     SELECT SUM(claim_qty)
@@ -562,6 +568,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
             'claim_month' => $data['claim_month'],
             'claim_date' => $data['claim_date'],
             'claim_qty' => $data['claim_qty'],
+            'status_rfs' => $data['status_rfs'],
             'photo_path' => $data['photo_path'],
             'claim_note' => $data['claim_note'],
             'status_claim' => $data['status_claim'],
@@ -599,6 +606,19 @@ class MMonitoring_RFS_MyRep extends CI_Model
         return $this->db
             ->get_where('tb_rfs_myrep_claim', ['id_claim' => (int) $claimId])
             ->row_array();
+    }
+
+    public function clusterExistsForTarget($idTarget, $clusterName)
+    {
+        $row = $this->db
+            ->select('id_cluster')
+            ->from('tb_rfs_myrep_cluster')
+            ->where('id_target', (int) $idTarget)
+            ->where('UPPER(cluster_name)', strtoupper(trim((string) $clusterName)))
+            ->get()
+            ->row_array();
+
+        return !empty($row);
     }
 
     public function ensureChecklistPackagesForCluster($clusterId, $tanggalRfs = null, $userId = null)
