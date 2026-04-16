@@ -161,6 +161,17 @@ $clusterProgressPercent = checklist_doc_percent(
         margin-bottom: 0;
     }
 
+    .doc-requirement-note {
+        margin-top: .35rem;
+        font-size: .82rem;
+        color: #92400e;
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 10px;
+        padding: .45rem .6rem;
+        line-height: 1.45;
+    }
+
     .doc-bulk-table thead th {
         background: #eaf4f7;
         border-bottom: 0;
@@ -292,6 +303,27 @@ $clusterProgressPercent = checklist_doc_percent(
         color: #0f766e;
         font-weight: 600;
         font-size: .88rem;
+    }
+
+    .upload-progress-panel {
+        display: none;
+        background: linear-gradient(135deg, #eff6ff, #f8fbff);
+        border: 1px solid #dbeafe;
+        border-radius: 14px;
+        padding: 1rem;
+    }
+
+    .upload-progress-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: .5rem;
+        font-weight: 700;
+        color: #1e3a8a;
+    }
+
+    .upload-progress-percent {
+        font-size: 1rem;
     }
 
     .doc-flag-chip {
@@ -685,7 +717,12 @@ $clusterProgressPercent = checklist_doc_percent(
                                                         <?php foreach ($group['items'] as $item): ?>
                                                             <tr>
                                                                 <td><?= $no++ ?></td>
-                                                                <td><?= $item['doc_name'] ?></td>
+                                                                <td>
+                                                                    <div><?= $item['doc_name'] ?></div>
+                                                                    <?php if (!empty($item['doc_requirement_note'])): ?>
+                                                                        <div class="doc-requirement-note"><?= nl2br(htmlspecialchars($item['doc_requirement_note'], ENT_QUOTES)) ?></div>
+                                                                    <?php endif; ?>
+                                                                </td>
                                                                 <td><span class="badge badge-<?= checklist_doc_status_badge($item['status_file']) ?>"><?= checklist_doc_status_label($item['status_file']) ?></span></td>
                                                                 <td>
                                                                     <?php if (!empty($item['file_path'])): ?>
@@ -717,7 +754,8 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
                                                                             data-package-id="<?= (int) $group['id_doc_package'] ?>"
                                                                             data-item-id="<?= (int) $item['id_doc_item'] ?>"
-                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                            data-doc-note="<?= htmlspecialchars((string) $item['doc_requirement_note'], ENT_QUOTES) ?>">
                                                                             Upload
                                                                         </button>
                                                                     <?php endif; ?>
@@ -817,6 +855,9 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                         <td><?= $bulkNo++ ?></td>
                                                                         <td>
                                                                             <div class="doc-bulk-name"><?= $item['doc_name'] ?></div>
+                                                                            <?php if (!empty($item['doc_requirement_note'])): ?>
+                                                                                <div class="doc-requirement-note"><?= nl2br(htmlspecialchars($item['doc_requirement_note'], ENT_QUOTES)) ?></div>
+                                                                            <?php endif; ?>
                                                                             <div class="doc-bulk-help">Pilih file baru jika dokumen ini ingin diupload atau diperbarui.</div>
                                                                             <input type="hidden" name="id_doc_item[]" value="<?= (int) $item['id_doc_item'] ?>">
                                                                             <input type="hidden" name="doc_name[]" value="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">
@@ -923,7 +964,12 @@ $clusterProgressPercent = checklist_doc_percent(
                                                         <?php foreach ($group['items'] as $item): ?>
                                                             <tr>
                                                                 <td><?= $no++ ?></td>
-                                                                <td><?= $item['doc_name'] ?></td>
+                                                                <td>
+                                                                    <div><?= $item['doc_name'] ?></div>
+                                                                    <?php if (!empty($item['doc_requirement_note'])): ?>
+                                                                        <div class="doc-requirement-note"><?= nl2br(htmlspecialchars($item['doc_requirement_note'], ENT_QUOTES)) ?></div>
+                                                                    <?php endif; ?>
+                                                                </td>
                                                                 <td><span class="badge badge-<?= checklist_doc_status_badge($item['status_file']) ?>"><?= checklist_doc_status_label($item['status_file']) ?></span></td>
                                                                 <td>
                                                                     <?php if (!empty($item['file_path'])): ?>
@@ -955,7 +1001,8 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
                                                                             data-package-id="<?= (int) $group['id_doc_package'] ?>"
                                                                             data-item-id="<?= (int) $item['id_doc_item'] ?>"
-                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                            data-doc-note="<?= htmlspecialchars((string) $item['doc_requirement_note'], ENT_QUOTES) ?>">
                                                                             Upload
                                                                         </button>
                                                                     <?php endif; ?>
@@ -1055,6 +1102,9 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                         <td><?= $bulkNo++ ?></td>
                                                                         <td>
                                                                             <div class="doc-bulk-name"><?= $item['doc_name'] ?></div>
+                                                                            <?php if (!empty($item['doc_requirement_note'])): ?>
+                                                                                <div class="doc-requirement-note"><?= nl2br(htmlspecialchars($item['doc_requirement_note'], ENT_QUOTES)) ?></div>
+                                                                            <?php endif; ?>
                                                                             <div class="doc-bulk-help">Pilih file baru jika dokumen ini ingin diupload atau diperbarui.</div>
                                                                             <input type="hidden" name="id_doc_item[]" value="<?= (int) $item['id_doc_item'] ?>">
                                                                             <input type="hidden" name="doc_name[]" value="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">
@@ -1157,7 +1207,7 @@ $clusterProgressPercent = checklist_doc_percent(
 <div class="modal fade doc-modal doc-modal-upload" id="modalUploadDocument">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/uploadDocument') ?>" enctype="multipart/form-data">
+            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/uploadDocument') ?>" enctype="multipart/form-data" id="upload-document-form">
                 <div class="modal-header">
                     <div>
                         <h4 class="modal-title mb-1">Upload Dokumen</h4>
@@ -1173,6 +1223,7 @@ $clusterProgressPercent = checklist_doc_percent(
                     <div class="doc-upload-highlight mb-3">
                         <div class="doc-upload-name" id="upload-doc-name"></div>
                         <p class="doc-upload-note">File yang diupload akan masuk ke dokumen ini dan menggantikan file sebelumnya jika sudah ada.</p>
+                        <div class="doc-requirement-note" id="upload-doc-note" style="display:none;"></div>
                     </div>
                     <div class="doc-modal-panel">
                         <div class="form-group mb-0">
@@ -1186,7 +1237,16 @@ $clusterProgressPercent = checklist_doc_percent(
                                     <div class="upload-dropzone-file" id="upload-file-name">Belum ada file dipilih</div>
                                 </div>
                             </div>
-                            <small class="form-text text-muted">Format yang didukung: PDF, Word, Excel, JPG, JPEG, PNG.</small>
+                            <small class="form-text text-muted">Format yang didukung: PDF, Word, Excel, JPG, JPEG, PNG. Maksimal dokumen 30 MB.</small>
+                        </div>
+                    </div>
+                    <div class="upload-progress-panel" id="upload-progress-panel">
+                        <div class="upload-progress-meta">
+                            <span>Progress Upload</span>
+                            <span class="upload-progress-percent" id="upload-progress-percent">0%</span>
+                        </div>
+                        <div class="doc-progress">
+                            <div class="doc-progress-bar warning" id="upload-progress-bar" style="width: 0%"></div>
                         </div>
                     </div>
                     <div class="doc-modal-panel">
@@ -1211,7 +1271,7 @@ $clusterProgressPercent = checklist_doc_percent(
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                    <button type="submit" class="btn btn-success">Upload Dokumen</button>
+                    <button type="submit" class="btn btn-success" id="upload-document-submit">Upload Dokumen</button>
                 </div>
             </form>
         </div>
@@ -1424,10 +1484,20 @@ $clusterProgressPercent = checklist_doc_percent(
         $('#upload-package-id').val($(this).data('package-id'));
         $('#upload-item-id').val($(this).data('item-id'));
         $('#upload-doc-name-input').val($(this).data('doc-name'));
+        var docNote = $(this).data('doc-note') || '';
+        if (docNote !== '') {
+            $('#upload-doc-note').text(docNote).show();
+        } else {
+            $('#upload-doc-note').text('').hide();
+        }
         $('#upload-file-name').text('Belum ada file dipilih');
         $('#upload-file-input').val('');
         $('#is-document-not-required').prop('checked', false);
         $('#upload-file-input').prop('disabled', false).prop('required', true);
+        $('#upload-progress-panel').hide();
+        $('#upload-progress-bar').css('width', '0%');
+        $('#upload-progress-percent').text('0%');
+        $('#upload-document-submit').prop('disabled', false).text('Upload Dokumen');
     });
 
     $(document).on('click', '.btn-reject-doc', function() {
@@ -1516,6 +1586,61 @@ $clusterProgressPercent = checklist_doc_percent(
         if (isNy) {
             $('#astri-submitted-date').val('');
         }
+    });
+
+    $('#upload-document-form').on('submit', function(e) {
+        e.preventDefault();
+
+        var form = this;
+        var submitButton = $('#upload-document-submit');
+        var progressPanel = $('#upload-progress-panel');
+        var progressBar = $('#upload-progress-bar');
+        var progressPercent = $('#upload-progress-percent');
+        var formData = new FormData(form);
+
+        submitButton.prop('disabled', true).text('Uploading...');
+        progressPanel.show();
+        progressBar.removeClass('success').addClass('warning').css('width', '0%');
+        progressPercent.text('0%');
+
+        $.ajax({
+            url: $(form).attr('action'),
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            xhr: function() {
+                var xhr = $.ajaxSettings.xhr();
+                if (xhr.upload) {
+                    xhr.upload.addEventListener('progress', function(evt) {
+                        if (evt.lengthComputable) {
+                            var percent = Math.round((evt.loaded / evt.total) * 100);
+                            progressBar.css('width', percent + '%');
+                            progressPercent.text(percent + '%');
+                        }
+                    }, false);
+                }
+                return xhr;
+            },
+            success: function(response) {
+                progressBar.removeClass('warning').addClass('success').css('width', '100%');
+                progressPercent.text('100%');
+                if (response && response.status) {
+                    window.location.href = response.redirect_url || window.location.href;
+                    return;
+                }
+
+                alert(response && response.message ? response.message : 'Upload gagal.');
+                submitButton.prop('disabled', false).text('Upload Dokumen');
+            },
+            error: function() {
+                alert('Upload gagal. Silakan coba lagi.');
+                submitButton.prop('disabled', false).text('Upload Dokumen');
+            }
+        });
     });
 
     bindDropzone('#upload-dropzone', '#upload-file-input', '#upload-file-name');

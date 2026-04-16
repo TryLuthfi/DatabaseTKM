@@ -133,6 +133,66 @@ class MChecklist_Dokument_MyRep extends CI_Model
         return $this->enrichClusterRows($rows);
     }
 
+    public function getClusterDocumentItemRows($city = '', $regional = '')
+    {
+        $query = $this->db
+            ->select("
+                c.id_cluster,
+                c.cluster_name,
+                mt.city_name,
+                mt.regional_name,
+                g.scope_type,
+                g.sow_type,
+                g.group_label,
+                i.id_doc_item,
+                i.doc_name,
+                i.doc_requirement_note,
+                f.id_doc_file,
+                f.status_file,
+                f.file_name,
+                f.file_path,
+                f.remark,
+                f.uploaded_at,
+                f.reviewed_at,
+                f.approved_at,
+                f.astri_submitted_date,
+                f.astri_status,
+                f.astri_remark
+            ", false)
+            ->from('tb_rfs_myrep_cluster c')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
+            ->join('md_rfs_myrep_doc_group g', 'g.is_active = 1', 'inner')
+            ->join('md_rfs_myrep_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1 AND i.is_required = 1', 'inner')
+            ->join('tb_rfs_myrep_doc_package p', 'p.cluster_id = c.id_cluster AND p.id_doc_group = g.id_doc_group', 'left')
+            ->join('tb_rfs_myrep_doc_file f', 'f.id_doc_package = p.id_doc_package AND f.id_doc_item = i.id_doc_item', 'left')
+            ->where('c.status_rfs', 'FULL RFS');
+
+        if ($city !== '') {
+            $query->where('UPPER(mt.city_name)', strtoupper($city));
+        }
+
+        if ($regional !== '') {
+            $query->where('UPPER(mt.regional_name)', strtoupper($regional));
+        }
+
+        $rows = $query
+            ->order_by('mt.regional_name', 'ASC')
+            ->order_by('mt.city_name', 'ASC')
+            ->order_by('c.cluster_name', 'ASC')
+            ->order_by('g.sort_no', 'ASC')
+            ->order_by('i.sort_no', 'ASC')
+            ->get()
+            ->result_array();
+
+        foreach ($rows as &$row) {
+            $row['status_file'] = !empty($row['status_file']) ? $row['status_file'] : 'NOT UPLOADED';
+            $row['astri_status'] = !empty($row['astri_status']) ? $row['astri_status'] : 'NY';
+        }
+        unset($row);
+
+        return $rows;
+    }
+
     public function getClusterDetail($clusterId)
     {
         $row = $this->db
@@ -226,6 +286,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                         'id_doc_package' => $packageId,
                         'id_doc_item' => (int) $item['id_doc_item'],
                         'doc_name' => (string) $item['doc_name'],
+                        'doc_requirement_note' => (string) ($item['doc_requirement_note'] ?? ''),
                         'status_file' => (string) ($itemFile['status_file'] ?? 'NOT UPLOADED'),
                         'file_name' => (string) ($itemFile['file_name'] ?? ''),
                         'file_path' => (string) ($itemFile['file_path'] ?? ''),
@@ -1304,7 +1365,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
     private function getDocumentItems()
     {
         $rows = $this->db
-            ->select('id_doc_item, id_doc_group, doc_name, sort_no')
+            ->select('id_doc_item, id_doc_group, doc_name, doc_requirement_note, sort_no')
             ->from('md_rfs_myrep_doc_item')
             ->where('is_active', 1)
             ->where('is_required', 1)

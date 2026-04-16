@@ -26,6 +26,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $data['cityOptions'] = $this->MChecklist_Dokument_MyRep->getCityOptions();
         $data['regionalOptions'] = $this->MChecklist_Dokument_MyRep->getRegionalOptions();
         $data['clusterList'] = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional);
+        $data['documentItemList'] = $this->MChecklist_Dokument_MyRep->getClusterDocumentItemRows($selectedCity, $selectedRegional);
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -161,6 +162,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
     public function uploadMainfeederDocument()
     {
         if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.');
+                return;
+            }
             redirect('Auth');
             return;
         }
@@ -172,14 +177,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
 
         if ($mainfeederId <= 0 || $packageId <= 0 || $itemId <= 0) {
-            $this->session->set_flashdata('error', 'Data upload mainfeeder belum lengkap.');
-            redirect('Checklist_Dokument_MyRep/mainfeeder');
+            $this->handleUploadError('Data upload mainfeeder belum lengkap.', 'Checklist_Dokument_MyRep/mainfeeder');
             return;
         }
 
         if (!$isNoDocumentRequired && empty($_FILES['file']['name'])) {
-            $this->session->set_flashdata('error', 'File wajib dipilih jika dokumen dibutuhkan.');
-            redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+            $this->handleUploadError('File wajib dipilih jika dokumen dibutuhkan.', 'Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
             return;
         }
 
@@ -197,14 +200,13 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $config = [
                 'upload_path' => $uploadDir,
                 'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
-                'max_size' => 10240,
+                'max_size' => 30720,
                 'file_name' => $fileName,
                 'overwrite' => true,
             ];
             $this->upload->initialize($config);
             if (!$this->upload->do_upload('file')) {
-                $this->session->set_flashdata('error', strip_tags($this->upload->display_errors()));
-                redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+                $this->handleUploadError(strip_tags($this->upload->display_errors()), 'Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
                 return;
             }
             $fileData = $this->upload->data();
@@ -223,8 +225,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
         ]);
 
-        $this->session->set_flashdata('success', 'Dokumen mainfeeder berhasil diupload.');
-        redirect('Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
+        $this->handleUploadSuccess('Dokumen mainfeeder berhasil diupload.', 'Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
     }
 
     public function approveMainfeederDocument()
@@ -377,6 +378,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
     public function uploadDocument()
     {
         if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.');
+                return;
+            }
             redirect('Auth');
             return;
         }
@@ -388,14 +393,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
 
         if ($clusterId <= 0 || $packageId <= 0 || $itemId <= 0) {
-            $this->session->set_flashdata('error', 'Data upload dokumen belum lengkap.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $this->handleUploadError('Data upload dokumen belum lengkap.', 'Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
         }
 
         if (!$isNoDocumentRequired && empty($_FILES['file']['name'])) {
-            $this->session->set_flashdata('error', 'File wajib dipilih jika dokumen dibutuhkan.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $this->handleUploadError('File wajib dipilih jika dokumen dibutuhkan.', 'Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
         }
 
@@ -414,7 +417,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $config = [
                 'upload_path' => $uploadDir,
                 'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
-                'max_size' => 10240,
+                'max_size' => 30720,
                 'file_name' => $fileName,
                 'overwrite' => true,
             ];
@@ -422,8 +425,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $this->upload->initialize($config);
 
             if (!$this->upload->do_upload('file')) {
-                $this->session->set_flashdata('error', strip_tags($this->upload->display_errors()));
-                redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+                $this->handleUploadError(strip_tags($this->upload->display_errors()), 'Checklist_Dokument_MyRep/detail/' . $clusterId);
                 return;
             }
 
@@ -444,8 +446,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
         ];
 
         $this->MChecklist_Dokument_MyRep->saveFileUpload($payload);
-        $this->session->set_flashdata('success', $isNoDocumentRequired ? 'Dokumen ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen berhasil diupload.');
-        redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+        $this->handleUploadSuccess(
+            $isNoDocumentRequired ? 'Dokumen ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen berhasil diupload.',
+            'Checklist_Dokument_MyRep/detail/' . $clusterId
+        );
     }
 
     public function bulkUploadDocuments()
@@ -489,7 +493,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $config = [
                 'upload_path' => $uploadDir,
                 'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
-                'max_size' => 10240,
+                'max_size' => 30720,
                 'file_name' => $fileName,
                 'overwrite' => true,
             ];
@@ -690,6 +694,51 @@ class Checklist_Dokument_MyRep extends CI_Controller
         exit;
     }
 
+    private function isApprover()
+    {
+        return $this->session->userdata('lokasi_user') === 'HO'
+            || $this->session->userdata('nama_level') === 'Super Admin';
+    }
+
+    private function isAjaxRequest()
+    {
+        return $this->input->is_ajax_request()
+            || strtolower((string) $this->input->server('HTTP_X_REQUESTED_WITH')) === 'xmlhttprequest';
+    }
+
+    private function jsonResponse($status, $message, $redirectUrl = '')
+    {
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => $status,
+                'message' => $message,
+                'redirect_url' => $redirectUrl,
+            ]));
+    }
+
+    private function handleUploadError($message, $redirectPath)
+    {
+        if ($this->isAjaxRequest()) {
+            $this->jsonResponse(false, $message, base_url($redirectPath));
+            return;
+        }
+
+        $this->session->set_flashdata('error', $message);
+        redirect($redirectPath);
+    }
+
+    private function handleUploadSuccess($message, $redirectPath)
+    {
+        if ($this->isAjaxRequest()) {
+            $this->jsonResponse(true, $message, base_url($redirectPath));
+            return;
+        }
+
+        $this->session->set_flashdata('success', $message);
+        redirect($redirectPath);
+    }
+
     private function normalizeDateInput($date)
     {
         $date = trim((string) $date);
@@ -698,11 +747,5 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         return $date;
-    }
-
-    private function isApprover()
-    {
-        return $this->session->userdata('lokasi_user') === 'HO'
-            || $this->session->userdata('nama_level') === 'Super Admin';
     }
 }

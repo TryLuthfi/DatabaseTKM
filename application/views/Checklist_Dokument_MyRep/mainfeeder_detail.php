@@ -59,6 +59,8 @@ $mainfeederProgressPercent = checklist_doc_percent(
     .doc-progress-bar.success { background: linear-gradient(90deg, #065f46, #10b981); }
     .doc-progress-summary-box { background: linear-gradient(135deg, #1f2937, #111827) !important; color: #fff !important; }
     .doc-progress-summary-box h4, .doc-progress-summary-box p { color: #fff !important; }
+    .upload-progress-panel { display: none; background: linear-gradient(135deg, #eff6ff, #f8fbff); border: 1px solid #dbeafe; border-radius: 14px; padding: 1rem; margin-top: 1rem; }
+    .upload-progress-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; font-weight: 700; color: #1e3a8a; }
 </style>
 
 <div class="content-wrapper">
@@ -274,7 +276,7 @@ $mainfeederProgressPercent = checklist_doc_percent(
 <div class="modal fade" id="modalUploadMainfeeder">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/uploadMainfeederDocument') ?>" enctype="multipart/form-data">
+            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/uploadMainfeederDocument') ?>" enctype="multipart/form-data" id="upload-mainfeeder-form">
                 <div class="modal-header bg-success"><h4 class="modal-title">Upload Dokumen Mainfeeder</h4><button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
                 <div class="modal-body">
                     <input type="hidden" name="mainfeeder_id" id="mf-upload-mainfeeder-id">
@@ -282,7 +284,11 @@ $mainfeederProgressPercent = checklist_doc_percent(
                     <input type="hidden" name="id_doc_item_mainfeeder" id="mf-upload-item-id">
                     <input type="hidden" name="doc_name" id="mf-upload-doc-name-input">
                     <div class="form-group"><label>Dokumen</label><input type="text" id="mf-upload-doc-name" class="form-control" readonly></div>
-                    <div class="form-group"><label>File</label><input type="file" name="file" id="mf-upload-file-input" class="form-control" required></div>
+                    <div class="form-group">
+                        <label>File</label>
+                        <input type="file" name="file" id="mf-upload-file-input" class="form-control" required>
+                        <small class="form-text text-muted">Maksimal dokumen 30 MB.</small>
+                    </div>
                     <div class="form-group">
                         <div class="custom-control custom-checkbox">
                             <input type="checkbox" class="custom-control-input" id="mf-is-document-not-required" name="is_document_not_required" value="1">
@@ -290,8 +296,17 @@ $mainfeederProgressPercent = checklist_doc_percent(
                         </div>
                     </div>
                     <div class="form-group mb-0"><label>Remark</label><textarea name="remark" class="form-control" rows="3"></textarea></div>
+                    <div class="upload-progress-panel" id="mf-upload-progress-panel">
+                        <div class="upload-progress-meta">
+                            <span>Progress Upload</span>
+                            <span id="mf-upload-progress-percent">0%</span>
+                        </div>
+                        <div class="doc-progress">
+                            <div class="doc-progress-bar warning" id="mf-upload-progress-bar" style="width:0%"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button><button type="submit" class="btn btn-success">Upload</button></div>
+                <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button><button type="submit" class="btn btn-success" id="mf-upload-submit">Upload</button></div>
             </form>
         </div>
     </div>
@@ -352,6 +367,10 @@ $mainfeederProgressPercent = checklist_doc_percent(
         $('#mf-upload-doc-name-input').val($(this).data('doc-name'));
         $('#mf-is-document-not-required').prop('checked', false);
         $('#mf-upload-file-input').prop('disabled', false).prop('required', true).val('');
+        $('#mf-upload-progress-panel').hide();
+        $('#mf-upload-progress-bar').css('width', '0%');
+        $('#mf-upload-progress-percent').text('0%');
+        $('#mf-upload-submit').prop('disabled', false).text('Upload');
     });
 
     $(document).on('change', '#mf-is-document-not-required', function() {
@@ -379,5 +398,60 @@ $mainfeederProgressPercent = checklist_doc_percent(
         $('#mf-astri-submitted-date').val($(this).data('astri-submitted-date'));
         $('#mf-astri-status').val(status);
         $('#mf-astri-remark').val($(this).data('astri-remark') || '');
+    });
+
+    $('#upload-mainfeeder-form').on('submit', function(e) {
+        e.preventDefault();
+
+        var form = this;
+        var submitButton = $('#mf-upload-submit');
+        var progressPanel = $('#mf-upload-progress-panel');
+        var progressBar = $('#mf-upload-progress-bar');
+        var progressPercent = $('#mf-upload-progress-percent');
+        var formData = new FormData(form);
+
+        submitButton.prop('disabled', true).text('Uploading...');
+        progressPanel.show();
+        progressBar.removeClass('success').addClass('warning').css('width', '0%');
+        progressPercent.text('0%');
+
+        $.ajax({
+            url: $(form).attr('action'),
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            xhr: function() {
+                var xhr = $.ajaxSettings.xhr();
+                if (xhr.upload) {
+                    xhr.upload.addEventListener('progress', function(evt) {
+                        if (evt.lengthComputable) {
+                            var percent = Math.round((evt.loaded / evt.total) * 100);
+                            progressBar.css('width', percent + '%');
+                            progressPercent.text(percent + '%');
+                        }
+                    }, false);
+                }
+                return xhr;
+            },
+            success: function(response) {
+                progressBar.removeClass('warning').addClass('success').css('width', '100%');
+                progressPercent.text('100%');
+                if (response && response.status) {
+                    window.location.href = response.redirect_url || window.location.href;
+                    return;
+                }
+
+                alert(response && response.message ? response.message : 'Upload gagal.');
+                submitButton.prop('disabled', false).text('Upload');
+            },
+            error: function() {
+                alert('Upload gagal. Silakan coba lagi.');
+                submitButton.prop('disabled', false).text('Upload');
+            }
+        });
     });
 </script>

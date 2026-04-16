@@ -73,6 +73,40 @@ if (!function_exists('checklist_doc_progress_theme')) {
     }
 }
 
+if (!function_exists('checklist_doc_status_badge')) {
+    function checklist_doc_status_badge($status)
+    {
+        $status = strtoupper(trim((string) $status));
+
+        switch ($status) {
+            case 'APPROVED':
+                return 'success';
+            case 'REJECTED':
+                return 'danger';
+            case 'UPLOADED':
+                return 'warning';
+            case 'NOT UPLOADED':
+            case 'NY':
+                return 'secondary';
+            default:
+                return 'info';
+        }
+    }
+}
+
+if (!function_exists('checklist_doc_status_label')) {
+    function checklist_doc_status_label($status)
+    {
+        $status = strtoupper(trim((string) $status));
+
+        if ($status === 'UPLOADED') {
+            return 'ON REVIEW';
+        }
+
+        return $status !== '' ? $status : '-';
+    }
+}
+
 $totalCluster = count($clusterList);
 $clusterDoneRfsBelumAtp = 0;
 $clusterDoneAtpBelumDokument = 0;
@@ -298,6 +332,48 @@ foreach ($clusterList as $cluster) {
         min-width: 92px;
         margin-bottom: 6px;
     }
+
+    .flat-cluster-name {
+        font-weight: 700;
+        color: #111827;
+        min-width: 220px;
+    }
+
+    .item-note {
+        display: block;
+        margin-top: 4px;
+        font-size: 11px;
+        color: #92400e;
+        line-height: 1.4;
+    }
+
+    .remark-cell {
+        min-width: 220px;
+        white-space: normal;
+    }
+
+    .table-card .card-tools .btn-tool {
+        color: #475569;
+    }
+
+    .item-filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .item-filter-group {
+        min-width: 180px;
+    }
+
+    .item-filter-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: #475569;
+        margin-bottom: 6px;
+    }
 </style>
 
 <div class="content-wrapper">
@@ -416,6 +492,11 @@ foreach ($clusterList as $cluster) {
             <div class="card table-card">
                 <div class="card-header">
                     <h3 class="card-title">List Cluster FULL RFS</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <table id="table-checklist-dokument" class="table table-bordered table-striped table-hover">
@@ -743,6 +824,120 @@ foreach ($clusterList as $cluster) {
                     </table>
                 </div>
             </div>
+
+            <div class="card table-card">
+                <div class="card-header">
+                    <h3 class="card-title">Monitoring Item Dokumen</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="item-filter-bar">
+                        <div class="item-filter-group">
+                            <label for="item-filter-regional">Regional</label>
+                            <select id="item-filter-regional" class="form-control form-control-sm">
+                                <option value="">Semua Regional</option>
+                            </select>
+                        </div>
+                        <div class="item-filter-group">
+                            <label for="item-filter-city">Kota</label>
+                            <select id="item-filter-city" class="form-control form-control-sm">
+                                <option value="">Semua Kota</option>
+                            </select>
+                        </div>
+                        <div class="item-filter-group">
+                            <label for="item-filter-internal-status">Status Internal</label>
+                            <select id="item-filter-internal-status" class="form-control form-control-sm">
+                                <option value="">Semua Status Internal</option>
+                                <option value="NOT UPLOADED">NOT UPLOADED</option>
+                                <option value="ON REVIEW">ON REVIEW</option>
+                                <option value="REJECTED">REJECTED</option>
+                                <option value="APPROVED">APPROVED</option>
+                            </select>
+                        </div>
+                        <div class="item-filter-group">
+                            <label for="item-filter-astri-status">Status Astri</label>
+                            <select id="item-filter-astri-status" class="form-control form-control-sm">
+                                <option value="">Semua Status Astri</option>
+                                <option value="NY">NY</option>
+                                <option value="ON REVIEW">ON REVIEW</option>
+                                <option value="REJECTED">REJECTED</option>
+                                <option value="APPROVED">APPROVED</option>
+                            </select>
+                        </div>
+                    </div>
+                    <table id="table-checklist-item" class="table table-bordered table-striped table-hover">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>No</th>
+                                <th>Regional</th>
+                                <th>Kota</th>
+                                <th>Cluster</th>
+                                <th>Scope</th>
+                                <th>SOW</th>
+                                <th>Dokumen</th>
+                                <th>Status Internal</th>
+                                <th>Remark Internal</th>
+                                <th>Status Astri</th>
+                                <th>Remark Astri</th>
+                                <th>Uploaded At</th>
+                                <th>Reviewed At</th>
+                                <th>Approved At</th>
+                                <th>Submit Astri</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($documentItemList)): ?>
+                                <tr>
+                                    <td colspan="16" class="text-center">Belum ada item dokumen.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php $itemNo = 1; ?>
+                                <?php foreach ($documentItemList as $item): ?>
+                                    <tr>
+                                        <td><?= $itemNo++ ?></td>
+                                        <td><?= !empty($item['regional_name']) ? $item['regional_name'] : '-' ?></td>
+                                        <td><?= !empty($item['city_name']) ? $item['city_name'] : '-' ?></td>
+                                        <td>
+                                            <div class="flat-cluster-name"><?= !empty($item['cluster_name']) ? $item['cluster_name'] : '-' ?></div>
+                                        </td>
+                                        <td><?= !empty($item['scope_type']) ? $item['scope_type'] : '-' ?></td>
+                                        <td><?= !empty($item['sow_type']) ? $item['sow_type'] : '-' ?></td>
+                                        <td>
+                                            <strong><?= !empty($item['doc_name']) ? $item['doc_name'] : '-' ?></strong>
+                                            <?php if (!empty($item['doc_requirement_note'])): ?>
+                                                <span class="item-note"><?= $item['doc_requirement_note'] ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php $internalStatus = checklist_doc_status_label($item['status_file'] ?? 'NOT UPLOADED'); ?>
+                                            <span class="badge badge-<?= checklist_doc_status_badge($item['status_file'] ?? 'NOT UPLOADED') ?>"><?= $internalStatus ?></span>
+                                        </td>
+                                        <td class="remark-cell"><?= !empty($item['remark']) ? nl2br(htmlspecialchars($item['remark'])) : '-' ?></td>
+                                        <td>
+                                            <?php $astriStatus = checklist_doc_status_label($item['astri_status'] ?? 'NY'); ?>
+                                            <span class="badge badge-<?= checklist_doc_status_badge($item['astri_status'] ?? 'NY') ?>"><?= $astriStatus ?></span>
+                                        </td>
+                                        <td class="remark-cell"><?= !empty($item['astri_remark']) ? nl2br(htmlspecialchars($item['astri_remark'])) : '-' ?></td>
+                                        <td><?= checklist_doc_format_date($item['uploaded_at'] ?? null) ?></td>
+                                        <td><?= checklist_doc_format_date($item['reviewed_at'] ?? null) ?></td>
+                                        <td><?= checklist_doc_format_date($item['approved_at'] ?? null) ?></td>
+                                        <td><?= checklist_doc_format_date($item['astri_submitted_date'] ?? null) ?></td>
+                                        <td>
+                                            <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . (int) $item['id_cluster']) ?>"
+                                                class="btn btn-primary btn-sm">Detail</a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </section>
 </div>
@@ -763,6 +958,69 @@ foreach ($clusterList as $cluster) {
                 [10, 25, 50, 100],
                 [10, 25, 50, 100]
             ]
+        });
+
+        var itemTable = $('#table-checklist-item').DataTable({
+            "paging": true,
+            "lengthChange": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "autoWidth": false,
+            "responsive": false,
+            "scrollX": true,
+            "pageLength": 10,
+            "lengthMenu": [
+                [10, 25, 50, 100],
+                [10, 25, 50, 100]
+            ]
+        });
+
+        function escapeRegex(value) {
+            return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function populateFilterOptions(columnIndex, selector) {
+            var select = $(selector);
+            var values = [];
+
+            itemTable.column(columnIndex).data().each(function(value) {
+                var text = $('<div>').html(value).text().trim();
+                if (text !== '' && values.indexOf(text) === -1) {
+                    values.push(text);
+                }
+            });
+
+            values.sort();
+            $.each(values, function(_, value) {
+                select.append($('<option>', {
+                    value: value,
+                    text: value
+                }));
+            });
+        }
+
+        populateFilterOptions(1, '#item-filter-regional');
+        populateFilterOptions(2, '#item-filter-city');
+
+        $('#item-filter-regional').on('change', function() {
+            var value = $.fn.dataTable.util.escapeRegex($(this).val());
+            itemTable.column(1).search(value ? '^' + value + '$' : '', true, false).draw();
+        });
+
+        $('#item-filter-city').on('change', function() {
+            var value = $.fn.dataTable.util.escapeRegex($(this).val());
+            itemTable.column(2).search(value ? '^' + value + '$' : '', true, false).draw();
+        });
+
+        $('#item-filter-internal-status').on('change', function() {
+            var value = $(this).val();
+            itemTable.column(7).search(value ? escapeRegex(value) : '', true, false).draw();
+        });
+
+        $('#item-filter-astri-status').on('change', function() {
+            var value = $(this).val();
+            itemTable.column(9).search(value ? escapeRegex(value) : '', true, false).draw();
         });
     });
 </script>
