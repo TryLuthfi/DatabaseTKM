@@ -54,6 +54,18 @@ if (!function_exists('checklist_doc_progress_theme')) {
 }
 
 $totalMainfeeder = count($mainfeederList);
+$mainfeederNyDokument = 0;
+$mainfeederNyAstri = 0;
+
+foreach ($mainfeederList as $row) {
+    if (empty($row['actual_submit_doc_date'])) {
+        $mainfeederNyDokument++;
+    }
+
+    if (empty($row['approved_astri_date'])) {
+        $mainfeederNyAstri++;
+    }
+}
 ?>
 
 <style>
@@ -129,10 +141,32 @@ $totalMainfeeder = count($mainfeederList);
                     <div class="small-box bg-info">
                         <div class="inner">
                             <h3><?= $totalMainfeeder ?></h3>
-                            <p>Mainfeeder</p>
+                            <p>MAINFEEDER</p>
                         </div>
                         <div class="icon">
                             <i class="fas fa-project-diagram"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small-box bg-danger">
+                        <div class="inner">
+                            <h3><?= $mainfeederNyDokument ?></h3>
+                            <p>NY DOKUMENT</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-file-upload"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small-box bg-secondary">
+                        <div class="inner">
+                            <h3><?= $mainfeederNyAstri ?></h3>
+                            <p>NY ASTRI</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-share-square"></i>
                         </div>
                     </div>
                 </div>

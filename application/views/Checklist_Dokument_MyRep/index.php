@@ -76,6 +76,7 @@ if (!function_exists('checklist_doc_progress_theme')) {
 $totalCluster = count($clusterList);
 $clusterDoneRfsBelumAtp = 0;
 $clusterDoneAtpBelumDokument = 0;
+$clusterNyAstri = 0;
 
 foreach ($clusterList as $cluster) {
     if (!empty($cluster['tanggal_rfs']) && empty($cluster['actual_atp_date'])) {
@@ -84,6 +85,10 @@ foreach ($clusterList as $cluster) {
 
     if (!empty($cluster['actual_atp_date']) && empty($cluster['actual_submit_doc_date'])) {
         $clusterDoneAtpBelumDokument++;
+    }
+
+    if (empty($cluster['approved_astri_date'])) {
+        $clusterNyAstri++;
     }
 }
 ?>
@@ -328,7 +333,7 @@ foreach ($clusterList as $cluster) {
                     <div class="small-box bg-info">
                         <div class="inner">
                             <h3><?= $totalCluster ?></h3>
-                            <p>Cluster Full RFS</p>
+                            <p>FULL RFS</p>
                         </div>
                         <div class="icon">
                             <i class="fas fa-network-wired"></i>
@@ -339,7 +344,7 @@ foreach ($clusterList as $cluster) {
                     <div class="small-box bg-warning">
                         <div class="inner">
                             <h3><?= $clusterDoneRfsBelumAtp ?></h3>
-                            <p>Done RFS Belum ATP</p>
+                            <p>NY ATP</p>
                         </div>
                         <div class="icon">
                             <i class="fas fa-hourglass-half"></i>
@@ -350,10 +355,21 @@ foreach ($clusterList as $cluster) {
                     <div class="small-box bg-danger">
                         <div class="inner">
                             <h3><?= $clusterDoneAtpBelumDokument ?></h3>
-                            <p>Done ATP Belum Full Dokument</p>
+                            <p>NY DOKUMENT</p>
                         </div>
                         <div class="icon">
                             <i class="fas fa-file-upload"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small-box bg-secondary">
+                        <div class="inner">
+                            <h3><?= $clusterNyAstri ?></h3>
+                            <p>NY ASTRI</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-share-square"></i>
                         </div>
                     </div>
                 </div>
