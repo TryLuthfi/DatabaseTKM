@@ -21,6 +21,10 @@ if (!function_exists('checklist_doc_status_badge')) {
                 return 'danger';
             case 'UPLOADED':
             case 'ON REVIEW':
+            case 'WAITING WASPANG':
+            case 'WAITING PLANNING':
+            case 'WAITING TL':
+            case 'WAITING LOGISTIK':
             case 'ON PROGRESS':
                 return 'warning';
             default:
@@ -200,6 +204,11 @@ $clusterProgressPercent = checklist_doc_percent(
 
     .doc-bulk-input {
         min-width: 220px;
+    }
+
+    .bulk-upload-progress-panel {
+        display: none;
+        margin-top: .9rem;
     }
 
     .doc-progress-wrap {
@@ -571,6 +580,18 @@ $clusterProgressPercent = checklist_doc_percent(
                             <div class="doc-progress-bar <?= $clusterProgressPercent >= 100 ? 'success' : 'warning' ?>" style="width: <?= $clusterProgressPercent ?>%"></div>
                         </div>
                     </div>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="button"
+                            class="btn btn-outline-primary btn-edit-timeline"
+                            data-toggle="modal"
+                            data-target="#modalTimeline"
+                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                            data-cluster-name="<?= htmlspecialchars($cluster['cluster_name'], ENT_QUOTES) ?>"
+                            data-tanggal-rfs="<?= $cluster['tanggal_rfs'] ?>"
+                            data-actual-atp-date="<?= $cluster['actual_atp_date'] ?>">
+                            Edit Timeline Cluster
+                        </button>
+                    </div>
                     <div class="row">
                         <div class="col-md-2">
                             <div class="small-box bg-info">
@@ -651,18 +672,6 @@ $clusterProgressPercent = checklist_doc_percent(
                                                     <?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?>
                                                 </span>
                                                 <button type="button"
-                                                    class="btn btn-sm btn-outline-primary btn-edit-timeline"
-                                                    data-toggle="modal"
-                                                    data-target="#modalTimeline"
-                                                    data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
-                                                    data-package-id="<?= (int) $group['id_doc_package'] ?>"
-                                                    data-group-label="<?= $group['group_label'] ?>"
-                                                    data-tanggal-rfs="<?= $group['tanggal_rfs'] ?>"
-                                                    data-actual-atp-date="<?= $group['actual_atp_date'] ?>"
-                                                    data-remarks="<?= htmlspecialchars($group['remarks'], ENT_QUOTES) ?>">
-                                                    Edit Timeline
-                                                </button>
-                                                <button type="button"
                                                     class="btn btn-sm btn-outline-success"
                                                     data-toggle="modal"
                                                     data-target="#modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
@@ -782,6 +791,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
                                                                             data-astri-submitted-date="<?= htmlspecialchars((string) $item['astri_submitted_date'], ENT_QUOTES) ?>"
                                                                             data-astri-status="<?= htmlspecialchars((string) $item['astri_status'], ENT_QUOTES) ?>"
+                                                                            data-special-astri-flow="<?= (int) ($item['is_special_project_opname'] ?? 0) ?>"
                                                                             data-astri-remark="<?= htmlspecialchars((string) $item['astri_remark'], ENT_QUOTES) ?>">
                                                                             ASTRI
                                                                         </button>
@@ -820,7 +830,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                 <div class="modal fade doc-modal doc-modal-bulk" id="modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
-                                            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/bulkUploadDocuments') ?>" enctype="multipart/form-data">
+                                            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/bulkUploadDocuments') ?>" enctype="multipart/form-data" class="bulk-upload-form">
                                                 <div class="modal-header">
                                                     <div>
                                                         <h4 class="modal-title mb-1">Bulk Upload <?= $group['group_label'] ?></h4>
@@ -875,10 +885,19 @@ $clusterProgressPercent = checklist_doc_percent(
                                                             </tbody>
                                                         </table>
                                                     </div>
+                                                    <div class="bulk-upload-progress-panel">
+                                                        <div class="doc-progress-meta">
+                                                            <span>Progress Upload</span>
+                                                            <span class="bulk-upload-progress-percent">0%</span>
+                                                        </div>
+                                                        <div class="doc-progress">
+                                                            <div class="doc-progress-bar warning bulk-upload-progress-bar" style="width: 0%"></div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                                                    <button type="submit" class="btn btn-success">Upload Semua Yang Diisi</button>
+                                                    <button type="submit" class="btn btn-success bulk-upload-submit">Upload Semua Yang Diisi</button>
                                                 </div>
                                             </form>
                                         </div>
@@ -898,18 +917,6 @@ $clusterProgressPercent = checklist_doc_percent(
                                                     <?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?>
                                                 </span>
                                                 <button type="button"
-                                                    class="btn btn-sm btn-outline-success btn-edit-timeline"
-                                                    data-toggle="modal"
-                                                    data-target="#modalTimeline"
-                                                    data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
-                                                    data-package-id="<?= (int) $group['id_doc_package'] ?>"
-                                                    data-group-label="<?= $group['group_label'] ?>"
-                                                    data-tanggal-rfs="<?= $group['tanggal_rfs'] ?>"
-                                                    data-actual-atp-date="<?= $group['actual_atp_date'] ?>"
-                                                    data-remarks="<?= htmlspecialchars($group['remarks'], ENT_QUOTES) ?>">
-                                                    Edit Timeline
-                                                </button>
-                                                <button type="button"
                                                     class="btn btn-sm btn-outline-success"
                                                     data-toggle="modal"
                                                     data-target="#modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
@@ -1029,6 +1036,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
                                                                             data-astri-submitted-date="<?= htmlspecialchars((string) $item['astri_submitted_date'], ENT_QUOTES) ?>"
                                                                             data-astri-status="<?= htmlspecialchars((string) $item['astri_status'], ENT_QUOTES) ?>"
+                                                                            data-special-astri-flow="<?= (int) ($item['is_special_project_opname'] ?? 0) ?>"
                                                                             data-astri-remark="<?= htmlspecialchars((string) $item['astri_remark'], ENT_QUOTES) ?>">
                                                                             ASTRI
                                                                         </button>
@@ -1067,7 +1075,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                 <div class="modal fade doc-modal doc-modal-bulk" id="modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
-                                            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/bulkUploadDocuments') ?>" enctype="multipart/form-data">
+                                            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/bulkUploadDocuments') ?>" enctype="multipart/form-data" class="bulk-upload-form">
                                                 <div class="modal-header">
                                                     <div>
                                                         <h4 class="modal-title mb-1">Bulk Upload <?= $group['group_label'] ?></h4>
@@ -1122,10 +1130,19 @@ $clusterProgressPercent = checklist_doc_percent(
                                                             </tbody>
                                                         </table>
                                                     </div>
+                                                    <div class="bulk-upload-progress-panel">
+                                                        <div class="doc-progress-meta">
+                                                            <span>Progress Upload</span>
+                                                            <span class="bulk-upload-progress-percent">0%</span>
+                                                        </div>
+                                                        <div class="doc-progress">
+                                                            <div class="doc-progress-bar warning bulk-upload-progress-bar" style="width: 0%"></div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                                                    <button type="submit" class="btn btn-success">Upload Semua Yang Diisi</button>
+                                                    <button type="submit" class="btn btn-success bulk-upload-submit">Upload Semua Yang Diisi</button>
                                                 </div>
                                             </form>
                                         </div>
@@ -1153,7 +1170,6 @@ $clusterProgressPercent = checklist_doc_percent(
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="cluster_id" id="timeline-cluster-id">
-                    <input type="hidden" name="id_doc_package" id="timeline-package-id">
                     <div class="doc-modal-panel">
                         <div class="doc-modal-title">Ringkasan SLA</div>
                         <p class="doc-modal-subtitle">Isi tanggal real ATP bila sudah selesai. Plan dokumen akan dihitung otomatis sesuai rule SLA.</p>
@@ -1177,21 +1193,15 @@ $clusterProgressPercent = checklist_doc_percent(
                             <div class="form-group mb-0">
                                 <label class="font-weight-bold">Tanggal RFS</label>
                                 <input type="date" name="tanggal_rfs_display" id="timeline-tanggal-rfs" class="form-control" readonly disabled>
-                                <small class="form-text text-muted">Tanggal RFS dikunci dan menjadi dasar perhitungan `Plan ATP`.</small>
+                                <small class="form-text text-muted">Tanggal RFS dikunci dan menjadi dasar perhitungan `Plan ATP` untuk seluruh dokumen dalam cluster ini.</small>
                             </div>
                         </div>
                         <div class="doc-modal-panel">
                             <div class="form-group mb-0">
                                 <label class="font-weight-bold">Realisasi ATP</label>
                                 <input type="date" name="actual_atp_date" id="timeline-actual-atp" class="form-control">
-                                <small class="form-text text-muted">Jika kosong, sistem tetap menghitung target dokumen dari `Plan ATP`.</small>
+                                <small class="form-text text-muted">Tanggal ini berlaku sama untuk seluruh package dalam satu cluster. Jika kosong, sistem tetap menghitung target dokumen dari `Plan ATP`.</small>
                             </div>
-                        </div>
-                    </div>
-                    <div class="doc-modal-panel">
-                        <div class="form-group mb-0">
-                            <label class="font-weight-bold">Remarks</label>
-                            <textarea name="remarks" id="timeline-remarks" class="form-control" rows="3" placeholder="Tambahkan catatan timeline jika diperlukan"></textarea>
                         </div>
                     </div>
                 </div>
@@ -1409,6 +1419,10 @@ $clusterProgressPercent = checklist_doc_percent(
                                 <select name="astri_status" id="astri-status" class="form-control">
                                     <option value="NY">NY</option>
                                     <option value="ON REVIEW">ON REVIEW</option>
+                                    <option value="WAITING WASPANG">WAITING WASPANG</option>
+                                    <option value="WAITING PLANNING">WAITING PLANNING</option>
+                                    <option value="WAITING TL">WAITING TL</option>
+                                    <option value="WAITING LOGISTIK">WAITING LOGISTIK</option>
                                     <option value="REJECTED">REJECTED</option>
                                     <option value="APPROVED">APPROVED</option>
                                 </select>
@@ -1470,12 +1484,10 @@ $clusterProgressPercent = checklist_doc_percent(
     }
 
     $(document).on('click', '.btn-edit-timeline', function() {
-        $('#timeline-group-label').text($(this).data('group-label'));
+        $('#timeline-group-label').text($(this).data('cluster-name') || 'Timeline Cluster');
         $('#timeline-cluster-id').val($(this).data('cluster-id'));
-        $('#timeline-package-id').val($(this).data('package-id'));
         $('#timeline-tanggal-rfs').val($(this).data('tanggal-rfs'));
         $('#timeline-actual-atp').val($(this).data('actual-atp-date'));
-        $('#timeline-remarks').val($(this).data('remarks'));
     });
 
     $(document).on('click', '.btn-upload-doc', function() {
@@ -1516,11 +1528,31 @@ $clusterProgressPercent = checklist_doc_percent(
 
     $(document).on('click', '.btn-astri-doc', function() {
         var astriStatus = $(this).data('astri-status') || 'NY';
+        var isSpecialAstriFlow = parseInt($(this).data('special-astri-flow'), 10) === 1;
+        var statusOptions = isSpecialAstriFlow ? [
+            'NY',
+            'WAITING WASPANG',
+            'WAITING PLANNING',
+            'WAITING TL',
+            'WAITING LOGISTIK',
+            'REJECTED',
+            'APPROVED'
+        ] : [
+            'NY',
+            'ON REVIEW',
+            'REJECTED',
+            'APPROVED'
+        ];
+
         $('#astri-doc-name').text($(this).data('doc-name'));
         $('#astri-cluster-id').val($(this).data('cluster-id'));
         $('#astri-file-id').val($(this).data('file-id'));
         $('#astri-submitted-date').val($(this).data('astri-submitted-date'));
-        $('#astri-status').val(astriStatus);
+        var optionHtml = '';
+        statusOptions.forEach(function(option) {
+            optionHtml += '<option value="' + option + '">' + option + '</option>';
+        });
+        $('#astri-status').html(optionHtml).val(astriStatus);
         $('#astri-remark').val($(this).data('astri-remark') || '');
         $('#astri-submitted-date').prop('required', astriStatus !== 'NY');
     });
@@ -1639,6 +1671,62 @@ $clusterProgressPercent = checklist_doc_percent(
             error: function() {
                 alert('Upload gagal. Silakan coba lagi.');
                 submitButton.prop('disabled', false).text('Upload Dokumen');
+            }
+        });
+    });
+
+    $('.bulk-upload-form').on('submit', function(e) {
+        e.preventDefault();
+
+        var form = this;
+        var $form = $(form);
+        var submitButton = $form.find('.bulk-upload-submit');
+        var progressPanel = $form.find('.bulk-upload-progress-panel');
+        var progressBar = $form.find('.bulk-upload-progress-bar');
+        var progressPercent = $form.find('.bulk-upload-progress-percent');
+        var formData = new FormData(form);
+
+        submitButton.prop('disabled', true).text('Uploading...');
+        progressPanel.show();
+        progressBar.removeClass('success').addClass('warning').css('width', '0%');
+        progressPercent.text('0%');
+
+        $.ajax({
+            url: $form.attr('action'),
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            xhr: function() {
+                var xhr = $.ajaxSettings.xhr();
+                if (xhr.upload) {
+                    xhr.upload.addEventListener('progress', function(evt) {
+                        if (evt.lengthComputable) {
+                            var percent = Math.round((evt.loaded / evt.total) * 100);
+                            progressBar.css('width', percent + '%');
+                            progressPercent.text(percent + '%');
+                        }
+                    }, false);
+                }
+                return xhr;
+            },
+            success: function(response) {
+                progressBar.removeClass('warning').addClass('success').css('width', '100%');
+                progressPercent.text('100%');
+                if (response && response.status) {
+                    window.location.href = response.redirect_url || window.location.href;
+                    return;
+                }
+
+                alert(response && response.message ? response.message : 'Bulk upload gagal.');
+                submitButton.prop('disabled', false).text('Upload Semua Yang Diisi');
+            },
+            error: function() {
+                alert('Bulk upload gagal. Silakan coba lagi.');
+                submitButton.prop('disabled', false).text('Upload Semua Yang Diisi');
             }
         });
     });

@@ -3,6 +3,41 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MChecklist_Dokument_MyRep extends CI_Model
 {
+    private function getProjectOpnameAstriStatuses()
+    {
+        return [
+            'WAITING WASPANG',
+            'WAITING PLANNING',
+            'WAITING TL',
+            'WAITING LOGISTIK',
+        ];
+    }
+
+    private function isSpecialProjectOpname($scopeType, $sowType, $docName)
+    {
+        return strtoupper(trim((string) $scopeType)) === 'CLUSTER'
+            && strtoupper(trim((string) $sowType)) === 'RFS'
+            && strtoupper(trim((string) $docName)) === 'PROJECT OPNAME';
+    }
+
+    private function getEffectiveAstriStatus($storedStatus, $actualAtpDate, $scopeType, $sowType, $docName)
+    {
+        $status = strtoupper(trim((string) $storedStatus));
+        if ($status === '') {
+            $status = 'NY';
+        }
+
+        if (
+            $status === 'NY'
+            && !empty($actualAtpDate)
+            && $this->isSpecialProjectOpname($scopeType, $sowType, $docName)
+        ) {
+            return 'WAITING WASPANG';
+        }
+
+        return $status;
+    }
+
     public function ensureClusterPackages($clusterId, $tanggalRfs = null)
     {
         $clusterId = (int) $clusterId;
@@ -147,6 +182,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 i.id_doc_item,
                 i.doc_name,
                 i.doc_requirement_note,
+                p.actual_atp_date,
                 f.id_doc_file,
                 f.status_file,
                 f.file_name,
@@ -186,7 +222,13 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
         foreach ($rows as &$row) {
             $row['status_file'] = !empty($row['status_file']) ? $row['status_file'] : 'NOT UPLOADED';
-            $row['astri_status'] = !empty($row['astri_status']) ? $row['astri_status'] : 'NY';
+            $row['astri_status'] = $this->getEffectiveAstriStatus(
+                $row['astri_status'] ?? 'NY',
+                $row['actual_atp_date'] ?? null,
+                $row['scope_type'] ?? '',
+                $row['sow_type'] ?? '',
+                $row['doc_name'] ?? ''
+            );
         }
         unset($row);
 
@@ -266,6 +308,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             $uploadedDocs = 0;
             $approvedDocs = 0;
             $groupItems = [];
+            $actualAtp = $this->normalizeDate($package['actual_atp_date'] ?? null);
 
             if (isset($items[$groupId])) {
                 foreach ($items[$groupId] as $item) {
@@ -296,9 +339,20 @@ class MChecklist_Dokument_MyRep extends CI_Model
                         'reviewed_at' => $this->normalizeDateTime($itemFile['reviewed_at'] ?? null),
                         'approved_at' => $this->normalizeDateTime($itemFile['approved_at'] ?? null),
                         'astri_submitted_date' => $this->normalizeDate($itemFile['astri_submitted_date'] ?? null),
-                        'astri_status' => (string) ($itemFile['astri_status'] ?? 'NY'),
+                        'astri_status' => $this->getEffectiveAstriStatus(
+                            $itemFile['astri_status'] ?? 'NY',
+                            $actualAtp,
+                            $group['scope_type'] ?? '',
+                            $group['sow_type'] ?? '',
+                            $item['doc_name'] ?? ''
+                        ),
                         'astri_status_updated_at' => $this->normalizeDateTime($itemFile['astri_status_updated_at'] ?? null),
                         'astri_remark' => (string) ($itemFile['astri_remark'] ?? ''),
+                        'is_special_project_opname' => $this->isSpecialProjectOpname(
+                            $group['scope_type'] ?? '',
+                            $group['sow_type'] ?? '',
+                            $item['doc_name'] ?? ''
+                        ) ? 1 : 0,
                         'history' => [],
                     ];
                 }
@@ -306,7 +360,6 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
             $tanggalRfs = $this->normalizeDate($package['tanggal_rfs'] ?? null);
             $planAtp = $this->normalizeDate($package['plan_atp_date'] ?? null);
-            $actualAtp = $this->normalizeDate($package['actual_atp_date'] ?? null);
             $planDoc = $this->normalizeDate($package['plan_submit_doc_date'] ?? null);
             $actualDoc = $this->normalizeDate($package['actual_submit_doc_date'] ?? null);
 
@@ -396,7 +449,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             $planDoc = $this->addBusinessDays($planAtp, 7);
         }
 
-        return $this->db
+        $result = $this->db
             ->where('id_doc_package', (int) $packageId)
             ->update('tb_rfs_myrep_doc_package', [
                 'tanggal_rfs' => $tanggalRfs,
@@ -406,6 +459,54 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 'remarks' => $data['remarks'],
                 'updated_by' => (int) $data['updated_by'],
             ]);
+
+        if ($result) {
+            $this->syncProjectOpnameAstriStatusByPackage((int) $packageId, $actualAtp);
+        }
+
+        return $result;
+    }
+
+    public function updateClusterTimeline($clusterId, $data)
+    {
+        $packages = $this->db
+            ->get_where('tb_rfs_myrep_doc_package', [
+                'cluster_id' => (int) $clusterId,
+            ])
+            ->result_array();
+
+        if (empty($packages)) {
+            return false;
+        }
+
+        $actualAtp = !empty($data['actual_atp_date']) ? $data['actual_atp_date'] : null;
+        $updatedBy = (int) $data['updated_by'];
+
+        foreach ($packages as $package) {
+            $packageId = (int) $package['id_doc_package'];
+            $tanggalRfs = $this->normalizeDate($package['tanggal_rfs'] ?? null);
+            $planAtp = $tanggalRfs ? $this->addBusinessDays($tanggalRfs, 7) : null;
+            $planDoc = null;
+
+            if ($actualAtp) {
+                $planDoc = $this->addBusinessDays($actualAtp, 7);
+            } elseif ($planAtp) {
+                $planDoc = $this->addBusinessDays($planAtp, 7);
+            }
+
+            $this->db
+                ->where('id_doc_package', $packageId)
+                ->update('tb_rfs_myrep_doc_package', [
+                    'plan_atp_date' => $planAtp,
+                    'actual_atp_date' => $actualAtp,
+                    'plan_submit_doc_date' => $planDoc,
+                    'updated_by' => $updatedBy,
+                ]);
+
+            $this->syncProjectOpnameAstriStatusByPackage($packageId, $actualAtp);
+        }
+
+        return true;
     }
 
     public function saveFileUpload($data)
@@ -496,6 +597,11 @@ class MChecklist_Dokument_MyRep extends CI_Model
         ]);
 
         $this->refreshPackageStatus((int) $file['id_doc_package']);
+
+        if ($result && $data['status_file'] === 'APPROVED') {
+            $this->syncProjectOpnameAstriStatusByPackage((int) $file['id_doc_package']);
+        }
+
         return $result;
     }
 
@@ -525,11 +631,104 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function getFileById($fileId)
     {
-        return $this->db
-            ->get_where('tb_rfs_myrep_doc_file', [
-                'id_doc_file' => (int) $fileId,
-            ])
+        $row = $this->db
+            ->select('
+                f.*,
+                p.cluster_id,
+                p.actual_atp_date,
+                g.scope_type,
+                g.sow_type,
+                i.doc_name
+            ')
+            ->from('tb_rfs_myrep_doc_file f')
+            ->join('tb_rfs_myrep_doc_package p', 'p.id_doc_package = f.id_doc_package', 'left')
+            ->join('md_rfs_myrep_doc_item i', 'i.id_doc_item = f.id_doc_item', 'left')
+            ->join('md_rfs_myrep_doc_group g', 'g.id_doc_group = i.id_doc_group', 'left')
+            ->where('f.id_doc_file', (int) $fileId)
+            ->get()
             ->row_array();
+
+        if (!$row) {
+            return [];
+        }
+
+        $row['cluster_actual_atp_date'] = null;
+        if (!empty($row['cluster_id'])) {
+            $clusterAtp = $this->db
+                ->select('MAX(actual_atp_date) AS cluster_actual_atp_date', false)
+                ->from('tb_rfs_myrep_doc_package')
+                ->where('cluster_id', (int) $row['cluster_id'])
+                ->get()
+                ->row_array();
+            $row['cluster_actual_atp_date'] = $this->normalizeDate($clusterAtp['cluster_actual_atp_date'] ?? null);
+        }
+
+        $row['astri_status'] = $this->getEffectiveAstriStatus(
+            $row['astri_status'] ?? 'NY',
+            $row['cluster_actual_atp_date'] ?? ($row['actual_atp_date'] ?? null),
+            $row['scope_type'] ?? '',
+            $row['sow_type'] ?? '',
+            $row['doc_name'] ?? ''
+        );
+        $row['is_special_project_opname'] = $this->isSpecialProjectOpname(
+            $row['scope_type'] ?? '',
+            $row['sow_type'] ?? '',
+            $row['doc_name'] ?? ''
+        ) ? 1 : 0;
+
+        return $row;
+    }
+
+    private function syncProjectOpnameAstriStatusByPackage($packageId, $actualAtpDate = null)
+    {
+        $package = $this->db
+            ->select('p.id_doc_package, p.actual_atp_date, g.scope_type, g.sow_type')
+            ->from('tb_rfs_myrep_doc_package p')
+            ->join('md_rfs_myrep_doc_group g', 'g.id_doc_group = p.id_doc_group', 'inner')
+            ->where('p.id_doc_package', (int) $packageId)
+            ->get()
+            ->row_array();
+
+        if (!$package || strtoupper((string) $package['scope_type']) !== 'CLUSTER' || strtoupper((string) $package['sow_type']) !== 'RFS') {
+            return;
+        }
+
+        $actualAtpDate = $actualAtpDate !== null ? $actualAtpDate : $this->normalizeDate($package['actual_atp_date'] ?? null);
+
+        $file = $this->db
+            ->select('f.id_doc_file, f.astri_status, f.status_file')
+            ->from('tb_rfs_myrep_doc_file f')
+            ->join('md_rfs_myrep_doc_item i', 'i.id_doc_item = f.id_doc_item', 'inner')
+            ->where('f.id_doc_package', (int) $packageId)
+            ->where('UPPER(i.doc_name)', 'PROJECT OPNAME')
+            ->get()
+            ->row_array();
+
+        if (!$file) {
+            return;
+        }
+
+        $currentStatus = strtoupper(trim((string) ($file['astri_status'] ?? 'NY')));
+        $currentFileStatus = strtoupper(trim((string) ($file['status_file'] ?? '')));
+
+        if ($actualAtpDate && $currentStatus === 'NY' && $currentFileStatus === 'APPROVED') {
+            $this->db
+                ->where('id_doc_file', (int) $file['id_doc_file'])
+                ->update('tb_rfs_myrep_doc_file', [
+                    'astri_status' => 'WAITING WASPANG',
+                    'astri_status_updated_at' => date('Y-m-d H:i:s'),
+                ]);
+        }
+
+        if (!$actualAtpDate && $currentStatus === 'WAITING WASPANG') {
+            $this->db
+                ->where('id_doc_file', (int) $file['id_doc_file'])
+                ->update('tb_rfs_myrep_doc_file', [
+                    'astri_status' => 'NY',
+                    'astri_status_updated_at' => null,
+                    'astri_submitted_date' => null,
+                ]);
+        }
     }
 
     public function getFileLogsByFileIds($fileIds)
@@ -1441,21 +1640,54 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
         $rows = $this->db
             ->select("
-                id_doc_package,
-                SUM(CASE WHEN status_file = 'APPROVED' THEN 1 ELSE 0 END) AS approved,
-                SUM(CASE WHEN status_file = 'UPLOADED' THEN 1 ELSE 0 END) AS on_review,
-                SUM(CASE WHEN status_file = 'REJECTED' THEN 1 ELSE 0 END) AS rejected,
+                f.id_doc_package,
+                SUM(CASE WHEN f.status_file = 'APPROVED' THEN 1 ELSE 0 END) AS approved,
+                SUM(CASE WHEN f.status_file = 'UPLOADED' THEN 1 ELSE 0 END) AS on_review,
+                SUM(CASE WHEN f.status_file = 'REJECTED' THEN 1 ELSE 0 END) AS rejected,
                 COUNT(*) AS existing,
-                SUM(CASE WHEN astri_status = 'APPROVED' THEN 1 ELSE 0 END) AS astri_approved,
-                SUM(CASE WHEN astri_status = 'ON REVIEW' THEN 1 ELSE 0 END) AS astri_on_review,
-                SUM(CASE WHEN astri_status = 'REJECTED' THEN 1 ELSE 0 END) AS astri_rejected,
-                SUM(CASE WHEN astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED') THEN 1 ELSE 0 END) AS astri_submitted,
-                MAX(CASE WHEN astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED') AND astri_submitted_date IS NOT NULL THEN astri_submitted_date ELSE NULL END) AS astri_latest_submitted_date,
-                MAX(CASE WHEN astri_status = 'APPROVED' AND astri_status_updated_at IS NOT NULL THEN DATE(astri_status_updated_at) ELSE NULL END) AS astri_latest_approved_date
+                SUM(CASE WHEN f.astri_status = 'APPROVED' THEN 1 ELSE 0 END) AS astri_approved,
+                SUM(CASE WHEN f.astri_status = 'REJECTED' THEN 1 ELSE 0 END) AS astri_rejected,
+                SUM(CASE
+                    WHEN f.astri_status IN ('ON REVIEW', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
+                        THEN 1
+                    WHEN f.astri_status = 'NY'
+                        AND p.actual_atp_date IS NOT NULL
+                        AND g.scope_type = 'CLUSTER'
+                        AND g.sow_type = 'RFS'
+                        AND UPPER(i.doc_name) = 'PROJECT OPNAME'
+                        THEN 1
+                    ELSE 0
+                END) AS astri_on_review,
+                SUM(CASE
+                    WHEN f.astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
+                        THEN 1
+                    WHEN f.astri_status = 'NY'
+                        AND p.actual_atp_date IS NOT NULL
+                        AND g.scope_type = 'CLUSTER'
+                        AND g.sow_type = 'RFS'
+                        AND UPPER(i.doc_name) = 'PROJECT OPNAME'
+                        THEN 1
+                    ELSE 0
+                END) AS astri_submitted,
+                MAX(CASE
+                    WHEN (
+                        f.astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
+                        OR (
+                            f.astri_status = 'NY'
+                            AND p.actual_atp_date IS NOT NULL
+                            AND g.scope_type = 'CLUSTER'
+                            AND g.sow_type = 'RFS'
+                            AND UPPER(i.doc_name) = 'PROJECT OPNAME'
+                        )
+                    ) AND f.astri_submitted_date IS NOT NULL THEN f.astri_submitted_date ELSE NULL END) AS astri_latest_submitted_date,
+                MAX(CASE WHEN f.astri_status = 'APPROVED' AND f.astri_status_updated_at IS NOT NULL THEN DATE(f.astri_status_updated_at) ELSE NULL END) AS astri_latest_approved_date
             ", false)
-            ->from('tb_rfs_myrep_doc_file')
-            ->where_in('id_doc_package', $packageIds)
-            ->group_by('id_doc_package')
+            ->from('tb_rfs_myrep_doc_file f')
+            ->join('tb_rfs_myrep_doc_package p', 'p.id_doc_package = f.id_doc_package', 'left')
+            ->join('md_rfs_myrep_doc_item i', 'i.id_doc_item = f.id_doc_item', 'left')
+            ->join('md_rfs_myrep_doc_group g', 'g.id_doc_group = i.id_doc_group', 'left')
+            ->where_in('f.id_doc_package', $packageIds)
+            ->group_by('f.id_doc_package')
             ->get()
             ->result_array();
 

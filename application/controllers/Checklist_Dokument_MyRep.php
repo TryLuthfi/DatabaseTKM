@@ -356,21 +356,18 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
-        $packageId = (int) $this->input->post('id_doc_package');
-        if ($clusterId <= 0 || $packageId <= 0) {
+        if ($clusterId <= 0) {
             $this->session->set_flashdata('error', 'Data timeline tidak valid.');
             redirect('Checklist_Dokument_MyRep');
             return;
         }
 
         $payload = [
-            'tanggal_rfs' => null,
             'actual_atp_date' => $this->normalizeDateInput($this->input->post('actual_atp_date')),
-            'remarks' => trim((string) $this->input->post('remarks')),
             'updated_by' => (int) $this->session->userdata('id_user'),
         ];
 
-        $this->MChecklist_Dokument_MyRep->updatePackageTimeline($packageId, $payload);
+        $this->MChecklist_Dokument_MyRep->updateClusterTimeline($clusterId, $payload);
         $this->session->set_flashdata('success', 'Timeline berhasil diperbarui.');
         redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
     }
@@ -455,6 +452,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
     public function bulkUploadDocuments()
     {
         if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.');
+                return;
+            }
             redirect('Auth');
             return;
         }
@@ -465,8 +466,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $docNames = $this->input->post('doc_name');
 
         if ($clusterId <= 0 || $packageId <= 0 || !is_array($itemIds)) {
-            $this->session->set_flashdata('error', 'Data bulk upload tidak valid.');
-            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            $this->handleUploadError('Data bulk upload tidak valid.', 'Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
         }
 
@@ -521,12 +521,11 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         if ($successCount > 0) {
-            $this->session->set_flashdata('success', $successCount . ' dokumen berhasil diupload.');
-        } else {
-            $this->session->set_flashdata('error', 'Tidak ada file yang berhasil diupload.');
+            $this->handleUploadSuccess($successCount . ' dokumen berhasil diupload.', 'Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
         }
 
-        redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+        $this->handleUploadError('Tidak ada file yang berhasil diupload.', 'Checklist_Dokument_MyRep/detail/' . $clusterId);
     }
 
     public function approveDocument()
@@ -618,7 +617,16 @@ class Checklist_Dokument_MyRep extends CI_Controller
             return;
         }
 
-        $allowedStatuses = ['NY', 'ON REVIEW', 'REJECTED', 'APPROVED'];
+        $allowedStatuses = [
+            'NY',
+            'ON REVIEW',
+            'WAITING WASPANG',
+            'WAITING PLANNING',
+            'WAITING TL',
+            'WAITING LOGISTIK',
+            'REJECTED',
+            'APPROVED'
+        ];
         if (!in_array($astriStatus, $allowedStatuses, true)) {
             $this->session->set_flashdata('error', 'Status ASTRI tidak dikenali.');
             redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
@@ -628,6 +636,19 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $file = $this->MChecklist_Dokument_MyRep->getFileById($fileId);
         if (empty($file)) {
             $this->session->set_flashdata('error', 'Dokumen tidak ditemukan.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $specialAstriStatuses = ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'];
+        if (!(int) ($file['is_special_project_opname'] ?? 0) && in_array($astriStatus, $specialAstriStatuses, true)) {
+            $this->session->set_flashdata('error', 'Status ASTRI khusus ini hanya berlaku untuk Project Opname.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        if ((int) ($file['is_special_project_opname'] ?? 0) && empty($file['cluster_actual_atp_date']) && $astriStatus !== 'NY') {
+            $this->session->set_flashdata('error', 'Project Opname hanya bisa masuk flow approval ASTRI setelah ATP terisi.');
             redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
         }

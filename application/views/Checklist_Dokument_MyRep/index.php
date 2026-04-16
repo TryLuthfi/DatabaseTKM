@@ -84,6 +84,10 @@ if (!function_exists('checklist_doc_status_badge')) {
             case 'REJECTED':
                 return 'danger';
             case 'UPLOADED':
+            case 'WAITING WASPANG':
+            case 'WAITING PLANNING':
+            case 'WAITING TL':
+            case 'WAITING LOGISTIK':
                 return 'warning';
             case 'NOT UPLOADED':
             case 'NY':
@@ -373,6 +377,13 @@ foreach ($clusterList as $cluster) {
         font-weight: 700;
         color: #475569;
         margin-bottom: 6px;
+    }
+
+    .item-filter-actions {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        margin-left: auto;
     }
 </style>
 
@@ -864,9 +875,18 @@ foreach ($clusterList as $cluster) {
                                 <option value="">Semua Status Astri</option>
                                 <option value="NY">NY</option>
                                 <option value="ON REVIEW">ON REVIEW</option>
+                                <option value="WAITING WASPANG">WAITING WASPANG</option>
+                                <option value="WAITING PLANNING">WAITING PLANNING</option>
+                                <option value="WAITING TL">WAITING TL</option>
+                                <option value="WAITING LOGISTIK">WAITING LOGISTIK</option>
                                 <option value="REJECTED">REJECTED</option>
                                 <option value="APPROVED">APPROVED</option>
                             </select>
+                        </div>
+                        <div class="item-filter-actions">
+                            <button type="button" id="btn-export-item-excel" class="btn btn-success btn-sm">
+                                <i class="fas fa-file-excel mr-1"></i> Download Excel
+                            </button>
                         </div>
                     </div>
                     <table id="table-checklist-item" class="table table-bordered table-striped table-hover">
@@ -1021,6 +1041,62 @@ foreach ($clusterList as $cluster) {
         $('#item-filter-astri-status').on('change', function() {
             var value = $(this).val();
             itemTable.column(9).search(value ? escapeRegex(value) : '', true, false).draw();
+        });
+
+        $('#btn-export-item-excel').on('click', function() {
+            var exportColumnIndexes = [];
+            var headers = [];
+            $('#table-checklist-item thead th').each(function(index) {
+                var headerText = $(this).text().trim();
+                if (headerText !== 'Aksi') {
+                    exportColumnIndexes.push(index);
+                    headers.push(headerText);
+                }
+            });
+
+            var rows = itemTable.rows({
+                search: 'applied',
+                order: 'applied'
+            }).nodes();
+
+            var html = '<table border="1"><thead><tr>';
+            $.each(headers, function(_, header) {
+                html += '<th>' + $('<div>').text(header).html() + '</th>';
+            });
+            html += '</tr></thead><tbody>';
+
+            if (!rows.length) {
+                html += '<tr><td colspan="' + headers.length + '">Tidak ada data.</td></tr>';
+            } else {
+                $(rows).each(function() {
+                    html += '<tr>';
+                    var cells = $(this).find('td');
+                    $.each(exportColumnIndexes, function(_, columnIndex) {
+                        var cell = cells.eq(columnIndex).clone();
+                        cell.find('.item-note').remove();
+                        var cellText = cell.text().trim().replace(/\s+/g, ' ');
+                        html += '<td>' + $('<div>').text(cellText).html() + '</td>';
+                    });
+                    html += '</tr>';
+                });
+            }
+
+            html += '</tbody></table>';
+
+            var blob = new Blob(
+                ['\ufeff' + html], {
+                    type: 'application/vnd.ms-excel'
+                }
+            );
+
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = 'monitoring_item_dokumen_' + new Date().toISOString().slice(0, 10) + '.xls';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         });
     });
 </script>
