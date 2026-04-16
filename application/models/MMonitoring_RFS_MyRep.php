@@ -3,6 +3,11 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MMonitoring_RFS_MyRep extends CI_Model
 {
+    public function claimSupportsStatusRfs()
+    {
+        return $this->db->field_exists('status_rfs', 'tb_rfs_myrep_claim');
+    }
+
     public function getAnnualSummary($year, $startMonth = 1, $endMonth = 12, $city = '')
     {
         $params = [$year, $startMonth, $endMonth];
@@ -568,13 +573,16 @@ class MMonitoring_RFS_MyRep extends CI_Model
             'claim_month' => $data['claim_month'],
             'claim_date' => $data['claim_date'],
             'claim_qty' => $data['claim_qty'],
-            'status_rfs' => $data['status_rfs'],
             'photo_path' => $data['photo_path'],
             'claim_note' => $data['claim_note'],
             'status_claim' => $data['status_claim'],
             'submitted_by' => $data['submitted_by'],
             'created_at' => date('Y-m-d H:i:s')
         ];
+
+        if ($this->claimSupportsStatusRfs()) {
+            $payload['status_rfs'] = $data['status_rfs'];
+        }
 
         $this->db->insert('tb_rfs_myrep_claim', $payload);
         return $this->db->insert_id();

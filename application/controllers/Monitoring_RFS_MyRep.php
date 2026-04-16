@@ -628,6 +628,12 @@ class Monitoring_RFS_MyRep extends CI_Controller
             return;
         }
 
+        if (!$this->MMonitoring_RFS_MyRep->claimSupportsStatusRfs()) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Database belum support status RFS claim. Jalankan update kolom `status_rfs` pada tabel `tb_rfs_myrep_claim` terlebih dahulu.');
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+            return;
+        }
+
         $claimDateTs = strtotime($claimDate);
         if ($claimDateTs === false) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Tanggal RFS tidak valid.');
