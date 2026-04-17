@@ -176,12 +176,15 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 c.cluster_name,
                 mt.city_name,
                 mt.regional_name,
+                mt.id_user_pic_ho,
                 g.scope_type,
                 g.sow_type,
                 g.group_label,
                 i.id_doc_item,
                 i.doc_name,
                 i.doc_requirement_note,
+                i.verification_team,
+                u_ho.nama_user AS ho_pic_name,
                 p.actual_atp_date,
                 f.id_doc_file,
                 f.status_file,
@@ -199,6 +202,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
             ->join('md_rfs_myrep_doc_group g', 'g.is_active = 1', 'inner')
             ->join('md_rfs_myrep_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1 AND i.is_required = 1', 'inner')
+            ->join('tb_master_user u_ho', 'u_ho.id_user = mt.id_user_pic_ho', 'left')
             ->join('tb_rfs_myrep_doc_package p', 'p.cluster_id = c.id_cluster AND p.id_doc_group = g.id_doc_group', 'left')
             ->join('tb_rfs_myrep_doc_file f', 'f.id_doc_package = p.id_doc_package AND f.id_doc_item = i.id_doc_item', 'left')
             ->where('c.status_rfs', 'FULL RFS');
@@ -229,6 +233,12 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 $row['sow_type'] ?? '',
                 $row['doc_name'] ?? ''
             );
+            $verificationTeam = strtoupper(trim((string) ($row['verification_team'] ?? '')));
+            if ($verificationTeam === 'SITAC') {
+                $row['verification_by'] = 'TIM SITAC';
+            } else {
+                $row['verification_by'] = !empty($row['ho_pic_name']) ? (string) $row['ho_pic_name'] : 'PIC HO BELUM DISET';
+            }
         }
         unset($row);
 
@@ -250,13 +260,16 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 mt.regional_name,
                 mt.province_name,
                 mt.chief,
+                mt.id_user_pic_ho,
                 mt.rpm,
                 mt.sm,
                 mt.spv,
+                u_ho.nama_user AS ho_pic_name,
                 latest_claim.rfs_date
             ", false)
             ->from('tb_rfs_myrep_cluster c')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
+            ->join('tb_master_user u_ho', 'u_ho.id_user = mt.id_user_pic_ho', 'left')
             ->join('(
                 SELECT cluster_id, MAX(claim_date) AS rfs_date
                 FROM tb_rfs_myrep_claim
@@ -277,6 +290,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function getClusterScopeTabs($clusterId)
     {
+        $clusterDetail = $this->getClusterDetail($clusterId);
         $groups = $this->getDocumentGroups();
         $items = $this->getDocumentItems();
         $packagesByCluster = $this->getPackagesByClusterIds([(int) $clusterId]);
@@ -330,6 +344,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                         'id_doc_item' => (int) $item['id_doc_item'],
                         'doc_name' => (string) $item['doc_name'],
                         'doc_requirement_note' => (string) ($item['doc_requirement_note'] ?? ''),
+                        'verification_team' => (string) ($item['verification_team'] ?? ''),
                         'status_file' => (string) ($itemFile['status_file'] ?? 'NOT UPLOADED'),
                         'file_name' => (string) ($itemFile['file_name'] ?? ''),
                         'file_path' => (string) ($itemFile['file_path'] ?? ''),
@@ -353,6 +368,9 @@ class MChecklist_Dokument_MyRep extends CI_Model
                             $group['sow_type'] ?? '',
                             $item['doc_name'] ?? ''
                         ) ? 1 : 0,
+                        'verification_by' => strtoupper(trim((string) ($item['verification_team'] ?? ''))) === 'SITAC'
+                            ? 'TIM SITAC'
+                            : (!empty($clusterDetail['ho_pic_name']) ? (string) $clusterDetail['ho_pic_name'] : 'PIC HO BELUM DISET'),
                         'history' => [],
                     ];
                 }
@@ -1564,7 +1582,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
     private function getDocumentItems()
     {
         $rows = $this->db
-            ->select('id_doc_item, id_doc_group, doc_name, doc_requirement_note, sort_no')
+            ->select('id_doc_item, id_doc_group, doc_name, doc_requirement_note, verification_team, sort_no')
             ->from('md_rfs_myrep_doc_item')
             ->where('is_active', 1)
             ->where('is_required', 1)

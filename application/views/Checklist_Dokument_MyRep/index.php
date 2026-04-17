@@ -107,6 +107,10 @@ if (!function_exists('checklist_doc_status_label')) {
             return 'ON REVIEW';
         }
 
+        if ($status === 'NY') {
+            return 'NOT UPLOADED';
+        }
+
         return $status !== '' ? $status : '-';
     }
 }
@@ -115,6 +119,24 @@ $totalCluster = count($clusterList);
 $clusterDoneRfsBelumAtp = 0;
 $clusterDoneAtpBelumDokument = 0;
 $clusterNyAstri = 0;
+$internalStatusSummary = [
+    'NY' => 0,
+    'ON REVIEW' => 0,
+    'REJECTED' => 0,
+    'APPROVED' => 0,
+];
+$astriStatusSummary = [
+    'NY' => 0,
+    'ON REVIEW' => 0,
+    'REJECTED' => 0,
+    'APPROVED' => 0,
+];
+$projectOpnameFlowSummary = [
+    'WAITING WASPANG' => 0,
+    'WAITING PLANNING' => 0,
+    'WAITING TL' => 0,
+    'WAITING LOGISTIK' => 0,
+];
 
 foreach ($clusterList as $cluster) {
     if (!empty($cluster['tanggal_rfs']) && empty($cluster['actual_atp_date'])) {
@@ -129,9 +151,86 @@ foreach ($clusterList as $cluster) {
         $clusterNyAstri++;
     }
 }
+
+foreach ($documentItemList as $item) {
+    $internalStatus = checklist_doc_status_label($item['status_file'] ?? 'NOT UPLOADED');
+    if ($internalStatus === 'NOT UPLOADED') {
+        $internalStatusSummary['NY']++;
+    } elseif (isset($internalStatusSummary[$internalStatus])) {
+        $internalStatusSummary[$internalStatus]++;
+    }
+
+    $astriStatus = checklist_doc_status_label($item['astri_status'] ?? 'NY');
+    if (in_array($astriStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'], true)) {
+        $astriStatusSummary['ON REVIEW']++;
+    } elseif (isset($astriStatusSummary[$astriStatus])) {
+        $astriStatusSummary[$astriStatus]++;
+    }
+
+    if (
+        strtoupper(trim((string) ($item['scope_type'] ?? ''))) === 'CLUSTER'
+        && strtoupper(trim((string) ($item['sow_type'] ?? ''))) === 'RFS'
+        && strtoupper(trim((string) ($item['doc_name'] ?? ''))) === 'PROJECT OPNAME'
+        && isset($projectOpnameFlowSummary[$astriStatus])
+    ) {
+        $projectOpnameFlowSummary[$astriStatus]++;
+    }
+}
 ?>
 
 <style>
+    #globalLoader {
+        position: fixed;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.92);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .loader-content {
+        text-align: center;
+        color: #1f2937;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #e5e7eb;
+        border-top: 5px solid #2563eb;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .checklist-page-content {
+        visibility: hidden;
+    }
+
+    .checklist-page-content.is-ready {
+        visibility: visible;
+        animation: checklistFadeIn .25s ease-in-out;
+    }
+
+    @keyframes checklistFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     .checklist-board .small-box {
         border-radius: 14px;
         overflow: hidden;
@@ -175,6 +274,7 @@ foreach ($clusterList as $cluster) {
     .cluster-name {
         font-weight: 700;
         color: #111827;
+        font-size: 16px;
         line-height: 1.4;
         margin-bottom: 6px;
     }
@@ -282,10 +382,12 @@ foreach ($clusterList as $cluster) {
     }
 
     .doc-status-item {
-        background: rgba(255, 255, 255, 0.75);
-        border: 1px solid rgba(148, 163, 184, 0.25);
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(148, 163, 184, 0.18);
         border-radius: 10px;
         padding: 8px 9px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        border-left-width: 4px;
     }
 
     .doc-status-label {
@@ -302,6 +404,42 @@ foreach ($clusterList as $cluster) {
         font-weight: 800;
         color: #0f172a;
         line-height: 1;
+    }
+
+    .doc-status-grid .doc-status-item:nth-child(1) {
+        border-left-color: #94a3b8;
+    }
+
+    .doc-status-grid .doc-status-item:nth-child(1) .doc-status-label,
+    .doc-status-grid .doc-status-item:nth-child(1) .doc-status-value {
+        color: #475569;
+    }
+
+    .doc-status-grid .doc-status-item:nth-child(2) {
+        border-left-color: #f59e0b;
+    }
+
+    .doc-status-grid .doc-status-item:nth-child(2) .doc-status-label,
+    .doc-status-grid .doc-status-item:nth-child(2) .doc-status-value {
+        color: #9a3412;
+    }
+
+    .doc-status-grid .doc-status-item:nth-child(3) {
+        border-left-color: #ef4444;
+    }
+
+    .doc-status-grid .doc-status-item:nth-child(3) .doc-status-label,
+    .doc-status-grid .doc-status-item:nth-child(3) .doc-status-value {
+        color: #b91c1c;
+    }
+
+    .doc-status-grid .doc-status-item:nth-child(4) {
+        border-left-color: #22c55e;
+    }
+
+    .doc-status-grid .doc-status-item:nth-child(4) .doc-status-label,
+    .doc-status-grid .doc-status-item:nth-child(4) .doc-status-value {
+        color: #166534;
     }
 
     .bg-light {
@@ -335,6 +473,10 @@ foreach ($clusterList as $cluster) {
     .action-stack .btn {
         min-width: 92px;
         margin-bottom: 6px;
+    }
+
+    .sla-separator-left {
+        border-left: 4px solid #1f2937 !important;
     }
 
     .flat-cluster-name {
@@ -385,8 +527,140 @@ foreach ($clusterList as $cluster) {
         gap: 8px;
         margin-left: auto;
     }
+
+    .cluster-filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .cluster-filter-group {
+        min-width: 220px;
+    }
+
+    .cluster-filter-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: #475569;
+        margin-bottom: 6px;
+    }
+
+    .cluster-filter-actions {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        margin-left: auto;
+    }
+
+    .status-summary-card {
+        border: 0;
+        border-radius: 16px;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+
+    .status-summary-card .card-header {
+        color: #fff;
+        font-weight: 700;
+        border-bottom: 0;
+    }
+
+    .status-summary-card .card-body {
+        padding: 0;
+    }
+
+    .status-summary-card.internal .card-header {
+        background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    }
+
+    .status-summary-card.astri .card-header {
+        background: linear-gradient(135deg, #0f766e, #0d9488);
+    }
+
+    .status-summary-card.opname .card-header {
+        background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+    }
+
+    .status-summary-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .status-summary-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #edf2f7;
+        font-size: 13px;
+    }
+
+    .status-summary-list li.is-clickable {
+        cursor: pointer;
+        transition: background-color .15s ease;
+    }
+
+    .status-summary-list li.is-clickable:hover {
+        background: linear-gradient(135deg, #eef4ff 0%, #dbeafe 100%);
+        box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18);
+    }
+
+    .status-summary-list li:last-child {
+        border-bottom: 0;
+    }
+
+    .status-summary-label {
+        color: #1f2937;
+        font-weight: 600;
+    }
+
+    .status-summary-count {
+        min-width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+        padding: 0 8px;
+    }
+
+    .status-summary-count.primary {
+        background: #2563eb;
+    }
+
+    .status-summary-count.success {
+        background: #16a34a;
+    }
+
+    .status-summary-count.warning {
+        background: #f59e0b;
+    }
+
+    .status-summary-count.danger {
+        background: #dc2626;
+    }
+
+    .status-summary-count.dark {
+        background: #475569;
+    }
 </style>
 
+<div id="globalLoader">
+    <div class="loader-content">
+        <div class="spinner"></div>
+        <div>Loading checklist dokument...</div>
+    </div>
+</div>
+
+<div id="checklistPageContent" class="checklist-page-content">
 <div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
@@ -462,45 +736,85 @@ foreach ($clusterList as $cluster) {
                 </div>
             </div>
 
-            <div class="card card-primary card-outline filter-card">
-                <div class="card-header">
-                    <h3 class="card-title">Filter Cluster</h3>
-                </div>
-                <div class="card-body">
-                    <form method="get" action="<?= base_url('Checklist_Dokument_MyRep') ?>">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <label>Regional</label>
-                                <select name="regional" class="form-control">
-                                    <option value="">Semua Regional</option>
-                                    <?php foreach ($regionalOptions as $regionalOption): ?>
-                                        <option value="<?= $regionalOption ?>" <?= ($selectedRegional === $regionalOption) ? 'selected' : '' ?>>
-                                            <?= $regionalOption ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label>Kota</label>
-                                <select name="city" class="form-control">
-                                    <option value="">Semua Kota</option>
-                                    <?php foreach ($cityOptions as $cityOption): ?>
-                                        <option value="<?= $cityOption ?>" <?= ($selectedCity === $cityOption) ? 'selected' : '' ?>>
-                                            <?= $cityOption ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-4 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary mr-2">Terapkan</button>
-                                <a href="<?= base_url('Checklist_Dokument_MyRep') ?>" class="btn btn-default">Reset</a>
-                            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card status-summary-card internal">
+                        <div class="card-header">Status Internal</div>
+                        <div class="card-body">
+                            <ul class="status-summary-list">
+                                <li class="is-clickable quick-item-filter" data-filter-type="internal" data-filter-value="NOT UPLOADED">
+                                    <span class="status-summary-label">Not Uploaded</span>
+                                    <span class="status-summary-count dark"><?= (int) $internalStatusSummary['NY'] ?></span>
+                                </li>
+                                <li class="is-clickable quick-item-filter" data-filter-type="internal" data-filter-value="ON REVIEW">
+                                    <span class="status-summary-label">On Review</span>
+                                    <span class="status-summary-count warning"><?= (int) $internalStatusSummary['ON REVIEW'] ?></span>
+                                </li>
+                                <li class="is-clickable quick-item-filter" data-filter-type="internal" data-filter-value="REJECTED">
+                                    <span class="status-summary-label">Rejected</span>
+                                    <span class="status-summary-count danger"><?= (int) $internalStatusSummary['REJECTED'] ?></span>
+                                </li>
+                                <li class="is-clickable quick-item-filter" data-filter-type="internal" data-filter-value="APPROVED">
+                                    <span class="status-summary-label">Approved</span>
+                                    <span class="status-summary-count success"><?= (int) $internalStatusSummary['APPROVED'] ?></span>
+                                </li>
+                            </ul>
                         </div>
-                    </form>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card status-summary-card astri">
+                        <div class="card-header">Status ASTRI</div>
+                        <div class="card-body">
+                            <ul class="status-summary-list">
+                                <li class="is-clickable quick-item-filter" data-filter-type="astri" data-filter-value="NOT UPLOADED">
+                                    <span class="status-summary-label">Not Uploaded</span>
+                                    <span class="status-summary-count dark"><?= (int) $astriStatusSummary['NY'] ?></span>
+                                </li>
+                                <li class="is-clickable quick-item-filter" data-filter-type="astri" data-filter-value="ON REVIEW">
+                                    <span class="status-summary-label">On Review</span>
+                                    <span class="status-summary-count warning"><?= (int) $astriStatusSummary['ON REVIEW'] ?></span>
+                                </li>
+                                <li class="is-clickable quick-item-filter" data-filter-type="astri" data-filter-value="REJECTED">
+                                    <span class="status-summary-label">Rejected</span>
+                                    <span class="status-summary-count danger"><?= (int) $astriStatusSummary['REJECTED'] ?></span>
+                                </li>
+                                <li class="is-clickable quick-item-filter" data-filter-type="astri" data-filter-value="APPROVED">
+                                    <span class="status-summary-label">Approved</span>
+                                    <span class="status-summary-count success"><?= (int) $astriStatusSummary['APPROVED'] ?></span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card status-summary-card opname">
+                        <div class="card-header">Project Opname Flow</div>
+                        <div class="card-body">
+                            <ul class="status-summary-list">
+                                <li class="is-clickable quick-item-filter" data-filter-type="project-opname" data-filter-value="WAITING WASPANG">
+                                    <span class="status-summary-label">Waiting Waspang</span>
+                                    <span class="status-summary-count warning"><?= (int) $projectOpnameFlowSummary['WAITING WASPANG'] ?></span>
+                                </li>
+                                <li class="is-clickable quick-item-filter" data-filter-type="project-opname" data-filter-value="WAITING PLANNING">
+                                    <span class="status-summary-label">Waiting Planning</span>
+                                    <span class="status-summary-count primary"><?= (int) $projectOpnameFlowSummary['WAITING PLANNING'] ?></span>
+                                </li>
+                                <li class="is-clickable quick-item-filter" data-filter-type="project-opname" data-filter-value="WAITING TL">
+                                    <span class="status-summary-label">Waiting TL</span>
+                                    <span class="status-summary-count primary"><?= (int) $projectOpnameFlowSummary['WAITING TL'] ?></span>
+                                </li>
+                                <li class="is-clickable quick-item-filter" data-filter-type="project-opname" data-filter-value="WAITING LOGISTIK">
+                                    <span class="status-summary-label">Waiting Logistik</span>
+                                    <span class="status-summary-count primary"><?= (int) $projectOpnameFlowSummary['WAITING LOGISTIK'] ?></span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="card table-card">
+            <div class="card table-card" id="cluster-monitor-card">
                 <div class="card-header">
                     <h3 class="card-title">List Cluster FULL RFS</h3>
                     <div class="card-tools">
@@ -510,6 +824,35 @@ foreach ($clusterList as $cluster) {
                     </div>
                 </div>
                 <div class="card-body">
+                    <form method="get" action="<?= base_url('Checklist_Dokument_MyRep') ?>" id="cluster-filter-form">
+                        <div class="cluster-filter-bar">
+                            <div class="cluster-filter-group">
+                                <label>Regional</label>
+                                <select name="regional" id="cluster-filter-regional" class="form-control form-control-sm">
+                                    <option value="">Semua Regional</option>
+                                    <?php foreach ($regionalOptions as $regionalOption): ?>
+                                        <option value="<?= $regionalOption ?>" <?= ($selectedRegional === $regionalOption) ? 'selected' : '' ?>>
+                                            <?= $regionalOption ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="cluster-filter-group">
+                                <label>Kota</label>
+                                <select name="city" id="cluster-filter-city" class="form-control form-control-sm">
+                                    <option value="">Semua Kota</option>
+                                    <?php foreach ($cityOptions as $cityOption): ?>
+                                        <option value="<?= $cityOption ?>" <?= ($selectedCity === $cityOption) ? 'selected' : '' ?>>
+                                            <?= $cityOption ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="cluster-filter-actions">
+                                <a href="<?= base_url('Checklist_Dokument_MyRep') ?>" class="btn btn-default btn-sm">Reset</a>
+                            </div>
+                        </div>
+                    </form>
                     <table id="table-checklist-dokument" class="table table-bordered table-striped table-hover">
                         <thead class="thead-dark">
                             <tr>
@@ -697,7 +1040,7 @@ foreach ($clusterList as $cluster) {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td class="sla-separator-left">
                                             <div class="timeline-stack">
                                                 <div class="timeline-item">
                                                     <span class="timeline-label">Submit Astri</span>
@@ -836,7 +1179,7 @@ foreach ($clusterList as $cluster) {
                 </div>
             </div>
 
-            <div class="card table-card">
+            <div class="card table-card" id="item-monitor-card">
                 <div class="card-header">
                     <h3 class="card-title">Monitoring Item Dokumen</h3>
                     <div class="card-tools">
@@ -873,7 +1216,7 @@ foreach ($clusterList as $cluster) {
                             <label for="item-filter-astri-status">Status Astri</label>
                             <select id="item-filter-astri-status" class="form-control form-control-sm">
                                 <option value="">Semua Status Astri</option>
-                                <option value="NY">NY</option>
+                                <option value="NOT UPLOADED">NOT UPLOADED</option>
                                 <option value="ON REVIEW">ON REVIEW</option>
                                 <option value="WAITING WASPANG">WAITING WASPANG</option>
                                 <option value="WAITING PLANNING">WAITING PLANNING</option>
@@ -899,6 +1242,7 @@ foreach ($clusterList as $cluster) {
                                 <th>Scope</th>
                                 <th>SOW</th>
                                 <th>Dokumen</th>
+                                <th>Verification By</th>
                                 <th>Status Internal</th>
                                 <th>Remark Internal</th>
                                 <th>Status Astri</th>
@@ -913,7 +1257,7 @@ foreach ($clusterList as $cluster) {
                         <tbody>
                             <?php if (empty($documentItemList)): ?>
                                 <tr>
-                                    <td colspan="16" class="text-center">Belum ada item dokumen.</td>
+                                    <td colspan="17" class="text-center">Belum ada item dokumen.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php $itemNo = 1; ?>
@@ -929,10 +1273,8 @@ foreach ($clusterList as $cluster) {
                                         <td><?= !empty($item['sow_type']) ? $item['sow_type'] : '-' ?></td>
                                         <td>
                                             <strong><?= !empty($item['doc_name']) ? $item['doc_name'] : '-' ?></strong>
-                                            <?php if (!empty($item['doc_requirement_note'])): ?>
-                                                <span class="item-note"><?= $item['doc_requirement_note'] ?></span>
-                                            <?php endif; ?>
                                         </td>
+                                        <td><?= !empty($item['verification_by']) ? $item['verification_by'] : '-' ?></td>
                                         <td>
                                             <?php $internalStatus = checklist_doc_status_label($item['status_file'] ?? 'NOT UPLOADED'); ?>
                                             <span class="badge badge-<?= checklist_doc_status_badge($item['status_file'] ?? 'NOT UPLOADED') ?>"><?= $internalStatus ?></span>
@@ -961,9 +1303,44 @@ foreach ($clusterList as $cluster) {
         </div>
     </section>
 </div>
+</div>
 
 <script>
     $(function() {
+        function showChecklistContent() {
+            $('#checklistPageContent').addClass('is-ready');
+            $('#globalLoader').fadeOut(200);
+        }
+
+        var activeQuickFilter = {
+            type: '',
+            value: ''
+        };
+
+        function setCardCollapsed(cardSelector, collapsed) {
+            var card = $(cardSelector);
+            var body = card.children('.card-body');
+            var icon = card.find('[data-card-widget="collapse"] i');
+
+            if (!card.length || !body.length) {
+                return;
+            }
+
+            if (collapsed) {
+                card.addClass('collapsed-card');
+                body.slideUp(150);
+                icon.removeClass('fa-minus').addClass('fa-plus');
+            } else {
+                card.removeClass('collapsed-card');
+                body.slideDown(150);
+                icon.removeClass('fa-plus').addClass('fa-minus');
+            }
+        }
+
+        $('#cluster-filter-regional, #cluster-filter-city').on('change', function() {
+            $('#cluster-filter-form').trigger('submit');
+        });
+
         $('#table-checklist-dokument').DataTable({
             "paging": true,
             "lengthChange": true,
@@ -994,6 +1371,29 @@ foreach ($clusterList as $cluster) {
                 [10, 25, 50, 100],
                 [10, 25, 50, 100]
             ]
+        });
+
+        $.fn.dataTable.ext.search.push(function(settings, data) {
+            if (settings.nTable.id !== 'table-checklist-item') {
+                return true;
+            }
+
+            if (!activeQuickFilter.type || !activeQuickFilter.value) {
+                return true;
+            }
+
+            var docName = (data[6] || '').toUpperCase().trim();
+            var astriStatus = (data[10] || '').toUpperCase().trim();
+
+            if (activeQuickFilter.type === 'project-opname') {
+                return docName === 'PROJECT OPNAME' && astriStatus === activeQuickFilter.value;
+            }
+
+            if (activeQuickFilter.type === 'astri' && activeQuickFilter.value === 'ON REVIEW') {
+                return ['ON REVIEW', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'].indexOf(astriStatus) !== -1;
+            }
+
+            return true;
         });
 
         function escapeRegex(value) {
@@ -1034,13 +1434,56 @@ foreach ($clusterList as $cluster) {
         });
 
         $('#item-filter-internal-status').on('change', function() {
+            activeQuickFilter.type = '';
+            activeQuickFilter.value = '';
             var value = $(this).val();
-            itemTable.column(7).search(value ? escapeRegex(value) : '', true, false).draw();
+            itemTable.column(8).search(value ? escapeRegex(value) : '', true, false).draw();
         });
 
         $('#item-filter-astri-status').on('change', function() {
+            activeQuickFilter.type = '';
+            activeQuickFilter.value = '';
             var value = $(this).val();
-            itemTable.column(9).search(value ? escapeRegex(value) : '', true, false).draw();
+            itemTable.column(10).search(value ? escapeRegex(value) : '', true, false).draw();
+        });
+
+        $('.quick-item-filter').on('click', function() {
+            var filterType = $(this).data('filter-type') || '';
+            var filterValue = ($(this).data('filter-value') || '').toString().toUpperCase();
+
+            $('#item-filter-regional').val('');
+            $('#item-filter-city').val('');
+            $('#item-filter-internal-status').val('');
+            $('#item-filter-astri-status').val('');
+
+            itemTable.column(1).search('', true, false);
+            itemTable.column(2).search('', true, false);
+            itemTable.column(8).search('', true, false);
+            itemTable.column(10).search('', true, false);
+
+            activeQuickFilter.type = filterType;
+            activeQuickFilter.value = filterValue;
+
+            if (filterType === 'internal') {
+                $('#item-filter-internal-status').val(filterValue);
+                itemTable.column(8).search(escapeRegex(filterValue), true, false);
+            } else if (filterType === 'astri') {
+                $('#item-filter-astri-status').val(filterValue);
+                if (filterValue !== 'ON REVIEW') {
+                    itemTable.column(10).search(escapeRegex(filterValue), true, false);
+                }
+            } else if (filterType === 'project-opname') {
+                $('#item-filter-astri-status').val(filterValue);
+                itemTable.column(10).search(escapeRegex(filterValue), true, false);
+            }
+
+            setCardCollapsed('#cluster-monitor-card', true);
+            setCardCollapsed('#item-monitor-card', false);
+            itemTable.draw();
+
+            $('html, body').animate({
+                scrollTop: $('#item-monitor-card').offset().top - 20
+            }, 250);
         });
 
         $('#btn-export-item-excel').on('click', function() {
@@ -1098,5 +1541,7 @@ foreach ($clusterList as $cluster) {
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
         });
+
+        setTimeout(showChecklistContent, 150);
     });
 </script>

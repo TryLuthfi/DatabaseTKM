@@ -8,6 +8,11 @@ class MMonitoring_RFS_MyRep extends CI_Model
         return $this->db->field_exists('status_rfs', 'tb_rfs_myrep_claim');
     }
 
+    public function claimSupportsRpmApproval()
+    {
+        return $this->db->field_exists('rpm_approval_status', 'tb_rfs_myrep_claim');
+    }
+
     public function getAnnualSummary($year, $startMonth = 1, $endMonth = 12, $city = '')
     {
         $params = [$year, $startMonth, $endMonth];
@@ -65,7 +70,13 @@ class MMonitoring_RFS_MyRep extends CI_Model
     public function getMonthlySummary($year, $startMonth, $endMonth, $city = '')
     {
         $this->db
-            ->select('city_name, SUM(target_myrep) AS target_myrep, SUM(target_rkap) AS target_rkap, SUM(realization_myrep) AS realization_myrep', false)
+            ->select("city_name,
+                MAX(COALESCE(NULLIF(regional_name, ''), '-')) AS regional_name,
+                MAX(COALESCE(NULLIF(sm, ''), '-')) AS sm,
+                MAX(COALESCE(NULLIF(team_name, ''), '-')) AS team_name,
+                SUM(target_myrep) AS target_myrep,
+                SUM(target_rkap) AS target_rkap,
+                SUM(realization_myrep) AS realization_myrep", false)
             ->from('tb_rfs_myrep_monthly_target')
             ->where('year_num', $year)
             ->where('month_num >=', $startMonth)
@@ -104,6 +115,9 @@ class MMonitoring_RFS_MyRep extends CI_Model
             $cityKey = strtoupper((string) $target['city_name']);
             $rows[$cityKey] = [
                 'city_name' => $target['city_name'],
+                'regional_name' => $target['regional_name'] ?? '-',
+                'sm' => $target['sm'] ?? '-',
+                'team_name' => $target['team_name'] ?? '-',
                 'target_myrep' => (float) $target['target_myrep'],
                 'realization_myrep' => (float) $target['realization_myrep'],
                 'target_tkm' => (float) $target['target_rkap'],
@@ -116,6 +130,9 @@ class MMonitoring_RFS_MyRep extends CI_Model
             if (!isset($rows[$cityKey])) {
                 $rows[$cityKey] = [
                     'city_name' => $claim['city_name'],
+                    'regional_name' => '-',
+                    'sm' => '-',
+                    'team_name' => '-',
                     'target_myrep' => 0,
                     'realization_myrep' => 0,
                     'target_tkm' => 0,
@@ -143,7 +160,13 @@ class MMonitoring_RFS_MyRep extends CI_Model
     public function getAnnualCitySummary($year, $startMonth = 1, $endMonth = 12, $city = '')
     {
         $this->db
-            ->select('city_name, SUM(target_myrep) AS target_myrep, SUM(target_rkap) AS target_tkm, SUM(realization_myrep) AS realization_myrep', false)
+            ->select("city_name,
+                MAX(COALESCE(NULLIF(regional_name, ''), '-')) AS regional_name,
+                MAX(COALESCE(NULLIF(sm, ''), '-')) AS sm,
+                MAX(COALESCE(NULLIF(team_name, ''), '-')) AS team_name,
+                SUM(target_myrep) AS target_myrep,
+                SUM(target_rkap) AS target_tkm,
+                SUM(realization_myrep) AS realization_myrep", false)
             ->from('tb_rfs_myrep_monthly_target')
             ->where('year_num', $year)
             ->where('month_num >=', $startMonth)
@@ -176,6 +199,9 @@ class MMonitoring_RFS_MyRep extends CI_Model
             $cityKey = strtoupper((string) $target['city_name']);
             $rows[$cityKey] = [
                 'city_name' => $target['city_name'],
+                'regional_name' => $target['regional_name'] ?? '-',
+                'sm' => $target['sm'] ?? '-',
+                'team_name' => $target['team_name'] ?? '-',
                 'target_myrep' => (float) $target['target_myrep'],
                 'realization_myrep' => (float) $target['realization_myrep'],
                 'target_tkm' => (float) $target['target_tkm'],
@@ -188,6 +214,9 @@ class MMonitoring_RFS_MyRep extends CI_Model
             if (!isset($rows[$cityKey])) {
                 $rows[$cityKey] = [
                     'city_name' => $claim['city_name'],
+                    'regional_name' => '-',
+                    'sm' => '-',
+                    'team_name' => '-',
                     'target_myrep' => 0,
                     'realization_myrep' => 0,
                     'target_tkm' => 0,
@@ -239,6 +268,92 @@ class MMonitoring_RFS_MyRep extends CI_Model
         }
 
         return $columns;
+    }
+
+    public function getGroupedKpiSummary($year, $startMonth, $endMonth, $groupField, $city = '')
+    {
+        $allowedFields = ['regional_name', 'sm', 'team_name'];
+        if (!in_array($groupField, $allowedFields, true)) {
+            return [];
+        }
+
+        $fallbackLabel = $groupField === 'team_name' ? 'BELUM ADA TEAM' : 'BELUM DISET';
+        $groupExpression = "COALESCE(NULLIF(TRIM($groupField), ''), " . $this->db->escape($fallbackLabel) . ")";
+
+        $this->db
+            ->select("$groupExpression AS group_name,
+                SUM(target_myrep) AS target_myrep,
+                SUM(target_rkap) AS target_tkm,
+                SUM(realization_myrep) AS realization_myrep", false)
+            ->from('tb_rfs_myrep_monthly_target')
+            ->where('year_num', $year)
+            ->where('month_num >=', $startMonth)
+            ->where('month_num <=', $endMonth);
+
+        if ($city !== '') {
+            $this->db->where('UPPER(city_name)', $city);
+        }
+
+        $targets = $this->db
+            ->group_by($groupExpression, false)
+            ->get()
+            ->result_array();
+
+        $claimSql = "SELECT $groupExpression AS group_name, COALESCE(SUM(c.claim_qty), 0) AS realization_tkm
+             FROM tb_rfs_myrep_claim c
+             INNER JOIN tb_rfs_myrep_cluster cl ON cl.id_cluster = c.cluster_id
+             INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = cl.id_target
+             WHERE c.claim_year = ? AND c.claim_month BETWEEN ? AND ? AND c.status_claim = 'APPROVED'";
+        $claimParams = [$year, $startMonth, $endMonth];
+
+        if ($city !== '') {
+            $claimSql .= " AND UPPER(mt.city_name) = ? ";
+            $claimParams[] = $city;
+        }
+
+        $claimSql .= " GROUP BY $groupExpression";
+
+        $claims = $this->db->query($claimSql, $claimParams)->result_array();
+
+        $rows = [];
+        foreach ($targets as $target) {
+            $groupKey = strtoupper((string) $target['group_name']);
+            $rows[$groupKey] = [
+                'group_name' => $target['group_name'],
+                'target_myrep' => (float) $target['target_myrep'],
+                'realization_myrep' => (float) $target['realization_myrep'],
+                'target_tkm' => (float) $target['target_tkm'],
+                'realization_tkm' => 0
+            ];
+        }
+
+        foreach ($claims as $claim) {
+            $groupKey = strtoupper((string) $claim['group_name']);
+            if (!isset($rows[$groupKey])) {
+                $rows[$groupKey] = [
+                    'group_name' => $claim['group_name'],
+                    'target_myrep' => 0,
+                    'realization_myrep' => 0,
+                    'target_tkm' => 0,
+                    'realization_tkm' => 0
+                ];
+            }
+
+            $rows[$groupKey]['realization_tkm'] = (float) $claim['realization_tkm'];
+        }
+
+        foreach ($rows as &$row) {
+            $row['pct_myrep'] = $this->calculatePercent($row['realization_myrep'], $row['target_myrep']);
+            $row['pct_tkm'] = $this->calculatePercent($row['realization_tkm'], $row['target_tkm']);
+            $row['myrep_vs_tkm'] = $this->calculatePercent($row['realization_tkm'], $row['realization_myrep']);
+        }
+        unset($row);
+
+        usort($rows, function ($a, $b) {
+            return strcmp((string) $a['group_name'], (string) $b['group_name']);
+        });
+
+        return $rows;
     }
 
     public function getThreeMonthSummary($year, $startMonth, $endMonth, $city = '')
@@ -377,16 +492,14 @@ class MMonitoring_RFS_MyRep extends CI_Model
                     SELECT COUNT(1)
                     FROM tb_rfs_myrep_claim cl_pending
                     WHERE cl_pending.cluster_id = c.id_cluster
-                    AND cl_pending.status_claim = 'PENDING'
+                    AND cl_pending.status_claim IN ('WAITING APPROVAL RPM', 'WAITING APPROVAL HO')
                 ), 0) AS pending_claim_count,
                 COALESCE(p.optimistic_target, 0) AS optimistic_target,
                 COALESCE((
                     SELECT SUM(claim_qty)
                     FROM tb_rfs_myrep_claim cl
                     WHERE cl.cluster_id = c.id_cluster
-                    AND cl.claim_year = ?
-                    AND cl.claim_month BETWEEN ? AND ?
-                    AND cl.status_claim IN ('PENDING', 'APPROVED')
+                    AND cl.status_claim IN ('WAITING APPROVAL RPM', 'WAITING APPROVAL HO', 'APPROVED')
                 ), 0) AS claimed_qty
              FROM tb_rfs_myrep_cluster c
              INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
@@ -396,7 +509,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
                AND p.month_num = ?
              WHERE 1=1";
 
-        $params = [$year, $startMonth, $endMonth, $year, $endMonth];
+        $params = [$year, $endMonth];
 
         if ($city !== '') {
             $sql .= " AND UPPER(mt.city_name) = ? ";
@@ -419,12 +532,14 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 mt.sm,
                 mt.spv,
                 su.nama_user AS submitted_name,
-                au.nama_user AS approved_name
+                au.nama_user AS approved_name,
+                ru.nama_user AS rpm_approved_name
              FROM tb_rfs_myrep_claim cl
              INNER JOIN tb_rfs_myrep_cluster c ON c.id_cluster = cl.cluster_id
              INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
              LEFT JOIN tb_master_user su ON su.id_user = cl.submitted_by
              LEFT JOIN tb_master_user au ON au.id_user = cl.approved_by
+             LEFT JOIN tb_master_user ru ON ru.id_user = cl.rpm_approved_by
              WHERE cl.claim_year = ? AND cl.claim_month BETWEEN ? AND ?";
 
         $params = [$year, $startMonth, $endMonth];
@@ -489,6 +604,9 @@ class MMonitoring_RFS_MyRep extends CI_Model
             'province_name' => array_key_exists('province_name', $data)
                 ? $data['province_name']
                 : ($existing['province_name'] ?? null),
+            'team_name' => array_key_exists('team_name', $data)
+                ? $data['team_name']
+                : ($existing['team_name'] ?? null),
             'target_myrep' => $targetMyrep,
             'target_rkap' => $targetRkap,
             'realization_myrep' => $realizationMyrep,
@@ -584,6 +702,13 @@ class MMonitoring_RFS_MyRep extends CI_Model
             $payload['status_rfs'] = $data['status_rfs'];
         }
 
+        if ($this->claimSupportsRpmApproval()) {
+            $payload['rpm_approval_status'] = $data['rpm_approval_status'];
+            $payload['rpm_approval_note'] = $data['rpm_approval_note'] ?? null;
+            $payload['rpm_approved_by'] = $data['rpm_approved_by'] ?? null;
+            $payload['rpm_approved_at'] = $data['rpm_approved_at'] ?? null;
+        }
+
         $this->db->insert('tb_rfs_myrep_claim', $payload);
         return $this->db->insert_id();
     }
@@ -609,10 +734,33 @@ class MMonitoring_RFS_MyRep extends CI_Model
             ]);
     }
 
+    public function updateClaimRpmApproval($claimId, $data)
+    {
+        $payload = [
+            'status_claim' => $data['status_claim'],
+        ];
+
+        if ($this->claimSupportsRpmApproval()) {
+            $payload['rpm_approval_status'] = $data['rpm_approval_status'];
+            $payload['rpm_approval_note'] = $data['rpm_approval_note'];
+            $payload['rpm_approved_by'] = $data['rpm_approved_by'];
+            $payload['rpm_approved_at'] = date('Y-m-d H:i:s');
+        }
+
+        return $this->db
+            ->where('id_claim', $claimId)
+            ->update('tb_rfs_myrep_claim', $payload);
+    }
+
     public function getClaimById($claimId)
     {
         return $this->db
-            ->get_where('tb_rfs_myrep_claim', ['id_claim' => (int) $claimId])
+            ->select('cl.*, mt.rpm, mt.city_name, c.cluster_name')
+            ->from('tb_rfs_myrep_claim cl')
+            ->join('tb_rfs_myrep_cluster c', 'c.id_cluster = cl.cluster_id', 'inner')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
+            ->where('cl.id_claim', (int) $claimId)
+            ->get()
             ->row_array();
     }
 
@@ -711,7 +859,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
     public function getTargetOptions($year, $startMonth, $endMonth, $city = '')
     {
         $this->db
-            ->select('id_target, year_num, month_num, regional_name, province_name, city_name, chief, rpm, sm, spv, target_myrep, realization_myrep, target_rkap')
+            ->select('id_target, year_num, month_num, regional_name, province_name, city_name, team_name, chief, rpm, sm, spv, target_myrep, realization_myrep, target_rkap')
             ->from('tb_rfs_myrep_monthly_target')
             ->where('year_num', $year)
             ->where('month_num >=', $startMonth)
@@ -734,7 +882,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
             "SELECT COALESCE(SUM(claim_qty), 0) AS total_claim
              FROM tb_rfs_myrep_claim
              WHERE cluster_id = ?
-             AND status_claim IN ('PENDING', 'APPROVED')",
+             AND status_claim IN ('WAITING APPROVAL RPM', 'WAITING APPROVAL HO', 'APPROVED')",
             [$clusterId]
         )->row_array();
 

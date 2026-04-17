@@ -20,6 +20,7 @@ if (!empty($targetOptions)) {
                 'city_name' => (string) ($targetOption['city_name'] ?? ''),
                 'regional_name' => (string) ($targetOption['regional_name'] ?? ''),
                 'province_name' => (string) ($targetOption['province_name'] ?? ''),
+                'team_name' => (string) ($targetOption['team_name'] ?? ''),
                 'chief' => (string) ($targetOption['chief'] ?? ''),
                 'rpm' => (string) ($targetOption['rpm'] ?? ''),
                 'sm' => (string) ($targetOption['sm'] ?? ''),
@@ -67,6 +68,7 @@ if (!empty($allTargetOptions)) {
             'city_name' => (string) ($targetOption['city_name'] ?? ''),
             'regional_name' => (string) ($targetOption['regional_name'] ?? ''),
             'province_name' => (string) ($targetOption['province_name'] ?? ''),
+            'team_name' => (string) ($targetOption['team_name'] ?? ''),
             'chief' => (string) ($targetOption['chief'] ?? ''),
             'rpm' => (string) ($targetOption['rpm'] ?? ''),
             'sm' => (string) ($targetOption['sm'] ?? ''),
@@ -86,9 +88,30 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                 return 'success';
             case 'REJECTED':
                 return 'danger';
+            case 'WAITING APPROVAL RPM':
+                return 'primary';
+            case 'WAITING APPROVAL HO':
+                return 'info';
+            case 'SKIPPED':
+                return 'secondary';
             default:
                 return 'warning';
         }
+    }
+}
+
+if (!function_exists('monitoring_rfs_tkm_percent_class')) {
+    function monitoring_rfs_tkm_percent_class($percent)
+    {
+        $percent = (float) $percent;
+        if ($percent <= 30) {
+            return 'low';
+        }
+        if ($percent <= 70) {
+            return 'medium';
+        }
+
+        return 'high';
     }
 }
 ?>
@@ -232,14 +255,85 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         transform: translateY(-1px);
     }
 
+    .tkm-percent-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .tkm-percent-indicator::before {
+        content: '';
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .tkm-percent-low {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .tkm-percent-low::before {
+        background: #dc2626;
+    }
+
+    .tkm-percent-medium {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .tkm-percent-medium::before {
+        background: #f59e0b;
+    }
+
+    .tkm-percent-high {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .tkm-percent-high::before {
+        background: #16a34a;
+    }
+
+    .city-health-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 92px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+
+    .city-health-low {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .city-health-medium {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .city-health-high {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
     .rfs-header-myrep {
-        background-color: #d9edf7;
-        color: #0c5460;
+        background-color: #ede2ff;
+        color: #5b3f8c;
     }
 
     .rfs-header-tkm {
-        background-color: #d4edda;
-        color: #155724;
+        background-color: #dbeafe;
+        color: #1d4ed8;
     }
 
     .rfs-header-rkap {
@@ -465,6 +559,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <tr>
                                     <th rowspan="2" class="rfs-header-fixed">NO</th>
                                     <th rowspan="2" class="rfs-header-fixed">KOTA</th>
+                                    <th rowspan="2" class="rfs-header-fixed">REGIONAL</th>
+                                    <th rowspan="2" class="rfs-header-fixed">SM</th>
+                                    <th rowspan="2" class="rfs-header-fixed">TEAM</th>
                                     <th colspan="4" class="rfs-header-myrep">MYREP</th>
                                     <th colspan="4" class="rfs-header-tkm">TKM</th>
                                     <th rowspan="2" class="rfs-header-fixed">MYREP VS TKM</th>
@@ -485,7 +582,14 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                     <?php foreach ($annualCitySummary as $row) { ?>
                                         <tr>
                                             <td></td>
-                                            <td><?= htmlspecialchars($row['city_name']) ?></td>
+                                            <td>
+                                                <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                    <?= htmlspecialchars($row['city_name']) ?>
+                                                </span>
+                                            </td>
+                                            <td><?= htmlspecialchars($row['regional_name'] ?? '-') ?></td>
+                                            <td><?= htmlspecialchars($row['sm'] ?? '-') ?></td>
+                                            <td><?= htmlspecialchars($row['team_name'] ?? '-') ?></td>
                                             <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['realization_myrep'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['target_myrep'] - (float) $row['realization_myrep'], 0, ',', '.') ?>
@@ -495,13 +599,17 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                             <td><?= number_format((float) $row['realization_tkm'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['target_tkm'] - (float) $row['realization_tkm'], 0, ',', '.') ?>
                                             </td>
-                                            <td><?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%</td>
+                                            <td>
+                                                <span class="tkm-percent-indicator tkm-percent-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                    <?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%
+                                                </span>
+                                            </td>
                                             <td><?= number_format((float) $row['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
                                         </tr>
                                     <?php } ?>
                                 <?php } else { ?>
                                     <tr>
-                                        <td colspan="11" class="text-center">Belum ada breakdown annual per kota.</td>
+                                        <td colspan="14" class="text-center">Belum ada breakdown annual per kota.</td>
                                     </tr>
                                 <?php } ?>
                             </tbody>
@@ -509,6 +617,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <tr>
                                     <th>-</th>
                                     <th>TOTAL</th>
+                                    <th>-</th>
+                                    <th>-</th>
+                                    <th>-</th>
                                     <th>0</th>
                                     <th>0</th>
                                     <th>0</th>
@@ -588,9 +699,10 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                 <thead>
                                                     <tr class="text-center">
                                                         <th style="width: 5%;">No</th>
-                                                        <th style="width: 18%;">Kota</th>
+                                                        <th style="width: 16%;">Kota</th>
                                                         <th>Regional</th>
                                                         <th>Provinsi</th>
+                                                        <th>Team</th>
                                                         <th>Chief</th>
                                                         <th>RPM</th>
                                                         <th>SM</th>
@@ -607,6 +719,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                         </td>
                                                         <td><input type="text" name="regional_name[]" class="form-control city-master-regional"></td>
                                                         <td><input type="text" name="province_name[]" class="form-control city-master-province"></td>
+                                                        <td><input type="text" name="team_name[]" class="form-control city-master-team"></td>
                                                         <td><input type="text" name="chief[]" class="form-control city-master-chief"></td>
                                                         <td><input type="text" name="rpm[]" class="form-control city-master-rpm"></td>
                                                         <td><input type="text" name="sm[]" class="form-control city-master-sm"></td>
@@ -877,6 +990,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                             <tr>
                                 <th rowspan="2" class="rfs-header-fixed">NO</th>
                                 <th rowspan="2" class="rfs-header-fixed">KOTA</th>
+                                <th rowspan="2" class="rfs-header-fixed">REGIONAL</th>
+                                <th rowspan="2" class="rfs-header-fixed">SM</th>
+                                <th rowspan="2" class="rfs-header-fixed">TEAM</th>
                                 <th colspan="3" class="rfs-header-myrep">MYREP</th>
                                 <th colspan="3" class="rfs-header-tkm">TKM</th>
                                 <th rowspan="2" class="rfs-header-fixed">MYREP VS TKM</th>
@@ -895,19 +1011,30 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <?php foreach ($monthlySummary as $row) { ?>
                                     <tr>
                                         <td></td>
-                                        <td><?= htmlspecialchars($row['city_name']) ?></td>
+                                        <td>
+                                            <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                <?= htmlspecialchars($row['city_name']) ?>
+                                            </span>
+                                        </td>
+                                        <td><?= htmlspecialchars($row['regional_name'] ?? '-') ?></td>
+                                        <td><?= htmlspecialchars($row['sm'] ?? '-') ?></td>
+                                        <td><?= htmlspecialchars($row['team_name'] ?? '-') ?></td>
                                         <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
                                         <td><?= number_format((float) $row['realization_myrep'], 0, ',', '.') ?></td>
                                         <td><?= number_format((float) $row['pct_myrep'], 2, ',', '.') ?>%</td>
                                         <td><?= number_format((float) $row['target_tkm'], 0, ',', '.') ?></td>
                                         <td><?= number_format((float) $row['realization_tkm'], 0, ',', '.') ?></td>
-                                        <td><?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%</td>
+                                        <td>
+                                            <span class="tkm-percent-indicator tkm-percent-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                <?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%
+                                            </span>
+                                        </td>
                                         <td><?= number_format((float) $row['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
                                     </tr>
                                 <?php } ?>
                             <?php } else { ?>
                                 <tr>
-                                    <td colspan="9" class="text-center">Belum ada data bulanan.</td>
+                                    <td colspan="12" class="text-center">Belum ada data bulanan.</td>
                                 </tr>
                             <?php } ?>
                         </tbody>
@@ -915,6 +1042,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                             <tr>
                                 <th>-</th>
                                 <th>TOTAL</th>
+                                <th>-</th>
+                                <th>-</th>
+                                <th>-</th>
                                 <th>0</th>
                                 <th>0</th>
                                 <th>0%</th>
@@ -925,6 +1055,189 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                             </tr>
                         </tfoot>
                     </table>
+                </div>
+            </div>
+
+            <div class="card card-outline card-info">
+                <div class="card-header">
+                    <h3 class="card-title">2A. KPI Summary By Regional / SM / Team</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse" title="Collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <div class="mb-4">
+                        <h5 class="mb-3">By Regional</h5>
+                        <table id="table_rfs_regional_summary" class="table table-bordered table-striped text-center">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" class="rfs-header-fixed">NO</th>
+                                    <th rowspan="2" class="rfs-header-fixed">REGIONAL</th>
+                                    <th colspan="3" class="rfs-header-myrep">MYREP</th>
+                                    <th colspan="3" class="rfs-header-tkm">TKM</th>
+                                    <th rowspan="2" class="rfs-header-fixed">MYREP VS TKM</th>
+                                </tr>
+                                <tr>
+                                    <th class="rfs-header-myrep">TARGET</th>
+                                    <th class="rfs-header-myrep">REALISASI</th>
+                                    <th class="rfs-header-myrep">%</th>
+                                    <th class="rfs-header-tkm">TARGET</th>
+                                    <th class="rfs-header-tkm">REALISASI</th>
+                                    <th class="rfs-header-tkm">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($regionalSummary)) { ?>
+                                    <?php foreach ($regionalSummary as $row) { ?>
+                                        <tr>
+                                            <td></td>
+                                            <td><?= htmlspecialchars($row['group_name'] ?? '-') ?></td>
+                                            <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['realization_myrep'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['pct_myrep'], 2, ',', '.') ?>%</td>
+                                            <td><?= number_format((float) $row['target_tkm'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['realization_tkm'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%</td>
+                                            <td><?= number_format((float) $row['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
+                                        </tr>
+                                    <?php } ?>
+                                <?php } else { ?>
+                                    <tr>
+                                        <td colspan="9" class="text-center">Belum ada data KPI per regional.</td>
+                                    </tr>
+                                <?php } ?>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th>-</th>
+                                    <th>TOTAL</th>
+                                    <th>0</th>
+                                    <th>0</th>
+                                    <th>0%</th>
+                                    <th>0</th>
+                                    <th>0</th>
+                                    <th>0%</th>
+                                    <th>0%</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5 class="mb-3">By SM</h5>
+                        <table id="table_rfs_sm_summary" class="table table-bordered table-striped text-center">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" class="rfs-header-fixed">NO</th>
+                                    <th rowspan="2" class="rfs-header-fixed">SM</th>
+                                    <th colspan="3" class="rfs-header-myrep">MYREP</th>
+                                    <th colspan="3" class="rfs-header-tkm">TKM</th>
+                                    <th rowspan="2" class="rfs-header-fixed">MYREP VS TKM</th>
+                                </tr>
+                                <tr>
+                                    <th class="rfs-header-myrep">TARGET</th>
+                                    <th class="rfs-header-myrep">REALISASI</th>
+                                    <th class="rfs-header-myrep">%</th>
+                                    <th class="rfs-header-tkm">TARGET</th>
+                                    <th class="rfs-header-tkm">REALISASI</th>
+                                    <th class="rfs-header-tkm">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($smSummary)) { ?>
+                                    <?php foreach ($smSummary as $row) { ?>
+                                        <tr>
+                                            <td></td>
+                                            <td><?= htmlspecialchars($row['group_name'] ?? '-') ?></td>
+                                            <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['realization_myrep'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['pct_myrep'], 2, ',', '.') ?>%</td>
+                                            <td><?= number_format((float) $row['target_tkm'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['realization_tkm'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%</td>
+                                            <td><?= number_format((float) $row['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
+                                        </tr>
+                                    <?php } ?>
+                                <?php } else { ?>
+                                    <tr>
+                                        <td colspan="9" class="text-center">Belum ada data KPI per SM.</td>
+                                    </tr>
+                                <?php } ?>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th>-</th>
+                                    <th>TOTAL</th>
+                                    <th>0</th>
+                                    <th>0</th>
+                                    <th>0%</th>
+                                    <th>0</th>
+                                    <th>0</th>
+                                    <th>0%</th>
+                                    <th>0%</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div>
+                        <h5 class="mb-3">By Team</h5>
+                        <table id="table_rfs_team_summary" class="table table-bordered table-striped text-center">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" class="rfs-header-fixed">NO</th>
+                                    <th rowspan="2" class="rfs-header-fixed">TEAM</th>
+                                    <th colspan="3" class="rfs-header-myrep">MYREP</th>
+                                    <th colspan="3" class="rfs-header-tkm">TKM</th>
+                                    <th rowspan="2" class="rfs-header-fixed">MYREP VS TKM</th>
+                                </tr>
+                                <tr>
+                                    <th class="rfs-header-myrep">TARGET</th>
+                                    <th class="rfs-header-myrep">REALISASI</th>
+                                    <th class="rfs-header-myrep">%</th>
+                                    <th class="rfs-header-tkm">TARGET</th>
+                                    <th class="rfs-header-tkm">REALISASI</th>
+                                    <th class="rfs-header-tkm">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($teamSummary)) { ?>
+                                    <?php foreach ($teamSummary as $row) { ?>
+                                        <tr>
+                                            <td></td>
+                                            <td><?= htmlspecialchars($row['group_name'] ?? '-') ?></td>
+                                            <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['realization_myrep'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['pct_myrep'], 2, ',', '.') ?>%</td>
+                                            <td><?= number_format((float) $row['target_tkm'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['realization_tkm'], 0, ',', '.') ?></td>
+                                            <td><?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%</td>
+                                            <td><?= number_format((float) $row['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
+                                        </tr>
+                                    <?php } ?>
+                                <?php } else { ?>
+                                    <tr>
+                                        <td colspan="9" class="text-center">Belum ada data KPI per team.</td>
+                                    </tr>
+                                <?php } ?>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th>-</th>
+                                    <th>TOTAL</th>
+                                    <th>0</th>
+                                    <th>0</th>
+                                    <th>0%</th>
+                                    <th>0</th>
+                                    <th>0</th>
+                                    <th>0%</th>
+                                    <th>0%</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -1061,7 +1374,9 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                 ? 'success'
                                                 : ($displayStatusRfs === 'PARTIAL'
                                                     ? 'warning'
-                                                    : ($displayStatusRfs === 'WAITING APPROVAL' ? 'info' : 'secondary'));
+                                                    : ($displayStatusRfs === 'WAITING APPROVAL'
+                                                        ? 'info'
+                                                        : ($displayStatusRfs === 'REJECTED' ? 'danger' : 'secondary')));
                                             ?>
                                             <span class="badge badge-<?= $displayBadgeClass ?>">
                                                 <?= htmlspecialchars($displayStatusRfs) ?>
@@ -1079,10 +1394,14 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                             <?= number_format((float) $cluster['homepass'] - (float) $cluster['claimed_qty'], 0, ',', '.') ?>
                                         </td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-success" data-toggle="modal"
-                                                data-target="#claimModal<?= (int) $cluster['id_cluster'] ?>">
-                                                Claim RFS
-                                            </button>
+                                            <?php if (in_array($displayStatusRfs, ['NY RFS', 'PARTIAL', 'REJECTED'], true)) { ?>
+                                                <button type="button" class="btn btn-sm btn-success" data-toggle="modal"
+                                                    data-target="#claimModal<?= (int) $cluster['id_cluster'] ?>">
+                                                    Claim RFS
+                                                </button>
+                                            <?php } else { ?>
+                                                <span class="text-muted small">Tidak tersedia</span>
+                                            <?php } ?>
                                         </td>
                                     </tr>
 
@@ -1210,6 +1529,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <th>Foto</th>
                                 <th>Status</th>
                                 <th>PIC Area</th>
+                                <th>Approval RPM</th>
                                 <th>Approval HO</th>
                             </tr>
                         </thead>
@@ -1238,8 +1558,19 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                             <?= htmlspecialchars(trim(($claim['rpm'] ?? '') . ' / ' . ($claim['sm'] ?? '') . ' / ' . ($claim['spv'] ?? ''), ' /')) ?><br>
                                             <small>Submitter: <?= htmlspecialchars($claim['submitted_name'] ?? '') ?></small>
                                         </td>
-                                        <td style="min-width: 280px;">
-                                            <?php if ($canApprove) { ?>
+                                        <td style="min-width: 260px;">
+                                            <?php
+                                            $claimRpm = trim((string) ($claim['rpm'] ?? ''));
+                                            $rpmApprovalStatus = trim((string) ($claim['rpm_approval_status'] ?? ''));
+                                            $claimStatus = trim((string) ($claim['status_claim'] ?? ''));
+                                            $sessionName = strtoupper(trim((string) $this->session->userdata('nama_user')));
+                                            $canApproveRpm = $this->session->userdata('nama_level') === 'Super Admin'
+                                                || ($claimRpm !== '' && $sessionName === strtoupper($claimRpm));
+                                            ?>
+                                            <?php if ($claimRpm === '') { ?>
+                                                <span class="badge badge-secondary">SKIPPED</span>
+                                                <div><small>Tidak ada RPM untuk area ini</small></div>
+                                            <?php } elseif ($claimStatus === 'WAITING APPROVAL RPM' && $canApproveRpm) { ?>
                                                 <form method="post"
                                                     action="<?= base_url('Monitoring_RFS_MyRep/updateClaimStatus') ?>">
                                                     <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
@@ -1251,6 +1582,48 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                     <input type="hidden" name="filter_end_month"
                                                         value="<?= (int) $selectedEndMonth ?>">
                                                     <input type="hidden" name="claim_id" value="<?= (int) $claim['id_claim'] ?>">
+                                                    <input type="hidden" name="approver_stage" value="RPM">
+                                                    <div class="form-group mb-2">
+                                                        <select name="status_claim" class="form-control form-control-sm">
+                                                            <option value="APPROVED">APPROVED</option>
+                                                            <option value="REJECTED">REJECTED</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group mb-2">
+                                                        <textarea name="rpm_approval_note" class="form-control form-control-sm" rows="2"
+                                                            placeholder="Catatan RPM"><?= htmlspecialchars($claim['rpm_approval_note'] ?? '') ?></textarea>
+                                                    </div>
+                                                    <button type="submit" class="btn btn-sm btn-primary">Update RPM</button>
+                                                </form>
+                                            <?php } else { ?>
+                                                <span class="badge badge-<?= monitoring_rfs_badge_class($rpmApprovalStatus !== '' ? $rpmApprovalStatus : 'WAITING APPROVAL RPM') ?>">
+                                                    <?= htmlspecialchars($rpmApprovalStatus !== '' ? $rpmApprovalStatus : 'WAITING APPROVAL RPM') ?>
+                                                </span>
+                                                <?php if (!empty($claim['rpm_approved_name'])) { ?>
+                                                    <div><small>By: <?= htmlspecialchars($claim['rpm_approved_name'] ?? '') ?> |
+                                                            <?= htmlspecialchars($claim['rpm_approved_at'] ?? '') ?></small></div>
+                                                <?php } else { ?>
+                                                    <div><small>RPM: <?= htmlspecialchars($claimRpm) ?></small></div>
+                                                <?php } ?>
+                                                <?php if (!empty($claim['rpm_approval_note'])) { ?>
+                                                    <div><small><?= htmlspecialchars($claim['rpm_approval_note'] ?? '') ?></small></div>
+                                                <?php } ?>
+                                            <?php } ?>
+                                        </td>
+                                        <td style="min-width: 280px;">
+                                            <?php if ($canApprove && in_array(($claim['status_claim'] ?? ''), ['WAITING APPROVAL HO', 'APPROVED', 'REJECTED'], true)) { ?>
+                                                <form method="post"
+                                                    action="<?= base_url('Monitoring_RFS_MyRep/updateClaimStatus') ?>">
+                                                    <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
+                                                    <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
+                                                    <input type="hidden" name="filter_city"
+                                                        value="<?= htmlspecialchars($selectedCity) ?>">
+                                                    <input type="hidden" name="filter_start_month"
+                                                        value="<?= (int) $selectedStartMonth ?>">
+                                                    <input type="hidden" name="filter_end_month"
+                                                        value="<?= (int) $selectedEndMonth ?>">
+                                                    <input type="hidden" name="claim_id" value="<?= (int) $claim['id_claim'] ?>">
+                                                    <input type="hidden" name="approver_stage" value="HO">
                                                     <div class="form-group mb-2">
                                                         <select name="status_claim" class="form-control form-control-sm">
                                                             <option value="APPROVED" <?= ($claim['status_claim'] === 'APPROVED') ? 'selected' : '' ?>>APPROVED</option>
@@ -1269,7 +1642,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                                 </form>
                                             <?php } else { ?>
                                                 <small>
-                                                    <?= !empty($claim['approved_name']) ? 'By: ' . htmlspecialchars($claim['approved_name'] ?? '') : 'Menunggu PIC HO' ?><br>
+                                                    <?= !empty($claim['approved_name']) ? 'By: ' . htmlspecialchars($claim['approved_name'] ?? '') : (($claim['status_claim'] ?? '') === 'WAITING APPROVAL RPM' ? 'Menunggu approval RPM' : 'Menunggu PIC HO') ?><br>
                                                     <?= htmlspecialchars((string) $claim['approval_note']) ?>
                                                 </small>
                                             <?php } ?>
@@ -1278,7 +1651,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <?php } ?>
                             <?php } else { ?>
                                 <tr>
-                                    <td colspan="9" class="text-center">Belum ada claim pada periode ini.</td>
+                                    <td colspan="10" class="text-center">Belum ada claim pada periode ini.</td>
                                 </tr>
                             <?php } ?>
                         </tbody>
@@ -1287,6 +1660,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                                 <th>-</th>
                                 <th colspan="3" class="text-center">TOTAL</th>
                                 <th>0</th>
+                                <th>-</th>
                                 <th>-</th>
                                 <th>-</th>
                                 <th>-</th>
@@ -1314,6 +1688,30 @@ if (!function_exists('monitoring_rfs_badge_class')) {
         }
 
         var $ = window.jQuery;
+
+        $.fn.dataTable.ext.type.detect.unshift(function (data) {
+            var text = $('<div>').html(data === null || data === undefined ? '' : String(data)).text().trim();
+
+            if (text === '' || text === '-') {
+                return 'id-locale-num';
+            }
+
+            if (/^-?[\d.,]+%?$/.test(text)) {
+                return 'id-locale-num';
+            }
+
+            return null;
+        });
+
+        $.fn.dataTable.ext.type.order['id-locale-num-pre'] = function (data) {
+            var text = $('<div>').html(data === null || data === undefined ? '' : String(data)).text().trim();
+
+            if (text === '' || text === '-') {
+                return 0;
+            }
+
+            return parseLocaleNumber(text);
+        };
 
         function syncClusterTargetSelection($row) {
             var selectedCity = String($row.find('.cluster-city-selector').val() || '').toUpperCase();
@@ -1416,6 +1814,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
                     '</td>' +
                     '<td><input type="text" name="regional_name[]" class="form-control city-master-regional"></td>' +
                     '<td><input type="text" name="province_name[]" class="form-control city-master-province"></td>' +
+                    '<td><input type="text" name="team_name[]" class="form-control city-master-team"></td>' +
                     '<td><input type="text" name="chief[]" class="form-control city-master-chief"></td>' +
                     '<td><input type="text" name="rpm[]" class="form-control city-master-rpm"></td>' +
                     '<td><input type="text" name="sm[]" class="form-control city-master-sm"></td>' +
@@ -1450,7 +1849,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             var $info = $row.find('.city-master-info');
 
             if (!data) {
-                $row.find('.city-master-regional, .city-master-province, .city-master-chief, .city-master-rpm, .city-master-sm, .city-master-spv').each(function() {
+                $row.find('.city-master-regional, .city-master-province, .city-master-team, .city-master-chief, .city-master-rpm, .city-master-sm, .city-master-spv').each(function() {
                     if (!$(this).data('userEdited')) {
                         $(this).val('');
                     }
@@ -1461,6 +1860,7 @@ if (!function_exists('monitoring_rfs_badge_class')) {
 
             $row.find('.city-master-regional').val(data.regional_name || '');
             $row.find('.city-master-province').val(data.province_name || '');
+            $row.find('.city-master-team').val(data.team_name || '');
             $row.find('.city-master-chief').val(data.chief || '');
             $row.find('.city-master-rpm').val(data.rpm || '');
             $row.find('.city-master-sm').val(data.sm || '');
@@ -1589,6 +1989,36 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             });
         }
 
+        $.fn.dataTable.ext.type.detect.unshift(function(data) {
+            if (data === null || data === undefined) {
+                return null;
+            }
+
+            var text = String(data)
+                .replace(/<[^>]*>/g, ' ')
+                .replace(/&nbsp;/g, ' ')
+                .trim();
+
+            if (text === '') {
+                return null;
+            }
+
+            if (/^-?[\d.\-,%\s]+$/.test(text) && /\d/.test(text)) {
+                return 'id-locale-num';
+            }
+
+            return null;
+        });
+
+        $.fn.dataTable.ext.type.order['id-locale-num-pre'] = function(data) {
+            if (data === null || data === undefined) {
+                return 0;
+            }
+
+            var text = String(data).replace(/<[^>]*>/g, ' ').trim();
+            return parseLocaleNumber(text);
+        };
+
         function sumColumn(api, columnIndex, useInputValue) {
             return api
                 .cells(null, columnIndex, { search: 'applied' })
@@ -1685,26 +2115,43 @@ if (!function_exists('monitoring_rfs_badge_class')) {
 
         initAdminLteTable('#table_rfs_annual_city_summary', [[1, 'asc']], function () {
             var api = this.api();
-            var totalTargetMyrep = sumColumn(api, 2);
-            var totalRealisasiMyrep = sumColumn(api, 3);
+            var totalTargetMyrep = sumColumn(api, 5);
+            var totalRealisasiMyrep = sumColumn(api, 6);
             var totalSelisihMyrep = totalTargetMyrep - totalRealisasiMyrep;
-            var totalTargetTkm = sumColumn(api, 6);
-            var totalRealisasiTkm = sumColumn(api, 7);
+            var totalTargetTkm = sumColumn(api, 9);
+            var totalRealisasiTkm = sumColumn(api, 10);
             var totalSelisihTkm = totalTargetTkm - totalRealisasiTkm;
 
-            setFooterValue(api, 2, totalTargetMyrep, 0);
-            setFooterValue(api, 3, totalRealisasiMyrep, 0);
-            setFooterValue(api, 4, totalSelisihMyrep, 0);
-            setFooterValue(api, 5, safePercent(totalRealisasiMyrep, totalTargetMyrep), 2, '%');
-            setFooterValue(api, 6, totalTargetTkm, 0);
-            setFooterValue(api, 7, totalRealisasiTkm, 0);
-            setFooterValue(api, 8, totalSelisihTkm, 0);
-            setFooterValue(api, 9, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
-            setFooterValue(api, 10, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
+            setFooterValue(api, 5, totalTargetMyrep, 0);
+            setFooterValue(api, 6, totalRealisasiMyrep, 0);
+            setFooterValue(api, 7, totalSelisihMyrep, 0);
+            setFooterValue(api, 8, safePercent(totalRealisasiMyrep, totalTargetMyrep), 2, '%');
+            setFooterValue(api, 9, totalTargetTkm, 0);
+            setFooterValue(api, 10, totalRealisasiTkm, 0);
+            setFooterValue(api, 11, totalSelisihTkm, 0);
+            setFooterValue(api, 12, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
+            setFooterValue(api, 13, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
         });
         addRowNumbers('#table_rfs_annual_city_summary', 0);
 
         initAdminLteTable('#table_rfs_monthly_summary', [[1, 'asc']], function () {
+            var api = this.api();
+            var totalTargetMyrep = sumColumn(api, 5);
+            var totalRealisasiMyrep = sumColumn(api, 6);
+            var totalTargetTkm = sumColumn(api, 8);
+            var totalRealisasiTkm = sumColumn(api, 9);
+
+            setFooterValue(api, 5, totalTargetMyrep, 0);
+            setFooterValue(api, 6, totalRealisasiMyrep, 0);
+            setFooterValue(api, 7, safePercent(totalRealisasiMyrep, totalTargetMyrep), 2, '%');
+            setFooterValue(api, 8, totalTargetTkm, 0);
+            setFooterValue(api, 9, totalRealisasiTkm, 0);
+            setFooterValue(api, 10, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
+            setFooterValue(api, 11, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
+        });
+        addRowNumbers('#table_rfs_monthly_summary', 0);
+
+        initAdminLteTable('#table_rfs_regional_summary', [[1, 'asc']], function () {
             var api = this.api();
             var totalTargetMyrep = sumColumn(api, 2);
             var totalRealisasiMyrep = sumColumn(api, 3);
@@ -1719,7 +2166,41 @@ if (!function_exists('monitoring_rfs_badge_class')) {
             setFooterValue(api, 7, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
             setFooterValue(api, 8, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
         });
-        addRowNumbers('#table_rfs_monthly_summary', 0);
+        addRowNumbers('#table_rfs_regional_summary', 0);
+
+        initAdminLteTable('#table_rfs_sm_summary', [[1, 'asc']], function () {
+            var api = this.api();
+            var totalTargetMyrep = sumColumn(api, 2);
+            var totalRealisasiMyrep = sumColumn(api, 3);
+            var totalTargetTkm = sumColumn(api, 5);
+            var totalRealisasiTkm = sumColumn(api, 6);
+
+            setFooterValue(api, 2, totalTargetMyrep, 0);
+            setFooterValue(api, 3, totalRealisasiMyrep, 0);
+            setFooterValue(api, 4, safePercent(totalRealisasiMyrep, totalTargetMyrep), 2, '%');
+            setFooterValue(api, 5, totalTargetTkm, 0);
+            setFooterValue(api, 6, totalRealisasiTkm, 0);
+            setFooterValue(api, 7, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
+            setFooterValue(api, 8, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
+        });
+        addRowNumbers('#table_rfs_sm_summary', 0);
+
+        initAdminLteTable('#table_rfs_team_summary', [[1, 'asc']], function () {
+            var api = this.api();
+            var totalTargetMyrep = sumColumn(api, 2);
+            var totalRealisasiMyrep = sumColumn(api, 3);
+            var totalTargetTkm = sumColumn(api, 5);
+            var totalRealisasiTkm = sumColumn(api, 6);
+
+            setFooterValue(api, 2, totalTargetMyrep, 0);
+            setFooterValue(api, 3, totalRealisasiMyrep, 0);
+            setFooterValue(api, 4, safePercent(totalRealisasiMyrep, totalTargetMyrep), 2, '%');
+            setFooterValue(api, 5, totalTargetTkm, 0);
+            setFooterValue(api, 6, totalRealisasiTkm, 0);
+            setFooterValue(api, 7, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
+            setFooterValue(api, 8, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
+        });
+        addRowNumbers('#table_rfs_team_summary', 0);
 
         initAdminLteTable('#table_rfs_three_month_summary', [[1, 'asc']], function () {
             var api = this.api();

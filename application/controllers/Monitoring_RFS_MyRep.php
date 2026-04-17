@@ -60,6 +60,9 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $data['annualSummary'] = $this->MMonitoring_RFS_MyRep->getAnnualSummary($selectedYear, 1, 12, '');
         $data['annualCitySummary'] = $this->MMonitoring_RFS_MyRep->getAnnualCitySummary($selectedYear, 1, 12, '');
         $data['monthlySummary'] = $this->MMonitoring_RFS_MyRep->getMonthlySummary($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
+        $data['regionalSummary'] = $this->MMonitoring_RFS_MyRep->getGroupedKpiSummary($selectedYear, $selectedStartMonth, $selectedEndMonth, 'regional_name', $selectedCity);
+        $data['smSummary'] = $this->MMonitoring_RFS_MyRep->getGroupedKpiSummary($selectedYear, $selectedStartMonth, $selectedEndMonth, 'sm', $selectedCity);
+        $data['teamSummary'] = $this->MMonitoring_RFS_MyRep->getGroupedKpiSummary($selectedYear, $selectedStartMonth, $selectedEndMonth, 'team_name', $selectedCity);
         $data['threeMonthSummary'] = $this->MMonitoring_RFS_MyRep->getThreeMonthSummary($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
         $data['clusterList'] = $this->MMonitoring_RFS_MyRep->getClustersWithPlan($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
         $data['claimList'] = $this->MMonitoring_RFS_MyRep->getClaims($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
@@ -163,6 +166,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $cities = $this->input->post('city');
         $regionalRows = $this->input->post('regional_name');
         $provinceRows = $this->input->post('province_name');
+        $teamRows = $this->input->post('team_name');
         $chiefRows = $this->input->post('chief');
         $rpmRows = $this->input->post('rpm');
         $smRows = $this->input->post('sm');
@@ -182,6 +186,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
             count($cities),
             is_array($regionalRows) ? count($regionalRows) : 0,
             is_array($provinceRows) ? count($provinceRows) : 0,
+            is_array($teamRows) ? count($teamRows) : 0,
             is_array($chiefRows) ? count($chiefRows) : 0,
             is_array($rpmRows) ? count($rpmRows) : 0,
             is_array($smRows) ? count($smRows) : 0,
@@ -201,6 +206,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
                 'city_name' => $city,
                 'regional_name' => trim((string) ($regionalRows[$i] ?? '')),
                 'province_name' => trim((string) ($provinceRows[$i] ?? '')),
+                'team_name' => trim((string) ($teamRows[$i] ?? '')),
                 'chief' => trim((string) ($chiefRows[$i] ?? '')),
                 'rpm' => trim((string) ($rpmRows[$i] ?? '')),
                 'sm' => trim((string) ($smRows[$i] ?? '')),
@@ -634,6 +640,12 @@ class Monitoring_RFS_MyRep extends CI_Controller
             return;
         }
 
+        if (!$this->MMonitoring_RFS_MyRep->claimSupportsRpmApproval()) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Database belum support approval RPM. Jalankan update kolom approval RPM pada tabel `tb_rfs_myrep_claim` terlebih dahulu.');
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+            return;
+        }
+
         $claimDateTs = strtotime($claimDate);
         if ($claimDateTs === false) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Tanggal RFS tidak valid.');
@@ -680,13 +692,19 @@ class Monitoring_RFS_MyRep extends CI_Controller
             'status_rfs' => $statusRfs,
             'photo_path' => $uploadResult['file_path'],
             'claim_note' => trim((string) $this->input->post('claim_note')),
-            'status_claim' => 'PENDING',
+            'status_claim' => $this->hasRpmApprover($cluster) ? 'WAITING APPROVAL RPM' : 'WAITING APPROVAL HO',
+            'rpm_approval_status' => $this->hasRpmApprover($cluster) ? 'WAITING APPROVAL RPM' : 'SKIPPED',
             'submitted_by' => (int) $this->session->userdata('id_user')
         ];
 
         $this->MMonitoring_RFS_MyRep->createClaim($payload);
 
-        $this->session->set_flashdata('monitoring_rfs_myrep_message', 'Claim RFS berhasil dikirim dan menunggu approval HO.');
+        $this->session->set_flashdata(
+            'monitoring_rfs_myrep_message',
+            $this->hasRpmApprover($cluster)
+                ? 'Claim RFS berhasil dikirim dan menunggu approval RPM.'
+                : 'Claim RFS berhasil dikirim dan menunggu approval HO.'
+        );
 
         redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
     }
@@ -702,9 +720,58 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $month = (int) $this->input->post('month');
         $claimId = (int) $this->input->post('claim_id');
         $status = strtoupper(trim((string) $this->input->post('status_claim')));
+        $approverStage = strtoupper(trim((string) $this->input->post('approver_stage')));
         $filterCity = strtoupper(trim((string) $this->input->post('filter_city')));
         $filterStartMonth = (int) $this->input->post('filter_start_month');
         $filterEndMonth = (int) $this->input->post('filter_end_month');
+
+        if (!in_array($status, ['APPROVED', 'REJECTED'], true) || $claimId <= 0) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Status approval tidak valid.');
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+            return;
+        }
+
+        $claim = $this->MMonitoring_RFS_MyRep->getClaimById($claimId);
+        if (empty($claim)) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Data claim tidak ditemukan.');
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+            return;
+        }
+
+        if ($approverStage === 'RPM') {
+            if (!$this->isRpmApprover($claim['rpm'] ?? '')) {
+                $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Approval RPM hanya bisa dilakukan oleh RPM terkait.');
+                redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+                return;
+            }
+
+            if (($claim['status_claim'] ?? '') !== 'WAITING APPROVAL RPM') {
+                $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Claim ini tidak sedang menunggu approval RPM.');
+                redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+                return;
+            }
+
+            $nextStatus = $status === 'APPROVED' ? 'WAITING APPROVAL HO' : 'REJECTED';
+            $this->MMonitoring_RFS_MyRep->updateClaimRpmApproval($claimId, [
+                'status_claim' => $nextStatus,
+                'rpm_approval_status' => $status,
+                'rpm_approval_note' => trim((string) $this->input->post('rpm_approval_note')),
+                'rpm_approved_by' => (int) $this->session->userdata('id_user')
+            ]);
+
+            if ($status === 'REJECTED') {
+                $this->MMonitoring_RFS_MyRep->updateClusterStatusRfs((int) $claim['cluster_id'], 'REJECTED');
+            }
+
+            $this->session->set_flashdata(
+                'monitoring_rfs_myrep_message',
+                $status === 'APPROVED'
+                    ? 'Approval RPM berhasil. Claim diteruskan ke HO.'
+                    : 'Claim berhasil direject oleh RPM.'
+            );
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+            return;
+        }
 
         if (!$this->isHoApprover()) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Approval claim hanya bisa dilakukan PIC HO.');
@@ -712,8 +779,8 @@ class Monitoring_RFS_MyRep extends CI_Controller
             return;
         }
 
-        if (!in_array($status, ['APPROVED', 'REJECTED'], true) || $claimId <= 0) {
-            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Status approval tidak valid.');
+        if (($claim['status_claim'] ?? '') !== 'WAITING APPROVAL HO') {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Claim ini belum siap untuk approval HO.');
             redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
@@ -724,23 +791,29 @@ class Monitoring_RFS_MyRep extends CI_Controller
             'approved_by' => (int) $this->session->userdata('id_user')
         ]);
 
+        $claim = $this->MMonitoring_RFS_MyRep->getClaimById($claimId);
+        if ($status === 'APPROVED' && !empty($claim['status_rfs'])) {
+            $this->MMonitoring_RFS_MyRep->updateClusterStatusRfs(
+                (int) $claim['cluster_id'],
+                strtoupper((string) $claim['status_rfs'])
+            );
+        }
+
+        if ($status === 'REJECTED') {
+            $this->MMonitoring_RFS_MyRep->updateClusterStatusRfs(
+                (int) $claim['cluster_id'],
+                'REJECTED'
+            );
+        }
+
         if ($status === 'APPROVED') {
-            $claim = $this->MMonitoring_RFS_MyRep->getClaimById($claimId);
-            if (!empty($claim)) {
-                if (!empty($claim['status_rfs'])) {
-                    $this->MMonitoring_RFS_MyRep->updateClusterStatusRfs(
-                        (int) $claim['cluster_id'],
-                        strtoupper((string) $claim['status_rfs'])
-                    );
-                }
-                $cluster = $this->MMonitoring_RFS_MyRep->getClusterById((int) $claim['cluster_id']);
-                if (!empty($cluster) && strtoupper((string) ($claim['status_rfs'] ?? '')) === 'FULL RFS') {
-                    $this->MMonitoring_RFS_MyRep->ensureChecklistPackagesForCluster(
-                        (int) $claim['cluster_id'],
-                        !empty($claim['claim_date']) ? $claim['claim_date'] : null,
-                        (int) $this->session->userdata('id_user')
-                    );
-                }
+            $cluster = $this->MMonitoring_RFS_MyRep->getClusterById((int) $claim['cluster_id']);
+            if (!empty($cluster) && strtoupper((string) ($claim['status_rfs'] ?? '')) === 'FULL RFS') {
+                $this->MMonitoring_RFS_MyRep->ensureChecklistPackagesForCluster(
+                    (int) $claim['cluster_id'],
+                    !empty($claim['claim_date']) ? $claim['claim_date'] : null,
+                    (int) $this->session->userdata('id_user')
+                );
             }
         }
 
@@ -869,6 +942,20 @@ class Monitoring_RFS_MyRep extends CI_Controller
     private function isHoApprover()
     {
         return $this->session->userdata('lokasi_user') === 'HO' || $this->session->userdata('nama_level') === 'Super Admin';
+    }
+
+    private function hasRpmApprover($cluster)
+    {
+        return trim((string) ($cluster['rpm'] ?? '')) !== '';
+    }
+
+    private function isRpmApprover($rpmName)
+    {
+        if ($this->session->userdata('nama_level') === 'Super Admin') {
+            return true;
+        }
+
+        return strtoupper(trim((string) $this->session->userdata('nama_user'))) === strtoupper(trim((string) $rpmName));
     }
 
     private function getMonthLabels()

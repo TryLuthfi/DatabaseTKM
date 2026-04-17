@@ -705,6 +705,7 @@ $clusterProgressPercent = checklist_doc_percent(
                             <tr>
                                 <th>No</th>
                                 <th>Nama Dokumen</th>
+                                <th>Verification By</th>
                                 <th>Status</th>
                                 <th>File</th>
                                 <th>Uploaded At</th>
@@ -719,7 +720,7 @@ $clusterProgressPercent = checklist_doc_percent(
                         <tbody>
                             <?php if (empty($group['items'])): ?>
                                 <tr>
-                                    <td colspan="11" class="text-center">Belum ada master dokumen.</td>
+                                    <td colspan="12" class="text-center">Belum ada master dokumen.</td>
                                 </tr>
                             <?php else: ?>
                                                         <?php $no = 1; ?>
@@ -728,10 +729,11 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                 <td><?= $no++ ?></td>
                                                                 <td>
                                                                     <div><?= $item['doc_name'] ?></div>
-                                                                    <?php if (!empty($item['doc_requirement_note'])): ?>
+                                                                <?php if (!empty($item['doc_requirement_note'])): ?>
                                                                         <div class="doc-requirement-note"><?= nl2br(htmlspecialchars($item['doc_requirement_note'], ENT_QUOTES)) ?></div>
                                                                     <?php endif; ?>
                                                                 </td>
+                                                                <td><?= !empty($item['verification_by']) ? $item['verification_by'] : '-' ?></td>
                                                                 <td><span class="badge badge-<?= checklist_doc_status_badge($item['status_file']) ?>"><?= checklist_doc_status_label($item['status_file']) ?></span></td>
                                                                 <td>
                                                                     <?php if (!empty($item['file_path'])): ?>
@@ -950,6 +952,7 @@ $clusterProgressPercent = checklist_doc_percent(
                             <tr>
                                 <th>No</th>
                                 <th>Nama Dokumen</th>
+                                <th>Verification By</th>
                                 <th>Status</th>
                                 <th>File</th>
                                 <th>Uploaded At</th>
@@ -964,7 +967,7 @@ $clusterProgressPercent = checklist_doc_percent(
                         <tbody>
                             <?php if (empty($group['items'])): ?>
                                 <tr>
-                                    <td colspan="11" class="text-center">Belum ada master dokumen.</td>
+                                    <td colspan="12" class="text-center">Belum ada master dokumen.</td>
                                 </tr>
                             <?php else: ?>
                                                         <?php $no = 1; ?>
@@ -973,10 +976,11 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                 <td><?= $no++ ?></td>
                                                                 <td>
                                                                     <div><?= $item['doc_name'] ?></div>
-                                                                    <?php if (!empty($item['doc_requirement_note'])): ?>
+                                                                <?php if (!empty($item['doc_requirement_note'])): ?>
                                                                         <div class="doc-requirement-note"><?= nl2br(htmlspecialchars($item['doc_requirement_note'], ENT_QUOTES)) ?></div>
                                                                     <?php endif; ?>
                                                                 </td>
+                                                                <td><?= !empty($item['verification_by']) ? $item['verification_by'] : '-' ?></td>
                                                                 <td><span class="badge badge-<?= checklist_doc_status_badge($item['status_file']) ?>"><?= checklist_doc_status_label($item['status_file']) ?></span></td>
                                                                 <td>
                                                                     <?php if (!empty($item['file_path'])): ?>
