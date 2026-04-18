@@ -279,6 +279,17 @@ foreach ($documentItemList as $item) {
         margin-bottom: 6px;
     }
 
+    .cluster-name-link {
+        color: #111827;
+        text-decoration: none;
+        transition: color .15s ease;
+    }
+
+    .cluster-name-link:hover {
+        color: #2563eb;
+        text-decoration: underline;
+    }
+
     .cluster-meta {
         display: flex;
         flex-wrap: wrap;
@@ -898,7 +909,11 @@ foreach ($documentItemList as $item) {
                                         <td><?= !empty($cluster['regional_name']) ? $cluster['regional_name'] : '-' ?></td>
                                         <td>
                                             <div class="cluster-identity">
-                                                <div class="cluster-name"><?= $cluster['cluster_name'] ?></div>
+                                                <div class="cluster-name">
+                                                    <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . (int) $cluster['id_cluster']) ?>" class="cluster-name-link">
+                                                        <?= $cluster['cluster_name'] ?>
+                                                    </a>
+                                                </div>
                                                 <div class="cluster-meta">
                                                     <span class="cluster-chip"><?= $cluster['city_name'] ?></span>
                                                     <span class="cluster-chip">HP <?= number_format((float) $cluster['homepass'], 0, ',', '.') ?></span>
@@ -1267,7 +1282,11 @@ foreach ($documentItemList as $item) {
                                         <td><?= !empty($item['regional_name']) ? $item['regional_name'] : '-' ?></td>
                                         <td><?= !empty($item['city_name']) ? $item['city_name'] : '-' ?></td>
                                         <td>
-                                            <div class="flat-cluster-name"><?= !empty($item['cluster_name']) ? $item['cluster_name'] : '-' ?></div>
+                                            <div class="flat-cluster-name">
+                                                <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . (int) $item['id_cluster']) ?>" class="cluster-name-link">
+                                                    <?= !empty($item['cluster_name']) ? $item['cluster_name'] : '-' ?>
+                                                </a>
+                                            </div>
                                         </td>
                                         <td><?= !empty($item['scope_type']) ? $item['scope_type'] : '-' ?></td>
                                         <td><?= !empty($item['sow_type']) ? $item['sow_type'] : '-' ?></td>

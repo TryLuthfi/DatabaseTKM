@@ -715,6 +715,46 @@ class Checklist_Dokument_MyRep extends CI_Controller
         exit;
     }
 
+    public function downloadDocumentFormat($itemId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $item = $this->MChecklist_Dokument_MyRep->getDocumentItemFormatById((int) $itemId);
+        if (empty($item) || empty($item['format_file_path'])) {
+            show_404();
+            return;
+        }
+
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $item['format_file_path']);
+        if (!is_file($fullPath)) {
+            show_404();
+            return;
+        }
+
+        $downloadName = !empty($item['format_file_name']) ? $item['format_file_name'] : basename($fullPath);
+        $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        $mimeMap = [
+            'pdf' => 'application/pdf',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls' => 'application/vnd.ms-excel',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ];
+
+        header('Content-Type: ' . ($mimeMap[$extension] ?? 'application/octet-stream'));
+        header('Content-Length: ' . filesize($fullPath));
+        header('Content-Disposition: attachment; filename="' . basename($downloadName) . '"');
+        header('X-Content-Type-Options: nosniff');
+        readfile($fullPath);
+        exit;
+    }
+
     private function isApprover()
     {
         return $this->session->userdata('lokasi_user') === 'HO'

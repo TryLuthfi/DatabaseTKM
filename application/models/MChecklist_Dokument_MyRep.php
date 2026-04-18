@@ -183,6 +183,8 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 i.id_doc_item,
                 i.doc_name,
                 i.doc_requirement_note,
+                i.format_file_name,
+                i.format_file_path,
                 i.verification_team,
                 u_ho.nama_user AS ho_pic_name,
                 p.actual_atp_date,
@@ -344,6 +346,8 @@ class MChecklist_Dokument_MyRep extends CI_Model
                         'id_doc_item' => (int) $item['id_doc_item'],
                         'doc_name' => (string) $item['doc_name'],
                         'doc_requirement_note' => (string) ($item['doc_requirement_note'] ?? ''),
+                        'format_file_name' => (string) ($item['format_file_name'] ?? ''),
+                        'format_file_path' => (string) ($item['format_file_path'] ?? ''),
                         'verification_team' => (string) ($item['verification_team'] ?? ''),
                         'status_file' => (string) ($itemFile['status_file'] ?? 'NOT UPLOADED'),
                         'file_name' => (string) ($itemFile['file_name'] ?? ''),
@@ -542,6 +546,9 @@ class MChecklist_Dokument_MyRep extends CI_Model
             'remark' => $data['remark'],
             'uploaded_by' => (int) $data['uploaded_by'],
             'uploaded_at' => date('Y-m-d H:i:s'),
+            'approved_by' => null,
+            'reviewed_at' => null,
+            'approved_at' => null,
         ];
 
         if ($existing) {
@@ -1009,6 +1016,9 @@ class MChecklist_Dokument_MyRep extends CI_Model
             'remark' => $data['remark'],
             'uploaded_by' => (int) $data['uploaded_by'],
             'uploaded_at' => date('Y-m-d H:i:s'),
+            'approved_by' => null,
+            'reviewed_at' => null,
+            'approved_at' => null,
         ];
 
         if ($existing) {
@@ -1582,7 +1592,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
     private function getDocumentItems()
     {
         $rows = $this->db
-            ->select('id_doc_item, id_doc_group, doc_name, doc_requirement_note, verification_team, sort_no')
+            ->select('id_doc_item, id_doc_group, doc_name, doc_requirement_note, format_file_name, format_file_path, verification_team, sort_no')
             ->from('md_rfs_myrep_doc_item')
             ->where('is_active', 1)
             ->where('is_required', 1)
@@ -1597,6 +1607,16 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         return $items;
+    }
+
+    public function getDocumentItemFormatById($itemId)
+    {
+        return $this->db
+            ->select('id_doc_item, doc_name, format_file_name, format_file_path')
+            ->from('md_rfs_myrep_doc_item')
+            ->where('id_doc_item', (int) $itemId)
+            ->get()
+            ->row_array();
     }
 
     private function getPackagesByClusterIds($clusterIds)

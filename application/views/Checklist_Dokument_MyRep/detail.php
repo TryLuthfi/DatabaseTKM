@@ -672,252 +672,11 @@ $clusterProgressPercent = checklist_doc_percent(
                                                     <?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?>
                                                 </span>
                                                 <button type="button"
-                                                    class="btn btn-sm btn-outline-success"
+                                                    class="btn btn-sm btn-outline-info"
                                                     data-toggle="modal"
-                                                    data-target="#modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
-                                                    Bulk Upload
+                                                    data-target="#modalDownloadFormat-<?= (int) $group['id_doc_package'] ?>">
+                                                    Download Format
                                                 </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <?php $groupPercent = checklist_doc_percent((int) $group['uploaded_docs'], (int) $group['required_docs']); ?>
-                                        <div class="doc-progress-wrap mb-3">
-                                            <div class="doc-progress-meta">
-                                                <span>Progress Grup</span>
-                                                <span><?= $groupPercent ?>% (<?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?>)</span>
-                                            </div>
-                                            <div class="doc-progress">
-                                                <div class="doc-progress-bar <?= $groupPercent >= 100 ? 'success' : 'warning' ?>" style="width: <?= $groupPercent ?>%"></div>
-                                            </div>
-                                        </div>
-                                        <div class="row mb-3">
-                                            <div class="col-md-2"><strong>RFS</strong><br><?= checklist_doc_detail_date($group['tanggal_rfs']) ?></div>
-                                            <div class="col-md-2"><strong>Plan ATP</strong><br><?= checklist_doc_detail_date($group['plan_atp_date']) ?></div>
-                                            <div class="col-md-2"><strong>Actual ATP</strong><br><?= checklist_doc_detail_date($group['actual_atp_date']) ?></div>
-                                            <div class="col-md-2"><strong>Plan Doc</strong><br><?= checklist_doc_detail_date($group['plan_submit_doc_date']) ?></div>
-                                            <div class="col-md-2"><strong>Actual Doc</strong><br><?= checklist_doc_detail_date($group['actual_submit_doc_date']) ?></div>
-                                            <div class="col-md-2"><strong>Aging Doc</strong><br><?= ($group['aging_doc_days'] === null) ? '-' : ((int) $group['aging_doc_days'] . ' hari') ?></div>
-                                        </div>
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-hover">
-                                                <thead class="thead-dark">
-                            <tr>
-                                <th>No</th>
-                                <th>Nama Dokumen</th>
-                                <th>Verification By</th>
-                                <th>Status</th>
-                                <th>File</th>
-                                <th>Uploaded At</th>
-                                <th>Reviewed At</th>
-                                <th>Approved At</th>
-                                <th>Submit Astri</th>
-                                <th>Status Astri</th>
-                                <th>Remark</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($group['items'])): ?>
-                                <tr>
-                                    <td colspan="12" class="text-center">Belum ada master dokumen.</td>
-                                </tr>
-                            <?php else: ?>
-                                                        <?php $no = 1; ?>
-                                                        <?php foreach ($group['items'] as $item): ?>
-                                                            <tr>
-                                                                <td><?= $no++ ?></td>
-                                                                <td>
-                                                                    <div><?= $item['doc_name'] ?></div>
-                                                                <?php if (!empty($item['doc_requirement_note'])): ?>
-                                                                        <div class="doc-requirement-note"><?= nl2br(htmlspecialchars($item['doc_requirement_note'], ENT_QUOTES)) ?></div>
-                                                                    <?php endif; ?>
-                                                                </td>
-                                                                <td><?= !empty($item['verification_by']) ? $item['verification_by'] : '-' ?></td>
-                                                                <td><span class="badge badge-<?= checklist_doc_status_badge($item['status_file']) ?>"><?= checklist_doc_status_label($item['status_file']) ?></span></td>
-                                                                <td>
-                                                                    <?php if (!empty($item['file_path'])): ?>
-                                                                        <a href="<?= base_url($item['file_path']) ?>" target="_blank">
-                                                                            <?= !empty($item['file_name']) ? $item['file_name'] : basename($item['file_path']) ?>
-                                                                        </a>
-                                                                    <?php elseif (!empty($item['is_document_not_required'])): ?>
-                                                                        <span class="text-muted">Tanpa file</span>
-                                                                        <div class="doc-flag-chip">Tidak dibutuhkan dokument</div>
-                                                                    <?php else: ?>
-                                                                        -
-                                                                    <?php endif; ?>
-                                                                </td>
-                                                                <td><?= checklist_doc_detail_date($item['uploaded_at']) ?></td>
-                                                                <td><?= checklist_doc_detail_date($item['reviewed_at']) ?></td>
-                                                                <td><?= checklist_doc_detail_date($item['approved_at']) ?></td>
-                                                                <td><?= checklist_doc_detail_date($item['astri_submitted_date']) ?></td>
-                                                                <td><span class="badge badge-<?= checklist_doc_status_badge($item['astri_status']) ?>"><?= $item['astri_status'] !== '' ? $item['astri_status'] : 'NY' ?></span></td>
-                                                                <td>
-                                                                    <div><strong>Internal:</strong> <?= $item['remark'] !== '' ? $item['remark'] : '-' ?></div>
-                                                                    <div><strong>ASTRI:</strong> <?= $item['astri_remark'] !== '' ? $item['astri_remark'] : '-' ?></div>
-                                                                </td>
-                                                                <td>
-                                                                    <?php if (in_array($item['status_file'], ['NOT UPLOADED', 'REJECTED'], true)): ?>
-                                                                        <button type="button"
-                                                                            class="btn btn-sm btn-success btn-upload-doc"
-                                                                            data-toggle="modal"
-                                                                            data-target="#modalUploadDocument"
-                                                                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
-                                                                            data-package-id="<?= (int) $group['id_doc_package'] ?>"
-                                                                            data-item-id="<?= (int) $item['id_doc_item'] ?>"
-                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
-                                                                            data-doc-note="<?= htmlspecialchars((string) $item['doc_requirement_note'], ENT_QUOTES) ?>">
-                                                                            Upload
-                                                                        </button>
-                                                                    <?php endif; ?>
-                                                                    <?php if (!empty($item['file_path'])): ?>
-                                                                        <a href="<?= base_url('Checklist_Dokument_MyRep/previewDocument/' . (int) $item['id_doc_file']) ?>" target="_blank" class="btn btn-sm btn-warning">View</a>
-                                                                    <?php endif; ?>
-                                                                    <?php if ((int) $item['id_doc_file'] > 0): ?>
-                                                                        <button type="button"
-                                                                            class="btn btn-sm btn-info btn-history-doc"
-                                                                            data-toggle="modal"
-                                                                            data-target="#modalHistoryDocument"
-                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
-                                                                            data-history='<?= htmlspecialchars(json_encode($item["history"]), ENT_QUOTES, "UTF-8") ?>'>
-                                                                            Detail
-                                                                        </button>
-                                                                    <?php endif; ?>
-                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
-                                                                        <button type="button"
-                                                                            class="btn btn-sm btn-secondary btn-astri-doc"
-                                                                            data-toggle="modal"
-                                                                            data-target="#modalAstriDocument"
-                                                                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
-                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>"
-                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
-                                                                            data-astri-submitted-date="<?= htmlspecialchars((string) $item['astri_submitted_date'], ENT_QUOTES) ?>"
-                                                                            data-astri-status="<?= htmlspecialchars((string) $item['astri_status'], ENT_QUOTES) ?>"
-                                                                            data-special-astri-flow="<?= (int) ($item['is_special_project_opname'] ?? 0) ?>"
-                                                                            data-astri-remark="<?= htmlspecialchars((string) $item['astri_remark'], ENT_QUOTES) ?>">
-                                                                            ASTRI
-                                                                        </button>
-                                                                    <?php endif; ?>
-                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
-                                                                        <button type="button"
-                                                                            class="btn btn-sm btn-primary btn-approve-doc"
-                                                                            data-toggle="modal"
-                                                                            data-target="#modalApproveDocument"
-                                                                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
-                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>"
-                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">
-                                                                            Approve
-                                                                        </button>
-                                                                    <?php endif; ?>
-                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'APPROVED'], true)): ?>
-                                                                        <button type="button"
-                                                                            class="btn btn-sm btn-danger btn-reject-doc"
-                                                                            data-toggle="modal"
-                                                                            data-target="#modalRejectDocument"
-                                                                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
-                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>"
-                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">
-                                                                            Reject
-                                                                        </button>
-                                                                    <?php endif; ?>
-                                                                </td>
-                                                            </tr>
-                                                        <?php endforeach; ?>
-                                                    <?php endif; ?>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="modal fade doc-modal doc-modal-bulk" id="modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
-                                    <div class="modal-dialog modal-lg">
-                                        <div class="modal-content">
-                                            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/bulkUploadDocuments') ?>" enctype="multipart/form-data" class="bulk-upload-form">
-                                                <div class="modal-header">
-                                                    <div>
-                                                        <h4 class="modal-title mb-1">Bulk Upload <?= $group['group_label'] ?></h4>
-                                                        <p class="mb-0" style="opacity:.9;">Upload beberapa file sekaligus untuk satu grup dokumen.</p>
-                                                    </div>
-                                                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_cluster'] ?>">
-                                                    <input type="hidden" name="id_doc_package" value="<?= (int) $group['id_doc_package'] ?>">
-                                                    <div class="doc-modal-panel">
-                                                        <div class="doc-modal-title">Ringkasan Grup</div>
-                                                        <p class="doc-modal-subtitle">
-                                                            Progress saat ini <?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?> dokumen.
-                                                            Isi hanya file yang ingin diupload atau diganti.
-                                                        </p>
-                                                    </div>
-                                                    <div class="table-responsive doc-modal-panel mb-0">
-                                                        <table class="table table-bordered doc-bulk-table mb-0">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>No</th>
-                                                                    <th>Dokumen</th>
-                                                                    <th>Status Saat Ini</th>
-                                                                    <th>Upload File</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                <?php $bulkNo = 1; ?>
-                                                                <?php foreach ($group['items'] as $item): ?>
-                                                                    <tr>
-                                                                        <td><?= $bulkNo++ ?></td>
-                                                                        <td>
-                                                                            <div class="doc-bulk-name"><?= $item['doc_name'] ?></div>
-                                                                            <?php if (!empty($item['doc_requirement_note'])): ?>
-                                                                                <div class="doc-requirement-note"><?= nl2br(htmlspecialchars($item['doc_requirement_note'], ENT_QUOTES)) ?></div>
-                                                                            <?php endif; ?>
-                                                                            <div class="doc-bulk-help">Pilih file baru jika dokumen ini ingin diupload atau diperbarui.</div>
-                                                                            <input type="hidden" name="id_doc_item[]" value="<?= (int) $item['id_doc_item'] ?>">
-                                                                            <input type="hidden" name="doc_name[]" value="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">
-                                                                        </td>
-                                                                        <td>
-                                                                            <span class="badge badge-<?= checklist_doc_status_badge($item['status_file']) ?>">
-                                                                                <?= $item['status_file'] ?>
-                                                                            </span>
-                                                                        </td>
-                                                                        <td>
-                                                                            <input type="file" name="bulk_file_<?= (int) $item['id_doc_item'] ?>" class="form-control doc-bulk-input">
-                                                                        </td>
-                                                                    </tr>
-                                                                <?php endforeach; ?>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                    <div class="bulk-upload-progress-panel">
-                                                        <div class="doc-progress-meta">
-                                                            <span>Progress Upload</span>
-                                                            <span class="bulk-upload-progress-percent">0%</span>
-                                                        </div>
-                                                        <div class="doc-progress">
-                                                            <div class="doc-progress-bar warning bulk-upload-progress-bar" style="width: 0%"></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                                                    <button type="submit" class="btn btn-success bulk-upload-submit">Upload Semua Yang Diisi</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-
-                        <div class="tab-pane fade" id="tab-subfeeder" role="tabpanel">
-                            <?php foreach ($subfeederTabRows as $group): ?>
-                                <div class="card card-outline card-success">
-                                    <div class="card-header">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h3 class="card-title mb-0"><?= $group['group_label'] ?></h3>
-                                            <div>
-                                                <span class="badge badge-<?= checklist_doc_status_badge($group['status_package']) ?> mr-2">
-                                                    <?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?>
-                                                </span>
                                                 <button type="button"
                                                     class="btn btn-sm btn-outline-success"
                                                     data-toggle="modal"
@@ -1149,6 +908,363 @@ $clusterProgressPercent = checklist_doc_percent(
                                                     <button type="submit" class="btn btn-success bulk-upload-submit">Upload Semua Yang Diisi</button>
                                                 </div>
                                             </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal fade doc-modal doc-modal-bulk" id="modalDownloadFormat-<?= (int) $group['id_doc_package'] ?>">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <div>
+                                                    <h4 class="modal-title mb-1">Download Format <?= $group['group_label'] ?></h4>
+                                                    <p class="mb-0" style="opacity:.9;">Pilih format dokumen yang ingin didownload sesuai item.</p>
+                                                </div>
+                                                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="table-responsive doc-modal-panel mb-0">
+                                                    <table class="table table-bordered doc-bulk-table mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>No</th>
+                                                                <th>Dokumen</th>
+                                                                <th>Aksi</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php $formatNo = 1; ?>
+                                                            <?php foreach ($group['items'] as $item): ?>
+                                                                <tr>
+                                                                    <td><?= $formatNo++ ?></td>
+                                                                    <td>
+                                                                        <div class="doc-bulk-name"><?= $item['doc_name'] ?></div>
+                                                                        <?php if (!empty($item['doc_requirement_note'])): ?>
+                                                                            <div class="doc-requirement-note"><?= nl2br(htmlspecialchars($item['doc_requirement_note'], ENT_QUOTES)) ?></div>
+                                                                        <?php endif; ?>
+                                                                    </td>
+                                                                    <td>
+                                                                        <?php if (!empty($item['format_file_path'])): ?>
+                                                                            <a href="<?= base_url('Checklist_Dokument_MyRep/downloadDocumentFormat/' . (int) $item['id_doc_item']) ?>" class="btn btn-sm btn-primary">
+                                                                                Download Format
+                                                                            </a>
+                                                                        <?php else: ?>
+                                                                            <span class="text-muted">Belum ada format</span>
+                                                                        <?php endif; ?>
+                                                                    </td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <div class="tab-pane fade" id="tab-subfeeder" role="tabpanel">
+                            <?php foreach ($subfeederTabRows as $group): ?>
+                                <div class="card card-outline card-success">
+                                    <div class="card-header">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h3 class="card-title mb-0"><?= $group['group_label'] ?></h3>
+                                            <div>
+                                                <span class="badge badge-<?= checklist_doc_status_badge($group['status_package']) ?> mr-2">
+                                                    <?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?>
+                                                </span>
+                                                <button type="button"
+                                                    class="btn btn-sm btn-outline-info"
+                                                    data-toggle="modal"
+                                                    data-target="#modalDownloadFormat-<?= (int) $group['id_doc_package'] ?>">
+                                                    Download Format
+                                                </button>
+                                                <button type="button"
+                                                    class="btn btn-sm btn-outline-success"
+                                                    data-toggle="modal"
+                                                    data-target="#modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
+                                                    Bulk Upload
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <?php $groupPercent = checklist_doc_percent((int) $group['uploaded_docs'], (int) $group['required_docs']); ?>
+                                        <div class="doc-progress-wrap mb-3">
+                                            <div class="doc-progress-meta">
+                                                <span>Progress Grup</span>
+                                                <span><?= $groupPercent ?>% (<?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?>)</span>
+                                            </div>
+                                            <div class="doc-progress">
+                                                <div class="doc-progress-bar <?= $groupPercent >= 100 ? 'success' : 'warning' ?>" style="width: <?= $groupPercent ?>%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-2"><strong>RFS</strong><br><?= checklist_doc_detail_date($group['tanggal_rfs']) ?></div>
+                                            <div class="col-md-2"><strong>Plan ATP</strong><br><?= checklist_doc_detail_date($group['plan_atp_date']) ?></div>
+                                            <div class="col-md-2"><strong>Actual ATP</strong><br><?= checklist_doc_detail_date($group['actual_atp_date']) ?></div>
+                                            <div class="col-md-2"><strong>Plan Doc</strong><br><?= checklist_doc_detail_date($group['plan_submit_doc_date']) ?></div>
+                                            <div class="col-md-2"><strong>Actual Doc</strong><br><?= checklist_doc_detail_date($group['actual_submit_doc_date']) ?></div>
+                                            <div class="col-md-2"><strong>Aging Doc</strong><br><?= ($group['aging_doc_days'] === null) ? '-' : ((int) $group['aging_doc_days'] . ' hari') ?></div>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover">
+                                                <thead class="thead-dark">
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Dokumen</th>
+                                <th>Verification By</th>
+                                <th>Status</th>
+                                <th>File</th>
+                                <th>Uploaded At</th>
+                                <th>Reviewed At</th>
+                                <th>Approved At</th>
+                                <th>Submit Astri</th>
+                                <th>Status Astri</th>
+                                <th>Remark</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($group['items'])): ?>
+                                <tr>
+                                    <td colspan="12" class="text-center">Belum ada master dokumen.</td>
+                                </tr>
+                            <?php else: ?>
+                                                        <?php $no = 1; ?>
+                                                        <?php foreach ($group['items'] as $item): ?>
+                                                            <tr>
+                                                                <td><?= $no++ ?></td>
+                                                                <td>
+                                                                    <div><?= $item['doc_name'] ?></div>
+                                                                <?php if (!empty($item['doc_requirement_note'])): ?>
+                                                                        <div class="doc-requirement-note"><?= nl2br(htmlspecialchars($item['doc_requirement_note'], ENT_QUOTES)) ?></div>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                                <td><?= !empty($item['verification_by']) ? $item['verification_by'] : '-' ?></td>
+                                                                <td><span class="badge badge-<?= checklist_doc_status_badge($item['status_file']) ?>"><?= checklist_doc_status_label($item['status_file']) ?></span></td>
+                                                                <td>
+                                                                    <?php if (!empty($item['file_path'])): ?>
+                                                                        <a href="<?= base_url($item['file_path']) ?>" target="_blank">
+                                                                            <?= !empty($item['file_name']) ? $item['file_name'] : basename($item['file_path']) ?>
+                                                                        </a>
+                                                                    <?php elseif (!empty($item['is_document_not_required'])): ?>
+                                                                        <span class="text-muted">Tanpa file</span>
+                                                                        <div class="doc-flag-chip">Tidak dibutuhkan dokument</div>
+                                                                    <?php else: ?>
+                                                                        -
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                                <td><?= checklist_doc_detail_date($item['uploaded_at']) ?></td>
+                                                                <td><?= checklist_doc_detail_date($item['reviewed_at']) ?></td>
+                                                                <td><?= checklist_doc_detail_date($item['approved_at']) ?></td>
+                                                                <td><?= checklist_doc_detail_date($item['astri_submitted_date']) ?></td>
+                                                                <td><span class="badge badge-<?= checklist_doc_status_badge($item['astri_status']) ?>"><?= $item['astri_status'] !== '' ? $item['astri_status'] : 'NY' ?></span></td>
+                                                                <td>
+                                                                    <div><strong>Internal:</strong> <?= $item['remark'] !== '' ? $item['remark'] : '-' ?></div>
+                                                                    <div><strong>ASTRI:</strong> <?= $item['astri_remark'] !== '' ? $item['astri_remark'] : '-' ?></div>
+                                                                </td>
+                                                                <td>
+                                                                    <?php if (in_array($item['status_file'], ['NOT UPLOADED', 'REJECTED'], true)): ?>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-success btn-upload-doc"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modalUploadDocument"
+                                                                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                                                                            data-package-id="<?= (int) $group['id_doc_package'] ?>"
+                                                                            data-item-id="<?= (int) $item['id_doc_item'] ?>"
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                            data-doc-note="<?= htmlspecialchars((string) $item['doc_requirement_note'], ENT_QUOTES) ?>">
+                                                                            Upload
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                    <?php if (!empty($item['file_path'])): ?>
+                                                                        <a href="<?= base_url('Checklist_Dokument_MyRep/previewDocument/' . (int) $item['id_doc_file']) ?>" target="_blank" class="btn btn-sm btn-warning">View</a>
+                                                                    <?php endif; ?>
+                                                                    <?php if ((int) $item['id_doc_file'] > 0): ?>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-info btn-history-doc"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modalHistoryDocument"
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                            data-history='<?= htmlspecialchars(json_encode($item["history"]), ENT_QUOTES, "UTF-8") ?>'>
+                                                                            Detail
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-secondary btn-astri-doc"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modalAstriDocument"
+                                                                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>"
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
+                                                                            data-astri-submitted-date="<?= htmlspecialchars((string) $item['astri_submitted_date'], ENT_QUOTES) ?>"
+                                                                            data-astri-status="<?= htmlspecialchars((string) $item['astri_status'], ENT_QUOTES) ?>"
+                                                                            data-special-astri-flow="<?= (int) ($item['is_special_project_opname'] ?? 0) ?>"
+                                                                            data-astri-remark="<?= htmlspecialchars((string) $item['astri_remark'], ENT_QUOTES) ?>">
+                                                                            ASTRI
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-primary btn-approve-doc"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modalApproveDocument"
+                                                                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>"
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">
+                                                                            Approve
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'APPROVED'], true)): ?>
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-danger btn-reject-doc"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modalRejectDocument"
+                                                                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>"
+                                                                            data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">
+                                                                            Reject
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal fade doc-modal doc-modal-bulk" id="modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/bulkUploadDocuments') ?>" enctype="multipart/form-data" class="bulk-upload-form">
+                                                <div class="modal-header">
+                                                    <div>
+                                                        <h4 class="modal-title mb-1">Bulk Upload <?= $group['group_label'] ?></h4>
+                                                        <p class="mb-0" style="opacity:.9;">Upload beberapa file sekaligus untuk satu grup dokumen.</p>
+                                                    </div>
+                                                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_cluster'] ?>">
+                                                    <input type="hidden" name="id_doc_package" value="<?= (int) $group['id_doc_package'] ?>">
+                                                    <div class="doc-modal-panel">
+                                                        <div class="doc-modal-title">Ringkasan Grup</div>
+                                                        <p class="doc-modal-subtitle">
+                                                            Progress saat ini <?= $group['uploaded_docs'] ?>/<?= $group['required_docs'] ?> dokumen.
+                                                            Isi hanya file yang ingin diupload atau diganti.
+                                                        </p>
+                                                    </div>
+                                                    <div class="table-responsive doc-modal-panel mb-0">
+                                                        <table class="table table-bordered doc-bulk-table mb-0">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>No</th>
+                                                                    <th>Dokumen</th>
+                                                                    <th>Status Saat Ini</th>
+                                                                    <th>Upload File</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <?php $bulkNo = 1; ?>
+                                                                <?php foreach ($group['items'] as $item): ?>
+                                                                    <tr>
+                                                                        <td><?= $bulkNo++ ?></td>
+                                                                        <td>
+                                                                            <div class="doc-bulk-name"><?= $item['doc_name'] ?></div>
+                                                                            <?php if (!empty($item['doc_requirement_note'])): ?>
+                                                                                <div class="doc-requirement-note"><?= nl2br(htmlspecialchars($item['doc_requirement_note'], ENT_QUOTES)) ?></div>
+                                                                            <?php endif; ?>
+                                                                            <div class="doc-bulk-help">Pilih file baru jika dokumen ini ingin diupload atau diperbarui.</div>
+                                                                            <input type="hidden" name="id_doc_item[]" value="<?= (int) $item['id_doc_item'] ?>">
+                                                                            <input type="hidden" name="doc_name[]" value="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">
+                                                                        </td>
+                                                                        <td>
+                                                                            <span class="badge badge-<?= checklist_doc_status_badge($item['status_file']) ?>">
+                                                                                <?= $item['status_file'] ?>
+                                                                            </span>
+                                                                        </td>
+                                                                        <td>
+                                                                            <input type="file" name="bulk_file_<?= (int) $item['id_doc_item'] ?>" class="form-control doc-bulk-input">
+                                                                        </td>
+                                                                    </tr>
+                                                                <?php endforeach; ?>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    <div class="bulk-upload-progress-panel">
+                                                        <div class="doc-progress-meta">
+                                                            <span>Progress Upload</span>
+                                                            <span class="bulk-upload-progress-percent">0%</span>
+                                                        </div>
+                                                        <div class="doc-progress">
+                                                            <div class="doc-progress-bar warning bulk-upload-progress-bar" style="width: 0%"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
+                                                    <button type="submit" class="btn btn-success bulk-upload-submit">Upload Semua Yang Diisi</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal fade doc-modal doc-modal-bulk" id="modalDownloadFormat-<?= (int) $group['id_doc_package'] ?>">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <div>
+                                                    <h4 class="modal-title mb-1">Download Format <?= $group['group_label'] ?></h4>
+                                                    <p class="mb-0" style="opacity:.9;">Pilih format dokumen yang ingin didownload sesuai item.</p>
+                                                </div>
+                                                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="table-responsive doc-modal-panel mb-0">
+                                                    <table class="table table-bordered doc-bulk-table mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>No</th>
+                                                                <th>Dokumen</th>
+                                                                <th>Aksi</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php $formatNo = 1; ?>
+                                                            <?php foreach ($group['items'] as $item): ?>
+                                                                <tr>
+                                                                    <td><?= $formatNo++ ?></td>
+                                                                    <td>
+                                                                        <div class="doc-bulk-name"><?= $item['doc_name'] ?></div>
+                                                                        <?php if (!empty($item['doc_requirement_note'])): ?>
+                                                                            <div class="doc-requirement-note"><?= nl2br(htmlspecialchars($item['doc_requirement_note'], ENT_QUOTES)) ?></div>
+                                                                        <?php endif; ?>
+                                                                    </td>
+                                                                    <td>
+                                                                        <?php if (!empty($item['format_file_path'])): ?>
+                                                                            <a href="<?= base_url('Checklist_Dokument_MyRep/downloadDocumentFormat/' . (int) $item['id_doc_item']) ?>" class="btn btn-sm btn-primary">
+                                                                                Download Format
+                                                                            </a>
+                                                                        <?php else: ?>
+                                                                            <span class="text-muted">Belum ada format</span>
+                                                                        <?php endif; ?>
+                                                                    </td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
