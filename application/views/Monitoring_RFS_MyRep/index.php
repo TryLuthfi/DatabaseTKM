@@ -1093,13 +1093,21 @@ if (!function_exists('monitoring_rfs_tkm_percent_class')) {
                                     <?php foreach ($regionalSummary as $row) { ?>
                                         <tr>
                                             <td></td>
-                                            <td><?= htmlspecialchars($row['group_name'] ?? '-') ?></td>
+                                            <td>
+                                                <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                    <?= htmlspecialchars($row['group_name'] ?? '-') ?>
+                                                </span>
+                                            </td>
                                             <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['realization_myrep'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['pct_myrep'], 2, ',', '.') ?>%</td>
                                             <td><?= number_format((float) $row['target_tkm'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['realization_tkm'], 0, ',', '.') ?></td>
-                                            <td><?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%</td>
+                                            <td>
+                                                <span class="tkm-percent-indicator tkm-percent-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                    <?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%
+                                                </span>
+                                            </td>
                                             <td><?= number_format((float) $row['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
                                         </tr>
                                     <?php } ?>
@@ -1150,13 +1158,21 @@ if (!function_exists('monitoring_rfs_tkm_percent_class')) {
                                     <?php foreach ($smSummary as $row) { ?>
                                         <tr>
                                             <td></td>
-                                            <td><?= htmlspecialchars($row['group_name'] ?? '-') ?></td>
+                                            <td>
+                                                <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                    <?= htmlspecialchars($row['group_name'] ?? '-') ?>
+                                                </span>
+                                            </td>
                                             <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['realization_myrep'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['pct_myrep'], 2, ',', '.') ?>%</td>
                                             <td><?= number_format((float) $row['target_tkm'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['realization_tkm'], 0, ',', '.') ?></td>
-                                            <td><?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%</td>
+                                            <td>
+                                                <span class="tkm-percent-indicator tkm-percent-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                    <?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%
+                                                </span>
+                                            </td>
                                             <td><?= number_format((float) $row['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
                                         </tr>
                                     <?php } ?>
@@ -1207,13 +1223,21 @@ if (!function_exists('monitoring_rfs_tkm_percent_class')) {
                                     <?php foreach ($teamSummary as $row) { ?>
                                         <tr>
                                             <td></td>
-                                            <td><?= htmlspecialchars($row['group_name'] ?? '-') ?></td>
+                                            <td>
+                                                <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                    <?= htmlspecialchars($row['group_name'] ?? '-') ?>
+                                                </span>
+                                            </td>
                                             <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['realization_myrep'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['pct_myrep'], 2, ',', '.') ?>%</td>
                                             <td><?= number_format((float) $row['target_tkm'], 0, ',', '.') ?></td>
                                             <td><?= number_format((float) $row['realization_tkm'], 0, ',', '.') ?></td>
-                                            <td><?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%</td>
+                                            <td>
+                                                <span class="tkm-percent-indicator tkm-percent-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                    <?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%
+                                                </span>
+                                            </td>
                                             <td><?= number_format((float) $row['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
                                         </tr>
                                     <?php } ?>
