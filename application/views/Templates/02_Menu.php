@@ -421,6 +421,8 @@ $id_menu = $this->uri->segment('1');
                         $id_menu == 'Fiberstar_Kompensasi' ||
                         $id_menu == 'MyRepublik_PO' ||
                         $id_menu == 'MyRepublik_Project' ||
+                        $id_menu == 'DRM_MyRep' ||
+                        $id_menu == 'Post_Donasi_MyRep' ||
                         $id_menu == 'Monitoring_RFS_MyRep' ||
                         $id_menu == 'Checklist_Dokument_MyRep'
                     ) ? 'menu-open' : '' ?>">
@@ -431,6 +433,8 @@ $id_menu = $this->uri->segment('1');
                             $id_menu == 'Fiberstar_Kompensasi' ||
                             $id_menu == 'MyRepublik_PO' ||
                             $id_menu == 'MyRepublik_Project' ||
+                            $id_menu == 'DRM_MyRep' ||
+                            $id_menu == 'Post_Donasi_MyRep' ||
                             $id_menu == 'Monitoring_RFS_MyRep' ||
                             $id_menu == 'Checklist_Dokument_MyRep'
                         ) ? 'active' : '' ?>">
@@ -492,12 +496,22 @@ $id_menu = $this->uri->segment('1');
                             <li class="nav-item has-treeview <?= (
                                 $id_menu == 'MyRepublik_Project' ||
                                 $id_menu == 'MyRepublik_PO' ||
+                                $id_menu == 'BAK_MyRep' ||
+                                $id_menu == 'VALSAL_MyRep' ||
+                                $id_menu == 'Batch_Approval_MyRep' ||
+                                $id_menu == 'DRM_MyRep' ||
+                                $id_menu == 'Post_Donasi_MyRep' ||
                                 $id_menu == 'Monitoring_RFS_MyRep' ||
                                 $id_menu == 'Checklist_Dokument_MyRep'
                             ) ? 'menu-open' : '' ?>">
                                 <a href="#" class="nav-link <?= (
                                     $id_menu == 'MyRepublik_Project' ||
                                     $id_menu == 'MyRepublik_PO' ||
+                                    $id_menu == 'BAK_MyRep' ||
+                                    $id_menu == 'VALSAL_MyRep' ||
+                                    $id_menu == 'Batch_Approval_MyRep' ||
+                                    $id_menu == 'DRM_MyRep' ||
+                                    $id_menu == 'Post_Donasi_MyRep' ||
                                     $id_menu == 'Monitoring_RFS_MyRep' ||
                                     $id_menu == 'Checklist_Dokument_MyRep'
                                 ) ? 'active' : '' ?>">
@@ -505,7 +519,7 @@ $id_menu = $this->uri->segment('1');
                                     <p>
                                         My Republik
                                         <i class="fas fa-angle-left right"></i>
-                                        <span class="badge badge-info right">4</span>
+                                        <span class="badge badge-info right">9</span>
                                     </p>
                                 </a>
                                 <ul class="nav nav-treeview">
@@ -514,6 +528,41 @@ $id_menu = $this->uri->segment('1');
                                             class="nav-link <?= ($id_menu == 'MyRepublik_Project') ? 'active' : '' ?>">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>List Project</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('BAK_MyRep') ?>"
+                                            class="nav-link <?= ($id_menu == 'BAK_MyRep') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>BAK</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('VALSAL_MyRep') ?>"
+                                            class="nav-link <?= ($id_menu == 'VALSAL_MyRep') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>VALSAL</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Batch_Approval_MyRep') ?>"
+                                            class="nav-link <?= ($id_menu == 'Batch_Approval_MyRep') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Batch Approval</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('DRM_MyRep') ?>"
+                                            class="nav-link <?= ($id_menu == 'DRM_MyRep') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>DRM</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Post_Donasi_MyRep') ?>"
+                                            class="nav-link <?= ($id_menu == 'Post_Donasi_MyRep') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Post Donasi</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
