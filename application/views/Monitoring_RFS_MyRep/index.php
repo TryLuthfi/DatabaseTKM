@@ -156,6 +156,22 @@ if (!empty($claimList)) {
 
 $annualMyrepAchievementPercent = (float) ($annualSummary['pct_myrep'] ?? 0);
 $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
+$kpiDetailRows = [];
+
+if (!empty($monthlySummary)) {
+    foreach ($monthlySummary as $summaryRow) {
+        $kpiDetailRows[] = [
+            'city_name' => (string) ($summaryRow['city_name'] ?? '-'),
+            'regional_name' => trim((string) ($summaryRow['regional_name'] ?? '')) !== '' ? (string) $summaryRow['regional_name'] : 'BELUM DISET',
+            'sm' => trim((string) ($summaryRow['sm'] ?? '')) !== '' ? (string) $summaryRow['sm'] : 'BELUM DISET',
+            'team_name' => trim((string) ($summaryRow['team_name'] ?? '')) !== '' ? (string) $summaryRow['team_name'] : 'BELUM ADA TEAM',
+            'target_myrep' => (float) ($summaryRow['target_myrep'] ?? 0),
+            'realization_myrep' => (float) ($summaryRow['realization_myrep'] ?? 0),
+            'target_tkm' => (float) ($summaryRow['target_tkm'] ?? 0),
+            'realization_tkm' => (float) ($summaryRow['realization_tkm'] ?? 0)
+        ];
+    }
+}
 ?>
 
 <style>
@@ -322,6 +338,106 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
         border-radius: 16px;
         padding: 16px;
         background: linear-gradient(180deg, #ffffff, #fbfdff);
+    }
+
+    .kpi-drilldown-trigger {
+        background: transparent;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    .kpi-detail-modal .modal-content {
+        border-radius: 18px;
+        border: none;
+        overflow: hidden;
+        box-shadow: 0 20px 48px rgba(15, 23, 42, 0.18);
+    }
+
+    .kpi-detail-modal .modal-dialog.modal-xxl {
+        max-width: 96vw;
+    }
+
+    .kpi-detail-modal .modal-header {
+        background: linear-gradient(135deg, #0f172a, #1d4ed8);
+        color: #fff;
+    }
+
+    .kpi-detail-modal .modal-body {
+        background: linear-gradient(180deg, #f8fbff, #f4f7fb);
+    }
+
+    .kpi-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .kpi-detail-card {
+        background: #fff;
+        border: 1px solid #dbe5f2;
+        border-radius: 14px;
+        padding: 14px 16px;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .kpi-detail-card .detail-label {
+        display: block;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #64748b;
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+
+    .kpi-detail-card .detail-value {
+        font-size: 24px;
+        line-height: 1.15;
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+    .kpi-detail-section {
+        background: #fff;
+        border: 1px solid #dbe5f2;
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+        height: 100%;
+    }
+
+    .kpi-detail-section h6 {
+        margin-bottom: 12px;
+        font-size: 13px;
+        font-weight: 800;
+        color: #1e3a8a;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .kpi-detail-chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .kpi-detail-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: #eef2ff;
+        color: #1e3a8a;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .kpi-detail-empty {
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 600;
     }
 
     #modal-cluster-baru .modal-content {
@@ -845,8 +961,8 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
                             <thead>
                                 <tr>
                                     <th rowspan="2" class="rfs-header-fixed">NO</th>
-                                    <th rowspan="2" class="rfs-header-fixed">KOTA</th>
                                     <th rowspan="2" class="rfs-header-fixed">REGIONAL</th>
+                                    <th rowspan="2" class="rfs-header-fixed">KOTA</th>
                                     <th rowspan="2" class="rfs-header-fixed">SM</th>
                                     <th rowspan="2" class="rfs-header-fixed">TEAM</th>
                                     <th colspan="4" class="rfs-header-myrep">MYREP</th>
@@ -869,12 +985,12 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
                                     <?php foreach ($annualCitySummary as $row) { ?>
                                         <tr>
                                             <td></td>
+                                            <td><?= htmlspecialchars($row['regional_name'] ?? '-') ?></td>
                                             <td>
                                                 <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
                                                     <?= htmlspecialchars($row['city_name']) ?>
                                                 </span>
                                             </td>
-                                            <td><?= htmlspecialchars($row['regional_name'] ?? '-') ?></td>
                                             <td><?= htmlspecialchars($row['sm'] ?? '-') ?></td>
                                             <td><?= htmlspecialchars($row['team_name'] ?? '-') ?></td>
                                             <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
@@ -1264,8 +1380,8 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
                         <thead>
                             <tr>
                                 <th rowspan="2" class="rfs-header-fixed">NO</th>
-                                <th rowspan="2" class="rfs-header-fixed">KOTA</th>
                                 <th rowspan="2" class="rfs-header-fixed">REGIONAL</th>
+                                <th rowspan="2" class="rfs-header-fixed">KOTA</th>
                                 <th rowspan="2" class="rfs-header-fixed">SM</th>
                                 <th rowspan="2" class="rfs-header-fixed">TEAM</th>
                                 <th colspan="3" class="rfs-header-myrep">MYREP</th>
@@ -1286,12 +1402,12 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
                                 <?php foreach ($monthlySummary as $row) { ?>
                                     <tr>
                                         <td></td>
+                                        <td><?= htmlspecialchars($row['regional_name'] ?? '-') ?></td>
                                         <td>
                                             <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
                                                 <?= htmlspecialchars($row['city_name']) ?>
                                             </span>
                                         </td>
-                                        <td><?= htmlspecialchars($row['regional_name'] ?? '-') ?></td>
                                         <td><?= htmlspecialchars($row['sm'] ?? '-') ?></td>
                                         <td><?= htmlspecialchars($row['team_name'] ?? '-') ?></td>
                                         <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
@@ -1385,9 +1501,16 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
                                                 <tr>
                                                     <td></td>
                                                     <td>
-                                                        <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
-                                                            <?= htmlspecialchars($row['group_name'] ?? '-') ?>
-                                                        </span>
+                                                        <button type="button"
+                                                            class="kpi-drilldown-trigger js-kpi-detail-trigger"
+                                                            data-toggle="modal"
+                                                            data-target="#modal-kpi-detail"
+                                                            data-group-type="regional"
+                                                            data-group-name="<?= htmlspecialchars((string) ($row['group_name'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>">
+                                                            <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                                <?= htmlspecialchars($row['group_name'] ?? '-') ?>
+                                                            </span>
+                                                        </button>
                                                     </td>
                                                     <td><?= htmlspecialchars($row['rpm_names'] ?? '-') ?></td>
                                                     <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
@@ -1457,9 +1580,16 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
                                                 <tr>
                                                     <td></td>
                                                     <td>
-                                                        <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
-                                                            <?= htmlspecialchars($row['group_name'] ?? '-') ?>
-                                                        </span>
+                                                        <button type="button"
+                                                            class="kpi-drilldown-trigger js-kpi-detail-trigger"
+                                                            data-toggle="modal"
+                                                            data-target="#modal-kpi-detail"
+                                                            data-group-type="sm"
+                                                            data-group-name="<?= htmlspecialchars((string) ($row['group_name'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>">
+                                                            <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                                <?= htmlspecialchars($row['group_name'] ?? '-') ?>
+                                                            </span>
+                                                        </button>
                                                     </td>
                                                     <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
                                                     <td><?= number_format((float) $row['realization_myrep'], 0, ',', '.') ?></td>
@@ -1527,9 +1657,16 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
                                                 <tr>
                                                     <td></td>
                                                     <td>
-                                                        <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
-                                                            <?= htmlspecialchars($row['group_name'] ?? '-') ?>
-                                                        </span>
+                                                        <button type="button"
+                                                            class="kpi-drilldown-trigger js-kpi-detail-trigger"
+                                                            data-toggle="modal"
+                                                            data-target="#modal-kpi-detail"
+                                                            data-group-type="team"
+                                                            data-group-name="<?= htmlspecialchars((string) ($row['group_name'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>">
+                                                            <span class="city-health-badge city-health-<?= monitoring_rfs_tkm_percent_class($row['pct_tkm']) ?>">
+                                                                <?= htmlspecialchars($row['group_name'] ?? '-') ?>
+                                                            </span>
+                                                        </button>
                                                     </td>
                                                     <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
                                                     <td><?= number_format((float) $row['realization_myrep'], 0, ',', '.') ?></td>
@@ -2005,6 +2142,95 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
                     </table>
                 </div>
             </div>
+
+            <div class="modal fade kpi-detail-modal" id="modal-kpi-detail" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-xxl" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="kpiDetailModalTitle">Detail KPI</h5>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="kpi-detail-grid">
+                                <div class="kpi-detail-card">
+                                    <span class="detail-label">Target TKM</span>
+                                    <div class="detail-value" id="kpiDetailTargetTkm">0</div>
+                                </div>
+                                <div class="kpi-detail-card">
+                                    <span class="detail-label">Realisasi TKM</span>
+                                    <div class="detail-value" id="kpiDetailRealizationTkm">0</div>
+                                </div>
+                                <div class="kpi-detail-card">
+                                    <span class="detail-label">% TKM</span>
+                                    <div class="detail-value" id="kpiDetailPctTkm">0%</div>
+                                </div>
+                            </div>
+
+                            <div class="kpi-detail-grid">
+                                <div class="kpi-detail-card">
+                                    <span class="detail-label">Total Kota Target</span>
+                                    <div class="detail-value" id="kpiDetailTotalCities">0</div>
+                                </div>
+                                <div class="kpi-detail-card">
+                                    <span class="detail-label">Kota Sudah Realisasi</span>
+                                    <div class="detail-value" id="kpiDetailRealizedCities">0</div>
+                                </div>
+                                <div class="kpi-detail-card">
+                                    <span class="detail-label">Kota Belum Realisasi</span>
+                                    <div class="detail-value" id="kpiDetailPendingCities">0</div>
+                                </div>
+                            </div>
+
+                            <div class="kpi-detail-section">
+                                <h6 id="kpiDetailTableTitle">Detail KPI Bulanan</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-striped text-center mb-0" id="table_kpi_detail_modal">
+                                        <thead>
+                                            <tr>
+                                                <th>No</th>
+                                                <th>Regional</th>
+                                                <th>Kota</th>
+                                                <th>SM</th>
+                                                <th>Team</th>
+                                                <th>Target MyRep</th>
+                                                <th>Realisasi MyRep</th>
+                                                <th>% MyRep</th>
+                                                <th>Target TKM</th>
+                                                <th>Realisasi TKM</th>
+                                                <th>% TKM</th>
+                                                <th>MyRep vs TKM</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="kpiDetailTableBody">
+                                            <tr>
+                                                <td colspan="12" class="text-center">Belum ada detail.</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th>-</th>
+                                                <th>TOTAL</th>
+                                                <th>-</th>
+                                                <th>-</th>
+                                                <th>-</th>
+                                                <th>0</th>
+                                                <th>0</th>
+                                                <th>0%</th>
+                                                <th>0</th>
+                                                <th>0</th>
+                                                <th>0%</th>
+                                                <th>0%</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 </div>
@@ -2015,6 +2241,7 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
         var monthLabels = <?= json_encode($monthLabels) ?>;
         var monthlyTargetCityMap = <?= json_encode($monthlyTargetCityMap) ?>;
         var monthlyTargetPeriodCityMap = <?= json_encode($monthlyTargetPeriodCityMap) ?>;
+        var kpiDetailRows = <?= json_encode($kpiDetailRows) ?>;
         var importedClusterRows = [];
 
         if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable) {
@@ -2324,6 +2551,145 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
             });
         }
 
+        function uniqueSorted(values) {
+            var map = {};
+            (values || []).forEach(function (value) {
+                var text = String(value || '').trim();
+                if (!text) {
+                    return;
+                }
+
+                map[text] = true;
+            });
+
+            return Object.keys(map).sort(function (a, b) {
+                return a.localeCompare(b);
+            });
+        }
+
+        function renderKpiDetailList($container, values) {
+            var uniqueValues = uniqueSorted(values);
+
+            if (!uniqueValues.length) {
+                $container.html('<span class="kpi-detail-empty">Belum ada data</span>');
+                return;
+            }
+
+            var html = '';
+            uniqueValues.forEach(function (value) {
+                html += '<span class="kpi-detail-chip">' + $('<div>').text(value).html() + '</span>';
+            });
+            $container.html(html);
+        }
+
+        function renderKpiDetailTable(rows) {
+            var $tbody = $('#kpiDetailTableBody');
+
+            if (!rows || !rows.length) {
+                $tbody.html('<tr><td colspan="12" class="text-center">Belum ada detail.</td></tr>');
+                if ($.fn.DataTable.isDataTable('#table_kpi_detail_modal')) {
+                    $('#table_kpi_detail_modal').DataTable().clear().destroy();
+                }
+                return;
+            }
+
+            var html = '';
+            rows.forEach(function (row, index) {
+                var pctMyrep = safePercent(row.realization_myrep, row.target_myrep);
+                var pctTkm = safePercent(row.realization_tkm, row.target_tkm);
+                var myrepVsTkm = safePercent(row.realization_tkm, row.realization_myrep);
+
+                html += '' +
+                    '<tr>' +
+                        '<td>' + (index + 1) + '</td>' +
+                        '<td>' + $('<div>').text(row.regional_name || '-').html() + '</td>' +
+                        '<td><span class="city-health-badge city-health-' + monitoringRfsPercentClass(pctTkm) + '">' + $('<div>').text(row.city_name || '-').html() + '</span></td>' +
+                        '<td>' + $('<div>').text(row.sm || '-').html() + '</td>' +
+                        '<td>' + $('<div>').text(row.team_name || '-').html() + '</td>' +
+                        '<td>' + formatLocaleNumber(row.target_myrep || 0, 0) + '</td>' +
+                        '<td>' + formatLocaleNumber(row.realization_myrep || 0, 0) + '</td>' +
+                        '<td>' + formatLocaleNumber(pctMyrep, 2) + '%</td>' +
+                        '<td>' + formatLocaleNumber(row.target_tkm || 0, 0) + '</td>' +
+                        '<td>' + formatLocaleNumber(row.realization_tkm || 0, 0) + '</td>' +
+                        '<td><span class="tkm-percent-indicator tkm-percent-' + monitoringRfsPercentClass(pctTkm) + '">' + formatLocaleNumber(pctTkm, 2) + '%</span></td>' +
+                        '<td>' + formatLocaleNumber(myrepVsTkm, 2) + '%</td>' +
+                    '</tr>';
+            });
+
+            $tbody.html(html);
+            initKpiDetailModalDataTable();
+        }
+
+        function monitoringRfsPercentClass(percent) {
+            var numericPercent = Number(percent || 0);
+
+            if (numericPercent <= 30) {
+                return 'low';
+            }
+            if (numericPercent <= 70) {
+                return 'medium';
+            }
+
+            return 'high';
+        }
+
+        function openKpiDetailModal(groupType, groupName) {
+            var normalizedType = String(groupType || '').toLowerCase();
+            var normalizedName = String(groupName || '').trim().toUpperCase();
+            var matchedRows = (kpiDetailRows || []).filter(function (row) {
+                var sourceValue = '';
+
+                if (normalizedType === 'regional') {
+                    sourceValue = row.regional_name;
+                } else if (normalizedType === 'sm') {
+                    sourceValue = row.sm;
+                } else if (normalizedType === 'team') {
+                    sourceValue = row.team_name;
+                }
+
+                return String(sourceValue || '').trim().toUpperCase() === normalizedName;
+            });
+
+            var summary = matchedRows.reduce(function (carry, row) {
+                carry.target_myrep += Number(row.target_myrep || 0);
+                carry.realization_myrep += Number(row.realization_myrep || 0);
+                carry.target_tkm += Number(row.target_tkm || 0);
+                carry.realization_tkm += Number(row.realization_tkm || 0);
+                return carry;
+            }, {
+                target_myrep: 0,
+                realization_myrep: 0,
+                target_tkm: 0,
+                realization_tkm: 0
+            });
+
+            var pctMyrep = safePercent(summary.realization_myrep, summary.target_myrep);
+            var pctTkm = safePercent(summary.realization_tkm, summary.target_tkm);
+            var uniqueCities = uniqueSorted(matchedRows.map(function (row) {
+                return row.city_name;
+            }));
+            var realizedCities = uniqueSorted(matchedRows
+                .filter(function (row) {
+                    return Number(row.realization_tkm || 0) > 0;
+                })
+                .map(function (row) {
+                    return row.city_name;
+                }));
+            var titlePrefix = normalizedType === 'regional'
+                ? 'Detail Regional'
+                : (normalizedType === 'sm' ? 'Detail SM' : 'Detail Team');
+
+            $('#kpiDetailModalTitle').text(titlePrefix + ' - ' + groupName);
+            $('#kpiDetailTargetTkm').text(formatLocaleNumber(summary.target_tkm, 0));
+            $('#kpiDetailRealizationTkm').text(formatLocaleNumber(summary.realization_tkm, 0));
+            $('#kpiDetailPctTkm').text(formatLocaleNumber(pctTkm, 2) + '%');
+            $('#kpiDetailTotalCities').text(formatLocaleNumber(uniqueCities.length, 0));
+            $('#kpiDetailRealizedCities').text(formatLocaleNumber(realizedCities.length, 0));
+            $('#kpiDetailPendingCities').text(formatLocaleNumber(uniqueCities.length - realizedCities.length, 0));
+            $('#kpiDetailTableTitle').text('Detail KPI Bulanan');
+            renderKpiDetailTable(matchedRows);
+        }
+
         $.fn.dataTable.ext.type.detect.unshift(function(data) {
             if (data === null || data === undefined) {
                 return null;
@@ -2418,6 +2784,53 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
             };
 
             $(selector).DataTable($.extend(true, {}, baseOptions, extraOptions || {}));
+        }
+
+        function initKpiDetailModalDataTable() {
+            var selector = '#table_kpi_detail_modal';
+            if (!$(selector).length) {
+                return;
+            }
+
+            if ($.fn.DataTable.isDataTable(selector)) {
+                $(selector).DataTable().destroy();
+            }
+
+            $(selector).DataTable({
+                paging: true,
+                pageLength: 5,
+                info: true,
+                searching: true,
+                lengthChange: true,
+                autoWidth: false,
+                responsive: false,
+                ordering: true,
+                order: [[1, 'asc'], [2, 'asc']],
+                scrollX: true,
+                language: {
+                    emptyTable: 'Belum ada detail.'
+                },
+                footerCallback: function () {
+                    var api = this.api();
+                    var totalTargetMyrep = sumColumn(api, 5);
+                    var totalRealisasiMyrep = sumColumn(api, 6);
+                    var totalTargetTkm = sumColumn(api, 8);
+                    var totalRealisasiTkm = sumColumn(api, 9);
+
+                    setFooterValue(api, 5, totalTargetMyrep, 0);
+                    setFooterValue(api, 6, totalRealisasiMyrep, 0);
+                    setFooterValue(api, 7, safePercent(totalRealisasiMyrep, totalTargetMyrep), 2, '%');
+                    setFooterValue(api, 8, totalTargetTkm, 0);
+                    setFooterValue(api, 9, totalRealisasiTkm, 0);
+                    setFooterValue(api, 10, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
+                    setFooterValue(api, 11, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
+                },
+                initComplete: function () {
+                    $(this.api().table().container())
+                        .find('.dataTables_scrollHead, .dataTables_scrollBody')
+                        .css('width', '100%');
+                }
+            });
         }
 
         function adjustAllDataTables() {
@@ -2613,6 +3026,16 @@ $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
             setFooterValue(api, 4, sumColumn(api, 4), 0);
         });
         addRowNumbers('#table_rfs_claim_list', 0);
+
+        $(document).on('click', '.js-kpi-detail-trigger', function () {
+            openKpiDetailModal($(this).data('group-type'), $(this).data('group-name'));
+        });
+
+        $('#modal-kpi-detail').on('shown.bs.modal', function () {
+            if ($.fn.DataTable.isDataTable('#table_kpi_detail_modal')) {
+                $('#table_kpi_detail_modal').DataTable().columns.adjust().draw(false);
+            }
+        });
 
         $(document).on('change', '.cluster-city-selector', function () {
             syncClusterTargetSelection($(this).closest('.manual-cluster-row'));
