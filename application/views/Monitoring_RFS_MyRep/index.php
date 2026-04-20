@@ -153,6 +153,9 @@ if (!empty($claimList)) {
         }
     }
 }
+
+$annualMyrepAchievementPercent = (float) ($annualSummary['pct_myrep'] ?? 0);
+$annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
 ?>
 
 <style>
@@ -738,14 +741,14 @@ if (!empty($claimList)) {
 
             <div class="monitoring-summary-grid">
                 <div class="summary-kpi-card primary">
-                    <span class="kpi-label">Target MyRep</span>
-                    <div class="kpi-value"><?= number_format((float) ($annualSummary['target_myrep'] ?? 0), 0, ',', '.') ?></div>
-                    <div class="kpi-meta">Realisasi: <?= number_format((float) ($annualSummary['realization_myrep'] ?? 0), 0, ',', '.') ?></div>
+                    <span class="kpi-label">Realisasi MyRep</span>
+                    <div class="kpi-value"><?= number_format((float) ($annualSummary['realization_myrep'] ?? 0), 0, ',', '.') ?></div>
+                    <div class="kpi-meta">Target: <?= number_format((float) ($annualSummary['target_myrep'] ?? 0), 0, ',', '.') ?> | Pencapaian: <?= number_format($annualMyrepAchievementPercent, 2, ',', '.') ?>%</div>
                 </div>
                 <div class="summary-kpi-card success">
-                    <span class="kpi-label">Target TKM</span>
-                    <div class="kpi-value"><?= number_format((float) ($annualSummary['target_tkm'] ?? 0), 0, ',', '.') ?></div>
-                    <div class="kpi-meta">Realisasi: <?= number_format((float) ($annualSummary['realization_tkm'] ?? 0), 0, ',', '.') ?></div>
+                    <span class="kpi-label">Realisasi TKM</span>
+                    <div class="kpi-value"><?= number_format((float) ($annualSummary['realization_tkm'] ?? 0), 0, ',', '.') ?></div>
+                    <div class="kpi-meta">Target: <?= number_format((float) ($annualSummary['target_tkm'] ?? 0), 0, ',', '.') ?> | Pencapaian: <?= number_format($annualTkmAchievementPercent, 2, ',', '.') ?>%</div>
                 </div>
                 <div class="summary-kpi-card info">
                     <span class="kpi-label">Persentase TKM</span>
@@ -1361,8 +1364,9 @@ if (!empty($claimList)) {
                                         <tr>
                                             <th rowspan="2" class="rfs-header-fixed">NO</th>
                                             <th rowspan="2" class="rfs-header-fixed">REGIONAL</th>
+                                            <th rowspan="2" class="rfs-header-fixed">RPM</th>
                                             <th colspan="3" class="rfs-header-myrep">MYREP</th>
-                                            <th colspan="3" class="rfs-header-tkm">TKM</th>
+                                            <th colspan="4" class="rfs-header-tkm">TKM</th>
                                             <th rowspan="2" class="rfs-header-fixed">MYREP VS TKM</th>
                                         </tr>
                                         <tr>
@@ -1372,6 +1376,7 @@ if (!empty($claimList)) {
                                             <th class="rfs-header-tkm">TARGET</th>
                                             <th class="rfs-header-tkm">REALISASI</th>
                                             <th class="rfs-header-tkm">%</th>
+                                            <th class="rfs-header-tkm">BOBOT REALISASI</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1384,6 +1389,7 @@ if (!empty($claimList)) {
                                                             <?= htmlspecialchars($row['group_name'] ?? '-') ?>
                                                         </span>
                                                     </td>
+                                                    <td><?= htmlspecialchars($row['rpm_names'] ?? '-') ?></td>
                                                     <td><?= number_format((float) $row['target_myrep'], 0, ',', '.') ?></td>
                                                     <td><?= number_format((float) $row['realization_myrep'], 0, ',', '.') ?></td>
                                                     <td><?= number_format((float) $row['pct_myrep'], 2, ',', '.') ?>%</td>
@@ -1394,12 +1400,13 @@ if (!empty($claimList)) {
                                                             <?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%
                                                         </span>
                                                     </td>
+                                                    <td><?= number_format((float) ($row['bobot_realisasi'] ?? 0), 2, ',', '.') ?>%</td>
                                                     <td><?= number_format((float) $row['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
                                                 </tr>
                                             <?php } ?>
                                         <?php } else { ?>
                                             <tr>
-                                                <td colspan="9" class="text-center">Belum ada data KPI per regional.</td>
+                                                <td colspan="11" class="text-center">Belum ada data KPI per regional.</td>
                                             </tr>
                                         <?php } ?>
                                     </tbody>
@@ -1407,11 +1414,13 @@ if (!empty($claimList)) {
                                         <tr>
                                             <th>-</th>
                                             <th>TOTAL</th>
+                                            <th>-</th>
                                             <th>0</th>
                                             <th>0</th>
                                             <th>0%</th>
                                             <th>0</th>
                                             <th>0</th>
+                                            <th>0%</th>
                                             <th>0%</th>
                                             <th>0%</th>
                                         </tr>
@@ -1429,7 +1438,7 @@ if (!empty($claimList)) {
                                             <th rowspan="2" class="rfs-header-fixed">NO</th>
                                             <th rowspan="2" class="rfs-header-fixed">SM</th>
                                             <th colspan="3" class="rfs-header-myrep">MYREP</th>
-                                            <th colspan="3" class="rfs-header-tkm">TKM</th>
+                                            <th colspan="4" class="rfs-header-tkm">TKM</th>
                                             <th rowspan="2" class="rfs-header-fixed">MYREP VS TKM</th>
                                         </tr>
                                         <tr>
@@ -1439,6 +1448,7 @@ if (!empty($claimList)) {
                                             <th class="rfs-header-tkm">TARGET</th>
                                             <th class="rfs-header-tkm">REALISASI</th>
                                             <th class="rfs-header-tkm">%</th>
+                                            <th class="rfs-header-tkm">BOBOT REALISASI</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1461,12 +1471,13 @@ if (!empty($claimList)) {
                                                             <?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%
                                                         </span>
                                                     </td>
+                                                    <td><?= number_format((float) ($row['bobot_realisasi'] ?? 0), 2, ',', '.') ?>%</td>
                                                     <td><?= number_format((float) $row['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
                                                 </tr>
                                             <?php } ?>
                                         <?php } else { ?>
                                             <tr>
-                                                <td colspan="9" class="text-center">Belum ada data KPI per SM.</td>
+                                                <td colspan="10" class="text-center">Belum ada data KPI per SM.</td>
                                             </tr>
                                         <?php } ?>
                                     </tbody>
@@ -1479,6 +1490,7 @@ if (!empty($claimList)) {
                                             <th>0%</th>
                                             <th>0</th>
                                             <th>0</th>
+                                            <th>0%</th>
                                             <th>0%</th>
                                             <th>0%</th>
                                         </tr>
@@ -1496,7 +1508,7 @@ if (!empty($claimList)) {
                                             <th rowspan="2" class="rfs-header-fixed">NO</th>
                                             <th rowspan="2" class="rfs-header-fixed">TEAM</th>
                                             <th colspan="3" class="rfs-header-myrep">MYREP</th>
-                                            <th colspan="3" class="rfs-header-tkm">TKM</th>
+                                            <th colspan="4" class="rfs-header-tkm">TKM</th>
                                             <th rowspan="2" class="rfs-header-fixed">MYREP VS TKM</th>
                                         </tr>
                                         <tr>
@@ -1506,6 +1518,7 @@ if (!empty($claimList)) {
                                             <th class="rfs-header-tkm">TARGET</th>
                                             <th class="rfs-header-tkm">REALISASI</th>
                                             <th class="rfs-header-tkm">%</th>
+                                            <th class="rfs-header-tkm">BOBOT REALISASI</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1528,12 +1541,13 @@ if (!empty($claimList)) {
                                                             <?= number_format((float) $row['pct_tkm'], 2, ',', '.') ?>%
                                                         </span>
                                                     </td>
+                                                    <td><?= number_format((float) ($row['bobot_realisasi'] ?? 0), 2, ',', '.') ?>%</td>
                                                     <td><?= number_format((float) $row['myrep_vs_tkm'], 2, ',', '.') ?>%</td>
                                                 </tr>
                                             <?php } ?>
                                         <?php } else { ?>
                                             <tr>
-                                                <td colspan="9" class="text-center">Belum ada data KPI per team.</td>
+                                                <td colspan="10" class="text-center">Belum ada data KPI per team.</td>
                                             </tr>
                                         <?php } ?>
                                     </tbody>
@@ -1546,6 +1560,7 @@ if (!empty($claimList)) {
                                             <th>0%</th>
                                             <th>0</th>
                                             <th>0</th>
+                                            <th>0%</th>
                                             <th>0%</th>
                                             <th>0%</th>
                                         </tr>
@@ -2518,18 +2533,19 @@ if (!empty($claimList)) {
 
         initAdminLteTable('#table_rfs_regional_summary', [[1, 'asc']], function () {
             var api = this.api();
-            var totalTargetMyrep = sumColumn(api, 2);
-            var totalRealisasiMyrep = sumColumn(api, 3);
-            var totalTargetTkm = sumColumn(api, 5);
-            var totalRealisasiTkm = sumColumn(api, 6);
+            var totalTargetMyrep = sumColumn(api, 3);
+            var totalRealisasiMyrep = sumColumn(api, 4);
+            var totalTargetTkm = sumColumn(api, 6);
+            var totalRealisasiTkm = sumColumn(api, 7);
 
-            setFooterValue(api, 2, totalTargetMyrep, 0);
-            setFooterValue(api, 3, totalRealisasiMyrep, 0);
-            setFooterValue(api, 4, safePercent(totalRealisasiMyrep, totalTargetMyrep), 2, '%');
-            setFooterValue(api, 5, totalTargetTkm, 0);
-            setFooterValue(api, 6, totalRealisasiTkm, 0);
-            setFooterValue(api, 7, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
-            setFooterValue(api, 8, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
+            setFooterValue(api, 3, totalTargetMyrep, 0);
+            setFooterValue(api, 4, totalRealisasiMyrep, 0);
+            setFooterValue(api, 5, safePercent(totalRealisasiMyrep, totalTargetMyrep), 2, '%');
+            setFooterValue(api, 6, totalTargetTkm, 0);
+            setFooterValue(api, 7, totalRealisasiTkm, 0);
+            setFooterValue(api, 8, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
+            setFooterValue(api, 9, totalRealisasiTkm > 0 ? 100 : 0, 2, '%');
+            setFooterValue(api, 10, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
         }, {
             scrollX: false
         });
@@ -2548,7 +2564,8 @@ if (!empty($claimList)) {
             setFooterValue(api, 5, totalTargetTkm, 0);
             setFooterValue(api, 6, totalRealisasiTkm, 0);
             setFooterValue(api, 7, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
-            setFooterValue(api, 8, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
+            setFooterValue(api, 8, totalRealisasiTkm > 0 ? 100 : 0, 2, '%');
+            setFooterValue(api, 9, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
         }, {
             scrollX: false
         });
@@ -2567,7 +2584,8 @@ if (!empty($claimList)) {
             setFooterValue(api, 5, totalTargetTkm, 0);
             setFooterValue(api, 6, totalRealisasiTkm, 0);
             setFooterValue(api, 7, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
-            setFooterValue(api, 8, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
+            setFooterValue(api, 8, totalRealisasiTkm > 0 ? 100 : 0, 2, '%');
+            setFooterValue(api, 9, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
         }, {
             scrollX: false
         });

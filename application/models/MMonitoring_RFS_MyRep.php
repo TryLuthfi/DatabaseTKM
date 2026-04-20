@@ -279,12 +279,16 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
         $fallbackLabel = $groupField === 'team_name' ? 'BELUM ADA TEAM' : 'BELUM DISET';
         $groupExpression = "COALESCE(NULLIF(TRIM($groupField), ''), " . $this->db->escape($fallbackLabel) . ")";
+        $rpmSelect = $groupField === 'regional_name'
+            ? ", COALESCE(NULLIF(GROUP_CONCAT(DISTINCT NULLIF(TRIM(rpm), '') ORDER BY rpm SEPARATOR ', '), ''), '-') AS rpm_names"
+            : ", '-' AS rpm_names";
 
         $this->db
             ->select("$groupExpression AS group_name,
                 SUM(target_myrep) AS target_myrep,
                 SUM(target_rkap) AS target_tkm,
-                SUM(realization_myrep) AS realization_myrep", false)
+                SUM(realization_myrep) AS realization_myrep
+                $rpmSelect", false)
             ->from('tb_rfs_myrep_monthly_target')
             ->where('year_num', $year)
             ->where('month_num >=', $startMonth)
@@ -320,6 +324,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
             $groupKey = strtoupper((string) $target['group_name']);
             $rows[$groupKey] = [
                 'group_name' => $target['group_name'],
+                'rpm_names' => $target['rpm_names'] ?? '-',
                 'target_myrep' => (float) $target['target_myrep'],
                 'realization_myrep' => (float) $target['realization_myrep'],
                 'target_tkm' => (float) $target['target_tkm'],
@@ -332,6 +337,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
             if (!isset($rows[$groupKey])) {
                 $rows[$groupKey] = [
                     'group_name' => $claim['group_name'],
+                    'rpm_names' => '-',
                     'target_myrep' => 0,
                     'realization_myrep' => 0,
                     'target_tkm' => 0,
@@ -342,9 +348,15 @@ class MMonitoring_RFS_MyRep extends CI_Model
             $rows[$groupKey]['realization_tkm'] = (float) $claim['realization_tkm'];
         }
 
+        $totalRealizationTkm = 0;
+        foreach ($rows as $row) {
+            $totalRealizationTkm += (float) ($row['realization_tkm'] ?? 0);
+        }
+
         foreach ($rows as &$row) {
             $row['pct_myrep'] = $this->calculatePercent($row['realization_myrep'], $row['target_myrep']);
             $row['pct_tkm'] = $this->calculatePercent($row['realization_tkm'], $row['target_tkm']);
+            $row['bobot_realisasi'] = $this->calculatePercent($row['realization_tkm'], $totalRealizationTkm);
             $row['myrep_vs_tkm'] = $this->calculatePercent($row['realization_tkm'], $row['realization_myrep']);
         }
         unset($row);
