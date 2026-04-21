@@ -121,10 +121,17 @@ class Batch_Approval_MyRep extends CI_Controller
         $stagingStatus = 'WAITING HO';
         $astriBatchNumber = trim((string) $this->input->post('astri_batch_number'));
         $remark = trim((string) $this->input->post('remark_batch_approval'));
+        $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
         $pics = $this->collectPicsFromPost();
 
         if ($clusterId <= 0 || $hpDonasi <= 0 || $nominalPengajuanArea <= 0 || $recipientName === '' || $bankName === '' || $bankAccountNumber === '') {
             $this->session->set_flashdata('error', 'Cluster, HP donasi, nominal area, data penerima, dan data bank wajib diisi.');
+            redirect('Batch_Approval_MyRep');
+            return;
+        }
+
+        if (!$isNoDocumentRequired && empty($_FILES['batch_rar_file']['name'])) {
+            $this->session->set_flashdata('error', 'Upload RAR wajib diisi. Centang `Tidak membutuhkan dokument` jika dokumen memang tidak diperlukan.');
             redirect('Batch_Approval_MyRep');
             return;
         }
@@ -154,7 +161,7 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $userId = (int) $this->session->userdata('id_user');
         $nominalPerHomepass = $hpDonasi > 0 ? round($nominalPengajuanArea / $hpDonasi, 2) : 0;
-        $result = $this->MBatch_Approval_MyRep->createBatchApproval($clusterId, [
+        $batchId = $this->MBatch_Approval_MyRep->createBatchApproval($clusterId, [
             'submission_date' => $submissionDate,
             'hp_donasi' => $hpDonasi,
             'nominal_pengajuan_area' => $nominalPengajuanArea,
@@ -183,10 +190,14 @@ class Batch_Approval_MyRep extends CI_Controller
             'updated_by' => $userId,
         ], $pics);
 
-        if (!$result) {
+        if ($batchId <= 0) {
             $this->session->set_flashdata('error', 'Gagal menyimpan data Batch Approval.');
             redirect('Batch_Approval_MyRep');
             return;
+        }
+
+        if ($this->MBatch_Approval_MyRep->batchDocumentTablesReady()) {
+            $this->handleInitialBatchDocumentUpload($clusterId, $remark, $isNoDocumentRequired);
         }
 
         $this->session->set_flashdata('success', 'Data Batch Approval berhasil ditambahkan.');
@@ -274,14 +285,16 @@ class Batch_Approval_MyRep extends CI_Controller
             'updated_by' => $userId,
         ], $pics);
 
+        $redirectPath = $this->resolveBatchRedirectPath($clusterId);
+
         if (!$result) {
             $this->session->set_flashdata('error', 'Gagal memperbarui data Batch Approval.');
-            redirect('Batch_Approval_MyRep');
+            redirect($redirectPath);
             return;
         }
 
         $this->session->set_flashdata('success', 'Data Batch Approval berhasil diperbarui.');
-        redirect('Batch_Approval_MyRep');
+        redirect($redirectPath);
     }
 
     public function uploadDocument()
@@ -569,13 +582,26 @@ class Batch_Approval_MyRep extends CI_Controller
             return 0;
         }
 
-        if (is_numeric($value)) {
-            return (float) $value;
+        $normalized = preg_replace('/[^\d,.\-]/', '', trim((string) $value));
+        if ($normalized === '' || $normalized === '-' || $normalized === ',' || $normalized === '.') {
+            return 0;
         }
 
-        $normalized = preg_replace('/[^\d,.\-]/', '', (string) $value);
-        $normalized = str_replace('.', '', $normalized);
-        $normalized = str_replace(',', '.', $normalized);
+        $hasComma = strpos($normalized, ',') !== false;
+        $dotCount = substr_count($normalized, '.');
+
+        if ($hasComma) {
+            $normalized = str_replace('.', '', $normalized);
+            $normalized = str_replace(',', '.', $normalized);
+        } elseif ($dotCount > 1) {
+            $normalized = str_replace('.', '', $normalized);
+        } elseif ($dotCount === 1) {
+            $parts = explode('.', $normalized);
+            $decimalLength = isset($parts[1]) ? strlen($parts[1]) : 0;
+            if ($decimalLength === 3) {
+                $normalized = implode('', $parts);
+            }
+        }
 
         return (float) $normalized;
     }
@@ -690,5 +716,66 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         return 'Batch_Approval_MyRep';
+    }
+
+    private function handleInitialBatchDocumentUpload($clusterId, $remark = '', $isNoDocumentRequired = false)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return;
+        }
+
+        $context = $this->MBatch_Approval_MyRep->getBatchDocumentContext($clusterId);
+        if (empty($context['id_doc_item'])) {
+            return;
+        }
+
+        if ($isNoDocumentRequired) {
+            $this->MBatch_Approval_MyRep->saveBatchFileUpload($clusterId, [
+                'file_name' => '',
+                'file_path' => '',
+                'is_document_not_required' => 1,
+                'status_file' => 'TIDAK BUTUH DOKUMENT',
+                'remark' => $remark,
+                'uploaded_by' => (int) $this->session->userdata('id_user'),
+            ]);
+            return;
+        }
+
+        if (empty($_FILES['batch_rar_file']['name'])) {
+            return;
+        }
+
+        $uploadDir = './uploads/myrep_batch_approval/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $extension = pathinfo($_FILES['batch_rar_file']['name'], PATHINFO_EXTENSION);
+        $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($context['doc_name'] ?? 'RAR'));
+        $fileName = 'BATCH_' . $clusterId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+
+        $config = [
+            'upload_path' => $uploadDir,
+            'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png|rar|zip',
+            'max_size' => 30720,
+            'file_name' => $fileName,
+            'overwrite' => true,
+        ];
+
+        $this->upload->initialize($config);
+        if (!$this->upload->do_upload('batch_rar_file')) {
+            return;
+        }
+
+        $fileData = $this->upload->data();
+        $this->MBatch_Approval_MyRep->saveBatchFileUpload($clusterId, [
+            'file_name' => $fileData['file_name'],
+            'file_path' => 'uploads/myrep_batch_approval/' . $fileData['file_name'],
+            'is_document_not_required' => 0,
+            'status_file' => 'UPLOADED',
+            'remark' => $remark,
+            'uploaded_by' => (int) $this->session->userdata('id_user'),
+        ]);
     }
 }

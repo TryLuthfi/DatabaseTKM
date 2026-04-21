@@ -58,7 +58,7 @@ if (!function_exists('batchDocLabel')) {
     function batchDocLabel($row)
     {
         if ((int) ($row['batch_doc_not_required'] ?? 0) === 1) {
-            return 'Tidak Dibutuhkan';
+            return 'TIDAK BUTUH DOKUMENT';
         }
 
         $status = strtoupper(trim((string) ($row['batch_doc_status'] ?? '')));
@@ -285,90 +285,6 @@ if (!function_exists('batchStatusLabel')) {
                                                     <a href="<?= base_url('Batch_Approval_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="btn btn-sm btn-outline-secondary">
                                                         Detail
                                                     </a>
-                                                    <button
-                                                        type="button"
-                                                        class="btn btn-sm btn-outline-primary js-edit-batch"
-                                                        data-toggle="modal"
-                                                        data-target="#modal-batch-edit"
-                                                        data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
-                                                        data-id_batch_approval="<?= (int) ($row['id_batch_approval'] ?? 0) ?>"
-                                                        data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-regional_name="<?= htmlspecialchars((string) ($row['regional_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-province_name="<?= htmlspecialchars((string) ($row['province_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-homepass_valsal="<?= (int) ($row['homepass_valsal'] ?? 0) ?>"
-                                                        data-valsal_date="<?= htmlspecialchars((string) ($row['valsal_date'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-submission_date="<?= htmlspecialchars((string) ($row['submission_date'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-hp_donasi="<?= (int) ($row['hp_donasi'] ?? 0) ?>"
-                                                        data-nominal_pengajuan_area="<?= htmlspecialchars((string) ($row['nominal_pengajuan_area'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-nominal_nego_emr="<?= htmlspecialchars((string) ($row['nominal_nego_emr'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-nominal_release_finance="<?= htmlspecialchars((string) ($row['nominal_release_finance'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-bank_name="<?= htmlspecialchars((string) ($row['bank_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-bank_account_number="<?= htmlspecialchars((string) ($row['bank_account_number'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-recipient_name="<?= htmlspecialchars((string) ($row['recipient_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-recipient_phone="<?= htmlspecialchars((string) ($row['recipient_phone'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-recipient_position="<?= htmlspecialchars((string) ($row['recipient_position'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-recipient_period="<?= htmlspecialchars((string) ($row['recipient_period'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-free_wifi_qty="<?= htmlspecialchars((string) ($row['free_wifi_qty'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-free_wifi_period_month="<?= htmlspecialchars((string) ($row['free_wifi_period_month'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-astri_batch_number="<?= htmlspecialchars((string) ($row['astri_batch_number'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-staging_status="<?= htmlspecialchars((string) ($row['staging_status'] ?? 'DRAFT'), ENT_QUOTES) ?>"
-                                                        data-remark_batch_approval="<?= htmlspecialchars((string) ($row['remark_batch_approval'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-pics='<?= htmlspecialchars(json_encode($this->MBatch_Approval_MyRep->getBatchPics((int) ($row['id_batch_approval'] ?? 0))), ENT_QUOTES) ?>'>
-                                                        Edit
-                                                    </button>
-                                                    <?php if ($docReady): ?>
-                                                        <button
-                                                            type="button"
-                                                            class="btn btn-sm btn-outline-info js-upload-doc mt-1"
-                                                            data-toggle="modal"
-                                                            data-target="#modal-batch-upload-doc"
-                                                            data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
-                                                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                            data-id_doc_file="<?= (int) ($row['batch_doc_file_id'] ?? 0) ?>"
-                                                            data-doc_status="<?= htmlspecialchars((string) batchDocLabel($row), ENT_QUOTES) ?>"
-                                                            data-doc_remark="<?= htmlspecialchars((string) ($row['batch_doc_remark'] ?? ''), ENT_QUOTES) ?>">
-                                                            <?= !empty($row['batch_doc_file_id']) ? 'Update RAR' : 'Upload RAR' ?>
-                                                        </button>
-                                                        <?php if (!empty($row['batch_doc_file_id']) && !empty($row['batch_doc_file_path'])): ?>
-                                                            <a href="<?= base_url('Batch_Approval_MyRep/previewDocument/' . (int) $row['batch_doc_file_id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary mt-1">
-                                                                Preview
-                                                            </a>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-dark js-history-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-batch-history-doc"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                                data-doc_name="RAR"
-                                                                data-history='<?= htmlspecialchars(json_encode($this->MBatch_Approval_MyRep->getBatchFileLogs((int) $row['batch_doc_file_id'])), ENT_QUOTES) ?>'>
-                                                                History
-                                                            </button>
-                                                        <?php endif; ?>
-                                                        <?php if ($canApprove && !empty($row['batch_doc_file_id']) && strtoupper((string) ($row['batch_doc_status'] ?? '')) === 'UPLOADED'): ?>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-success js-approve-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-batch-approve-doc"
-                                                                data-id_doc_file="<?= (int) $row['batch_doc_file_id'] ?>"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
-                                                                Approve
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-batch-reject-doc"
-                                                                data-id_doc_file="<?= (int) $row['batch_doc_file_id'] ?>"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
-                                                                Reject
-                                                            </button>
-                                                        <?php endif; ?>
-                                                    <?php endif; ?>
-                                                    <?php if (!empty($row['id_batch_approval'])): ?>
-                                                        <button type="button" class="btn btn-sm btn-outline-dark js-transfer-proof mt-1" data-toggle="modal" data-target="#modal-batch-transfer" data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>" data-id_batch_approval="<?= (int) $row['id_batch_approval'] ?>" data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">Upload Transfer</button>
-                                                    <?php endif; ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -387,7 +303,7 @@ if (!function_exists('batchStatusLabel')) {
     <div class="modal fade" id="modal-batch-create" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content">
-                <form method="post" action="<?= base_url('Batch_Approval_MyRep/saveBatchApproval') ?>">
+                <form method="post" action="<?= base_url('Batch_Approval_MyRep/saveBatchApproval') ?>" enctype="multipart/form-data" id="create-batch-approval-form">
                     <div class="modal-header valsal-modal-header">
                         <h5 class="modal-title">Input Batch Approval</h5>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
@@ -402,7 +318,7 @@ if (!function_exists('batchStatusLabel')) {
                                     <div class="form-group mb-0">
                                         <label>Cluster VALSAL</label>
                                         <select name="cluster_id" class="form-control js-batch-cluster-selector" required>
-                                            <option value="">Pilih cluster yang sudah VALSAL</option>
+                                            <option value=""><?= empty($eligibleClusterOptions) ? 'BELUM ADA CLUSTER YANG DONE VALSAL' : 'Pilih cluster yang sudah VALSAL' ?></option>
                                             <?php foreach ($eligibleClusterOptions as $clusterOption): ?>
                                                 <option
                                                     value="<?= (int) $clusterOption['id_myrep_cluster'] ?>"
@@ -496,6 +412,28 @@ if (!function_exists('batchStatusLabel')) {
                         </div>
 
                         <div class="batch-form-section batch-form-section--last">
+                            <div class="batch-form-section__title">Upload RAR</div>
+                            <div class="form-group mb-3">
+                                <div class="batch-dropzone js-dropzone">
+                                    <input type="file" name="batch_rar_file" id="create_batch_rar_file" class="js-dropzone-input">
+                                    <div class="batch-dropzone-content">
+                                        <div class="batch-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                        <div class="batch-dropzone-title">Drag & drop file RAR di sini</div>
+                                        <div class="batch-dropzone-text">Atau klik area ini untuk memilih file</div>
+                                        <div class="batch-dropzone-file js-dropzone-label">Belum ada file dipilih</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group mb-0">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="create_rar_not_required" name="is_document_not_required" value="1">
+                                    <label class="custom-control-label" for="create_rar_not_required">Tidak membutuhkan dokument</label>
+                                </div>
+                                <small class="text-muted d-block mt-2">Jika dicentang, batch tetap bisa disubmit tanpa melampirkan file RAR.</small>
+                            </div>
+                        </div>
+
+                        <div class="batch-form-section batch-form-section--last">
                             <div class="batch-form-section__title">Remark</div>
                             <div class="form-group mb-0"><textarea name="remark_batch_approval" rows="3" class="form-control"></textarea></div>
                         </div>
@@ -528,20 +466,20 @@ if (!function_exists('batchStatusLabel')) {
                                 <div class="col-md-12"><div class="form-group"><label>Cluster</label><input type="text" id="edit_cluster_name" class="form-control" readonly></div></div>
                                 <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" id="edit_regional_name" class="form-control" readonly></div></div>
                                 <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" id="edit_province_name" class="form-control" readonly></div></div>
-                                <div class="col-md-4"><div class="form-group mb-0"><label>Kota</label><input type="text" id="edit_city_name" class="form-control" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Kota</label><input type="text" id="edit_city_name" class="form-control" readonly></div></div>
+                                <div class="col-md-12"><div class="form-group mb-0"><label>Tanggal VALSAL</label><input type="text" id="edit_valsal_date" class="form-control" readonly></div></div>
                             </div>
                         </div>
 
                         <div class="batch-form-section">
                             <div class="batch-form-section__title">Data Pengajuan</div>
                             <div class="row">
+                                <div class="col-md-3"><div class="form-group"><label>HP VALSAL</label><input type="text" id="edit_homepass_valsal" class="form-control js-number-format" data-decimals="0" readonly></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>HP Donasi</label><input type="text" name="hp_donasi" id="edit_hp_donasi" inputmode="numeric" class="form-control js-number-format" data-decimals="0" required></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>Tanggal Pengajuan</label><input type="date" name="submission_date" id="edit_submission_date" class="form-control"></div></div>
-                                <div class="col-md-3"><div class="form-group"><label>HP VALSAL</label><input type="text" id="edit_homepass_valsal" class="form-control js-number-format" data-decimals="0" readonly></div></div>
-                                <div class="col-md-3"><div class="form-group"><label>Tanggal VALSAL</label><input type="text" id="edit_valsal_date" class="form-control" readonly></div></div>
-                                <div class="col-md-4"><div class="form-group"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="edit_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format" data-decimals="0" required></div></div>
-                                <div class="col-md-4"><div class="form-group"><label>Nominal / Homepass</label><input type="text" id="edit_nominal_per_homepass" class="form-control js-number-format" data-decimals="2" readonly></div></div>
-                                <div class="col-md-4"><div class="form-group mb-0"><label>Staging</label><select name="staging_status" id="edit_staging_status" class="form-control"><?php foreach ($statusOptions as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>"><?= $statusLabel ?></option><?php endforeach; ?></select></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Staging</label><select name="staging_status" id="edit_staging_status" class="form-control"><?php foreach ($statusOptions as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>"><?= $statusLabel ?></option><?php endforeach; ?></select></div></div>
+                                <div class="col-md-6"><div class="form-group"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="edit_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format" data-decimals="0" required></div></div>
+                                <div class="col-md-6"><div class="form-group mb-0"><label>Nominal / Homepass</label><input type="text" id="edit_nominal_per_homepass" class="form-control js-number-format" data-decimals="2" readonly></div></div>
                             </div>
                         </div>
 
@@ -1109,6 +1047,58 @@ if (!function_exists('batchStatusLabel')) {
         font-size: .85rem;
     }
 
+    .batch-dropzone {
+        position: relative;
+        background: linear-gradient(135deg, #f0fdf4, #ecfeff);
+        border: 2px dashed #60c7a0;
+        border-radius: 16px;
+        padding: 1rem;
+        transition: all .2s ease;
+        cursor: pointer;
+    }
+
+    .batch-dropzone.dragover {
+        border-color: #198754;
+        background: linear-gradient(135deg, #dcfce7, #d1fae5);
+        transform: scale(1.01);
+    }
+
+    .batch-dropzone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .batch-dropzone-content {
+        pointer-events: none;
+        text-align: center;
+    }
+
+    .batch-dropzone-icon {
+        font-size: 1.8rem;
+        color: #198754;
+        margin-bottom: .5rem;
+    }
+
+    .batch-dropzone-title {
+        font-weight: 700;
+        color: #166534;
+        margin-bottom: .2rem;
+    }
+
+    .batch-dropzone-text {
+        color: #4b5563;
+        font-size: .9rem;
+        margin-bottom: .3rem;
+    }
+
+    .batch-dropzone-file {
+        color: #0f766e;
+        font-weight: 600;
+        font-size: .88rem;
+    }
+
     .js-add-pic-row {
         position: relative;
         z-index: 2;
@@ -1184,6 +1174,49 @@ if (!function_exists('batchStatusLabel')) {
             });
         }
 
+        function bindInlineDropzones() {
+            $('.js-dropzone').each(function () {
+                var dropzone = this;
+                var input = dropzone.querySelector('.js-dropzone-input');
+                var label = dropzone.querySelector('.js-dropzone-label');
+
+                if (!input || !label || dropzone.dataset.bound === '1') {
+                    return;
+                }
+
+                dropzone.dataset.bound = '1';
+
+                ['dragenter', 'dragover'].forEach(function (eventName) {
+                    dropzone.addEventListener(eventName, function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.add('dragover');
+                    });
+                });
+
+                ['dragleave', 'drop'].forEach(function (eventName) {
+                    dropzone.addEventListener(eventName, function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropzone.classList.remove('dragover');
+                    });
+                });
+
+                dropzone.addEventListener('drop', function (e) {
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        input.files = e.dataTransfer.files;
+                        label.textContent = e.dataTransfer.files[0].name;
+                    }
+                });
+
+                input.addEventListener('change', function () {
+                    label.textContent = (input.files && input.files.length > 0)
+                        ? input.files[0].name
+                        : 'Belum ada file dipilih';
+                });
+            });
+        }
+
         function syncClusterMeta(target) {
             var $container = $(target).closest('#modal-batch-create, #modal-batch-edit');
             if (!$container.length) {
@@ -1242,7 +1275,21 @@ if (!function_exists('batchStatusLabel')) {
                 return 0;
             }
 
-            normalized = normalized.replace(/\./g, '').replace(',', '.');
+            var hasComma = normalized.indexOf(',') !== -1;
+            var dotCount = (normalized.match(/\./g) || []).length;
+
+            if (hasComma) {
+                normalized = normalized.replace(/\./g, '').replace(',', '.');
+            } else if (dotCount > 1) {
+                normalized = normalized.replace(/\./g, '');
+            } else if (dotCount === 1) {
+                var parts = normalized.split('.');
+                var decimalLength = parts[1] ? parts[1].length : 0;
+                if (decimalLength === 3) {
+                    normalized = parts[0] + parts[1];
+                }
+            }
+
             var number = parseFloat(normalized);
             return isNaN(number) ? 0 : number;
         }
@@ -1401,6 +1448,7 @@ if (!function_exists('batchStatusLabel')) {
                 renderPicRows('create', []);
                 toggleStageFields('create');
                 fillCreateDefaults();
+                $(this).find('.js-dropzone-label').text('Belum ada file dipilih');
                 $(this).find('.js-number-format').each(function () {
                     applyNumberFormatting($(this));
                 });
@@ -1413,7 +1461,38 @@ if (!function_exists('batchStatusLabel')) {
                 renderPicRows('create', []);
                 toggleStageFields('create');
                 fillCreateDefaults();
+                $(this).find('.js-dropzone-label').text('Belum ada file dipilih');
                 updateNominalPerHomepass('create');
+            });
+
+            $(document).on('change', '#create_rar_not_required', function () {
+                var isChecked = $(this).is(':checked');
+                var fileInput = $('#create_batch_rar_file').get(0);
+                var dropzone = $('#modal-batch-create .js-dropzone').get(0);
+
+                if (isChecked && fileInput) {
+                    fileInput.value = '';
+                }
+
+                if (dropzone) {
+                    var label = dropzone.querySelector('.js-dropzone-label');
+                    if (label && isChecked) {
+                        label.textContent = 'Dokumen ditandai tidak dibutuhkan';
+                    } else if (label && fileInput && (!fileInput.files || !fileInput.files.length)) {
+                        label.textContent = 'Belum ada file dipilih';
+                    }
+                }
+            });
+
+            $('#create-batch-approval-form').on('submit', function (e) {
+                var noDocumentRequired = $('#create_rar_not_required').is(':checked');
+                var fileInput = $('#create_batch_rar_file').get(0);
+                var hasFile = !!(fileInput && fileInput.files && fileInput.files.length > 0);
+
+                if (!noDocumentRequired && !hasFile) {
+                    e.preventDefault();
+                    alert('Upload RAR wajib diisi. Centang "Tidak membutuhkan dokument" jika dokumen memang tidak diperlukan.');
+                }
             });
 
             $(document).on('click', '.js-edit-batch', function () {
@@ -1646,6 +1725,7 @@ if (!function_exists('batchStatusLabel')) {
             });
 
             bindDropzone('#batch-upload-dropzone', '#batch-upload-file-input', '#batch-upload-file-name');
+            bindInlineDropzones();
             renderPicRows('create', []);
             toggleStageFields('create');
             fillCreateDefaults();

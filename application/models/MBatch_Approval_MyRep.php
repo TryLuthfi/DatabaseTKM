@@ -283,7 +283,7 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         $this->db->trans_complete();
-        return $this->db->trans_status();
+        return $this->db->trans_status() ? $batchId : 0;
     }
 
     public function updateBatchApproval($clusterId, $batchId, $batchPayload, $clusterPayload, $pics = [])

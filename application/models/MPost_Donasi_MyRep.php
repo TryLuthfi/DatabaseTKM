@@ -256,6 +256,23 @@ class MPost_Donasi_MyRep extends CI_Model
             ->row_array();
     }
 
+    public function getFileLogs($fileId)
+    {
+        if (!$this->documentTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->select('l.*, u.nama_user')
+            ->from('tb_myrep_flow_doc_file_log l')
+            ->join('tb_master_user u', 'u.id_user = l.action_by', 'left')
+            ->where('l.id_doc_file', (int) $fileId)
+            ->order_by('l.action_at', 'DESC')
+            ->order_by('l.id_doc_file_log', 'DESC')
+            ->get()
+            ->result_array();
+    }
+
     private function getDocumentSummaryMap($clusterIds)
     {
         $clusterIds = array_values(array_filter(array_map('intval', (array) $clusterIds)));
