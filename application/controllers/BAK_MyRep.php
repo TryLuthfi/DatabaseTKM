@@ -55,13 +55,21 @@ class BAK_MyRep extends CI_Controller
         $targetId = (int) $this->input->post('id_target');
         $clusterName = trim((string) $this->input->post('cluster_name'));
         $clusterCode = trim((string) $this->input->post('cluster_code'));
-        $baOpenDate = $this->normalizeDate($this->input->post('ba_open_date'));
-        $bakDate = $this->normalizeDate($this->input->post('bak_date'));
+        $today = date('Y-m-d');
+        $baOpenDate = $this->normalizeDate($this->input->post('ba_open_date')) ?: $today;
+        $bakDate = $this->normalizeDate($this->input->post('bak_date')) ?: $today;
         $homepassBak = (int) $this->normalizeNumber($this->input->post('homepass_bak'));
         $remarkBak = trim((string) $this->input->post('remark_bak'));
+        $docReady = $this->MBAK_MyRep->bakDocumentTablesReady();
 
         if ($targetId <= 0 || $clusterName === '' || $homepassBak <= 0) {
             $this->session->set_flashdata('error', 'Target, nama cluster, dan homepass BAK wajib diisi.');
+            redirect('BAK_MyRep');
+            return;
+        }
+
+        if ($docReady && empty($_FILES['create_file']['name']) && (int) $this->input->post('create_is_document_not_required') !== 1) {
+            $this->session->set_flashdata('error', 'Dokumen BA OPEN wajib diupload saat input cluster BAK baru.');
             redirect('BAK_MyRep');
             return;
         }
@@ -80,8 +88,8 @@ class BAK_MyRep extends CI_Controller
         }
 
         $userId = (int) $this->session->userdata('id_user');
-        $currentStatus = $this->buildCurrentStatus($baOpenDate, $bakDate, 'DRAFT');
-        $statusBak = $bakDate ? 'DONE' : ($baOpenDate ? 'SUBMITTED' : 'DRAFT');
+        $currentStatus = $this->buildCurrentStatus($baOpenDate, $bakDate, 'ON REVIEW');
+        $statusBak = 'ON REVIEW';
 
         $clusterId = $this->MBAK_MyRep->createClusterAndBak(
             [
@@ -119,6 +127,41 @@ class BAK_MyRep extends CI_Controller
             return;
         }
 
+        if ($docReady) {
+            $context = $this->MBAK_MyRep->getBakDocumentContext($clusterId);
+            if (empty($context['id_doc_item'])) {
+                $this->MBAK_MyRep->deleteClusterAndBak($clusterId);
+                $this->session->set_flashdata('error', 'Konfigurasi dokumen BA OPEN belum ditemukan.');
+                redirect('BAK_MyRep');
+                return;
+            }
+
+            $uploadResult = $this->storeBakUploadFile($clusterId, $context, 'create_file');
+            if (!$uploadResult['status']) {
+                $this->MBAK_MyRep->deleteClusterAndBak($clusterId);
+                $this->session->set_flashdata('error', $uploadResult['message']);
+                redirect('BAK_MyRep');
+                return;
+            }
+
+            $fileId = $this->MBAK_MyRep->saveBakFileUpload($clusterId, [
+                'file_name' => $uploadResult['file_name'],
+                'file_path' => $uploadResult['file_path'],
+                'is_document_not_required' => (int) $this->input->post('create_is_document_not_required') === 1 ? 1 : 0,
+                'status_file' => 'UPLOADED',
+                'remark' => trim((string) $this->input->post('create_doc_remark')),
+                'uploaded_by' => $userId,
+            ]);
+
+            if ($fileId <= 0) {
+                $this->deleteStoredFile($uploadResult['file_path']);
+                $this->MBAK_MyRep->deleteClusterAndBak($clusterId);
+                $this->session->set_flashdata('error', 'Dokumen BA OPEN gagal disimpan.');
+                redirect('BAK_MyRep');
+                return;
+            }
+        }
+
         $this->session->set_flashdata('success', 'Cluster BAK baru berhasil ditambahkan.');
         redirect('BAK_MyRep');
     }
@@ -140,21 +183,22 @@ class BAK_MyRep extends CI_Controller
         $targetId = (int) $this->input->post('id_target');
         $clusterName = trim((string) $this->input->post('cluster_name'));
         $clusterCode = trim((string) $this->input->post('cluster_code'));
-        $baOpenDate = $this->normalizeDate($this->input->post('ba_open_date'));
-        $bakDate = $this->normalizeDate($this->input->post('bak_date'));
+        $existing = $this->MBAK_MyRep->getClusterById($clusterId);
+        if (empty($existing)) {
+            $this->session->set_flashdata('error', 'Data cluster BAK tidak ditemukan.');
+            redirect('BAK_MyRep');
+            return;
+        }
+
+        $baOpenDate = $this->normalizeDate($this->input->post('ba_open_date')) ?: date('Y-m-d');
+        $bakDate = $this->normalizeDate($this->input->post('bak_date')) ?: date('Y-m-d');
         $homepassBak = (int) $this->normalizeNumber($this->input->post('homepass_bak'));
-        $statusBak = strtoupper(trim((string) $this->input->post('status_bak')));
         $remarkBak = trim((string) $this->input->post('remark_bak'));
 
         if ($clusterId <= 0 || $targetId <= 0 || $clusterName === '' || $homepassBak <= 0) {
             $this->session->set_flashdata('error', 'Data update BAK belum lengkap.');
             redirect('BAK_MyRep');
             return;
-        }
-
-        $allowedStatuses = ['DRAFT', 'SUBMITTED', 'ON REVIEW', 'APPROVED', 'REJECTED', 'DONE'];
-        if (!in_array($statusBak, $allowedStatuses, true)) {
-            $statusBak = $bakDate ? 'DONE' : ($baOpenDate ? 'SUBMITTED' : 'DRAFT');
         }
 
         $target = $this->MBAK_MyRep->getTargetById($targetId);
@@ -165,6 +209,13 @@ class BAK_MyRep extends CI_Controller
         }
 
         $userId = (int) $this->session->userdata('id_user');
+        $documentStatus = '';
+        if ($this->MBAK_MyRep->bakDocumentTablesReady()) {
+            $documentContext = $this->MBAK_MyRep->getBakDocumentContext($clusterId);
+            $documentStatus = (string) ($documentContext['status_file'] ?? '');
+        }
+
+        $statusBak = $this->resolveBakStatus($documentStatus, (string) ($existing['status_bak'] ?? 'ON REVIEW'));
         $result = $this->MBAK_MyRep->updateClusterAndBak(
             $clusterId,
             [
@@ -233,40 +284,15 @@ class BAK_MyRep extends CI_Controller
             return;
         }
 
-        $uploadDir = './uploads/myrep_bak/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
-
-        $fileName = '';
-        $filePath = '';
-        if (!$isNoDocumentRequired) {
-            $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
-            $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($context['doc_name'] ?? 'BA_OPEN'));
-            $fileName = 'BAK_' . $clusterId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
-
-            $config = [
-                'upload_path' => $uploadDir,
-                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
-                'max_size' => 30720,
-                'file_name' => $fileName,
-                'overwrite' => true,
-            ];
-
-            $this->upload->initialize($config);
-            if (!$this->upload->do_upload('file')) {
-                $this->handleUploadError(strip_tags($this->upload->display_errors()), 'BAK_MyRep');
-                return;
-            }
-
-            $fileData = $this->upload->data();
-            $fileName = $fileData['file_name'];
-            $filePath = 'uploads/myrep_bak/' . $fileData['file_name'];
+        $uploadResult = $this->storeBakUploadFile($clusterId, $context, 'file');
+        if (!$uploadResult['status']) {
+            $this->handleUploadError($uploadResult['message'], 'BAK_MyRep');
+            return;
         }
 
         $fileId = $this->MBAK_MyRep->saveBakFileUpload($clusterId, [
-            'file_name' => $fileName,
-            'file_path' => $filePath,
+            'file_name' => $uploadResult['file_name'],
+            'file_path' => $uploadResult['file_path'],
             'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
             'status_file' => 'UPLOADED',
             'remark' => trim((string) $this->input->post('remark')),
@@ -277,6 +303,8 @@ class BAK_MyRep extends CI_Controller
             $this->handleUploadError('Dokumen BA OPEN gagal disimpan.', 'BAK_MyRep');
             return;
         }
+
+        $this->MBAK_MyRep->updateBakStatusByCluster($clusterId, 'ON REVIEW', 'BA OPEN', (int) $this->session->userdata('id_user'));
 
         $this->handleUploadSuccess(
             $isNoDocumentRequired ? 'Dokumen BA OPEN ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen BA OPEN berhasil diupload.',
@@ -304,11 +332,22 @@ class BAK_MyRep extends CI_Controller
             return;
         }
 
+        $file = $this->MBAK_MyRep->getBakFileById($fileId);
+        if (empty($file['id_myrep_cluster'])) {
+            $this->session->set_flashdata('error', 'Data cluster dokumen BAK tidak ditemukan.');
+            redirect('BAK_MyRep');
+            return;
+        }
+
         $result = $this->MBAK_MyRep->updateBakFileStatus($fileId, [
             'status_file' => 'APPROVED',
             'remark' => trim((string) $this->input->post('remark')),
             'approved_by' => (int) $this->session->userdata('id_user'),
         ]);
+
+        if ($result) {
+            $this->MBAK_MyRep->updateBakStatusByCluster((int) $file['id_myrep_cluster'], 'DONE', 'BAK', (int) $this->session->userdata('id_user'));
+        }
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen BA OPEN berhasil di-approve.' : 'Gagal approve dokumen BA OPEN.');
         redirect('BAK_MyRep');
@@ -334,11 +373,22 @@ class BAK_MyRep extends CI_Controller
             return;
         }
 
+        $file = $this->MBAK_MyRep->getBakFileById($fileId);
+        if (empty($file['id_myrep_cluster'])) {
+            $this->session->set_flashdata('error', 'Data cluster dokumen BAK tidak ditemukan.');
+            redirect('BAK_MyRep');
+            return;
+        }
+
         $result = $this->MBAK_MyRep->updateBakFileStatus($fileId, [
             'status_file' => 'REJECTED',
             'remark' => trim((string) $this->input->post('remark')),
             'approved_by' => (int) $this->session->userdata('id_user'),
         ]);
+
+        if ($result) {
+            $this->MBAK_MyRep->updateBakStatusByCluster((int) $file['id_myrep_cluster'], 'REJECTED', 'REJECTED', (int) $this->session->userdata('id_user'));
+        }
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen BA OPEN berhasil di-reject.' : 'Gagal reject dokumen BA OPEN.');
         redirect('BAK_MyRep');
@@ -391,7 +441,7 @@ class BAK_MyRep extends CI_Controller
             return 'REJECTED';
         }
 
-        if (!empty($bakDate) || $statusBak === 'DONE' || $statusBak === 'APPROVED') {
+        if ($statusBak === 'DONE' || $statusBak === 'APPROVED') {
             return 'BAK';
         }
 
@@ -400,6 +450,96 @@ class BAK_MyRep extends CI_Controller
         }
 
         return 'DRAFT';
+    }
+
+    private function resolveBakStatus($documentStatus, $fallbackStatus = 'ON REVIEW')
+    {
+        $documentStatus = strtoupper(trim((string) $documentStatus));
+        $fallbackStatus = strtoupper(trim((string) $fallbackStatus));
+
+        if ($documentStatus === 'APPROVED') {
+            return 'DONE';
+        }
+
+        if ($documentStatus === 'REJECTED') {
+            return 'REJECTED';
+        }
+
+        if ($documentStatus === 'UPLOADED') {
+            return 'ON REVIEW';
+        }
+
+        return $fallbackStatus !== '' ? $fallbackStatus : 'ON REVIEW';
+    }
+
+    private function storeBakUploadFile($clusterId, $context, $fieldName)
+    {
+        $isNoDocumentRequired = (int) $this->input->post($fieldName === 'create_file' ? 'create_is_document_not_required' : 'is_document_not_required') === 1;
+        if ($isNoDocumentRequired) {
+            return [
+                'status' => true,
+                'message' => '',
+                'file_name' => '',
+                'file_path' => '',
+            ];
+        }
+
+        if (empty($_FILES[$fieldName]['name'])) {
+            return [
+                'status' => false,
+                'message' => 'File BA OPEN wajib dipilih.',
+                'file_name' => '',
+                'file_path' => '',
+            ];
+        }
+
+        $uploadDir = './uploads/myrep_bak/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $extension = pathinfo($_FILES[$fieldName]['name'], PATHINFO_EXTENSION);
+        $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($context['doc_name'] ?? 'BA_OPEN'));
+        $fileName = 'BAK_' . (int) $clusterId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+
+        $config = [
+            'upload_path' => $uploadDir,
+            'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
+            'max_size' => 30720,
+            'file_name' => $fileName,
+            'overwrite' => true,
+        ];
+
+        $this->upload->initialize($config);
+        if (!$this->upload->do_upload($fieldName)) {
+            return [
+                'status' => false,
+                'message' => strip_tags($this->upload->display_errors()),
+                'file_name' => '',
+                'file_path' => '',
+            ];
+        }
+
+        $fileData = $this->upload->data();
+        return [
+            'status' => true,
+            'message' => '',
+            'file_name' => (string) $fileData['file_name'],
+            'file_path' => 'uploads/myrep_bak/' . $fileData['file_name'],
+        ];
+    }
+
+    private function deleteStoredFile($filePath)
+    {
+        $filePath = trim((string) $filePath);
+        if ($filePath === '') {
+            return;
+        }
+
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filePath);
+        if (is_file($fullPath)) {
+            @unlink($fullPath);
+        }
     }
 
     private function normalizeDate($date)

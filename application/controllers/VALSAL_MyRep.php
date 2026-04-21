@@ -53,12 +53,19 @@ class VALSAL_MyRep extends CI_Controller
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
-        $valsalDate = $this->normalizeDate($this->input->post('valsal_date'));
+        $valsalDate = $this->normalizeDate($this->input->post('valsal_date')) ?: date('Y-m-d');
         $homepassValsal = (int) $this->normalizeNumber($this->input->post('homepass_valsal'));
         $remarkValsal = trim((string) $this->input->post('remark_valsal'));
+        $docReady = $this->MVALSAL_MyRep->valsalDocumentTablesReady();
 
         if ($clusterId <= 0 || $homepassValsal <= 0) {
             $this->session->set_flashdata('error', 'Cluster dan homepass VALSAL wajib diisi.');
+            redirect('VALSAL_MyRep');
+            return;
+        }
+
+        if ($docReady && empty($_FILES['create_file']['name']) && (int) $this->input->post('create_is_document_not_required') !== 1) {
+            $this->session->set_flashdata('error', 'Dokumen SND KASAR wajib diupload saat input VALSAL baru.');
             redirect('VALSAL_MyRep');
             return;
         }
@@ -77,7 +84,7 @@ class VALSAL_MyRep extends CI_Controller
         }
 
         $userId = (int) $this->session->userdata('id_user');
-        $statusValsal = $valsalDate ? 'DONE' : 'DRAFT';
+        $statusValsal = 'ON REVIEW';
         $result = $this->MVALSAL_MyRep->createValsal($clusterId, [
             'valsal_date' => $valsalDate,
             'homepass_valsal' => $homepassValsal,
@@ -94,6 +101,44 @@ class VALSAL_MyRep extends CI_Controller
             $this->session->set_flashdata('error', 'Gagal menyimpan data VALSAL.');
             redirect('VALSAL_MyRep');
             return;
+        }
+
+        if ($docReady) {
+            $context = $this->MVALSAL_MyRep->getValsalDocumentContext($clusterId);
+            if (empty($context['id_doc_item'])) {
+                $this->MVALSAL_MyRep->deleteValsalByCluster($clusterId);
+                $this->MVALSAL_MyRep->updateClusterStatusOnly($clusterId, 'BAK', $userId);
+                $this->session->set_flashdata('error', 'Konfigurasi dokumen SND KASAR belum ditemukan.');
+                redirect('VALSAL_MyRep');
+                return;
+            }
+
+            $uploadResult = $this->storeValsalUploadFile($clusterId, $context, 'create_file');
+            if (!$uploadResult['status']) {
+                $this->MVALSAL_MyRep->deleteValsalByCluster($clusterId);
+                $this->MVALSAL_MyRep->updateClusterStatusOnly($clusterId, 'BAK', $userId);
+                $this->session->set_flashdata('error', $uploadResult['message']);
+                redirect('VALSAL_MyRep');
+                return;
+            }
+
+            $fileId = $this->MVALSAL_MyRep->saveValsalFileUpload($clusterId, [
+                'file_name' => $uploadResult['file_name'],
+                'file_path' => $uploadResult['file_path'],
+                'is_document_not_required' => (int) $this->input->post('create_is_document_not_required') === 1 ? 1 : 0,
+                'status_file' => 'UPLOADED',
+                'remark' => trim((string) $this->input->post('create_doc_remark')),
+                'uploaded_by' => $userId,
+            ]);
+
+            if ($fileId <= 0) {
+                $this->deleteStoredFile($uploadResult['file_path']);
+                $this->MVALSAL_MyRep->deleteValsalByCluster($clusterId);
+                $this->MVALSAL_MyRep->updateClusterStatusOnly($clusterId, 'BAK', $userId);
+                $this->session->set_flashdata('error', 'Dokumen SND KASAR gagal disimpan.');
+                redirect('VALSAL_MyRep');
+                return;
+            }
         }
 
         $this->session->set_flashdata('success', 'Data VALSAL berhasil ditambahkan.');
@@ -114,9 +159,15 @@ class VALSAL_MyRep extends CI_Controller
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
-        $valsalDate = $this->normalizeDate($this->input->post('valsal_date'));
+        $existing = $this->MVALSAL_MyRep->getValsalByClusterId($clusterId);
+        if (empty($existing)) {
+            $this->session->set_flashdata('error', 'Data cluster VALSAL tidak ditemukan.');
+            redirect('VALSAL_MyRep');
+            return;
+        }
+
+        $valsalDate = $this->normalizeDate($this->input->post('valsal_date')) ?: date('Y-m-d');
         $homepassValsal = (int) $this->normalizeNumber($this->input->post('homepass_valsal'));
-        $statusValsal = strtoupper(trim((string) $this->input->post('status_valsal')));
         $remarkValsal = trim((string) $this->input->post('remark_valsal'));
 
         if ($clusterId <= 0 || $homepassValsal <= 0) {
@@ -125,10 +176,12 @@ class VALSAL_MyRep extends CI_Controller
             return;
         }
 
-        $allowedStatuses = ['DRAFT', 'SUBMITTED', 'ON REVIEW', 'APPROVED', 'REJECTED', 'DONE'];
-        if (!in_array($statusValsal, $allowedStatuses, true)) {
-            $statusValsal = $valsalDate ? 'DONE' : 'DRAFT';
+        $documentStatus = '';
+        if ($this->MVALSAL_MyRep->valsalDocumentTablesReady()) {
+            $documentContext = $this->MVALSAL_MyRep->getValsalDocumentContext($clusterId);
+            $documentStatus = (string) ($documentContext['status_file'] ?? '');
         }
+        $statusValsal = $this->resolveValsalStatus($documentStatus, (string) ($existing['status_valsal'] ?? 'ON REVIEW'));
 
         $userId = (int) $this->session->userdata('id_user');
         $result = $this->MVALSAL_MyRep->updateValsal($clusterId, [
@@ -181,40 +234,15 @@ class VALSAL_MyRep extends CI_Controller
             return;
         }
 
-        $uploadDir = './uploads/myrep_valsal/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
-
-        $fileName = '';
-        $filePath = '';
-        if (!$isNoDocumentRequired) {
-            $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
-            $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($context['doc_name'] ?? 'SND_KASAR'));
-            $fileName = 'VALSAL_' . $clusterId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
-
-            $config = [
-                'upload_path' => $uploadDir,
-                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
-                'max_size' => 30720,
-                'file_name' => $fileName,
-                'overwrite' => true,
-            ];
-
-            $this->upload->initialize($config);
-            if (!$this->upload->do_upload('file')) {
-                $this->handleUploadError(strip_tags($this->upload->display_errors()), 'VALSAL_MyRep');
-                return;
-            }
-
-            $fileData = $this->upload->data();
-            $fileName = $fileData['file_name'];
-            $filePath = 'uploads/myrep_valsal/' . $fileData['file_name'];
+        $uploadResult = $this->storeValsalUploadFile($clusterId, $context, 'file');
+        if (!$uploadResult['status']) {
+            $this->handleUploadError($uploadResult['message'], 'VALSAL_MyRep');
+            return;
         }
 
         $fileId = $this->MVALSAL_MyRep->saveValsalFileUpload($clusterId, [
-            'file_name' => $fileName,
-            'file_path' => $filePath,
+            'file_name' => $uploadResult['file_name'],
+            'file_path' => $uploadResult['file_path'],
             'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
             'status_file' => 'UPLOADED',
             'remark' => trim((string) $this->input->post('remark')),
@@ -225,6 +253,8 @@ class VALSAL_MyRep extends CI_Controller
             $this->handleUploadError('Dokumen SND KASAR gagal disimpan.', 'VALSAL_MyRep');
             return;
         }
+
+        $this->MVALSAL_MyRep->updateValsalStatusByCluster($clusterId, 'ON REVIEW', 'BAK', (int) $this->session->userdata('id_user'));
 
         $this->handleUploadSuccess(
             $isNoDocumentRequired ? 'Dokumen SND KASAR ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen SND KASAR berhasil diupload.',
@@ -252,11 +282,22 @@ class VALSAL_MyRep extends CI_Controller
             return;
         }
 
+        $file = $this->MVALSAL_MyRep->getValsalFileById($fileId);
+        if (empty($file['id_myrep_cluster'])) {
+            $this->session->set_flashdata('error', 'Data cluster dokumen VALSAL tidak ditemukan.');
+            redirect('VALSAL_MyRep');
+            return;
+        }
+
         $result = $this->MVALSAL_MyRep->updateValsalFileStatus($fileId, [
             'status_file' => 'APPROVED',
             'remark' => trim((string) $this->input->post('remark')),
             'approved_by' => (int) $this->session->userdata('id_user'),
         ]);
+
+        if ($result) {
+            $this->MVALSAL_MyRep->updateValsalStatusByCluster((int) $file['id_myrep_cluster'], 'DONE', 'VALSAL', (int) $this->session->userdata('id_user'));
+        }
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen SND KASAR berhasil di-approve.' : 'Gagal approve dokumen SND KASAR.');
         redirect('VALSAL_MyRep');
@@ -282,11 +323,22 @@ class VALSAL_MyRep extends CI_Controller
             return;
         }
 
+        $file = $this->MVALSAL_MyRep->getValsalFileById($fileId);
+        if (empty($file['id_myrep_cluster'])) {
+            $this->session->set_flashdata('error', 'Data cluster dokumen VALSAL tidak ditemukan.');
+            redirect('VALSAL_MyRep');
+            return;
+        }
+
         $result = $this->MVALSAL_MyRep->updateValsalFileStatus($fileId, [
             'status_file' => 'REJECTED',
             'remark' => trim((string) $this->input->post('remark')),
             'approved_by' => (int) $this->session->userdata('id_user'),
         ]);
+
+        if ($result) {
+            $this->MVALSAL_MyRep->updateValsalStatusByCluster((int) $file['id_myrep_cluster'], 'REJECTED', 'REJECTED', (int) $this->session->userdata('id_user'));
+        }
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen SND KASAR berhasil di-reject.' : 'Gagal reject dokumen SND KASAR.');
         redirect('VALSAL_MyRep');
@@ -339,11 +391,101 @@ class VALSAL_MyRep extends CI_Controller
             return 'REJECTED';
         }
 
-        if (!empty($valsalDate) || $statusValsal === 'DONE' || $statusValsal === 'APPROVED') {
+        if ($statusValsal === 'DONE' || $statusValsal === 'APPROVED') {
             return 'VALSAL';
         }
 
         return 'BAK';
+    }
+
+    private function resolveValsalStatus($documentStatus, $fallbackStatus = 'ON REVIEW')
+    {
+        $documentStatus = strtoupper(trim((string) $documentStatus));
+        $fallbackStatus = strtoupper(trim((string) $fallbackStatus));
+
+        if ($documentStatus === 'APPROVED') {
+            return 'DONE';
+        }
+
+        if ($documentStatus === 'REJECTED') {
+            return 'REJECTED';
+        }
+
+        if ($documentStatus === 'UPLOADED') {
+            return 'ON REVIEW';
+        }
+
+        return $fallbackStatus !== '' ? $fallbackStatus : 'ON REVIEW';
+    }
+
+    private function storeValsalUploadFile($clusterId, $context, $fieldName)
+    {
+        $isNoDocumentRequired = (int) $this->input->post($fieldName === 'create_file' ? 'create_is_document_not_required' : 'is_document_not_required') === 1;
+        if ($isNoDocumentRequired) {
+            return [
+                'status' => true,
+                'message' => '',
+                'file_name' => '',
+                'file_path' => '',
+            ];
+        }
+
+        if (empty($_FILES[$fieldName]['name'])) {
+            return [
+                'status' => false,
+                'message' => 'File SND KASAR wajib dipilih.',
+                'file_name' => '',
+                'file_path' => '',
+            ];
+        }
+
+        $uploadDir = './uploads/myrep_valsal/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $extension = pathinfo($_FILES[$fieldName]['name'], PATHINFO_EXTENSION);
+        $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($context['doc_name'] ?? 'SND_KASAR'));
+        $fileName = 'VALSAL_' . (int) $clusterId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+
+        $config = [
+            'upload_path' => $uploadDir,
+            'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
+            'max_size' => 30720,
+            'file_name' => $fileName,
+            'overwrite' => true,
+        ];
+
+        $this->upload->initialize($config);
+        if (!$this->upload->do_upload($fieldName)) {
+            return [
+                'status' => false,
+                'message' => strip_tags($this->upload->display_errors()),
+                'file_name' => '',
+                'file_path' => '',
+            ];
+        }
+
+        $fileData = $this->upload->data();
+        return [
+            'status' => true,
+            'message' => '',
+            'file_name' => (string) $fileData['file_name'],
+            'file_path' => 'uploads/myrep_valsal/' . $fileData['file_name'],
+        ];
+    }
+
+    private function deleteStoredFile($filePath)
+    {
+        $filePath = trim((string) $filePath);
+        if ($filePath === '') {
+            return;
+        }
+
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filePath);
+        if (is_file($fullPath)) {
+            @unlink($fullPath);
+        }
     }
 
     private function normalizeDate($date)

@@ -50,11 +50,7 @@ class MVALSAL_MyRep extends CI_Model
             ->distinct()
             ->select('c.city_name')
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'inner')
-            ->group_start()
-                ->where_in('UPPER(c.status_current)', ['BAK', 'VALSAL', 'WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'DONE'])
-                ->or_where_in('UPPER(b.status_bak)', ['DONE', 'APPROVED'])
-            ->group_end()
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
             ->order_by('c.city_name', 'ASC')
@@ -162,13 +158,8 @@ class MVALSAL_MyRep extends CI_Model
             ')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left');
-
-        $this->db->group_start()
-            ->where_in('UPPER(c.status_current)', ['BAK', 'VALSAL', 'WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'DONE'])
-            ->or_where('v.id_valsal IS NOT NULL', null, false)
-        ->group_end();
 
         if ($this->valsalDocumentTablesReady()) {
             $this->db
@@ -255,6 +246,16 @@ class MVALSAL_MyRep extends CI_Model
 
         $this->db->trans_complete();
         return $this->db->trans_status();
+    }
+
+    public function deleteValsalByCluster($clusterId)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return false;
+        }
+
+        return $this->db->where('id_myrep_cluster', $clusterId)->delete('tb_myrep_valsal');
     }
 
     public function updateValsal($clusterId, $valsalPayload, $clusterPayload)
@@ -475,6 +476,70 @@ class MVALSAL_MyRep extends CI_Model
             ->order_by('l.id_doc_file_log', 'DESC')
             ->get()
             ->result_array();
+    }
+
+    public function updateValsalStatusByCluster($clusterId, $statusValsal, $statusCurrent, $userId)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return false;
+        }
+
+        $existing = $this->getValsalByClusterId($clusterId);
+        if (empty($existing)) {
+            return false;
+        }
+
+        $statusValsal = strtoupper(trim((string) $statusValsal));
+        $statusCurrent = strtoupper(trim((string) $statusCurrent));
+        $userId = (int) $userId;
+
+        $this->db->trans_start();
+        $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->update('tb_myrep_cluster', [
+                'status_current' => $this->resolveSafeCurrentStatus(
+                    (string) ($existing['status_current'] ?? ''),
+                    $statusCurrent
+                ),
+                'updated_by' => $userId,
+            ]);
+
+        $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->update('tb_myrep_valsal', [
+                'status_valsal' => $statusValsal,
+                'updated_by' => $userId,
+            ]);
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
+    }
+
+    public function updateClusterStatusOnly($clusterId, $statusCurrent, $userId)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return false;
+        }
+
+        $cluster = $this->db->get_where('tb_myrep_cluster', [
+            'id_myrep_cluster' => $clusterId,
+        ])->row_array();
+
+        if (empty($cluster)) {
+            return false;
+        }
+
+        return $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->update('tb_myrep_cluster', [
+                'status_current' => $this->resolveSafeCurrentStatus(
+                    (string) ($cluster['status_current'] ?? ''),
+                    strtoupper(trim((string) $statusCurrent))
+                ),
+                'updated_by' => (int) $userId,
+            ]);
     }
 
     private function ensurePackage($clusterId, $flowType, $docGroupId, $userId)

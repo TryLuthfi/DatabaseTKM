@@ -228,6 +228,21 @@ class MBAK_MyRep extends CI_Model
         return $this->db->trans_status() ? $clusterId : 0;
     }
 
+    public function deleteClusterAndBak($clusterId)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return false;
+        }
+
+        $this->db->trans_start();
+        $this->db->where('id_myrep_cluster', $clusterId)->delete('tb_myrep_bak');
+        $this->db->where('id_myrep_cluster', $clusterId)->delete('tb_myrep_cluster');
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
+    }
+
     public function updateClusterAndBak($clusterId, $clusterPayload, $bakPayload)
     {
         $clusterId = (int) $clusterId;
@@ -447,6 +462,44 @@ class MBAK_MyRep extends CI_Model
             ->order_by('l.id_doc_file_log', 'DESC')
             ->get()
             ->result_array();
+    }
+
+    public function updateBakStatusByCluster($clusterId, $statusBak, $statusCurrent, $userId)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return false;
+        }
+
+        $existing = $this->getClusterById($clusterId);
+        if (empty($existing)) {
+            return false;
+        }
+
+        $statusBak = strtoupper(trim((string) $statusBak));
+        $statusCurrent = strtoupper(trim((string) $statusCurrent));
+        $userId = (int) $userId;
+
+        $this->db->trans_start();
+        $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->update('tb_myrep_cluster', [
+                'status_current' => $this->resolveSafeCurrentStatus(
+                    (string) ($existing['status_current'] ?? ''),
+                    $statusCurrent
+                ),
+                'updated_by' => $userId,
+            ]);
+
+        $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->update('tb_myrep_bak', [
+                'status_bak' => $statusBak,
+                'updated_by' => $userId,
+            ]);
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
     }
 
     private function ensureBakPackage($clusterId, $docGroupId, $userId)

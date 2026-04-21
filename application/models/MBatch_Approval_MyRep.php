@@ -338,6 +338,32 @@ class MBatch_Approval_MyRep extends CI_Model
         return $this->db->trans_status();
     }
 
+    public function updateBatchStage($clusterId, $batchId, $batchPayload, $clusterPayload)
+    {
+        $clusterId = (int) $clusterId;
+        $batchId = (int) $batchId;
+        if ($clusterId <= 0 || $batchId <= 0) {
+            return false;
+        }
+
+        $existing = $this->getBatchByClusterId($clusterId);
+        if (empty($existing) || (int) ($existing['id_batch_approval'] ?? 0) !== $batchId) {
+            return false;
+        }
+
+        $clusterPayload['status_current'] = $this->resolveSafeCurrentStatus(
+            (string) ($existing['status_current'] ?? ''),
+            (string) ($clusterPayload['status_current'] ?? 'VALSAL')
+        );
+
+        $this->db->trans_start();
+        $this->db->where('id_batch_approval', $batchId)->update('tb_myrep_batch_approval', $batchPayload);
+        $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_cluster', $clusterPayload);
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
+    }
+
     public function getBatchDocumentContext($clusterId)
     {
         if (!$this->batchDocumentTablesReady()) {

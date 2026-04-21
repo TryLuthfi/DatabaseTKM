@@ -1,7 +1,8 @@
 <?php
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
-$statusOptions = ['DRAFT', 'SUBMITTED', 'ON REVIEW', 'APPROVED', 'REJECTED', 'DONE'];
+$statusOptions = ['DRAFT', 'ON REVIEW', 'REJECTED', 'DONE'];
+$today = date('Y-m-d');
 $summaryTotal = count($clusterRows);
 $summaryWaiting = 0;
 $summaryDone = 0;
@@ -35,7 +36,6 @@ if (!function_exists('valsalBadgeClass')) {
             case 'REJECTED':
                 return 'danger';
             case 'BAK':
-            case 'SUBMITTED':
                 return 'info';
             case 'ON REVIEW':
                 return 'warning';
@@ -225,7 +225,11 @@ if (!function_exists('valsalDocLabel')) {
                                     </thead>
                                     <tbody>
                                         <?php foreach ($clusterRows as $index => $row): ?>
-                                            <?php $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-'; ?>
+                                            <?php
+                                            $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
+                                            $valsalDocStatusRaw = strtoupper(trim((string) ($row['valsal_doc_status'] ?? '')));
+                                            $showUploadButton = $docReady && in_array($valsalDocStatusRaw, ['', 'REJECTED'], true);
+                                            ?>
                                             <tr>
                                                 <td><?= $index + 1 ?></td>
                                                 <td>
@@ -279,18 +283,20 @@ if (!function_exists('valsalDocLabel')) {
                                                         Edit
                                                     </button>
                                                     <?php if ($docReady): ?>
-                                                        <button
-                                                            type="button"
-                                                            class="btn btn-sm btn-outline-info js-upload-doc mt-1"
-                                                            data-toggle="modal"
-                                                            data-target="#modal-valsal-upload-doc"
-                                                            data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
-                                                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                            data-id_doc_file="<?= (int) ($row['valsal_doc_file_id'] ?? 0) ?>"
-                                                            data-doc_status="<?= htmlspecialchars((string) valsalDocLabel($row), ENT_QUOTES) ?>"
-                                                            data-doc_remark="<?= htmlspecialchars((string) ($row['valsal_doc_remark'] ?? ''), ENT_QUOTES) ?>">
-                                                            <?= !empty($row['valsal_doc_file_id']) ? 'Update Doc' : 'Upload Doc' ?>
-                                                        </button>
+                                                        <?php if ($showUploadButton): ?>
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-outline-info js-upload-doc mt-1"
+                                                                data-toggle="modal"
+                                                                data-target="#modal-valsal-upload-doc"
+                                                                data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
+                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                                                                data-id_doc_file="<?= (int) ($row['valsal_doc_file_id'] ?? 0) ?>"
+                                                                data-doc_status="<?= htmlspecialchars((string) valsalDocLabel($row), ENT_QUOTES) ?>"
+                                                                data-doc_remark="<?= htmlspecialchars((string) ($row['valsal_doc_remark'] ?? ''), ENT_QUOTES) ?>">
+                                                                <?= $valsalDocStatusRaw === 'REJECTED' ? 'Re-Upload Doc' : 'Upload Doc' ?>
+                                                            </button>
+                                                        <?php endif; ?>
                                                         <?php if (!empty($row['valsal_doc_file_id']) && !empty($row['valsal_doc_file_path'])): ?>
                                                             <a href="<?= base_url('VALSAL_MyRep/previewDocument/' . (int) $row['valsal_doc_file_id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary mt-1">
                                                                 Preview
@@ -345,7 +351,7 @@ if (!function_exists('valsalDocLabel')) {
     <div class="modal fade" id="modal-valsal-create" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
-                <form method="post" action="<?= base_url('VALSAL_MyRep/saveValsal') ?>">
+                <form method="post" action="<?= base_url('VALSAL_MyRep/saveValsal') ?>" enctype="multipart/form-data">
                     <div class="modal-header valsal-modal-header">
                         <h5 class="modal-title">Input Cluster VALSAL Baru</h5>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
@@ -381,8 +387,40 @@ if (!function_exists('valsalDocLabel')) {
                             <div class="col-md-4"><div class="form-group"><label>Tanggal BAK</label><input type="text" class="form-control js-bak-date" readonly></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Homepass BAK</label><input type="number" class="form-control js-homepass-bak" readonly></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Homepass VALSAL</label><input type="number" name="homepass_valsal" min="1" class="form-control js-homepass-valsal" required></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Tanggal VALSAL</label><input type="date" name="valsal_date" class="form-control"></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>Tanggal VALSAL</label><input type="date" name="valsal_date" class="form-control" value="<?= $today ?>"></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>Status VALSAL</label><input type="text" class="form-control" value="ON REVIEW" readonly></div></div>
                             <div class="col-md-12"><div class="form-group"><label>Remark</label><textarea name="remark_valsal" rows="3" class="form-control"></textarea></div></div>
+                            <?php if ($docReady): ?>
+                                <div class="col-md-12">
+                                    <div class="doc-modal-panel">
+                                        <div class="doc-modal-title">Dokumen SND KASAR</div>
+                                        <p class="doc-modal-subtitle">Upload dokumen SND KASAR saat create VALSAL. Setelah disimpan, status VALSAL tetap `ON REVIEW` sampai dokumen di-approve HO.</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="doc-modal-panel">
+                                        <label class="font-weight-bold d-block">File SND KASAR</label>
+                                        <div class="upload-dropzone" id="valsal-create-dropzone">
+                                            <input type="file" name="create_file" id="valsal-create-file-input">
+                                            <div class="upload-dropzone-content">
+                                                <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                                <div class="upload-dropzone-title">Drag & drop file di sini</div>
+                                                <div class="upload-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
+                                                <div class="upload-dropzone-file" id="valsal-create-file-name">Belum ada file dipilih</div>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted d-block mt-2">Format: pdf, doc, docx, xls, xlsx, jpg, jpeg, png. Maksimal 30 MB.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="doc-modal-panel">
+                                        <div class="form-group mb-0">
+                                            <label class="font-weight-bold">Remark Dokumen</label>
+                                            <textarea name="create_doc_remark" rows="3" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -420,7 +458,7 @@ if (!function_exists('valsalDocLabel')) {
                             <div class="col-md-4"><div class="form-group"><label>Homepass VALSAL</label><input type="number" name="homepass_valsal" id="edit_homepass_valsal" min="1" class="form-control" required></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Tanggal BAK</label><input type="text" id="edit_bak_date" class="form-control" readonly></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Tanggal VALSAL</label><input type="date" name="valsal_date" id="edit_valsal_date" class="form-control"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Status VALSAL</label><select name="status_valsal" id="edit_status_valsal" class="form-control"><?php foreach ($statusOptions as $statusOption): ?><option value="<?= $statusOption ?>"><?= $statusOption ?></option><?php endforeach; ?></select></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>Status VALSAL</label><input type="text" id="edit_status_valsal" class="form-control" readonly></div></div>
                             <div class="col-md-12"><div class="form-group"><label>Remark</label><textarea name="remark_valsal" id="edit_remark_valsal" rows="3" class="form-control"></textarea></div></div>
                         </div>
                     </div>
@@ -911,6 +949,8 @@ if (!function_exists('valsalDocLabel')) {
 
             $('#modal-valsal-create').on('shown.bs.modal', function () {
                 syncClusterMeta($(this));
+                $('#valsal-create-file-input').val('');
+                $('#valsal-create-file-name').text('Belum ada file dipilih');
             });
 
             $(document).on('click', '.js-edit-valsal', function () {
@@ -1066,6 +1106,7 @@ if (!function_exists('valsalDocLabel')) {
                 });
             });
 
+            bindDropzone('#valsal-create-dropzone', '#valsal-create-file-input', '#valsal-create-file-name');
             bindDropzone('#valsal-upload-dropzone', '#valsal-upload-file-input', '#valsal-upload-file-name');
         });
     })();

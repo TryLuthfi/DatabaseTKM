@@ -440,6 +440,128 @@ class Batch_Approval_MyRep extends CI_Controller
         redirect($redirectPath);
     }
 
+    public function updateStagingProgress()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $batchId = (int) $this->input->post('id_batch_approval');
+        $redirectPath = $this->resolveBatchRedirectPath($clusterId);
+
+        if (!$this->MBatch_Approval_MyRep->batchTablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel Batch Approval belum tersedia.');
+            redirect($redirectPath);
+            return;
+        }
+
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses mengubah staging Batch Approval.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $batch = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
+        if ($clusterId <= 0 || $batchId <= 0 || empty($batch) || (int) ($batch['id_batch_approval'] ?? 0) !== $batchId) {
+            $this->session->set_flashdata('error', 'Data Batch Approval tidak ditemukan.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $currentStage = strtoupper(trim((string) ($batch['staging_status'] ?? 'DRAFT')));
+        $targetStage = strtoupper(trim((string) $this->input->post('target_stage')));
+        $userId = (int) $this->session->userdata('id_user');
+        $batchPayload = ['updated_by' => $userId];
+        $successMessage = 'Staging Batch Approval berhasil diperbarui.';
+
+        if ($currentStage === 'WAITING HO' && $targetStage === 'WAITING MYREP') {
+            $submittedToMyrepAt = $this->normalizeDateTimeInput($this->input->post('submitted_to_astri_at'));
+            if ($submittedToMyrepAt === null) {
+                $this->session->set_flashdata('error', 'Tanggal input ke MYREP wajib diisi.');
+                redirect($redirectPath);
+                return;
+            }
+
+            $batchPayload['staging_status'] = 'WAITING MYREP';
+            $batchPayload['submitted_to_astri_at'] = $submittedToMyrepAt;
+            $successMessage = 'Staging berhasil diubah ke WAITING MYREP.';
+        } elseif ($currentStage === 'WAITING MYREP' && $targetStage === 'WAITING FINANCE') {
+            $astriBatchNumber = trim((string) $this->input->post('astri_batch_number'));
+            $nominalApprovalMyrep = $this->normalizeNullableNumber($this->input->post('nominal_nego_emr'));
+            $approvedMyrepAt = $this->normalizeDateTimeInput($this->input->post('submitted_to_finance_at'));
+
+            if ($astriBatchNumber === '' || $nominalApprovalMyrep === null || $approvedMyrepAt === null) {
+                $this->session->set_flashdata('error', 'Nomor batch, nominal approval MYREP, dan tanggal approved MYREP wajib diisi.');
+                redirect($redirectPath);
+                return;
+            }
+
+            $batchPayload['staging_status'] = 'WAITING FINANCE';
+            $batchPayload['astri_batch_number'] = $astriBatchNumber;
+            $batchPayload['nominal_nego_emr'] = $nominalApprovalMyrep;
+            $batchPayload['submitted_to_finance_at'] = $approvedMyrepAt;
+            $successMessage = 'Staging berhasil diubah ke WAITING FINANCE.';
+        } elseif ($currentStage === 'WAITING FINANCE' && $targetStage === 'RELEASED') {
+            $releasedAt = $this->normalizeDateTimeInput($this->input->post('released_at'));
+            $nominalReleaseFinance = $this->normalizeNullableNumber($this->input->post('nominal_release_finance'));
+
+            if ($releasedAt === null || $nominalReleaseFinance === null || empty($_FILES['transfer_proof']['name'])) {
+                $this->session->set_flashdata('error', 'Tanggal pencairan, nominal cair, dan foto transfer wajib diisi.');
+                redirect($redirectPath);
+                return;
+            }
+
+            $uploadDir = './uploads/myrep_batch_transfer/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+
+            $extension = pathinfo($_FILES['transfer_proof']['name'], PATHINFO_EXTENSION);
+            $fileName = 'TRANSFER_' . $clusterId . '_' . date('YmdHis') . '.' . $extension;
+            $config = [
+                'upload_path' => $uploadDir,
+                'allowed_types' => 'pdf|jpg|jpeg|png',
+                'max_size' => 30720,
+                'file_name' => $fileName,
+                'overwrite' => true,
+            ];
+
+            $this->upload->initialize($config);
+            if (!$this->upload->do_upload('transfer_proof')) {
+                $this->session->set_flashdata('error', strip_tags($this->upload->display_errors()));
+                redirect($redirectPath);
+                return;
+            }
+
+            $fileData = $this->upload->data();
+            $batchPayload['staging_status'] = 'RELEASED';
+            $batchPayload['released_at'] = $releasedAt;
+            $batchPayload['nominal_release_finance'] = $nominalReleaseFinance;
+            $batchPayload['transfer_proof_file_name'] = $fileData['file_name'];
+            $batchPayload['transfer_proof_file_path'] = 'uploads/myrep_batch_transfer/' . $fileData['file_name'];
+            $successMessage = 'Staging berhasil diubah ke RELEASED.';
+        } else {
+            $this->session->set_flashdata('error', 'Transisi staging tidak valid.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $result = $this->MBatch_Approval_MyRep->updateBatchStage(
+            $clusterId,
+            $batchId,
+            $batchPayload,
+            [
+                'status_current' => $this->mapClusterStatusFromStaging($batchPayload['staging_status']),
+                'updated_by' => $userId,
+            ]
+        );
+
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? $successMessage : 'Gagal memperbarui staging Batch Approval.');
+        redirect($redirectPath);
+    }
+
     public function approveDocument()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -616,6 +738,21 @@ class Batch_Approval_MyRep extends CI_Controller
     {
         $value = trim((string) $value);
         return $value === '' ? null : (int) $this->normalizeNumber($value);
+    }
+
+    private function normalizeDateTimeInput($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return $value . ' 00:00:00';
+        }
+
+        $timestamp = strtotime($value);
+        return $timestamp ? date('Y-m-d H:i:s', $timestamp) : null;
     }
 
     private function collectPicsFromPost()

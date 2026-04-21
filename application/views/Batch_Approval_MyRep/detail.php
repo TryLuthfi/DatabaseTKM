@@ -29,10 +29,6 @@ if (!function_exists('batchDetailStatusLabel')) {
     function batchDetailStatusLabel($status)
     {
         $status = strtoupper(trim((string) $status));
-        if ($status === 'WAITING MYREP') {
-            return 'WAITING EMR';
-        }
-
         return $status !== '' ? $status : 'DRAFT';
     }
 }
@@ -94,12 +90,27 @@ $initialPics = !empty($batchPics) ? $batchPics : [[
 $statusOptions = [
     'DRAFT' => 'DRAFT',
     'WAITING HO' => 'WAITING HO',
-    'WAITING MYREP' => 'WAITING EMR',
+    'WAITING MYREP' => 'WAITING MYREP',
     'WAITING FINANCE' => 'WAITING FINANCE',
     'RELEASED' => 'RELEASED',
     'DONE BATCH APPROVAL' => 'DONE BATCH APPROVAL',
     'REJECTED' => 'REJECTED',
 ];
+$currentStage = strtoupper(trim((string) ($cluster['staging_status'] ?? 'DRAFT')));
+$stageButtonTarget = '';
+$stageButtonLabel = '';
+if ($canApprove) {
+    if ($currentStage === 'WAITING HO') {
+        $stageButtonTarget = '#modal-stage-to-myrep';
+        $stageButtonLabel = 'Edit Staging';
+    } elseif ($currentStage === 'WAITING MYREP') {
+        $stageButtonTarget = '#modal-stage-to-finance';
+        $stageButtonLabel = 'Edit Staging';
+    } elseif ($currentStage === 'WAITING FINANCE') {
+        $stageButtonTarget = '#modal-stage-to-released';
+        $stageButtonLabel = 'Edit Staging';
+    }
+}
 ?>
 
 <style>
@@ -446,7 +457,14 @@ $statusOptions = [
                     <div class="batch-progress-wrap">
                         <div class="batch-progress-meta">
                             <div>Progress Batch Approval</div>
-                            <div><?= htmlspecialchars(batchDetailStatusLabel($cluster['staging_status'] ?? 'DRAFT')) ?> · <?= (int) $stageMeta['percent'] ?>%</div>
+                            <div class="d-flex align-items-center" style="gap:.75rem;">
+                                <div><?= htmlspecialchars(batchDetailStatusLabel($cluster['staging_status'] ?? 'DRAFT')) ?> · <?= (int) $stageMeta['percent'] ?>%</div>
+                                <?php if ($stageButtonTarget !== ''): ?>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="<?= htmlspecialchars($stageButtonTarget) ?>">
+                                        <i class="fas fa-edit"></i> <?= htmlspecialchars($stageButtonLabel) ?>
+                                    </button>
+                                <?php endif; ?>
+                            </div>
                         </div>
                         <div class="batch-progress-caption mb-2"><?= htmlspecialchars($stageMeta['label']) ?></div>
                         <div class="progress batch-progress">
@@ -884,6 +902,115 @@ $statusOptions = [
     </div>
 </div>
 
+<div class="modal fade" id="modal-stage-to-myrep" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content batch-modal">
+            <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>">
+                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                <input type="hidden" name="id_batch_approval" value="<?= (int) $cluster['id_batch_approval'] ?>">
+                <input type="hidden" name="target_stage" value="WAITING MYREP">
+                <input type="hidden" name="redirect_to_detail" value="1">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Edit Staging ke WAITING MYREP</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Staging Saat Ini</label>
+                        <input type="text" class="form-control" value="<?= htmlspecialchars(batchDetailStatusLabel($cluster['staging_status'] ?? 'DRAFT')) ?>" readonly>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Tanggal Input ke Astri</label>
+                        <input type="date" name="submitted_to_astri_at" class="form-control" value="<?= !empty($cluster['submitted_to_astri_at']) ? htmlspecialchars(substr((string) $cluster['submitted_to_astri_at'], 0, 10)) : date('Y-m-d') ?>" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-primary">Ubah ke WAITING MYREP</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-stage-to-finance" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content batch-modal">
+            <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>">
+                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                <input type="hidden" name="id_batch_approval" value="<?= (int) $cluster['id_batch_approval'] ?>">
+                <input type="hidden" name="target_stage" value="WAITING FINANCE">
+                <input type="hidden" name="redirect_to_detail" value="1">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Edit Staging ke WAITING FINANCE</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Nomor Batch</label>
+                        <input type="text" name="astri_batch_number" class="form-control" value="<?= htmlspecialchars((string) ($cluster['astri_batch_number'] ?? '')) ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nominal Approval dari MYREP</label>
+                        <input type="text" name="nominal_nego_emr" class="form-control js-number-format" data-decimals="0" value="<?= htmlspecialchars((string) ($cluster['nominal_nego_emr'] ?? '')) ?>" required>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Tanggal Approved MYREP</label>
+                        <input type="date" name="submitted_to_finance_at" class="form-control" value="<?= !empty($cluster['submitted_to_finance_at']) ? htmlspecialchars(substr((string) $cluster['submitted_to_finance_at'], 0, 10)) : date('Y-m-d') ?>" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-warning">Ubah ke WAITING FINANCE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-stage-to-released" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content batch-modal">
+            <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>" enctype="multipart/form-data">
+                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                <input type="hidden" name="id_batch_approval" value="<?= (int) $cluster['id_batch_approval'] ?>">
+                <input type="hidden" name="target_stage" value="RELEASED">
+                <input type="hidden" name="redirect_to_detail" value="1">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Edit Staging ke RELEASED</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Tanggal Pencairan</label>
+                        <input type="date" name="released_at" class="form-control" value="<?= !empty($cluster['released_at']) ? htmlspecialchars(substr((string) $cluster['released_at'], 0, 10)) : date('Y-m-d') ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nominal Cair</label>
+                        <input type="text" name="nominal_release_finance" class="form-control js-number-format" data-decimals="0" value="<?= htmlspecialchars((string) ($cluster['nominal_release_finance'] ?? '')) ?>" required>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>Foto Transfer</label>
+                        <div class="batch-dropzone js-dropzone">
+                            <input type="file" name="transfer_proof" class="js-dropzone-input" required>
+                            <div class="batch-dropzone-content">
+                                <div class="batch-dropzone-icon"><i class="fas fa-file-upload"></i></div>
+                                <div class="batch-dropzone-title">Drag & drop foto transfer</div>
+                                <div class="batch-dropzone-text">Atau klik area ini untuk memilih file</div>
+                                <div class="batch-dropzone-file js-dropzone-label">Belum ada file dipilih</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-dark">Ubah ke RELEASED</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="modal-transfer-proof" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content batch-modal">
@@ -1106,10 +1233,16 @@ $statusOptions = [
             });
         }
 
-        function normalizeFormattedNumber(value) {
+        function normalizeFormattedNumber(value, decimals) {
             var normalized = String(value || '').replace(/[^\d,.\-]/g, '');
             if (normalized === '') {
                 return 0;
+            }
+
+            if (typeof decimals === 'number' && decimals === 0) {
+                normalized = normalized.replace(/[.,]/g, '');
+                var integerNumber = parseFloat(normalized);
+                return isNaN(integerNumber) ? 0 : integerNumber;
             }
 
             var hasComma = normalized.indexOf(',') !== -1;
@@ -1132,7 +1265,7 @@ $statusOptions = [
         }
 
         function formatNumberValue(value, decimals) {
-            var number = typeof value === 'number' ? value : normalizeFormattedNumber(value);
+            var number = typeof value === 'number' ? value : normalizeFormattedNumber(value, decimals);
             if (!isFinite(number)) {
                 number = 0;
             }
@@ -1163,8 +1296,8 @@ $statusOptions = [
         }
 
         function updateNominalPerHomepass() {
-            var hpDonasi = normalizeFormattedNumber($('#detail_edit_hp_donasi').val());
-            var nominalDonasi = normalizeFormattedNumber($('#detail_edit_nominal_pengajuan_area').val());
+            var hpDonasi = normalizeFormattedNumber($('#detail_edit_hp_donasi').val(), 0);
+            var nominalDonasi = normalizeFormattedNumber($('#detail_edit_nominal_pengajuan_area').val(), 0);
             var result = hpDonasi > 0 ? (nominalDonasi / hpDonasi) : 0;
             $('#detail_edit_nominal_per_homepass').val(result > 0 ? formatNumberValue(result, 2) : '');
         }

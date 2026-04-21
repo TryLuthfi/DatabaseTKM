@@ -413,6 +413,12 @@ if (!function_exists('batchStatusLabel')) {
 
                         <div class="batch-form-section batch-form-section--last">
                             <div class="batch-form-section__title">Upload RAR</div>
+                            <div class="alert alert-light border mb-3" style="border-radius: 14px; border-color: #dbeafe !important; background: linear-gradient(135deg, #f8fbff, #eef6ff);">
+                                <div class="font-weight-bold text-primary mb-2">Isi dokumen RAR yang harus diupload</div>
+                                <div class="small text-muted mb-1">1. Foto Lingkungan : 2 foto</div>
+                                <div class="small text-muted mb-1">2. Foto Jalan : 2 foto</div>
+                                <div class="small text-muted mb-0">3. Foto Rumah : 2 foto</div>
+                            </div>
                             <div class="form-group mb-3">
                                 <div class="batch-dropzone js-dropzone">
                                     <input type="file" name="batch_rar_file" id="create_batch_rar_file" class="js-dropzone-input">
@@ -580,6 +586,12 @@ if (!function_exists('batchStatusLabel')) {
                             </div>
                             <div class="doc-modal-panel">
                                 <label class="font-weight-bold d-block">File RAR</label>
+                                <div class="alert alert-light border mb-3" style="border-radius: 14px; border-color: #dbeafe !important; background: linear-gradient(135deg, #f8fbff, #eef6ff);">
+                                    <div class="font-weight-bold text-primary mb-2">Isi dokumen RAR yang harus diupload</div>
+                                    <div class="small text-muted mb-1">1. Foto Lingkungan: 2 foto</div>
+                                    <div class="small text-muted mb-1">2. Foto Jalan: 2 foto</div>
+                                    <div class="small text-muted mb-0">3. Foto Rumah: 2 foto</div>
+                                </div>
                                 <div class="upload-dropzone" id="batch-upload-dropzone">
                                     <input type="file" name="file" id="batch-upload-file-input">
                                     <div class="upload-dropzone-content">
