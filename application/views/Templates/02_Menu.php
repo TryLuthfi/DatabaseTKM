@@ -422,7 +422,6 @@ $id_menu = $this->uri->segment('1');
                         $id_menu == 'MyRepublik_PO' ||
                         $id_menu == 'MyRepublik_Project' ||
                         $id_menu == 'DRM_MyRep' ||
-                        $id_menu == 'Post_Donasi_MyRep' ||
                         $id_menu == 'Monitoring_RFS_MyRep' ||
                         $id_menu == 'Checklist_Dokument_MyRep' ||
                         $id_menu == 'BAK_MyRep' ||
@@ -439,7 +438,6 @@ $id_menu = $this->uri->segment('1');
                             $id_menu == 'MyRepublik_PO' ||
                             $id_menu == 'MyRepublik_Project' ||
                             $id_menu == 'DRM_MyRep' ||
-                            $id_menu == 'Post_Donasi_MyRep' ||
                             $id_menu == 'Monitoring_RFS_MyRep' ||
                             $id_menu == 'Checklist_Dokument_MyRep' ||
                             $id_menu == 'BAK_MyRep' ||
@@ -511,7 +509,6 @@ $id_menu = $this->uri->segment('1');
                                 $id_menu == 'Batch_Approval_MyRep' ||
                                 $id_menu == 'DRM_MyRep' ||
                                 $id_menu == 'Implementasi_BOQ_MyRep' ||
-                                $id_menu == 'Post_Donasi_MyRep' ||
                                 $id_menu == 'Monitoring_RFS_MyRep' ||
                                 $id_menu == 'Checklist_Dokument_MyRep' ||
                                 $id_menu == 'BAK_MyRep' ||
@@ -527,7 +524,6 @@ $id_menu = $this->uri->segment('1');
                                     $id_menu == 'Batch_Approval_MyRep' ||
                                     $id_menu == 'DRM_MyRep' ||
                                     $id_menu == 'Implementasi_BOQ_MyRep' ||
-                                    $id_menu == 'Post_Donasi_MyRep' ||
                                     $id_menu == 'Monitoring_RFS_MyRep' ||
                                     $id_menu == 'Checklist_Dokument_MyRep' ||
                                     $id_menu == 'BAK_MyRep' ||
@@ -583,13 +579,6 @@ $id_menu = $this->uri->segment('1');
                                             class="nav-link <?= ($id_menu == 'Implementasi_BOQ_MyRep') ? 'active' : '' ?>">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Implementasi BOQ</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="<?= base_url('Post_Donasi_MyRep') ?>"
-                                            class="nav-link <?= ($id_menu == 'Post_Donasi_MyRep') ? 'active' : '' ?>">
-                                            <i class="far fa-dot-circle nav-icon"></i>
-                                            <p>Post Donasi</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">

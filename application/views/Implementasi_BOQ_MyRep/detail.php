@@ -14,6 +14,63 @@ if (!function_exists('implHistoryNumber')) {
     }
 }
 
+if (!function_exists('implAddWorkingDays')) {
+    function implAddWorkingDays($dateString, $workingDays)
+    {
+        if (empty($dateString)) {
+            return null;
+        }
+
+        try {
+            $date = new DateTime($dateString);
+        } catch (Exception $e) {
+            return null;
+        }
+
+        $added = 0;
+        while ($added < (int) $workingDays) {
+            $date->modify('+1 day');
+            $dayOfWeek = (int) $date->format('N');
+            if ($dayOfWeek < 6) {
+                $added++;
+            }
+        }
+
+        return $date;
+    }
+}
+
+if (!function_exists('implCountWorkingDays')) {
+    function implCountWorkingDays($startDateString, $endDateString = 'today')
+    {
+        if (empty($startDateString)) {
+            return 0;
+        }
+
+        try {
+            $start = new DateTime($startDateString);
+            $end = new DateTime($endDateString);
+        } catch (Exception $e) {
+            return 0;
+        }
+
+        if ($start > $end) {
+            return 0;
+        }
+
+        $workingDays = 0;
+        while ($start <= $end) {
+            $dayOfWeek = (int) $start->format('N');
+            if ($dayOfWeek < 6) {
+                $workingDays++;
+            }
+            $start->modify('+1 day');
+        }
+
+        return $workingDays;
+    }
+}
+
 $historyTypePlan = [];
 $historyDateRows = [];
 $historyTypeOrder = [];
@@ -162,6 +219,9 @@ $qtyPercent = $qtyTargetTotal > 0 ? min(100, round(($qtyActualTotal / $qtyTarget
 $photoPercent = $photoTargetTotal > 0 ? min(100, round(($photoUploadedTotal / $photoTargetTotal) * 100)) : 0;
 $itemPercent = $itemTotal > 0 ? min(100, round(($itemDone / $itemTotal) * 100)) : 0;
 $overallPercent = (int) round(($qtyPercent + $photoPercent + $itemPercent) / 3);
+$agingWorkingDays = !empty($cluster['drm_date']) ? implCountWorkingDays((string) $cluster['drm_date']) : 0;
+$agingTargetDate = !empty($cluster['drm_date']) ? implAddWorkingDays((string) $cluster['drm_date'], 23) : null;
+$agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
 ?>
 
 <style>
@@ -175,6 +235,76 @@ $overallPercent = (int) round(($qtyPercent + $photoPercent + $itemPercent) / 3);
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 1rem;
+    }
+
+    .impl-cluster-overview {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .impl-cluster-overview__card {
+        padding: 1rem 1.1rem;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        border: 1px solid #dbeafe;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+    }
+
+    .impl-cluster-overview__label {
+        color: #64748b;
+        font-size: .85rem;
+        margin-bottom: .3rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        font-weight: 700;
+    }
+
+    .impl-cluster-overview__value {
+        color: #0f172a;
+        font-size: 1.35rem;
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    .impl-cluster-overview__value--hero {
+        font-size: 1.6rem;
+    }
+
+    .impl-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .impl-meta-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: .95rem 1rem;
+    }
+
+    .impl-meta-box__label {
+        color: #64748b;
+        font-size: .82rem;
+        margin-bottom: .25rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        font-weight: 700;
+    }
+
+    .impl-meta-box__value {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .impl-meta-box__sub {
+        margin-top: .25rem;
+        font-size: .8rem;
+        color: #64748b;
     }
 
     .impl-hero {
@@ -689,6 +819,10 @@ $overallPercent = (int) round(($qtyPercent + $photoPercent + $itemPercent) / 3);
     }
 
     @media (max-width: 767.98px) {
+        .impl-cluster-overview {
+            grid-template-columns: 1fr;
+        }
+
         .impl-hero {
             padding: 1rem;
         }
@@ -794,12 +928,53 @@ $overallPercent = (int) round(($qtyPercent + $photoPercent + $itemPercent) / 3);
                         </div>
                     </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-4"><strong>Cluster</strong><div><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div></div>
-                        <div class="col-md-2"><strong>Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
-                        <div class="col-md-2"><strong>Regional</strong><div><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div></div>
-                        <div class="col-md-2"><strong>Tanggal DRM</strong><div><?= !empty($cluster['drm_date']) ? htmlspecialchars((string) $cluster['drm_date']) : '-' ?></div></div>
-                        <div class="col-md-2"><strong>Status DRM</strong><div><?= !empty($cluster['status_drm']) ? htmlspecialchars((string) $cluster['status_drm']) : '-' ?></div></div>
+                    <div class="impl-cluster-overview">
+                        <div class="impl-cluster-overview__card">
+                            <div class="impl-cluster-overview__label">Nama Cluster</div>
+                            <div class="impl-cluster-overview__value impl-cluster-overview__value--hero"><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div>
+                        </div>
+                        <div class="impl-cluster-overview__card">
+                            <div class="impl-cluster-overview__label">Regional</div>
+                            <div class="impl-cluster-overview__value"><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div>
+                        </div>
+                        <div class="impl-cluster-overview__card">
+                            <div class="impl-cluster-overview__label">Kota</div>
+                            <div class="impl-cluster-overview__value"><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div>
+                        </div>
+                    </div>
+
+                    <div class="impl-meta-grid">
+                        <div class="impl-meta-box">
+                            <div class="impl-meta-box__label">RPM</div>
+                            <div class="impl-meta-box__value"><?= htmlspecialchars((string) ($cluster['rpm'] ?? '-')) ?></div>
+                        </div>
+                        <div class="impl-meta-box">
+                            <div class="impl-meta-box__label">SPV</div>
+                            <div class="impl-meta-box__value"><?= htmlspecialchars((string) ($cluster['spv'] ?? '-')) ?></div>
+                        </div>
+                        <div class="impl-meta-box">
+                            <div class="impl-meta-box__label">Team</div>
+                            <div class="impl-meta-box__value"><?= htmlspecialchars((string) ($cluster['team_name'] ?? '-')) ?></div>
+                        </div>
+                        <div class="impl-meta-box">
+                            <div class="impl-meta-box__label">HP DRM</div>
+                            <div class="impl-meta-box__value"><?= implHistoryNumber((float) ($cluster['homepass_drm'] ?? 0), false) ?></div>
+                        </div>
+                        <div class="impl-meta-box">
+                            <div class="impl-meta-box__label">Tanggal DRM</div>
+                            <div class="impl-meta-box__value"><?= !empty($cluster['drm_date']) ? htmlspecialchars((string) $cluster['drm_date']) : '-' ?></div>
+                        </div>
+                        <div class="impl-meta-box">
+                            <div class="impl-meta-box__label">Aging ke RFS</div>
+                            <div class="impl-meta-box__value"><?= $agingWorkingDays ?> / 23 Hari Kerja</div>
+                            <div class="impl-meta-box__sub">
+                                Target RFS <?= $agingTargetDate instanceof DateTime ? htmlspecialchars($agingTargetDate->format('Y-m-d')) : '-' ?>
+                                <?php if (!empty($cluster['status_drm'])): ?>
+                                    | Status DRM <?= htmlspecialchars((string) $cluster['status_drm']) ?>
+                                <?php endif; ?>
+                                | <?= $agingPercent ?>%
+                            </div>
+                        </div>
                     </div>
 
                     <div class="impl-summary">
