@@ -237,7 +237,7 @@ class MBatch_Approval_MyRep extends CI_Model
             ->get()
             ->row_array();
     }
-
+    
     public function getBatchByClusterId($clusterId)
     {
         if (!$this->batchTablesReady()) {

@@ -157,20 +157,67 @@ if (!empty($claimList)) {
 $annualMyrepAchievementPercent = (float) ($annualSummary['pct_myrep'] ?? 0);
 $annualTkmAchievementPercent = (float) ($annualSummary['pct_tkm'] ?? 0);
 $kpiDetailRows = [];
+$kpiDetailRowMap = [];
 
-if (!empty($monthlySummary)) {
-    foreach ($monthlySummary as $summaryRow) {
-        $kpiDetailRows[] = [
-            'city_name' => (string) ($summaryRow['city_name'] ?? '-'),
-            'regional_name' => trim((string) ($summaryRow['regional_name'] ?? '')) !== '' ? (string) $summaryRow['regional_name'] : 'BELUM DISET',
-            'sm' => trim((string) ($summaryRow['sm'] ?? '')) !== '' ? (string) $summaryRow['sm'] : 'BELUM DISET',
-            'team_name' => trim((string) ($summaryRow['team_name'] ?? '')) !== '' ? (string) $summaryRow['team_name'] : 'BELUM ADA TEAM',
-            'target_myrep' => (float) ($summaryRow['target_myrep'] ?? 0),
-            'realization_myrep' => (float) ($summaryRow['realization_myrep'] ?? 0),
-            'target_tkm' => (float) ($summaryRow['target_tkm'] ?? 0),
-            'realization_tkm' => (float) ($summaryRow['realization_tkm'] ?? 0)
-        ];
+if (!empty($targetOptions)) {
+    foreach ($targetOptions as $targetRow) {
+        $cityName = trim((string) ($targetRow['city_name'] ?? ''));
+        $regionalName = trim((string) ($targetRow['regional_name'] ?? '')) !== '' ? (string) $targetRow['regional_name'] : 'BELUM DISET';
+        $smName = trim((string) ($targetRow['sm'] ?? '')) !== '' ? (string) $targetRow['sm'] : 'BELUM DISET';
+        $teamName = trim((string) ($targetRow['team_name'] ?? '')) !== '' ? (string) $targetRow['team_name'] : 'BELUM ADA TEAM';
+        $rowKey = strtoupper($regionalName . '|' . $smName . '|' . $teamName . '|' . $cityName);
+
+        if (!isset($kpiDetailRowMap[$rowKey])) {
+            $kpiDetailRowMap[$rowKey] = [
+                'city_name' => $cityName !== '' ? $cityName : '-',
+                'regional_name' => $regionalName,
+                'sm' => $smName,
+                'team_name' => $teamName,
+                'target_myrep' => 0,
+                'realization_myrep' => 0,
+                'target_tkm' => 0,
+                'realization_tkm' => 0
+            ];
+        }
+
+        $kpiDetailRowMap[$rowKey]['target_myrep'] += (float) ($targetRow['target_myrep'] ?? 0);
+        $kpiDetailRowMap[$rowKey]['realization_myrep'] += (float) ($targetRow['realization_myrep'] ?? 0);
+        $kpiDetailRowMap[$rowKey]['target_tkm'] += (float) ($targetRow['target_rkap'] ?? 0);
     }
+}
+
+if (!empty($claimList)) {
+    foreach ($claimList as $claimRow) {
+        $claimStatus = strtoupper(trim((string) ($claimRow['status_claim'] ?? '')));
+        if ($claimStatus !== 'APPROVED') {
+            continue;
+        }
+
+        $cityName = trim((string) ($claimRow['city_name'] ?? ''));
+        $regionalName = trim((string) ($claimRow['regional_name'] ?? '')) !== '' ? (string) $claimRow['regional_name'] : 'BELUM DISET';
+        $smName = trim((string) ($claimRow['sm'] ?? '')) !== '' ? (string) $claimRow['sm'] : 'BELUM DISET';
+        $teamName = trim((string) ($claimRow['team_name'] ?? '')) !== '' ? (string) $claimRow['team_name'] : 'BELUM ADA TEAM';
+        $rowKey = strtoupper($regionalName . '|' . $smName . '|' . $teamName . '|' . $cityName);
+
+        if (!isset($kpiDetailRowMap[$rowKey])) {
+            $kpiDetailRowMap[$rowKey] = [
+                'city_name' => $cityName !== '' ? $cityName : '-',
+                'regional_name' => $regionalName,
+                'sm' => $smName,
+                'team_name' => $teamName,
+                'target_myrep' => 0,
+                'realization_myrep' => 0,
+                'target_tkm' => 0,
+                'realization_tkm' => 0
+            ];
+        }
+
+        $kpiDetailRowMap[$rowKey]['realization_tkm'] += (float) ($claimRow['claim_qty'] ?? 0);
+    }
+}
+
+if (!empty($kpiDetailRowMap)) {
+    $kpiDetailRows = array_values($kpiDetailRowMap);
 }
 ?>
 
@@ -2584,12 +2631,14 @@ if (!empty($monthlySummary)) {
 
         function renderKpiDetailTable(rows) {
             var $tbody = $('#kpiDetailTableBody');
+            var tableSelector = '#table_kpi_detail_modal';
+
+            if ($.fn.DataTable.isDataTable(tableSelector)) {
+                $(tableSelector).DataTable().clear().destroy();
+            }
 
             if (!rows || !rows.length) {
                 $tbody.html('<tr><td colspan="12" class="text-center">Belum ada detail.</td></tr>');
-                if ($.fn.DataTable.isDataTable('#table_kpi_detail_modal')) {
-                    $('#table_kpi_detail_modal').DataTable().clear().destroy();
-                }
                 return;
             }
 
@@ -2638,7 +2687,6 @@ if (!empty($monthlySummary)) {
             var normalizedName = String(groupName || '').trim().toUpperCase();
             var matchedRows = (kpiDetailRows || []).filter(function (row) {
                 var sourceValue = '';
-
                 if (normalizedType === 'regional') {
                     sourceValue = row.regional_name;
                 } else if (normalizedType === 'sm') {

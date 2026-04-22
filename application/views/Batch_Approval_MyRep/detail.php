@@ -753,20 +753,20 @@ if ($canApprove) {
                     <div class="batch-form-section">
                         <div class="batch-form-section__title">Data Pengajuan</div>
                         <div class="row">
-                            <div class="col-md-3"><div class="form-group"><label>HP VALSAL</label><input type="text" id="detail_edit_homepass_valsal" class="form-control js-number-format" data-decimals="0" value="<?= htmlspecialchars((string) ($cluster['homepass_valsal'] ?? 0)) ?>" readonly></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>HP Donasi</label><input type="text" name="hp_donasi" id="detail_edit_hp_donasi" inputmode="numeric" class="form-control js-number-format" data-decimals="0" value="<?= htmlspecialchars((string) ($cluster['hp_donasi'] ?? '')) ?>" required></div></div>
+                            <div class="col-md-3"><div class="form-group"><label>HP VALSAL</label><input type="text" id="detail_edit_homepass_valsal" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['homepass_valsal'] ?? null) ? htmlspecialchars(number_format((float) $cluster['homepass_valsal'], 0, ',', '.')) : '' ?>" readonly></div></div>
+                            <div class="col-md-3"><div class="form-group"><label>HP Donasi</label><input type="text" name="hp_donasi" id="detail_edit_hp_donasi" inputmode="numeric" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['hp_donasi'] ?? null) ? htmlspecialchars(number_format((float) $cluster['hp_donasi'], 0, ',', '.')) : '' ?>" required></div></div>
                             <div class="col-md-3"><div class="form-group"><label>Tanggal Pengajuan</label><input type="date" name="submission_date" id="detail_edit_submission_date" class="form-control" value="<?= htmlspecialchars((string) ($cluster['submission_date'] ?? '')) ?>"></div></div>
                             <div class="col-md-3"><div class="form-group"><label>Staging</label><select name="staging_status" id="detail_edit_staging_status" class="form-control"><?php foreach ($statusOptions as $statusValue => $statusLabel): ?><option value="<?= $statusValue ?>" <?= strtoupper((string) ($cluster['staging_status'] ?? '')) === $statusValue ? 'selected' : '' ?>><?= $statusLabel ?></option><?php endforeach; ?></select></div></div>
-                            <div class="col-md-6"><div class="form-group"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="detail_edit_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format" data-decimals="0" value="<?= htmlspecialchars((string) ($cluster['nominal_pengajuan_area'] ?? '')) ?>" required></div></div>
-                            <div class="col-md-6"><div class="form-group mb-0"><label>Nominal / Homepass</label><input type="text" id="detail_edit_nominal_per_homepass" class="form-control js-number-format" data-decimals="2" value="<?= htmlspecialchars((string) ($cluster['nominal_per_homepass'] ?? '')) ?>" readonly></div></div>
+                            <div class="col-md-6"><div class="form-group"><label>Nominal Donasi</label><input type="text" name="nominal_pengajuan_area" id="detail_edit_nominal_pengajuan_area" inputmode="decimal" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['nominal_pengajuan_area'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_pengajuan_area'], 0, ',', '.')) : '' ?>" required></div></div>
+                            <div class="col-md-6"><div class="form-group mb-0"><label>Nominal / Homepass</label><input type="text" id="detail_edit_nominal_per_homepass" class="form-control js-number-format" data-decimals="2" value="<?= !is_null($cluster['nominal_per_homepass'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_per_homepass'], 2, ',', '.')) : '' ?>" readonly></div></div>
                         </div>
                     </div>
 
                     <div class="batch-form-section">
                         <div class="batch-form-section__title">Free Wifi</div>
                         <div class="row">
-                            <div class="col-md-6"><div class="form-group mb-md-0"><label>Jumlah Free Wifi</label><input type="text" name="free_wifi_qty" inputmode="numeric" class="form-control js-number-format" data-decimals="0" value="<?= htmlspecialchars((string) ($cluster['free_wifi_qty'] ?? '')) ?>"></div></div>
-                            <div class="col-md-6"><div class="form-group mb-0"><label>Periode Free Wifi</label><input type="text" name="free_wifi_period_month" inputmode="numeric" class="form-control js-number-format" data-decimals="0" value="<?= htmlspecialchars((string) ($cluster['free_wifi_period_month'] ?? '')) ?>"></div></div>
+                            <div class="col-md-6"><div class="form-group mb-md-0"><label>Jumlah Free Wifi</label><input type="text" name="free_wifi_qty" inputmode="numeric" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['free_wifi_qty'] ?? null) ? htmlspecialchars(number_format((float) $cluster['free_wifi_qty'], 0, ',', '.')) : '' ?>"></div></div>
+                            <div class="col-md-6"><div class="form-group mb-0"><label>Periode Free Wifi</label><input type="text" name="free_wifi_period_month" inputmode="numeric" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['free_wifi_period_month'] ?? null) ? htmlspecialchars(number_format((float) $cluster['free_wifi_period_month'], 0, ',', '.')) : '' ?>"></div></div>
                         </div>
                     </div>
 
@@ -785,14 +785,14 @@ if ($canApprove) {
                     <div class="batch-form-section js-emr-fields" data-stage-scope="detail-edit" style="display:none;">
                         <div class="batch-form-section__title">Approval EMR</div>
                         <div class="row">
-                            <div class="col-md-12"><div class="form-group mb-0"><label>Nominal Approval EMR</label><input type="text" name="nominal_nego_emr" id="detail_edit_nominal_nego_emr" inputmode="decimal" class="form-control js-number-format" data-decimals="0" value="<?= htmlspecialchars((string) ($cluster['nominal_nego_emr'] ?? '')) ?>"></div></div>
+                            <div class="col-md-12"><div class="form-group mb-0"><label>Nominal Approval EMR</label><input type="text" name="nominal_nego_emr" id="detail_edit_nominal_nego_emr" inputmode="decimal" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['nominal_nego_emr'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_nego_emr'], 0, ',', '.')) : '' ?>"></div></div>
                         </div>
                     </div>
 
                     <div class="batch-form-section js-finance-fields" data-stage-scope="detail-edit" style="display:none;">
                         <div class="batch-form-section__title">Release Finance</div>
                         <div class="row">
-                            <div class="col-md-12"><div class="form-group mb-0"><label>Nominal Release Finance</label><input type="text" name="nominal_release_finance" id="detail_edit_nominal_release_finance" inputmode="decimal" class="form-control js-number-format" data-decimals="0" value="<?= htmlspecialchars((string) ($cluster['nominal_release_finance'] ?? '')) ?>"></div></div>
+                            <div class="col-md-12"><div class="form-group mb-0"><label>Nominal Release Finance</label><input type="text" name="nominal_release_finance" id="detail_edit_nominal_release_finance" inputmode="decimal" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['nominal_release_finance'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_release_finance'], 0, ',', '.')) : '' ?>"></div></div>
                         </div>
                     </div>
 
@@ -1083,7 +1083,7 @@ if ($canApprove) {
 </div>
 
 <div class="modal fade" id="modal-batch-approve" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content batch-modal">
             <form method="post" action="<?= base_url('Batch_Approval_MyRep/approveDocument') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
@@ -1097,7 +1097,7 @@ if ($canApprove) {
                     <div class="mb-3"><strong>File:</strong> <span id="batch_approve_file_name">-</span></div>
                     <div class="form-group mb-0">
                         <label>Remark</label>
-                        <input type="text" name="remark" class="form-control form-control-sm" placeholder="Remark approve">
+                        <textarea name="remark" class="form-control" rows="5" placeholder="Remark approve"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1109,7 +1109,7 @@ if ($canApprove) {
 </div>
 
 <div class="modal fade" id="modal-batch-reject" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content batch-modal">
             <form method="post" action="<?= base_url('Batch_Approval_MyRep/rejectDocument') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
@@ -1123,7 +1123,7 @@ if ($canApprove) {
                     <div class="mb-3"><strong>File:</strong> <span id="batch_reject_file_name">-</span></div>
                     <div class="form-group mb-0">
                         <label>Alasan Reject</label>
-                        <input type="text" name="remark" class="form-control form-control-sm" placeholder="Alasan reject" required>
+                        <textarea name="remark" class="form-control" rows="5" placeholder="Alasan reject" required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1135,7 +1135,7 @@ if ($canApprove) {
 </div>
 
 <div class="modal fade" id="modal-post-approve" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content batch-modal">
             <form method="post" action="<?= base_url('Post_Donasi_MyRep/approveDocument') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
@@ -1149,7 +1149,7 @@ if ($canApprove) {
                     <div class="mb-3"><strong>Dokumen:</strong> <span id="post_approve_doc_name">-</span></div>
                     <div class="form-group mb-0">
                         <label>Remark</label>
-                        <input type="text" name="remark" class="form-control form-control-sm" placeholder="Remark approve">
+                        <textarea name="remark" class="form-control" rows="5" placeholder="Remark approve"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1161,7 +1161,7 @@ if ($canApprove) {
 </div>
 
 <div class="modal fade" id="modal-post-reject" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content batch-modal">
             <form method="post" action="<?= base_url('Post_Donasi_MyRep/rejectDocument') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
@@ -1175,7 +1175,7 @@ if ($canApprove) {
                     <div class="mb-3"><strong>Dokumen:</strong> <span id="post_reject_doc_name">-</span></div>
                     <div class="form-group mb-0">
                         <label>Alasan Reject</label>
-                        <input type="text" name="remark" class="form-control form-control-sm" placeholder="Alasan reject" required>
+                        <textarea name="remark" class="form-control" rows="5" placeholder="Alasan reject" required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">

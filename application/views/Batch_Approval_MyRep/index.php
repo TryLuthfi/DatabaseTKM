@@ -14,6 +14,16 @@ $summaryTotal = count($clusterRows);
 $summaryWaiting = 0;
 $summaryDone = 0;
 $summaryRejected = 0;
+$createCityOptions = [];
+
+foreach ($eligibleClusterOptions as $clusterOption) {
+    $cityName = trim((string) ($clusterOption['city_name'] ?? ''));
+    if ($cityName !== '') {
+        $createCityOptions[strtoupper($cityName)] = $cityName;
+    }
+}
+
+asort($createCityOptions);
 
 foreach ($clusterRows as $row) {
     $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
@@ -315,20 +325,32 @@ if (!function_exists('batchStatusLabel')) {
                             <div class="batch-form-section__title">Pilih Cluster</div>
                             <div class="row">
                                 <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>Kota</label>
+                                        <select class="form-control js-batch-city-selector">
+                                            <option value="">Pilih kota</option>
+                                            <?php foreach ($createCityOptions as $cityValue => $cityLabel): ?>
+                                                <option value="<?= htmlspecialchars($cityValue, ENT_QUOTES) ?>"><?= htmlspecialchars($cityLabel) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
                                     <div class="form-group mb-0">
-                                        <label>Cluster VALSAL</label>
-                                        <select name="cluster_id" class="form-control js-batch-cluster-selector" required>
+                                        <label>Nama Cluster</label>
+                                        <select name="cluster_id" class="form-control js-batch-cluster-selector js-batch-cluster-select" required>
                                             <option value=""><?= empty($eligibleClusterOptions) ? 'BELUM ADA CLUSTER YANG DONE VALSAL' : 'Pilih cluster yang sudah VALSAL' ?></option>
                                             <?php foreach ($eligibleClusterOptions as $clusterOption): ?>
                                                 <option
                                                     value="<?= (int) $clusterOption['id_myrep_cluster'] ?>"
+                                                    data-city-filter="<?= htmlspecialchars(strtoupper((string) ($clusterOption['city_name'] ?? '')), ENT_QUOTES) ?>"
                                                     data-cluster-name="<?= htmlspecialchars((string) ($clusterOption['cluster_name'] ?? ''), ENT_QUOTES) ?>"
                                                     data-regional-name="<?= htmlspecialchars((string) ($clusterOption['regional_name'] ?? ''), ENT_QUOTES) ?>"
                                                     data-province-name="<?= htmlspecialchars((string) ($clusterOption['province_name'] ?? ''), ENT_QUOTES) ?>"
                                                     data-city-name="<?= htmlspecialchars((string) ($clusterOption['city_name'] ?? ''), ENT_QUOTES) ?>"
                                                     data-homepass-valsal="<?= (int) ($clusterOption['homepass_valsal'] ?? 0) ?>"
                                                     data-valsal-date="<?= htmlspecialchars((string) ($clusterOption['valsal_date'] ?? ''), ENT_QUOTES) ?>">
-                                                    <?= htmlspecialchars((string) ($clusterOption['cluster_name'] ?? '-')) ?> | <?= htmlspecialchars((string) ($clusterOption['city_name'] ?? '-')) ?> | <?= sprintf('%02d/%04d', (int) ($clusterOption['month_num'] ?? 0), (int) ($clusterOption['year_num'] ?? 0)) ?>
+                                                    <?= htmlspecialchars((string) ($clusterOption['cluster_name'] ?? '-')) ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -1135,6 +1157,10 @@ if (!function_exists('batchStatusLabel')) {
         border-radius: 999px;
     }
 
+    .select2-container--open {
+        z-index: 1065;
+    }
+
     @media (max-width: 767.98px) {
         .batch-form-section__head,
         .batch-pic-card__head {
@@ -1146,6 +1172,27 @@ if (!function_exists('batchStatusLabel')) {
 <script>
     (function () {
         var MAX_PIC_ROWS = 5;
+
+        function initBatchCreateSelects() {
+            var $modal = $('#modal-batch-create');
+            if (!$.fn.select2 || !$modal.length) {
+                return;
+            }
+
+            $modal.find('.js-batch-city-selector, .js-batch-cluster-select').each(function () {
+                var $select = $(this);
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+
+                $select.select2({
+                    width: '100%',
+                    placeholder: $select.hasClass('js-batch-city-selector') ? 'Pilih kota' : 'Pilih cluster',
+                    allowClear: true,
+                    dropdownParent: $modal
+                });
+            });
+        }
 
         function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
             var dropzone = document.querySelector(dropzoneSelector);
@@ -1270,6 +1317,36 @@ if (!function_exists('batchStatusLabel')) {
                 applyNumberFormatting($('#create_hp_donasi'));
                 updateNominalPerHomepass('create');
             }
+        }
+
+        function filterBatchClusterOptions($modal) {
+            var selectedCity = (($modal.find('.js-batch-city-selector').val() || '') + '').toUpperCase();
+            var $clusterSelect = $modal.find('.js-batch-cluster-selector');
+
+            $clusterSelect.find('option').each(function () {
+                var $option = $(this);
+                var optionValue = $option.attr('value');
+
+                if (!optionValue) {
+                    $option.prop('hidden', false).prop('disabled', false);
+                    return;
+                }
+
+                var optionCity = (($option.data('city-filter') || '') + '').toUpperCase();
+                var shouldShow = selectedCity === '' || optionCity === selectedCity;
+                $option.prop('hidden', !shouldShow).prop('disabled', !shouldShow);
+            });
+
+            if (selectedCity !== '') {
+                var currentOption = $clusterSelect.find('option:selected');
+                var currentCity = ((currentOption.data('city-filter') || '') + '').toUpperCase();
+                if (currentCity !== selectedCity) {
+                    $clusterSelect.val('');
+                }
+            }
+
+            $clusterSelect.trigger('change.select2');
+            syncClusterMeta($modal);
         }
 
         function toggleStageFields(prefix) {
@@ -1455,7 +1532,15 @@ if (!function_exists('batchStatusLabel')) {
                 syncClusterMeta(this);
             });
 
+            $(document).on('change', '.js-batch-city-selector', function () {
+                filterBatchClusterOptions($(this).closest('.modal-body, .modal-content'));
+            });
+
             $('#modal-batch-create').on('shown.bs.modal', function () {
+                initBatchCreateSelects();
+                $(this).find('.js-batch-city-selector').val('').trigger('change');
+                $(this).find('.js-batch-cluster-selector').val('').trigger('change');
+                filterBatchClusterOptions($(this));
                 syncClusterMeta(this);
                 renderPicRows('create', []);
                 toggleStageFields('create');
@@ -1469,6 +1554,14 @@ if (!function_exists('batchStatusLabel')) {
 
             $('#modal-batch-create').on('hidden.bs.modal', function () {
                 this.querySelector('form').reset();
+                var $citySelect = $(this).find('.js-batch-city-selector');
+                var $clusterSelect = $(this).find('.js-batch-cluster-select');
+                if ($citySelect.hasClass('select2-hidden-accessible')) {
+                    $citySelect.select2('close');
+                }
+                if ($clusterSelect.hasClass('select2-hidden-accessible')) {
+                    $clusterSelect.select2('close');
+                }
                 syncClusterMeta(this);
                 renderPicRows('create', []);
                 toggleStageFields('create');
@@ -1741,6 +1834,7 @@ if (!function_exists('batchStatusLabel')) {
             renderPicRows('create', []);
             toggleStageFields('create');
             fillCreateDefaults();
+            initBatchCreateSelects();
             $('.js-number-format').each(function () {
                 applyNumberFormatting($(this));
             });
@@ -1762,4 +1856,3 @@ if (!function_exists('batchStatusLabel')) {
         });
     })();
 </script>
-

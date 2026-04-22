@@ -538,6 +538,8 @@ class MMonitoring_RFS_MyRep extends CI_Model
         $sql = "SELECT
                 cl.*,
                 mt.city_name,
+                mt.regional_name,
+                mt.team_name,
                 c.cluster_name,
                 c.homepass,
                 mt.rpm,

@@ -55,6 +55,26 @@ class MBAK_MyRep extends CI_Model
             ->result_array();
     }
 
+    public function getCreateTargetOptions()
+    {
+        $rows = $this->getTargetOptions();
+        if (empty($rows)) {
+            return [];
+        }
+
+        $options = [];
+        foreach ($rows as $row) {
+            $cityKey = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($cityKey === '' || isset($options[$cityKey])) {
+                continue;
+            }
+
+            $options[$cityKey] = $row;
+        }
+
+        return array_values($options);
+    }
+
     public function getCityOptions()
     {
         if (!$this->bakTablesReady()) {

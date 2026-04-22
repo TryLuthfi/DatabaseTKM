@@ -7,6 +7,16 @@ $summaryTotal = count($clusterRows);
 $summaryWaiting = 0;
 $summaryDone = 0;
 $summaryRejected = 0;
+$createCityOptions = [];
+
+foreach ($eligibleClusterOptions as $clusterOption) {
+    $cityName = trim((string) ($clusterOption['city_name'] ?? ''));
+    if ($cityName !== '') {
+        $createCityOptions[strtoupper($cityName)] = $cityName;
+    }
+}
+
+asort($createCityOptions);
 
 foreach ($clusterRows as $row) {
     $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
@@ -92,11 +102,21 @@ if (!function_exists('valsalDocLabel')) {
             <?php endif; ?>
 
             <?php if (!empty($flashSuccess)): ?>
-                <div class="alert alert-success"><?= $flashSuccess ?></div>
+                <div class="alert alert-success alert-dismissible fade show js-valsal-flash-alert" role="alert" data-flash-key="<?= htmlspecialchars('valsal_flash_success_' . md5((string) $flashSuccess), ENT_QUOTES) ?>">
+                    <?= $flashSuccess ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
             <?php endif; ?>
 
             <?php if (!empty($flashError)): ?>
-                <div class="alert alert-danger"><?= $flashError ?></div>
+                <div class="alert alert-danger alert-dismissible fade show js-valsal-flash-alert" role="alert" data-flash-key="<?= htmlspecialchars('valsal_flash_error_' . md5((string) $flashError), ENT_QUOTES) ?>">
+                    <?= $flashError ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
             <?php endif; ?>
 
             <div class="row">
@@ -312,7 +332,7 @@ if (!function_exists('valsalDocLabel')) {
                                                                 History
                                                             </button>
                                                         <?php endif; ?>
-                                                        <?php if ($canApprove && !empty($row['valsal_doc_file_id']) && strtoupper((string) ($row['valsal_doc_status'] ?? '')) === 'UPLOADED'): ?>
+                                                        <?php if ($canApprove && !empty($row['valsal_doc_file_id']) && in_array(strtoupper((string) ($row['valsal_doc_status'] ?? '')), ['UPLOADED', 'REJECTED'], true)): ?>
                                                             <button
                                                                 type="button"
                                                                 class="btn btn-sm btn-outline-success js-approve-doc mt-1"
@@ -322,6 +342,16 @@ if (!function_exists('valsalDocLabel')) {
                                                                 data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
                                                                 Approve
                                                             </button>
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
+                                                                data-toggle="modal"
+                                                                data-target="#modal-valsal-reject-doc"
+                                                                data-id_doc_file="<?= (int) $row['valsal_doc_file_id'] ?>"
+                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
+                                                                Reject
+                                                            </button>
+                                                        <?php elseif ($canApprove && !empty($row['valsal_doc_file_id']) && strtoupper((string) ($row['valsal_doc_status'] ?? '')) === 'APPROVED'): ?>
                                                             <button
                                                                 type="button"
                                                                 class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
@@ -362,19 +392,31 @@ if (!function_exists('valsalDocLabel')) {
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
-                                    <label>Cluster BAK</label>
-                                    <select name="cluster_id" class="form-control js-valsal-cluster-selector" required>
+                                    <label>Kota</label>
+                                    <select class="form-control js-valsal-city-selector" id="create_valsal_city">
+                                        <option value="">Pilih kota</option>
+                                        <?php foreach ($createCityOptions as $cityValue => $cityLabel): ?>
+                                            <option value="<?= htmlspecialchars($cityValue, ENT_QUOTES) ?>"><?= htmlspecialchars($cityLabel) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label>Nama Cluster</label>
+                                    <select name="cluster_id" class="form-control js-valsal-cluster-selector js-valsal-cluster-select" required>
                                         <option value="">Pilih cluster yang sudah BAK</option>
                                         <?php foreach ($eligibleClusterOptions as $clusterOption): ?>
                                             <option
                                                 value="<?= (int) $clusterOption['id_myrep_cluster'] ?>"
+                                                data-city-filter="<?= htmlspecialchars(strtoupper((string) ($clusterOption['city_name'] ?? '')), ENT_QUOTES) ?>"
                                                 data-cluster_name="<?= htmlspecialchars((string) ($clusterOption['cluster_name'] ?? ''), ENT_QUOTES) ?>"
                                                 data-regional_name="<?= htmlspecialchars((string) ($clusterOption['regional_name'] ?? ''), ENT_QUOTES) ?>"
                                                 data-province_name="<?= htmlspecialchars((string) ($clusterOption['province_name'] ?? ''), ENT_QUOTES) ?>"
                                                 data-city_name="<?= htmlspecialchars((string) ($clusterOption['city_name'] ?? ''), ENT_QUOTES) ?>"
                                                 data-homepass_bak="<?= (int) ($clusterOption['homepass_bak'] ?? 0) ?>"
                                                 data-bak_date="<?= htmlspecialchars((string) ($clusterOption['bak_date'] ?? ''), ENT_QUOTES) ?>">
-                                                <?= htmlspecialchars((string) ($clusterOption['cluster_name'] ?? '-')) ?> | <?= htmlspecialchars((string) ($clusterOption['city_name'] ?? '-')) ?> | <?= sprintf('%02d/%04d', (int) ($clusterOption['month_num'] ?? 0), (int) ($clusterOption['year_num'] ?? 0)) ?>
+                                                <?= htmlspecialchars((string) ($clusterOption['cluster_name'] ?? '-')) ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -399,6 +441,10 @@ if (!function_exists('valsalDocLabel')) {
                                 </div>
                                 <div class="col-md-12">
                                     <div class="doc-modal-panel">
+                                        <div class="form-group form-check mb-3">
+                                            <input type="checkbox" class="form-check-input" id="create_doc_not_required" name="create_is_document_not_required" value="1">
+                                            <label class="form-check-label" for="create_doc_not_required">Dokumen kosong / tidak dibutuhkan</label>
+                                        </div>
                                         <label class="font-weight-bold d-block">File SND KASAR</label>
                                         <div class="upload-dropzone" id="valsal-create-dropzone">
                                             <input type="file" name="create_file" id="valsal-create-file-input">
@@ -877,10 +923,56 @@ if (!function_exists('valsalDocLabel')) {
         padding: 6px 10px;
         border-radius: 999px;
     }
+
+    .select2-container--open {
+        z-index: 1065;
+    }
 </style>
 
 <script>
     (function () {
+        function initValsalSelect(selector, modalSelector, placeholderText) {
+            var $modal = $(modalSelector);
+            var $select = $modal.find(selector);
+
+            if (!$select.length || !$.fn.select2) {
+                return;
+            }
+
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.select2('destroy');
+            }
+
+            $select.select2({
+                width: '100%',
+                placeholder: placeholderText,
+                allowClear: true,
+                dropdownParent: $modal
+            });
+        }
+
+        function handleValsalFlashAlerts() {
+            $('.js-valsal-flash-alert').each(function () {
+                var $alert = $(this);
+                var flashKey = $alert.data('flash-key');
+
+                if (!flashKey || !window.sessionStorage) {
+                    return;
+                }
+
+                if (window.sessionStorage.getItem(flashKey) === '1') {
+                    $alert.remove();
+                    return;
+                }
+
+                window.sessionStorage.setItem(flashKey, '1');
+            });
+
+            window.setTimeout(function () {
+                $('.js-valsal-flash-alert').alert('close');
+            }, 4000);
+        }
+
         function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
             var dropzone = document.querySelector(dropzoneSelector);
             var input = document.querySelector(inputSelector);
@@ -934,7 +1026,39 @@ if (!function_exists('valsalDocLabel')) {
             }
         }
 
+        function filterValsalClusterOptions($modal) {
+            var selectedCity = ($modal.find('.js-valsal-city-selector').val() || '').toUpperCase();
+            var $clusterSelect = $modal.find('.js-valsal-cluster-selector');
+
+            $clusterSelect.find('option').each(function () {
+                var $option = $(this);
+                var optionValue = $option.attr('value');
+
+                if (!optionValue) {
+                    $option.prop('hidden', false).prop('disabled', false);
+                    return;
+                }
+
+                var optionCity = ($option.data('city-filter') || '').toString().toUpperCase();
+                var shouldShow = selectedCity === '' || optionCity === selectedCity;
+                $option.prop('hidden', !shouldShow).prop('disabled', !shouldShow);
+            });
+
+            if (selectedCity !== '') {
+                var currentOption = $clusterSelect.find('option:selected');
+                var currentCity = (currentOption.data('city-filter') || '').toString().toUpperCase();
+                if (currentCity !== selectedCity) {
+                    $clusterSelect.val('');
+                }
+            }
+
+            $clusterSelect.trigger('change.select2');
+            syncClusterMeta($modal);
+        }
+
         $(function () {
+            handleValsalFlashAlerts();
+
             if ($.fn.DataTable) {
                 $('#table_valsal_myrep').DataTable({
                     responsive: true,
@@ -943,14 +1067,37 @@ if (!function_exists('valsalDocLabel')) {
                 });
             }
 
+            initValsalSelect('.js-valsal-city-selector', '#modal-valsal-create', 'Pilih kota');
+            initValsalSelect('.js-valsal-cluster-select', '#modal-valsal-create', 'Pilih cluster');
+
             $(document).on('change', '.js-valsal-cluster-selector', function () {
                 syncClusterMeta($(this).closest('.modal-body, .modal-content'));
             });
 
+            $(document).on('change', '.js-valsal-city-selector', function () {
+                filterValsalClusterOptions($(this).closest('.modal-body, .modal-content'));
+            });
+
             $('#modal-valsal-create').on('shown.bs.modal', function () {
+                initValsalSelect('.js-valsal-city-selector', '#modal-valsal-create', 'Pilih kota');
+                initValsalSelect('.js-valsal-cluster-select', '#modal-valsal-create', 'Pilih cluster');
+                $(this).find('.js-valsal-city-selector').val('').trigger('change');
+                $(this).find('.js-valsal-cluster-selector').val('').trigger('change');
+                filterValsalClusterOptions($(this));
                 syncClusterMeta($(this));
                 $('#valsal-create-file-input').val('');
                 $('#valsal-create-file-name').text('Belum ada file dipilih');
+                $('#create_doc_not_required').prop('checked', false);
+                $('#valsal-create-file-input').prop('disabled', false).prop('required', true);
+            }).on('hidden.bs.modal', function () {
+                var $citySelect = $(this).find('.js-valsal-city-selector');
+                var $clusterSelect = $(this).find('.js-valsal-cluster-select');
+                if ($citySelect.hasClass('select2-hidden-accessible')) {
+                    $citySelect.select2('close');
+                }
+                if ($clusterSelect.hasClass('select2-hidden-accessible')) {
+                    $clusterSelect.select2('close');
+                }
             });
 
             $(document).on('click', '.js-edit-valsal', function () {
@@ -1047,6 +1194,28 @@ if (!function_exists('valsalDocLabel')) {
                     $('#valsal-upload-file-name').text('File tidak diperlukan untuk item ini');
                 } else {
                     $('#valsal-upload-file-name').text('Belum ada file dipilih');
+                }
+            });
+
+            $(document).on('change', '#create_doc_not_required', function () {
+                var checked = $(this).is(':checked');
+                $('#valsal-create-file-input').prop('disabled', checked).prop('required', !checked);
+                if (checked) {
+                    $('#valsal-create-file-input').val('');
+                    $('#valsal-create-file-name').text('File tidak diperlukan untuk item ini');
+                } else {
+                    $('#valsal-create-file-name').text('Belum ada file dipilih');
+                }
+            });
+
+            $('#modal-valsal-create form').on('submit', function (e) {
+                var isDocNotRequired = $('#create_doc_not_required').is(':checked');
+                var fileInput = $('#valsal-create-file-input').get(0);
+                var hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+
+                if (!isDocNotRequired && !hasFile) {
+                    e.preventDefault();
+                    alert('File SND KASAR tidak boleh kosong jika checkbox dokumen kosong tidak dicentang.');
                 }
             });
 

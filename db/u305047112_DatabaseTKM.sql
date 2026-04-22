@@ -221914,6 +221914,150 @@ INSERT INTO `md_myrep_flow_doc_item` (`id_doc_item`, `id_doc_group`, `doc_name`,
 (19, 5, 'POST DONASI DOCUMENT 10', 'Placeholder dokumen pasca donasi 10', 'HO', 10, 1, 1, CURRENT_TIMESTAMP),
 (20, 5, 'POST DONASI DOCUMENT 11', 'Placeholder dokumen pasca donasi 11', 'HO', 11, 1, 1, CURRENT_TIMESTAMP),
 (21, 5, 'POST DONASI DOCUMENT 12', 'Placeholder dokumen pasca donasi 12', 'HO', 12, 1, 1, CURRENT_TIMESTAMP);
+
+CREATE TABLE `md_myrep_boq_item` (
+  `id_boq_item` int(11) NOT NULL AUTO_INCREMENT,
+  `excel_item_name` varchar(255) NOT NULL,
+  `item_name` varchar(100) NOT NULL,
+  `item_type` varchar(100) DEFAULT NULL,
+  `default_photo_qty` int(11) NOT NULL DEFAULT 0,
+  `photo_type` varchar(255) DEFAULT NULL,
+  `remarks_rule` enum('SESUAI ITEM','SAMPLING') NOT NULL DEFAULT 'SESUAI ITEM',
+  `sort_no` int(11) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_boq_item`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `tb_myrep_drm_boq` (
+  `id_drm_boq` int(11) NOT NULL AUTO_INCREMENT,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `id_drm` int(11) DEFAULT NULL,
+  `source_doc_file_id` int(11) DEFAULT NULL,
+  `review_status` enum('DRAFT','WAITING HO','APPROVED','REJECTED') NOT NULL DEFAULT 'DRAFT',
+  `submitted_at` datetime DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `rejected_at` datetime DEFAULT NULL,
+  `approved_by` int(11) DEFAULT NULL,
+  `ho_review_remark` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_drm_boq`),
+  UNIQUE KEY `uniq_myrep_drm_boq_cluster` (`id_myrep_cluster`),
+  KEY `idx_myrep_drm_boq_status` (`review_status`),
+  KEY `idx_myrep_drm_boq_drm` (`id_drm`),
+  KEY `idx_myrep_drm_boq_doc` (`source_doc_file_id`),
+  CONSTRAINT `fk_myrep_drm_boq_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_myrep_drm_boq_drm` FOREIGN KEY (`id_drm`) REFERENCES `tb_myrep_drm` (`id_drm`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_myrep_drm_boq_doc` FOREIGN KEY (`source_doc_file_id`) REFERENCES `tb_myrep_flow_doc_file` (`id_doc_file`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `tb_myrep_drm_boq_item` (
+  `id_drm_boq_item` int(11) NOT NULL AUTO_INCREMENT,
+  `id_drm_boq` int(11) NOT NULL,
+  `id_boq_item` int(11) NOT NULL,
+  `qty_boq` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `jumlah_foto` int(11) NOT NULL DEFAULT 0,
+  `remarks_rule` enum('SESUAI ITEM','SAMPLING') NOT NULL DEFAULT 'SESUAI ITEM',
+  `target_foto_required` int(11) NOT NULL DEFAULT 0,
+  `item_note` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_drm_boq_item`),
+  UNIQUE KEY `uniq_myrep_drm_boq_item` (`id_drm_boq`,`id_boq_item`),
+  KEY `idx_myrep_drm_boq_item_master` (`id_boq_item`),
+  CONSTRAINT `fk_myrep_drm_boq_item_header` FOREIGN KEY (`id_drm_boq`) REFERENCES `tb_myrep_drm_boq` (`id_drm_boq`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_myrep_drm_boq_item_master` FOREIGN KEY (`id_boq_item`) REFERENCES `md_myrep_boq_item` (`id_boq_item`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `tb_myrep_boq_baseline` (
+  `id_boq_baseline` int(11) NOT NULL AUTO_INCREMENT,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `id_drm_boq` int(11) NOT NULL,
+  `status_baseline` enum('ACTIVE','REPLACED') NOT NULL DEFAULT 'ACTIVE',
+  `approved_at` datetime DEFAULT NULL,
+  `approved_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_boq_baseline`),
+  UNIQUE KEY `uniq_myrep_boq_baseline_cluster` (`id_myrep_cluster`,`status_baseline`),
+  KEY `idx_myrep_boq_baseline_drm_boq` (`id_drm_boq`),
+  CONSTRAINT `fk_myrep_boq_baseline_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_myrep_boq_baseline_drm_boq` FOREIGN KEY (`id_drm_boq`) REFERENCES `tb_myrep_drm_boq` (`id_drm_boq`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `tb_myrep_boq_baseline_item` (
+  `id_boq_baseline_item` int(11) NOT NULL AUTO_INCREMENT,
+  `id_boq_baseline` int(11) NOT NULL,
+  `id_boq_item` int(11) NOT NULL,
+  `qty_boq` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `jumlah_foto` int(11) NOT NULL DEFAULT 0,
+  `remarks_rule` enum('SESUAI ITEM','SAMPLING') NOT NULL DEFAULT 'SESUAI ITEM',
+  `target_foto_required` int(11) NOT NULL DEFAULT 0,
+  `item_note` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_boq_baseline_item`),
+  UNIQUE KEY `uniq_myrep_boq_baseline_item` (`id_boq_baseline`,`id_boq_item`),
+  KEY `idx_myrep_boq_baseline_item_master` (`id_boq_item`),
+  CONSTRAINT `fk_myrep_boq_baseline_item_header` FOREIGN KEY (`id_boq_baseline`) REFERENCES `tb_myrep_boq_baseline` (`id_boq_baseline`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_myrep_boq_baseline_item_master` FOREIGN KEY (`id_boq_item`) REFERENCES `md_myrep_boq_item` (`id_boq_item`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `md_myrep_boq_item` (`id_boq_item`, `excel_item_name`, `item_name`, `item_type`, `default_photo_qty`, `photo_type`, `remarks_rule`, `sort_no`, `is_active`, `created_at`) VALUES
+(1, 'INSTAL FAT POLE MOUNTED TYPE (16 PORTS)', 'FAT', 'FAT', 2, 'TERBUKA DAN TERTUTUP', 'SESUAI ITEM', 1, 1, CURRENT_TIMESTAMP),
+(2, 'INSTAL 48 CORES CAPACITY POLE FDT', 'FDT 48', 'FDT', 2, 'TERBUKA DAN TERTUTUP', 'SESUAI ITEM', 2, 1, CURRENT_TIMESTAMP),
+(3, 'INSTAL 72 CORES CAPACITY POLE FDT', 'FDT 72', 'FDT', 2, 'TERBUKA DAN TERTUTUP', 'SESUAI ITEM', 3, 1, CURRENT_TIMESTAMP),
+(4, 'SPLICING FO', 'SPLICING', 'SPLICING', 4, 'FOTO SPLICING', 'SAMPLING', 4, 1, CURRENT_TIMESTAMP),
+(5, 'STRAND WIRE MESSENGER 6 MM', 'SLING WIRE', 'SLING WIRE', 4, 'FOTO PENARIKAN KABEL', 'SAMPLING', 5, 1, CURRENT_TIMESTAMP),
+(6, 'Pemasangan Pole / Tiang Udara 7 M 2.5', 'TIANG 7''2.5', 'TIANG', 1, 'FOTO FULL TIANG BERDIRI', 'SESUAI ITEM', 6, 1, CURRENT_TIMESTAMP),
+(7, 'Pemasangan Tiang 7 meter 3 inch', 'TIANG 7''3', 'TIANG', 1, 'FOTO FULL TIANG BERDIRI', 'SESUAI ITEM', 7, 1, CURRENT_TIMESTAMP),
+(8, 'Pemasangan Tiang 7 meter 4'', STEL-L003 1996', 'TIANG 7''4', 'TIANG', 1, 'FOTO FULL TIANG BERDIRI', 'SESUAI ITEM', 8, 1, CURRENT_TIMESTAMP),
+(9, 'Pemasangan Tiang Tunggal 9 meter 4'', STEL-L003 1996', 'TIANG 9''4', 'TIANG', 1, 'FOTO FULL TIANG BERDIRI', 'SESUAI ITEM', 9, 1, CURRENT_TIMESTAMP),
+(10, 'INSTAL FO TYPE SM G.652.D-ADSS 24 CORES', 'CABLE 24', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 10, 1, CURRENT_TIMESTAMP),
+(11, 'INSTAL FO TYPE SM G.652.D-ADSS 36 CORES', 'CABLE 36', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 11, 1, CURRENT_TIMESTAMP),
+(12, 'INSTAL FO TYPE SM G.652.D-ADSS 48 CORES', 'CABLE 48', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 12, 1, CURRENT_TIMESTAMP),
+(13, 'INSTAL FO TYPE SM G.652.D-ADSS 72 CORES', 'CABLE 72', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 13, 1, CURRENT_TIMESTAMP),
+(14, 'INSTAL FO TYPE SM G.652.D-ADSS 96 CORES', 'CABLE 96', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 14, 1, CURRENT_TIMESTAMP),
+(15, 'INSTAL FO TYPE SM G.652.D-ADSS 144 CORES', 'CABLE 144', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 15, 1, CURRENT_TIMESTAMP);
+
+CREATE TABLE `tb_myrep_boq_progress_item` (
+  `id_progress_item` int(11) NOT NULL AUTO_INCREMENT,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `id_boq_baseline` int(11) NOT NULL,
+  `id_boq_baseline_item` int(11) NOT NULL,
+  `progress_date` date NOT NULL,
+  `qty_progress` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `status_progress` enum('ON PROGRESS','DONE') NOT NULL DEFAULT 'ON PROGRESS',
+  `remark_progress` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_progress_item`),
+  KEY `idx_myrep_boq_progress_cluster` (`id_myrep_cluster`),
+  KEY `idx_myrep_boq_progress_baseline` (`id_boq_baseline`),
+  KEY `idx_myrep_boq_progress_baseline_item` (`id_boq_baseline_item`),
+  KEY `idx_myrep_boq_progress_date` (`progress_date`),
+  CONSTRAINT `fk_myrep_boq_progress_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_myrep_boq_progress_baseline` FOREIGN KEY (`id_boq_baseline`) REFERENCES `tb_myrep_boq_baseline` (`id_boq_baseline`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_myrep_boq_progress_baseline_item` FOREIGN KEY (`id_boq_baseline_item`) REFERENCES `tb_myrep_boq_baseline_item` (`id_boq_baseline_item`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `tb_myrep_boq_progress_photo` (
+  `id_progress_photo` int(11) NOT NULL AUTO_INCREMENT,
+  `id_progress_item` int(11) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `caption` varchar(255) DEFAULT NULL,
+  `uploaded_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_progress_photo`),
+  KEY `idx_myrep_boq_progress_photo_item` (`id_progress_item`),
+  CONSTRAINT `fk_myrep_boq_progress_photo_item` FOREIGN KEY (`id_progress_item`) REFERENCES `tb_myrep_boq_progress_item` (`id_progress_item`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

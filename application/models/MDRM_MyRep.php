@@ -15,6 +15,25 @@ class MDRM_MyRep extends CI_Model
         return true;
     }
 
+    public function drmBoqTablesReady()
+    {
+        $requiredTables = [
+            'md_myrep_boq_item',
+            'tb_myrep_drm_boq',
+            'tb_myrep_drm_boq_item',
+            'tb_myrep_boq_baseline',
+            'tb_myrep_boq_baseline_item',
+        ];
+
+        foreach ($requiredTables as $tableName) {
+            if (!$this->db->table_exists($tableName)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function drmDocumentTablesReady()
     {
         $requiredTables = ['md_myrep_flow_doc_group', 'md_myrep_flow_doc_item', 'tb_myrep_flow_doc_package', 'tb_myrep_flow_doc_file', 'tb_myrep_flow_doc_file_log'];
@@ -146,7 +165,21 @@ class MDRM_MyRep extends CI_Model
         }
 
         $row = $this->db
-            ->select('c.*, ba.id_batch_approval, ba.hp_donasi, ba.released_at, d.*')
+            ->select('
+                c.*,
+                ba.id_batch_approval,
+                ba.hp_donasi,
+                ba.released_at,
+                d.id_drm,
+                d.drm_date,
+                d.homepass_drm,
+                d.status_drm,
+                d.remark_drm,
+                d.created_by AS drm_created_by,
+                d.updated_by AS drm_updated_by,
+                d.created_at AS drm_created_at,
+                d.updated_at AS drm_updated_at
+            ', false)
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
@@ -155,6 +188,102 @@ class MDRM_MyRep extends CI_Model
             ->row_array();
 
         return $row ?: [];
+    }
+
+    public function getBoqMasterItems()
+    {
+        if (!$this->drmBoqTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->from('md_myrep_boq_item')
+            ->where('is_active', 1)
+            ->order_by('sort_no', 'ASC')
+            ->order_by('id_boq_item', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+    public function getDrmBoqHeader($clusterId)
+    {
+        if (!$this->drmBoqTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->from('tb_myrep_drm_boq')
+            ->where('id_myrep_cluster', (int) $clusterId)
+            ->get()
+            ->row_array();
+    }
+
+    public function getDrmBoqItems($clusterId)
+    {
+        if (!$this->drmBoqTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->select('m.id_boq_item, m.excel_item_name, m.item_name, m.item_type, m.default_photo_qty, m.photo_type, m.remarks_rule AS master_remarks_rule, m.sort_no, h.id_drm_boq, h.review_status, i.id_drm_boq_item, i.qty_boq, i.jumlah_foto, i.remarks_rule, i.target_foto_required, i.item_note')
+            ->from('md_myrep_boq_item m')
+            ->join('tb_myrep_drm_boq h', 'h.id_myrep_cluster = ' . (int) $clusterId, 'left', false)
+            ->join('tb_myrep_drm_boq_item i', 'i.id_drm_boq = h.id_drm_boq AND i.id_boq_item = m.id_boq_item', 'left')
+            ->where('m.is_active', 1)
+            ->order_by('m.sort_no', 'ASC')
+            ->order_by('m.id_boq_item', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+    public function getBoqBaselineHeader($clusterId)
+    {
+        if (!$this->drmBoqTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->from('tb_myrep_boq_baseline')
+            ->where('id_myrep_cluster', (int) $clusterId)
+            ->where('status_baseline', 'ACTIVE')
+            ->get()
+            ->row_array();
+    }
+
+    public function getBoqBaselineItems($clusterId)
+    {
+        if (!$this->drmBoqTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->select('b.id_boq_baseline, i.id_boq_baseline_item, i.qty_boq, i.jumlah_foto, i.remarks_rule, i.target_foto_required, i.item_note, m.excel_item_name, m.item_name, m.item_type, m.photo_type, m.sort_no')
+            ->from('tb_myrep_boq_baseline b')
+            ->join('tb_myrep_boq_baseline_item i', 'i.id_boq_baseline = b.id_boq_baseline', 'inner')
+            ->join('md_myrep_boq_item m', 'm.id_boq_item = i.id_boq_item', 'inner')
+            ->where('b.id_myrep_cluster', (int) $clusterId)
+            ->where('b.status_baseline', 'ACTIVE')
+            ->order_by('m.sort_no', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+    public function getApdBoqDocumentFile($clusterId)
+    {
+        if (!$this->drmDocumentTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->select('doc_file.id_doc_file, doc_file.file_name, doc_file.file_path, doc_file.status_file, doc_file.reviewed_at, doc_file.approved_at')
+            ->from('md_myrep_flow_doc_group doc_group')
+            ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'inner')
+            ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = ' . (int) $clusterId . ' AND doc_package.flow_type = \'DRM\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
+            ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left')
+            ->where('doc_group.flow_type', 'DRM')
+            ->where('doc_item.doc_name', 'APD BOQ')
+            ->get()
+            ->row_array();
     }
 
     public function createDrm($clusterId, $drmPayload, $clusterPayload)
@@ -225,6 +354,24 @@ class MDRM_MyRep extends CI_Model
             ->where('doc_group.flow_type', 'DRM')
             ->where('doc_group.is_active', 1)
             ->where('doc_item.id_doc_item', (int) $docItemId)
+            ->get()
+            ->row_array();
+    }
+
+    public function getDrmDocumentDetailByName($clusterId, $docName)
+    {
+        if (!$this->drmDocumentTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->select('doc_group.id_doc_group, doc_group.group_label, doc_item.id_doc_item, doc_item.doc_name, doc_package.id_doc_package, doc_file.id_doc_file, doc_file.file_name, doc_file.file_path, doc_file.status_file')
+            ->from('md_myrep_flow_doc_group doc_group')
+            ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'inner')
+            ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = ' . (int) $clusterId . ' AND doc_package.flow_type = \'DRM\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
+            ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left')
+            ->where('doc_group.flow_type', 'DRM')
+            ->where('doc_item.doc_name', (string) $docName)
             ->get()
             ->row_array();
     }
@@ -317,6 +464,175 @@ class MDRM_MyRep extends CI_Model
 
         $this->refreshPackageStatus((int) $file['id_doc_package']);
         return $result;
+    }
+
+    public function saveDrmBoqDraft($clusterId, $drmId, $sourceDocFileId, $items, $userId, $submitToHo = false)
+    {
+        if (!$this->drmBoqTablesReady()) {
+            return false;
+        }
+
+        $clusterId = (int) $clusterId;
+        $drmId = (int) $drmId;
+        $userId = (int) $userId;
+        if ($clusterId <= 0 || empty($items)) {
+            return false;
+        }
+
+        $existing = $this->getDrmBoqHeader($clusterId);
+        if (!empty($existing) && strtoupper((string) ($existing['review_status'] ?? '')) === 'APPROVED') {
+            return false;
+        }
+
+        $reviewStatus = $submitToHo ? 'WAITING HO' : (($existing['review_status'] ?? '') === 'REJECTED' ? 'REJECTED' : 'DRAFT');
+
+        $this->db->trans_start();
+
+        if (!empty($existing['id_drm_boq'])) {
+            $this->db
+                ->where('id_drm_boq', (int) $existing['id_drm_boq'])
+                ->update('tb_myrep_drm_boq', [
+                    'id_drm' => $drmId > 0 ? $drmId : null,
+                    'source_doc_file_id' => $sourceDocFileId > 0 ? (int) $sourceDocFileId : null,
+                    'review_status' => $reviewStatus,
+                    'submitted_at' => $submitToHo ? date('Y-m-d H:i:s') : ($existing['submitted_at'] ?? null),
+                    'updated_by' => $userId,
+                    'approved_at' => null,
+                    'rejected_at' => null,
+                    'approved_by' => null,
+                    'ho_review_remark' => null,
+                ]);
+            $drmBoqId = (int) $existing['id_drm_boq'];
+        } else {
+            $this->db->insert('tb_myrep_drm_boq', [
+                'id_myrep_cluster' => $clusterId,
+                'id_drm' => $drmId > 0 ? $drmId : null,
+                'source_doc_file_id' => $sourceDocFileId > 0 ? (int) $sourceDocFileId : null,
+                'review_status' => $reviewStatus,
+                'submitted_at' => $submitToHo ? date('Y-m-d H:i:s') : null,
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ]);
+            $drmBoqId = (int) $this->db->insert_id();
+        }
+
+        foreach ($items as $item) {
+            $boqItemId = (int) ($item['id_boq_item'] ?? 0);
+            if ($boqItemId <= 0) {
+                continue;
+            }
+
+            $payload = [
+                'qty_boq' => (float) ($item['qty_boq'] ?? 0),
+                'jumlah_foto' => (int) ($item['jumlah_foto'] ?? 0),
+                'remarks_rule' => (string) ($item['remarks_rule'] ?? 'SESUAI ITEM'),
+                'target_foto_required' => (int) ($item['target_foto_required'] ?? 0),
+                'item_note' => !empty($item['item_note']) ? (string) $item['item_note'] : null,
+            ];
+
+            $existingItem = $this->db->get_where('tb_myrep_drm_boq_item', [
+                'id_drm_boq' => $drmBoqId,
+                'id_boq_item' => $boqItemId,
+            ])->row_array();
+
+            if ($existingItem) {
+                $this->db
+                    ->where('id_drm_boq_item', (int) $existingItem['id_drm_boq_item'])
+                    ->update('tb_myrep_drm_boq_item', $payload);
+            } else {
+                $payload['id_drm_boq'] = $drmBoqId;
+                $payload['id_boq_item'] = $boqItemId;
+                $this->db->insert('tb_myrep_drm_boq_item', $payload);
+            }
+        }
+
+        $this->db->trans_complete();
+        return $this->db->trans_status();
+    }
+
+    public function approveDrmBoq($clusterId, $userId, $remark = '')
+    {
+        if (!$this->drmBoqTablesReady()) {
+            return false;
+        }
+
+        $header = $this->getDrmBoqHeader($clusterId);
+        $items = $this->getDrmBoqItems($clusterId);
+        if (empty($header['id_drm_boq']) || empty($items)) {
+            return false;
+        }
+
+        $userId = (int) $userId;
+        $approvedAt = date('Y-m-d H:i:s');
+
+        $this->db->trans_start();
+
+        $this->db
+            ->where('id_drm_boq', (int) $header['id_drm_boq'])
+            ->update('tb_myrep_drm_boq', [
+                'review_status' => 'APPROVED',
+                'approved_at' => $approvedAt,
+                'rejected_at' => null,
+                'approved_by' => $userId,
+                'ho_review_remark' => $remark !== '' ? $remark : null,
+                'updated_by' => $userId,
+            ]);
+
+        $existingBaseline = $this->getBoqBaselineHeader($clusterId);
+        if (!empty($existingBaseline['id_boq_baseline'])) {
+            $this->db
+                ->where('id_boq_baseline', (int) $existingBaseline['id_boq_baseline'])
+                ->update('tb_myrep_boq_baseline', [
+                    'status_baseline' => 'REPLACED',
+                ]);
+        }
+
+        $this->db->insert('tb_myrep_boq_baseline', [
+            'id_myrep_cluster' => (int) $clusterId,
+            'id_drm_boq' => (int) $header['id_drm_boq'],
+            'status_baseline' => 'ACTIVE',
+            'approved_at' => $approvedAt,
+            'approved_by' => $userId,
+        ]);
+        $baselineId = (int) $this->db->insert_id();
+
+        foreach ($items as $item) {
+            $this->db->insert('tb_myrep_boq_baseline_item', [
+                'id_boq_baseline' => $baselineId,
+                'id_boq_item' => (int) $item['id_boq_item'],
+                'qty_boq' => (float) ($item['qty_boq'] ?? 0),
+                'jumlah_foto' => (int) (!empty($item['jumlah_foto']) ? $item['jumlah_foto'] : ($item['default_photo_qty'] ?? 0)),
+                'remarks_rule' => (string) (!empty($item['remarks_rule']) ? $item['remarks_rule'] : ($item['master_remarks_rule'] ?? 'SESUAI ITEM')),
+                'target_foto_required' => (int) ($item['target_foto_required'] ?? 0),
+                'item_note' => !empty($item['item_note']) ? (string) $item['item_note'] : null,
+            ]);
+        }
+
+        $this->db->trans_complete();
+        return $this->db->trans_status();
+    }
+
+    public function rejectDrmBoq($clusterId, $userId, $remark)
+    {
+        if (!$this->drmBoqTablesReady()) {
+            return false;
+        }
+
+        $header = $this->getDrmBoqHeader($clusterId);
+        if (empty($header['id_drm_boq'])) {
+            return false;
+        }
+
+        return $this->db
+            ->where('id_drm_boq', (int) $header['id_drm_boq'])
+            ->update('tb_myrep_drm_boq', [
+                'review_status' => 'REJECTED',
+                'rejected_at' => date('Y-m-d H:i:s'),
+                'approved_at' => null,
+                'approved_by' => (int) $userId,
+                'ho_review_remark' => $remark !== '' ? $remark : null,
+                'updated_by' => (int) $userId,
+            ]);
     }
 
     public function getDrmFileById($fileId)

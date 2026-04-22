@@ -25,6 +25,7 @@ class DRM_MyRep extends CI_Controller
         $data['selectedStatus'] = $selectedStatus;
         $data['isReady'] = $this->MDRM_MyRep->drmTablesReady();
         $data['docReady'] = $this->MDRM_MyRep->drmDocumentTablesReady();
+        $data['boqReady'] = $this->MDRM_MyRep->drmBoqTablesReady();
         $data['cityOptions'] = $this->MDRM_MyRep->getCityOptions();
         $data['eligibleClusterOptions'] = $this->MDRM_MyRep->getEligibleClusterOptions();
         $data['clusterRows'] = $data['isReady']
@@ -61,10 +62,16 @@ class DRM_MyRep extends CI_Controller
         $data['title'] = 'Detail DRM MyRep';
         $data['cluster'] = $cluster;
         $data['docReady'] = $this->MDRM_MyRep->drmDocumentTablesReady();
+        $data['boqReady'] = $this->MDRM_MyRep->drmBoqTablesReady();
         $data['canApprove'] = $this->isApprover();
         $data['documentRows'] = $data['docReady']
             ? $this->MDRM_MyRep->getDrmDocumentRows($clusterId)
             : [];
+        $data['boqHeader'] = $data['boqReady'] ? $this->MDRM_MyRep->getDrmBoqHeader($clusterId) : [];
+        $data['boqItems'] = $data['boqReady'] ? $this->MDRM_MyRep->getDrmBoqItems($clusterId) : [];
+        $data['boqBaselineHeader'] = $data['boqReady'] ? $this->MDRM_MyRep->getBoqBaselineHeader($clusterId) : [];
+        $data['boqBaselineItems'] = $data['boqReady'] ? $this->MDRM_MyRep->getBoqBaselineItems($clusterId) : [];
+        $data['apdBoqFile'] = $data['docReady'] ? $this->MDRM_MyRep->getApdBoqDocumentFile($clusterId) : [];
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -130,7 +137,7 @@ class DRM_MyRep extends CI_Controller
         ]);
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Data DRM berhasil ditambahkan.' : 'Gagal menyimpan data DRM.');
-        redirect('DRM_MyRep');
+        redirect($result ? ('DRM_MyRep/detail/' . $clusterId) : 'DRM_MyRep');
     }
 
     public function updateDrm()
@@ -177,7 +184,7 @@ class DRM_MyRep extends CI_Controller
         ]);
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Data DRM berhasil diperbarui.' : 'Gagal memperbarui data DRM.');
-        redirect('DRM_MyRep');
+        redirect('DRM_MyRep/detail/' . $clusterId);
     }
 
     public function uploadDocument()
@@ -343,6 +350,203 @@ class DRM_MyRep extends CI_Controller
         exit;
     }
 
+    public function saveBoqDraft()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if (!$this->MDRM_MyRep->drmBoqTablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel BOQ DRM belum tersedia.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $cluster = $this->MDRM_MyRep->getDrmByClusterId($clusterId);
+        if (empty($cluster)) {
+            $this->session->set_flashdata('error', 'Data cluster DRM tidak ditemukan.');
+            redirect('DRM_MyRep');
+            return;
+        }
+
+        $submitToHo = (int) $this->input->post('submit_to_ho') === 1;
+        $items = $this->collectBoqItemsFromPost();
+        if (empty($items)) {
+            $this->session->set_flashdata('error', 'Minimal isi satu item BOQ dengan qty lebih dari nol.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $apdBoqFile = $this->MDRM_MyRep->getApdBoqDocumentFile($clusterId);
+        $result = $this->MDRM_MyRep->saveDrmBoqDraft(
+            $clusterId,
+            (int) ($cluster['id_drm'] ?? 0),
+            (int) ($apdBoqFile['id_doc_file'] ?? 0),
+            $items,
+            (int) $this->session->userdata('id_user'),
+            $submitToHo
+        );
+
+        $message = $submitToHo ? 'Draft BOQ DRM berhasil dikirim ke review HO.' : 'Draft BOQ DRM berhasil disimpan.';
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? $message : 'Gagal menyimpan draft BOQ DRM.');
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function saveApdBoqPackage()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if (!$this->MDRM_MyRep->drmDocumentTablesReady() || !$this->MDRM_MyRep->drmBoqTablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel dokumen atau BOQ DRM belum tersedia.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $cluster = $this->MDRM_MyRep->getDrmByClusterId($clusterId);
+        if (empty($cluster)) {
+            $this->session->set_flashdata('error', 'Data cluster DRM tidak ditemukan.');
+            redirect('DRM_MyRep');
+            return;
+        }
+
+        $docDetail = $this->MDRM_MyRep->getDrmDocumentDetailByName($clusterId, 'APD BOQ');
+        if (empty($docDetail['id_doc_item'])) {
+            $this->session->set_flashdata('error', 'Dokumen APD BOQ tidak ditemukan.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $items = $this->collectBoqItemsFromPost();
+        if (empty($items)) {
+            $this->session->set_flashdata('error', 'BOQ manual wajib diisi minimal satu item dengan qty lebih dari nol.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $hasExistingFile = !empty($docDetail['id_doc_file']);
+        $hasNewFile = !empty($_FILES['apd_boq_file']['name']);
+        if (!$hasExistingFile && !$hasNewFile) {
+            $this->session->set_flashdata('error', 'File APD BOQ wajib diupload.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $userId = (int) $this->session->userdata('id_user');
+        $sourceDocFileId = (int) ($docDetail['id_doc_file'] ?? 0);
+
+        if ($hasNewFile) {
+            $uploadDir = './uploads/myrep_drm/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+
+            $extension = pathinfo($_FILES['apd_boq_file']['name'], PATHINFO_EXTENSION);
+            $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($docDetail['doc_name'] ?? 'APD_BOQ'));
+            $fileName = 'DRM_' . $clusterId . '_' . (int) $docDetail['id_doc_item'] . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+
+            $config = [
+                'upload_path' => $uploadDir,
+                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
+                'max_size' => 30720,
+                'file_name' => $fileName,
+                'overwrite' => true,
+            ];
+
+            $this->upload->initialize($config);
+            if (!$this->upload->do_upload('apd_boq_file')) {
+                $this->session->set_flashdata('error', strip_tags($this->upload->display_errors()));
+                redirect('DRM_MyRep/detail/' . $clusterId);
+                return;
+            }
+
+            $fileData = $this->upload->data();
+            $sourceDocFileId = $this->MDRM_MyRep->saveDrmFileUpload($clusterId, (int) $docDetail['id_doc_item'], [
+                'file_name' => (string) $fileData['file_name'],
+                'file_path' => 'uploads/myrep_drm/' . $fileData['file_name'],
+                'is_document_not_required' => 0,
+                'status_file' => 'UPLOADED',
+                'remark' => trim((string) $this->input->post('apd_boq_remark')),
+                'uploaded_by' => $userId,
+            ]);
+
+            if ($sourceDocFileId <= 0) {
+                $this->session->set_flashdata('error', 'File APD BOQ gagal disimpan.');
+                redirect('DRM_MyRep/detail/' . $clusterId);
+                return;
+            }
+        }
+
+        $submitToHo = (int) $this->input->post('submit_to_ho') === 1;
+        $result = $this->MDRM_MyRep->saveDrmBoqDraft(
+            $clusterId,
+            (int) ($cluster['id_drm'] ?? 0),
+            $sourceDocFileId,
+            $items,
+            $userId,
+            $submitToHo
+        );
+
+        $message = $submitToHo ? 'APD BOQ dan BOQ manual berhasil dikirim ke review HO.' : 'APD BOQ dan BOQ manual berhasil disimpan.';
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? $message : 'Gagal menyimpan paket APD BOQ.');
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function approveBoq()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses approve BOQ DRM.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $result = $this->MDRM_MyRep->approveDrmBoq(
+            $clusterId,
+            (int) $this->session->userdata('id_user'),
+            trim((string) $this->input->post('remark'))
+        );
+
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-approve dan dijadikan baseline implementasi.' : 'Gagal approve BOQ DRM.');
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function rejectBoq()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses reject BOQ DRM.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $remark = trim((string) $this->input->post('remark'));
+        if ($remark === '') {
+            $this->session->set_flashdata('error', 'Alasan reject BOQ wajib diisi.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $result = $this->MDRM_MyRep->rejectDrmBoq($clusterId, (int) $this->session->userdata('id_user'), $remark);
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-reject.' : 'Gagal reject BOQ DRM.');
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
     private function buildCurrentStatus($drmDate, $statusDrm)
     {
         $statusDrm = strtoupper(trim((string) $statusDrm));
@@ -378,6 +582,47 @@ class DRM_MyRep extends CI_Controller
         $normalized = str_replace(',', '.', $normalized);
 
         return (float) $normalized;
+    }
+
+    private function collectBoqItemsFromPost()
+    {
+        $qtyRows = (array) $this->input->post('boq_qty');
+        $masterItems = $this->MDRM_MyRep->getBoqMasterItems();
+        $masterMap = [];
+        foreach ($masterItems as $masterItem) {
+            $masterMap[(int) ($masterItem['id_boq_item'] ?? 0)] = $masterItem;
+        }
+        $items = [];
+
+        foreach ($qtyRows as $boqItemId => $qtyValue) {
+            $boqItemId = (int) $boqItemId;
+            if ($boqItemId <= 0 || empty($masterMap[$boqItemId])) {
+                continue;
+            }
+
+            $qty = $this->normalizeNumber($qtyValue);
+            $photoQty = (int) ($masterMap[$boqItemId]['default_photo_qty'] ?? 0);
+            $remarksRule = strtoupper(trim((string) ($masterMap[$boqItemId]['remarks_rule'] ?? 'SESUAI ITEM')));
+            $remarksRule = $remarksRule === 'SAMPLING' ? 'SAMPLING' : 'SESUAI ITEM';
+            $targetFoto = $remarksRule === 'SAMPLING'
+                ? $photoQty
+                : (int) round($qty * $photoQty);
+
+            if ($qty <= 0) {
+                continue;
+            }
+
+            $items[] = [
+                'id_boq_item' => $boqItemId,
+                'qty_boq' => $qty,
+                'jumlah_foto' => max($photoQty, 0),
+                'remarks_rule' => $remarksRule,
+                'target_foto_required' => max($targetFoto, 0),
+                'item_note' => null,
+            ];
+        }
+
+        return $items;
     }
 
     private function isApprover()

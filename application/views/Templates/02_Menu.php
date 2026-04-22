@@ -428,6 +428,7 @@ $id_menu = $this->uri->segment('1');
                         $id_menu == 'BAK_MyRep' ||
                         $id_menu == 'VALSAL_MyRep' ||
                         $id_menu == 'Batch_Approval_MyRep' ||
+                        $id_menu == 'Implementasi_BOQ_MyRep' ||
                         $id_menu == 'DRM_MyRep'
                     ) ? 'menu-open' : '' ?>">
                         <a href="#" class="nav-link <?= (
@@ -444,6 +445,7 @@ $id_menu = $this->uri->segment('1');
                             $id_menu == 'BAK_MyRep' ||
                             $id_menu == 'VALSAL_MyRep' ||
                             $id_menu == 'Batch_Approval_MyRep' ||
+                            $id_menu == 'Implementasi_BOQ_MyRep' ||
                             $id_menu == 'DRM_MyRep'
                         ) ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-project-diagram"></i>
@@ -508,6 +510,7 @@ $id_menu = $this->uri->segment('1');
                                 $id_menu == 'VALSAL_MyRep' ||
                                 $id_menu == 'Batch_Approval_MyRep' ||
                                 $id_menu == 'DRM_MyRep' ||
+                                $id_menu == 'Implementasi_BOQ_MyRep' ||
                                 $id_menu == 'Post_Donasi_MyRep' ||
                                 $id_menu == 'Monitoring_RFS_MyRep' ||
                                 $id_menu == 'Checklist_Dokument_MyRep' ||
@@ -523,6 +526,7 @@ $id_menu = $this->uri->segment('1');
                                     $id_menu == 'VALSAL_MyRep' ||
                                     $id_menu == 'Batch_Approval_MyRep' ||
                                     $id_menu == 'DRM_MyRep' ||
+                                    $id_menu == 'Implementasi_BOQ_MyRep' ||
                                     $id_menu == 'Post_Donasi_MyRep' ||
                                     $id_menu == 'Monitoring_RFS_MyRep' ||
                                     $id_menu == 'Checklist_Dokument_MyRep' ||
@@ -535,12 +539,12 @@ $id_menu = $this->uri->segment('1');
                                     <p>
                                         My Republik
                                         <i class="fas fa-angle-left right"></i>
-                                        <span class="badge badge-info right">9</span>
+                                        <span class="badge badge-info right">10</span>
                                     </p>
                                 </a>
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item">
-                                        <a href="<?= base_url('MyRepublik_Project') ?>"
+                                        <a href="<?= base_url('MyRepublik_Project') ?>" style="pointer-events: none"
                                             class="nav-link <?= ($id_menu == 'MyRepublik_Project') ? 'active' : '' ?>">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>List Project</p>
@@ -572,6 +576,13 @@ $id_menu = $this->uri->segment('1');
                                             class="nav-link <?= ($id_menu == 'DRM_MyRep') ? 'active' : '' ?>">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>DRM</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Implementasi_BOQ_MyRep') ?>"
+                                            class="nav-link <?= ($id_menu == 'Implementasi_BOQ_MyRep') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Implementasi BOQ</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">

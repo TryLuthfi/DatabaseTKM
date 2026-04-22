@@ -92,11 +92,21 @@ if (!function_exists('bakDocLabel')) {
             <?php endif; ?>
 
             <?php if (!empty($flashSuccess)): ?>
-                <div class="alert alert-success"><?= $flashSuccess ?></div>
+                <div class="alert alert-success alert-dismissible fade show js-bak-flash-alert" role="alert" data-flash-key="<?= htmlspecialchars('bak_flash_success_' . md5((string) $flashSuccess), ENT_QUOTES) ?>">
+                    <?= $flashSuccess ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
             <?php endif; ?>
 
             <?php if (!empty($flashError)): ?>
-                <div class="alert alert-danger"><?= $flashError ?></div>
+                <div class="alert alert-danger alert-dismissible fade show js-bak-flash-alert" role="alert" data-flash-key="<?= htmlspecialchars('bak_flash_error_' . md5((string) $flashError), ENT_QUOTES) ?>">
+                    <?= $flashError ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
             <?php endif; ?>
 
             <div class="row">
@@ -308,7 +318,7 @@ if (!function_exists('bakDocLabel')) {
                                                                 History
                                                             </button>
                                                         <?php endif; ?>
-                                                        <?php if ($canApprove && !empty($row['bak_doc_file_id']) && strtoupper((string) ($row['bak_doc_status'] ?? '')) === 'UPLOADED'): ?>
+                                                        <?php if ($canApprove && !empty($row['bak_doc_file_id']) && in_array(strtoupper((string) ($row['bak_doc_status'] ?? '')), ['UPLOADED', 'REJECTED'], true)): ?>
                                                             <button
                                                                 type="button"
                                                                 class="btn btn-sm btn-outline-success js-approve-doc mt-1"
@@ -318,6 +328,16 @@ if (!function_exists('bakDocLabel')) {
                                                                 data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
                                                                 Approve
                                                             </button>
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
+                                                                data-toggle="modal"
+                                                                data-target="#modal-bak-reject-doc"
+                                                                data-id_doc_file="<?= (int) $row['bak_doc_file_id'] ?>"
+                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
+                                                                Reject
+                                                            </button>
+                                                        <?php elseif ($canApprove && !empty($row['bak_doc_file_id']) && strtoupper((string) ($row['bak_doc_status'] ?? '')) === 'APPROVED'): ?>
                                                             <button
                                                                 type="button"
                                                                 class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
@@ -358,12 +378,12 @@ if (!function_exists('bakDocLabel')) {
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
-                                    <label>Target Kota MyRep</label>
-                                    <select name="id_target" class="form-control js-bak-target-selector" required>
+                                    <label>Kota</label>
+                                    <select name="id_target" class="form-control js-bak-target-selector js-bak-city-select" required>
                                         <option value="">Pilih target kota</option>
-                                        <?php foreach ($targetOptions as $targetOption): ?>
+                                        <?php foreach ($createTargetOptions as $targetOption): ?>
                                             <option value="<?= (int) $targetOption['id_target'] ?>" data-regional_name="<?= htmlspecialchars((string) ($targetOption['regional_name'] ?? ''), ENT_QUOTES) ?>" data-province_name="<?= htmlspecialchars((string) ($targetOption['province_name'] ?? ''), ENT_QUOTES) ?>" data-city_name="<?= htmlspecialchars((string) ($targetOption['city_name'] ?? ''), ENT_QUOTES) ?>">
-                                                <?= htmlspecialchars((string) ($targetOption['city_name'] ?? '-')) ?> | <?= sprintf('%02d/%04d', (int) ($targetOption['month_num'] ?? 0), (int) ($targetOption['year_num'] ?? 0)) ?>
+                                                <?= htmlspecialchars((string) ($targetOption['city_name'] ?? '-')) ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -388,6 +408,10 @@ if (!function_exists('bakDocLabel')) {
                                 </div>
                                 <div class="col-md-12">
                                     <div class="doc-modal-panel">
+                                        <div class="form-group form-check mb-3">
+                                            <input type="checkbox" class="form-check-input" id="create_doc_not_required" name="create_is_document_not_required" value="1">
+                                            <label class="form-check-label" for="create_doc_not_required">Dokumen kosong / tidak dibutuhkan</label>
+                                        </div>
                                         <label class="font-weight-bold d-block">File BA OPEN</label>
                                         <div class="upload-dropzone" id="bak-create-dropzone">
                                             <input type="file" name="create_file" id="bak-create-file-input">
@@ -436,12 +460,12 @@ if (!function_exists('bakDocLabel')) {
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
-                                    <label>Target Kota MyRep</label>
-                                    <select name="id_target" id="edit_id_target" class="form-control js-bak-target-selector" required>
+                                    <label>Kota</label>
+                                    <select name="id_target" id="edit_id_target" class="form-control js-bak-target-selector js-bak-edit-city-select" required>
                                         <option value="">Pilih target kota</option>
                                         <?php foreach ($targetOptions as $targetOption): ?>
                                             <option value="<?= (int) $targetOption['id_target'] ?>" data-regional_name="<?= htmlspecialchars((string) ($targetOption['regional_name'] ?? ''), ENT_QUOTES) ?>" data-province_name="<?= htmlspecialchars((string) ($targetOption['province_name'] ?? ''), ENT_QUOTES) ?>" data-city_name="<?= htmlspecialchars((string) ($targetOption['city_name'] ?? ''), ENT_QUOTES) ?>">
-                                                <?= htmlspecialchars((string) ($targetOption['city_name'] ?? '-')) ?> | <?= sprintf('%02d/%04d', (int) ($targetOption['month_num'] ?? 0), (int) ($targetOption['year_num'] ?? 0)) ?>
+                                                <?= htmlspecialchars((string) ($targetOption['city_name'] ?? '-')) ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -874,10 +898,56 @@ if (!function_exists('bakDocLabel')) {
         padding: 6px 10px;
         border-radius: 999px;
     }
+
+    .select2-container--open {
+        z-index: 1065;
+    }
 </style>
 
 <script>
     (function () {
+        function initBakCitySelect(modalSelector, selectSelector) {
+            var $modal = $(modalSelector);
+            var $select = $modal.find(selectSelector);
+
+            if (!$select.length || !$.fn.select2) {
+                return;
+            }
+
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.select2('destroy');
+            }
+
+            $select.select2({
+                width: '100%',
+                placeholder: 'Pilih kota',
+                allowClear: true,
+                dropdownParent: $modal
+            });
+        }
+
+        function handleBakFlashAlerts() {
+            $('.js-bak-flash-alert').each(function () {
+                var $alert = $(this);
+                var flashKey = $alert.data('flash-key');
+
+                if (!flashKey || !window.sessionStorage) {
+                    return;
+                }
+
+                if (window.sessionStorage.getItem(flashKey) === '1') {
+                    $alert.remove();
+                    return;
+                }
+
+                window.sessionStorage.setItem(flashKey, '1');
+            });
+
+            window.setTimeout(function () {
+                $('.js-bak-flash-alert').alert('close');
+            }, 4000);
+        }
+
         function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
             var dropzone = document.querySelector(dropzoneSelector);
             var input = document.querySelector(inputSelector);
@@ -926,6 +996,8 @@ if (!function_exists('bakDocLabel')) {
         }
 
         $(function () {
+            handleBakFlashAlerts();
+
             if ($.fn.DataTable) {
                 $('#table_bak_myrep').DataTable({
                     responsive: true,
@@ -934,14 +1006,38 @@ if (!function_exists('bakDocLabel')) {
                 });
             }
 
+            initBakCitySelect('#modal-bak-create', '.js-bak-city-select');
+            initBakCitySelect('#modal-bak-edit', '.js-bak-edit-city-select');
+
             $(document).on('change', '.js-bak-target-selector', function () {
                 syncTargetMeta($(this).closest('.modal-body, .modal-content'));
             });
 
             $('#modal-bak-create').on('shown.bs.modal', function () {
+                initBakCitySelect('#modal-bak-create', '.js-bak-city-select');
                 syncTargetMeta($(this));
                 $('#bak-create-file-input').val('');
                 $('#bak-create-file-name').text('Belum ada file dipilih');
+                $('#create_doc_not_required').prop('checked', false);
+                $('#bak-create-file-input').prop('disabled', false).prop('required', true);
+
+                window.setTimeout(function () {
+                    $('#modal-bak-create').find('.js-bak-city-select').select2('open');
+                }, 120);
+            }).on('hidden.bs.modal', function () {
+                var $select = $(this).find('.js-bak-city-select');
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('close');
+                }
+            });
+
+            $('#modal-bak-edit').on('shown.bs.modal', function () {
+                initBakCitySelect('#modal-bak-edit', '.js-bak-edit-city-select');
+            }).on('hidden.bs.modal', function () {
+                var $select = $(this).find('.js-bak-edit-city-select');
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('close');
+                }
             });
 
             $(document).on('click', '.js-edit-bak', function () {
@@ -949,7 +1045,7 @@ if (!function_exists('bakDocLabel')) {
                 var $modal = $('#modal-bak-edit');
 
                 $modal.find('#edit_id_myrep_cluster').val($button.data('id_myrep_cluster'));
-                $modal.find('#edit_id_target').val($button.data('id_target'));
+                $modal.find('#edit_id_target').val($button.data('id_target')).trigger('change.select2');
                 $modal.find('#edit_cluster_name').val($button.data('cluster_name'));
                 $modal.find('#edit_cluster_code').val($button.data('cluster_code'));
                 $modal.find('#edit_homepass_bak').val($button.data('homepass_bak'));
@@ -1038,6 +1134,28 @@ if (!function_exists('bakDocLabel')) {
                     $('#bak-upload-file-name').text('File tidak diperlukan untuk item ini');
                 } else {
                     $('#bak-upload-file-name').text('Belum ada file dipilih');
+                }
+            });
+
+            $(document).on('change', '#create_doc_not_required', function () {
+                var checked = $(this).is(':checked');
+                $('#bak-create-file-input').prop('disabled', checked).prop('required', !checked);
+                if (checked) {
+                    $('#bak-create-file-input').val('');
+                    $('#bak-create-file-name').text('File tidak diperlukan untuk item ini');
+                } else {
+                    $('#bak-create-file-name').text('Belum ada file dipilih');
+                }
+            });
+
+            $('#modal-bak-create form').on('submit', function (e) {
+                var isDocNotRequired = $('#create_doc_not_required').is(':checked');
+                var fileInput = $('#bak-create-file-input').get(0);
+                var hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+
+                if (!isDocNotRequired && !hasFile) {
+                    e.preventDefault();
+                    alert('File BA OPEN tidak boleh kosong jika checkbox dokumen kosong tidak dicentang.');
                 }
             });
 

@@ -28,6 +28,7 @@ class BAK_MyRep extends CI_Controller
         $data['canApprove'] = $this->isApprover();
         $data['cityOptions'] = $this->MBAK_MyRep->getCityOptions();
         $data['targetOptions'] = $this->MBAK_MyRep->getTargetOptions();
+        $data['createTargetOptions'] = $this->MBAK_MyRep->getCreateTargetOptions();
         $data['clusterRows'] = $data['isReady']
             ? $this->MBAK_MyRep->getBakRows($selectedCity, $selectedStatus)
             : [];
