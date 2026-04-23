@@ -246,10 +246,24 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
 
     .impl-cluster-overview__card {
         padding: 1rem 1.1rem;
-        border-radius: 18px;
-        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        border-radius: 20px;
+        background:
+            radial-gradient(circle at top right, rgba(59, 130, 246, .08), transparent 34%),
+            linear-gradient(135deg, #ffffff, #f8fbff);
         border: 1px solid #dbeafe;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .07);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .impl-cluster-overview__card::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #2563eb, #14b8a6);
     }
 
     .impl-cluster-overview__label {
@@ -280,10 +294,15 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
     }
 
     .impl-meta-box {
-        background: #f8fafc;
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
         border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        padding: .95rem 1rem;
+        border-radius: 18px;
+        padding: 1rem;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .05);
+        min-height: 112px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
 
     .impl-meta-box__label {
@@ -304,6 +323,55 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
     .impl-meta-box__sub {
         margin-top: .25rem;
         font-size: .8rem;
+        color: #64748b;
+        line-height: 1.45;
+    }
+
+    .impl-meta-box--aging {
+        background:
+            radial-gradient(circle at top right, rgba(245, 158, 11, .12), transparent 30%),
+            linear-gradient(180deg, #fffdf7, #fffaf0);
+        border-color: #fde68a;
+    }
+
+    .impl-meta-box__pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        width: fit-content;
+        margin-top: .55rem;
+        padding: .28rem .62rem;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: .74rem;
+        font-weight: 700;
+    }
+
+    .impl-meta-box__progress {
+        margin-top: .7rem;
+    }
+
+    .impl-meta-box__progress-track {
+        height: 10px;
+        background: #e5e7eb;
+        border-radius: 999px;
+        overflow: hidden;
+    }
+
+    .impl-meta-box__progress-track span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #f59e0b, #f97316);
+    }
+
+    .impl-meta-box__progress-note {
+        display: flex;
+        justify-content: space-between;
+        gap: .75rem;
+        margin-top: .35rem;
+        font-size: .76rem;
         color: #64748b;
     }
 
@@ -429,10 +497,23 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
     }
 
     .impl-summary-box {
-        background: #f8fafc;
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
         border: 1px solid #e5edf6;
-        border-radius: 14px;
+        border-radius: 16px;
         padding: 1rem;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .05);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .impl-summary-box::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(180deg, #2563eb, #14b8a6);
     }
 
     .impl-summary-box__label {
@@ -947,24 +1028,29 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                         <div class="impl-meta-box">
                             <div class="impl-meta-box__label">RPM</div>
                             <div class="impl-meta-box__value"><?= htmlspecialchars((string) ($cluster['rpm'] ?? '-')) ?></div>
+                            <div class="impl-meta-box__pill">Koordinasi Regional</div>
                         </div>
                         <div class="impl-meta-box">
                             <div class="impl-meta-box__label">SPV</div>
                             <div class="impl-meta-box__value"><?= htmlspecialchars((string) ($cluster['spv'] ?? '-')) ?></div>
+                            <div class="impl-meta-box__pill">Supervisi Lapangan</div>
                         </div>
                         <div class="impl-meta-box">
                             <div class="impl-meta-box__label">Team</div>
                             <div class="impl-meta-box__value"><?= htmlspecialchars((string) ($cluster['team_name'] ?? '-')) ?></div>
+                            <div class="impl-meta-box__pill">Eksekusi Implementasi</div>
                         </div>
                         <div class="impl-meta-box">
                             <div class="impl-meta-box__label">HP DRM</div>
                             <div class="impl-meta-box__value"><?= implHistoryNumber((float) ($cluster['homepass_drm'] ?? 0), false) ?></div>
+                            <div class="impl-meta-box__pill">Basis Perhitungan Progress</div>
                         </div>
                         <div class="impl-meta-box">
                             <div class="impl-meta-box__label">Tanggal DRM</div>
                             <div class="impl-meta-box__value"><?= !empty($cluster['drm_date']) ? htmlspecialchars((string) $cluster['drm_date']) : '-' ?></div>
+                            <div class="impl-meta-box__pill">Start Aging Implementasi</div>
                         </div>
-                        <div class="impl-meta-box">
+                        <div class="impl-meta-box impl-meta-box--aging">
                             <div class="impl-meta-box__label">Aging ke RFS</div>
                             <div class="impl-meta-box__value"><?= $agingWorkingDays ?> / 23 Hari Kerja</div>
                             <div class="impl-meta-box__sub">
@@ -972,7 +1058,15 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                                 <?php if (!empty($cluster['status_drm'])): ?>
                                     | Status DRM <?= htmlspecialchars((string) $cluster['status_drm']) ?>
                                 <?php endif; ?>
-                                | <?= $agingPercent ?>%
+                            </div>
+                            <div class="impl-meta-box__progress">
+                                <div class="impl-meta-box__progress-track">
+                                    <span style="width: <?= $agingPercent ?>%;"></span>
+                                </div>
+                                <div class="impl-meta-box__progress-note">
+                                    <span>Progress Aging</span>
+                                    <span><?= $agingPercent ?>%</span>
+                                </div>
                             </div>
                         </div>
                     </div>

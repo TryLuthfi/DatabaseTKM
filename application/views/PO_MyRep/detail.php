@@ -1,0 +1,315 @@
+<?php
+$flashSuccess = $this->session->flashdata('success');
+$flashError = $this->session->flashdata('error');
+
+if (!function_exists('poMyRepValue')) {
+    function poMyRepValue($value)
+    {
+        return number_format((float) $value, 0, ',', '.');
+    }
+}
+?>
+
+<style>
+    .po-detail-hero {
+        background:
+            radial-gradient(circle at top right, rgba(59, 130, 246, .18), transparent 32%),
+            linear-gradient(135deg, #0f172a, #1e3a8a 58%, #0f766e);
+        border-radius: 20px;
+        padding: 1.25rem;
+        color: #fff;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, .18);
+    }
+
+    .po-detail-hero__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .po-detail-hero__label {
+        color: rgba(255,255,255,.72);
+        font-size: .82rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        margin-bottom: .2rem;
+    }
+
+    .po-detail-hero__value {
+        font-size: 1.15rem;
+        font-weight: 800;
+    }
+
+    .po-card {
+        border: 1px solid #dbeafe;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
+        background: #fff;
+    }
+
+    .po-card__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.1rem;
+        background: linear-gradient(135deg, #f8fbff, #eef6ff);
+        border-bottom: 1px solid #dbeafe;
+    }
+
+    .po-card__title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .po-header-box {
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .po-header-box__title {
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: .7rem;
+    }
+
+    .po-termin-table th {
+        white-space: nowrap;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .po-termin-table td {
+        vertical-align: middle;
+    }
+</style>
+
+<div class="content-wrapper">
+    <section class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0 text-dark">Detail PO MyRep</h1>
+                </div>
+                <div class="col-sm-6 text-right">
+                    <a href="<?= base_url('PO_MyRep') ?>" class="btn btn-outline-secondary">Kembali</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="content">
+        <div class="container-fluid">
+            <?php if (!empty($flashSuccess)): ?>
+                <div class="alert alert-success"><?= $flashSuccess ?></div>
+            <?php endif; ?>
+            <?php if (!empty($flashError)): ?>
+                <div class="alert alert-danger"><?= $flashError ?></div>
+            <?php endif; ?>
+
+            <div class="po-detail-hero">
+                <div class="d-flex flex-wrap justify-content-between align-items-start" style="gap:1rem;">
+                    <div>
+                        <div class="h4 font-weight-bold mb-1"><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div>
+                        <div class="text-white-50"><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?> • <?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div>
+                    </div>
+                    <button type="button" class="btn btn-light btn-sm" data-toggle="modal" data-target="#modal-create-po">Tambah PO</button>
+                </div>
+
+                <div class="po-detail-hero__grid">
+                    <div>
+                        <div class="po-detail-hero__label">Status Flow</div>
+                        <div class="po-detail-hero__value"><?= htmlspecialchars((string) ($cluster['status_current'] ?? '-')) ?></div>
+                    </div>
+                    <div>
+                        <div class="po-detail-hero__label">DRM Date</div>
+                        <div class="po-detail-hero__value"><?= !empty($cluster['drm_date']) ? htmlspecialchars((string) $cluster['drm_date']) : '-' ?></div>
+                    </div>
+                    <div>
+                        <div class="po-detail-hero__label">HP DRM</div>
+                        <div class="po-detail-hero__value"><?= poMyRepValue((float) ($cluster['homepass_drm'] ?? 0)) ?></div>
+                    </div>
+                    <div>
+                        <div class="po-detail-hero__label">RPM / SPV</div>
+                        <div class="po-detail-hero__value"><?= htmlspecialchars((string) ($cluster['rpm'] ?? '-')) ?> / <?= htmlspecialchars((string) ($cluster['spv'] ?? '-')) ?></div>
+                    </div>
+                    <div>
+                        <div class="po-detail-hero__label">PO Count</div>
+                        <div class="po-detail-hero__value"><?= (int) ($cluster['po_count'] ?? 0) ?></div>
+                    </div>
+                    <div>
+                        <div class="po-detail-hero__label">Total PO Value</div>
+                        <div class="po-detail-hero__value"><?= poMyRepValue((float) ($cluster['po_total_value'] ?? 0)) ?></div>
+                    </div>
+                </div>
+            </div>
+
+            <?php foreach ($poGroups as $groupKey => $groupRows): ?>
+                <div class="po-card mb-4">
+                    <div class="po-card__head">
+                        <div class="po-card__title"><?= $groupKey === 'SUBFEEDER' ? 'PO Subfeeder' : 'PO Cluster' ?></div>
+                        <div class="small text-muted"><?= count($groupRows) ?> PO</div>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($groupRows)): ?>
+                            <div class="text-muted">Belum ada data <?= $groupKey === 'SUBFEEDER' ? 'PO Subfeeder' : 'PO Cluster' ?>.</div>
+                        <?php else: ?>
+                            <?php foreach ($groupRows as $header): ?>
+                                <div class="po-header-box">
+                                    <div class="po-header-box__title">
+                                        <?= htmlspecialchars((string) ($header['po_number'] ?? '-')) ?>
+                                        <span class="badge badge-primary ml-2"><?= htmlspecialchars((string) ($header['po_category'] ?? '-')) ?></span>
+                                        <span class="badge badge-info ml-1"><?= htmlspecialchars((string) ($header['status_po'] ?? '-')) ?></span>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-3"><strong>Tanggal PO</strong><div><?= !empty($header['po_date']) ? htmlspecialchars((string) $header['po_date']) : '-' ?></div></div>
+                                        <div class="col-md-3"><strong>Nilai PO</strong><div><?= poMyRepValue((float) ($header['po_value'] ?? 0)) ?></div></div>
+                                        <div class="col-md-3"><strong>Versi</strong><div><?= !empty($header['po_version_label']) ? htmlspecialchars((string) $header['po_version_label']) : '-' ?></div></div>
+                                        <div class="col-md-3"><strong>Remark</strong><div><?= !empty($header['remark_po']) ? htmlspecialchars((string) $header['remark_po']) : '-' ?></div></div>
+                                    </div>
+
+                                    <div class="table-responsive mt-3">
+                                        <table class="table table-bordered table-sm po-termin-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Termin</th>
+                                                    <th>%</th>
+                                                    <th>Nilai</th>
+                                                    <th>Status</th>
+                                                    <th>Invoice</th>
+                                                    <th>Tgl Invoice</th>
+                                                    <th>Tgl BAST</th>
+                                                    <th>Tgl Payment</th>
+                                                    <th>Remark</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach (($header['termin_rows'] ?? []) as $termin): ?>
+                                                    <tr>
+                                                        <td class="text-center"><?= (int) ($termin['termin_no'] ?? 0) ?></td>
+                                                        <td class="text-center"><?= poMyRepValue((float) ($termin['termin_percent'] ?? 0)) ?>%</td>
+                                                        <td class="text-right"><?= poMyRepValue((float) ($termin['termin_value'] ?? 0)) ?></td>
+                                                        <td class="text-center"><span class="badge badge-secondary"><?= htmlspecialchars((string) ($termin['status_termin'] ?? '-')) ?></span></td>
+                                                        <td><?= !empty($termin['invoice_number']) ? htmlspecialchars((string) $termin['invoice_number']) : '-' ?></td>
+                                                        <td class="text-center"><?= !empty($termin['invoice_date']) ? htmlspecialchars((string) $termin['invoice_date']) : '-' ?></td>
+                                                        <td class="text-center"><?= !empty($termin['bast_date']) ? htmlspecialchars((string) $termin['bast_date']) : '-' ?></td>
+                                                        <td class="text-center"><?= !empty($termin['payment_date']) ? htmlspecialchars((string) $termin['payment_date']) : '-' ?></td>
+                                                        <td><?= !empty($termin['remark_termin']) ? htmlspecialchars((string) $termin['remark_termin']) : '-' ?></td>
+                                                        <td class="text-center">
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-outline-primary js-open-termin-modal"
+                                                                data-toggle="modal"
+                                                                data-target="#modal-termin"
+                                                                data-termin-id="<?= (int) ($termin['id_po_termin'] ?? 0) ?>"
+                                                                data-po-number="<?= htmlspecialchars((string) ($header['po_number'] ?? ''), ENT_QUOTES) ?>"
+                                                                data-termin-no="<?= (int) ($termin['termin_no'] ?? 0) ?>"
+                                                                data-status="<?= htmlspecialchars((string) ($termin['status_termin'] ?? ''), ENT_QUOTES) ?>"
+                                                                data-invoice-number="<?= htmlspecialchars((string) ($termin['invoice_number'] ?? ''), ENT_QUOTES) ?>"
+                                                                data-invoice-date="<?= htmlspecialchars((string) ($termin['invoice_date'] ?? ''), ENT_QUOTES) ?>"
+                                                                data-bast-date="<?= htmlspecialchars((string) ($termin['bast_date'] ?? ''), ENT_QUOTES) ?>"
+                                                                data-payment-date="<?= htmlspecialchars((string) ($termin['payment_date'] ?? ''), ENT_QUOTES) ?>"
+                                                                data-remark="<?= htmlspecialchars((string) ($termin['remark_termin'] ?? ''), ENT_QUOTES) ?>">
+                                                                Update
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </section>
+</div>
+
+<div class="modal fade" id="modal-create-po" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('PO_MyRep/savePo') ?>">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Tambah PO MyRep</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6"><div class="form-group"><label>Cluster</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?>" readonly></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Status Flow</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['status_current'] ?? '-')) ?>" readonly></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Tipe PO</label><select name="po_type" class="form-control"><?php foreach ($poTypeOptions as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Kategori PO</label><select name="po_category" class="form-control"><?php foreach ($poCategoryOptions as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Status PO</label><select name="status_po" class="form-control"><?php foreach ($poStatusOptions as $value => $label): ?><option value="<?= $value ?>" <?= $value === 'ISSUED' ? 'selected' : '' ?>><?= $label ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Nomor PO</label><input type="text" name="po_number" class="form-control" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Tanggal PO</label><input type="date" name="po_date" class="form-control" value="<?= date('Y-m-d') ?>" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Nilai PO</label><input type="text" name="po_value" class="form-control" required></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Versi</label><input type="text" name="po_version_label" class="form-control" placeholder="Contoh: FINAL 01 / AMANDMENT 01"></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Parent PO</label><select name="parent_po_header_id" class="form-control"><option value="">PO Baru</option><?php foreach (array_merge($poGroups['CLUSTER'], $poGroups['SUBFEEDER']) as $existingPo): ?><option value="<?= (int) ($existingPo['id_po_header'] ?? 0) ?>"><?= htmlspecialchars((string) ($existingPo['po_number'] ?? '-')) ?> - <?= htmlspecialchars((string) ($existingPo['po_category'] ?? '-')) ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-12"><div class="form-group mb-0"><label>Remark</label><textarea name="remark_po" class="form-control" rows="3"></textarea></div></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="text-muted small mr-auto">5 termin akan dibuat otomatis: 20%, 25%, 15%, 30%, 10%</div>
+                    <button type="submit" class="btn btn-primary">Simpan PO</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-termin" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('PO_MyRep/updateTermin') ?>">
+                <input type="hidden" name="id_po_termin" id="po_termin_id">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">Update Termin PO</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3"><strong>PO:</strong> <span id="po_termin_po_number">-</span> | <strong>Termin:</strong> <span id="po_termin_no">-</span></div>
+                    <div class="row">
+                        <div class="col-md-4"><div class="form-group"><label>Status Termin</label><select name="status_termin" id="po_termin_status" class="form-control"><?php foreach ($terminStatusOptions as $value => $label): ?><option value="<?= $value ?>"><?= $label ?></option><?php endforeach; ?></select></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Nomor Invoice</label><input type="text" name="invoice_number" id="po_termin_invoice_number" class="form-control"></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Tanggal Invoice</label><input type="date" name="invoice_date" id="po_termin_invoice_date" class="form-control"></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Tanggal BAST</label><input type="date" name="bast_date" id="po_termin_bast_date" class="form-control"></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Tanggal Payment</label><input type="date" name="payment_date" id="po_termin_payment_date" class="form-control"></div></div>
+                        <div class="col-md-12"><div class="form-group mb-0"><label>Remark</label><textarea name="remark_termin" id="po_termin_remark" class="form-control" rows="3"></textarea></div></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-info">Update Termin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        $(document).on('click', '.js-open-termin-modal', function () {
+            var $button = $(this);
+            $('#po_termin_id').val($button.data('termin-id') || '');
+            $('#po_termin_po_number').text($button.data('po-number') || '-');
+            $('#po_termin_no').text($button.data('termin-no') || '-');
+            $('#po_termin_status').val($button.data('status') || 'NOT READY');
+            $('#po_termin_invoice_number').val($button.data('invoice-number') || '');
+            $('#po_termin_invoice_date').val($button.data('invoice-date') || '');
+            $('#po_termin_bast_date').val($button.data('bast-date') || '');
+            $('#po_termin_payment_date').val($button.data('payment-date') || '');
+            $('#po_termin_remark').val($button.data('remark') || '');
+        });
+    })();
+</script>

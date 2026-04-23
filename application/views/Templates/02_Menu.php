@@ -428,6 +428,7 @@ $id_menu = $this->uri->segment('1');
                         $id_menu == 'VALSAL_MyRep' ||
                         $id_menu == 'Batch_Approval_MyRep' ||
                         $id_menu == 'Implementasi_BOQ_MyRep' ||
+                        $id_menu == 'PO_MyRep' ||
                         $id_menu == 'DRM_MyRep'
                     ) ? 'menu-open' : '' ?>">
                         <a href="#" class="nav-link <?= (
@@ -444,6 +445,7 @@ $id_menu = $this->uri->segment('1');
                             $id_menu == 'VALSAL_MyRep' ||
                             $id_menu == 'Batch_Approval_MyRep' ||
                             $id_menu == 'Implementasi_BOQ_MyRep' ||
+                            $id_menu == 'PO_MyRep' ||
                             $id_menu == 'DRM_MyRep'
                         ) ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-project-diagram"></i>
@@ -509,6 +511,7 @@ $id_menu = $this->uri->segment('1');
                                 $id_menu == 'Batch_Approval_MyRep' ||
                                 $id_menu == 'DRM_MyRep' ||
                                 $id_menu == 'Implementasi_BOQ_MyRep' ||
+                                $id_menu == 'PO_MyRep' ||
                                 $id_menu == 'Monitoring_RFS_MyRep' ||
                                 $id_menu == 'Checklist_Dokument_MyRep' ||
                                 $id_menu == 'BAK_MyRep' ||
@@ -524,6 +527,7 @@ $id_menu = $this->uri->segment('1');
                                     $id_menu == 'Batch_Approval_MyRep' ||
                                     $id_menu == 'DRM_MyRep' ||
                                     $id_menu == 'Implementasi_BOQ_MyRep' ||
+                                    $id_menu == 'PO_MyRep' ||
                                     $id_menu == 'Monitoring_RFS_MyRep' ||
                                     $id_menu == 'Checklist_Dokument_MyRep' ||
                                     $id_menu == 'BAK_MyRep' ||
@@ -582,6 +586,13 @@ $id_menu = $this->uri->segment('1');
                                         </a>
                                     </li>
                                     <li class="nav-item">
+                                        <a href="<?= base_url('PO_MyRep') ?>"
+                                            class="nav-link <?= ($id_menu == 'PO_MyRep') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>PO MyRep</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
                                         <a href="<?= base_url('Monitoring_RFS_MyRep') ?>"
                                             class="nav-link <?= ($id_menu == 'Monitoring_RFS_MyRep') ? 'active' : '' ?>">
                                             <i class="far fa-dot-circle nav-icon"></i>
@@ -593,13 +604,6 @@ $id_menu = $this->uri->segment('1');
                                             class="nav-link <?= ($id_menu == 'Checklist_Dokument_MyRep') ? 'active' : '' ?>">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Checklist Dokument</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item" style="pointer-events: none;">
-                                        <a href="<?= base_url('MyRepublik_PO') ?>"
-                                            class="nav-link <?= ($id_menu == 'MyRepublik_PO') ? 'active' : '' ?>">
-                                            <i class="far fa-dot-circle nav-icon"></i>
-                                            <p>PO & Invoice</p>
                                         </a>
                                     </li>
                                 </ul>

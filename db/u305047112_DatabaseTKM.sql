@@ -222058,6 +222058,53 @@ CREATE TABLE `tb_myrep_boq_progress_photo` (
   KEY `idx_myrep_boq_progress_photo_item` (`id_progress_item`),
   CONSTRAINT `fk_myrep_boq_progress_photo_item` FOREIGN KEY (`id_progress_item`) REFERENCES `tb_myrep_boq_progress_item` (`id_progress_item`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `tb_myrep_po_header` (
+  `id_po_header` int(11) NOT NULL AUTO_INCREMENT,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `parent_po_header_id` int(11) DEFAULT NULL,
+  `po_type` enum('CLUSTER','SUBFEEDER') NOT NULL DEFAULT 'CLUSTER',
+  `po_category` enum('INITIAL','FINAL','AMANDMENT') NOT NULL DEFAULT 'INITIAL',
+  `po_number` varchar(150) NOT NULL,
+  `po_date` date DEFAULT NULL,
+  `po_value` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `status_po` enum('NOT ISSUED','ISSUED','PARTIAL PAYMENT','FULLY PAID','CLOSED') NOT NULL DEFAULT 'ISSUED',
+  `po_version_label` varchar(100) DEFAULT NULL,
+  `remark_po` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_po_header`),
+  KEY `idx_myrep_po_cluster` (`id_myrep_cluster`),
+  KEY `idx_myrep_po_parent` (`parent_po_header_id`),
+  KEY `idx_myrep_po_type` (`po_type`),
+  KEY `idx_myrep_po_status` (`status_po`),
+  CONSTRAINT `fk_myrep_po_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_myrep_po_parent` FOREIGN KEY (`parent_po_header_id`) REFERENCES `tb_myrep_po_header` (`id_po_header`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE `tb_myrep_po_termin` (
+  `id_po_termin` int(11) NOT NULL AUTO_INCREMENT,
+  `id_po_header` int(11) NOT NULL,
+  `termin_no` tinyint(4) NOT NULL,
+  `termin_percent` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `termin_value` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `status_termin` enum('NOT READY','READY BILLING','BILLED','PAID') NOT NULL DEFAULT 'NOT READY',
+  `invoice_number` varchar(150) DEFAULT NULL,
+  `invoice_date` date DEFAULT NULL,
+  `bast_date` date DEFAULT NULL,
+  `payment_date` date DEFAULT NULL,
+  `remark_termin` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_po_termin`),
+  UNIQUE KEY `uniq_myrep_po_termin` (`id_po_header`,`termin_no`),
+  KEY `idx_myrep_po_termin_status` (`status_termin`),
+  CONSTRAINT `fk_myrep_po_termin_header` FOREIGN KEY (`id_po_header`) REFERENCES `tb_myrep_po_header` (`id_po_header`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
