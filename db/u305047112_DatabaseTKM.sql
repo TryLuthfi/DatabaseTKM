@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Waktu pembuatan: 20 Apr 2026 pada 07.09
+-- Waktu pembuatan: 23 Apr 2026 pada 10.31
 -- Versi server: 11.8.6-MariaDB-log
 -- Versi PHP: 7.2.34
 
@@ -83331,6 +83331,117 @@ INSERT INTO `md_kokab_indonesia` (`id`, `province_id`, `name`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Struktur dari tabel `md_myrep_boq_item`
+--
+
+CREATE TABLE `md_myrep_boq_item` (
+  `id_boq_item` int(11) NOT NULL,
+  `excel_item_name` varchar(255) NOT NULL,
+  `item_name` varchar(100) NOT NULL,
+  `item_type` varchar(100) DEFAULT NULL,
+  `default_photo_qty` int(11) NOT NULL DEFAULT 0,
+  `photo_type` varchar(255) DEFAULT NULL,
+  `remarks_rule` enum('SESUAI ITEM','SAMPLING') NOT NULL DEFAULT 'SESUAI ITEM',
+  `sort_no` int(11) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `md_myrep_boq_item`
+--
+
+INSERT INTO `md_myrep_boq_item` (`id_boq_item`, `excel_item_name`, `item_name`, `item_type`, `default_photo_qty`, `photo_type`, `remarks_rule`, `sort_no`, `is_active`, `created_at`) VALUES
+(1, 'INSTAL FAT POLE MOUNTED TYPE (16 PORTS)', 'FAT', 'FAT', 2, 'TERBUKA DAN TERTUTUP', 'SESUAI ITEM', 1, 1, '2026-04-22 06:39:16'),
+(2, 'INSTAL 48 CORES CAPACITY POLE FDT', 'FDT 48', 'FDT', 2, 'TERBUKA DAN TERTUTUP', 'SESUAI ITEM', 2, 1, '2026-04-22 06:39:16'),
+(3, 'INSTAL 72 CORES CAPACITY POLE FDT', 'FDT 72', 'FDT', 2, 'TERBUKA DAN TERTUTUP', 'SESUAI ITEM', 3, 1, '2026-04-22 06:39:16'),
+(4, 'SPLICING FO', 'SPLICING', 'SPLICING', 4, 'FOTO SPLICING', 'SAMPLING', 4, 1, '2026-04-22 06:39:16'),
+(5, 'STRAND WIRE MESSENGER 6 MM', 'SLING WIRE', 'SLING WIRE', 4, 'FOTO PENARIKAN KABEL', 'SAMPLING', 5, 1, '2026-04-22 06:39:16'),
+(6, 'Pemasangan Pole / Tiang Udara 7 M 2.5', 'TIANG 7\'2.5', 'TIANG', 1, 'FOTO FULL TIANG BERDIRI', 'SESUAI ITEM', 6, 1, '2026-04-22 06:39:16'),
+(7, 'Pemasangan Tiang 7 meter 3 inch', 'TIANG 7\'3', 'TIANG', 1, 'FOTO FULL TIANG BERDIRI', 'SESUAI ITEM', 7, 1, '2026-04-22 06:39:16'),
+(8, 'Pemasangan Tiang 7 meter 4\', STEL-L003 1996', 'TIANG 7\'4', 'TIANG', 1, 'FOTO FULL TIANG BERDIRI', 'SESUAI ITEM', 8, 1, '2026-04-22 06:39:16'),
+(9, 'Pemasangan Tiang Tunggal 9 meter 4\', STEL-L003 1996', 'TIANG 9\'4', 'TIANG', 1, 'FOTO FULL TIANG BERDIRI', 'SESUAI ITEM', 9, 1, '2026-04-22 06:39:16'),
+(10, 'INSTAL FO TYPE SM G.652.D-ADSS 24 CORES', 'CABLE 24', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 10, 1, '2026-04-22 06:39:16'),
+(11, 'INSTAL FO TYPE SM G.652.D-ADSS 36 CORES', 'CABLE 36', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 11, 1, '2026-04-22 06:39:16'),
+(12, 'INSTAL FO TYPE SM G.652.D-ADSS 48 CORES', 'CABLE 48', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 12, 1, '2026-04-22 06:39:16'),
+(13, 'INSTAL FO TYPE SM G.652.D-ADSS 72 CORES', 'CABLE 72', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 13, 1, '2026-04-22 06:39:16'),
+(14, 'INSTAL FO TYPE SM G.652.D-ADSS 96 CORES', 'CABLE 96', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 14, 1, '2026-04-22 06:39:16'),
+(15, 'INSTAL FO TYPE SM G.652.D-ADSS 144 CORES', 'CABLE 144', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 15, 1, '2026-04-22 06:39:16');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `md_myrep_flow_doc_group`
+--
+
+CREATE TABLE `md_myrep_flow_doc_group` (
+  `id_doc_group` int(11) NOT NULL,
+  `flow_type` enum('BAK','VALSAL','BATCH_APPROVAL','POST_DONASI','DRM') NOT NULL,
+  `group_label` varchar(100) NOT NULL,
+  `sort_no` int(11) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `md_myrep_flow_doc_group`
+--
+
+INSERT INTO `md_myrep_flow_doc_group` (`id_doc_group`, `flow_type`, `group_label`, `sort_no`, `is_active`, `created_at`) VALUES
+(1, 'BAK', 'BA OPEN', 1, 1, '2026-04-20 07:25:41'),
+(2, 'VALSAL', 'VALIDASI SALES', 1, 1, '2026-04-20 07:25:41'),
+(3, 'BATCH_APPROVAL', 'RAR', 1, 1, '2026-04-20 07:25:41'),
+(4, 'DRM', 'DRM DOCUMENT', 1, 1, '2026-04-20 07:25:41'),
+(5, 'POST_DONASI', 'POST DONASI DOCUMENT', 1, 1, '2026-04-20 07:25:41');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `md_myrep_flow_doc_item`
+--
+
+CREATE TABLE `md_myrep_flow_doc_item` (
+  `id_doc_item` int(11) NOT NULL,
+  `id_doc_group` int(11) NOT NULL,
+  `doc_name` varchar(150) NOT NULL,
+  `doc_requirement_note` varchar(255) DEFAULT NULL,
+  `verification_team` varchar(100) DEFAULT NULL,
+  `sort_no` int(11) NOT NULL DEFAULT 0,
+  `is_required` tinyint(1) NOT NULL DEFAULT 1,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `md_myrep_flow_doc_item`
+--
+
+INSERT INTO `md_myrep_flow_doc_item` (`id_doc_item`, `id_doc_group`, `doc_name`, `doc_requirement_note`, `verification_team`, `sort_no`, `is_required`, `is_active`, `created_at`) VALUES
+(1, 1, 'BA OPEN', 'Dokumen BA OPEN hasil input HO', 'HO', 1, 1, 1, '2026-04-20 07:25:50'),
+(2, 2, 'SND KASAR', 'Dokumen SND Kasar dari AREA', 'HO', 1, 1, 1, '2026-04-20 07:25:50'),
+(3, 3, 'RAR', 'RAR berisi foto lingkungan, foto jalan, dan foto rumah', 'HO', 1, 1, 1, '2026-04-20 07:25:50'),
+(4, 4, 'APD KMZ', 'Dokumen DRM APD KMZ', 'HO', 1, 1, 1, '2026-04-20 07:25:50'),
+(5, 4, 'APD DWG', 'Dokumen DRM APD DWG', 'HO', 2, 1, 1, '2026-04-20 07:25:50'),
+(6, 4, 'APD PDF', 'Dokumen DRM APD PDF', 'HO', 3, 1, 1, '2026-04-20 07:25:50'),
+(7, 4, 'APD BOQ', 'Dokumen DRM APD BOQ', 'HO', 4, 1, 1, '2026-04-20 07:25:50'),
+(8, 4, 'HPDB', 'Dokumen DRM HPDB', 'HO', 5, 1, 1, '2026-04-20 07:25:50'),
+(9, 4, 'TSSR', 'Dokumen DRM TSSR', 'HO', 6, 1, 1, '2026-04-20 07:25:50'),
+(10, 5, 'Surat Ijin RT / RW', '-', 'HO', 1, 1, 1, '2026-04-20 07:25:50'),
+(11, 5, 'Form Cluster Survey', '-', 'HO', 2, 1, 1, '2026-04-20 07:25:50'),
+(12, 5, 'Berita Acara Open', '-', 'HO', 3, 1, 1, '2026-04-20 07:25:50'),
+(13, 5, 'Perjanjian Donasi dan Pemberian Izin', '-', 'HO', 4, 1, 1, '2026-04-20 07:25:50'),
+(14, 5, 'Layout SnD Kasar', '-', 'HO', 5, 1, 1, '2026-04-20 07:25:50'),
+(15, 5, 'Form Free Layanan', '-', 'HO', 6, 1, 1, '2026-04-20 07:25:50'),
+(16, 5, 'KTP PIC Free Layanan', '-', 'HO', 7, 1, 1, '2026-04-20 07:25:50'),
+(17, 5, 'Cluster Approval Proposal', '-', 'HO', 8, 1, 1, '2026-04-20 07:25:50'),
+(18, 5, 'KTP RT/RW', '-', 'HO', 9, 1, 1, '2026-04-20 07:25:50'),
+(19, 5, 'Dokumentasi Penyerahan Kontribusi', '-', 'HO', 10, 1, 1, '2026-04-20 07:25:50'),
+(20, 5, 'Bukti Transfer Kontribusi', '-', 'HO', 11, 1, 1, '2026-04-20 07:25:50'),
+(21, 5, 'Dokumentasi CSR', '-', 'HO', 12, 1, 1, '2026-04-20 07:25:50');
+
+-- --------------------------------------------------------
+
+--
 -- Struktur dari tabel `md_provinsi_indonesia`
 --
 
@@ -86726,9 +86837,9 @@ INSERT INTO `tb_billingpayment` (`id_billing`, `id_bowheer`, `no_invoice`, `tgl_
 (1870, 10, 'TEC.709/TKM.02/INV/II/2026', '2026-02-27 00:00:00', '2026-03-03 00:00:00', NULL, 'PO25005477-3', '2025-10-31 00:00:00', 442403000.00, 491067330.00, NULL, 'open', '2026-04-08', 116, 'Demak', '', 'FBEOPA DMK Mangunjiwan Dusun Platar RW 06 TK', '2026-04-10'),
 (1871, 10, 'TEC.712/TKM.02/INV/II/2026', '2026-02-27 00:00:00', '2026-03-03 00:00:00', NULL, 'PO25004980-3', '2025-10-05 00:00:00', 452648000.00, 502439280.00, NULL, 'open', '2026-04-08', 116, 'Banyumas', '', 'FBEOPA PWT KEDUNGRANDU RW01,02.03.07 TK', '2026-04-10'),
 (1872, 10, 'TEC.754/TKM.02/INV/III/2026', '2026-03-04 00:00:00', '2026-03-09 00:00:00', NULL, 'PO25003530-3', '2025-07-22 00:00:00', 109073582.00, 121071676.00, NULL, 'open', '2026-04-08', 116, 'Jember', '', 'FBEOPA JMR KRANJINGAN RW 04 TK', '2026-04-10'),
-(1873, 11, 'TEC.1171/TKM.02/INV/III/2026', '2026-03-31 00:00:00', '2025-04-09 00:00:00', NULL, 'PO25004692-3', '2025-09-21 00:00:00', 9244992.00, 10261941.00, NULL, 'open', '2026-04-08', 116, 'Tegal', '', 'FBEOPA SLW SUTAPRANAN RW 02 TK', '2026-04-10'),
-(1874, 11, 'TEC.1172/TKM.02/INV/III/2026', '2026-03-31 00:00:00', '2025-05-09 00:00:00', NULL, 'PO25004688-3', '2025-09-21 00:00:00', 15408320.00, 17103236.00, NULL, 'open', '2026-04-08', 116, 'Tegal', '', 'FBEOPA SLW KALIGAYAM RW 01,02,03,04,05 TK', '2026-04-10'),
-(1875, 11, 'TEC.1173/TKM.02/INV/III/2026', '2026-03-31 00:00:00', '2025-08-22 00:00:00', NULL, 'PO25005477-3', '2025-10-31 00:00:00', 46224961.00, 51309707.00, NULL, 'open', '2026-04-08', 116, 'Demak', '', 'FBEOPA DMK Mangunjiwan Dusun Platar RW 06 TK', '2026-04-10'),
+(1873, 11, 'TEC.1171/TKM.02/INV/III/2026', '2026-03-31 00:00:00', '2025-04-09 00:00:00', '2026-04-21 00:00:00', 'PO25004692-3', '2025-09-21 00:00:00', 9244992.00, 10261941.00, '10261941', 'paid', '2026-04-08', 116, 'Tegal', '', 'FBEOPA SLW SUTAPRANAN RW 02 TK', '2026-04-21'),
+(1874, 11, 'TEC.1172/TKM.02/INV/III/2026', '2026-03-31 00:00:00', '2025-05-09 00:00:00', '2026-04-21 00:00:00', 'PO25004688-3', '2025-09-21 00:00:00', 15408320.00, 17103236.00, '17103236', 'paid', '2026-04-08', 116, 'Tegal', '', 'FBEOPA SLW KALIGAYAM RW 01,02,03,04,05 TK', '2026-04-21'),
+(1875, 11, 'TEC.1173/TKM.02/INV/III/2026', '2026-03-31 00:00:00', '2025-08-22 00:00:00', '2026-04-21 00:00:00', 'PO25005477-3', '2025-10-31 00:00:00', 46224961.00, 51309707.00, '51309707', 'paid', '2026-04-08', 116, 'Demak', '', 'FBEOPA DMK Mangunjiwan Dusun Platar RW 06 TK', '2026-04-21'),
 (1876, 13, 'TEC.545.R/TKM.02/INV/III/2026', '2026-03-06 00:00:00', '2026-03-10 00:00:00', '2026-04-14 00:00:00', '4100025526-02', '2023-11-25 00:00:00', 5000.00, 5550.00, '5550', 'paid', '2026-04-08', 116, 'Ketapang', '', 'FO Fiberize New Cable <=24 Core Services\n\nRFI-KTP-0001\nINDOSAT', '2026-04-14'),
 (1877, 13, 'TEC.549.R/TKM.02/INV/III/2026', '2026-03-06 00:00:00', '2026-03-10 00:00:00', '2026-04-14 00:00:00', '4100029007-02', '2024-09-17 00:00:00', 5000.00, 5550.00, '5550', 'paid', '2026-04-08', 116, 'Balikpapan', '', 'FO Fiberize Collo <=24 Core Services\n\nRFI-BPP-0001\nINDOSAT', '2026-04-14'),
 (1878, 13, 'TEC.685.R/TKM.02/INV/III/2026', '2026-03-06 00:00:00', '2026-03-10 00:00:00', NULL, '4100025526-02', '2023-11-25 00:00:00', 3856713.00, 4280951.00, NULL, 'open', '2026-04-08', 116, 'Ketapang', '', 'FO Fiberize New Cable <=24 Core Services\n\nRFI-KTP-0001\nINDOSAT', '2026-04-10'),
@@ -86905,13 +87016,13 @@ INSERT INTO `tb_billingpayment` (`id_billing`, `id_bowheer`, `no_invoice`, `tgl_
 (2048, 6, 'TEC.1512/INV/IV/2026', '2015-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '7400114972', '2026-02-26 00:00:00', 7773750.00, 8628863.00, NULL, 'open', '2026-04-17', 116, 'Gorontalo', 'OSP Regional 5', 'Roll Out SUBFEEDER PERUMAHAN TAMAN INDAH REAL ESTATE GORONTALO GORONTALO [GTO000059]', '2026-04-17'),
 (2049, 10, 'TEC.1514/TKM.02/INV/IV/2026', '2015-04-26 00:00:00', '2017-04-26 00:00:00', NULL, 'PO24003424-4', '2010-12-24 00:00:00', 206506337.00, 229222034.00, NULL, 'open', '2026-04-17', 116, 'Jakarta Timur', 'OSP Regional 2', 'FBEOPA CKG RW 05 CILANGKAP TK', '2026-04-17'),
 (2050, 10, 'TEC.1515/TKM.02/INV/IV/2026', '2015-04-26 00:00:00', '2017-04-26 00:00:00', NULL, 'PO25000532-4', '2004-02-25 00:00:00', 250196000.00, 277717560.00, NULL, 'open', '2026-04-17', 116, 'Jakarta Timur', 'OSP Regional 2', 'BBNEXP CKG JL Raya Cilangkap to JL. Raya Kranggan', '2026-04-17'),
-(2051, 14, 'TEC.1519/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200022122-02', '2020-09-24 00:00:00', 11849673.00, 13153137.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH FEDR New Cable <=96C Services \n \nIFPLG10396\nINDOSAT', '2026-04-17'),
-(2052, 14, 'TEC.1520/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200019452-02', '2024-07-24 00:00:00', 1454000.00, 1613940.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH DIST Install Pole & Acc Serv\n \nIFPLG10152\nINDOSAT', '2026-04-17'),
-(2053, 14, 'TEC.1521/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200018566-02', '2001-07-24 00:00:00', 1439750.00, 1598123.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH FEDR Collo Cable Tracing&Repair\n \nIFPLG10098\nINDOSAT', '2026-04-17'),
-(2054, 14, 'TEC.1522/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200020243-02', '2007-08-24 00:00:00', 15650500.00, 17372055.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH FEDR Collo <=96C Services\n \nIFPLG10264\nINDOSAT', '2026-04-17'),
-(2055, 14, 'TEC.1523/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200019453-02', '2024-07-24 00:00:00', 1948800.00, 2163168.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH DIST Install Pole & Acc Serv\n \nIFPLG10155\nINDOSAT', '2026-04-17'),
-(2056, 14, 'TEC.1524/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200020504-02', '2014-08-24 00:00:00', 5144305.00, 5710179.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH FEDR New Cable <=96C Services \n \nIFPLG10333\nINDOSAT', '2026-04-17'),
-(2057, 14, 'TEC.1525/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200023668-02', '2022-10-24 00:00:00', 20326850.00, 22562804.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH Distribution Aerial Cable Serv\n \nIFPLG10508\nINDOSAT', '2026-04-17'),
+(2051, 19, 'TEC.1519/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200022122-02', '2020-09-24 00:00:00', 11849673.00, 13153137.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH FEDR New Cable <=96C Services \n \nIFPLG10396\nINDOSAT', '2026-04-17'),
+(2052, 19, 'TEC.1520/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200019452-02', '2024-07-24 00:00:00', 1454000.00, 1613940.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH DIST Install Pole & Acc Serv\n \nIFPLG10152\nINDOSAT', '2026-04-17'),
+(2053, 19, 'TEC.1521/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200018566-02', '2001-07-24 00:00:00', 1439750.00, 1598123.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH FEDR Collo Cable Tracing&Repair\n \nIFPLG10098\nINDOSAT', '2026-04-17'),
+(2054, 19, 'TEC.1522/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200020243-02', '2007-08-24 00:00:00', 15650500.00, 17372055.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH FEDR Collo <=96C Services\n \nIFPLG10264\nINDOSAT', '2026-04-17'),
+(2055, 19, 'TEC.1523/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200019453-02', '2024-07-24 00:00:00', 1948800.00, 2163168.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH DIST Install Pole & Acc Serv\n \nIFPLG10155\nINDOSAT', '2026-04-17'),
+(2056, 19, 'TEC.1524/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200020504-02', '2014-08-24 00:00:00', 5144305.00, 5710179.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH FEDR New Cable <=96C Services \n \nIFPLG10333\nINDOSAT', '2026-04-17'),
+(2057, 19, 'TEC.1525/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200023668-02', '2022-10-24 00:00:00', 20326850.00, 22562804.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH Distribution Aerial Cable Serv\n \nIFPLG10508\nINDOSAT', '2026-04-17'),
 (2058, 6, 'TEC.1526/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '7400118686', '2018-03-26 00:00:00', 6829200.00, 7580412.00, NULL, 'open', '2026-04-17', 116, 'Brebes', 'OSP Regional 3', 'Roll Out SUBFEEDER KARANGJUNTI RW 01 BREBES BREBES [BBS000946]', '2026-04-17'),
 (2059, 6, 'TEC.1527/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '7400118699', '2018-03-26 00:00:00', 6747150.00, 7489337.00, NULL, 'open', '2026-04-17', 116, 'Brebes', 'OSP Regional 3', 'Roll Out SUBFEEDER KARANGJUNTI RW 03 BREBES BREBES [BBS000945]', '2026-04-17'),
 (2060, 6, 'TEC.1528/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '7400080724', '2005-06-25 00:00:00', 4873900.00, 5410029.00, NULL, 'open', '2026-04-17', 116, 'Makassar', 'OSP Regional 5', 'Roll Out SUBFEEDER DUSUN ROMANG LOMPOA GENTUNGANG MAKASSAR MAKASSAR [MKS001252]', '2026-04-17'),
@@ -86987,7 +87098,7 @@ INSERT INTO `tb_billingpayment` (`id_billing`, `id_bowheer`, `no_invoice`, `tgl_
 (2129, 6, 'TEC.1598/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '7400065330', '2030-01-25 00:00:00', 1982550.00, 2200631.00, NULL, 'open', '2026-04-17', 116, 'Balikpapan', 'OSP Regional 4', 'Roll Out MUARA RAPAK RT 19 BALIKPAPAN [BPP000523]', '2026-04-17'),
 (2130, 6, 'TEC.1599/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '7400070369', '2011-03-25 00:00:00', 3544875.00, 3934811.00, NULL, 'open', '2026-04-17', 116, 'Balikpapan', 'OSP Regional 4', 'Roll Out PONDOK ASRI MANGGAR RT 29 BALIKPAPAN [BPP000315]', '2026-04-17'),
 (2131, 6, 'TEC.1600/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '7400063485', '2002-01-25 00:00:00', 3074580.00, 3412784.00, NULL, 'open', '2026-04-17', 116, 'Balikpapan', 'OSP Regional 4', 'Roll Out BALIKPAPAN REGENCY CLUSTER TAMPAK SIRING RT 42 BALIKPAPAN [BPP000675]', '2026-04-17'),
-(2132, 3, 'TEC.1601/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '4700028417/HK.810/TA-851020/04-2026', '2001-04-26 00:00:00', 338410505.00, 375635661.00, NULL, 'open', '2026-04-17', 116, 'Medan', 'OSP Regional 1', 'SINGLE TERRITORY ACCESS RESPONSIBILITY\nPAKET MEDAN 2 BULAN JANUARI 2026', '2026-04-17'),
+(2132, 3, 'TEC.1601/TKM.02/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '4700028417/HK.810/TA-851020/04-2026', '2001-04-26 00:00:00', 343890505.00, 381718461.00, NULL, 'open', '2026-04-17', 116, 'Medan', 'OSP Regional 1', 'SINGLE TERRITORY ACCESS RESPONSIBILITY\r\nPAKET MEDAN 2 BULAN JANUARI 2026', '2026-04-21'),
 (2133, 6, 'TEC.1602/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '7400094081', '2004-09-25 00:00:00', 27553800.00, 30584718.00, NULL, 'open', '2026-04-17', 116, 'Banjarmasin', 'OSP Regional 4', 'Roll Out TATAH BELAYUNG BARU RT 04 BANJARMASIN BANJARMASIN [BJM000955]', '2026-04-17'),
 (2134, 6, 'TEC.1603/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '7400090829', '2020-08-25 00:00:00', 25932781.00, 28785387.00, NULL, 'open', '2026-04-17', 116, 'Manado', 'OSP Regional 5', 'Roll Out PERUMAHAN CBA GOLD LAMA MINAHASA MANADO [MND000059]', '2026-04-17'),
 (2135, 6, 'TEC.1604/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '7400091411', '2029-08-25 00:00:00', 7886550.00, 8754071.00, NULL, 'open', '2026-04-17', 116, 'Banjarmasin', 'OSP Regional 4', 'Roll Out PERUMAHAN WIRA YUDHA BANJARBARU UTARA BANJARMASIN [BJM000667]', '2026-04-17'),
@@ -87012,10 +87123,10 @@ INSERT INTO `tb_billingpayment` (`id_billing`, `id_bowheer`, `no_invoice`, `tgl_
 (2154, 6, 'TEC.1623/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '7400105659', '2010-12-25 00:00:00', 8419381.00, 9345513.00, NULL, 'open', '2026-04-17', 116, 'Palangkaraya', 'OSP Regional 4', 'Roll Out PALANGKA RW 08 PALANGKARAYA PALANGKARAYA [PLK000126]', '2026-04-17'),
 (2155, 6, 'TEC.1624/INV/IV/2026', '2016-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '7400062320', '2026-12-24 00:00:00', 1984260.00, 2202529.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'Roll Out WAHID ALI PALEMBANG [PLB004536]', '2026-04-17'),
 (2156, 10, 'TEC.1626/TKM.02/INV/IV/2026', '2017-04-26 00:00:00', '2017-04-26 00:00:00', NULL, 'PO25004711-3', '2022-09-25 00:00:00', 84070698.00, 93318475.00, NULL, 'open', '2026-04-17', 116, 'Madiun', 'OSP Regional 3', 'FBEOPA CRB MOJOPURNO RW.01 TK', '2026-04-17'),
-(2157, 14, 'TEC.1627/TKM.02/INV/IV/2026', '2017-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200025251-02', '2026-11-24 00:00:00', 10930250.00, 12132578.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH FEDR Hanger Cable Services\n \nIFPLG10613\nINDOSAT', '2026-04-17'),
-(2158, 14, 'TEC.1628/TKM.02/INV/IV/2026', '2017-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200022831-02', '2003-10-24 00:00:00', 11871550.00, 13177421.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH Distribution Aerial Cable Serv\n \nIFPLG10565\nINDOSAT', '2026-04-17'),
-(2159, 14, 'TEC.1629/TKM.02/INV/IV/2026', '2017-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200025882-02', '2009-12-24 00:00:00', 41103650.00, 45625052.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH Distribution Aerial Cable Serv\n \nIFPLG10618\nINDOSAT', '2026-04-17'),
-(2160, 14, 'TEC.1630/TKM.02/INV/IV/2026', '2017-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200022682-02', '2030-09-24 00:00:00', 22589810.00, 25074689.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH FEDR New Cable <=96C Services \n \nIFPLG10521\nINDOSAT', '2026-04-17'),
+(2157, 19, 'TEC.1627/TKM.02/INV/IV/2026', '2017-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200025251-02', '2026-11-24 00:00:00', 10930250.00, 12132578.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH FEDR Hanger Cable Services\n \nIFPLG10613\nINDOSAT', '2026-04-17'),
+(2158, 19, 'TEC.1628/TKM.02/INV/IV/2026', '2017-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200022831-02', '2003-10-24 00:00:00', 11871550.00, 13177421.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH Distribution Aerial Cable Serv\n \nIFPLG10565\nINDOSAT', '2026-04-17'),
+(2159, 19, 'TEC.1629/TKM.02/INV/IV/2026', '2017-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200025882-02', '2009-12-24 00:00:00', 41103650.00, 45625052.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH Distribution Aerial Cable Serv\n \nIFPLG10618\nINDOSAT', '2026-04-17'),
+(2160, 19, 'TEC.1630/TKM.02/INV/IV/2026', '2017-04-26 00:00:00', '2017-04-26 00:00:00', NULL, '6200022682-02', '2030-09-24 00:00:00', 22589810.00, 25074689.00, NULL, 'open', '2026-04-17', 116, 'Palembang', 'OSP Regional 1', 'FO FTTH FEDR New Cable <=96C Services \n \nIFPLG10521\nINDOSAT', '2026-04-17'),
 (2161, 11, 'TEC.1631/TKM.02/INV/IV/2026', '2017-04-26 00:00:00', '2017-04-26 00:00:00', NULL, 'PO25005281-2', '2020-10-25 00:00:00', 8217771.00, 9121726.00, NULL, 'open', '2026-04-17', 116, 'Bandung', 'OSP Regional 2', 'FBECRD SOR SUKAMUKTI RW 08 TK', '2026-04-17');
 
 -- --------------------------------------------------------
@@ -94262,7 +94373,7 @@ INSERT INTO `tb_master_bowheer_bilco` (`id_bowheer`, `nama_bowheer`, `pic_user`,
 (6, 'PT. EMR - NRO', NULL, 45),
 (7, 'PT. EMR - DONASI', NULL, 30),
 (8, 'PT. EMR - PU ( NON PPN )', NULL, 30),
-(9, 'PT. EMR - DONASI ( NON PPN )', NULL, 30),
+(9, 'PT. EMR - DONASI', NULL, 30),
 (10, 'PT. MAP - OSP', NULL, 30),
 (11, 'PT. MAP - DONASI', NULL, 30),
 (12, 'PT. MAP - PU', NULL, 30),
@@ -94271,7 +94382,8 @@ INSERT INTO `tb_master_bowheer_bilco` (`id_bowheer`, `nama_bowheer`, `pic_user`,
 (15, 'PT. IFORTE - LBS', NULL, 30),
 (16, 'PT. MULTIPOLAR', NULL, 30),
 (17, 'PT. NET', NULL, 30),
-(18, 'PT. MORATEL', NULL, 30);
+(18, 'PT. MORATEL', NULL, 30),
+(19, 'PT. IFORTE - FTTH IOH', NULL, 30);
 
 -- --------------------------------------------------------
 
@@ -95087,6 +95199,562 @@ INSERT INTO `tb_master_user_child` (`id_master_user_child`, `id_master_user`, `v
 (3, 8, 'Planning'),
 (4, 2, 'Finance'),
 (5, 1, 'Direktur');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_bak`
+--
+
+CREATE TABLE `tb_myrep_bak` (
+  `id_bak` int(11) NOT NULL,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `ba_open_date` date DEFAULT NULL,
+  `bak_date` date DEFAULT NULL,
+  `homepass_bak` int(11) NOT NULL DEFAULT 0,
+  `status_bak` enum('DRAFT','SUBMITTED','ON REVIEW','APPROVED','REJECTED','DONE') NOT NULL DEFAULT 'DRAFT',
+  `remark_bak` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_bak`
+--
+
+INSERT INTO `tb_myrep_bak` (`id_bak`, `id_myrep_cluster`, `ba_open_date`, `bak_date`, `homepass_bak`, `status_bak`, `remark_bak`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+(8, 8, '2026-04-22', '2026-04-22', 1800, 'DONE', 'a', 76, 76, '2026-04-22 03:29:02', '2026-04-22 03:29:21');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_batch_approval`
+--
+
+CREATE TABLE `tb_myrep_batch_approval` (
+  `id_batch_approval` int(11) NOT NULL,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `submission_date` date DEFAULT NULL,
+  `hp_donasi` int(11) NOT NULL DEFAULT 0,
+  `nominal_pengajuan_area` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `nominal_nego_emr` decimal(18,2) DEFAULT NULL,
+  `nominal_release_finance` decimal(18,2) DEFAULT NULL,
+  `nominal_per_homepass` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `bank_name` varchar(100) DEFAULT NULL,
+  `bank_account_number` varchar(100) DEFAULT NULL,
+  `recipient_name` varchar(150) DEFAULT NULL,
+  `recipient_phone` varchar(50) DEFAULT NULL,
+  `recipient_position` varchar(100) DEFAULT NULL,
+  `recipient_period` varchar(50) DEFAULT NULL,
+  `free_wifi_qty` int(11) DEFAULT NULL,
+  `free_wifi_period_month` int(11) DEFAULT NULL,
+  `astri_batch_number` varchar(100) DEFAULT NULL,
+  `staging_status` enum('DRAFT','WAITING HO','WAITING MYREP','WAITING FINANCE','RELEASED','DONE BATCH APPROVAL','REJECTED') NOT NULL DEFAULT 'DRAFT',
+  `submitted_to_ho_at` datetime DEFAULT NULL,
+  `submitted_to_astri_at` datetime DEFAULT NULL,
+  `submitted_to_finance_at` datetime DEFAULT NULL,
+  `released_at` datetime DEFAULT NULL,
+  `transfer_proof_file_name` varchar(255) DEFAULT NULL,
+  `transfer_proof_file_path` varchar(255) DEFAULT NULL,
+  `remark_batch_approval` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_batch_approval`
+--
+
+INSERT INTO `tb_myrep_batch_approval` (`id_batch_approval`, `id_myrep_cluster`, `submission_date`, `hp_donasi`, `nominal_pengajuan_area`, `nominal_nego_emr`, `nominal_release_finance`, `nominal_per_homepass`, `bank_name`, `bank_account_number`, `recipient_name`, `recipient_phone`, `recipient_position`, `recipient_period`, `free_wifi_qty`, `free_wifi_period_month`, `astri_batch_number`, `staging_status`, `submitted_to_ho_at`, `submitted_to_astri_at`, `submitted_to_finance_at`, `released_at`, `transfer_proof_file_name`, `transfer_proof_file_path`, `remark_batch_approval`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+(6, 8, '2026-04-22', 1600, 35000000.00, NULL, NULL, 21875.00, 'BRI', '0190239012', 'Try Luthfi', '083271761767', 'WIRASWASTA', '2023 - 2026', 0, 0, NULL, 'RELEASED', '2026-04-22 10:30:54', NULL, NULL, '2026-04-22 10:32:02', 'TRANSFER_8_20260422103202.png', 'uploads/myrep_batch_transfer/TRANSFER_8_20260422103202.png', 'c1', 76, 76, '2026-04-22 03:30:55', '2026-04-22 03:32:04');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_batch_approval_pic`
+--
+
+CREATE TABLE `tb_myrep_batch_approval_pic` (
+  `id_batch_pic` int(11) NOT NULL,
+  `id_batch_approval` int(11) NOT NULL,
+  `pic_no` tinyint(4) NOT NULL,
+  `pic_name` varchar(150) NOT NULL,
+  `pic_phone` varchar(50) DEFAULT NULL,
+  `pic_position` varchar(100) DEFAULT NULL,
+  `pic_period` varchar(50) DEFAULT NULL,
+  `is_primary` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_batch_approval_pic`
+--
+
+INSERT INTO `tb_myrep_batch_approval_pic` (`id_batch_pic`, `id_batch_approval`, `pic_no`, `pic_name`, `pic_phone`, `pic_position`, `pic_period`, `is_primary`, `created_at`, `updated_at`) VALUES
+(25, 6, 1, 'Try Luthfi', '083271761767', 'WIRASWASTA', '2023 - 2026', 1, '2026-04-22 03:30:56', '2026-04-22 03:30:56');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_boq_baseline`
+--
+
+CREATE TABLE `tb_myrep_boq_baseline` (
+  `id_boq_baseline` int(11) NOT NULL,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `id_drm_boq` int(11) NOT NULL,
+  `status_baseline` enum('ACTIVE','REPLACED') NOT NULL DEFAULT 'ACTIVE',
+  `approved_at` datetime DEFAULT NULL,
+  `approved_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_boq_baseline`
+--
+
+INSERT INTO `tb_myrep_boq_baseline` (`id_boq_baseline`, `id_myrep_cluster`, `id_drm_boq`, `status_baseline`, `approved_at`, `approved_by`, `created_at`, `updated_at`) VALUES
+(1, 8, 1, 'ACTIVE', '2026-04-22 15:10:54', 76, '2026-04-22 08:10:54', '2026-04-22 08:10:54');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_boq_baseline_item`
+--
+
+CREATE TABLE `tb_myrep_boq_baseline_item` (
+  `id_boq_baseline_item` int(11) NOT NULL,
+  `id_boq_baseline` int(11) NOT NULL,
+  `id_boq_item` int(11) NOT NULL,
+  `qty_boq` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `jumlah_foto` int(11) NOT NULL DEFAULT 0,
+  `remarks_rule` enum('SESUAI ITEM','SAMPLING') NOT NULL DEFAULT 'SESUAI ITEM',
+  `target_foto_required` int(11) NOT NULL DEFAULT 0,
+  `item_note` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_boq_baseline_item`
+--
+
+INSERT INTO `tb_myrep_boq_baseline_item` (`id_boq_baseline_item`, `id_boq_baseline`, `id_boq_item`, `qty_boq`, `jumlah_foto`, `remarks_rule`, `target_foto_required`, `item_note`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 10.00, 2, 'SESUAI ITEM', 20, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(2, 1, 2, 10.00, 2, 'SESUAI ITEM', 20, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(3, 1, 3, 10.00, 2, 'SESUAI ITEM', 20, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(4, 1, 4, 10.00, 4, 'SAMPLING', 4, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(5, 1, 5, 10.00, 4, 'SAMPLING', 4, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(6, 1, 6, 10.00, 1, 'SESUAI ITEM', 10, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(7, 1, 7, 10.00, 1, 'SESUAI ITEM', 10, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(8, 1, 8, 10.00, 1, 'SESUAI ITEM', 10, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(9, 1, 9, 10.00, 1, 'SESUAI ITEM', 10, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(10, 1, 10, 10.00, 1, 'SAMPLING', 1, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(11, 1, 11, 10.00, 1, 'SAMPLING', 1, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(12, 1, 12, 10.00, 1, 'SAMPLING', 1, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(13, 1, 13, 10.00, 1, 'SAMPLING', 1, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(14, 1, 14, 10.00, 1, 'SAMPLING', 1, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55'),
+(15, 1, 15, 10.00, 1, 'SAMPLING', 1, NULL, '2026-04-22 08:10:55', '2026-04-22 08:10:55');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_boq_progress_item`
+--
+
+CREATE TABLE `tb_myrep_boq_progress_item` (
+  `id_progress_item` int(11) NOT NULL,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `id_boq_baseline` int(11) NOT NULL,
+  `id_boq_baseline_item` int(11) NOT NULL,
+  `progress_date` date NOT NULL,
+  `qty_progress` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `status_progress` enum('ON PROGRESS','DONE') NOT NULL DEFAULT 'ON PROGRESS',
+  `remark_progress` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_boq_progress_item`
+--
+
+INSERT INTO `tb_myrep_boq_progress_item` (`id_progress_item`, `id_myrep_cluster`, `id_boq_baseline`, `id_boq_baseline_item`, `progress_date`, `qty_progress`, `status_progress`, `remark_progress`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+(7, 8, 1, 1, '2026-04-22', 2.00, 'ON PROGRESS', NULL, 76, 76, '2026-04-22 11:10:10', '2026-04-22 11:10:10'),
+(8, 8, 1, 1, '2026-04-23', 2.00, 'ON PROGRESS', NULL, 76, 76, '2026-04-22 11:11:09', '2026-04-22 11:11:09'),
+(9, 8, 1, 6, '2026-04-24', 2.00, 'ON PROGRESS', NULL, 76, 76, '2026-04-22 11:12:21', '2026-04-22 11:12:21'),
+(10, 8, 1, 4, '2026-04-22', 1.00, 'ON PROGRESS', NULL, 76, 76, '2026-04-22 11:13:54', '2026-04-22 11:13:54'),
+(11, 8, 1, 4, '2026-04-27', 1.00, 'ON PROGRESS', NULL, 76, 76, '2026-04-22 11:14:49', '2026-04-22 11:14:49');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_boq_progress_photo`
+--
+
+CREATE TABLE `tb_myrep_boq_progress_photo` (
+  `id_progress_photo` int(11) NOT NULL,
+  `id_progress_item` int(11) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(255) NOT NULL,
+  `caption` varchar(255) DEFAULT NULL,
+  `uploaded_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_boq_progress_photo`
+--
+
+INSERT INTO `tb_myrep_boq_progress_photo` (`id_progress_photo`, `id_progress_item`, `file_name`, `file_path`, `caption`, `uploaded_by`, `created_at`) VALUES
+(11, 7, 'BOQ_PROGRESS_8_1_20260422181009_1.jpeg', 'uploads/myrep_boq_progress/BOQ_PROGRESS_8_1_20260422181009_1.jpeg', NULL, 76, '2026-04-22 11:10:10'),
+(12, 7, 'BOQ_PROGRESS_8_1_20260422181009_2.jpeg', 'uploads/myrep_boq_progress/BOQ_PROGRESS_8_1_20260422181009_2.jpeg', NULL, 76, '2026-04-22 11:10:10'),
+(13, 8, 'BOQ_PROGRESS_8_1_20260422181109_1.jpeg', 'uploads/myrep_boq_progress/BOQ_PROGRESS_8_1_20260422181109_1.jpeg', NULL, 76, '2026-04-22 11:11:09'),
+(14, 8, 'BOQ_PROGRESS_8_1_20260422181109_2.jpeg', 'uploads/myrep_boq_progress/BOQ_PROGRESS_8_1_20260422181109_2.jpeg', NULL, 76, '2026-04-22 11:11:09'),
+(15, 9, 'BOQ_PROGRESS_8_6_20260422181221_1.jpg', 'uploads/myrep_boq_progress/BOQ_PROGRESS_8_6_20260422181221_1.jpg', NULL, 76, '2026-04-22 11:12:22'),
+(16, 9, 'BOQ_PROGRESS_8_6_20260422181221_2.jpg', 'uploads/myrep_boq_progress/BOQ_PROGRESS_8_6_20260422181221_2.jpg', NULL, 76, '2026-04-22 11:12:22'),
+(17, 10, 'BOQ_PROGRESS_8_4_20260422181354_1.jpeg', 'uploads/myrep_boq_progress/BOQ_PROGRESS_8_4_20260422181354_1.jpeg', NULL, 76, '2026-04-22 11:13:54'),
+(18, 10, 'BOQ_PROGRESS_8_4_20260422181354_2.jpeg', 'uploads/myrep_boq_progress/BOQ_PROGRESS_8_4_20260422181354_2.jpeg', NULL, 76, '2026-04-22 11:13:54'),
+(19, 11, 'BOQ_PROGRESS_8_4_20260422181448_1.jpg', 'uploads/myrep_boq_progress/BOQ_PROGRESS_8_4_20260422181448_1.jpg', NULL, 76, '2026-04-22 11:14:49'),
+(20, 11, 'BOQ_PROGRESS_8_4_20260422181448_2.jpg', 'uploads/myrep_boq_progress/BOQ_PROGRESS_8_4_20260422181448_2.jpg', NULL, 76, '2026-04-22 11:14:49');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_cluster`
+--
+
+CREATE TABLE `tb_myrep_cluster` (
+  `id_myrep_cluster` int(11) NOT NULL,
+  `rfs_cluster_id` int(11) DEFAULT NULL,
+  `id_target` int(11) DEFAULT NULL,
+  `cluster_name` varchar(150) NOT NULL,
+  `cluster_code` varchar(50) DEFAULT NULL,
+  `regional_name` varchar(100) DEFAULT NULL,
+  `province_name` varchar(100) DEFAULT NULL,
+  `city_name` varchar(100) DEFAULT NULL,
+  `team_name` varchar(100) DEFAULT NULL,
+  `chief` varchar(100) DEFAULT NULL,
+  `rpm` varchar(100) DEFAULT NULL,
+  `sm` varchar(100) DEFAULT NULL,
+  `spv` varchar(100) DEFAULT NULL,
+  `pic_project` varchar(100) DEFAULT NULL,
+  `ntp_name` varchar(100) DEFAULT NULL,
+  `ntp_date` date DEFAULT NULL,
+  `ntp_year` smallint(6) DEFAULT NULL,
+  `hp_plan` int(11) NOT NULL DEFAULT 0,
+  `estimated_po` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `status_po` varchar(50) DEFAULT NULL,
+  `status_current` enum('DRAFT','BA OPEN','BAK','VALSAL','WAITING HO','WAITING MYREP','WAITING FINANCE','RELEASED','DONE BATCH APPROVAL','DRM','RFS','ATP','DONE','REJECTED','HOLD') NOT NULL DEFAULT 'DRAFT',
+  `outstanding_progress` text DEFAULT NULL,
+  `remark_general` text DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_cluster`
+--
+
+INSERT INTO `tb_myrep_cluster` (`id_myrep_cluster`, `rfs_cluster_id`, `id_target`, `cluster_name`, `cluster_code`, `regional_name`, `province_name`, `city_name`, `team_name`, `chief`, `rpm`, `sm`, `spv`, `pic_project`, `ntp_name`, `ntp_date`, `ntp_year`, `hp_plan`, `estimated_po`, `status_po`, `status_current`, `outstanding_progress`, `remark_general`, `is_active`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+(8, NULL, 1329, 'CLUSTER COBA BENGKULU', 'CCB1', 'REGIONAL 1', 'BENGKULU', 'BENGKULU', '', 'Zulkarnain', '', '', '', NULL, NULL, NULL, NULL, 1800, 0.00, NULL, 'DRM', NULL, 'a', 1, 76, 76, '2026-04-22 03:29:02', '2026-04-22 08:06:37');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_drm`
+--
+
+CREATE TABLE `tb_myrep_drm` (
+  `id_drm` int(11) NOT NULL,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `drm_date` date DEFAULT NULL,
+  `homepass_drm` int(11) NOT NULL DEFAULT 0,
+  `status_drm` enum('DRAFT','SUBMITTED','ON REVIEW','APPROVED','REJECTED','DONE') NOT NULL DEFAULT 'DRAFT',
+  `remark_drm` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_drm`
+--
+
+INSERT INTO `tb_myrep_drm` (`id_drm`, `id_myrep_cluster`, `drm_date`, `homepass_drm`, `status_drm`, `remark_drm`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+(2, 8, '2026-04-23', 1500, 'DONE', NULL, 76, 76, '2026-04-22 08:06:37', '2026-04-22 08:09:27');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_drm_boq`
+--
+
+CREATE TABLE `tb_myrep_drm_boq` (
+  `id_drm_boq` int(11) NOT NULL,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `id_drm` int(11) DEFAULT NULL,
+  `source_doc_file_id` int(11) DEFAULT NULL,
+  `review_status` enum('DRAFT','WAITING HO','APPROVED','REJECTED') NOT NULL DEFAULT 'DRAFT',
+  `submitted_at` datetime DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `rejected_at` datetime DEFAULT NULL,
+  `approved_by` int(11) DEFAULT NULL,
+  `ho_review_remark` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_drm_boq`
+--
+
+INSERT INTO `tb_myrep_drm_boq` (`id_drm_boq`, `id_myrep_cluster`, `id_drm`, `source_doc_file_id`, `review_status`, `submitted_at`, `approved_at`, `rejected_at`, `approved_by`, `ho_review_remark`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+(1, 8, 2, 23, 'APPROVED', '2026-04-22 15:07:48', '2026-04-22 15:10:54', NULL, 76, NULL, 76, 76, '2026-04-22 08:07:48', '2026-04-22 08:10:54');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_drm_boq_item`
+--
+
+CREATE TABLE `tb_myrep_drm_boq_item` (
+  `id_drm_boq_item` int(11) NOT NULL,
+  `id_drm_boq` int(11) NOT NULL,
+  `id_boq_item` int(11) NOT NULL,
+  `qty_boq` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `jumlah_foto` int(11) NOT NULL DEFAULT 0,
+  `remarks_rule` enum('SESUAI ITEM','SAMPLING') NOT NULL DEFAULT 'SESUAI ITEM',
+  `target_foto_required` int(11) NOT NULL DEFAULT 0,
+  `item_note` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_drm_boq_item`
+--
+
+INSERT INTO `tb_myrep_drm_boq_item` (`id_drm_boq_item`, `id_drm_boq`, `id_boq_item`, `qty_boq`, `jumlah_foto`, `remarks_rule`, `target_foto_required`, `item_note`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 10.00, 2, 'SESUAI ITEM', 20, NULL, '2026-04-22 08:07:48', '2026-04-22 08:07:48'),
+(2, 1, 2, 10.00, 2, 'SESUAI ITEM', 20, NULL, '2026-04-22 08:07:50', '2026-04-22 08:07:50'),
+(3, 1, 3, 10.00, 2, 'SESUAI ITEM', 20, NULL, '2026-04-22 08:07:50', '2026-04-22 08:07:50'),
+(4, 1, 4, 10.00, 4, 'SAMPLING', 4, NULL, '2026-04-22 08:07:50', '2026-04-22 08:07:50'),
+(5, 1, 5, 10.00, 4, 'SAMPLING', 4, NULL, '2026-04-22 08:07:51', '2026-04-22 08:07:51'),
+(6, 1, 6, 10.00, 1, 'SESUAI ITEM', 10, NULL, '2026-04-22 08:07:53', '2026-04-22 08:07:53'),
+(7, 1, 7, 10.00, 1, 'SESUAI ITEM', 10, NULL, '2026-04-22 08:07:53', '2026-04-22 08:07:53'),
+(8, 1, 8, 10.00, 1, 'SESUAI ITEM', 10, NULL, '2026-04-22 08:07:53', '2026-04-22 08:07:53'),
+(9, 1, 9, 10.00, 1, 'SESUAI ITEM', 10, NULL, '2026-04-22 08:07:53', '2026-04-22 08:07:53'),
+(10, 1, 10, 10.00, 1, 'SAMPLING', 1, NULL, '2026-04-22 08:07:54', '2026-04-22 08:07:54'),
+(11, 1, 11, 10.00, 1, 'SAMPLING', 1, NULL, '2026-04-22 08:07:54', '2026-04-22 08:07:54'),
+(12, 1, 12, 10.00, 1, 'SAMPLING', 1, NULL, '2026-04-22 08:07:54', '2026-04-22 08:07:54'),
+(13, 1, 13, 10.00, 1, 'SAMPLING', 1, NULL, '2026-04-22 08:07:55', '2026-04-22 08:07:55'),
+(14, 1, 14, 10.00, 1, 'SAMPLING', 1, NULL, '2026-04-22 08:07:55', '2026-04-22 08:07:55'),
+(15, 1, 15, 10.00, 1, 'SAMPLING', 1, NULL, '2026-04-22 08:07:55', '2026-04-22 08:07:55');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_flow_doc_file`
+--
+
+CREATE TABLE `tb_myrep_flow_doc_file` (
+  `id_doc_file` int(11) NOT NULL,
+  `id_doc_package` int(11) NOT NULL,
+  `id_doc_item` int(11) NOT NULL,
+  `file_name` varchar(255) DEFAULT NULL,
+  `file_path` varchar(255) DEFAULT NULL,
+  `is_document_not_required` tinyint(1) NOT NULL DEFAULT 0,
+  `status_file` enum('UPLOADED','APPROVED','REJECTED') DEFAULT NULL,
+  `remark` text DEFAULT NULL,
+  `uploaded_by` int(11) DEFAULT NULL,
+  `uploaded_at` datetime DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `approved_by` int(11) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_flow_doc_file`
+--
+
+INSERT INTO `tb_myrep_flow_doc_file` (`id_doc_file`, `id_doc_package`, `id_doc_item`, `file_name`, `file_path`, `is_document_not_required`, `status_file`, `remark`, `uploaded_by`, `uploaded_at`, `reviewed_at`, `approved_by`, `approved_at`, `created_at`, `updated_at`) VALUES
+(19, 18, 1, '', '', 1, 'APPROVED', 'a2', 76, '2026-04-22 10:29:01', '2026-04-22 10:29:19', 76, '2026-04-22 10:29:19', '2026-04-22 03:29:03', '2026-04-22 03:29:20'),
+(20, 19, 2, '', '', 1, 'APPROVED', 'b3', 76, '2026-04-22 10:29:42', '2026-04-22 10:29:49', 76, '2026-04-22 10:29:49', '2026-04-22 03:29:43', '2026-04-22 03:29:50'),
+(21, 20, 3, 'BATCH_8_RAR_20260422103054.rar', 'uploads/myrep_batch_approval/BATCH_8_RAR_20260422103054.rar', 0, 'UPLOADED', 'c1', 76, '2026-04-22 10:30:54', NULL, NULL, NULL, '2026-04-22 03:30:56', '2026-04-22 03:30:56'),
+(22, 21, 4, 'DRM_8_4_APD_KMZ_20260422150703.pdf', 'uploads/myrep_drm/DRM_8_4_APD_KMZ_20260422150703.pdf', 0, 'UPLOADED', '', 76, '2026-04-22 15:07:05', NULL, NULL, NULL, '2026-04-22 08:07:05', '2026-04-22 08:07:05'),
+(23, 21, 7, 'DRM_8_7_APD_BOQ_20260422150745.pdf', 'uploads/myrep_drm/DRM_8_7_APD_BOQ_20260422150745.pdf', 0, 'APPROVED', 'DOC APPROVED', 76, '2026-04-22 15:07:45', '2026-04-22 15:08:52', 76, '2026-04-22 15:08:52', '2026-04-22 08:07:46', '2026-04-22 08:08:52');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_flow_doc_file_log`
+--
+
+CREATE TABLE `tb_myrep_flow_doc_file_log` (
+  `id_doc_file_log` int(11) NOT NULL,
+  `id_doc_file` int(11) NOT NULL,
+  `id_doc_package` int(11) NOT NULL,
+  `id_doc_item` int(11) NOT NULL,
+  `action_type` enum('UPLOAD','APPROVE','REJECT','DELETE','REUPLOAD') NOT NULL,
+  `status_after` varchar(50) DEFAULT NULL,
+  `file_name` varchar(255) DEFAULT NULL,
+  `remark` text DEFAULT NULL,
+  `action_by` int(11) DEFAULT NULL,
+  `action_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_flow_doc_file_log`
+--
+
+INSERT INTO `tb_myrep_flow_doc_file_log` (`id_doc_file_log`, `id_doc_file`, `id_doc_package`, `id_doc_item`, `action_type`, `status_after`, `file_name`, `remark`, `action_by`, `action_at`) VALUES
+(30, 19, 18, 1, 'UPLOAD', 'UPLOADED', '[Tanpa Dokumen]', 'a1', 76, '2026-04-22 10:29:01'),
+(31, 19, 18, 1, 'APPROVE', 'APPROVED', '', 'a2', 76, '2026-04-22 10:29:19'),
+(32, 20, 19, 2, 'UPLOAD', 'UPLOADED', '[Tanpa Dokumen]', 'b2', 76, '2026-04-22 10:29:42'),
+(33, 20, 19, 2, 'APPROVE', 'APPROVED', '', 'b3', 76, '2026-04-22 10:29:49'),
+(34, 21, 20, 3, 'UPLOAD', 'UPLOADED', 'BATCH_8_RAR_20260422103054.rar', 'c1', 76, '2026-04-22 10:30:54'),
+(35, 22, 21, 4, 'UPLOAD', 'UPLOADED', 'DRM_8_4_APD_KMZ_20260422150703.pdf', '', 76, '2026-04-22 15:07:05'),
+(36, 23, 21, 7, 'UPLOAD', 'UPLOADED', 'DRM_8_7_APD_BOQ_20260422150745.pdf', '', 76, '2026-04-22 15:07:46'),
+(37, 23, 21, 7, 'APPROVE', 'APPROVED', 'DRM_8_7_APD_BOQ_20260422150745.pdf', 'DOC APPROVED', 76, '2026-04-22 15:08:53');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_flow_doc_package`
+--
+
+CREATE TABLE `tb_myrep_flow_doc_package` (
+  `id_doc_package` int(11) NOT NULL,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `flow_type` enum('BAK','VALSAL','BATCH_APPROVAL','POST_DONASI','DRM') NOT NULL,
+  `ref_process_id` int(11) DEFAULT NULL,
+  `id_doc_group` int(11) NOT NULL,
+  `status_package` enum('NOT STARTED','ON PROGRESS','DONE') NOT NULL DEFAULT 'NOT STARTED',
+  `remarks` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_flow_doc_package`
+--
+
+INSERT INTO `tb_myrep_flow_doc_package` (`id_doc_package`, `id_myrep_cluster`, `flow_type`, `ref_process_id`, `id_doc_group`, `status_package`, `remarks`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+(18, 8, 'BAK', NULL, 1, 'DONE', NULL, 76, 76, '2026-04-22 03:29:02', '2026-04-22 10:29:19'),
+(19, 8, 'VALSAL', NULL, 2, 'DONE', NULL, 76, 76, '2026-04-22 03:29:43', '2026-04-22 10:29:49'),
+(20, 8, 'BATCH_APPROVAL', NULL, 3, 'ON PROGRESS', NULL, 76, 76, '2026-04-22 03:30:56', '2026-04-22 10:30:55'),
+(21, 8, 'DRM', NULL, 4, 'ON PROGRESS', NULL, 76, 76, '2026-04-22 08:07:04', '2026-04-22 15:08:53');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_po_header`
+--
+
+CREATE TABLE `tb_myrep_po_header` (
+  `id_po_header` int(11) NOT NULL,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `parent_po_header_id` int(11) DEFAULT NULL,
+  `po_type` enum('CLUSTER','SUBFEEDER') NOT NULL DEFAULT 'CLUSTER',
+  `po_category` enum('INITIAL','FINAL','AMANDMENT') NOT NULL DEFAULT 'INITIAL',
+  `po_number` varchar(150) NOT NULL,
+  `po_date` date DEFAULT NULL,
+  `po_value` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `status_po` enum('NOT ISSUED','ISSUED','PARTIAL PAYMENT','FULLY PAID','CLOSED') NOT NULL DEFAULT 'ISSUED',
+  `po_version_label` varchar(100) DEFAULT NULL,
+  `remark_po` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_po_header`
+--
+
+INSERT INTO `tb_myrep_po_header` (`id_po_header`, `id_myrep_cluster`, `parent_po_header_id`, `po_type`, `po_category`, `po_number`, `po_date`, `po_value`, `status_po`, `po_version_label`, `remark_po`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+(1, 8, NULL, 'CLUSTER', 'INITIAL', '12345', '2026-04-23', 10000000.00, 'NOT ISSUED', '01', NULL, 76, 76, '2026-04-23 07:31:33', '2026-04-23 07:31:33');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_po_termin`
+--
+
+CREATE TABLE `tb_myrep_po_termin` (
+  `id_po_termin` int(11) NOT NULL,
+  `id_po_header` int(11) NOT NULL,
+  `termin_no` tinyint(4) NOT NULL,
+  `termin_percent` decimal(8,2) NOT NULL DEFAULT 0.00,
+  `termin_value` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `status_termin` enum('NOT READY','READY BILLING','BILLED','PAID') NOT NULL DEFAULT 'NOT READY',
+  `invoice_number` varchar(150) DEFAULT NULL,
+  `invoice_date` date DEFAULT NULL,
+  `bast_date` date DEFAULT NULL,
+  `payment_date` date DEFAULT NULL,
+  `remark_termin` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_po_termin`
+--
+
+INSERT INTO `tb_myrep_po_termin` (`id_po_termin`, `id_po_header`, `termin_no`, `termin_percent`, `termin_value`, `status_termin`, `invoice_number`, `invoice_date`, `bast_date`, `payment_date`, `remark_termin`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 20.00, 2000000.00, 'NOT READY', NULL, NULL, NULL, NULL, NULL, 76, 76, '2026-04-23 07:31:33', '2026-04-23 07:31:33'),
+(2, 1, 2, 25.00, 2500000.00, 'NOT READY', NULL, NULL, NULL, NULL, NULL, 76, 76, '2026-04-23 07:31:33', '2026-04-23 07:31:33'),
+(3, 1, 3, 15.00, 1500000.00, 'NOT READY', NULL, NULL, NULL, NULL, NULL, 76, 76, '2026-04-23 07:31:33', '2026-04-23 07:31:33'),
+(4, 1, 4, 30.00, 3000000.00, 'NOT READY', NULL, NULL, NULL, NULL, NULL, 76, 76, '2026-04-23 07:31:33', '2026-04-23 07:31:33'),
+(5, 1, 5, 10.00, 1000000.00, 'NOT READY', NULL, NULL, NULL, NULL, NULL, 76, 76, '2026-04-23 07:31:33', '2026-04-23 07:31:33');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tb_myrep_valsal`
+--
+
+CREATE TABLE `tb_myrep_valsal` (
+  `id_valsal` int(11) NOT NULL,
+  `id_myrep_cluster` int(11) NOT NULL,
+  `valsal_date` date DEFAULT NULL,
+  `homepass_valsal` int(11) NOT NULL DEFAULT 0,
+  `status_valsal` enum('DRAFT','SUBMITTED','ON REVIEW','APPROVED','REJECTED','DONE') NOT NULL DEFAULT 'DRAFT',
+  `remark_valsal` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_myrep_valsal`
+--
+
+INSERT INTO `tb_myrep_valsal` (`id_valsal`, `id_myrep_cluster`, `valsal_date`, `homepass_valsal`, `status_valsal`, `remark_valsal`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+(7, 8, '2026-04-22', 1700, 'DONE', 'b1', 76, 76, '2026-04-22 03:29:42', '2026-04-22 03:29:51');
 
 -- --------------------------------------------------------
 
@@ -96154,6 +96822,13 @@ CREATE TABLE `tb_project_implementasi_fiberstar` (
   `keterangan_progress` text NOT NULL,
   `data_created` date NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tb_project_implementasi_fiberstar`
+--
+
+INSERT INTO `tb_project_implementasi_fiberstar` (`id_implementasi`, `primary_access_id_project`, `access_id_project`, `id_user`, `plan_tiang`, `achiev_tiang`, `plan_kabel_24`, `achiev_kabel_24`, `plan_kabel_48`, `achiev_kabel_48`, `plan_fat`, `achiev_fat`, `plan_closure`, `achiev_closure`, `keterangan_progress`, `data_created`) VALUES
+(59, 194, 'ACCESS0047-11-2024', 76, 20, 0, 20, 0, 20, 0, 20, 0, 20, 0, 'BOQ Awal', '2026-04-22');
 
 -- --------------------------------------------------------
 
@@ -111886,7 +112561,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (21215, 1, 'REGIONAL 3', 'MADIUN', 'Wonda', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (21216, 1, 'REGIONAL 3', 'MADIUN', 'Wonda', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (21217, 1, 'REGIONAL 3', 'MADIUN', 'Wonda', 'W3', 'APRIL', NULL, NULL, NULL, NULL, '84079698', NULL, ''),
-(21218, 1, 'REGIONAL 3', 'MADIUN', 'Wonda', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(21218, 1, 'REGIONAL 3', 'MADIUN', 'Wonda', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '199695458', NULL, ''),
 (21219, 1, 'REGIONAL 3', 'MADIUN', 'Wonda', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (21220, 1, 'REGIONAL 3', 'MADIUN', 'Wonda', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (21221, 1, 'REGIONAL 3', 'MADIUN', 'Wonda', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -112129,7 +112804,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (21458, 2, 'REGIONAL 3', 'CILACAP', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (21459, 2, 'REGIONAL 3', 'CILACAP', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (21460, 2, 'REGIONAL 3', 'CILACAP', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(21461, 2, 'REGIONAL 3', 'CILACAP', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
+(21461, 2, 'REGIONAL 3', 'CILACAP', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '10000000', NULL, '    '),
 (21462, 2, 'REGIONAL 3', 'CILACAP', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (21463, 2, 'REGIONAL 3', 'CILACAP', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (21464, 2, 'REGIONAL 3', 'CILACAP', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
@@ -112210,7 +112885,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (21539, 2, 'REGIONAL 3', 'JEMBER', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (21540, 2, 'REGIONAL 3', 'JEMBER', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (21541, 2, 'REGIONAL 3', 'JEMBER', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(21542, 2, 'REGIONAL 3', 'JEMBER', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
+(21542, 2, 'REGIONAL 3', 'JEMBER', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '19500000', NULL, '    '),
 (21543, 2, 'REGIONAL 3', 'JEMBER', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (21544, 2, 'REGIONAL 3', 'JEMBER', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (21545, 2, 'REGIONAL 3', 'JEMBER', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
@@ -112361,9 +113036,9 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (21690, 2, 'REGIONAL 3', 'MALANG', '', 'W2', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (21691, 2, 'REGIONAL 3', 'MALANG', '', 'W3', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (21692, 2, 'REGIONAL 3', 'MALANG', '', 'W4', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(21693, 2, 'REGIONAL 3', 'MALANG', '', 'W5', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(21694, 2, 'REGIONAL 3', 'MALANG', '', 'W1', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '');
+(21693, 2, 'REGIONAL 3', 'MALANG', '', 'W5', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, '');
 INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(21694, 2, 'REGIONAL 3', 'MALANG', '', 'W1', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (21695, 2, 'REGIONAL 3', 'MALANG', '', 'W2', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (21696, 2, 'REGIONAL 3', 'MALANG', '', 'W3', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (21697, 2, 'REGIONAL 3', 'MALANG', '', 'W4', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -112454,7 +113129,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (21782, 2, 'REGIONAL 3', 'TEGAL', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (21783, 2, 'REGIONAL 3', 'TEGAL', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (21784, 2, 'REGIONAL 3', 'TEGAL', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(21785, 2, 'REGIONAL 3', 'TEGAL', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
+(21785, 2, 'REGIONAL 3', 'TEGAL', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '35000000', NULL, '    '),
 (21786, 2, 'REGIONAL 3', 'TEGAL', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (21787, 2, 'REGIONAL 3', 'TEGAL', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (21788, 2, 'REGIONAL 3', 'TEGAL', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
@@ -112841,9 +113516,9 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (22169, 3, 'REGIONAL 3', 'DEMAK', 'Irfan N', 'W5', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (22170, 3, 'REGIONAL 3', 'DEMAK', 'Irfan N', 'W1', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (22171, 3, 'REGIONAL 3', 'DEMAK', 'Irfan N', 'W2', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(22172, 3, 'REGIONAL 3', 'DEMAK', 'Irfan N', 'W3', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(22173, 3, 'REGIONAL 3', 'DEMAK', 'Irfan N', 'W4', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
+(22172, 3, 'REGIONAL 3', 'DEMAK', 'Irfan N', 'W3', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
 INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(22173, 3, 'REGIONAL 3', 'DEMAK', 'Irfan N', 'W4', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (22174, 3, 'REGIONAL 3', 'DEMAK', 'Irfan N', 'W5', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (22175, 3, 'REGIONAL 3', 'DEMAK', 'Irfan N', 'W1', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (22176, 3, 'REGIONAL 3', 'DEMAK', 'Irfan N', 'W2', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
@@ -113310,9 +113985,9 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (22637, 3, 'REGIONAL 3', 'MADIUN', 'Sugeng', 'W4', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (22638, 3, 'REGIONAL 3', 'MADIUN', 'Sugeng', 'W5', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (22639, 3, 'REGIONAL 3', 'MADIUN', 'Sugeng', 'W1', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(22640, 3, 'REGIONAL 3', 'MADIUN', 'Sugeng', 'W2', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(22641, 3, 'REGIONAL 3', 'MADIUN', 'Sugeng', 'W3', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
+(22640, 3, 'REGIONAL 3', 'MADIUN', 'Sugeng', 'W2', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
 INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(22641, 3, 'REGIONAL 3', 'MADIUN', 'Sugeng', 'W3', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (22642, 3, 'REGIONAL 3', 'MADIUN', 'Sugeng', 'W4', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (22643, 3, 'REGIONAL 3', 'MADIUN', 'Sugeng', 'W5', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (22644, 3, 'REGIONAL 3', 'MADIUN', 'Sugeng', 'W1', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
@@ -113778,9 +114453,9 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (23104, 3, 'REGIONAL 4', 'SINGKAWANG', 'DIMAS', 'W2', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23105, 3, 'REGIONAL 3', 'SLEMAN', 'Bowo Hartono', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (23106, 3, 'REGIONAL 3', 'SLEMAN', 'Bowo Hartono', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(23107, 3, 'REGIONAL 3', 'SLEMAN', 'Bowo Hartono', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(23108, 3, 'REGIONAL 3', 'SLEMAN', 'Bowo Hartono', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
+(23107, 3, 'REGIONAL 3', 'SLEMAN', 'Bowo Hartono', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
 INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(23108, 3, 'REGIONAL 3', 'SLEMAN', 'Bowo Hartono', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (23109, 3, 'REGIONAL 3', 'SLEMAN', 'Bowo Hartono', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (23110, 3, 'REGIONAL 3', 'SLEMAN', 'Bowo Hartono', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (23111, 3, 'REGIONAL 3', 'SLEMAN', 'Bowo Hartono', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
@@ -114158,7 +114833,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (23483, 4, 'REGIONAL 4', 'BANJARMASIN', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, '43898303', NULL, ''),
 (23484, 4, 'REGIONAL 4', 'BANJARMASIN', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23485, 4, 'REGIONAL 4', 'BANJARMASIN', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(23486, 4, 'REGIONAL 4', 'BANJARMASIN', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(23486, 4, 'REGIONAL 4', 'BANJARMASIN', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '15321005', NULL, ''),
 (23487, 4, 'REGIONAL 4', 'BANJARMASIN', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23488, 4, 'REGIONAL 4', 'BANJARMASIN', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23489, 4, 'REGIONAL 4', 'BANJARMASIN', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -114263,11 +114938,11 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (23588, 4, 'REGIONAL 3', 'BLITAR', '-', 'W5', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23589, 4, 'REGIONAL 3', 'BLITAR', '-', 'W1', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23590, 4, 'REGIONAL 3', 'BLITAR', '-', 'W2', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(23591, 4, 'REGIONAL 3', 'BOJONEGORO', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(23592, 4, 'REGIONAL 3', 'BOJONEGORO', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(23593, 4, 'REGIONAL 3', 'BOJONEGORO', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '');
+(23591, 4, 'REGIONAL 3', 'BOJONEGORO', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '');
 INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
-(23594, 4, 'REGIONAL 3', 'BOJONEGORO', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(23592, 4, 'REGIONAL 3', 'BOJONEGORO', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(23593, 4, 'REGIONAL 3', 'BOJONEGORO', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(23594, 4, 'REGIONAL 3', 'BOJONEGORO', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '17527488', NULL, ''),
 (23595, 4, 'REGIONAL 3', 'BOJONEGORO', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23596, 4, 'REGIONAL 3', 'BOJONEGORO', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23597, 4, 'REGIONAL 3', 'BOJONEGORO', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -114294,7 +114969,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (23618, 4, 'REGIONAL 3', 'BREBES', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23619, 4, 'REGIONAL 3', 'BREBES', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, '35952747', NULL, ''),
 (23620, 4, 'REGIONAL 3', 'BREBES', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(23621, 4, 'REGIONAL 3', 'BREBES', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(23621, 4, 'REGIONAL 3', 'BREBES', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '87621977', NULL, ''),
 (23622, 4, 'REGIONAL 3', 'BREBES', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23623, 4, 'REGIONAL 3', 'BREBES', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23624, 4, 'REGIONAL 3', 'BREBES', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -114375,7 +115050,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (23699, 4, 'REGIONAL 1', 'JAMBI', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, '2876219', NULL, ''),
 (23700, 4, 'REGIONAL 1', 'JAMBI', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, '3615818', NULL, ''),
 (23701, 4, 'REGIONAL 1', 'JAMBI', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(23702, 4, 'REGIONAL 1', 'JAMBI', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(23702, 4, 'REGIONAL 1', 'JAMBI', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '21140214', NULL, ''),
 (23703, 4, 'REGIONAL 1', 'JAMBI', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23704, 4, 'REGIONAL 1', 'JAMBI', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23705, 4, 'REGIONAL 1', 'JAMBI', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -114456,7 +115131,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (23780, 4, 'REGIONAL 1', 'LAMPUNG', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23781, 4, 'REGIONAL 1', 'LAMPUNG', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23782, 4, 'REGIONAL 1', 'LAMPUNG', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(23783, 4, 'REGIONAL 1', 'LAMPUNG', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(23783, 4, 'REGIONAL 1', 'LAMPUNG', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '7194658', NULL, ''),
 (23784, 4, 'REGIONAL 1', 'LAMPUNG', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23785, 4, 'REGIONAL 1', 'LAMPUNG', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23786, 4, 'REGIONAL 1', 'LAMPUNG', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -114537,7 +115212,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (23861, 4, 'REGIONAL 5', 'MAKASSAR', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, '67235750', NULL, ''),
 (23862, 4, 'REGIONAL 5', 'MAKASSAR', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23863, 4, 'REGIONAL 5', 'MAKASSAR', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(23864, 4, 'REGIONAL 5', 'MAKASSAR', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(23864, 4, 'REGIONAL 5', 'MAKASSAR', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '24174075', NULL, ''),
 (23865, 4, 'REGIONAL 5', 'MAKASSAR', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23866, 4, 'REGIONAL 5', 'MAKASSAR', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23867, 4, 'REGIONAL 5', 'MAKASSAR', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -114564,7 +115239,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (23888, 4, 'REGIONAL 5', 'MANADO', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23889, 4, 'REGIONAL 5', 'MANADO', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23890, 4, 'REGIONAL 5', 'MANADO', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(23891, 4, 'REGIONAL 5', 'MANADO', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(23891, 4, 'REGIONAL 5', 'MANADO', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '24756034', NULL, ''),
 (23892, 4, 'REGIONAL 5', 'MANADO', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23893, 4, 'REGIONAL 5', 'MANADO', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23894, 4, 'REGIONAL 5', 'MANADO', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -114672,7 +115347,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (23996, 4, 'REGIONAL 3', 'PEMALANG', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, '38007190', NULL, ''),
 (23997, 4, 'REGIONAL 3', 'PEMALANG', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (23998, 4, 'REGIONAL 3', 'PEMALANG', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(23999, 4, 'REGIONAL 3', 'PEMALANG', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(23999, 4, 'REGIONAL 3', 'PEMALANG', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '38007190', NULL, ''),
 (24000, 4, 'REGIONAL 3', 'PEMALANG', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24001, 4, 'REGIONAL 3', 'PEMALANG', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24002, 4, 'REGIONAL 3', 'PEMALANG', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -114726,7 +115401,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (24050, 4, 'REGIONAL 3', 'PROBOLINGGO', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24051, 4, 'REGIONAL 3', 'PROBOLINGGO', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24052, 4, 'REGIONAL 3', 'PROBOLINGGO', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(24053, 4, 'REGIONAL 3', 'PROBOLINGGO', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(24053, 4, 'REGIONAL 3', 'PROBOLINGGO', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '18970723', NULL, ''),
 (24054, 4, 'REGIONAL 3', 'PROBOLINGGO', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24055, 4, 'REGIONAL 3', 'PROBOLINGGO', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24056, 4, 'REGIONAL 3', 'PROBOLINGGO', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -114753,7 +115428,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (24077, 4, 'REGIONAL 3', 'PURWOREJO', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, '10265000', NULL, ''),
 (24078, 4, 'REGIONAL 3', 'PURWOREJO', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, '18477000', NULL, ''),
 (24079, 4, 'REGIONAL 3', 'PURWOREJO', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(24080, 4, 'REGIONAL 3', 'PURWOREJO', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(24080, 4, 'REGIONAL 3', 'PURWOREJO', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '10265000', NULL, ''),
 (24081, 4, 'REGIONAL 3', 'PURWOREJO', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24082, 4, 'REGIONAL 3', 'PURWOREJO', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24083, 4, 'REGIONAL 3', 'PURWOREJO', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -114777,11 +115452,11 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (24101, 4, 'REGIONAL 3', 'PURWOREJO', '-', 'W5', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24102, 4, 'REGIONAL 3', 'PURWOREJO', '-', 'W1', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24103, 4, 'REGIONAL 3', 'PURWOREJO', '-', 'W2', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(24104, 4, 'REGIONAL 4', 'SAMARINDA', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(24104, 4, 'REGIONAL 4', 'SAMARINDA', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '');
+INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
 (24105, 4, 'REGIONAL 4', 'SAMARINDA', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, '26707755', NULL, ''),
 (24106, 4, 'REGIONAL 4', 'SAMARINDA', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(24107, 4, 'REGIONAL 4', 'SAMARINDA', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '');
-INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(24107, 4, 'REGIONAL 4', 'SAMARINDA', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24108, 4, 'REGIONAL 4', 'SAMARINDA', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24109, 4, 'REGIONAL 4', 'SAMARINDA', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24110, 4, 'REGIONAL 4', 'SAMARINDA', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -114889,7 +115564,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (24212, 4, 'REGIONAL 3', 'TEGAL', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, '56472648', NULL, ''),
 (24213, 4, 'REGIONAL 3', 'TEGAL', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, '65710427', NULL, ''),
 (24214, 4, 'REGIONAL 3', 'TEGAL', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(24215, 4, 'REGIONAL 3', 'TEGAL', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(24215, 4, 'REGIONAL 3', 'TEGAL', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '34405784', NULL, ''),
 (24216, 4, 'REGIONAL 3', 'TEGAL', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24217, 4, 'REGIONAL 3', 'TEGAL', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (24218, 4, 'REGIONAL 3', 'TEGAL', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -115294,11 +115969,11 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (24617, 5, 'REGIONAL 3', 'PEMALANG', '-', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (24618, 5, 'REGIONAL 3', 'PEMALANG', '-', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (24619, 5, 'REGIONAL 3', 'PEMALANG', '-', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(24620, 5, 'REGIONAL 3', 'PEMALANG', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
+(24620, 5, 'REGIONAL 3', 'PEMALANG', '-', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
+INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
 (24621, 5, 'REGIONAL 3', 'PEMALANG', '-', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (24622, 5, 'REGIONAL 3', 'PEMALANG', '-', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(24623, 5, 'REGIONAL 3', 'PEMALANG', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
-INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(24623, 5, 'REGIONAL 3', 'PEMALANG', '-', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (24624, 5, 'REGIONAL 3', 'PEMALANG', '-', 'W3', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (24625, 5, 'REGIONAL 3', 'PEMALANG', '-', 'W4', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (24626, 5, 'REGIONAL 3', 'PEMALANG', '-', 'W5', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
@@ -115787,11 +116462,11 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (25109, 6, 'REGIONAL 3', 'KUDUS', 'HO', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (25110, 6, 'REGIONAL 3', 'KUDUS', 'HO', 'W3', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (25111, 6, 'REGIONAL 3', 'KUDUS', 'HO', 'W4', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(25112, 6, 'REGIONAL 3', 'KUDUS', 'HO', 'W5', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(25112, 6, 'REGIONAL 3', 'KUDUS', 'HO', 'W5', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, '');
+INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
 (25113, 6, 'REGIONAL 3', 'KUDUS', 'HO', 'W1', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (25114, 6, 'REGIONAL 3', 'KUDUS', 'HO', 'W2', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(25115, 6, 'REGIONAL 3', 'KUDUS', 'HO', 'W3', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, '');
-INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(25115, 6, 'REGIONAL 3', 'KUDUS', 'HO', 'W3', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (25116, 6, 'REGIONAL 3', 'KUDUS', 'HO', 'W4', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (25117, 6, 'REGIONAL 3', 'KUDUS', 'HO', 'W5', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (25118, 6, 'REGIONAL 3', 'KUDUS', 'HO', 'W1', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -116264,10 +116939,10 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (25585, 6, 'REGIONAL 3', 'PAMEKASAN', 'Aris', 'W4', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (25586, 6, 'REGIONAL 3', 'PAMEKASAN', 'Aris', 'W5', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (25587, 6, 'REGIONAL 3', 'PAMEKASAN', 'Aris', 'W1', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(25588, 6, 'REGIONAL 3', 'PAMEKASAN', 'Aris', 'W2', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(25589, 6, 'REGIONAL 1', 'PAYAKUMBUH', 'AHMAD SYAHREZA', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(25590, 6, 'REGIONAL 1', 'PAYAKUMBUH', 'AHMAD SYAHREZA', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
+(25588, 6, 'REGIONAL 3', 'PAMEKASAN', 'Aris', 'W2', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
 INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(25589, 6, 'REGIONAL 1', 'PAYAKUMBUH', 'AHMAD SYAHREZA', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
+(25590, 6, 'REGIONAL 1', 'PAYAKUMBUH', 'AHMAD SYAHREZA', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (25591, 6, 'REGIONAL 1', 'PAYAKUMBUH', 'AHMAD SYAHREZA', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (25592, 6, 'REGIONAL 1', 'PAYAKUMBUH', 'AHMAD SYAHREZA', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (25593, 6, 'REGIONAL 1', 'PAYAKUMBUH', 'AHMAD SYAHREZA', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
@@ -116746,10 +117421,10 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (26066, 8, 'REGIONAL 3', 'PEKALONGAN', '-', 'W4', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (26067, 8, 'REGIONAL 3', 'PEKALONGAN', '-', 'W5', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (26068, 8, 'REGIONAL 3', 'PEKALONGAN', '-', 'W1', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(26069, 8, 'REGIONAL 3', 'PEKALONGAN', '-', 'W2', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(26070, 8, 'REGIONAL 3', 'PEKALONGAN', '-', 'W3', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(26071, 8, 'REGIONAL 3', 'PEKALONGAN', '-', 'W4', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
+(26069, 8, 'REGIONAL 3', 'PEKALONGAN', '-', 'W2', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
 INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(26070, 8, 'REGIONAL 3', 'PEKALONGAN', '-', 'W3', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
+(26071, 8, 'REGIONAL 3', 'PEKALONGAN', '-', 'W4', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (26072, 8, 'REGIONAL 3', 'PEKALONGAN', '-', 'W5', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (26073, 8, 'REGIONAL 3', 'PEKALONGAN', '-', 'W1', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (26074, 8, 'REGIONAL 3', 'PEKALONGAN', '-', 'W2', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
@@ -117254,11 +117929,11 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (26573, 4, '', 'CIBUBUR', '', 'W3', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26574, 4, '', 'CIBUBUR', '', 'W4', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26575, 4, '', 'CIBUBUR', '', 'W5', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(26576, 4, '', 'CIBUBUR', '', 'W1', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(26576, 4, '', 'CIBUBUR', '', 'W1', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
 (26577, 4, '', 'CIBUBUR', '', 'W2', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26578, 4, '', 'CIBUBUR', '', 'W3', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(26579, 4, '', 'CIBUBUR', '', 'W4', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(26579, 4, '', 'CIBUBUR', '', 'W4', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26580, 4, '', 'CIBUBUR', '', 'W5', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26581, 4, '', 'CIBUBUR', '', 'W1', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26582, 4, '', 'CIBUBUR', '', 'W2', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -117270,7 +117945,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (26588, 4, '', 'CILEGON', '', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26589, 4, '', 'CILEGON', '', 'W2', 'APRIL', NULL, NULL, NULL, NULL, '10272213', NULL, NULL),
 (26590, 4, '', 'CILEGON', '', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(26591, 4, '', 'CILEGON', '', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(26591, 4, '', 'CILEGON', '', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '21058036', NULL, NULL),
 (26592, 4, '', 'CILEGON', '', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26593, 4, '', 'CILEGON', '', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26594, 4, '', 'CILEGON', '', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -117297,7 +117972,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (26615, 4, '', 'MALANG', '', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26616, 4, '', 'MALANG', '', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26617, 4, '', 'MALANG', '', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(26618, 4, '', 'MALANG', '', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(26618, 4, '', 'MALANG', '', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '6163328', NULL, NULL),
 (26619, 4, '', 'MALANG', '', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26620, 4, '', 'MALANG', '', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (26621, 4, '', 'MALANG', '', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
@@ -117729,7 +118404,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (27047, 4, '', 'GORONTALO', '', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27048, 4, '', 'GORONTALO', '', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27049, 4, '', 'GORONTALO', '', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(27050, 4, '', 'GORONTALO', '', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(27050, 4, '', 'GORONTALO', '', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '16558808', NULL, ''),
 (27051, 4, '', 'GORONTALO', '', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27052, 4, '', 'GORONTALO', '', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27053, 4, '', 'GORONTALO', '', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -117783,7 +118458,7 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (27101, 4, '', 'PONTIANAK', '', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27102, 4, '', 'PONTIANAK', '', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27103, 4, '', 'PONTIANAK', '', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(27104, 4, '', 'PONTIANAK', '', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(27104, 4, '', 'PONTIANAK', '', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '56497175', NULL, ''),
 (27105, 4, '', 'PONTIANAK', '', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27106, 4, '', 'PONTIANAK', '', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27107, 4, '', 'PONTIANAK', '', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -117817,11 +118492,11 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (27135, 4, '', 'GOWA', '', 'W3', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27136, 4, '', 'GOWA', '', 'W4', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27137, 4, '', 'GOWA', '', 'W5', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(27138, 4, '', 'GOWA', '', 'W1', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(27138, 4, '', 'GOWA', '', 'W1', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, '');
+INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
 (27139, 4, '', 'GOWA', '', 'W2', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27140, 4, '', 'GOWA', '', 'W3', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(27141, 4, '', 'GOWA', '', 'W4', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, '');
-INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(27141, 4, '', 'GOWA', '', 'W4', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27142, 4, '', 'GOWA', '', 'W5', 'JUNI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27143, 4, '', 'GOWA', '', 'W1', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27144, 4, '', 'GOWA', '', 'W2', 'JULI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -117889,11 +118564,11 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (27206, 5, '', 'KUTAI KARTANEGARA', '', 'W5', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27207, 5, '', 'KUTAI KARTANEGARA', '', 'W1', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27208, 5, '', 'KUTAI KARTANEGARA', '', 'W2', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(27209, 1, '', 'DEMAK', '', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(27210, 1, '', 'DEMAK', '', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(27211, 1, '', 'DEMAK', '', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(27212, 1, '', 'DEMAK', '', 'W4', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
-(27213, 1, '', 'DEMAK', '', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(27209, 4, '', 'DEMAK', '', 'W1', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(27210, 4, '', 'DEMAK', '', 'W2', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(27211, 4, '', 'DEMAK', '', 'W3', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
+(27212, 4, '', 'DEMAK', '', 'W4', 'APRIL', NULL, NULL, NULL, NULL, '128649200', NULL, ''),
+(27213, 4, '', 'DEMAK', '', 'W5', 'APRIL', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27214, 1, '', 'DEMAK', '', 'W1', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27215, 1, '', 'DEMAK', '', 'W2', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (27216, 1, '', 'DEMAK', '', 'W3', 'MEI', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -118371,10 +119046,10 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (27688, 6, 'REGIONAL 3', 'BATU', 'ARIS EFFENDI', 'W1', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (27689, 6, 'REGIONAL 3', 'BATU', 'ARIS EFFENDI', 'W2', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (27690, 6, 'REGIONAL 3', 'BATU', 'ARIS EFFENDI', 'W3', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(27691, 6, 'REGIONAL 3', 'BATU', 'ARIS EFFENDI', 'W4', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(27692, 6, 'REGIONAL 3', 'BATU', 'ARIS EFFENDI', 'W5', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(27693, 6, 'REGIONAL 3', 'BATU', 'ARIS EFFENDI', 'W1', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+(27691, 6, 'REGIONAL 3', 'BATU', 'ARIS EFFENDI', 'W4', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(27692, 6, 'REGIONAL 3', 'BATU', 'ARIS EFFENDI', 'W5', 'AGUSTUS', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(27693, 6, 'REGIONAL 3', 'BATU', 'ARIS EFFENDI', 'W1', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (27694, 6, 'REGIONAL 3', 'BATU', 'ARIS EFFENDI', 'W2', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (27695, 1, 'REGIONAL 2', 'BANDUNG', 'Rustandi', 'W3', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (27696, 1, 'REGIONAL 2', 'BANDUNG', 'Rustandi', 'W4', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
@@ -118842,10 +119517,10 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (28158, 6, 'REGIONAL 1', 'LAMPUNG', 'SITAC', 'W4', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (28159, 6, 'REGIONAL 1', 'LAMPUNG', 'SITAC', 'W5', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
 (28160, 6, 'REGIONAL 1', 'LAMPUNG', 'HO', 'W3', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(28161, 6, 'REGIONAL 1', 'LAMPUNG', 'HO', 'W4', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(28162, 6, 'REGIONAL 1', 'LAMPUNG', 'HO', 'W5', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
-(28163, 6, 'REGIONAL 1', 'LANGKAT', 'HO', 'W3', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '');
+(28161, 6, 'REGIONAL 1', 'LAMPUNG', 'HO', 'W4', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    ');
 INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_target`, `area_target`, `pic_target`, `week_target`, `month_target`, `qty_target`, `qty_target_ghost`, `week_achiev_target`, `month_achiev_target`, `qty_achiev_target`, `remarks_target`, `id_user`) VALUES
+(28162, 6, 'REGIONAL 1', 'LAMPUNG', 'HO', 'W5', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, '    '),
+(28163, 6, 'REGIONAL 1', 'LANGKAT', 'HO', 'W3', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (28164, 6, 'REGIONAL 1', 'LANGKAT', 'HO', 'W4', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (28165, 6, 'REGIONAL 1', 'LANGKAT', 'HO', 'W5', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, ''),
 (28166, 6, 'REGIONAL 1', 'LIMA PULUH KOTA', 'HO', 'W3', 'SEPTEMBER', NULL, NULL, NULL, NULL, NULL, NULL, ''),
@@ -119179,7 +119854,91 @@ INSERT INTO `tb_target_invoice` (`id_target_invoice`, `id_bowheer`, `regional_ta
 (29215, 1, '', 'JAKARTA TIMUR', '', 'W2', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
 (29216, 1, '', 'JAKARTA TIMUR', '', 'W3', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
 (29217, 1, '', 'JAKARTA TIMUR', '', 'W4', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
-(29218, 1, '', 'JAKARTA TIMUR', '', 'W5', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL);
+(29218, 1, '', 'JAKARTA TIMUR', '', 'W5', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
+(29219, 2, '', 'BANDUNG', '', 'W1', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29220, 2, '', 'BANDUNG', '', 'W2', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29221, 2, '', 'BANDUNG', '', 'W3', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29222, 2, '', 'BANDUNG', '', 'W4', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29223, 2, '', 'BANDUNG', '', 'W5', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29224, 2, '', 'BANDUNG', '', 'W1', 'NOVEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29225, 2, '', 'BANDUNG', '', 'W2', 'NOVEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29226, 2, '', 'BANDUNG', '', 'W3', 'NOVEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29227, 2, '', 'BANDUNG', '', 'W4', 'NOVEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29228, 2, '', 'BANDUNG', '', 'W1', 'DESEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29229, 2, '', 'BANDUNG', '', 'W2', 'DESEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29230, 2, '', 'BANDUNG', '', 'W3', 'DESEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29231, 2, '', 'BANDUNG', '', 'W4', 'DESEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29232, 2, '', 'BANDUNG', '', 'W1', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29233, 2, '', 'BANDUNG', '', 'W2', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29234, 2, '', 'BANDUNG', '', 'W3', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29235, 2, '', 'BANDUNG', '', 'W4', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29236, 2, '', 'BANDUNG', '', 'W5', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29237, 2, '', 'BANDUNG', '', 'W1', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29238, 2, '', 'BANDUNG', '', 'W2', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29239, 2, '', 'BANDUNG', '', 'W3', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29240, 2, '', 'BANDUNG', '', 'W4', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29241, 2, '', 'BANDUNG', '', 'W5', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29242, 2, '', 'BANDUNG', '', 'W1', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
+(29243, 2, '', 'BANDUNG', '', 'W2', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
+(29244, 2, '', 'BANDUNG', '', 'W3', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
+(29245, 2, '', 'BANDUNG', '', 'W4', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
+(29246, 2, '', 'BANDUNG', '', 'W5', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
+(29247, 4, '', 'DEMAK', '', 'W1', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29248, 4, '', 'DEMAK', '', 'W2', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29249, 4, '', 'DEMAK', '', 'W3', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29250, 4, '', 'DEMAK', '', 'W4', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29251, 4, '', 'DEMAK', '', 'W5', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29252, 4, '', 'DEMAK', '', 'W1', 'NOVEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29253, 4, '', 'DEMAK', '', 'W2', 'NOVEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29254, 4, '', 'DEMAK', '', 'W3', 'NOVEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29255, 4, '', 'DEMAK', '', 'W4', 'NOVEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29256, 4, '', 'DEMAK', '', 'W1', 'DESEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29257, 4, '', 'DEMAK', '', 'W2', 'DESEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29258, 4, '', 'DEMAK', '', 'W3', 'DESEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29259, 4, '', 'DEMAK', '', 'W4', 'DESEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29260, 4, '', 'DEMAK', '', 'W1', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29261, 4, '', 'DEMAK', '', 'W2', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29262, 4, '', 'DEMAK', '', 'W3', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29263, 4, '', 'DEMAK', '', 'W4', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29264, 4, '', 'DEMAK', '', 'W5', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29265, 4, '', 'DEMAK', '', 'W1', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29266, 4, '', 'DEMAK', '', 'W2', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29267, 4, '', 'DEMAK', '', 'W3', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29268, 4, '', 'DEMAK', '', 'W4', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29269, 4, '', 'DEMAK', '', 'W5', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29270, 4, '', 'DEMAK', '', 'W1', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
+(29271, 4, '', 'DEMAK', '', 'W2', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
+(29272, 4, '', 'DEMAK', '', 'W3', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
+(29273, 4, '', 'DEMAK', '', 'W4', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
+(29274, 4, '', 'DEMAK', '', 'W5', 'MARET', '', NULL, NULL, NULL, '', NULL, NULL),
+(29275, 4, '', 'TULUNGAGUNG', '', 'W1', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29276, 4, '', 'TULUNGAGUNG', '', 'W2', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29277, 4, '', 'TULUNGAGUNG', '', 'W3', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29278, 4, '', 'TULUNGAGUNG', '', 'W4', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29279, 4, '', 'TULUNGAGUNG', '', 'W5', 'OKTOBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29280, 4, '', 'TULUNGAGUNG', '', 'W1', 'NOVEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29281, 4, '', 'TULUNGAGUNG', '', 'W2', 'NOVEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29282, 4, '', 'TULUNGAGUNG', '', 'W3', 'NOVEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29283, 4, '', 'TULUNGAGUNG', '', 'W4', 'NOVEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29284, 4, '', 'TULUNGAGUNG', '', 'W1', 'DESEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29285, 4, '', 'TULUNGAGUNG', '', 'W2', 'DESEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29286, 4, '', 'TULUNGAGUNG', '', 'W3', 'DESEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29287, 4, '', 'TULUNGAGUNG', '', 'W4', 'DESEMBER', '', NULL, NULL, NULL, '', NULL, NULL),
+(29288, 4, '', 'TULUNGAGUNG', '', 'W1', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29289, 4, '', 'TULUNGAGUNG', '', 'W2', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29290, 4, '', 'TULUNGAGUNG', '', 'W3', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29291, 4, '', 'TULUNGAGUNG', '', 'W4', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29292, 4, '', 'TULUNGAGUNG', '', 'W5', 'JANUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29293, 4, '', 'TULUNGAGUNG', '', 'W1', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29294, 4, '', 'TULUNGAGUNG', '', 'W2', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29295, 4, '', 'TULUNGAGUNG', '', 'W3', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29296, 4, '', 'TULUNGAGUNG', '', 'W4', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29297, 4, '', 'TULUNGAGUNG', '', 'W5', 'FEBRUARI', '', NULL, NULL, NULL, '', NULL, NULL),
+(29298, 4, '', 'TULUNGAGUNG', '', 'W1', 'APRIL', '', NULL, NULL, NULL, '', NULL, NULL),
+(29299, 4, '', 'TULUNGAGUNG', '', 'W2', 'APRIL', '', NULL, NULL, NULL, '', NULL, NULL),
+(29300, 4, '', 'TULUNGAGUNG', '', 'W3', 'APRIL', '', NULL, NULL, NULL, '', NULL, NULL),
+(29301, 4, '', 'TULUNGAGUNG', '', 'W4', 'APRIL', '', NULL, NULL, NULL, '11576785', NULL, NULL),
+(29302, 4, '', 'TULUNGAGUNG', '', 'W5', 'APRIL', '', NULL, NULL, NULL, '', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -220600,6 +221359,26 @@ ALTER TABLE `md_kokab_indonesia`
   ADD KEY `regencies_province_id_index` (`province_id`);
 
 --
+-- Indeks untuk tabel `md_myrep_boq_item`
+--
+ALTER TABLE `md_myrep_boq_item`
+  ADD PRIMARY KEY (`id_boq_item`);
+
+--
+-- Indeks untuk tabel `md_myrep_flow_doc_group`
+--
+ALTER TABLE `md_myrep_flow_doc_group`
+  ADD PRIMARY KEY (`id_doc_group`),
+  ADD UNIQUE KEY `uniq_myrep_flow_doc_group` (`flow_type`,`group_label`);
+
+--
+-- Indeks untuk tabel `md_myrep_flow_doc_item`
+--
+ALTER TABLE `md_myrep_flow_doc_item`
+  ADD PRIMARY KEY (`id_doc_item`),
+  ADD KEY `idx_myrep_flow_doc_item_group` (`id_doc_group`);
+
+--
 -- Indeks untuk tabel `md_provinsi_indonesia`
 --
 ALTER TABLE `md_provinsi_indonesia`
@@ -220856,6 +221635,151 @@ ALTER TABLE `tb_master_user`
 --
 ALTER TABLE `tb_master_user_child`
   ADD PRIMARY KEY (`id_master_user_child`);
+
+--
+-- Indeks untuk tabel `tb_myrep_bak`
+--
+ALTER TABLE `tb_myrep_bak`
+  ADD PRIMARY KEY (`id_bak`),
+  ADD UNIQUE KEY `uniq_myrep_bak_cluster` (`id_myrep_cluster`),
+  ADD KEY `idx_myrep_bak_status` (`status_bak`);
+
+--
+-- Indeks untuk tabel `tb_myrep_batch_approval`
+--
+ALTER TABLE `tb_myrep_batch_approval`
+  ADD PRIMARY KEY (`id_batch_approval`),
+  ADD KEY `idx_myrep_batch_cluster` (`id_myrep_cluster`),
+  ADD KEY `idx_myrep_batch_status` (`staging_status`);
+
+--
+-- Indeks untuk tabel `tb_myrep_batch_approval_pic`
+--
+ALTER TABLE `tb_myrep_batch_approval_pic`
+  ADD PRIMARY KEY (`id_batch_pic`),
+  ADD UNIQUE KEY `uniq_myrep_batch_pic_no` (`id_batch_approval`,`pic_no`);
+
+--
+-- Indeks untuk tabel `tb_myrep_boq_baseline`
+--
+ALTER TABLE `tb_myrep_boq_baseline`
+  ADD PRIMARY KEY (`id_boq_baseline`),
+  ADD UNIQUE KEY `uniq_myrep_boq_baseline_cluster` (`id_myrep_cluster`,`status_baseline`),
+  ADD KEY `idx_myrep_boq_baseline_drm_boq` (`id_drm_boq`);
+
+--
+-- Indeks untuk tabel `tb_myrep_boq_baseline_item`
+--
+ALTER TABLE `tb_myrep_boq_baseline_item`
+  ADD PRIMARY KEY (`id_boq_baseline_item`),
+  ADD UNIQUE KEY `uniq_myrep_boq_baseline_item` (`id_boq_baseline`,`id_boq_item`),
+  ADD KEY `idx_myrep_boq_baseline_item_master` (`id_boq_item`);
+
+--
+-- Indeks untuk tabel `tb_myrep_boq_progress_item`
+--
+ALTER TABLE `tb_myrep_boq_progress_item`
+  ADD PRIMARY KEY (`id_progress_item`),
+  ADD KEY `idx_myrep_boq_progress_cluster` (`id_myrep_cluster`),
+  ADD KEY `idx_myrep_boq_progress_baseline` (`id_boq_baseline`),
+  ADD KEY `idx_myrep_boq_progress_baseline_item` (`id_boq_baseline_item`),
+  ADD KEY `idx_myrep_boq_progress_date` (`progress_date`);
+
+--
+-- Indeks untuk tabel `tb_myrep_boq_progress_photo`
+--
+ALTER TABLE `tb_myrep_boq_progress_photo`
+  ADD PRIMARY KEY (`id_progress_photo`),
+  ADD KEY `idx_myrep_boq_progress_photo_item` (`id_progress_item`);
+
+--
+-- Indeks untuk tabel `tb_myrep_cluster`
+--
+ALTER TABLE `tb_myrep_cluster`
+  ADD PRIMARY KEY (`id_myrep_cluster`),
+  ADD KEY `idx_myrep_cluster_status_current` (`status_current`),
+  ADD KEY `idx_myrep_cluster_city` (`city_name`),
+  ADD KEY `idx_myrep_cluster_target` (`id_target`),
+  ADD KEY `idx_myrep_cluster_rfs_cluster` (`rfs_cluster_id`);
+
+--
+-- Indeks untuk tabel `tb_myrep_drm`
+--
+ALTER TABLE `tb_myrep_drm`
+  ADD PRIMARY KEY (`id_drm`),
+  ADD UNIQUE KEY `uniq_myrep_drm_cluster` (`id_myrep_cluster`),
+  ADD KEY `idx_myrep_drm_status` (`status_drm`);
+
+--
+-- Indeks untuk tabel `tb_myrep_drm_boq`
+--
+ALTER TABLE `tb_myrep_drm_boq`
+  ADD PRIMARY KEY (`id_drm_boq`),
+  ADD UNIQUE KEY `uniq_myrep_drm_boq_cluster` (`id_myrep_cluster`),
+  ADD KEY `idx_myrep_drm_boq_status` (`review_status`),
+  ADD KEY `idx_myrep_drm_boq_drm` (`id_drm`),
+  ADD KEY `idx_myrep_drm_boq_doc` (`source_doc_file_id`);
+
+--
+-- Indeks untuk tabel `tb_myrep_drm_boq_item`
+--
+ALTER TABLE `tb_myrep_drm_boq_item`
+  ADD PRIMARY KEY (`id_drm_boq_item`),
+  ADD UNIQUE KEY `uniq_myrep_drm_boq_item` (`id_drm_boq`,`id_boq_item`),
+  ADD KEY `idx_myrep_drm_boq_item_master` (`id_boq_item`);
+
+--
+-- Indeks untuk tabel `tb_myrep_flow_doc_file`
+--
+ALTER TABLE `tb_myrep_flow_doc_file`
+  ADD PRIMARY KEY (`id_doc_file`),
+  ADD UNIQUE KEY `uniq_myrep_flow_doc_file` (`id_doc_package`,`id_doc_item`),
+  ADD KEY `idx_myrep_flow_doc_file_package` (`id_doc_package`),
+  ADD KEY `idx_myrep_flow_doc_file_item` (`id_doc_item`);
+
+--
+-- Indeks untuk tabel `tb_myrep_flow_doc_file_log`
+--
+ALTER TABLE `tb_myrep_flow_doc_file_log`
+  ADD PRIMARY KEY (`id_doc_file_log`),
+  ADD KEY `idx_myrep_flow_doc_log_file` (`id_doc_file`),
+  ADD KEY `idx_myrep_flow_doc_log_package` (`id_doc_package`),
+  ADD KEY `idx_myrep_flow_doc_log_item` (`id_doc_item`);
+
+--
+-- Indeks untuk tabel `tb_myrep_flow_doc_package`
+--
+ALTER TABLE `tb_myrep_flow_doc_package`
+  ADD PRIMARY KEY (`id_doc_package`),
+  ADD UNIQUE KEY `uniq_myrep_flow_doc_package` (`flow_type`,`ref_process_id`,`id_doc_group`),
+  ADD KEY `idx_myrep_flow_doc_package_cluster` (`id_myrep_cluster`),
+  ADD KEY `idx_myrep_flow_doc_package_group` (`id_doc_group`);
+
+--
+-- Indeks untuk tabel `tb_myrep_po_header`
+--
+ALTER TABLE `tb_myrep_po_header`
+  ADD PRIMARY KEY (`id_po_header`),
+  ADD KEY `idx_myrep_po_cluster` (`id_myrep_cluster`),
+  ADD KEY `idx_myrep_po_parent` (`parent_po_header_id`),
+  ADD KEY `idx_myrep_po_type` (`po_type`),
+  ADD KEY `idx_myrep_po_status` (`status_po`);
+
+--
+-- Indeks untuk tabel `tb_myrep_po_termin`
+--
+ALTER TABLE `tb_myrep_po_termin`
+  ADD PRIMARY KEY (`id_po_termin`),
+  ADD UNIQUE KEY `uniq_myrep_po_termin` (`id_po_header`,`termin_no`),
+  ADD KEY `idx_myrep_po_termin_status` (`status_termin`);
+
+--
+-- Indeks untuk tabel `tb_myrep_valsal`
+--
+ALTER TABLE `tb_myrep_valsal`
+  ADD PRIMARY KEY (`id_valsal`),
+  ADD UNIQUE KEY `uniq_myrep_valsal_cluster` (`id_myrep_cluster`),
+  ADD KEY `idx_myrep_valsal_status` (`status_valsal`);
 
 --
 -- Indeks untuk tabel `tb_po`
@@ -221128,6 +222052,24 @@ ALTER TABLE `md_document_support_fiberstar`
   MODIFY `id_document_support` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=83;
 
 --
+-- AUTO_INCREMENT untuk tabel `md_myrep_boq_item`
+--
+ALTER TABLE `md_myrep_boq_item`
+  MODIFY `id_boq_item` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+--
+-- AUTO_INCREMENT untuk tabel `md_myrep_flow_doc_group`
+--
+ALTER TABLE `md_myrep_flow_doc_group`
+  MODIFY `id_doc_group` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT untuk tabel `md_myrep_flow_doc_item`
+--
+ALTER TABLE `md_myrep_flow_doc_item`
+  MODIFY `id_doc_item` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+
+--
 -- AUTO_INCREMENT untuk tabel `md_rfs_myrep_doc_group`
 --
 ALTER TABLE `md_rfs_myrep_doc_group`
@@ -221281,7 +222223,7 @@ ALTER TABLE `tb_master_bowheer`
 -- AUTO_INCREMENT untuk tabel `tb_master_bowheer_bilco`
 --
 ALTER TABLE `tb_master_bowheer_bilco`
-  MODIFY `id_bowheer` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id_bowheer` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT untuk tabel `tb_master_bowheer_invoice`
@@ -221318,6 +222260,108 @@ ALTER TABLE `tb_master_user`
 --
 ALTER TABLE `tb_master_user_child`
   MODIFY `id_master_user_child` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_bak`
+--
+ALTER TABLE `tb_myrep_bak`
+  MODIFY `id_bak` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_batch_approval`
+--
+ALTER TABLE `tb_myrep_batch_approval`
+  MODIFY `id_batch_approval` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_batch_approval_pic`
+--
+ALTER TABLE `tb_myrep_batch_approval_pic`
+  MODIFY `id_batch_pic` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_boq_baseline`
+--
+ALTER TABLE `tb_myrep_boq_baseline`
+  MODIFY `id_boq_baseline` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_boq_baseline_item`
+--
+ALTER TABLE `tb_myrep_boq_baseline_item`
+  MODIFY `id_boq_baseline_item` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_boq_progress_item`
+--
+ALTER TABLE `tb_myrep_boq_progress_item`
+  MODIFY `id_progress_item` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_boq_progress_photo`
+--
+ALTER TABLE `tb_myrep_boq_progress_photo`
+  MODIFY `id_progress_photo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_cluster`
+--
+ALTER TABLE `tb_myrep_cluster`
+  MODIFY `id_myrep_cluster` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_drm`
+--
+ALTER TABLE `tb_myrep_drm`
+  MODIFY `id_drm` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_drm_boq`
+--
+ALTER TABLE `tb_myrep_drm_boq`
+  MODIFY `id_drm_boq` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_drm_boq_item`
+--
+ALTER TABLE `tb_myrep_drm_boq_item`
+  MODIFY `id_drm_boq_item` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_flow_doc_file`
+--
+ALTER TABLE `tb_myrep_flow_doc_file`
+  MODIFY `id_doc_file` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_flow_doc_file_log`
+--
+ALTER TABLE `tb_myrep_flow_doc_file_log`
+  MODIFY `id_doc_file_log` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_flow_doc_package`
+--
+ALTER TABLE `tb_myrep_flow_doc_package`
+  MODIFY `id_doc_package` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_po_header`
+--
+ALTER TABLE `tb_myrep_po_header`
+  MODIFY `id_po_header` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_po_termin`
+--
+ALTER TABLE `tb_myrep_po_termin`
+  MODIFY `id_po_termin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT untuk tabel `tb_myrep_valsal`
+--
+ALTER TABLE `tb_myrep_valsal`
+  MODIFY `id_valsal` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT untuk tabel `tb_po`
@@ -221371,7 +222415,7 @@ ALTER TABLE `tb_project_fiberstar_stagging`
 -- AUTO_INCREMENT untuk tabel `tb_project_implementasi_fiberstar`
 --
 ALTER TABLE `tb_project_implementasi_fiberstar`
-  MODIFY `id_implementasi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `id_implementasi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT untuk tabel `tb_project_progress_myrep`
@@ -221473,7 +222517,7 @@ ALTER TABLE `tb_so_periode`
 -- AUTO_INCREMENT untuk tabel `tb_target_invoice`
 --
 ALTER TABLE `tb_target_invoice`
-  MODIFY `id_target_invoice` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29219;
+  MODIFY `id_target_invoice` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29303;
 
 --
 -- AUTO_INCREMENT untuk tabel `tb_term_master`
@@ -221534,6 +222578,12 @@ ALTER TABLE `md_kokab_indonesia`
   ADD CONSTRAINT `regencies_province_id_foreign` FOREIGN KEY (`province_id`) REFERENCES `md_provinsi_indonesia` (`id`);
 
 --
+-- Ketidakleluasaan untuk tabel `md_myrep_flow_doc_item`
+--
+ALTER TABLE `md_myrep_flow_doc_item`
+  ADD CONSTRAINT `fk_myrep_flow_doc_item_group` FOREIGN KEY (`id_doc_group`) REFERENCES `md_myrep_flow_doc_group` (`id_doc_group`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Ketidakleluasaan untuk tabel `md_rfs_myrep_doc_item`
 --
 ALTER TABLE `md_rfs_myrep_doc_item`
@@ -221577,6 +222627,121 @@ ALTER TABLE `tb_logistik_pengiriman_pabrik_detail`
 --
 ALTER TABLE `tb_logistik_purchase_request_detail`
   ADD CONSTRAINT `tb_logistik_purchase_request_to_detail` FOREIGN KEY (`id_purchase_request`) REFERENCES `tb_logistik_purchase_request` (`id_purchase_request`);
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_bak`
+--
+ALTER TABLE `tb_myrep_bak`
+  ADD CONSTRAINT `fk_myrep_bak_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_batch_approval`
+--
+ALTER TABLE `tb_myrep_batch_approval`
+  ADD CONSTRAINT `fk_myrep_batch_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_batch_approval_pic`
+--
+ALTER TABLE `tb_myrep_batch_approval_pic`
+  ADD CONSTRAINT `fk_myrep_batch_pic_header` FOREIGN KEY (`id_batch_approval`) REFERENCES `tb_myrep_batch_approval` (`id_batch_approval`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_boq_baseline`
+--
+ALTER TABLE `tb_myrep_boq_baseline`
+  ADD CONSTRAINT `fk_myrep_boq_baseline_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_boq_baseline_drm_boq` FOREIGN KEY (`id_drm_boq`) REFERENCES `tb_myrep_drm_boq` (`id_drm_boq`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_boq_baseline_item`
+--
+ALTER TABLE `tb_myrep_boq_baseline_item`
+  ADD CONSTRAINT `fk_myrep_boq_baseline_item_header` FOREIGN KEY (`id_boq_baseline`) REFERENCES `tb_myrep_boq_baseline` (`id_boq_baseline`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_boq_baseline_item_master` FOREIGN KEY (`id_boq_item`) REFERENCES `md_myrep_boq_item` (`id_boq_item`) ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_boq_progress_item`
+--
+ALTER TABLE `tb_myrep_boq_progress_item`
+  ADD CONSTRAINT `fk_myrep_boq_progress_baseline` FOREIGN KEY (`id_boq_baseline`) REFERENCES `tb_myrep_boq_baseline` (`id_boq_baseline`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_boq_progress_baseline_item` FOREIGN KEY (`id_boq_baseline_item`) REFERENCES `tb_myrep_boq_baseline_item` (`id_boq_baseline_item`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_boq_progress_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_boq_progress_photo`
+--
+ALTER TABLE `tb_myrep_boq_progress_photo`
+  ADD CONSTRAINT `fk_myrep_boq_progress_photo_item` FOREIGN KEY (`id_progress_item`) REFERENCES `tb_myrep_boq_progress_item` (`id_progress_item`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_cluster`
+--
+ALTER TABLE `tb_myrep_cluster`
+  ADD CONSTRAINT `fk_myrep_cluster_rfs_cluster` FOREIGN KEY (`rfs_cluster_id`) REFERENCES `tb_rfs_myrep_cluster` (`id_cluster`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_cluster_target` FOREIGN KEY (`id_target`) REFERENCES `tb_rfs_myrep_monthly_target` (`id_target`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_drm`
+--
+ALTER TABLE `tb_myrep_drm`
+  ADD CONSTRAINT `fk_myrep_drm_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_drm_boq`
+--
+ALTER TABLE `tb_myrep_drm_boq`
+  ADD CONSTRAINT `fk_myrep_drm_boq_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_drm_boq_doc` FOREIGN KEY (`source_doc_file_id`) REFERENCES `tb_myrep_flow_doc_file` (`id_doc_file`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_drm_boq_drm` FOREIGN KEY (`id_drm`) REFERENCES `tb_myrep_drm` (`id_drm`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_drm_boq_item`
+--
+ALTER TABLE `tb_myrep_drm_boq_item`
+  ADD CONSTRAINT `fk_myrep_drm_boq_item_header` FOREIGN KEY (`id_drm_boq`) REFERENCES `tb_myrep_drm_boq` (`id_drm_boq`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_drm_boq_item_master` FOREIGN KEY (`id_boq_item`) REFERENCES `md_myrep_boq_item` (`id_boq_item`) ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_flow_doc_file`
+--
+ALTER TABLE `tb_myrep_flow_doc_file`
+  ADD CONSTRAINT `fk_myrep_flow_doc_file_item` FOREIGN KEY (`id_doc_item`) REFERENCES `md_myrep_flow_doc_item` (`id_doc_item`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_flow_doc_file_package` FOREIGN KEY (`id_doc_package`) REFERENCES `tb_myrep_flow_doc_package` (`id_doc_package`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_flow_doc_file_log`
+--
+ALTER TABLE `tb_myrep_flow_doc_file_log`
+  ADD CONSTRAINT `fk_myrep_flow_doc_log_file` FOREIGN KEY (`id_doc_file`) REFERENCES `tb_myrep_flow_doc_file` (`id_doc_file`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_flow_doc_log_item` FOREIGN KEY (`id_doc_item`) REFERENCES `md_myrep_flow_doc_item` (`id_doc_item`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_flow_doc_log_package` FOREIGN KEY (`id_doc_package`) REFERENCES `tb_myrep_flow_doc_package` (`id_doc_package`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_flow_doc_package`
+--
+ALTER TABLE `tb_myrep_flow_doc_package`
+  ADD CONSTRAINT `fk_myrep_flow_doc_package_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_flow_doc_package_group` FOREIGN KEY (`id_doc_group`) REFERENCES `md_myrep_flow_doc_group` (`id_doc_group`) ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_po_header`
+--
+ALTER TABLE `tb_myrep_po_header`
+  ADD CONSTRAINT `fk_myrep_po_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_myrep_po_parent` FOREIGN KEY (`parent_po_header_id`) REFERENCES `tb_myrep_po_header` (`id_po_header`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_po_termin`
+--
+ALTER TABLE `tb_myrep_po_termin`
+  ADD CONSTRAINT `fk_myrep_po_termin_header` FOREIGN KEY (`id_po_header`) REFERENCES `tb_myrep_po_header` (`id_po_header`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `tb_myrep_valsal`
+--
+ALTER TABLE `tb_myrep_valsal`
+  ADD CONSTRAINT `fk_myrep_valsal_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Ketidakleluasaan untuk tabel `tb_po_amend`
@@ -221644,467 +222809,6 @@ ALTER TABLE `tb_term_master_split`
 ALTER TABLE `tenants_stay`
   ADD CONSTRAINT `tenants_stay_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `tenants_stay_ibfk_2` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`);
-
--- --------------------------------------------------------
---
--- Patch struktur baru MyRep lifecycle:
--- BAK -> VALSAL -> BATCH APPROVAL -> DRM -> RFS -> ATP
--- Patch ini sengaja dipisah dari schema tb_rfs_myrep_* yang sudah berjalan
--- supaya flow awal bisa dibangun tanpa merusak modul RFS / ATP existing.
---
-
-CREATE TABLE `tb_myrep_cluster` (
-  `id_myrep_cluster` int(11) NOT NULL AUTO_INCREMENT,
-  `rfs_cluster_id` int(11) DEFAULT NULL,
-  `id_target` int(11) DEFAULT NULL,
-  `cluster_name` varchar(150) NOT NULL,
-  `cluster_code` varchar(50) DEFAULT NULL,
-  `regional_name` varchar(100) DEFAULT NULL,
-  `province_name` varchar(100) DEFAULT NULL,
-  `city_name` varchar(100) DEFAULT NULL,
-  `team_name` varchar(100) DEFAULT NULL,
-  `chief` varchar(100) DEFAULT NULL,
-  `rpm` varchar(100) DEFAULT NULL,
-  `sm` varchar(100) DEFAULT NULL,
-  `spv` varchar(100) DEFAULT NULL,
-  `pic_project` varchar(100) DEFAULT NULL,
-  `ntp_name` varchar(100) DEFAULT NULL,
-  `ntp_date` date DEFAULT NULL,
-  `ntp_year` smallint(6) DEFAULT NULL,
-  `hp_plan` int(11) NOT NULL DEFAULT 0,
-  `estimated_po` decimal(18,2) NOT NULL DEFAULT 0.00,
-  `status_po` varchar(50) DEFAULT NULL,
-  `status_current` enum('DRAFT','BA OPEN','BAK','VALSAL','WAITING HO','WAITING MYREP','WAITING FINANCE','RELEASED','DONE BATCH APPROVAL','DRM','RFS','ATP','DONE','REJECTED','HOLD') NOT NULL DEFAULT 'DRAFT',
-  `outstanding_progress` text DEFAULT NULL,
-  `remark_general` text DEFAULT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_by` int(11) DEFAULT NULL,
-  `updated_by` int(11) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_myrep_cluster`),
-  KEY `idx_myrep_cluster_status_current` (`status_current`),
-  KEY `idx_myrep_cluster_city` (`city_name`),
-  KEY `idx_myrep_cluster_target` (`id_target`),
-  KEY `idx_myrep_cluster_rfs_cluster` (`rfs_cluster_id`),
-  CONSTRAINT `fk_myrep_cluster_rfs_cluster` FOREIGN KEY (`rfs_cluster_id`) REFERENCES `tb_rfs_myrep_cluster` (`id_cluster`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_cluster_target` FOREIGN KEY (`id_target`) REFERENCES `tb_rfs_myrep_monthly_target` (`id_target`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_bak` (
-  `id_bak` int(11) NOT NULL AUTO_INCREMENT,
-  `id_myrep_cluster` int(11) NOT NULL,
-  `ba_open_date` date DEFAULT NULL,
-  `bak_date` date DEFAULT NULL,
-  `homepass_bak` int(11) NOT NULL DEFAULT 0,
-  `status_bak` enum('DRAFT','SUBMITTED','ON REVIEW','APPROVED','REJECTED','DONE') NOT NULL DEFAULT 'DRAFT',
-  `remark_bak` text DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `updated_by` int(11) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_bak`),
-  UNIQUE KEY `uniq_myrep_bak_cluster` (`id_myrep_cluster`),
-  KEY `idx_myrep_bak_status` (`status_bak`),
-  CONSTRAINT `fk_myrep_bak_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_valsal` (
-  `id_valsal` int(11) NOT NULL AUTO_INCREMENT,
-  `id_myrep_cluster` int(11) NOT NULL,
-  `valsal_date` date DEFAULT NULL,
-  `homepass_valsal` int(11) NOT NULL DEFAULT 0,
-  `status_valsal` enum('DRAFT','SUBMITTED','ON REVIEW','APPROVED','REJECTED','DONE') NOT NULL DEFAULT 'DRAFT',
-  `remark_valsal` text DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `updated_by` int(11) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_valsal`),
-  UNIQUE KEY `uniq_myrep_valsal_cluster` (`id_myrep_cluster`),
-  KEY `idx_myrep_valsal_status` (`status_valsal`),
-  CONSTRAINT `fk_myrep_valsal_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_batch_approval` (
-  `id_batch_approval` int(11) NOT NULL AUTO_INCREMENT,
-  `id_myrep_cluster` int(11) NOT NULL,
-  `submission_date` date DEFAULT NULL,
-  `hp_donasi` int(11) NOT NULL DEFAULT 0,
-  `nominal_pengajuan_area` decimal(18,2) NOT NULL DEFAULT 0.00,
-  `nominal_nego_emr` decimal(18,2) DEFAULT NULL,
-  `nominal_release_finance` decimal(18,2) DEFAULT NULL,
-  `nominal_per_homepass` decimal(18,2) NOT NULL DEFAULT 0.00,
-  `bank_name` varchar(100) DEFAULT NULL,
-  `bank_account_number` varchar(100) DEFAULT NULL,
-  `recipient_name` varchar(150) DEFAULT NULL,
-  `recipient_phone` varchar(50) DEFAULT NULL,
-  `recipient_position` varchar(100) DEFAULT NULL,
-  `recipient_period` varchar(50) DEFAULT NULL,
-  `free_wifi_qty` int(11) DEFAULT NULL,
-  `free_wifi_period_month` int(11) DEFAULT NULL,
-  `astri_batch_number` varchar(100) DEFAULT NULL,
-  `staging_status` enum('DRAFT','WAITING HO','WAITING MYREP','WAITING FINANCE','RELEASED','DONE BATCH APPROVAL','REJECTED') NOT NULL DEFAULT 'DRAFT',
-  `submitted_to_ho_at` datetime DEFAULT NULL,
-  `submitted_to_astri_at` datetime DEFAULT NULL,
-  `submitted_to_finance_at` datetime DEFAULT NULL,
-  `released_at` datetime DEFAULT NULL,
-  `transfer_proof_file_name` varchar(255) DEFAULT NULL,
-  `transfer_proof_file_path` varchar(255) DEFAULT NULL,
-  `remark_batch_approval` text DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `updated_by` int(11) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_batch_approval`),
-  KEY `idx_myrep_batch_cluster` (`id_myrep_cluster`),
-  KEY `idx_myrep_batch_status` (`staging_status`),
-  CONSTRAINT `fk_myrep_batch_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_batch_approval_pic` (
-  `id_batch_pic` int(11) NOT NULL AUTO_INCREMENT,
-  `id_batch_approval` int(11) NOT NULL,
-  `pic_no` tinyint(4) NOT NULL,
-  `pic_name` varchar(150) NOT NULL,
-  `pic_phone` varchar(50) DEFAULT NULL,
-  `pic_position` varchar(100) DEFAULT NULL,
-  `pic_period` varchar(50) DEFAULT NULL,
-  `is_primary` tinyint(1) NOT NULL DEFAULT 0,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_batch_pic`),
-  UNIQUE KEY `uniq_myrep_batch_pic_no` (`id_batch_approval`,`pic_no`),
-  CONSTRAINT `fk_myrep_batch_pic_header` FOREIGN KEY (`id_batch_approval`) REFERENCES `tb_myrep_batch_approval` (`id_batch_approval`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_drm` (
-  `id_drm` int(11) NOT NULL AUTO_INCREMENT,
-  `id_myrep_cluster` int(11) NOT NULL,
-  `drm_date` date DEFAULT NULL,
-  `homepass_drm` int(11) NOT NULL DEFAULT 0,
-  `status_drm` enum('DRAFT','SUBMITTED','ON REVIEW','APPROVED','REJECTED','DONE') NOT NULL DEFAULT 'DRAFT',
-  `remark_drm` text DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `updated_by` int(11) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_drm`),
-  UNIQUE KEY `uniq_myrep_drm_cluster` (`id_myrep_cluster`),
-  KEY `idx_myrep_drm_status` (`status_drm`),
-  CONSTRAINT `fk_myrep_drm_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `md_myrep_flow_doc_group` (
-  `id_doc_group` int(11) NOT NULL AUTO_INCREMENT,
-  `flow_type` enum('BAK','VALSAL','BATCH_APPROVAL','POST_DONASI','DRM') NOT NULL,
-  `group_label` varchar(100) NOT NULL,
-  `sort_no` int(11) NOT NULL DEFAULT 0,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id_doc_group`),
-  UNIQUE KEY `uniq_myrep_flow_doc_group` (`flow_type`,`group_label`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `md_myrep_flow_doc_item` (
-  `id_doc_item` int(11) NOT NULL AUTO_INCREMENT,
-  `id_doc_group` int(11) NOT NULL,
-  `doc_name` varchar(150) NOT NULL,
-  `doc_requirement_note` varchar(255) DEFAULT NULL,
-  `verification_team` varchar(100) DEFAULT NULL,
-  `sort_no` int(11) NOT NULL DEFAULT 0,
-  `is_required` tinyint(1) NOT NULL DEFAULT 1,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id_doc_item`),
-  KEY `idx_myrep_flow_doc_item_group` (`id_doc_group`),
-  CONSTRAINT `fk_myrep_flow_doc_item_group` FOREIGN KEY (`id_doc_group`) REFERENCES `md_myrep_flow_doc_group` (`id_doc_group`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_flow_doc_package` (
-  `id_doc_package` int(11) NOT NULL AUTO_INCREMENT,
-  `id_myrep_cluster` int(11) NOT NULL,
-  `flow_type` enum('BAK','VALSAL','BATCH_APPROVAL','POST_DONASI','DRM') NOT NULL,
-  `ref_process_id` int(11) DEFAULT NULL,
-  `id_doc_group` int(11) NOT NULL,
-  `status_package` enum('NOT STARTED','ON PROGRESS','DONE') NOT NULL DEFAULT 'NOT STARTED',
-  `remarks` text DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `updated_by` int(11) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_doc_package`),
-  UNIQUE KEY `uniq_myrep_flow_doc_package` (`flow_type`,`ref_process_id`,`id_doc_group`),
-  KEY `idx_myrep_flow_doc_package_cluster` (`id_myrep_cluster`),
-  KEY `idx_myrep_flow_doc_package_group` (`id_doc_group`),
-  CONSTRAINT `fk_myrep_flow_doc_package_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_flow_doc_package_group` FOREIGN KEY (`id_doc_group`) REFERENCES `md_myrep_flow_doc_group` (`id_doc_group`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_flow_doc_file` (
-  `id_doc_file` int(11) NOT NULL AUTO_INCREMENT,
-  `id_doc_package` int(11) NOT NULL,
-  `id_doc_item` int(11) NOT NULL,
-  `file_name` varchar(255) DEFAULT NULL,
-  `file_path` varchar(255) DEFAULT NULL,
-  `is_document_not_required` tinyint(1) NOT NULL DEFAULT 0,
-  `status_file` enum('UPLOADED','APPROVED','REJECTED') DEFAULT NULL,
-  `remark` text DEFAULT NULL,
-  `uploaded_by` int(11) DEFAULT NULL,
-  `uploaded_at` datetime DEFAULT NULL,
-  `reviewed_at` datetime DEFAULT NULL,
-  `approved_by` int(11) DEFAULT NULL,
-  `approved_at` datetime DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_doc_file`),
-  UNIQUE KEY `uniq_myrep_flow_doc_file` (`id_doc_package`,`id_doc_item`),
-  KEY `idx_myrep_flow_doc_file_package` (`id_doc_package`),
-  KEY `idx_myrep_flow_doc_file_item` (`id_doc_item`),
-  CONSTRAINT `fk_myrep_flow_doc_file_package` FOREIGN KEY (`id_doc_package`) REFERENCES `tb_myrep_flow_doc_package` (`id_doc_package`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_flow_doc_file_item` FOREIGN KEY (`id_doc_item`) REFERENCES `md_myrep_flow_doc_item` (`id_doc_item`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_flow_doc_file_log` (
-  `id_doc_file_log` int(11) NOT NULL AUTO_INCREMENT,
-  `id_doc_file` int(11) NOT NULL,
-  `id_doc_package` int(11) NOT NULL,
-  `id_doc_item` int(11) NOT NULL,
-  `action_type` enum('UPLOAD','APPROVE','REJECT','DELETE','REUPLOAD') NOT NULL,
-  `status_after` varchar(50) DEFAULT NULL,
-  `file_name` varchar(255) DEFAULT NULL,
-  `remark` text DEFAULT NULL,
-  `action_by` int(11) DEFAULT NULL,
-  `action_at` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id_doc_file_log`),
-  KEY `idx_myrep_flow_doc_log_file` (`id_doc_file`),
-  KEY `idx_myrep_flow_doc_log_package` (`id_doc_package`),
-  KEY `idx_myrep_flow_doc_log_item` (`id_doc_item`),
-  CONSTRAINT `fk_myrep_flow_doc_log_file` FOREIGN KEY (`id_doc_file`) REFERENCES `tb_myrep_flow_doc_file` (`id_doc_file`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_flow_doc_log_package` FOREIGN KEY (`id_doc_package`) REFERENCES `tb_myrep_flow_doc_package` (`id_doc_package`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_flow_doc_log_item` FOREIGN KEY (`id_doc_item`) REFERENCES `md_myrep_flow_doc_item` (`id_doc_item`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-INSERT INTO `md_myrep_flow_doc_group` (`id_doc_group`, `flow_type`, `group_label`, `sort_no`, `is_active`, `created_at`) VALUES
-(1, 'BAK', 'BA OPEN', 1, 1, CURRENT_TIMESTAMP),
-(2, 'VALSAL', 'VALIDASI SALES', 1, 1, CURRENT_TIMESTAMP),
-(3, 'BATCH_APPROVAL', 'RAR', 1, 1, CURRENT_TIMESTAMP),
-(4, 'DRM', 'DRM DOCUMENT', 1, 1, CURRENT_TIMESTAMP),
-(5, 'POST_DONASI', 'POST DONASI DOCUMENT', 1, 1, CURRENT_TIMESTAMP);
-
-INSERT INTO `md_myrep_flow_doc_item` (`id_doc_item`, `id_doc_group`, `doc_name`, `doc_requirement_note`, `verification_team`, `sort_no`, `is_required`, `is_active`, `created_at`) VALUES
-(1, 1, 'BA OPEN', 'Dokumen BA OPEN hasil input HO', 'HO', 1, 1, 1, CURRENT_TIMESTAMP),
-(2, 2, 'SND KASAR', 'Dokumen SND Kasar dari AREA', 'HO', 1, 1, 1, CURRENT_TIMESTAMP),
-(3, 3, 'RAR', 'RAR berisi foto lingkungan, foto jalan, dan foto rumah', 'HO', 1, 1, 1, CURRENT_TIMESTAMP),
-(4, 4, 'APD KMZ', 'Dokumen DRM APD KMZ', 'HO', 1, 1, 1, CURRENT_TIMESTAMP),
-(5, 4, 'APD DWG', 'Dokumen DRM APD DWG', 'HO', 2, 1, 1, CURRENT_TIMESTAMP),
-(6, 4, 'APD PDF', 'Dokumen DRM APD PDF', 'HO', 3, 1, 1, CURRENT_TIMESTAMP),
-(7, 4, 'APD BOQ', 'Dokumen DRM APD BOQ', 'HO', 4, 1, 1, CURRENT_TIMESTAMP),
-(8, 4, 'HPDB', 'Dokumen DRM HPDB', 'HO', 5, 1, 1, CURRENT_TIMESTAMP),
-(9, 4, 'TSSR', 'Dokumen DRM TSSR', 'HO', 6, 1, 1, CURRENT_TIMESTAMP),
-(10, 5, 'POST DONASI DOCUMENT 01', 'Placeholder dokumen pasca donasi 01', 'HO', 1, 1, 1, CURRENT_TIMESTAMP),
-(11, 5, 'POST DONASI DOCUMENT 02', 'Placeholder dokumen pasca donasi 02', 'HO', 2, 1, 1, CURRENT_TIMESTAMP),
-(12, 5, 'POST DONASI DOCUMENT 03', 'Placeholder dokumen pasca donasi 03', 'HO', 3, 1, 1, CURRENT_TIMESTAMP),
-(13, 5, 'POST DONASI DOCUMENT 04', 'Placeholder dokumen pasca donasi 04', 'HO', 4, 1, 1, CURRENT_TIMESTAMP),
-(14, 5, 'POST DONASI DOCUMENT 05', 'Placeholder dokumen pasca donasi 05', 'HO', 5, 1, 1, CURRENT_TIMESTAMP),
-(15, 5, 'POST DONASI DOCUMENT 06', 'Placeholder dokumen pasca donasi 06', 'HO', 6, 1, 1, CURRENT_TIMESTAMP),
-(16, 5, 'POST DONASI DOCUMENT 07', 'Placeholder dokumen pasca donasi 07', 'HO', 7, 1, 1, CURRENT_TIMESTAMP),
-(17, 5, 'POST DONASI DOCUMENT 08', 'Placeholder dokumen pasca donasi 08', 'HO', 8, 1, 1, CURRENT_TIMESTAMP),
-(18, 5, 'POST DONASI DOCUMENT 09', 'Placeholder dokumen pasca donasi 09', 'HO', 9, 1, 1, CURRENT_TIMESTAMP),
-(19, 5, 'POST DONASI DOCUMENT 10', 'Placeholder dokumen pasca donasi 10', 'HO', 10, 1, 1, CURRENT_TIMESTAMP),
-(20, 5, 'POST DONASI DOCUMENT 11', 'Placeholder dokumen pasca donasi 11', 'HO', 11, 1, 1, CURRENT_TIMESTAMP),
-(21, 5, 'POST DONASI DOCUMENT 12', 'Placeholder dokumen pasca donasi 12', 'HO', 12, 1, 1, CURRENT_TIMESTAMP);
-
-CREATE TABLE `md_myrep_boq_item` (
-  `id_boq_item` int(11) NOT NULL AUTO_INCREMENT,
-  `excel_item_name` varchar(255) NOT NULL,
-  `item_name` varchar(100) NOT NULL,
-  `item_type` varchar(100) DEFAULT NULL,
-  `default_photo_qty` int(11) NOT NULL DEFAULT 0,
-  `photo_type` varchar(255) DEFAULT NULL,
-  `remarks_rule` enum('SESUAI ITEM','SAMPLING') NOT NULL DEFAULT 'SESUAI ITEM',
-  `sort_no` int(11) NOT NULL DEFAULT 0,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id_boq_item`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_drm_boq` (
-  `id_drm_boq` int(11) NOT NULL AUTO_INCREMENT,
-  `id_myrep_cluster` int(11) NOT NULL,
-  `id_drm` int(11) DEFAULT NULL,
-  `source_doc_file_id` int(11) DEFAULT NULL,
-  `review_status` enum('DRAFT','WAITING HO','APPROVED','REJECTED') NOT NULL DEFAULT 'DRAFT',
-  `submitted_at` datetime DEFAULT NULL,
-  `approved_at` datetime DEFAULT NULL,
-  `rejected_at` datetime DEFAULT NULL,
-  `approved_by` int(11) DEFAULT NULL,
-  `ho_review_remark` text DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `updated_by` int(11) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_drm_boq`),
-  UNIQUE KEY `uniq_myrep_drm_boq_cluster` (`id_myrep_cluster`),
-  KEY `idx_myrep_drm_boq_status` (`review_status`),
-  KEY `idx_myrep_drm_boq_drm` (`id_drm`),
-  KEY `idx_myrep_drm_boq_doc` (`source_doc_file_id`),
-  CONSTRAINT `fk_myrep_drm_boq_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_drm_boq_drm` FOREIGN KEY (`id_drm`) REFERENCES `tb_myrep_drm` (`id_drm`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_drm_boq_doc` FOREIGN KEY (`source_doc_file_id`) REFERENCES `tb_myrep_flow_doc_file` (`id_doc_file`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_drm_boq_item` (
-  `id_drm_boq_item` int(11) NOT NULL AUTO_INCREMENT,
-  `id_drm_boq` int(11) NOT NULL,
-  `id_boq_item` int(11) NOT NULL,
-  `qty_boq` decimal(18,2) NOT NULL DEFAULT 0.00,
-  `jumlah_foto` int(11) NOT NULL DEFAULT 0,
-  `remarks_rule` enum('SESUAI ITEM','SAMPLING') NOT NULL DEFAULT 'SESUAI ITEM',
-  `target_foto_required` int(11) NOT NULL DEFAULT 0,
-  `item_note` text DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_drm_boq_item`),
-  UNIQUE KEY `uniq_myrep_drm_boq_item` (`id_drm_boq`,`id_boq_item`),
-  KEY `idx_myrep_drm_boq_item_master` (`id_boq_item`),
-  CONSTRAINT `fk_myrep_drm_boq_item_header` FOREIGN KEY (`id_drm_boq`) REFERENCES `tb_myrep_drm_boq` (`id_drm_boq`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_drm_boq_item_master` FOREIGN KEY (`id_boq_item`) REFERENCES `md_myrep_boq_item` (`id_boq_item`) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_boq_baseline` (
-  `id_boq_baseline` int(11) NOT NULL AUTO_INCREMENT,
-  `id_myrep_cluster` int(11) NOT NULL,
-  `id_drm_boq` int(11) NOT NULL,
-  `status_baseline` enum('ACTIVE','REPLACED') NOT NULL DEFAULT 'ACTIVE',
-  `approved_at` datetime DEFAULT NULL,
-  `approved_by` int(11) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_boq_baseline`),
-  UNIQUE KEY `uniq_myrep_boq_baseline_cluster` (`id_myrep_cluster`,`status_baseline`),
-  KEY `idx_myrep_boq_baseline_drm_boq` (`id_drm_boq`),
-  CONSTRAINT `fk_myrep_boq_baseline_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_boq_baseline_drm_boq` FOREIGN KEY (`id_drm_boq`) REFERENCES `tb_myrep_drm_boq` (`id_drm_boq`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_boq_baseline_item` (
-  `id_boq_baseline_item` int(11) NOT NULL AUTO_INCREMENT,
-  `id_boq_baseline` int(11) NOT NULL,
-  `id_boq_item` int(11) NOT NULL,
-  `qty_boq` decimal(18,2) NOT NULL DEFAULT 0.00,
-  `jumlah_foto` int(11) NOT NULL DEFAULT 0,
-  `remarks_rule` enum('SESUAI ITEM','SAMPLING') NOT NULL DEFAULT 'SESUAI ITEM',
-  `target_foto_required` int(11) NOT NULL DEFAULT 0,
-  `item_note` text DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_boq_baseline_item`),
-  UNIQUE KEY `uniq_myrep_boq_baseline_item` (`id_boq_baseline`,`id_boq_item`),
-  KEY `idx_myrep_boq_baseline_item_master` (`id_boq_item`),
-  CONSTRAINT `fk_myrep_boq_baseline_item_header` FOREIGN KEY (`id_boq_baseline`) REFERENCES `tb_myrep_boq_baseline` (`id_boq_baseline`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_boq_baseline_item_master` FOREIGN KEY (`id_boq_item`) REFERENCES `md_myrep_boq_item` (`id_boq_item`) ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-INSERT INTO `md_myrep_boq_item` (`id_boq_item`, `excel_item_name`, `item_name`, `item_type`, `default_photo_qty`, `photo_type`, `remarks_rule`, `sort_no`, `is_active`, `created_at`) VALUES
-(1, 'INSTAL FAT POLE MOUNTED TYPE (16 PORTS)', 'FAT', 'FAT', 2, 'TERBUKA DAN TERTUTUP', 'SESUAI ITEM', 1, 1, CURRENT_TIMESTAMP),
-(2, 'INSTAL 48 CORES CAPACITY POLE FDT', 'FDT 48', 'FDT', 2, 'TERBUKA DAN TERTUTUP', 'SESUAI ITEM', 2, 1, CURRENT_TIMESTAMP),
-(3, 'INSTAL 72 CORES CAPACITY POLE FDT', 'FDT 72', 'FDT', 2, 'TERBUKA DAN TERTUTUP', 'SESUAI ITEM', 3, 1, CURRENT_TIMESTAMP),
-(4, 'SPLICING FO', 'SPLICING', 'SPLICING', 4, 'FOTO SPLICING', 'SAMPLING', 4, 1, CURRENT_TIMESTAMP),
-(5, 'STRAND WIRE MESSENGER 6 MM', 'SLING WIRE', 'SLING WIRE', 4, 'FOTO PENARIKAN KABEL', 'SAMPLING', 5, 1, CURRENT_TIMESTAMP),
-(6, 'Pemasangan Pole / Tiang Udara 7 M 2.5', 'TIANG 7''2.5', 'TIANG', 1, 'FOTO FULL TIANG BERDIRI', 'SESUAI ITEM', 6, 1, CURRENT_TIMESTAMP),
-(7, 'Pemasangan Tiang 7 meter 3 inch', 'TIANG 7''3', 'TIANG', 1, 'FOTO FULL TIANG BERDIRI', 'SESUAI ITEM', 7, 1, CURRENT_TIMESTAMP),
-(8, 'Pemasangan Tiang 7 meter 4'', STEL-L003 1996', 'TIANG 7''4', 'TIANG', 1, 'FOTO FULL TIANG BERDIRI', 'SESUAI ITEM', 8, 1, CURRENT_TIMESTAMP),
-(9, 'Pemasangan Tiang Tunggal 9 meter 4'', STEL-L003 1996', 'TIANG 9''4', 'TIANG', 1, 'FOTO FULL TIANG BERDIRI', 'SESUAI ITEM', 9, 1, CURRENT_TIMESTAMP),
-(10, 'INSTAL FO TYPE SM G.652.D-ADSS 24 CORES', 'CABLE 24', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 10, 1, CURRENT_TIMESTAMP),
-(11, 'INSTAL FO TYPE SM G.652.D-ADSS 36 CORES', 'CABLE 36', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 11, 1, CURRENT_TIMESTAMP),
-(12, 'INSTAL FO TYPE SM G.652.D-ADSS 48 CORES', 'CABLE 48', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 12, 1, CURRENT_TIMESTAMP),
-(13, 'INSTAL FO TYPE SM G.652.D-ADSS 72 CORES', 'CABLE 72', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 13, 1, CURRENT_TIMESTAMP),
-(14, 'INSTAL FO TYPE SM G.652.D-ADSS 96 CORES', 'CABLE 96', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 14, 1, CURRENT_TIMESTAMP),
-(15, 'INSTAL FO TYPE SM G.652.D-ADSS 144 CORES', 'CABLE 144', 'CABLE', 1, 'FOTO PENARIKAN KABEL', 'SAMPLING', 15, 1, CURRENT_TIMESTAMP);
-
-CREATE TABLE `tb_myrep_boq_progress_item` (
-  `id_progress_item` int(11) NOT NULL AUTO_INCREMENT,
-  `id_myrep_cluster` int(11) NOT NULL,
-  `id_boq_baseline` int(11) NOT NULL,
-  `id_boq_baseline_item` int(11) NOT NULL,
-  `progress_date` date NOT NULL,
-  `qty_progress` decimal(18,2) NOT NULL DEFAULT 0.00,
-  `status_progress` enum('ON PROGRESS','DONE') NOT NULL DEFAULT 'ON PROGRESS',
-  `remark_progress` text DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `updated_by` int(11) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_progress_item`),
-  KEY `idx_myrep_boq_progress_cluster` (`id_myrep_cluster`),
-  KEY `idx_myrep_boq_progress_baseline` (`id_boq_baseline`),
-  KEY `idx_myrep_boq_progress_baseline_item` (`id_boq_baseline_item`),
-  KEY `idx_myrep_boq_progress_date` (`progress_date`),
-  CONSTRAINT `fk_myrep_boq_progress_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_boq_progress_baseline` FOREIGN KEY (`id_boq_baseline`) REFERENCES `tb_myrep_boq_baseline` (`id_boq_baseline`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_boq_progress_baseline_item` FOREIGN KEY (`id_boq_baseline_item`) REFERENCES `tb_myrep_boq_baseline_item` (`id_boq_baseline_item`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_boq_progress_photo` (
-  `id_progress_photo` int(11) NOT NULL AUTO_INCREMENT,
-  `id_progress_item` int(11) NOT NULL,
-  `file_name` varchar(255) NOT NULL,
-  `file_path` varchar(255) NOT NULL,
-  `caption` varchar(255) DEFAULT NULL,
-  `uploaded_by` int(11) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id_progress_photo`),
-  KEY `idx_myrep_boq_progress_photo_item` (`id_progress_item`),
-  CONSTRAINT `fk_myrep_boq_progress_photo_item` FOREIGN KEY (`id_progress_item`) REFERENCES `tb_myrep_boq_progress_item` (`id_progress_item`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_po_header` (
-  `id_po_header` int(11) NOT NULL AUTO_INCREMENT,
-  `id_myrep_cluster` int(11) NOT NULL,
-  `parent_po_header_id` int(11) DEFAULT NULL,
-  `po_type` enum('CLUSTER','SUBFEEDER') NOT NULL DEFAULT 'CLUSTER',
-  `po_category` enum('INITIAL','FINAL','AMANDMENT') NOT NULL DEFAULT 'INITIAL',
-  `po_number` varchar(150) NOT NULL,
-  `po_date` date DEFAULT NULL,
-  `po_value` decimal(18,2) NOT NULL DEFAULT 0.00,
-  `status_po` enum('NOT ISSUED','ISSUED','PARTIAL PAYMENT','FULLY PAID','CLOSED') NOT NULL DEFAULT 'ISSUED',
-  `po_version_label` varchar(100) DEFAULT NULL,
-  `remark_po` text DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `updated_by` int(11) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_po_header`),
-  KEY `idx_myrep_po_cluster` (`id_myrep_cluster`),
-  KEY `idx_myrep_po_parent` (`parent_po_header_id`),
-  KEY `idx_myrep_po_type` (`po_type`),
-  KEY `idx_myrep_po_status` (`status_po`),
-  CONSTRAINT `fk_myrep_po_cluster` FOREIGN KEY (`id_myrep_cluster`) REFERENCES `tb_myrep_cluster` (`id_myrep_cluster`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_myrep_po_parent` FOREIGN KEY (`parent_po_header_id`) REFERENCES `tb_myrep_po_header` (`id_po_header`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `tb_myrep_po_termin` (
-  `id_po_termin` int(11) NOT NULL AUTO_INCREMENT,
-  `id_po_header` int(11) NOT NULL,
-  `termin_no` tinyint(4) NOT NULL,
-  `termin_percent` decimal(8,2) NOT NULL DEFAULT 0.00,
-  `termin_value` decimal(18,2) NOT NULL DEFAULT 0.00,
-  `status_termin` enum('NOT READY','READY BILLING','BILLED','PAID') NOT NULL DEFAULT 'NOT READY',
-  `invoice_number` varchar(150) DEFAULT NULL,
-  `invoice_date` date DEFAULT NULL,
-  `bast_date` date DEFAULT NULL,
-  `payment_date` date DEFAULT NULL,
-  `remark_termin` text DEFAULT NULL,
-  `created_by` int(11) DEFAULT NULL,
-  `updated_by` int(11) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_po_termin`),
-  UNIQUE KEY `uniq_myrep_po_termin` (`id_po_header`,`termin_no`),
-  KEY `idx_myrep_po_termin_status` (`status_termin`),
-  CONSTRAINT `fk_myrep_po_termin_header` FOREIGN KEY (`id_po_header`) REFERENCES `tb_myrep_po_header` (`id_po_header`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

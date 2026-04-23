@@ -544,7 +544,7 @@ $id_menu = $this->uri->segment('1');
                                 </a>
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item">
-                                        <a href="<?= base_url('MyRepublik_Project') ?>" style="pointer-events: none"
+                                        <a href="<?= base_url('MyRepublik_Project') ?>"
                                             class="nav-link <?= ($id_menu == 'MyRepublik_Project') ? 'active' : '' ?>">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>List Project</p>

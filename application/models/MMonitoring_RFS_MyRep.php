@@ -3,6 +3,8 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MMonitoring_RFS_MyRep extends CI_Model
 {
+    private $rfsReadyStatuses = ['DRM', 'RFS', 'ATP', 'DONE'];
+
     public function claimSupportsStatusRfs()
     {
         return $this->db->field_exists('status_rfs', 'tb_rfs_myrep_claim');
@@ -488,6 +490,8 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     public function getClustersWithPlan($year, $startMonth, $endMonth, $city = '')
     {
+        $this->syncEligibleMyrepClustersToRfs($year, $endMonth, $city);
+
         $sql = "SELECT
                 c.*,
                 mt.id_target,
@@ -540,6 +544,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 mt.city_name,
                 mt.regional_name,
                 mt.team_name,
+                mt.id_target,
                 c.cluster_name,
                 c.homepass,
                 mt.rpm,
@@ -729,11 +734,17 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     public function updateClusterStatusRfs($clusterId, $statusRfs)
     {
-        return $this->db
+        $updated = $this->db
             ->where('id_cluster', $clusterId)
             ->update('tb_rfs_myrep_cluster', [
                 'status_rfs' => $statusRfs
             ]);
+
+        if ($updated) {
+            $this->syncMyrepStatusFromRfsCluster($clusterId, $statusRfs);
+        }
+
+        return $updated;
     }
 
     public function updateClaimStatus($claimId, $data)
@@ -844,7 +855,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
     public function getClusterById($clusterId)
     {
         return $this->db
-            ->select('c.*, mt.year_num, mt.month_num, mt.city_name, mt.regional_name, mt.province_name, mt.chief, mt.rpm, mt.sm, mt.spv')
+            ->select('c.*, mt.id_target, mt.year_num, mt.month_num, mt.city_name, mt.regional_name, mt.province_name, mt.chief, mt.rpm, mt.sm, mt.spv')
             ->from('tb_rfs_myrep_cluster c')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
             ->where('c.id_cluster', $clusterId)
@@ -922,5 +933,167 @@ class MMonitoring_RFS_MyRep extends CI_Model
         $dateTime = new DateTime($date);
         $dateTime->modify('+' . (int) $days . ' day');
         return $dateTime->format('Y-m-d');
+    }
+
+    private function hasMyrepClusterTables()
+    {
+        return $this->db->table_exists('tb_myrep_cluster');
+    }
+
+    private function syncEligibleMyrepClustersToRfs($year, $month, $city = '')
+    {
+        if (!$this->hasMyrepClusterTables()) {
+            return;
+        }
+
+        $this->db
+            ->select('id_myrep_cluster, rfs_cluster_id, cluster_name, regional_name, province_name, city_name, team_name, chief, rpm, sm, spv, hp_plan, status_current, updated_at')
+            ->from('tb_myrep_cluster')
+            ->where_in('status_current', $this->rfsReadyStatuses);
+
+        if ($city !== '') {
+            $this->db->where('UPPER(city_name)', strtoupper($city));
+        }
+
+        $clusters = $this->db->get()->result_array();
+        if (empty($clusters)) {
+            return;
+        }
+
+        foreach ($clusters as $cluster) {
+            $idTarget = $this->ensureTargetForMyrepCluster($cluster, $year, $month);
+            if ($idTarget <= 0) {
+                continue;
+            }
+
+            $rfsClusterId = (int) ($cluster['rfs_cluster_id'] ?? 0);
+            $homepass = (int) round((float) ($cluster['hp_plan'] ?? 0));
+            $mappedStatus = $this->mapMyrepStatusToRfs((string) ($cluster['status_current'] ?? ''));
+
+            if ($rfsClusterId > 0) {
+                $this->db
+                    ->where('id_cluster', $rfsClusterId)
+                    ->update('tb_rfs_myrep_cluster', [
+                        'id_target' => $idTarget,
+                        'cluster_name' => $cluster['cluster_name'],
+                        'homepass' => $homepass,
+                        'status_rfs' => $mappedStatus,
+                    ]);
+                continue;
+            }
+
+            $existing = $this->db
+                ->select('id_cluster')
+                ->from('tb_rfs_myrep_cluster')
+                ->where('id_target', $idTarget)
+                ->where('UPPER(cluster_name)', strtoupper(trim((string) ($cluster['cluster_name'] ?? ''))))
+                ->get()
+                ->row_array();
+
+            if ($existing) {
+                $rfsClusterId = (int) $existing['id_cluster'];
+                $this->db
+                    ->where('id_cluster', $rfsClusterId)
+                    ->update('tb_rfs_myrep_cluster', [
+                        'homepass' => $homepass,
+                        'status_rfs' => $mappedStatus,
+                    ]);
+            } else {
+                $this->db->insert('tb_rfs_myrep_cluster', [
+                    'id_target' => $idTarget,
+                    'cluster_name' => $cluster['cluster_name'],
+                    'homepass' => $homepass,
+                    'status_rfs' => $mappedStatus,
+                    'created_at' => date('Y-m-d H:i:s'),
+                ]);
+                $rfsClusterId = (int) $this->db->insert_id();
+            }
+
+            if ($rfsClusterId > 0) {
+                $this->db
+                    ->where('id_myrep_cluster', (int) $cluster['id_myrep_cluster'])
+                    ->update('tb_myrep_cluster', [
+                        'rfs_cluster_id' => $rfsClusterId,
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ]);
+            }
+        }
+    }
+
+    private function ensureTargetForMyrepCluster($cluster, $year, $month)
+    {
+        $cityName = strtoupper(trim((string) ($cluster['city_name'] ?? '')));
+        if ($cityName === '') {
+            return 0;
+        }
+
+        $existing = $this->db->get_where('tb_rfs_myrep_monthly_target', [
+            'year_num' => (int) $year,
+            'month_num' => (int) $month,
+            'city_name' => $cityName,
+        ])->row_array();
+
+        $payload = [
+            'regional_name' => strtoupper(trim((string) ($cluster['regional_name'] ?? ''))),
+            'province_name' => strtoupper(trim((string) ($cluster['province_name'] ?? ''))),
+            'team_name' => trim((string) ($cluster['team_name'] ?? '')),
+            'chief' => trim((string) ($cluster['chief'] ?? '')),
+            'rpm' => trim((string) ($cluster['rpm'] ?? '')),
+            'sm' => trim((string) ($cluster['sm'] ?? '')),
+            'spv' => trim((string) ($cluster['spv'] ?? '')),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        if ($existing) {
+            $this->db->where('id_target', (int) $existing['id_target'])->update('tb_rfs_myrep_monthly_target', $payload);
+            return (int) $existing['id_target'];
+        }
+
+        $payload['year_num'] = (int) $year;
+        $payload['month_num'] = (int) $month;
+        $payload['city_name'] = $cityName;
+        $payload['target_myrep'] = 0;
+        $payload['realization_myrep'] = 0;
+        $payload['target_rkap'] = 0;
+        $payload['created_at'] = date('Y-m-d H:i:s');
+
+        $this->db->insert('tb_rfs_myrep_monthly_target', $payload);
+        return (int) $this->db->insert_id();
+    }
+
+    private function mapMyrepStatusToRfs($statusCurrent)
+    {
+        $statusCurrent = strtoupper(trim((string) $statusCurrent));
+        if (in_array($statusCurrent, ['RFS', 'ATP', 'DONE'], true)) {
+            return 'FULL RFS';
+        }
+
+        return 'NY RFS';
+    }
+
+    private function syncMyrepStatusFromRfsCluster($rfsClusterId, $statusRfs)
+    {
+        if (!$this->hasMyrepClusterTables()) {
+            return;
+        }
+
+        $statusRfs = strtoupper(trim((string) $statusRfs));
+        $payload = [
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        if (in_array($statusRfs, ['PARTIAL', 'FULL RFS'], true)) {
+            $payload['status_current'] = 'RFS';
+        } elseif ($statusRfs === 'REJECTED') {
+            $payload['status_current'] = 'DRM';
+        }
+
+        if (count($payload) <= 1) {
+            return;
+        }
+
+        $this->db
+            ->where('rfs_cluster_id', (int) $rfsClusterId)
+            ->update('tb_myrep_cluster', $payload);
     }
 }
