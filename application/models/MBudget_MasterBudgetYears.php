@@ -3,121 +3,145 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MBudget_MasterBudgetYears extends CI_Model
 {
-
-    public function getAllData()
+    public function getItems()
     {
-        $data = $this->db->query('SELECT * FROM budget_years JOIN `budget_masterakunbiaya` ON `budget_years`.`id_mab` = `budget_masterakunbiaya`.`id_mab`')
+        return $this->db
+            ->order_by('item_name', 'ASC')
+            ->get_where('tb_budget_items', ['is_active' => 1])
             ->result_array();
-        return $data;
     }
 
-
-    public function getFilteredBudget_MasterBudgetYears($akun_utama, $sub_akun, $nomor_akun, $deskripsi_akun)
+    public function getAvailableYears()
     {
-        $this->db->select("
-        budget_years.id_budget_years,
-        budget_years.tahun,
-        budget_years.total_budget,
+        $years = $this->db
+            ->select('budget_year')
+            ->distinct()
+            ->order_by('budget_year', 'DESC')
+            ->get('tb_budget_annual')
+            ->result_array();
 
-        budget_masterakunbiaya.id_mab,
-        budget_masterakunbiaya.mab_akun_utama,
-        budget_masterakunbiaya.mab_sub_akun,
-        budget_masterakunbiaya.mab_nomor_akun,
-        budget_masterakunbiaya.mab_deskripsi_akun,
-
-        COALESCE(SUM(budget_monthly.budget_bulan),0) as total_monthly,
-        (budget_years.total_budget - COALESCE(SUM(budget_monthly.budget_bulan),0)) as selisih
-    ");
-
-        $this->db->from('budget_years');
-
-        $this->db->join(
-            'budget_masterakunbiaya',
-            'budget_years.id_mab = budget_masterakunbiaya.id_mab'
-        );
-
-        $this->db->join(
-            'budget_monthly',
-            'budget_monthly.id_budget_years = budget_years.id_budget_years',
-            'left'
-        );
-
-        // FILTER
-        if (!empty($akun_utama))
-            $this->db->where_in('mab_akun_utama', $akun_utama);
-
-        if (!empty($sub_akun))
-            $this->db->where_in('mab_sub_akun', $sub_akun);
-
-        if (!empty($nomor_akun))
-            $this->db->where_in('mab_nomor_akun', $nomor_akun);
-
-        if (!empty($deskripsi_akun))
-            $this->db->where_in('mab_deskripsi_akun', $deskripsi_akun);
-
-        $this->db->group_by('budget_years.id_budget_years');
-
-        $query = $this->db->get();
-
-        log_message('debug', 'Last Query aa: ' . $this->db->last_query());
-
-        return $query->result_array();
+        return array_map(static function ($row) {
+            return (int) $row['budget_year'];
+        }, $years);
     }
 
-
-    public function tambahMasterAkun($data)
+    public function getBudgetRows($year)
     {
+        $this->db->select('
+            a.id_budget_annual,
+            a.budget_year,
+            a.annual_budget,
+            a.notes,
+            i.id_budget_item,
+            i.item_code,
+            i.item_name,
+            i.item_category,
+            i.item_group,
+            COALESCE(SUM(m.monthly_budget), 0) AS total_monthly
+        ');
+        $this->db->from('tb_budget_annual a');
+        $this->db->join('tb_budget_items i', 'i.id_budget_item = a.id_budget_item');
+        $this->db->join('tb_budget_monthly m', 'm.id_budget_annual = a.id_budget_annual', 'left');
+        $this->db->where('a.budget_year', (int) $year);
+        $this->db->group_by('a.id_budget_annual');
+        $this->db->order_by('i.item_name', 'ASC');
 
-        $akun_utama = !empty($data['addfilter_akun_utama'])
-            ? $data['addfilter_akun_utama']
-            : $data['inputAkunUtamaBaru'];
+        return $this->db->get()->result_array();
+    }
 
-        $sub_akun = !empty($data['addfilter_sub_akun'])
-            ? $data['addfilter_sub_akun']
-            : $data['inputSubAkunBaru'];
+    public function getBudgetById($id)
+    {
+        return $this->db
+            ->select('a.*, i.item_name, i.item_code')
+            ->from('tb_budget_annual a')
+            ->join('tb_budget_items i', 'i.id_budget_item = a.id_budget_item')
+            ->where('a.id_budget_annual', (int) $id)
+            ->get()
+            ->row_array();
+    }
 
-        $divisi = !empty($data['addfilter_divisi'])
-            ? $data['addfilter_divisi']
-            : $data['inputDivisiBaru'];
+    public function getMonthlyRows($annualId)
+    {
+        $rows = $this->db
+            ->order_by('month_no', 'ASC')
+            ->get_where('tb_budget_monthly', ['id_budget_annual' => (int) $annualId])
+            ->result_array();
 
-        $pic = !empty($data['addfilter_pic'])
-            ? $data['addfilter_pic']
-            : $data['inputPICBaru'];
-
-        $nomorakun = $data['inputNomorAkunBaru'];
-        $deskripsiakun = $data['inputDeskripsiAkunBaru'];
-
-        $hasil_data = array(
-            'mab_akun_utama' => $akun_utama,
-            'mab_sub_akun' => $sub_akun,
-            'mab_divisi' => $divisi,
-            'mab_pic' => $pic,
-            'mab_nomor_akun' => $nomorakun,
-            'mab_deskripsi_akun' => $deskripsiakun
-        );
-
-        $this->db->insert('budget_years', $hasil_data);
-        $nilai_update = $this->db->affected_rows();
-
-        if ($this->db->affected_rows() > 0) {
-            return ['status' => true, 'message' => 'Update berhasil', 'nilai_update' => $nilai_update];
-        } else {
-            return ['status' => false, 'message' => 'Tidak ada data yang diubah'];
+        $mapped = [];
+        foreach ($rows as $row) {
+            $mapped[(int) $row['month_no']] = (float) $row['monthly_budget'];
         }
+
+        return $mapped;
     }
 
-    public function deleteMasterAkun($id_mab)
+    public function saveBudget(array $payload)
     {
-        $res = $this->db->delete("budget_years", $id_mab);
-        return $res;
+        $annualId = (int) ($payload['id_budget_annual'] ?? 0);
+        $itemId = (int) ($payload['id_budget_item'] ?? 0);
+        $year = (int) ($payload['budget_year'] ?? 0);
+        $annualBudget = (float) ($payload['annual_budget'] ?? 0);
+        $notes = trim((string) ($payload['notes'] ?? ''));
+        $months = $payload['monthly_budget'] ?? [];
+
+        $this->db->trans_start();
+
+        $annualData = [
+            'id_budget_item' => $itemId,
+            'budget_year' => $year,
+            'annual_budget' => $annualBudget,
+            'notes' => $notes,
+        ];
+
+        if ($annualId > 0) {
+            $this->db->where('id_budget_annual', $annualId)->update('tb_budget_annual', $annualData);
+        } else {
+            $existing = $this->db
+                ->get_where('tb_budget_annual', [
+                    'id_budget_item' => $itemId,
+                    'budget_year' => $year,
+                ])
+                ->row_array();
+
+            if ($existing) {
+                $annualId = (int) $existing['id_budget_annual'];
+                $this->db->where('id_budget_annual', $annualId)->update('tb_budget_annual', $annualData);
+            } else {
+                $this->db->insert('tb_budget_annual', $annualData);
+                $annualId = (int) $this->db->insert_id();
+            }
+        }
+
+        for ($month = 1; $month <= 12; $month++) {
+            $value = isset($months[$month]) ? (float) $months[$month] : 0;
+            $existingMonthly = $this->db
+                ->get_where('tb_budget_monthly', [
+                    'id_budget_annual' => $annualId,
+                    'month_no' => $month,
+                ])
+                ->row_array();
+
+            if ($existingMonthly) {
+                $this->db
+                    ->where('id_budget_monthly', (int) $existingMonthly['id_budget_monthly'])
+                    ->update('tb_budget_monthly', ['monthly_budget' => $value]);
+            } else {
+                $this->db->insert('tb_budget_monthly', [
+                    'id_budget_annual' => $annualId,
+                    'month_no' => $month,
+                    'monthly_budget' => $value,
+                ]);
+            }
+        }
+
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
     }
 
-    public function updateMasterAkun($id_mab, $data)
+    public function deleteBudget($id)
     {
-        $this->db->where('id_mab', $id_mab);
-        $this->db->update('master_akun_biaya', $data);
-
-        return $this->db->affected_rows();
+        $this->db->delete('tb_budget_annual', ['id_budget_annual' => (int) $id]);
+        return $this->db->affected_rows() > 0;
     }
 }
-

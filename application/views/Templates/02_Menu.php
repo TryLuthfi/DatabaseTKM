@@ -759,6 +759,8 @@ $id_menu = $this->uri->segment('1');
                         <li class="nav-header">Budgeting</li>
                         <li class="nav-item has-treeview <?php if (
                             $id_menu == 'Budget_MasterAkunBiaya' ||
+                            $id_menu == 'Budget_Cashflow' ||
+                            $id_menu == 'Budget_Report' ||
                             $id_menu == 'Budget_MasterBudgetYears'
                         ) {
                             echo 'menu-open';
@@ -766,6 +768,8 @@ $id_menu = $this->uri->segment('1');
 
                             <a href="#" class="nav-link <?php if (
                                 $id_menu == 'Budget_MasterAkunBiaya' ||
+                                $id_menu == 'Budget_Cashflow' ||
+                                $id_menu == 'Budget_Report' ||
                                 $id_menu == 'Budget_MasterBudgetYears'
                             ) {
                                 echo 'active';
@@ -783,14 +787,16 @@ $id_menu = $this->uri->segment('1');
                                 <li class="nav-item has-treeview <?php if (
                                     $id_menu == 'Budget_MasterAkunBiaya' ||
                                     $id_menu == 'Budget_MasterBudgetYears' ||
-                                    $id_menu == 'GHTenants'
+                                    $id_menu == 'Budget_Cashflow' ||
+                                    $id_menu == 'Budget_Report'
                                 ) {
                                     echo 'menu-open';
                                 } ?>">
                                     <a href="#" class="nav-link <?php if (
                                         $id_menu == 'Budget_MasterAkunBiaya' ||
                                         $id_menu == 'Budget_MasterBudgetYears' ||
-                                        $id_menu == 'GHTenants'
+                                        $id_menu == 'Budget_Cashflow' ||
+                                        $id_menu == 'Budget_Report'
                                     ) {
                                         echo 'active';
                                     } ?>">
@@ -805,7 +811,7 @@ $id_menu = $this->uri->segment('1');
                                             <a href="<?= base_url('Budget_MasterAkunBiaya') ?>" class="nav-link <?php if ($id_menu == 'Budget_MasterAkunBiaya')
                                                   echo 'active'; ?>">
                                                 <i class="far fa-circle nav-icon"></i>
-                                                <p>Master Akun Biaya</p>
+                                                <p>Master Item</p>
                                             </a>
                                         </li>
                                         <li class="nav-item">
@@ -823,7 +829,7 @@ $id_menu = $this->uri->segment('1');
                                     <a href="<?= base_url('Budget_Cashflow') ?>" class="nav-link <?php if ($id_menu == 'Budget_Cashflow')
                                           echo 'active'; ?>">
                                         <i class="far fa-file nav-icon"></i>
-                                        <p>List Cashflow</p>
+                                        <p>Cashflow TEC</p>
                                     </a>
                                 </li>
                                 <!-- Master Logistik -->
@@ -833,7 +839,7 @@ $id_menu = $this->uri->segment('1');
                                     <a href="<?= base_url('Budget_Report') ?>" class="nav-link <?php if ($id_menu == 'Budget_Report')
                                           echo 'active'; ?>">
                                         <i class="far fa-file nav-icon"></i>
-                                        <p>Report Cashflow Monthly</p>
+                                        <p>Dashboard Budget</p>
                                     </a>
                                 </li>
                             </ul>

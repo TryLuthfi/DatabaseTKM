@@ -1,0 +1,80 @@
+item_code;item_name;item_category;item_group;uom;default_direction;is_active
+4100-99-010;Penjualan Material ;Pendapatan Usaha;Pendapatan / Penjualan;UNIT;DEBIT;1
+4100-99-020;Penjualan Jasa ;Pendapatan Usaha;Pendapatan / Penjualan;UNIT;DEBIT;1
+4200-99-030;Pendapatan Jasa Giro ;Pendapatan Lain-lain;Pendapatan / Penjualan;UNIT;DEBIT;1
+4200-99-040;Pendapatan Lain-Lain ;Pendapatan Lain-lain;Pendapatan / Penjualan;UNIT;DEBIT;1
+5100-99-010;Harga Pokok Material/Penjualan;Biaya Pokok Proyek (HPP) / Biaya Atas Pendapatan;Biaya Langsung;UNIT;KREDIT;1
+5200-99-010;Biaya Upah Mandor ;Biaya Upah Mandor;Biaya Langsung;UNIT;KREDIT;1
+5300-99-020;Biaya Freelance Project ;Biaya Overhead Operasional Proyek;Biaya Langsung;UNIT;KREDIT;1
+5300-99-030;Biaya Proyek ;Biaya Overhead Operasional Proyek;Biaya Langsung;UNIT;KREDIT;1
+5300-99-040;Biaya Proyek - BBM ;Biaya Overhead Operasional Proyek;Biaya Langsung;UNIT;KREDIT;1
+5300-99-050;Biaya Proyek - ATK ;Biaya Overhead Operasional Proyek;Biaya Langsung;UNIT;KREDIT;1
+5300-99-060;Biaya Proyek - ATP ;Biaya Overhead Operasional Proyek;Biaya Langsung;UNIT;KREDIT;1
+5300-99-070;Biaya Proyek - SITAC;Biaya Overhead Operasional Proyek;Biaya Langsung;UNIT;KREDIT;1
+5300-99-080;Biaya Proyek - Comcase;Biaya Overhead Operasional Proyek;Biaya Langsung;UNIT;KREDIT;1
+5300-99-090;Biaya Proyek - Material Kecil ;Biaya Overhead Operasional Proyek;Biaya Langsung;UNIT;KREDIT;1
+5300-99-100;Biaya Proyek - Perlengkapan ;Biaya Overhead Operasional Proyek;Biaya Langsung;UNIT;KREDIT;1
+5400-99-110;Biaya Donasi;Biaya Donasi;Biaya Langsung;UNIT;KREDIT;1
+5500-99-120;Biaya Perizinan Proyek ;Biaya Perizinan Proyek;Biaya Langsung;UNIT;KREDIT;1
+5600-99-130;Biaya Survey Proyek;Biaya Survey Proyek;Biaya Langsung;UNIT;KREDIT;1
+5700-99-140;Asuransi Proyek ;Biaya Asuransi Proyek;Biaya Langsung;UNIT;KREDIT;1
+5800-99-150;Biaya Expedisi ;Biaya Ekspedisi;Biaya Langsung;UNIT;KREDIT;1
+5900-99-160;Biaya Entertain Proyek;Biaya Entertaint Proyek;Biaya Langsung;UNIT;KREDIT;1
+51000-99-170;Biaya Denda Proyek ;Biaya Denda Proyek;Biaya Langsung;UNIT;KREDIT;1
+51100-99-180;Biaya Penghapusan Piutang ;Biaya Penghapusan Piutang ;Biaya Langsung;UNIT;KREDIT;1
+6100-99-010;Biaya Gaji Karyawan ;Biaya Karyawan;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6100-99-020;Biaya Pajak Penghasilan Pasal 21 ;Biaya Karyawan;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6100-99-030;Biaya rekrutmen ;Biaya Karyawan;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6100-99-040;Biaya Pelatihan ;Biaya Karyawan;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6100-99-050;Biaya Pengobatan;Biaya Karyawan;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6100-99-060;Biaya Asuransi Umum ;Biaya Karyawan;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6200-99-070;Biaya Perjalanan Dinas Dalam Kota ;Biaya Perjalanan Dinas;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6200-99-080;Biaya Perjalanan Dinas Luar Kota ;Biaya Perjalanan Dinas;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6200-99-090;Biaya Perjalanan Dinas Luar Negeri ;Biaya Perjalanan Dinas;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6300-99-100;Biaya Materai ;Biaya ATK dan Pengiriman Dokumen;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6300-99-110;Biaya Fotocopy/Jilid/Kalkir/Blueprint ;Biaya ATK dan Pengiriman Dokumen;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6300-99-120;Biaya Pengiriman ;Biaya ATK dan Pengiriman Dokumen;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6300-99-130;Biaya Alat Tulis Kantor - ATK ;Biaya ATK dan Pengiriman Dokumen;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6400-99-140;Biaya Listrik;Biaya Listrik, Telepon dan Air;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6400-99-150;Biaya Telepon &  Internet ;Biaya Listrik, Telepon dan Air;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6400-99-160;Biaya Air ;Biaya Listrik, Telepon dan Air;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6400-99-170;Biaya Website / Hosting ;Biaya Listrik, Telepon dan Air;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6500-99-180;Biaya Konsumsi ;Biaya Rumah Tangga Kantor;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6500-99-190;Biaya Rumah Tangga Kantor ;Biaya Rumah Tangga Kantor;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6600-99-200;Biaya Perlengkapan Kantor ;Biaya Perlengkapan Kantor;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6600-99-210;Biaya Seragam & ID;Biaya Perlengkapan Kantor;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6700-99-220;Biaya License & Perizinan;Biaya Pemeliharaan Kantor;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6700-99-230;Biaya Perbaikan dan Pemeliharaan Gedung ;Biaya Pemeliharaan Kantor;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6700-99-240;Biaya Kebersihan dan Keamanan ;Biaya Pemeliharaan Kantor;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6800-99-250;Biaya Pemeliharaan & Perbaikan Kendaraan ;Biaya Pemeliharaan Aset;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6800-99-260;Biaya Pemeliharaan & Perbaikan peralatan ;Biaya Pemeliharaan Aset;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6800-99-270;Biaya Asuransi Kendaraan ;Biaya Pemeliharaan Aset;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6800-99-280;Biaya Leasing ;Biaya Pemeliharaan Aset;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6800-99-290;Biaya Perpanjang STNK, KEUR/KIR ;Biaya Pemeliharaan Aset;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6900-99-300;Biaya E-Toll, Parkir & BBM ;Biaya BBM, Parkir dan Tol;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+61000-99-310;Biaya Iklan & Promosi ;Biaya Pemasaran;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+61000-99-320;Biaya Entertainment ;Biaya Pemasaran;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+61100-99-330;Biaya Sumbangan / CSR ;Biaya CSR-Donasi;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+61100-99-340;Biaya Suka Cita/Duka Cita ;Biaya CSR-Donasi;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+61200-99-350;Biaya Gathering, Rekreasi ;Biaya Gathering, Rekreasi;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+61300-99-360;Biaya Rumah Tangga Gudang ;Biaya Operasional Gudang;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+61300-99-370;Biaya Perlengkapan Gudang ;Biaya Operasional Gudang;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+61300-99-380;Biaya Tenaga Freelance/Angkut/Supir ;Biaya Operasional Gudang;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+61400-99-390;Biaya Bunga Pemegang Saham ;Biaya Bunga Pinjaman Pihak Ke-3;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+61400-99-400;Biaya Bunga Hubungan Istimewa ;Biaya Bunga Pinjaman Pihak Ke-3;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+61500-99-410;Biaya Pembulatan ;Biaya Lain - lain;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+6150-99-420;Biaya Lain - Lain ;Biaya Lain - lain;Biaya Operasional (Tidak Langsung);UNIT;KREDIT;1
+7100-99-010;Biaya Penyusutan Bangunan ;Biaya Penyusutan;Biaya Non Operasional;UNIT;KREDIT;1
+7100-99-020;Biaya Penyusutan Mesin & Peralatan ;Biaya Penyusutan;Biaya Non Operasional;UNIT;KREDIT;1
+7100-99-030;Biaya Penyusutan Kendaraan ;Biaya Penyusutan;Biaya Non Operasional;UNIT;KREDIT;1
+7100-99-040;Biaya Penyusutan Harta Lain ;Biaya Penyusutan;Biaya Non Operasional;UNIT;KREDIT;1
+8100-99-010;Biaya Bunga Pinjaman Bank ;Biaya Bank;Biaya Lain Luar Usaha;UNIT;KREDIT;1
+8100-99-020;Biaya Administrasi Bank ;Biaya Bank;Biaya Lain Luar Usaha;UNIT;KREDIT;1
+8100-99-030;Biaya Administrasi Bank Lainnya ;Biaya Bank;Biaya Lain Luar Usaha;UNIT;KREDIT;1
+8100-99-040;Biaya Pajak Bunga Bank ;Biaya Bank;Biaya Lain Luar Usaha;UNIT;KREDIT;1
+8200-99-050;Biaya Pajak Penghasilan Pasal 4 Ayat  2 (Final) ;Biaya Pajak;Biaya Lain Luar Usaha;UNIT;KREDIT;1
+8200-99-060;Biaya Pajak Tahunan ;Biaya Pajak;Biaya Lain Luar Usaha;UNIT;KREDIT;1
+8200-99-070;Biaya Pajak Penghasilan Pasal 22 ;Biaya Pajak;Biaya Lain Luar Usaha;UNIT;KREDIT;1
+8200-99-080;Biaya Pajak Penghasilan Pasal 23 ;Biaya Pajak;Biaya Lain Luar Usaha;UNIT;KREDIT;1
+8200-99-090;Biaya Pajak Penghasilan Pasal 25 ;Biaya Pajak;Biaya Lain Luar Usaha;UNIT;KREDIT;1
+8200-99-100;Biaya Pajak PPN ;Biaya Pajak;Biaya Lain Luar Usaha;UNIT;KREDIT;1

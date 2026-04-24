@@ -1,1332 +1,1369 @@
 <?php
 $status = $this->session->flashdata('status');
-$error_log = $this->session->flashdata('error_log');
-
-$total = 1;
-
-$unique_akun_utama = array_unique(array_column($getAllDataCashflow, 'mab_akun_utama'));
-$unique_sub_akun = array_unique(array_column($getAllDataCashflow, 'mab_sub_akun'));
-$unique_nomor_akun = array_unique(array_column($getAllDataCashflow, 'mab_nomor_akun'));
-$unique_deskripsi_akun = array_unique(array_column($getAllDataCashflow, 'mab_deskripsi_akun'));
-$unique_divisi = array_unique(array_column($getAllDataCashflow, 'mab_divisi'));
-$unique_pic = array_unique(array_column($getAllDataCashflow, 'mab_pic'));
-
-// sort($unique_akun_utama, SORT_STRING | SORT_FLAG_CASE);
-
-
+$importNotes = $this->session->flashdata('import_notes');
+$validationErrors = $this->session->flashdata('validation_errors');
+$validationWarnings = $this->session->flashdata('validation_warnings');
 ?>
-
-
-<meta name="format-detection" content="telephone=no">
 
 <div class="content-wrapper">
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-12 ">
-                    <h1 class="m-0 text-dark" style="text-align: center;">CASHFLOW</h1>
-                </div><!-- /.col -->
-            </div><!-- /.row -->
-        </div><!-- /.container-fluid -->
+                <div class="col-sm-8">
+                    <h1 class="m-0 text-dark">Cashflow TEC</h1>
+                    <p class="text-muted mb-0">Kelola transaksi TEC dengan pencarian cepat, pagination, dan tampilan tabel yang lebih modern.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="container-fluid">
-
-        <div class="row">
-            <div class="col-md-12">
-                <!-- DIRECT CHAT DANGER -->
-                <div class="card card-primary direct-chat direct-chat-primary shadow-lg">
-                    <div class="card-header">
-                        <h3 class="card-title">FILTER DATA</h3>
-
-                        <div class="card-tools">
-                            <button id="cardfiltercollapse" type="button" class="btn btn-tool"
-                                data-card-widget="collapse">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="card-body" style="margin-top:10px;">
-                        <div class="container-fluid">
-                            <!-- Info boxes -->
-                            <div class="row">
-                                <div class="col-sm-3">
-                                    <div class="form-group">
-                                        <label style="display: flex; justify-content: center; align-items: center;">AKUN
-                                            UTAMA
-                                        </label>
-                                        <select id="filter_akun_utama" class="select2" multiple="multiple"
-                                            data-placeholder="Pilih akun utama" style="width: 100%;">
-                                            <?php foreach ($unique_akun_utama as $akun_utama): ?>
-                                                <option value="<?= $akun_utama ?>"><?= $akun_utama ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-sm-3">
-                                    <div class="form-group">
-                                        <label style="display: flex; justify-content: center; align-items: center;">SUB
-                                            AKUN
-                                        </label>
-                                        <select id="filter_sub_akun" class="select2" multiple="multiple"
-                                            data-placeholder="Pilih sub akun" style="width: 100%;">
-                                            <?php foreach ($unique_sub_akun as $sub_akun): ?>
-                                                <option value="<?= $sub_akun ?>"><?= $sub_akun ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-sm-3">
-                                    <div class="form-group">
-                                        <label
-                                            style="display: flex; justify-content: center; align-items: center;">NOMOR
-                                            AKUN
-                                        </label>
-                                        <select id="filter_nomor_akun" class="select2" multiple="multiple"
-                                            data-placeholder="Pilih nomor akun" style="width: 100%;">
-                                            <?php foreach ($unique_nomor_akun as $nomor_akun): ?>
-                                                <option value="<?= $nomor_akun ?>"><?= $nomor_akun ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-sm-3">
-                                    <div class="form-group">
-                                        <label
-                                            style="display: flex; justify-content: center; align-items: center;">DETAIL
-                                            AKUN</label>
-                                        <select id="filter_deskripsi_akun" class="select2" multiple="multiple"
-                                            data-placeholder="Pilih deskripsi akun" style="width: 100%;">
-                                            <?php foreach ($unique_deskripsi_akun as $deskripsi_akun): ?>
-                                                <option value="<?= $deskripsi_akun ?>"><?= $deskripsi_akun ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="modal-footer col-sm-12">
-                                    <button type="button" id="reset_filter" class="btn btn-danger"
-                                        data-dismiss="modal">Hapus</button>
-                                    <button id="btnFilterDataProject" class="btn btn-primary"><i
-                                            class="fa fa-spinner fa-spin loading" style="display:none"></i> Cari
+    <section class="content">
+        <div class="container-fluid">
+            <div class="card card-outline card-primary shadow-sm budget-card">
+                <div class="card-header budget-card__header">
+                    <h3 class="card-title">Filter Cashflow</h3>
+                </div>
+                <div class="card-body">
+                    <form method="get" action="<?= base_url('Budget_Cashflow') ?>">
+                        <div class="row align-items-end">
+                            <div class="col-md-3">
+                                <label class="budget-field-label">Tahun</label>
+                                <input type="number" class="form-control budget-input" name="year" value="<?= (int) $selectedYear ?>" placeholder="Tahun">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="budget-field-label">Bulan</label>
+                                <select class="form-control budget-input" name="month">
+                                    <option value="0">Semua Bulan</option>
+                                    <?php for ($m = 1; $m <= 12; $m++): ?>
+                                        <option value="<?= $m ?>" <?= (int) $selectedMonth === $m ? 'selected' : '' ?>>
+                                            <?= date('F', mktime(0, 0, 0, $m, 1)) ?>
+                                        </option>
+                                    <?php endfor; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex flex-wrap justify-content-md-end budget-toolbar">
+                                    <button type="submit" class="btn budget-btn budget-btn--primary">
+                                        <i class="fas fa-search mr-1"></i> Tampilkan
+                                    </button>
+                                    <button type="button" class="btn budget-btn budget-btn--success" onclick="openEntryModal('manual')">
+                                        <i class="fas fa-plus-circle mr-1"></i> Input / Import
                                     </button>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="content">
-
-        <div class="content-header">
-            <div class="container-fluid">
-                <div class="row mb-2 justify-content-center">
-                    <div class="col-sm-6 text-center">
-                        <button type="button" class="btn btn-gradient-primary btn-lg shadow pulse" data-toggle="modal"
-                            data-target="#modal-lg-tambah-masterakun">
-                            <i class="fas fa-plus-circle mr-2"></i>
-                            <strong>TAMBAH CASHFLOW</strong>
-                        </button>
-                    </div>
+            <?php if (!empty($validationErrors)): ?>
+                <div class="alert alert-danger">
+                    <strong>Validasi gagal:</strong>
+                    <ul class="mb-0">
+                        <?php foreach ($validationErrors as $message): ?>
+                            <li><?= htmlspecialchars($message) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
                 </div>
-            </div>
-        </div>
+            <?php endif; ?>
 
-        <section class="content">
+            <?php if (!empty($validationWarnings)): ?>
+                <div class="alert alert-warning">
+                    <strong>Peringatan budget:</strong>
+                    <ul class="mb-0">
+                        <?php foreach ($validationWarnings as $message): ?>
+                            <li><?= htmlspecialchars($message) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
 
-            <div class="container-fluid">
-                <!-- Info boxes -->
-                <div class="row">
-                    <!-- fix for small devices only -->
-                    <div class="clearfix hidden-md-up"></div>
-
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <div class="row">
-                                            <div class="col-6">
-                                                <div class="form-group">
-                                                    <div class="input-group">
-                                                        <div class="input-group-prepend">
-                                                            <span class="input-group-text">
-                                                                <i class="far fa-calendar-alt"></i>
-                                                            </span>
-                                                        </div>
-                                                        <input type="text" class="form-control float-right"
-                                                            id="date-range" name="date"
-                                                            value="<?= date('m/d/Y') ?> - <?= date('m/d/Y') ?>">
-                                                    </div>
+            <div class="card shadow-sm budget-card">
+                <div class="card-header budget-card__header d-flex align-items-center justify-content-between">
+                    <h3 class="card-title mb-0">Daftar Cashflow TEC</h3>
+                    <span class="badge badge-light"><?= count($headers) ?> header</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="cashflowTecTable" class="table table-bordered table-hover table-striped js-budget-table">
+                            <thead class="bg-info">
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nomor TEC</th>
+                                    <th>Tanggal</th>
+                                    <th>Bowheer</th>
+                                    <th>Project</th>
+                                    <th>PIC Project</th>
+                                    <th>Regional</th>
+                                    <th>Kota</th>
+                                    <th>Item</th>
+                                    <th class="text-right">Debit</th>
+                                    <th class="text-right">Kredit</th>
+                                    <th style="width: 220px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($headers)): ?>
+                                    <tr>
+                                        <td colspan="12" class="text-center text-muted">Belum ada realisasi cashflow.</td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php $no = 1;
+                                    foreach ($headers as $row): ?>
+                                        <tr>
+                                            <td><?= $no++ ?></td>
+                                            <td><?= htmlspecialchars($row['nomor_tec']) ?></td>
+                                            <td><?= htmlspecialchars($row['tanggal_cashflow']) ?></td>
+                                            <td><?= htmlspecialchars($row['nama_bowheer'] ?? '-') ?></td>
+                                            <td><?= htmlspecialchars($row['project_name']) ?></td>
+                                            <td><?= htmlspecialchars($row['pic_project'] ?? '-') ?></td>
+                                            <td><?= htmlspecialchars($row['regional'] ?? '-') ?></td>
+                                            <td><?= htmlspecialchars($row['kota'] ?? '-') ?></td>
+                                            <td class="text-right"><?= (int) $row['total_items'] ?></td>
+                                            <td class="text-right"><?= number_format((float) $row['total_debit'], 0, ',', '.') ?></td>
+                                            <td class="text-right"><?= number_format((float) $row['total_kredit'], 0, ',', '.') ?></td>
+                                            <td>
+                                                <div class="budget-action-inline">
+                                                    <button type="button" class="btn btn-sm budget-btn budget-btn--table-primary js-edit-cashflow"
+                                                        data-id-cashflow-header="<?= (int) $row['id_cashflow_header'] ?>">
+                                                        <i class="fas fa-pen mr-1"></i> Edit
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm budget-btn budget-btn--table-info"
+                                                        onclick="showDetail(<?= (int) $row['id_cashflow_header'] ?>, '<?= htmlspecialchars($row['nomor_tec'], ENT_QUOTES) ?>')">
+                                                        <i class="fas fa-list-ul mr-1"></i> Detail
+                                                    </button>
+                                                    <a href="<?= base_url('Budget_Cashflow/delete/' . (int) $row['id_cashflow_header']) ?>"
+                                                        class="btn btn-sm budget-btn budget-btn--table-danger js-delete-cashflow"
+                                                        data-item-name="<?= htmlspecialchars($row['nomor_tec'], ENT_QUOTES) ?>">
+                                                        <i class="fas fa-trash-alt mr-1"></i> Hapus
+                                                    </a>
                                                 </div>
-                                            </div>
-                                            <div class="col-6">
-                                                <button type="button" id="resetTanggal"
-                                                    class="btn btn-danger">Hapus</button>
-                                                <button type="submit" id="filtertanggal"
-                                                    class="btn btn-info">Cari</button>
-                                            </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="8" class="text-right">Total</th>
+                                    <th class="text-right" id="summaryTotalItems">0</th>
+                                    <th class="text-right" id="summaryTotalDebit">0</th>
+                                    <th class="text-right" id="summaryTotalKredit">0</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<div class="modal fade" id="entryModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content budget-modal">
+            <div class="modal-header budget-modal__header">
+                <div>
+                    <span class="budget-modal__eyebrow">Budget Cashflow</span>
+                    <h5 class="modal-title mb-1" id="entryModalTitle">Kelola Cashflow TEC</h5>
+                    <p class="mb-0 budget-modal__subtitle" id="entryModalSubtitle">Pilih input manual atau import file dalam satu workflow yang lebih rapi.</p>
+                </div>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-pills budget-nav-tabs mb-4" id="cashflowEntryTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="manual-tab" data-toggle="pill" href="#manual-pane" role="tab">Input Manual</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="import-tab" data-toggle="pill" href="#import-pane" role="tab">Import File</a>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="manual-pane" role="tabpanel">
+                        <form method="post" action="<?= base_url('Budget_Cashflow/save') ?>" id="cashflowForm">
+                            <input type="hidden" name="id_cashflow_header" id="cashflow_header_id">
+
+                            <div class="budget-form-section">
+                                <div class="budget-form-section__title">Informasi Header</div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">Nomor TEC</label>
+                                            <input type="text" class="form-control budget-input" name="nomor_tec" id="nomor_tec" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">Tanggal Cashflow</label>
+                                            <input type="date" class="form-control budget-input" name="tanggal_cashflow" id="tanggal_cashflow" value="<?= date('Y-m-d') ?>" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">Bowheer</label>
+                                            <select class="form-control budget-input" name="id_bowheer" id="id_bowheer">
+                                                <option value="">Pilih Bowheer</option>
+                                                <?php foreach ($bowheers as $bowheer): ?>
+                                                    <option value="<?= (int) $bowheer['id_bowheer'] ?>">
+                                                        <?= htmlspecialchars($bowheer['nama_bowheer']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">Nama Project</label>
+                                            <input type="text" class="form-control budget-input" name="project_name" id="project_name" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">PIC Project</label>
+                                            <input type="text" class="form-control budget-input" name="pic_project" id="pic_project">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">Regional</label>
+                                            <input type="text" class="form-control budget-input" name="regional" id="regional">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">Kota</label>
+                                            <input type="text" class="form-control budget-input" name="kota" id="kota">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group mb-0">
+                                    <label class="budget-field-label">Remarks Header</label>
+                                    <textarea class="form-control budget-input" name="remarks" id="remarks" rows="2"></textarea>
+                                </div>
                             </div>
-                            <!-- /.card-header -->
-                            <div class="card-body table-responsive text-nowrap">
-                                <table id="tabel_targetpic_summary" class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>No</th>
-                                            <th>Tanggal</th>
-                                            <th>Nomor Akun</th>
-                                            <th>Akun Utama</th>
-                                            <th>Sub Akun</th>
-                                            <th>Deskripsi Akun</th>
-                                            <th>Area</th>
-                                            <th>Project</th>
-                                            <th>Remarks</th>
-                                            <th>IN</th>
-                                            <th>OUT</th>
-                                            <th>Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php
-                                        $total = 1;
-                                        foreach ($getAllDataCashflow as $data):
-                                            ?>
-                                            <tr>
-                                                <td><?= $total++ ?></td>
-                                                <td><?= $data['date_cashflow'] ?></td>
-                                                <td><?= $data['mab_nomor_akun'] ?></td>
-                                                <td><?= $data['mab_akun_utama'] ?></td>
-                                                <td><?= $data['mab_sub_akun'] ?></td>
-                                                <td><?= $data['mab_deskripsi_akun'] ?></td>
-                                                <td><?= $data['area_cashflow'] ?></td>
-                                                <td><?= $data['nama_bowheer'] ?></td>
-                                                <td><?= $data['remarks_cashflow'] ?></td>
-                                                <td><?= number_format(floatval($data['cashflow_in']), 0, ",", "."); ?>
-                                                </td>
-                                                <td><?= number_format(floatval($data['cashflow_out']), 0, ",", "."); ?>
-                                                </td>
-                                                <td class="d-flex">
-                                                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
-                                                        <a href="<?php echo site_url('Budget_Cashflow/hapusMasterBudget/' . urlencode($data['id_cashflow'])); ?>"
-                                                            id="tombol_hapus_rincian"
-                                                            class="btn btn-danger tombol_hapus_rincian">
-                                                            <i class="fas fa-trash"></i>
-                                                        </a>
-                                                    <?php } ?>
 
-                                                    <a href="" data-suratjalan="<?= $data['id_cashflow']; ?>"
-                                                        data-id-logistik-stok-unique="<?= $data['id_cashflow'] ?>"
-                                                        data-target="#form_detail_surat_jalan" data-toggle="modal"
-                                                        class="btn btn-primary tombol_detail ml-1"><i
-                                                            class=" fas fa-eye"></i></a>
-                                                </td>
+                            <div class="budget-form-section">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                                    <div class="budget-form-section__title mb-0">Detail Item TEC</div>
+                                    <div class="d-flex flex-wrap align-items-center budget-toolbar">
+                                        <div class="budget-monthly-summary">
+                                            <span>Total Debit</span>
+                                            <strong id="manualTotalDebit">0</strong>
+                                        </div>
+                                        <div class="budget-monthly-summary budget-monthly-summary--gap">
+                                            <span>Total Kredit</span>
+                                            <strong id="manualTotalKredit">0</strong>
+                                        </div>
+                                        <button type="button" class="btn budget-btn budget-btn--ghost" onclick="addDetailRow()">
+                                            <i class="fas fa-plus mr-1"></i> Tambah Baris
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm table-striped" id="detailTable">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>Item</th>
+                                                <th>Debit / Kredit</th>
+                                                <th>Qty</th>
+                                                <th>Harga Satuan</th>
+                                                <th>Nominal</th>
+                                                <th>Remarks Item</th>
+                                                <th>Aksi</th>
                                             </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th colspan="9">Total</th>
-                                            <th><span id="totalCashFlowIN">0</span>
-                                            </th>
-                                            <th><span id="totalCashFlowOUT">0</span>
-                                            </th>
-                                            <th></th>
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                                        </thead>
+                                        <tbody></tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="4" class="text-right">Total</th>
+                                                <th class="text-right" id="manualFooterNominal">0</th>
+                                                <th></th>
+                                                <th></th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
                             </div>
+
+                            <div class="budget-modal__footer px-0 pt-0">
+                                <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Batal</button>
+                                <button type="submit" class="btn budget-btn budget-btn--primary" id="cashflowSubmitBtn">
+                                    <i class="fas fa-save mr-1"></i> Simpan Cashflow
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="import-pane" role="tabpanel">
+                        <form method="post" action="<?= base_url('Budget_Cashflow/import') ?>" enctype="multipart/form-data" id="cashflowImportForm">
+                            <div class="budget-form-section">
+                                <div class="budget-form-section__title">Template Import</div>
+                                <div class="mb-3">
+                                    <a href="<?= base_url('Budget_Cashflow/downloadCashflowTemplateCsv') ?>" class="btn budget-btn budget-btn--ghost btn-sm mb-2">Template Cashflow CSV</a>
+                                    <a href="<?= base_url('Budget_Cashflow/downloadCashflowTemplateXlsx') ?>" class="btn budget-btn budget-btn--ghost btn-sm mb-2">Template Cashflow XLSX</a>
+                                    <a href="<?= base_url('Budget_Cashflow/downloadBudgetTemplateCsv') ?>" class="btn budget-btn budget-btn--ghost btn-sm mb-2">Template Budget CSV</a>
+                                    <a href="<?= base_url('Budget_Cashflow/downloadBudgetTemplateXlsx') ?>" class="btn budget-btn budget-btn--ghost btn-sm mb-2">Template Budget XLSX</a>
+                                </div>
+                                <small class="text-muted d-block">
+                                    A `nomor_tec`, B `tanggal_cashflow`, C `id_bowheer`, D `project_name`, E `pic_project`,
+                                    F `regional`, G `kota`, H `item_code`, I `direction`, J `qty`,
+                                    K `unit_price`, L `nominal`, M `remarks_header`, N `remarks_item`
+                                </small>
+                            </div>
+
+                            <div class="budget-form-section">
+                                <div class="budget-form-section__title">Upload File</div>
+                                <input type="file" class="d-none" name="import_file" id="import_file" accept=".csv,.xls,.xlsx" required>
+                                <div class="budget-dropzone" id="importDropzone">
+                                    <div class="budget-dropzone__icon"><i class="fas fa-file-upload"></i></div>
+                                    <h5 class="mb-2">Drag & Drop file di sini</h5>
+                                    <p class="text-muted mb-2">Atau klik area ini untuk memilih file `.csv`, `.xls`, atau `.xlsx`</p>
+                                    <div class="budget-dropzone__filename" id="importFileName">Belum ada file dipilih</div>
+                                </div>
+                            </div>
+
+                            <div class="budget-form-section">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                                    <div class="budget-form-section__title mb-0">Preview Import</div>
+                                    <div class="budget-monthly-summary">
+                                        <span>Preview Rows</span>
+                                        <strong id="importPreviewCount">0</strong>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm table-striped" id="importPreviewTable">
+                                        <thead>
+                                            <tr>
+                                                <th>No</th>
+                                                <th>Nomor TEC</th>
+                                                <th>Tanggal</th>
+                                                <th>Project</th>
+                                                <th>Item Code</th>
+                                                <th>Direction</th>
+                                                <th>Qty</th>
+                                                <th>Unit Price</th>
+                                                <th>Nominal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="importPreviewBody">
+                                            <tr>
+                                                <td colspan="9" class="text-center text-muted">Preview file akan muncul di sini.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <small class="text-muted d-block mt-2" id="importPreviewHint">Preview browser mendukung CSV dan XLSX. Untuk XLS lama (`.xls`), file tetap bisa diupload, tetapi preview mungkin tidak tersedia.</small>
+                            </div>
+
+                            <div class="budget-modal__footer px-0 pt-0">
+                                <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Batal</button>
+                                <button type="submit" class="btn budget-btn budget-btn--primary" id="importSubmitBtn">
+                                    <i class="fas fa-file-import mr-1"></i> Import
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content budget-modal">
+            <div class="modal-header budget-modal__header">
+                <div>
+                    <span class="budget-modal__eyebrow">Cashflow Detail</span>
+                    <h5 class="modal-title mb-1" id="detailTitle">Detail TEC</h5>
+                    <p class="mb-0 budget-modal__subtitle">Lihat rincian item TEC dengan ringkasan nominal yang lebih jelas dan mudah dipindai.</p>
+                </div>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="budget-form-section">
+                    <div class="budget-form-section__title">Informasi TEC</div>
+                    <div class="detail-summary-grid mb-4">
+                        <div class="detail-summary-card">
+                            <span class="detail-summary-card__label">Nomor TEC</span>
+                            <strong class="detail-summary-card__value" id="detailInfoNomorTec">-</strong>
                         </div>
-                        <div class="row">
-                            <!-- ISI -->
+                        <div class="detail-summary-card">
+                            <span class="detail-summary-card__label">Nama Project</span>
+                            <strong class="detail-summary-card__value" id="detailInfoProject">-</strong>
+                        </div>
+                        <div class="detail-summary-card">
+                            <span class="detail-summary-card__label">Bowheer</span>
+                            <strong class="detail-summary-card__value" id="detailInfoBowheer">-</strong>
+                        </div>
+                        <div class="detail-summary-card">
+                            <span class="detail-summary-card__label">Lokasi Project</span>
+                            <strong class="detail-summary-card__value" id="detailInfoLokasi">-</strong>
                         </div>
                     </div>
-        </section>
 
-        <!-- /.content-wrapper -->
-
-
-
-        <!-- Control Sidebar -->
-        <aside class="control-sidebar control-sidebar-dark">
-            <!-- Control sidebar content goes here -->
-        </aside>
-
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                        <div class="budget-form-section__title mb-0">Breakdown Rincian Item</div>
+                        <div class="d-flex flex-wrap budget-toolbar">
+                            <div class="budget-monthly-summary">
+                                <span>Total Item</span>
+                                <strong id="detailSummaryItems">0</strong>
+                            </div>
+                            <div class="budget-monthly-summary budget-monthly-summary--gap">
+                                <span>Total Nominal</span>
+                                <strong id="detailSummaryNominal">0</strong>
+                            </div>
+                        </div>
+                    </div>
+                <div class="table-responsive detail-table-shell">
+                    <table id="cashflowDetailTable" class="table table-bordered table-sm table-striped js-budget-table-modal">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>No</th>
+                                <th>Kode Item</th>
+                                <th>Nama Item</th>
+                                <th>Debit / Kredit</th>
+                                <th>Qty</th>
+                                <th>Harga Satuan</th>
+                                <th>Nominal</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailBody"></tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="6" class="text-right">Total</th>
+                                <th id="detailFooterNominal" class="text-right">0</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 
-    <script>
-        const userLevel = "<?= $this->session->userdata('nama_level'); ?>";
-    </script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+    const itemOptions = <?= json_encode(array_map(static function ($item) {
+        return [
+            'id' => (int) $item['id_budget_item'],
+            'label' => $item['item_code'] . ' - ' . $item['item_name'],
+            'direction' => $item['default_direction'],
+        ];
+    }, $items)) ?>;
 
-    <script>
+    function formatBudgetNumber(value) {
+        return new Intl.NumberFormat('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(value || 0);
+    }
 
-        $(function () {
-            //Initialize Select2 Elements
-            $('.select2').select2()
-            $('.select2bs4').select2({
-                theme: 'bootstrap4'
-            })
+    function parseBudgetNumber(value) {
+        if (typeof value === 'number') {
+            return value;
+        }
 
-            <?php if ($status == 'sukses_tambah') { ?>
-                swal.fire("Success!", "Berhasil Ditambah!", "success");
-            <?php } else if ($status == 'sukses_hapus') { ?>
-                    swal.fire("Success!", "Berhasil Dihapus!", "success");
-            <?php } else if ($status == 'sukses_edit') { ?>
-                        swal.fire("Success!", "Berhasil Edit Data!", "success");
-            <?php } else if ($status == 'gagal_tambah') { ?>
-                            swal.fire("Gagal!", "Gagal Menambah Data!", "warning");
-            <?php } else if ($status == 'gagal_edit') { ?>
-                                swal.fire("Gagal!", "Gagal Mengedit Data!", "warning");
-            <?php } else if ($status == 'gagal_hapus') { ?>
-                                    swal.fire("Gagal!", "Gagal Menghapus Data!", "warning");
-            <?php } else { ?>
-            <?php } ?>
+        value = String(value || '')
+            .replace(/\./g, '')
+            .replace(/,/g, '.')
+            .replace(/[^\d.-]/g, '');
 
-            <?php $this->session->set_flashdata('status', 'kosong'); ?>
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? 0 : parsed;
+    }
 
-        })
+    function buildItemOptions() {
+        return itemOptions.map(function (item) {
+            return '<option value="' + item.id + '" data-direction="' + item.direction + '">' + item.label + '</option>';
+        }).join('');
+    }
 
-        $(document).ready(function () {
-            $('#tabel_targetpic_summary').DataTable({
-                paging: true,
-                pageLength: 10,
-                info: true,
-                searching: true,
-                lengthChange: true,
-                autoWidth: false,     // aktifkan scroll horizontal otomatis
-                responsive: false,   // matikan agar kolom tetap sejajar
-                ordering: true,
-                initComplete: function () {
-                    // pastikan wrapper scroll ikut lebar layar
-                    $('.dataTables_scrollHead, .dataTables_scrollBody')
-                        .css('width', '100%');
-                }
+    function updateManualSummary() {
+        let totalNominal = 0;
+        let totalDebit = 0;
+        let totalKredit = 0;
+
+        $('#detailTable tbody tr').each(function () {
+            const nominal = parseBudgetNumber($(this).find('.nominal-input').val());
+            const direction = ($(this).find('.direction-select').val() || 'DEBIT').toUpperCase();
+
+            totalNominal += nominal;
+            if (direction === 'DEBIT') {
+                totalDebit += nominal;
+            } else {
+                totalKredit += nominal;
+            }
+        });
+
+        $('#manualFooterNominal').text(formatBudgetNumber(totalNominal));
+        $('#manualTotalDebit').text(formatBudgetNumber(totalDebit));
+        $('#manualTotalKredit').text(formatBudgetNumber(totalKredit));
+    }
+
+    function addDetailRow() {
+        const tbody = document.querySelector('#detailTable tbody');
+        const tr = document.createElement('tr');
+        tr.innerHTML = '' +
+            '<td><select class="form-control form-control-sm budget-input item-select" name="detail_item_id[]" required>' +
+                '<option value="">Pilih Item</option>' + buildItemOptions() +
+            '</select></td>' +
+            '<td><select class="form-control form-control-sm budget-input direction-select" name="detail_direction[]">' +
+                '<option value="DEBIT">DEBIT</option>' +
+                '<option value="KREDIT">KREDIT</option>' +
+            '</select></td>' +
+            '<td><input type="number" step="0.01" class="form-control form-control-sm budget-input qty-input" name="detail_qty[]" value="1"></td>' +
+            '<td><input type="number" step="0.01" class="form-control form-control-sm budget-input unit-price-input" name="detail_unit_price[]" value="0"></td>' +
+            '<td><input type="number" step="0.01" class="form-control form-control-sm budget-input nominal-input" name="detail_nominal[]" value="0"></td>' +
+            '<td><input type="text" class="form-control form-control-sm budget-input" name="detail_remarks[]"></td>' +
+            '<td><button type="button" class="btn btn-sm budget-btn budget-btn--table-danger js-remove-detail-row">Hapus</button></td>';
+        tbody.appendChild(tr);
+        updateManualSummary();
+    }
+
+    function addDetailRowWithData(detail) {
+        addDetailRow();
+        const tr = $('#detailTable tbody tr:last');
+        tr.find('.item-select').val(detail.id_budget_item);
+        tr.find('.direction-select').val(detail.direction || 'DEBIT');
+        tr.find('.qty-input').val(detail.qty || 1);
+        tr.find('.unit-price-input').val(detail.unit_price || 0);
+        tr.find('.nominal-input').val(detail.nominal || 0);
+        tr.find('input[name="detail_remarks[]"]').val(detail.remarks_item || '');
+        updateManualSummary();
+    }
+
+    function resetCashflowForm() {
+        $('#entryModalTitle').text('Kelola Cashflow TEC');
+        $('#entryModalSubtitle').text('Pilih input manual atau import file dalam satu workflow yang lebih rapi.');
+        $('#cashflowForm')[0].dataset.confirmed = 'false';
+        $('#cashflow_header_id').val('');
+        $('#nomor_tec').val('');
+        $('#tanggal_cashflow').val('<?= date('Y-m-d') ?>');
+        $('#id_bowheer').val('');
+        $('#project_name').val('');
+        $('#pic_project').val('');
+        $('#regional').val('');
+        $('#kota').val('');
+        $('#remarks').val('');
+        $('#detailTable tbody').html('');
+        $('#cashflowSubmitBtn').html('<i class="fas fa-save mr-1"></i> Simpan Cashflow').prop('disabled', false);
+        addDetailRow();
+        updateManualSummary();
+    }
+
+    function openEntryModal(tabName) {
+        resetCashflowForm();
+        if ($('#cashflowImportForm').length) {
+            $('#cashflowImportForm')[0].dataset.confirmed = 'false';
+        }
+        $('#entryModal').modal('show');
+        if (tabName === 'import') {
+            $('#import-tab').tab('show');
+        } else {
+            $('#manual-tab').tab('show');
+        }
+    }
+
+    function editCashflow(headerId) {
+        openEntryModal('manual');
+        $('#entryModalTitle').text('Edit Cashflow TEC');
+        $('#entryModalSubtitle').text('Memuat detail cashflow untuk diedit...');
+        $('#cashflowSubmitBtn').html('<i class="fas fa-spinner fa-spin mr-1"></i> Memuat...').prop('disabled', true);
+
+        $.ajax({
+            url: '<?= base_url('Budget_Cashflow/editData/') ?>' + headerId,
+            type: 'GET',
+            dataType: 'text'
+        }).done(function (responseText) {
+            let response = null;
+
+            try {
+                response = JSON.parse($.trim(responseText));
+            } catch (error) {
+                $('#entryModal').modal('hide');
+                Swal.fire('Gagal', 'Detail cashflow gagal dimuat. Format respons tidak valid.', 'error');
+                return;
+            }
+
+            if (!response || !response.status) {
+                $('#entryModal').modal('hide');
+                Swal.fire('Gagal', (response && response.message) || 'Data tidak ditemukan.', 'error');
+                return;
+            }
+
+            $('#entryModalTitle').text('Edit Cashflow TEC');
+            $('#entryModalSubtitle').text('Perbarui data header dan detail item cashflow, lalu simpan perubahan jika semuanya sudah sesuai.');
+            $('#cashflow_header_id').val(response.header.id_cashflow_header);
+            $('#nomor_tec').val(response.header.nomor_tec || '');
+            $('#tanggal_cashflow').val(response.header.tanggal_cashflow || '');
+            $('#id_bowheer').val(response.header.id_bowheer || '');
+            $('#project_name').val(response.header.project_name || '');
+            $('#pic_project').val(response.header.pic_project || '');
+            $('#regional').val(response.header.regional || '');
+            $('#kota').val(response.header.kota || '');
+            $('#remarks').val(response.header.remarks || '');
+            $('#detailTable tbody').html('');
+
+            if (response.details && response.details.length) {
+                response.details.forEach(function (detail) {
+                    addDetailRowWithData(detail);
+                });
+            } else {
+                addDetailRow();
+            }
+
+            $('#cashflowSubmitBtn').html('<i class="fas fa-save mr-1"></i> Simpan Perubahan').prop('disabled', false);
+            updateManualSummary();
+        }).fail(function (xhr) {
+            $('#entryModal').modal('hide');
+            Swal.fire('Gagal', 'Detail cashflow gagal dimuat. ' + (xhr.status ? 'Kode ' + xhr.status + '.' : 'Silakan coba lagi.'), 'error');
+        });
+    }
+
+    function showDetail(headerId, nomorTec) {
+        $('#detailTitle').text('Detail TEC - ' + nomorTec);
+        $('#detailBody').html('<tr><td colspan="8" class="text-center">Loading...</td></tr>');
+        $('#detailFooterNominal').text('0');
+        $('#detailSummaryItems').text('0');
+        $('#detailSummaryNominal').text('0');
+        $('#detailInfoNomorTec').text(nomorTec || '-');
+        $('#detailInfoProject').text('-');
+        $('#detailInfoBowheer').text('-');
+        $('#detailInfoLokasi').text('-');
+        $('#detailModal').modal('show');
+
+        $.ajax({
+            url: '<?= base_url('Budget_Cashflow/detail/') ?>' + headerId,
+            type: 'GET',
+            dataType: 'text'
+        }).done(function (responseText) {
+            let payload = {};
+            let rows = [];
+            try {
+                payload = JSON.parse($.trim(responseText));
+                rows = payload.details || [];
+            } catch (error) {
+                payload = {};
+                rows = [];
+            }
+
+            let html = '';
+            let totalNominal = 0;
+            let totalItems = 0;
+
+            if (payload.header) {
+                const lokasi = [payload.header.kota, payload.header.regional].filter(Boolean).join(' / ');
+                $('#detailInfoNomorTec').text(payload.header.nomor_tec || nomorTec || '-');
+                $('#detailInfoProject').text(payload.header.project_name || '-');
+                $('#detailInfoBowheer').text(payload.header.nama_bowheer || '-');
+                $('#detailInfoLokasi').text(lokasi || '-');
+            }
+
+            if (!rows.length) {
+                html = '<tr><td colspan="8" class="text-center text-muted">Belum ada detail item.</td></tr>';
+            } else {
+                rows.forEach(function (row, index) {
+                    totalItems++;
+                    totalNominal += Number(row.nominal) || 0;
+                    html += '<tr>' +
+                        '<td>' + (index + 1) + '</td>' +
+                        '<td>' + row.item_code + '</td>' +
+                        '<td>' + row.item_name + '</td>' +
+                        '<td><span class="budget-direction-badge budget-direction-badge--' + String(row.direction || '').toLowerCase() + '">' + row.direction + '</span></td>' +
+                        '<td class="text-right">' + Number(row.qty).toLocaleString('id-ID') + '</td>' +
+                        '<td class="text-right">' + Number(row.unit_price).toLocaleString('id-ID') + '</td>' +
+                        '<td class="text-right font-weight-bold">' + Number(row.nominal).toLocaleString('id-ID') + '</td>' +
+                        '<td>' + (row.remarks_item || '-') + '</td>' +
+                    '</tr>';
+                });
+            }
+
+            if ($.fn.DataTable.isDataTable('#cashflowDetailTable')) {
+                $('#cashflowDetailTable').DataTable().clear().destroy();
+            }
+
+            $('#detailBody').html(html);
+            $('#detailFooterNominal').text(formatBudgetNumber(totalNominal));
+            $('#detailSummaryItems').text(formatBudgetNumber(totalItems));
+            $('#detailSummaryNominal').text(formatBudgetNumber(totalNominal));
+        });
+    }
+
+    function renderImportPreview(rows) {
+        const previewRows = rows.slice(0, 20);
+        let html = '';
+
+        if (!previewRows.length) {
+            html = '<tr><td colspan="9" class="text-center text-muted">Tidak ada data untuk dipreview.</td></tr>';
+        } else {
+            previewRows.forEach(function (row, index) {
+                html += '<tr>' +
+                    '<td>' + (index + 1) + '</td>' +
+                    '<td>' + (row.A || '') + '</td>' +
+                    '<td>' + (row.B || '') + '</td>' +
+                    '<td>' + (row.D || '') + '</td>' +
+                    '<td>' + (row.H || '') + '</td>' +
+                    '<td>' + (row.I || '') + '</td>' +
+                    '<td class="text-right">' + (row.J || '') + '</td>' +
+                    '<td class="text-right">' + (row.K || '') + '</td>' +
+                    '<td class="text-right">' + (row.L || '') + '</td>' +
+                '</tr>';
             });
+        }
+
+        $('#importPreviewBody').html(html);
+        $('#importPreviewCount').text(rows.length);
+    }
+
+    function handleImportFile(file) {
+        if (!file) {
+            return;
+        }
+
+        $('#import_file')[0].files = createFileList(file);
+        $('#importFileName').text(file.name);
+        $('#importPreviewHint').text('Membaca preview file...');
+
+        const extension = (file.name.split('.').pop() || '').toLowerCase();
+        const reader = new FileReader();
+
+        if (extension === 'csv') {
+            reader.onload = function (e) {
+                const text = e.target.result || '';
+                const rows = text.split(/\r?\n/).filter(Boolean).slice(1).map(function (line) {
+                    const cols = line.split(',');
+                    return {
+                        A: cols[0] || '',
+                        B: cols[1] || '',
+                        D: cols[3] || '',
+                        H: cols[7] || '',
+                        I: cols[8] || '',
+                        J: cols[9] || '',
+                        K: cols[10] || '',
+                        L: cols[11] || ''
+                    };
+                });
+                renderImportPreview(rows);
+                $('#importPreviewHint').text('Preview diambil dari 20 baris pertama file.');
+            };
+            reader.readAsText(file);
+            return;
+        }
+
+        if (extension === 'xlsx' && typeof XLSX !== 'undefined') {
+            reader.onload = function (e) {
+                const workbook = XLSX.read(e.target.result, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, {
+                    header: 'A',
+                    raw: false
+                }).slice(1);
+                renderImportPreview(rows);
+                $('#importPreviewHint').text('Preview diambil dari sheet pertama, maksimal 20 baris.');
+            };
+            reader.readAsArrayBuffer(file);
+            return;
+        }
+
+        $('#importPreviewBody').html('<tr><td colspan="9" class="text-center text-muted">Preview tidak tersedia untuk file ini, tetapi file tetap bisa diimport.</td></tr>');
+        $('#importPreviewCount').text('0');
+        $('#importPreviewHint').text('Preview browser saat ini mendukung CSV dan XLSX. File tetap akan dikirim ke server saat import.');
+    }
+
+    function createFileList(file) {
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        return dataTransfer.files;
+    }
+
+    $(document).on('change', '.item-select', function () {
+        const selected = $(this).find(':selected');
+        const direction = selected.data('direction');
+        if (direction) {
+            $(this).closest('tr').find('.direction-select').val(direction);
+        }
+        updateManualSummary();
+    });
+
+    $(document).on('input', '.qty-input, .unit-price-input', function () {
+        const tr = $(this).closest('tr');
+        const qty = parseFloat(tr.find('.qty-input').val()) || 0;
+        const unitPrice = parseFloat(tr.find('.unit-price-input').val()) || 0;
+        tr.find('.nominal-input').val((qty * unitPrice).toFixed(2));
+        updateManualSummary();
+    });
+
+    $(document).on('input change', '.nominal-input, .direction-select', function () {
+        updateManualSummary();
+    });
+
+    $(document).on('click', '.js-remove-detail-row', function () {
+        $(this).closest('tr').remove();
+        if (!$('#detailTable tbody tr').length) {
+            addDetailRow();
+        }
+        updateManualSummary();
+    });
+
+    $(function () {
+        const sumColumn = function (api, index) {
+            return api.column(index, { search: 'applied' }).data().reduce(function (a, b) {
+                return parseBudgetNumber(a) + parseBudgetNumber(b);
+            }, 0);
+        };
+
+        $('#importDropzone').on('click', function () {
+            $('#import_file').trigger('click');
         });
 
-        $(document).ready(function () {
-            $('.card[data-card-widget="collapsed"]').addClass('card-tools');
+        $('#import_file').on('change', function () {
+            handleImportFile(this.files[0]);
         });
 
-        // document.addEventListener("DOMContentLoaded", function () {
-        //     let cardfilter = document.getElementById("cardfiltercollapse").closest(".card");
-        //     cardfilter.classList.add("collapsed-card");
-        // });
+        $('#importDropzone').on('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).addClass('is-dragover');
+        });
 
-    </script>
+        $('#importDropzone').on('dragleave dragend drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('is-dragover');
+        });
 
-    <script>
-        $(document).on('click', '.btn-edit-akun', function (e) {
+        $('#importDropzone').on('drop', function (e) {
+            const files = e.originalEvent.dataTransfer.files;
+            if (files && files.length) {
+                handleImportFile(files[0]);
+            }
+        });
+
+        $(document).on('click', '.js-edit-cashflow', function (e) {
+            e.preventDefault();
+            editCashflow($(this).attr('data-id-cashflow-header'));
+        });
+
+        $(document).on('click', '.js-delete-cashflow', function (e) {
             e.preventDefault();
 
-            const btn = $(this);
-
-            $('#edit_id_mab').val(btn.data('id'));
-
-            $('#editfilter_akun_utama').val(btn.data('akun-utama')).trigger('change');
-            $('#editfilter_sub_akun').val(btn.data('sub-akun')).trigger('change');
-            $('#editfilter_divisi').val(btn.data('divisi')).trigger('change');
-            $('#editfilter_pic').val(btn.data('pic')).trigger('change');
-
-            $('#editNomorAkunBaru').val(btn.data('nomor-akun'));
-            $('#editDeskripsiAkunBaru').val(btn.data('deskripsi'));
-
-            $('#modal-lg-edit-masterakun').modal('show');
-        });
-    </script>
-
-    <script>
-        var allData = <?= json_encode($getAllDataCashflow) ?>;
-
-        $(document).ready(function () {
-            // === PETA KOLOM DAN FILTER ===
-            const colMap = {
-                filter_akun_utama: 'mab_akun_utama',
-                filter_sub_akun: 'mab_sub_akun',
-                filter_nomor_akun: 'mab_nomor_akun',
-                filter_deskripsi_akun: 'mab_deskripsi_akun'
-            };
-
-            const currentSelections = {
-                filter_akun_utama: [],
-                filter_sub_akun: [],
-                filter_nomor_akun: [],
-                filter_deskripsi_akun: []
-            };
-
-            $('.select2').select2({
-                width: '100%',
-                allowClear: true,
-                placeholder: function () {
-                    return $(this).data('placeholder') || 'Pilih';
-                }
-            });
-
-            // === Helper Filter Antar-Select ===
-            function getFilteredDataByAllSelections(excludeId = null) {
-                return allData.filter(item => {
-                    for (const selId in currentSelections) {
-                        if (selId === excludeId) continue;
-                        const selectedVals = currentSelections[selId] || [];
-                        if (selectedVals.length === 0) continue;
-                        const col = colMap[selId];
-                        if (!selectedVals.map(String).includes(String(item[col]))) return false;
-                    }
-                    return true;
-                });
-            }
-
-            function populateSelectFromFilteredData(selectId) {
-                const $sel = $('#' + selectId);
-                const col = colMap[selectId];
-                const filtered = getFilteredDataByAllSelections(selectId);
-                const unique = [...new Set(filtered.map(it => it[col]).filter(v => v !== null && v !== undefined && v !== ''))];
-                const prevSelected = ($sel.val() || []).map(String);
-
-                $sel.empty();
-                unique.forEach(v => $sel.append(`<option value="${v}">${v}</option>`));
-
-                const toSelect = unique.filter(u => prevSelected.includes(String(u)));
-                $sel.val(toSelect.length ? toSelect : null);
-                $sel.trigger('change.select2');
-            }
-
-            function onSelectChange(changedId) {
-                currentSelections[changedId] = ($('#' + changedId).val() || []).map(String);
-                for (const selId in colMap) populateSelectFromFilteredData(selId);
-            }
-
-            Object.keys(colMap).forEach(selId => {
-                $('#' + selId).on('change', function () {
-                    onSelectChange(selId);
-                });
-            });
-
-            Object.keys(colMap).forEach(populateSelectFromFilteredData);
-
-            // === EVENT: FILTER DATA ===
-            $('#btnFilterDataProject').on('click', function (e) {
-                e.preventDefault();
-
-                const filters = {
-                    mab_akun_utama: $('#filter_akun_utama').val(),
-                    mab_sub_akun: $('#filter_sub_akun').val(),
-                    mab_nomor_akun: $('#filter_nomor_akun').val(),
-                    mab_deskripsi_akun: $('#filter_deskripsi_akun').val(),
-                };
-
-                $.ajax({
-                    url: '<?= base_url("Budget_Cashflow/getFilteredBudget_CashflowAjax") ?>',
-                    type: 'POST',
-                    data: filters,
-                    dataType: 'json',
-                    beforeSend: function () {
-                        $('#btnFilterDataProject i.loading').show();
-                    },
-                    success: function (response) {
-                        if ($.fn.DataTable.isDataTable('#tabel_targetpic_summary')) {
-                            $('#tabel_targetpic_summary').DataTable().clear().destroy();
-                        }
-
-                        // === HEADER ===
-                        let theadHtml = '<tr>';
-                        response.columns.forEach(col => theadHtml += `<th>${col}</th>`);
-                        theadHtml += '</tr>';
-                        $('#tabel_targetpic_summary thead').html(theadHtml);
-
-                        // === FOOTER ===
-                        let tfootHtml = '<tr>';
-                        response.columns.forEach((col, index) => {
-                            if (['Target', 'Achieved', 'Sisa', 'Target %', 'Achieved %'].includes(col)) {
-                                tfootHtml += `<th id="footer_${col.replace(/\s+/g, '_')}">0</th>`;
-                            } else if (index === 0) {
-                                tfootHtml += `<th style="text-align:right">Total:</th>`;
-                            } else {
-                                tfootHtml += `<th></th>`;
-                            }
-                        });
-                        tfootHtml += '</tr>';
-                        $('#tabel_targetpic_summary tfoot').html(tfootHtml);
-
-                        // === BODY ===
-                        if (!response.data || response.data.length === 0) {
-                            $('#tabel_targetpic_summary tbody').html(
-                                `<tr><td colspan="${response.columns.length}" class="text-center">No data available</td></tr>`
-                            );
-                        } else {
-                            let tbodyHtml = '';
-
-                            response.data.forEach((row, i) => {
-                                tbodyHtml += `<tr>`;
-
-                                response.columns.forEach(col => {
-                                    // console.log(response.columns);
-                                    switch (col) {
-                                        case 'No':
-                                            tbodyHtml += `<td>${i + 1}</td>`;
-                                            break;
-
-                                        case 'Tanggal':
-                                            tbodyHtml += `<td>${row.date_cashflow || '-'}</td>`;
-                                            break;
-
-                                        case 'Nomor Akun':
-                                            tbodyHtml += `<td>${row.mab_nomor_akun || '-'}</td>`;
-                                            break;
-
-                                        case 'Akun Utama':
-                                            tbodyHtml += `<td>${row.mab_akun_utama || '-'}</td>`;
-                                            break;
-
-                                        case 'Sub Akun':
-                                            tbodyHtml += `<td>${row.mab_sub_akun || '-'}</td>`;
-                                            break;
-
-                                        case 'Deskripsi Akun':
-                                            tbodyHtml += `<td>${row.mab_deskripsi_akun || '-'}</td>`;
-                                            break;
-
-                                            case 'Area':
-                                            tbodyHtml += `<td>${row.area_cashflow || '-'}</td>`;
-                                            break;
-
-                                            case 'Project':
-                                            tbodyHtml += `<td>${row.nama_bowheer || '-'}</td>`;
-                                            break;
-
-                                            case 'Remarks':
-                                            tbodyHtml += `<td>${row.remarks_cashflow || '-'}</td>`;
-                                            break;
-
-                                            case 'IN':
-    tbodyHtml += `<td>${row.cashflow_in
-        ? Number(row.cashflow_in).toLocaleString('id-ID') 
-        : '-'}</td>`;
-
-                                            case 'OUT':
-    tbodyHtml += `<td>${row.cashflow_out 
-        ? Number(row.cashflow_out).toLocaleString('id-ID') 
-        : '-'}</td>`;
-    break;
-                                    }
-                                });
-
-                                if (userLevel === 'Super Admin') {
-                                    tbodyHtml += `
-                        <td class="text-center">
-                            <a href="<?= site_url('Budget_Cashflow/hapusMasterBudget/') ?>${row.id_mab}"
-                               class="btn btn-danger btn-sm tombol_hapus">
-                                <i class="fas fa-trash"></i>
-                            </a>
-
-                            <a href="#"
-   class="btn btn-warning btn-sm btn-edit-akun"
-   data-id="${row.id_mab}"
-   data-akun-utama="${row.mab_akun_utama}"
-   data-sub-akun="${row.mab_sub_akun}"
-   data-nomor-akun="${row.mab_nomor_akun}"
-   data-deskripsi="${row.mab_deskripsi_akun}"
-   data-divisi="${row.mab_divisi}"
-   data-pic="${row.mab_pic}">
-    <i class="fas fa-edit"></i>
-</a>
-                        </td>
-                    `;
-                                } else {
-                                    tbodyHtml += `<td>-</td>`;
-                                }
-
-                                tbodyHtml += `</tr>`;
-
-                                tbodyHtml += `</tr>`;
-                            });
-
-                            $('#tabel_targetpic_summary tbody').html(tbodyHtml);
-                            console.log('userLevel =', userLevel);
-                        }
-
-                        // === DATATABLE ===
-                        const table = $('#tabel_targetpic_summary').DataTable({
-                            responsive: true,
-                            autoWidth: false,
-                            pageLength: 10,
-                            ordering: true,
-                            order: [[1, 'desc']],
-                            footerCallback: function (row, data, start, end, display) {
-                                const api = this.api();
-                                const parseValue = val => {
-                                    return typeof val === 'string'
-                                        ? parseFloat(val.replace(/\./g, '').replace(/[^0-9.-]/g, '')) || 0
-                                        : typeof val === 'number' ? val : 0;
-                                };
-                                const colIndex = name => response.columns.indexOf(name);
-                                let totalTarget = 0, totalAchieved = 0, totalSisa = 0;
-
-                                if (colIndex('Target') > -1)
-                                    totalTarget = api.column(colIndex('Target'), { search: 'applied' }).data().reduce((a, b) => a + parseValue(b), 0);
-                                if (colIndex('Achieved') > -1)
-                                    totalAchieved = api.column(colIndex('Achieved'), { search: 'applied' }).data().reduce((a, b) => a + parseValue(b), 0);
-                                if (colIndex('Sisa') > -1)
-                                    totalSisa = api.column(colIndex('Sisa'), { search: 'applied' }).data().reduce((a, b) => a + parseValue(b), 0);
-
-                                const persenAchieved = totalTarget > 0 ? (totalAchieved / totalTarget) * 100 : 0;
-                                const persenSisa = totalTarget > 0 ? (totalSisa / totalTarget) * 100 : 0;
-
-                                if (colIndex('Target') > -1)
-                                    $(api.column(colIndex('Target')).footer()).html(formatTitik(totalTarget));
-                                if (colIndex('Achieved') > -1)
-                                    $(api.column(colIndex('Achieved')).footer()).html(formatTitik(totalAchieved));
-                                if (colIndex('Sisa') > -1)
-                                    $(api.column(colIndex('Sisa')).footer()).html(formatTitik(totalSisa));
-                                if (colIndex('Target %') > -1)
-                                    $(api.column(colIndex('Target %')).footer()).html(persenSisa.toFixed(0) + '%');
-                                if (colIndex('Achieved %') > -1)
-                                    $(api.column(colIndex('Achieved %')).footer()).html(persenAchieved.toFixed(0) + '%');
-
-                                updateDashboardFromFooter();
-                                highlightCells();
-                            }
-                        });
-
-                        // === Nomor Otomatis ===
-                        table.on('order.dt search.dt', function () {
-                            table.column(0, { search: 'applied', order: 'applied' })
-                                .nodes().each(function (cell, i) {
-                                    cell.innerHTML = i + 1;
-                                });
-                        }).draw();
-                    },
-                    error: function (xhr) {
-                        console.error('Error:', xhr.responseText);
-                    },
-                    complete: function () {
-                        $('#btnFilterDataProject i.loading').hide();
-                    }
-                });
-            });
-
-            // === AUTO CLICK SAAT AWAL ===
-            setTimeout(() => {
-                $('#btnFilterDataProject').trigger('click');
-            }, 500);
-
-            // === RESET FILTER ===
-            $('#reset_filter').on('click', function () {
-                $('#filter_akun_utama, #filter_sub_akun, #filter_nomor_akun, #filter_deskripsi_akun').val(null).trigger('change');
-                setTimeout(() => $('#btnFilterDataProject').trigger('click'), 300);
-            });
-        });
-
-        $(document).on('click', '.tombol_hapus', function (e) {
-            e.preventDefault();
-            const url = $(this).attr('href');
+            const href = $(this).attr('href');
+            const itemName = $(this).data('item-name') || 'transaksi ini';
 
             Swal.fire({
-                icon: 'warning',
-                title: 'Hapus data?',
-                text: 'Data yang dihapus tidak bisa dikembalikan',
+                title: 'Hapus cashflow?',
+                text: 'Transaksi TEC "' + itemName + '" akan dihapus.',
+                type: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Ya, Hapus!',
+                confirmButtonColor: '#d9534f',
+                cancelButtonColor: '#9aa9b8',
+                confirmButtonText: 'Ya, hapus',
                 cancelButtonText: 'Batal'
-            }).then((res) => {
-                if (res.isConfirmed) {
-                    window.location.href = url;
+            }).then(function (result) {
+                if (result.value) {
+                    window.location.href = href;
                 }
             });
         });
 
+        $('#cashflowForm').on('submit', function (e) {
+            const form = this;
+            if (form.dataset.confirmed === 'true') {
+                return true;
+            }
 
-        // === ANIMASI ANGKA DASHBOARD ===
-        function animateValue(id, start, end, duration, isRupiah = false) {
-            const element = document.getElementById(id);
-            if (!element) return;
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                const currentValue = Math.floor(progress * (end - start) + start);
-                element.innerText = isRupiah
-                    ? formatRupiah(currentValue)
-                    : formatTitik(currentValue) + (id === 'dashboardPersentaseInvoice' ? '%' : '');
-                if (progress < 1) window.requestAnimationFrame(step);
-            };
-            window.requestAnimationFrame(step);
-        }
+            e.preventDefault();
+            const isEdit = $.trim($('#cashflow_header_id').val()) !== '';
 
-        // === UPDATE DASHBOARD DARI FOOTER ===
-        function updateDashboardFromFooter() {
-            const totalTarget = parseFloat($('#tabel_targetpic_summary tfoot th#footer_Target').text().replace(/[^\d]/g, '')) || 0;
-            const totalAchieved = parseFloat($('#tabel_targetpic_summary tfoot th#footer_Achieved').text().replace(/[^\d]/g, '')) || 0;
-            const totalSisa = parseFloat($('#tabel_targetpic_summary tfoot th#footer_Sisa').text().replace(/[^\d]/g, '')) || 0;
-            const totalPersen = totalTarget > 0 ? (totalAchieved / totalTarget) * 100 : 0;
-
-            animateValue('dashboardBudget_Cashflow', 0, totalTarget, 600, true);
-            animateValue('dashboardAchievInvoice', 0, totalAchieved, 600, true);
-            animateValue('dashboardSisaInvoice', 0, totalSisa, 600, true);
-            animateValue('dashboardPersentaseInvoice', 0, totalPersen, 600, false);
-        }
-
-        function highlightCells() {
-            $('#tabel_targetpic_summary tbody tr').each(function () {
-                const cell = $(this).find('td:contains("%")').last();
-                let persenText = cell.text().trim();
-                persenText = persenText.replace(/<[^>]+>/g, '').replace(/[\u2191\u2193✅❌]/g, '');
-                const persen = parseFloat(persenText.replace('%', '').replace(',', '.')) || 0;
-
-                let icon = '';
-                if (persen < 100) {
-                    icon = ' <i class="fas fa-arrow-down text-danger"></i>'; // merah turun
-                    cell.addClass('cell-red');
-                } else if (persen === 100) {
-                    icon = ' <i class="fas fa-check-circle text-success"></i>'; // hijau centang
-                    cell.addClass('cell-green-light');
-                } else if (persen > 100) {
-                    icon = ' <i class="fas fa-arrow-up text-success"></i>'; // hijau naik
-                    cell.addClass('cell-green-dark');
+            Swal.fire({
+                title: isEdit ? 'Simpan perubahan cashflow?' : 'Simpan cashflow baru?',
+                text: isEdit
+                    ? 'Perubahan akan langsung memperbarui header dan detail cashflow.'
+                    : 'Data cashflow baru akan ditambahkan ke daftar transaksi.',
+                type: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#1f6da1',
+                cancelButtonColor: '#9aa9b8',
+                confirmButtonText: isEdit ? 'Ya, simpan perubahan' : 'Ya, simpan cashflow',
+                cancelButtonText: 'Batal'
+            }).then(function (result) {
+                if (result.value) {
+                    form.dataset.confirmed = 'true';
+                    form.submit();
                 }
-
-                cell.html(`${persenText}${icon}`);
             });
-        }
-
-
-        $(document).ready(function () {
-            // === VALIDASI SAAT SIMPAN ===
-            $("form").on("submit", function (e) {
-                e.preventDefault();
-
-                // 🔹 Validasi tetap dipertahankan (jangan dihapus)
-
-                const inputAkunUtamaBaru = $('#inputAkunUtamaBaru');
-                const inputSubAkunBaru = $('#inputSubAkunBaru');
-                const inputDivisiBaru = $('#inputDivisiBaru');
-                const inputPICBaru = $('#inputPICBaru');
-
-                const akunutamaDropdown = $('#addfilter_akun_utama');
-                const subakunDropdown = $('#addfilter_sub_akun');
-                const divisiDropdown = $('#addfilter_divisi');
-                const picDropdown = $('#addfilter_pic');
-
-                let akunutama = akunutamaDropdown.val(); // ✅ Tambahkan ini
-                let subakun = subakunDropdown.val(); // ✅ Tambahkan ini
-                let divisi = divisiDropdown.val(); // ✅ Tambahkan ini
-                let pic = picDropdown.val(); // ✅ Tambahkan ini
-
-                let nomorakun = $("#inputNomorAkunBaru").val();
-                let deskripsiakun = $("#inputDeskripsiAkunBaru").val();
-
-                // 🔹 Jika tambah kota baru aktif → pakai nilai input kota baru
-                if (inputAkunUtamaBaru.is(':visible') && inputAkunUtamaBaru.val().trim() !== '') {
-                    akunutama = inputAkunUtamaBaru.val().trim(); // ✅ overwrite nilai akun utama
-                    akunutamaDropdown.val(akunutama); // agar ikut terkirim via serialize
-                }
-
-                if (inputSubAkunBaru.is(':visible') && inputSubAkunBaru.val().trim() !== '') {
-                    subakun = inputSubAkunBaru.val().trim(); // ✅ overwrite nilai sub akun
-                    subakunDropdown.val(subakun); // agar ikut terkirim via serialize
-                }
-
-                if (inputDivisiBaru.is(':visible') && inputDivisiBaru.val().trim() !== '') {
-                    divisi = inputDivisiBaru.val().trim(); // ✅ overwrite nilai divisi
-                    divisiDropdown.val(divisi); // agar ikut terkirim via serialize
-                }
-
-                if (inputPICBaru.is(':visible') && inputPICBaru.val().trim() !== '') {
-                    pic = inputPICBaru.val().trim(); // ✅ overwrite nilai PIC
-                    picDropdown.val(pic); // agar ikut terkirim via serialize
-                }
-
-                if (!akunutama) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Data belum lengkap!',
-                        text: 'Pastikan semua dropdown dan input sudah diisi a.'
-                    });
-                    return;
-                }
-
-                if (!subakun) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Data belum lengkap!',
-                        text: 'Pastikan semua dropdown dan input sudah diisi b.'
-                    });
-                    return;
-                }
-
-                if (!divisi) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Data belum lengkap!',
-                        text: 'Pastikan semua dropdown dan input sudah diisi c.'
-                    });
-                    return;
-                }
-
-                if (!pic) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Data belum lengkap!',
-                        text: 'Pastikan semua dropdown dan input sudah diisi d.'
-                    });
-                    return;
-                }
-
-                if (!nomorakun) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Data belum lengkap!',
-                        text: 'Pastikan semua dropdown dan input sudah diisi e.'
-                    });
-                    return;
-                }
-
-                if (!deskripsiakun) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Data belum lengkap!',
-                        text: 'Pastikan semua dropdown dan input sudah diisi f.'
-                    });
-                    return;
-                }
-
-                // 🔹 Konfirmasi simpan
-                Swal.fire({
-                    icon: 'question',
-                    title: 'Simpan Data?',
-                    text: 'Pastikan semua data sudah benar sebelum disimpan.',
-                    showCancelButton: true,
-                    confirmButtonText: 'Ya, Simpan!',
-                    cancelButtonText: 'Batal'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const formData = $("form").serialize();
-
-                        $.ajax({
-                            url: "<?= base_url('Budget_Cashflow/addMasterBudget') ?>",
-                            type: "POST",
-                            data: formData,
-                            dataType: "json",
-                            success: function (res) {
-                                console.log(res);
-
-                                if (res.status === 'not_found') {
-                                    Swal.fire({
-                                        icon: 'question',
-                                        title: 'Area belum terdaftar',
-                                        text: 'Project ini tidak memiliki area ini. Tambahkan area dan invoice?',
-                                        showCancelButton: true,
-                                        confirmButtonText: 'Ya, Tambahkan!',
-                                        cancelButtonText: 'Batal'
-                                    }).then((r) => {
-                                        if (r.isConfirmed) {
-                                            $.ajax({
-                                                url: "<?= base_url('Budget_Cashflow/createNewTargetInvoice') ?>",
-                                                type: "POST",
-                                                dataType: "json",
-                                                data: res,
-
-                                                success: function (res2) {
-                                                    Swal.fire({
-                                                        icon: res2.status ? 'success' : 'error',
-                                                        title: res2.status ? 'Berhasil' : 'Gagal',
-                                                        text: res2.message
-                                                    }).then(() => location.reload());
-                                                }
-                                            });
-                                        }
-                                    });
-                                } else if (res.status) {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Berhasil!',
-                                        text: 'Invoice berhasil disimpan.'
-                                    }).then(() => location.reload());
-                                } else {
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Gagal!',
-                                        text: res.message || 'Terjadi kesalahan.'
-                                    });
-                                }
-                            },
-                            error: function (xhr) {
-                                console.error(xhr.responseText);
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Berhasil!',
-                                    text: 'Invoice berhasil disimpan.'
-                                }).then(() => location.reload());
-                            }
-                        });
-                    }
-                });
-            });
-
-            // Reset form ketika modal dibuka
-            $('#modal-lg-tambah-masterakun').on('show.bs.modal', function () {
-                $(this).find('form')[0].reset();
-                $("[name='achiev_invoice'], [name='tambahan_invoice'], [name='total_invoice']").val("");
-                $("[name='tambahan_invoice']").closest('.form-group').hide();
-                $("[name='total_invoice']").closest('.form-group').hide();
-            });
-
         });
 
-        $(document).ready(function () {
-            let isTambahAkunUtamaActive = false;
-            let isTambahSubAkunActive = false;
-            let isTambahDivisiActive = false;
-            let isTambahPicActive = false;
+        $('#cashflowImportForm').on('submit', function (e) {
+            const form = this;
+            if (form.dataset.confirmed === 'true') {
+                return true;
+            }
 
-            $('#btnTambahAkunUtamaBaru').on('click', function () {
-                isTambahAkunUtamaActive = !isTambahAkunUtamaActive;
-                if (isTambahAkunUtamaActive) {
-                    // Saat aktif → tampilkan input, disable dropdown
-                    $('#inputAkunUtamaBaruContainer').slideDown();
-                    $('#addfilter_akun_utama').prop('disabled', true);
-                    $('#addfilter_akun_utama').val('');
-                    $(this).text('× Batalkan Tambah Akun Utama');
-
-                } else {
-                    // Saat nonaktif → sembunyikan input, enable dropdown
-                    $('#inputAkunUtamaBaruContainer').slideUp();
-                    $('#addfilter_akun_utama').prop('disabled', false);
-                    $('#inputAkunUtamaBaru').val('');
-                    $(this).text('+ Tambah Akun Utama Baru');
-
+            e.preventDefault();
+            Swal.fire({
+                title: 'Import file cashflow?',
+                text: 'File yang dipilih akan diproses dan menambah data cashflow ke sistem.',
+                type: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#1f6da1',
+                cancelButtonColor: '#9aa9b8',
+                confirmButtonText: 'Ya, import file',
+                cancelButtonText: 'Batal'
+            }).then(function (result) {
+                if (result.value) {
+                    form.dataset.confirmed = 'true';
+                    form.submit();
                 }
-            });
-
-            $('#btnTambahSubAkunBaru').on('click', function () {
-                isTambahSubAkunActive = !isTambahSubAkunActive;
-                if (isTambahSubAkunActive) {
-                    // Saat aktif → tampilkan input, disable dropdown
-                    $('#inputSubAkunBaruContainer').slideDown();
-                    $('#addfilter_sub_akun').prop('disabled', true);
-                    $('#addfilter_sub_akun').val('');
-                    $(this).text('× Batalkan Tambah Sub Akun');
-
-                } else {
-                    // Saat nonaktif → sembunyikan input, enable dropdown
-                    $('#inputSubAkunBaruContainer').slideUp();
-                    $('#addfilter_sub_akun').prop('disabled', false);
-                    $('#inputSubAkunBaru').val('');
-                    $(this).text('+ Tambah Sub Akun Baru');
-                }
-            });
-
-            $('#btnTambahDivisiBaru').on('click', function () {
-                isTambahDivisiActive = !isTambahDivisiActive;
-                if (isTambahDivisiActive) {
-                    // Saat aktif → tampilkan input, disable dropdown
-                    $('#inputDivisiBaruContainer').slideDown();
-                    $('#addfilter_divisi').prop('disabled', true);
-                    $('#addfilter_divisi').val('');
-                    $(this).text('× Batalkan Tambah Divisi');
-
-                } else {
-                    // Saat nonaktif → sembunyikan input, enable dropdown
-                    $('#inputDivisiBaruContainer').slideUp();
-                    $('#addfilter_divisi').prop('disabled', false);
-                    $('#inputDivisiBaru').val('');
-                    $(this).text('+ Tambah Divisi Baru');
-                }
-            });
-
-            $('#btnTambahPICBaru').on('click', function () {
-                isTambahPicActive = !isTambahPicActive;
-                if (isTambahPicActive) {
-                    // Saat aktif → tampilkan input, disable dropdown
-                    $('#inputPICBaruContainer').slideDown();
-                    $('#addfilter_pic').prop('disabled', true);
-                    $('#addfilter_pic').val('');
-                    $(this).text('× Batalkan Tambah PIC');
-
-                } else {
-                    // Saat nonaktif → sembunyikan input, enable dropdown
-                    $('#inputPICBaruContainer').slideUp();
-                    $('#addfilter_pic').prop('disabled', false);
-                    $('#inputPICBaru').val('');
-                    $(this).text('+ Tambah PIC Baru');
-                }
-            });
-
-            // Pastikan saat submit form, area_target diambil sesuai yang aktif
-            $('form').on('submit', function (e) {
-                const isTambahAkunUtamaBaru = isTambahAkunUtamaActive;
-                const isTambahSubAkunBaru = isTambahSubAkunActive;
-                const isTambahDivisiBaru = isTambahDivisiActive;
-                const isTambahPicBaru = isTambahPicActive;
-
-                const akunutamaDropdown = $('#addfilter_akun_utama').val();
-                const akunutamaBaru = $('#inputAkunUtamaBaru').val().trim();
-
-                const subakunDropdown = $('#addfilter_sub_akun').val();
-                const subakunBaru = $('#inputSubAkunBaru').val().trim();
-
-                const divisiDropdown = $('#addfilter_divisi').val();
-                const divisiBaru = $('#inputDivisiBaru').val().trim();
-
-                const picDropdown = $('#addfilter_pic').val();
-                const picBaru = $('#inputPICBaru').val().trim();
-
-                const nomorAkunBaru = $('#inputNomorAkunBaru').val().trim();
-                const deskripsiAkunBaru = $('#inputDeskripsiAkunBaru').val().trim();
-                if (isTambahAkunUtamaBaru && akunutamaBaru === '') {
-                    e.preventDefault();
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Akun Utama baru belum diisi!',
-                        text: 'Silakan isi nomor akun utama baru sebelum melanjutkan.'
-                    });
-                    return false;
-                }
-
-                if (isTambahSubAkunBaru && subakunBaru === '') {
-                    e.preventDefault();
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Sub Akun baru belum diisi!',
-                        text: 'Silakan isi nama sub akun baru sebelum melanjutkan.'
-                    });
-                    return false;
-                }
-
-                if (isTambahDivisiBaru && divisiBaru === '') {
-                    e.preventDefault();
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Divisi baru belum diisi!',
-                        text: 'Silakan isi nama divisi baru sebelum melanjutkan.'
-                    });
-                    return false;
-                }
-
-                if (isTambahPicBaru && picBaru === '') {
-                    e.preventDefault();
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'PIC baru belum diisi!',
-                        text: 'Silakan isi nama PIC sebelum melanjutkan.'
-                    });
-                    return false;
-                }
-
             });
         });
-    </script>
 
+        if ($.fn.DataTable) {
+            $('#cashflowTecTable').DataTable({
+                paging: true,
+                searching: true,
+                info: true,
+                ordering: true,
+                responsive: false,
+                autoWidth: false,
+                scrollX: true,
+                pageLength: 10,
+                footerCallback: function () {
+                    const api = this.api();
+                    $('#summaryTotalItems').text(formatBudgetNumber(sumColumn(api, 8)));
+                    $('#summaryTotalDebit').text(formatBudgetNumber(sumColumn(api, 9)));
+                    $('#summaryTotalKredit').text(formatBudgetNumber(sumColumn(api, 10)));
+                },
+                language: {
+                    search: 'Search:',
+                    lengthMenu: 'Tampilkan _MENU_ data',
+                    info: 'Menampilkan _START_ - _END_ dari _TOTAL_ data',
+                    paginate: {
+                        previous: 'Prev',
+                        next: 'Next'
+                    },
+                    zeroRecords: 'Tidak ada data yang cocok'
+                }
+            });
 
-
-    <style>
-        #tabel_targetpic_summary tfoot th {
-            text-align: right;
-            background-color: #f8f9fa;
-            font-weight: bold;
         }
 
-        /* upgrade warna header merah */
+        resetCashflowForm();
 
-        .glow-red {
-            border: 1px solid rgba(255, 0, 0, 0.7);
-            box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
-            transition: box-shadow 0.3s ease-in-out;
-            border-radius: 10px;
+        <?php if (!empty($status)): ?>
+        const flashStatus = '<?= htmlspecialchars((string) $status, ENT_QUOTES) ?>';
+        const flashStorageKey = 'budget_cashflow_flash_' + flashStatus + '_<?= (int) $selectedYear ?>_<?= (int) $selectedMonth ?>';
+        if (!window.__budgetCashflowAlertShown && sessionStorage.getItem(flashStorageKey) !== 'shown') {
+            window.__budgetCashflowAlertShown = true;
+            sessionStorage.setItem(flashStorageKey, 'shown');
+            <?php if ($status === 'sukses_simpan'): ?>
+            Swal.fire('Success', 'Cashflow berhasil disimpan.', 'success');
+            <?php elseif ($status === 'sukses_edit'): ?>
+            Swal.fire('Success', 'Cashflow berhasil diperbarui.', 'success');
+            <?php elseif ($status === 'sukses_hapus'): ?>
+            Swal.fire('Success', 'Cashflow berhasil dihapus.', 'success');
+            <?php elseif ($status === 'sukses_import'): ?>
+            Swal.fire('Success', 'Import berhasil diproses.', 'success');
+            <?php elseif ($status === 'warning_import'): ?>
+            Swal.fire('Warning', 'Import selesai dengan beberapa catatan. <?= htmlspecialchars((string) $importNotes, ENT_QUOTES) ?>', 'warning');
+            <?php elseif ($status === 'gagal_import' || $status === 'gagal_simpan' || $status === 'gagal_hapus'): ?>
+            Swal.fire('Gagal', 'Proses cashflow gagal dilakukan. <?= htmlspecialchars((string) $importNotes, ENT_QUOTES) ?>', 'error');
+            <?php endif; ?>
+        }
+        <?php endif; ?>
+
+        <?php if (!empty($validationWarnings) && ($status === 'sukses_simpan' || $status === 'sukses_edit')): ?>
+        const warningStorageKey = 'budget_cashflow_warning_<?= md5(json_encode($validationWarnings)) ?>';
+        if (sessionStorage.getItem(warningStorageKey) !== 'shown') {
+            sessionStorage.setItem(warningStorageKey, 'shown');
+            Swal.fire('Warning', 'Data tersimpan, tetapi ada item yang melewati budget.', 'warning');
+        }
+        <?php endif; ?>
+    });
+</script>
+
+<style>
+    .budget-toolbar {
+        gap: 10px;
+    }
+
+    .budget-field-label {
+        display: inline-block;
+        margin-bottom: 8px;
+        font-size: 0.84rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: #48657f;
+        text-transform: uppercase;
+    }
+
+    .budget-card {
+        border: 0;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 18px 42px rgba(14, 41, 64, 0.08);
+        background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%);
+    }
+
+    .budget-card__header {
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 30%),
+            linear-gradient(135deg, #103b5a, #1f6da1 55%, #53a9d8);
+        color: #fff;
+    }
+
+    .budget-card .card-title {
+        font-weight: 700;
+    }
+
+    .budget-btn {
+        border: 0;
+        border-radius: 12px;
+        padding: 0.68rem 1.15rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        transition: all 0.2s ease;
+        box-shadow: 0 12px 22px rgba(16, 59, 90, 0.12);
+    }
+
+    .budget-btn:hover,
+    .budget-btn:focus {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 28px rgba(16, 59, 90, 0.16);
+    }
+
+    .budget-btn--primary {
+        background: linear-gradient(135deg, #103b5a 0%, #1f6da1 100%);
+        color: #fff;
+    }
+
+    .budget-btn--success {
+        background: linear-gradient(135deg, #0f8b72 0%, #24b18f 100%);
+        color: #fff;
+    }
+
+    .budget-btn--ghost {
+        background: #fff;
+        color: #315d7f;
+        border: 1px solid #d7e6f2;
+        box-shadow: 0 10px 22px rgba(112, 141, 165, 0.12);
+    }
+
+    .budget-btn--table-primary,
+    .budget-btn--table-danger,
+    .budget-btn--table-info {
+        padding: 0.52rem 0.9rem;
+        box-shadow: none;
+    }
+
+    .budget-btn--table-primary {
+        background: linear-gradient(135deg, #eaf4fb 0%, #d8ecfa 100%);
+        color: #1d5f8d;
+        border: 1px solid #c9e1f3;
+    }
+
+    .budget-btn--table-info {
+        background: linear-gradient(135deg, #eef7f4 0%, #d7efe7 100%);
+        color: #16685c;
+        border: 1px solid #bfe0d6;
+    }
+
+    .budget-btn--table-danger {
+        background: linear-gradient(135deg, #fff1f0 0%, #ffdedd 100%);
+        color: #b93d38;
+        border: 1px solid #f5c8c5;
+    }
+
+    .budget-btn--table-danger:hover,
+    .budget-btn--table-danger:focus {
+        color: #fff;
+        background: linear-gradient(135deg, #d9534f 0%, #b93d38 100%);
+        border-color: #b93d38;
+    }
+
+    .budget-action-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .budget-modal {
+        border: 0;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 30px 50px rgba(8, 35, 55, 0.22);
+    }
+
+    .budget-modal__header {
+        border-bottom: 0;
+        padding: 1.4rem 1.5rem 1.1rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 30%),
+            linear-gradient(135deg, #103b5a 0%, #1f6da1 55%, #53a9d8 100%);
+        color: #fff;
+    }
+
+    .budget-modal__eyebrow {
+        display: inline-block;
+        margin-bottom: 6px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.76);
+    }
+
+    .budget-modal__subtitle {
+        max-width: 85%;
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 0.92rem;
+    }
+
+    .budget-modal .modal-body {
+        padding: 1.5rem;
+        background: linear-gradient(180deg, #fbfdff 0%, #f2f8fc 100%);
+    }
+
+    .budget-modal__footer {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        border-top: 0;
+        margin-top: 1rem;
+        background: transparent;
+    }
+
+    .budget-form-section {
+        margin-bottom: 1rem;
+        padding: 1rem 1rem 0.9rem;
+        border: 1px solid #dbe9f4;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    .budget-form-section__title {
+        margin-bottom: 0.9rem;
+        font-size: 0.86rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #2d6287;
+    }
+
+    .budget-input {
+        border-radius: 12px;
+        border: 1px solid #cfe0ee;
+        min-height: 44px;
+        box-shadow: none;
+    }
+
+    .budget-input:focus {
+        border-color: #55a7d5;
+        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
+    .budget-monthly-summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0.65rem 0.95rem;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #eff7fc 0%, #dfeef8 100%);
+        color: #27587c;
+        font-weight: 700;
+    }
+
+    .budget-monthly-summary--gap {
+        background: linear-gradient(135deg, #edf8ef 0%, #d8efdc 100%);
+        color: #1d6b3e;
+    }
+
+    .detail-table-shell {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid #d8e7f2;
+        background: #fff;
+    }
+
+    .detail-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .detail-summary-card {
+        padding: 1rem 1.05rem;
+        border-radius: 16px;
+        border: 1px solid #d9e8f3;
+        background: linear-gradient(180deg, #ffffff 0%, #f4f9fd 100%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .detail-summary-card__label {
+        display: block;
+        margin-bottom: 0.4rem;
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #68839a;
+    }
+
+    .detail-summary-card__value {
+        display: block;
+        font-size: 1rem;
+        line-height: 1.35;
+        color: #163f5d;
+        word-break: break-word;
+    }
+
+    #cashflowDetailTable thead th {
+        background: linear-gradient(180deg, #eef6fb 0%, #dcecf8 100%);
+        color: #2e607f;
+        border-bottom: 0;
+        vertical-align: middle;
+    }
+
+    #cashflowDetailTable tbody tr:hover {
+        background: rgba(83, 169, 216, 0.08);
+    }
+
+    #cashflowDetailTable {
+        table-layout: auto;
+    }
+
+    #cashflowDetailTable th,
+    #cashflowDetailTable td {
+        vertical-align: middle;
+    }
+
+    .budget-direction-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 86px;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+    }
+
+    .budget-direction-badge--debit {
+        background: linear-gradient(135deg, #e7f8ef 0%, #d2f0df 100%);
+        color: #1e7a49;
+    }
+
+    .budget-direction-badge--kredit {
+        background: linear-gradient(135deg, #fff0ef 0%, #ffd9d6 100%);
+        color: #b3413b;
+    }
+
+    .budget-nav-tabs {
+        gap: 10px;
+    }
+
+    .budget-nav-tabs .nav-link {
+        border: 0;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        font-weight: 700;
+        color: #315d7f;
+        background: #e9f3fa;
+    }
+
+    .budget-nav-tabs .nav-link.active {
+        color: #fff;
+        background: linear-gradient(135deg, #103b5a 0%, #1f6da1 100%);
+        box-shadow: 0 12px 22px rgba(16, 59, 90, 0.18);
+    }
+
+    .budget-dropzone {
+        border: 2px dashed #9dc4df;
+        border-radius: 18px;
+        padding: 2rem 1.5rem;
+        text-align: center;
+        background: linear-gradient(180deg, #fafdff 0%, #eff7fc 100%);
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .budget-dropzone.is-dragover {
+        border-color: #1f6da1;
+        background: linear-gradient(180deg, #eef7fd 0%, #dcecf8 100%);
+        transform: translateY(-1px);
+    }
+
+    .budget-dropzone__icon {
+        font-size: 2rem;
+        color: #2d6287;
+        margin-bottom: 0.75rem;
+    }
+
+    .budget-dropzone__filename {
+        font-weight: 700;
+        color: #1d5f8d;
+    }
+
+    .js-budget-table thead th,
+    .js-budget-table tfoot th,
+    .js-budget-table-modal thead th,
+    .js-budget-table-modal tfoot th,
+    #detailTable tfoot th,
+    #detailTable thead th {
+        white-space: nowrap;
+    }
+
+    .js-budget-table tfoot th,
+    .js-budget-table-modal tfoot th,
+    #detailTable tfoot th {
+        background: #eef5fb;
+        color: #315d7f;
+    }
+
+    .dataTables_wrapper .dataTables_filter input,
+    .dataTables_wrapper .dataTables_length select {
+        border-radius: 10px;
+        border: 1px solid #cfe0ee;
+        box-shadow: none;
+    }
+
+    @media (max-width: 767.98px) {
+        .budget-toolbar {
+            margin-top: 1rem;
+            justify-content: flex-start !important;
         }
 
-        .glow-red:hover {
-            box-shadow: 0 0 25px rgba(255, 0, 0, 0.9);
+        .budget-btn {
+            width: 100%;
         }
 
-        /* upgrade warna header hijau */
-        .glow-green {
-            border: 1px solid rgba(0, 255, 0, 0.7);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
-            transition: box-shadow 0.3s ease-in-out;
-            border-radius: 10px;
+        .budget-action-inline {
+            width: 100%;
+            flex-direction: column;
+            align-items: stretch;
         }
 
-        .glow-green:hover {
-            box-shadow: 0 0 25px rgba(0, 255, 0, 0.9);
+        .budget-modal__subtitle {
+            max-width: 100%;
         }
 
-
-        /* upgrade warna table */
-
-        .cell-red {
-            font-color: #ffb3b3 !important;
-            color: #eb0000ff !important;
-            font-weight: bold;
+        .budget-modal__footer {
+            flex-direction: column;
         }
 
-        /* 🟢 Hijau muda untuk = 100% */
-        .cell-green-light {
-            color: #b3ffb3 !important;
-            font-weight: bold;
+        .detail-summary-grid {
+            grid-template-columns: 1fr;
         }
-
-        /* 🟩 Hijau tua untuk > 100% */
-        .cell-green-dark {
-            color: #33cc33 !important;
-            font-weight: bold;
-            font-weight: bold;
-        }
-
-        /* Gradien biru menarik */
-        .btn-gradient-primary {
-            background: linear-gradient(45deg, #007bff, #00c6ff);
-            border: none;
-            color: #fff;
-            border-radius: 50px;
-            transition: all 0.3s ease-in-out;
-            padding: 12px 25px;
-            letter-spacing: 1px;
-        }
-
-        /* Efek hover */
-        .btn-gradient-primary:hover {
-            background: linear-gradient(45deg, #0056b3, #0099cc);
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
-        }
-
-        /* Efek glowing lembut */
-        .btn-gradient-primary:focus,
-        .btn-gradient-primary:active {
-            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
-            outline: none;
-        }
-
-        /* Animasi berdenyut (pulse effect) */
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4);
-            }
-
-            70% {
-                box-shadow: 0 0 0 15px rgba(0, 123, 255, 0);
-            }
-
-            100% {
-                box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
-            }
-        }
-
-        /* ======== TAMBAHAN STYLE UNTUK MODAL TAMBAH INVOICE ======== */
-        #modal-lg-tambah-masterakun .modal-content {
-            border-radius: 15px;
-            border: none;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-            animation: fadeInUp 0.3s ease-out;
-        }
-
-        #modal-lg-tambah-masterakun .modal-header {
-            background: linear-gradient(135deg, #007bff, #6610f2);
-            color: white;
-            border-top-left-radius: 15px;
-            border-top-right-radius: 15px;
-            padding: 1rem 1.5rem;
-        }
-
-        #modal-lg-tambah-masterakun .modal-header h4 {
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-
-        #modal-lg-tambah-masterakun .modal-body {
-            background-color: #f9fafc;
-            padding: 1.5rem;
-            border-radius: 0 0 15px 15px;
-        }
-
-        #modal-lg-tambah-masterakun .form-group label {
-            font-weight: 600;
-            color: #495057;
-        }
-
-        #modal-lg-tambah-masterakun .form-control {
-            border-radius: 10px;
-            border: 1px solid #ced4da;
-            transition: all 0.2s ease-in-out;
-        }
-
-        #modal-lg-tambah-masterakun .form-control:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-        }
-
-        #modal-lg-tambah-masterakun .modal-footer {
-            background: #f1f3f6;
-            border-top: 1px solid #dee2e6;
-            border-bottom-left-radius: 15px;
-            border-bottom-right-radius: 15px;
-        }
-
-        #modal-lg-tambah-masterakun .btn-primary {
-            background: linear-gradient(135deg, #007bff, #6610f2);
-            border: none;
-            border-radius: 10px;
-            padding: 8px 20px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        #modal-lg-tambah-masterakun .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
-        }
-
-        #modal-lg-tambah-masterakun .btn-danger {
-            border-radius: 10px;
-            font-weight: 600;
-            padding: 8px 20px;
-        }
-
-        /* ======== editAN STYLE UNTUK MODAL edit INVOICE ======== */
-        #modal-lg-edit-masterakun .modal-content {
-            border-radius: 15px;
-            border: none;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-            animation: fadeInUp 0.3s ease-out;
-        }
-
-        #modal-lg-edit-masterakun .modal-header {
-            background: linear-gradient(135deg, #007bff, #6610f2);
-            color: white;
-            border-top-left-radius: 15px;
-            border-top-right-radius: 15px;
-            padding: 1rem 1.5rem;
-        }
-
-        #modal-lg-edit-masterakun .modal-header h4 {
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-
-        #modal-lg-edit-masterakun .modal-body {
-            background-color: #f9fafc;
-            padding: 1.5rem;
-            border-radius: 0 0 15px 15px;
-        }
-
-        #modal-lg-edit-masterakun .form-group label {
-            font-weight: 600;
-            color: #495057;
-        }
-
-        #modal-lg-edit-masterakun .form-control {
-            border-radius: 10px;
-            border: 1px solid #ced4da;
-            transition: all 0.2s ease-in-out;
-        }
-
-        #modal-lg-edit-masterakun .form-control:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-        }
-
-        #modal-lg-edit-masterakun .modal-footer {
-            background: #f1f3f6;
-            border-top: 1px solid #dee2e6;
-            border-bottom-left-radius: 15px;
-            border-bottom-right-radius: 15px;
-        }
-
-        #modal-lg-edit-masterakun .btn-primary {
-            background: linear-gradient(135deg, #007bff, #6610f2);
-            border: none;
-            border-radius: 10px;
-            padding: 8px 20px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        #modal-lg-edit-masterakun .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
-        }
-
-        #modal-lg-edit-masterakun .btn-danger {
-            border-radius: 10px;
-            font-weight: 600;
-            padding: 8px 20px;
-        }
-
-
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Tombol pemicu modal (judul TAMBAH INVOICE) */
-        .text-primary.font-weight-bold {
-            background: linear-gradient(90deg, #007bff, #6610f2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            transition: all 0.3s ease;
-        }
-
-        .text-primary.font-weight-bold:hover {
-            transform: scale(1.05);
-            text-shadow: 0 0 10px rgba(102, 16, 242, 0.4);
-        }
-
-        #btnTambahAkunUtamaBaru {
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        #btnTambahAkunUtamaBaru:hover {
-            text-decoration: underline;
-            transform: scale(1.05);
-        }
-
-        #btnTambahSubAkunBaru {
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        #btnTambahSubAkunBaru:hover {
-            text-decoration: underline;
-            transform: scale(1.05);
-        }
-
-        #btnTambahDivisiBaru {
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        #btnTambahDivisiBaru:hover {
-            text-decoration: underline;
-            transform: scale(1.05);
-        }
-
-        #btnTambahPICBaru {
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        #btnTambahPICBaru:hover {
-            text-decoration: underline;
-            transform: scale(1.05);
-        }
-    </style>
+    }
+</style>

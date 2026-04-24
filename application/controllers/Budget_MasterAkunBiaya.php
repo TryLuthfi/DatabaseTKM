@@ -3,120 +3,66 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Budget_MasterAkunBiaya extends CI_Controller
 {
-
     public function __construct()
     {
         parent::__construct();
-        $this->load->library('form_validation');
         $this->load->model('MBudget_MasterAkunBiaya');
     }
 
     public function index()
     {
-        if (!empty($this->session->userdata('id_user'))) {
-
-            $data['title'] = 'RINCIAN INVOICE';
-            $data['judul'] = 'RINCIAN INVOICE';
-            $data['getAllData'] = $this->MBudget_MasterAkunBiaya->getAllData();
-
-            $this->load->view('Templates/01_Header', $data);
-            $this->load->view('Templates/02_Menu');
-            $this->load->view('Budget_MasterAkunBiaya/index', $data);
-            $this->load->view('Templates/03_Footer');
-            $this->load->view('Templates/99_JS');
-        } else {
+        if (!$this->session->userdata('id_user')) {
             redirect('Auth');
         }
+
+        $keyword = trim((string) $this->input->get('keyword'));
+
+        $data['title'] = 'Budgeting - Master Item';
+        $data['judul'] = 'Budgeting - Master Item';
+        $data['keyword'] = $keyword;
+        $data['items'] = $this->MBudget_MasterAkunBiaya->getItems($keyword);
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('Budget_MasterAkunBiaya/index', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
     }
 
-    public function getFilteredBudget_MasterAkunBiayaAjax()
+    public function save()
     {
-
-        error_reporting(0);
-        ini_set('display_errors', 0);
-
-        $mab_akun_utama = $this->input->post('mab_akun_utama');
-        $mab_sub_akun = $this->input->post('mab_sub_akun');
-        $mab_nomor_akun = $this->input->post('mab_nomor_akun');
-        $mab_deskripsi_akun = $this->input->post('mab_deskripsi_akun');
-
-        $data = $this->MBudget_MasterAkunBiaya->getFilteredBudget_MasterAkunBiaya($mab_akun_utama, $mab_sub_akun, $mab_nomor_akun, $mab_deskripsi_akun);
-
-        // Tentukan kolom yang tampil berdasarkan filter
-        if (!empty($mab_akun_utama && !empty($mab_sub_akun) && !empty($mab_nomor_akun) && !empty($mab_deskripsi_akun))) {
-            $columns = ['No', 'Akun Utama', 'Sub Akun', 'Nomor Akun', 'Deskripsi Akun', 'Divisi', 'PIC', 'ACTION'];
-        } elseif (!empty($mab_sub_akun)) {
-            $columns = ['No', 'Akun Utama', 'Sub Akun', 'Nomor Akun', 'Deskripsi Akun', 'Divisi', 'PIC', 'ACTION'];
-        } elseif (!empty($mab_nomor_akun)) {
-            $columns = ['No', 'Akun Utama', 'Sub Akun', 'Nomor Akun', 'Deskripsi Akun', 'Divisi', 'PIC', 'ACTION'];
-        } elseif (!empty($mab_deskripsi_akun)) {
-            $columns = ['No', 'Akun Utama', 'Sub Akun', 'Nomor Akun', 'Deskripsi Akun', 'Divisi', 'PIC', 'ACTION'];
-        } else {
-            $columns = ['No', 'Akun Utama', 'Sub Akun', 'Nomor Akun', 'Deskripsi Akun', 'Divisi', 'PIC', 'ACTION'];
+        if (!$this->session->userdata('id_user')) {
+            redirect('Auth');
         }
 
-        echo json_encode([
-            'columns' => $columns,
-            'data' => $data
-        ]);
+        $id = (int) $this->input->post('id_budget_item');
+        $payload = $this->input->post(NULL, true);
 
-        log_message('debug', 'Last Query ab: ' . $this->db->last_query());
-    }
-
-    public function addMasterBudget()
-    {
-
-        error_reporting(0);
-        ini_set('display_errors', 0);
-
-        $data = $this->input->post();
-
-        //     echo '<pre>';
-        // print_r($data);
-        // echo '</pre>';
-        // exit;
-        $this->load->model('MBudget_MasterAkunBiaya');
-
-        $result = $this->MBudget_MasterAkunBiaya->tambahMasterAkun($data);
-
-        echo json_encode($result);
-    }
-
-    public function hapusMasterBudget($id_mab)
-    {
-        $id_mab = array('id_mab' => $id_mab);
-        $res = $this->MBudget_MasterAkunBiaya->deleteMasterAkun($id_mab);
-
-        if ($res >= 1) {
-            $this->session->set_flashdata('status', 'sukses_hapus');
-            redirect("Budget_MasterAkunBiaya");
-        } else {
-            $this->session->set_flashdata('status', 'gagal_hapus');
-            redirect("Budget_MasterAkunBiaya");
+        if (empty($payload['item_code']) || empty($payload['item_name'])) {
+            $this->session->set_flashdata('status', 'gagal_simpan');
+            redirect('Budget_MasterAkunBiaya');
         }
-    }
 
-    public function editMasterBudget()
-    {
-        $id_mab = $this->input->post('id_mab');
-
-        $data = [
-            'mab_akun_utama' => $this->input->post('addfilter_akun_utama'),
-            'mab_sub_akun' => $this->input->post('addfilter_sub_akun'),
-            'mab_nomor_akun' => $this->input->post('inputNomorAkunBaru'),
-            'mab_deskripsi_akun' => $this->input->post('inputDeskripsiAkunBaru'),
-            'mab_divisi' => $this->input->post('addfilter_divisi'),
-            'mab_pic' => $this->input->post('addfilter_pic'),
-        ];
-
-        $res = $this->MBudget_MasterAkunBiaya->updateMasterAkun($id_mab, $data);
-
-        if ($res >= 1) {
+        if ($id > 0) {
+            $this->MBudget_MasterAkunBiaya->updateItem($id, $payload);
             $this->session->set_flashdata('status', 'sukses_edit');
         } else {
-            $this->session->set_flashdata('status', 'gagal_edit');
+            $this->MBudget_MasterAkunBiaya->saveItem($payload);
+            $this->session->set_flashdata('status', 'sukses_tambah');
         }
 
-        redirect("Budget_MasterAkunBiaya");
+        redirect('Budget_MasterAkunBiaya');
+    }
+
+    public function delete($id)
+    {
+        if (!$this->session->userdata('id_user')) {
+            redirect('Auth');
+        }
+
+        $success = $this->MBudget_MasterAkunBiaya->deleteItem((int) $id);
+        $this->session->set_flashdata('status', $success ? 'sukses_hapus' : 'gagal_hapus');
+
+        redirect('Budget_MasterAkunBiaya');
     }
 }

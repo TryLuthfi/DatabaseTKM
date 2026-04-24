@@ -3,152 +3,203 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MBudget_Cashflow extends CI_Model
 {
-
-    public function getAllDataCashflow()
+    public function getBowheers()
     {
-        $data = $this->db->query('SELECT
-	bc.id_cashflow,
-	bc.date_cashflow,
-	mab.mab_nomor_akun,
-	mab.mab_akun_utama,
-	mab.mab_sub_akun,
-	mab.mab_deskripsi_akun,
-	bc.area_cashflow,
-	bc.project_cashflow,
-	tmbi.nama_bowheer,
-	bc.remarks_cashflow,
-	mab.mab_status,
-	CASE
-		WHEN mab.mab_status = "IN" THEN bc.jumlah_cashflow
-		ELSE 0
-	END AS cashflow_in,
-	CASE
-		WHEN mab.mab_status = "OUT" THEN bc.jumlah_cashflow
-		ELSE 0
-	END AS cashflow_out
-FROM
-	budget_cashflow bc
-JOIN budget_masterakunbiaya mab 
-    ON
-	mab.id_mab = bc.id_mab
-JOIN tb_master_bowheer_invoice tmbi ON
-	tmbi.id_bowheer = bc.project_cashflow
-WHERE
-	mab.is_active = 1
-ORDER BY
-	bc.date_cashflow DESC')
+        return $this->db
+            ->order_by('nama_bowheer', 'ASC')
+            ->get('tb_master_bowheer')
             ->result_array();
-        return $data;
     }
 
-
-    public function getFilteredBudget_Cashflow($akun_utama = [], $sub_akun = [], $nomor_akun = [], $deskripsi_akun = [])
+    public function getItems()
     {
-        $this->db->select("
-        bc.id_cashflow,
-        bc.date_cashflow,
-        mab.mab_nomor_akun,
-        mab.mab_akun_utama,
-        mab.mab_sub_akun,
-        mab.mab_deskripsi_akun,
-        bc.area_cashflow,
-        bc.project_cashflow,
-        tmbi.nama_bowheer,
-        bc.remarks_cashflow,
-        mab.mab_status,
-        CASE 
-            WHEN mab.mab_status = 'IN' THEN bc.jumlah_cashflow 
-            ELSE 0 
-        END AS cashflow_in,
-        CASE 
-            WHEN mab.mab_status = 'OUT' THEN bc.jumlah_cashflow 
-            ELSE 0 
-        END AS cashflow_out
-    ");
-
-        $this->db->from('budget_cashflow bc');
-
-        $this->db->join('budget_masterakunbiaya mab', 'mab.id_mab = bc.id_mab');
-        $this->db->join('tb_master_bowheer_invoice tmbi', 'tmbi.id_bowheer = bc.project_cashflow');
-
-        $this->db->where('mab.is_active', 1);
-
-        // === FILTERS ===
-        if (!empty($akun_utama))
-            $this->db->where_in('mab.mab_akun_utama', $akun_utama);
-
-        if (!empty($sub_akun))
-            $this->db->where_in('mab.mab_sub_akun', $sub_akun);
-
-        if (!empty($nomor_akun))
-            $this->db->where_in('mab.mab_nomor_akun', $nomor_akun);
-
-        if (!empty($deskripsi_akun))
-            $this->db->where_in('mab.mab_deskripsi_akun', $deskripsi_akun);
-
-        $this->db->order_by('bc.date_cashflow', 'DESC');
-
-        $query = $this->db->get();
-
-        log_message('debug', 'Last Query: ' . $this->db->last_query());
-
-        return $query->result_array();
+        return $this->db
+            ->order_by('item_name', 'ASC')
+            ->get_where('tb_budget_items', ['is_active' => 1])
+            ->result_array();
     }
 
-
-    public function tambahMasterAkun($data)
+    public function getHeaders($year, $month = 0)
     {
-
-        $akun_utama = !empty($data['addfilter_akun_utama'])
-            ? $data['addfilter_akun_utama']
-            : $data['inputAkunUtamaBaru'];
-
-        $sub_akun = !empty($data['addfilter_sub_akun'])
-            ? $data['addfilter_sub_akun']
-            : $data['inputSubAkunBaru'];
-
-        $divisi = !empty($data['addfilter_divisi'])
-            ? $data['addfilter_divisi']
-            : $data['inputDivisiBaru'];
-
-        $pic = !empty($data['addfilter_pic'])
-            ? $data['addfilter_pic']
-            : $data['inputPICBaru'];
-
-        $nomorakun = $data['inputNomorAkunBaru'];
-        $deskripsiakun = $data['inputDeskripsiAkunBaru'];
-
-        $hasil_data = array(
-            'mab_akun_utama' => $akun_utama,
-            'mab_sub_akun' => $sub_akun,
-            'mab_divisi' => $divisi,
-            'mab_pic' => $pic,
-            'mab_nomor_akun' => $nomorakun,
-            'mab_deskripsi_akun' => $deskripsiakun
-        );
-
-        $this->db->insert('Budget_Cashflow', $hasil_data);
-        $nilai_update = $this->db->affected_rows();
-
-        if ($this->db->affected_rows() > 0) {
-            return ['status' => true, 'message' => 'Update berhasil', 'nilai_update' => $nilai_update];
-        } else {
-            return ['status' => false, 'message' => 'Tidak ada data yang diubah'];
+        $this->db->select('
+            h.*,
+            b.nama_bowheer,
+            COUNT(d.id_cashflow_detail) AS total_items,
+            COALESCE(SUM(CASE WHEN d.direction = "DEBIT" THEN d.nominal ELSE 0 END), 0) AS total_debit,
+            COALESCE(SUM(CASE WHEN d.direction = "KREDIT" THEN d.nominal ELSE 0 END), 0) AS total_kredit
+        ');
+        $this->db->from('tb_budget_cashflow_header h');
+        $this->db->join('tb_master_bowheer b', 'b.id_bowheer = h.id_bowheer', 'left');
+        $this->db->join('tb_budget_cashflow_detail d', 'd.id_cashflow_header = h.id_cashflow_header', 'left');
+        $this->db->where('YEAR(h.tanggal_cashflow)', (int) $year);
+        if ((int) $month > 0) {
+            $this->db->where('MONTH(h.tanggal_cashflow)', (int) $month);
         }
+        $this->db->group_by('h.id_cashflow_header');
+        $this->db->order_by('h.tanggal_cashflow', 'DESC');
+        $this->db->order_by('h.nomor_tec', 'DESC');
+
+        return $this->db->get()->result_array();
     }
 
-    public function deleteMasterAkun($id_mab)
+    public function getHeaderDetails($headerId)
     {
-        $res = $this->db->delete("Budget_Cashflow", $id_mab);
-        return $res;
+        return $this->db
+            ->select('d.*, i.item_code, i.item_name')
+            ->from('tb_budget_cashflow_detail d')
+            ->join('tb_budget_items i', 'i.id_budget_item = d.id_budget_item')
+            ->where('d.id_cashflow_header', (int) $headerId)
+            ->order_by('d.id_cashflow_detail', 'ASC')
+            ->get()
+            ->result_array();
     }
 
-    public function updateMasterAkun($id_mab, $data)
+    public function getHeaderById($headerId)
     {
-        $this->db->where('id_mab', $id_mab);
-        $this->db->update('master_akun_biaya', $data);
+        return $this->db
+            ->select('h.*, b.nama_bowheer')
+            ->from('tb_budget_cashflow_header h')
+            ->join('tb_master_bowheer b', 'b.id_bowheer = h.id_bowheer', 'left')
+            ->where('h.id_cashflow_header', (int) $headerId)
+            ->get()
+            ->row_array();
+    }
 
-        return $this->db->affected_rows();
+    public function isDuplicateHeader($nomorTec, $tanggalCashflow, $projectName, $excludeHeaderId = 0)
+    {
+        $this->db->from('tb_budget_cashflow_header');
+        $this->db->where('nomor_tec', trim($nomorTec));
+        $this->db->where('tanggal_cashflow', $tanggalCashflow);
+        $this->db->where('project_name', trim($projectName));
+
+        if ((int) $excludeHeaderId > 0) {
+            $this->db->where('id_cashflow_header !=', (int) $excludeHeaderId);
+        }
+
+        return $this->db->count_all_results() > 0;
+    }
+
+    public function getBudgetSnapshotByItems($year, $month, array $itemIds)
+    {
+        if (empty($itemIds)) {
+            return [];
+        }
+
+        $itemIds = array_values(array_unique(array_map('intval', $itemIds)));
+
+        $this->db->select("
+            i.id_budget_item,
+            i.item_code,
+            i.item_name,
+            COALESCE(a.annual_budget, 0) AS annual_budget,
+            COALESCE(m.monthly_budget, 0) AS monthly_budget,
+            COALESCE(r.real_annual, 0) AS real_annual,
+            COALESCE(rm.real_monthly, 0) AS real_monthly
+        ");
+        $this->db->from('tb_budget_items i');
+        $this->db->join(
+            'tb_budget_annual a',
+            'a.id_budget_item = i.id_budget_item AND a.budget_year = ' . (int) $year,
+            'left',
+            false
+        );
+        $this->db->join(
+            'tb_budget_monthly m',
+            'm.id_budget_annual = a.id_budget_annual AND m.month_no = ' . (int) $month,
+            'left',
+            false
+        );
+        $this->db->join(
+            "(SELECT d.id_budget_item, SUM(CASE WHEN d.direction = 'DEBIT' THEN d.nominal ELSE -d.nominal END) AS real_annual
+              FROM tb_budget_cashflow_detail d
+              JOIN tb_budget_cashflow_header h ON h.id_cashflow_header = d.id_cashflow_header
+              WHERE YEAR(h.tanggal_cashflow) = " . (int) $year . "
+              GROUP BY d.id_budget_item) r",
+            'r.id_budget_item = i.id_budget_item',
+            'left',
+            false
+        );
+        $this->db->join(
+            "(SELECT d.id_budget_item, SUM(CASE WHEN d.direction = 'DEBIT' THEN d.nominal ELSE -d.nominal END) AS real_monthly
+              FROM tb_budget_cashflow_detail d
+              JOIN tb_budget_cashflow_header h ON h.id_cashflow_header = d.id_cashflow_header
+              WHERE YEAR(h.tanggal_cashflow) = " . (int) $year . "
+                AND MONTH(h.tanggal_cashflow) = " . (int) $month . "
+              GROUP BY d.id_budget_item) rm",
+            'rm.id_budget_item = i.id_budget_item',
+            'left',
+            false
+        );
+        $this->db->where_in('i.id_budget_item', $itemIds);
+
+        $rows = $this->db->get()->result_array();
+        $mapped = [];
+        foreach ($rows as $row) {
+            $mapped[(int) $row['id_budget_item']] = $row;
+        }
+
+        return $mapped;
+    }
+
+    public function saveManualCashflow(array $header, array $details)
+    {
+        $this->db->trans_start();
+
+        $this->db->insert('tb_budget_cashflow_header', $header);
+        $headerId = (int) $this->db->insert_id();
+
+        foreach ($details as $detail) {
+            $detail['id_cashflow_header'] = $headerId;
+            $this->db->insert('tb_budget_cashflow_detail', $detail);
+        }
+
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
+    }
+
+    public function updateManualCashflow($headerId, array $header, array $details)
+    {
+        $this->db->trans_start();
+
+        $this->db
+            ->where('id_cashflow_header', (int) $headerId)
+            ->update('tb_budget_cashflow_header', $header);
+
+        $this->db->delete('tb_budget_cashflow_detail', ['id_cashflow_header' => (int) $headerId]);
+
+        foreach ($details as $detail) {
+            $detail['id_cashflow_header'] = (int) $headerId;
+            $this->db->insert('tb_budget_cashflow_detail', $detail);
+        }
+
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
+    }
+
+    public function deleteHeader($headerId)
+    {
+        $this->db->delete('tb_budget_cashflow_header', ['id_cashflow_header' => (int) $headerId]);
+        return $this->db->affected_rows() > 0;
+    }
+
+    public function logImport($fileName, $totalRows, $successRows, $failedRows, $notes, $userId)
+    {
+        $this->db->insert('tb_budget_import_log', [
+            'file_name' => $fileName,
+            'total_rows' => (int) $totalRows,
+            'success_rows' => (int) $successRows,
+            'failed_rows' => (int) $failedRows,
+            'notes' => $notes,
+            'uploaded_by' => (int) $userId,
+        ]);
+    }
+
+    public function findItemByCode($itemCode)
+    {
+        return $this->db
+            ->get_where('tb_budget_items', ['item_code' => trim($itemCode)])
+            ->row_array();
     }
 }
-
