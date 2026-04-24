@@ -301,6 +301,12 @@ class BillingPayment extends CI_Controller
             $data['judul'] = 'RINCIAN INVOICE';
             $data['getTargetPriorityBowheer'] = $this->MBillingPayment->getTargetPriorityBowheer();
             $data['getAllData'] = $this->MBillingPayment->getAllData();
+            $data['masterBowheerList'] = $this->db
+                ->select('id_bowheer, nama_bowheer')
+                ->from('tb_master_bowheer_bilco')
+                ->order_by('nama_bowheer', 'ASC')
+                ->get()
+                ->result_array();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');

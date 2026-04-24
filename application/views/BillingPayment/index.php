@@ -20,7 +20,7 @@ $bulan_order = [
 $total = 1;
 
 $bowheer_options = [];
-foreach ($getAllData as $row) {
+foreach (($masterBowheerList ?? []) as $row) {
     if (!empty($row['id_bowheer']) && !isset($bowheer_options[$row['id_bowheer']])) {
         $bowheer_options[$row['id_bowheer']] = [
             'id' => $row['id_bowheer'],
