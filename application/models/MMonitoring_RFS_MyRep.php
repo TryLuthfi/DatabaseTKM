@@ -490,8 +490,6 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     public function getClustersWithPlan($year, $startMonth, $endMonth, $city = '')
     {
-        $this->syncEligibleMyrepClustersToRfs($year, $endMonth, $city);
-
         $sql = "SELECT
                 c.*,
                 mt.id_target,
@@ -535,6 +533,22 @@ class MMonitoring_RFS_MyRep extends CI_Model
         $sql .= " ORDER BY mt.city_name ASC, c.cluster_name ASC";
 
         return $this->db->query($sql, $params)->result_array();
+    }
+
+    public function syncMyrepCompatibilityBridge($year, $month, $city = '')
+    {
+        $year = (int) $year;
+        $month = (int) $month;
+
+        if ($year <= 0) {
+            $year = (int) date('Y');
+        }
+
+        if ($month < 1 || $month > 12) {
+            $month = (int) date('n');
+        }
+
+        $this->syncEligibleMyrepClustersToRfs($year, $month, $city);
     }
 
     public function getClaims($year, $startMonth, $endMonth, $city = '')
@@ -947,7 +961,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
         }
 
         $this->db
-            ->select('id_myrep_cluster, rfs_cluster_id, cluster_name, regional_name, province_name, city_name, team_name, chief, rpm, sm, spv, hp_plan, status_current, updated_at')
+            ->select('id_myrep_cluster, rfs_cluster_id, cluster_name, regional_name, province_name, city_name, team_name, chief, rpm, sm, spv, hp_plan, status_current, created_at, updated_at')
             ->from('tb_myrep_cluster')
             ->where_in('status_current', $this->rfsReadyStatuses);
 
@@ -979,6 +993,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
                         'homepass' => $homepass,
                         'status_rfs' => $mappedStatus,
                     ]);
+                $this->syncChecklistBridgeForCluster($rfsClusterId, $cluster, $mappedStatus);
                 continue;
             }
 
@@ -1016,6 +1031,8 @@ class MMonitoring_RFS_MyRep extends CI_Model
                         'rfs_cluster_id' => $rfsClusterId,
                         'updated_at' => date('Y-m-d H:i:s'),
                     ]);
+
+                $this->syncChecklistBridgeForCluster($rfsClusterId, $cluster, $mappedStatus);
             }
         }
     }
@@ -1095,5 +1112,36 @@ class MMonitoring_RFS_MyRep extends CI_Model
         $this->db
             ->where('rfs_cluster_id', (int) $rfsClusterId)
             ->update('tb_myrep_cluster', $payload);
+    }
+
+    private function syncChecklistBridgeForCluster($rfsClusterId, $cluster, $mappedStatus)
+    {
+        if (strtoupper(trim((string) $mappedStatus)) !== 'FULL RFS') {
+            return;
+        }
+
+        $tanggalRfs = $this->resolveChecklistTanggalRfs($cluster);
+        $userId = (int) ($this->session->userdata('id_user') ?? 0);
+        $this->ensureChecklistPackagesForCluster((int) $rfsClusterId, $tanggalRfs, $userId > 0 ? $userId : null);
+    }
+
+    private function resolveChecklistTanggalRfs($cluster)
+    {
+        $preferredDates = [
+            $cluster['tanggal_rfs'] ?? null,
+            $cluster['updated_at'] ?? null,
+            $cluster['created_at'] ?? null,
+        ];
+
+        foreach ($preferredDates as $value) {
+            $value = trim((string) $value);
+            if ($value === '' || $value === '0000-00-00' || $value === '0000-00-00 00:00:00') {
+                continue;
+            }
+
+            return substr($value, 0, 10);
+        }
+
+        return null;
     }
 }

@@ -56,6 +56,9 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $data['selectedCity'] = $selectedCity;
         $data['monthLabels'] = $this->getMonthLabels();
         $data['selectedPeriodLabel'] = $this->buildPeriodLabel($selectedStartMonth, $selectedEndMonth);
+
+        $this->MMonitoring_RFS_MyRep->syncMyrepCompatibilityBridge($selectedYear, $selectedEndMonth, $selectedCity);
+
         $data['monthColumns'] = $this->MMonitoring_RFS_MyRep->getMonthColumnsInRange($selectedYear, $selectedStartMonth, $selectedEndMonth);
         $data['annualSummary'] = $this->MMonitoring_RFS_MyRep->getAnnualSummary($selectedYear, 1, 12, '');
         $data['annualCitySummary'] = $this->MMonitoring_RFS_MyRep->getAnnualCitySummary($selectedYear, 1, 12, '');

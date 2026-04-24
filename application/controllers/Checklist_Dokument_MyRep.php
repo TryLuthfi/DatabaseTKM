@@ -7,6 +7,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
     {
         parent::__construct();
         $this->load->model('MChecklist_Dokument_MyRep');
+        $this->load->model('MMonitoring_RFS_MyRep');
         $this->load->library('upload');
     }
 
@@ -19,6 +20,8 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
         $selectedCity = strtoupper(trim((string) $this->input->get('city')));
         $selectedRegional = strtoupper(trim((string) $this->input->get('regional')));
+
+        $this->MMonitoring_RFS_MyRep->syncMyrepCompatibilityBridge((int) date('Y'), (int) date('n'), $selectedCity);
 
         $data['title'] = 'Checklist Dokument';
         $data['selectedCity'] = $selectedCity;
@@ -47,6 +50,8 @@ class Checklist_Dokument_MyRep extends CI_Controller
             redirect('Checklist_Dokument_MyRep');
             return;
         }
+
+        $this->MMonitoring_RFS_MyRep->syncMyrepCompatibilityBridge((int) date('Y'), (int) date('n'));
 
         $cluster = $this->MChecklist_Dokument_MyRep->getClusterDetail($clusterId);
         if (empty($cluster)) {
