@@ -261,10 +261,10 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                             GRAND TOTAL</th>
                                     </tr>
                                     <tr>
-                                        <th style="color: #000000;">TAGIHAN ( BJT )<br>< 0 Hari</th>
-                                        <th style="color: #000000;">TAGIHAN ( P3 )<br>0 - 30 Hari</th>
-                                        <th style="color: #000000;">TAGIHAN ( P2 )<br>31 - 45 Hari</th>
                                         <th style="color: #000000;">TAGIHAN ( P1 )<br>> 45 Hari</th>
+                                        <th style="color: #000000;">TAGIHAN ( P2 )<br>31 - 45 Hari</th>
+                                        <th style="color: #000000;">TAGIHAN ( P3 )<br>0 - 30 Hari</th>
+                                        <th style="color: #000000;">TAGIHAN ( BJT )<br>< 0 Hari</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -274,19 +274,12 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         <tr>
                                             <td><?= $total++ ?></td>
                                             <td><?= $data['nama_bowheer'] ?></td>
-                                            <td><?php if ($data['total_bjt'] == "0") {
+                                            <td><?php if ($data['total_p1'] == "0") {
                                                 echo "-";
                                             } else {
-                                                echo number_format(floatval($data['total_bjt']), 0, ",", ".");
+                                                echo number_format(floatval($data['total_p1']), 0, ",", ".");
                                             } ?></td>
                                             </td>
-                                            <td><?php
-                                            if ($data['total_p3'] == "0") {
-                                                echo "-";
-                                            } else {
-                                                echo number_format(floatval($data['total_p3']), 0, ",", ".");
-                                            }
-                                            ?></td>
                                             <td><?php
                                             if ($data['total_p2'] == "0") {
                                                 echo "-";
@@ -295,10 +288,17 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                             }
                                             ?></td>
                                             <td><?php
-                                            if ($data['total_p1'] == "0") {
+                                            if ($data['total_p3'] == "0") {
                                                 echo "-";
                                             } else {
-                                                echo number_format(floatval($data['total_p1']), 0, ",", ".");
+                                                echo number_format(floatval($data['total_p3']), 0, ",", ".");
+                                            }
+                                            ?></td>
+                                            <td><?php
+                                            if ($data['total_bjt'] == "0") {
+                                                echo "-";
+                                            } else {
+                                                echo number_format(floatval($data['total_bjt']), 0, ",", ".");
                                             }
                                             ?></td>
                                             <td><?php
@@ -317,10 +317,10 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                 <tfoot>
                                     <tr>
                                         <th colspan="2">Total</th>
-                                        <th id="totalBJT"></th>
-                                        <th id="totalP3"></th>
-                                        <th id="totalP2"></th>
                                         <th id="totalP1"></th>
+                                        <th id="totalP2"></th>
+                                        <th id="totalP3"></th>
+                                        <th id="totalBJT"></th>
                                         <th id="totalAll"></th>
                                     </tr>
                                 </tfoot>
@@ -1067,25 +1067,25 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         function updateTotal() {
             const data = table.rows({ search: 'applied' }).data();
 
-            let totalBJT = 0;
-            let totalP3 = 0;
-            let totalP2 = 0;
             let totalP1 = 0;
+            let totalP2 = 0;
+            let totalP3 = 0;
+            let totalBJT = 0;
             let totalAll = 0;
 
             data.each(function (row) {
-                totalBJT += parseValue(row[2]);
-                totalP3 += parseValue(row[3]);
-                totalP2 += parseValue(row[4]);
-                totalP1 += parseValue(row[5]);
+                totalP1 += parseValue(row[2]);
+                totalP2 += parseValue(row[3]);
+                totalP3 += parseValue(row[4]);
+                totalBJT += parseValue(row[5]);
                 totalAll += parseValue(row[6]);
             });
 
             // isi footer sesuai kolom
-            $(table.column(2).footer()).text(formatTitik(totalBJT));
-            $(table.column(3).footer()).text(formatTitik(totalP3));
-            $(table.column(4).footer()).text(formatTitik(totalP2));
-            $(table.column(5).footer()).text(formatTitik(totalP1));
+            $(table.column(2).footer()).text(formatTitik(totalP1));
+            $(table.column(3).footer()).text(formatTitik(totalP2));
+            $(table.column(4).footer()).text(formatTitik(totalP3));
+            $(table.column(5).footer()).text(formatTitik(totalBJT));
             $(table.column(6).footer()).text(formatTitik(totalAll));
         }
 
