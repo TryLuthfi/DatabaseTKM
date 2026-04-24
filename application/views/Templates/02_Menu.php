@@ -759,22 +759,14 @@ $id_menu = $this->uri->segment('1');
                         <li class="nav-header">Budgeting</li>
                         <li class="nav-item has-treeview <?php if (
                             $id_menu == 'Budget_MasterAkunBiaya' ||
-                            $id_menu == 'Budget_MasterBudgetYears' ||
-                            $id_menu == 'GHTenantsRooms' ||
-                            $id_menu == 'GHRooms' ||
-                            $id_menu == 'GHAssets' ||
-                            $id_menu == 'GHTenants'
+                            $id_menu == 'Budget_MasterBudgetYears'
                         ) {
                             echo 'menu-open';
                         } ?>">
 
                             <a href="#" class="nav-link <?php if (
                                 $id_menu == 'Budget_MasterAkunBiaya' ||
-                                $id_menu == 'Budget_MasterBudgetYears' ||
-                                $id_menu == 'GHTenantsRooms' ||
-                                $id_menu == 'GHRooms' ||
-                                $id_menu == 'GHAssets' ||
-                                $id_menu == 'GHTenants'
+                                $id_menu == 'Budget_MasterBudgetYears'
                             ) {
                                 echo 'active';
                             } ?>">
@@ -842,23 +834,6 @@ $id_menu = $this->uri->segment('1');
                                           echo 'active'; ?>">
                                         <i class="far fa-file nav-icon"></i>
                                         <p>Report Cashflow Monthly</p>
-                                    </a>
-                                </li>
-
-                                <li class="nav-item">
-                                    <a href="<?= base_url('GHTenantsRooms') ?>" class="nav-link <?php if ($id_menu == 'GHTenantsRooms')
-                                          echo 'active'; ?>">
-                                        <i class="far fa-file nav-icon"></i>
-                                        <p>List Tenants - Rooms</p>
-                                    </a>
-                                </li>
-
-                                <!-- Purchase Order -->
-                                <li class="nav-item" style="pointer-events: none">
-                                    <a href="<?= base_url('aLogistik_Pesanan_Pabrik') ?>" class="nav-link <?php if ($id_menu == 'aLogistik_Pesanan_Pabrik')
-                                          echo 'active'; ?>">
-                                        <i class="far fa-file nav-icon"></i>
-                                        <p>Pembayaran Kos</p>
                                     </a>
                                 </li>
                             </ul>
