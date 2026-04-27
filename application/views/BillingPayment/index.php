@@ -409,7 +409,8 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                             <th>Date Invoice</th>
                                             <th>Date Submit</th>
                                             <th>Due Date</th>
-                                            <th>Agging</th>
+                                            <th>Aging Today</th>
+                                            <th>Aging Due Date</th>
                                             <th>Priority</th>
                                             <th>PO Number</th>
                                             <th>Status Invoice</th>
@@ -419,7 +420,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                     <tbody></tbody>
                                     <tfoot>
                                         <tr>
-                                            <th colspan="9" style="text-align:right">Total:</th>
+                                            <th colspan="10" style="text-align:right">Total:</th>
                                             <th id="totalTarget">0</th>
                                             <th id="totalAchieved">0</th>
                                             <th id="totalSisa">0</th>
@@ -1280,8 +1281,11 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                     case 'Due Date':
                                         tbodyHtml += `<td>${row.tgl_jatuh_tempo || '-'}</td>`;
                                         break;
-                                    case 'Aging':
+                                    case 'Aging Today':
                                         tbodyHtml += `<td>${row.umur_invoice || '-'}</td>`;
+                                        break;
+                                    case 'Aging Due Date':
+                                        tbodyHtml += `<td>${row.umur_due_date || '-'}</td>`;
                                         break;
                                     case 'Priority':
                                         tbodyHtml += `<td>${row.priority || '-'}</td>`;

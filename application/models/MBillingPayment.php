@@ -3,11 +3,13 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MBillingPayment extends CI_Model
 {
-    private $agingExpr = 'DATEDIFF(CURDATE(), DATE(tbp.tgl_create_invoice))';
+    private $agingInvoiceExpr = 'DATEDIFF(CURDATE(), DATE(tbp.tgl_create_invoice))';
+    private $agingDueExpr = 'DATEDIFF(CURDATE(), DATE_ADD(tbp.tgl_create_invoice, INTERVAL tmbi.jt_invoice DAY))';
 
     public function getAllData()
     {
-        $agingExpr = $this->agingExpr;
+        $agingInvoiceExpr = $this->agingInvoiceExpr;
+        $agingDueExpr = $this->agingDueExpr;
         $data = $this->db->query('SELECT
     tbp.*,
     tmbi.*,
@@ -15,23 +17,26 @@ class MBillingPayment extends CI_Model
     tmbi.jt_invoice,
 
     -- aging dihitung terhadap tanggal invoice
-    ' . $agingExpr . ' AS umur_invoice,
+    ' . $agingInvoiceExpr . ' AS umur_invoice,
+
+    -- aging dihitung terhadap due date
+    ' . $agingDueExpr . ' AS umur_due_date,
 
     -- 🔥 jatuh tempo dinamis
     DATE_ADD(tbp.tgl_create_invoice, INTERVAL tmbi.jt_invoice DAY) AS tgl_jatuh_tempo,
 
     -- priority
     CASE
-        WHEN ' . $agingExpr . ' > 45 THEN "P1"
-        WHEN ' . $agingExpr . ' BETWEEN 31 AND 45 THEN "P2"
-        WHEN ' . $agingExpr . ' BETWEEN 0 AND 30 THEN "P3"
+        WHEN ' . $agingDueExpr . ' > 45 THEN "P1"
+        WHEN ' . $agingDueExpr . ' BETWEEN 31 AND 45 THEN "P2"
+        WHEN ' . $agingDueExpr . ' BETWEEN 0 AND 30 THEN "P3"
         ELSE "BJT"
     END AS priority,
     
     CASE 
     WHEN CURDATE() > DATE_ADD(tbp.tgl_create_invoice, INTERVAL tmbi.jt_invoice DAY)
         THEN "OVERDUE"
-    WHEN ' . $agingExpr . ' >= -7
+    WHEN ' . $agingDueExpr . ' >= -7
         THEN "WARNING"
     ELSE "AMAN"
 END AS status_monitor
@@ -39,7 +44,7 @@ END AS status_monitor
 FROM tb_billingpayment tbp
 JOIN tb_master_bowheer_bilco tmbi 
     ON tbp.id_bowheer = tmbi.id_bowheer
-    ORDER BY umur_invoice DESC')
+    ORDER BY umur_due_date DESC')
             ->result_array();
         return $data;
     }
@@ -53,7 +58,7 @@ JOIN tb_master_bowheer_bilco tmbi
 
     public function getTargetPriorityBowheer()
     {
-        $agingExpr = $this->agingExpr;
+        $agingDueExpr = $this->agingDueExpr;
         $data = $this->db->query('SELECT
 	tmbi.nama_bowheer,
     -- TOTAL SEMUA OUTSTANDING
@@ -70,7 +75,7 @@ JOIN tb_master_bowheer_bilco tmbi
     -- BJT
     SUM(
         CASE 
-            WHEN ' . $agingExpr . ' < 0
+            WHEN ' . $agingDueExpr . ' < 0
             THEN CASE
                 WHEN tbp.status_invoice = "partial" THEN GREATEST(
                     tbp.invoice_price_nett - CAST(COALESCE(NULLIF(tbp.invoice_price_payment, ""), "0") AS DECIMAL(18,2)),
@@ -85,7 +90,7 @@ JOIN tb_master_bowheer_bilco tmbi
     -- P1
     SUM(
         CASE 
-            WHEN ' . $agingExpr . ' > 45 
+            WHEN ' . $agingDueExpr . ' > 45 
             THEN CASE
                 WHEN tbp.status_invoice = "partial" THEN GREATEST(
                     tbp.invoice_price_nett - CAST(COALESCE(NULLIF(tbp.invoice_price_payment, ""), "0") AS DECIMAL(18,2)),
@@ -100,7 +105,7 @@ JOIN tb_master_bowheer_bilco tmbi
     -- P2
     SUM(
         CASE 
-            WHEN ' . $agingExpr . ' BETWEEN 31 AND 45
+            WHEN ' . $agingDueExpr . ' BETWEEN 31 AND 45
             THEN CASE
                 WHEN tbp.status_invoice = "partial" THEN GREATEST(
                     tbp.invoice_price_nett - CAST(COALESCE(NULLIF(tbp.invoice_price_payment, ""), "0") AS DECIMAL(18,2)),
@@ -115,7 +120,7 @@ JOIN tb_master_bowheer_bilco tmbi
     -- P3
     SUM(
         CASE 
-            WHEN ' . $agingExpr . ' BETWEEN 0 AND 30
+            WHEN ' . $agingDueExpr . ' BETWEEN 0 AND 30
             THEN CASE
                 WHEN tbp.status_invoice = "partial" THEN GREATEST(
                     tbp.invoice_price_nett - CAST(COALESCE(NULLIF(tbp.invoice_price_payment, ""), "0") AS DECIMAL(18,2)),
@@ -139,7 +144,7 @@ WHERE tbp.status_invoice IN ("open", "partial")
 
     public function getOutstandingSummary($bowheer, $regional, $city, $priority)
     {
-        $agingExpr = $this->agingExpr;
+        $agingDueExpr = $this->agingDueExpr;
         $outstandingSql = 'CASE
             WHEN tbp.status_invoice = "partial" THEN GREATEST(
                 tbp.invoice_price_nett - CAST(COALESCE(NULLIF(tbp.invoice_price_payment, ""), "0") AS DECIMAL(18,2)),
@@ -150,9 +155,9 @@ WHERE tbp.status_invoice IN ("open", "partial")
 
         $this->db->select("
             SUM($outstandingSql) AS total_all,
-            SUM(CASE WHEN $agingExpr > 45 THEN $outstandingSql ELSE 0 END) AS total_p1,
-            SUM(CASE WHEN $agingExpr BETWEEN 31 AND 45 THEN $outstandingSql ELSE 0 END) AS total_p2,
-            SUM(CASE WHEN $agingExpr BETWEEN 0 AND 30 THEN $outstandingSql ELSE 0 END) AS total_p3
+            SUM(CASE WHEN $agingDueExpr > 45 THEN $outstandingSql ELSE 0 END) AS total_p1,
+            SUM(CASE WHEN $agingDueExpr BETWEEN 31 AND 45 THEN $outstandingSql ELSE 0 END) AS total_p2,
+            SUM(CASE WHEN $agingDueExpr BETWEEN 0 AND 30 THEN $outstandingSql ELSE 0 END) AS total_p3
         ", false);
         $this->db->from('tb_billingpayment tbp');
         $this->db->join('tb_master_bowheer_bilco tmbi', 'tbp.id_bowheer = tmbi.id_bowheer');
@@ -169,13 +174,13 @@ WHERE tbp.status_invoice IN ("open", "partial")
 
             foreach ($priority as $p) {
                 if ($p == "P1") {
-                    $conditions[] = $agingExpr . ' > 45';
+                    $conditions[] = $agingDueExpr . ' > 45';
                 } elseif ($p == "P2") {
-                    $conditions[] = '(' . $agingExpr . ' BETWEEN 31 AND 45)';
+                    $conditions[] = '(' . $agingDueExpr . ' BETWEEN 31 AND 45)';
                 } elseif ($p == "P3") {
-                    $conditions[] = '(' . $agingExpr . ' BETWEEN 0 AND 30)';
+                    $conditions[] = '(' . $agingDueExpr . ' BETWEEN 0 AND 30)';
                 } elseif ($p == "BJT") {
-                    $conditions[] = $agingExpr . ' < 0';
+                    $conditions[] = $agingDueExpr . ' < 0';
                 }
             }
 
@@ -189,42 +194,46 @@ WHERE tbp.status_invoice IN ("open", "partial")
 
     public function getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice = 'open')
     {
-        $agingExpr = $this->agingExpr;
+        $agingInvoiceExpr = $this->agingInvoiceExpr;
+        $agingDueExpr = $this->agingDueExpr;
         if ($priority == "P1") {
-            $priorityCondition = $agingExpr . ' > 45';
+            $priorityCondition = $agingDueExpr . ' > 45';
         } elseif ($priority == "P2") {
-            $priorityCondition = $agingExpr . ' BETWEEN 31 AND 45';
+            $priorityCondition = $agingDueExpr . ' BETWEEN 31 AND 45';
         } elseif ($priority == "P3") {
-            $priorityCondition = $agingExpr . ' BETWEEN 0 AND 30';
+            $priorityCondition = $agingDueExpr . ' BETWEEN 0 AND 30';
         } elseif ($priority == "BJT") {
-            $priorityCondition = $agingExpr . ' < 0';
+            $priorityCondition = $agingDueExpr . ' < 0';
         } else {
             $priorityCondition = '1=1'; // Jika tidak ada filter priority, tampilkan semua
         }
 
         $this->db->select('tbp.*,
-        tmbi.*,
+    tmbi.*,
 
     tmbi.jt_invoice,
 
     -- aging dihitung terhadap tanggal invoice
-    ' . $agingExpr . ' AS umur_invoice,
+    ' . $agingInvoiceExpr . ' AS umur_invoice,
+
+    -- aging dihitung terhadap due date
+    ' . $agingDueExpr . ' AS umur_due_date,
 
     -- 🔥 jatuh tempo dinamis
     DATE_ADD(tbp.tgl_create_invoice, INTERVAL tmbi.jt_invoice DAY) AS tgl_jatuh_tempo,
 
     -- priority
     CASE
-        WHEN ' . $agingExpr . ' > 45 THEN "P1"
-        WHEN ' . $agingExpr . ' BETWEEN 31 AND 45 THEN "P2"
-        WHEN ' . $agingExpr . ' BETWEEN 0 AND 30 THEN "P3"
+        WHEN ' . $agingDueExpr . ' > 45 THEN "P1"
+        WHEN ' . $agingDueExpr . ' BETWEEN 31 AND 45 THEN "P2"
+        WHEN ' . $agingDueExpr . ' BETWEEN 0 AND 30 THEN "P3"
         ELSE "BJT"
     END AS priority,
     
     CASE 
     WHEN CURDATE() > DATE_ADD(tbp.tgl_create_invoice, INTERVAL tmbi.jt_invoice DAY)
         THEN "OVERDUE"
-    WHEN ' . $agingExpr . ' >= -7
+    WHEN ' . $agingDueExpr . ' >= -7
         THEN "WARNING"
     ELSE "AMAN"
 END AS status_monitor');
@@ -246,13 +255,13 @@ END AS status_monitor');
 
             foreach ($priority as $p) {
                 if ($p == "P1") {
-                    $conditions[] = $agingExpr . ' > 45';
+                    $conditions[] = $agingDueExpr . ' > 45';
                 } elseif ($p == "P2") {
-                    $conditions[] = '(' . $agingExpr . ' BETWEEN 31 AND 45)';
+                    $conditions[] = '(' . $agingDueExpr . ' BETWEEN 31 AND 45)';
                 } elseif ($p == "P3") {
-                    $conditions[] = '(' . $agingExpr . ' BETWEEN 0 AND 30)';
+                    $conditions[] = '(' . $agingDueExpr . ' BETWEEN 0 AND 30)';
                 } elseif ($p == "BJT") {
-                    $conditions[] = $agingExpr . ' < 0';
+                    $conditions[] = $agingDueExpr . ' < 0';
                 }
             }
 
@@ -261,7 +270,7 @@ END AS status_monitor');
             }
         }
 
-        $this->db->order_by('umur_invoice', 'DESC');
+        $this->db->order_by('umur_due_date', 'DESC');
 
         $query = $this->db->get();
 

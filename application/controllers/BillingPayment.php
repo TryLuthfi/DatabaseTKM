@@ -340,7 +340,7 @@ class BillingPayment extends CI_Controller
 
         // Tentukan kolom yang tampil berdasarkan filter
         $priceHeader = $statusInvoice === 'partial' ? 'Outstanding Balance' : 'Price';
-        $columns = ['No', 'Bowheer', 'Invoice', $priceHeader, 'Regional', 'Area', 'Date Invoice', 'Date Submit', 'Due Date', 'Aging', "Priority", "PO Number", "Status Invoice", "Action"];
+        $columns = ['No', 'Bowheer', 'Invoice', $priceHeader, 'Regional', 'Area', 'Date Invoice', 'Date Submit', 'Due Date', 'Aging Today', 'Aging Due Date', "Priority", "PO Number", "Status Invoice", "Action"];
 
         echo json_encode([
             'columns' => $columns,
@@ -607,8 +607,8 @@ class BillingPayment extends CI_Controller
 
         echo '<html><head><meta charset="UTF-8"></head><body>';
         echo '<table border="1">';
-        echo '<tr><th colspan="12" style="font-weight:bold;font-size:16px;">Billing Payment Report</th></tr>';
-        echo '<tr><th colspan="12">Generated At: ' . date('Y-m-d H:i:s') . '</th></tr>';
+        echo '<tr><th colspan="14" style="font-weight:bold;font-size:16px;">Billing Payment Report</th></tr>';
+        echo '<tr><th colspan="14">Generated At: ' . date('Y-m-d H:i:s') . '</th></tr>';
         echo '<tr>';
         echo '<th>No</th>';
         echo '<th>Bowheer</th>';
@@ -616,9 +616,11 @@ class BillingPayment extends CI_Controller
         echo '<th>Invoice Price</th>';
         echo '<th>Regional</th>';
         echo '<th>Area</th>';
+        echo '<th>Date Invoice</th>';
         echo '<th>Date Submit</th>';
         echo '<th>Due Date</th>';
-        echo '<th>Aging</th>';
+        echo '<th>Aging Today</th>';
+        echo '<th>Aging Due Date</th>';
         echo '<th>Priority</th>';
         echo '<th>PO Number</th>';
         echo '<th>Status Invoice</th>';
@@ -634,9 +636,11 @@ class BillingPayment extends CI_Controller
             echo '<td style="mso-number-format:\'#,##0.00\'">' . number_format((float) $row['invoice_price_nett'], 2, '.', '') . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['regional_payment']) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['area_payment']) . '</td>';
+            echo '<td>' . htmlspecialchars((string) $row['tgl_create_invoice']) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['tgl_submit_invoice']) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['tgl_jatuh_tempo']) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['umur_invoice']) . '</td>';
+            echo '<td>' . htmlspecialchars((string) $row['umur_due_date']) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['priority']) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['po_number']) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['status_invoice']) . '</td>';
@@ -646,7 +650,7 @@ class BillingPayment extends CI_Controller
         echo '<tr>';
         echo '<th colspan="3" style="text-align:right;">Total</th>';
         echo '<th style="mso-number-format:\'#,##0.00\'">' . number_format($total, 2, '.', '') . '</th>';
-        echo '<th colspan="8"></th>';
+        echo '<th colspan="10"></th>';
         echo '</tr>';
         echo '</table>';
         echo '</body></html>';
