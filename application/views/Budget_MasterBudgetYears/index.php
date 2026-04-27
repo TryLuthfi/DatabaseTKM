@@ -276,6 +276,43 @@ $monthNames = [
         return isNaN(parsed) ? 0 : parsed;
     }
 
+    function normalizeInputNumberValue(value) {
+        if (typeof value === 'number') {
+            return value;
+        }
+
+        var raw = String(value || '').trim();
+        if (raw === '') {
+            return 0;
+        }
+
+        raw = raw.replace(/\s+/g, '');
+
+        var hasComma = raw.indexOf(',') !== -1;
+        var hasDot = raw.indexOf('.') !== -1;
+
+        if (hasComma && hasDot) {
+            if (raw.lastIndexOf(',') > raw.lastIndexOf('.')) {
+                raw = raw.replace(/\./g, '').replace(',', '.');
+            } else {
+                raw = raw.replace(/,/g, '');
+            }
+        } else if (hasComma) {
+            if (/,\d{1,4}$/.test(raw)) {
+                raw = raw.replace(/\./g, '').replace(',', '.');
+            } else {
+                raw = raw.replace(/,/g, '');
+            }
+        } else if (hasDot) {
+            if (!/\.\d{1,4}$/.test(raw)) {
+                raw = raw.replace(/\./g, '');
+            }
+        }
+
+        var parsed = parseFloat(raw);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+
     function updateMonthlyTotalSummary() {
         var total = 0;
         var annualBudget = parseBudgetNumber($('#annual_budget').val());
@@ -295,6 +332,24 @@ $monthNames = [
             .toggleClass('is-balanced', gap === 0);
     }
 
+    function initBudgetYearItemSelect() {
+        if (!$.fn.select2 || !$('#id_budget_item').length) {
+            return;
+        }
+
+        if ($('#id_budget_item').hasClass('select2-hidden-accessible')) {
+            $('#id_budget_item').select2('destroy');
+        }
+
+        $('#id_budget_item').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#budgetModal'),
+            placeholder: 'Pilih Item',
+            allowClear: true
+        });
+    }
+
     function openBudgetModal() {
         document.getElementById('budgetModalTitle').textContent = 'Tambah Budget';
         document.getElementById('budgetModalSubtitle').textContent = 'Lengkapi budget tahunan dan breakdown bulanan untuk menjaga planning tetap presisi.';
@@ -312,6 +367,8 @@ $monthNames = [
         });
 
         updateMonthlyTotalSummary();
+        initBudgetYearItemSelect();
+        $('#id_budget_item').val('').trigger('change.select2');
         $('#budgetModal').modal('show');
     }
 
@@ -353,14 +410,15 @@ $monthNames = [
             document.getElementById('id_budget_annual').value = response.budget.id_budget_annual;
             document.getElementById('budget_year').value = response.budget.budget_year;
             document.getElementById('id_budget_item').value = response.budget.id_budget_item;
-            document.getElementById('annual_budget').value = response.budget.annual_budget;
+            document.getElementById('annual_budget').value = normalizeInputNumberValue(response.budget.annual_budget);
             document.getElementById('notes').value = response.budget.notes || '';
             document.getElementById('budgetSubmitBtn').innerHTML = '<i class="fas fa-save mr-1"></i> Simpan Perubahan';
             $('#budgetSubmitBtn').prop('disabled', false);
             $('#id_budget_item').prop('disabled', false);
+            $('#id_budget_item').val(String(response.budget.id_budget_item || '')).trigger('change.select2');
 
             Object.keys(emptyMonthly).forEach(function (month) {
-                document.getElementById('monthly_budget_' + month).value = response.monthly[month] || 0;
+                document.getElementById('monthly_budget_' + month).value = normalizeInputNumberValue(response.monthly[month] || 0);
             });
 
             updateMonthlyTotalSummary();
@@ -371,6 +429,8 @@ $monthNames = [
     }
 
     $(function () {
+        initBudgetYearItemSelect();
+
         $(document).on('click', '.js-edit-budget', function (e) {
             e.preventDefault();
             editBudget($(this).attr('data-id-budget-annual'));
@@ -689,6 +749,59 @@ $monthNames = [
     .budget-input:focus {
         border-color: #55a7d5;
         box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
+    .budget-modal .select2-container {
+        width: 100% !important;
+    }
+
+    .budget-modal .select2-container--bootstrap4 .select2-selection {
+        min-height: 44px;
+        border-radius: 12px;
+        border: 1px solid #cfe0ee;
+        box-shadow: none;
+        background: #fff;
+    }
+
+    .budget-modal .select2-container--bootstrap4 .select2-selection--single {
+        display: flex;
+        align-items: center;
+        padding: 0.375rem 2.2rem 0.375rem 0.95rem;
+    }
+
+    .budget-modal .select2-container--bootstrap4 .select2-selection__rendered {
+        width: 100%;
+        padding: 0;
+        color: #495057;
+        line-height: 1.5;
+    }
+
+    .budget-modal .select2-container--bootstrap4 .select2-selection__placeholder {
+        color: #8aa0b4;
+    }
+
+    .budget-modal .select2-container--bootstrap4 .select2-selection__arrow {
+        height: 42px;
+        right: 10px;
+    }
+
+    .budget-modal .select2-container--bootstrap4.select2-container--focus .select2-selection,
+    .budget-modal .select2-container--bootstrap4.select2-container--open .select2-selection {
+        border-color: #55a7d5;
+        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
+    .select2-container--bootstrap4 .select2-dropdown {
+        border-color: #cfe0ee;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 18px 32px rgba(16, 59, 90, 0.14);
+    }
+
+    .select2-container--bootstrap4 .select2-search__field {
+        border-radius: 10px;
+        border-color: #cfe0ee;
+        min-height: 38px;
     }
 
     .budget-monthly-summary {

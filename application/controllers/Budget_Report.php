@@ -6,14 +6,12 @@ class Budget_Report extends CI_Controller
     public function __construct()
     {
         parent::__construct();
+        enforce_budgeting_access();
         $this->load->model('MBudget_Report');
     }
 
     public function index()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
 
         $data = $this->buildDashboardData();
 
@@ -26,8 +24,9 @@ class Budget_Report extends CI_Controller
 
     public function exportExcel()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
+        if (!class_exists('ZipArchive')) {
+            $this->exportCsv();
+            return;
         }
 
         $data = $this->buildDashboardData();
@@ -47,10 +46,6 @@ class Budget_Report extends CI_Controller
 
     public function exportCsv()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
-
         $data = $this->buildDashboardData();
         $monthNames = $this->getMonthNames();
 
@@ -129,18 +124,6 @@ class Budget_Report extends CI_Controller
 
     public function drilldown()
     {
-        if (!$this->session->userdata('id_user')) {
-            $this->output
-                ->set_status_header(401)
-                ->set_content_type('application/json', 'utf-8')
-                ->set_output(json_encode([
-                    'status' => false,
-                    'message' => 'Unauthorized',
-                    'rows' => [],
-                ]));
-            return;
-        }
-
         $year = (int) $this->input->get('year');
         if ($year <= 0) {
             $year = (int) date('Y');
@@ -269,6 +252,12 @@ class Budget_Report extends CI_Controller
     {
         if (!class_exists('PHPExcel_IOFactory')) {
             require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel/IOFactory.php';
+        }
+
+        if (function_exists('ob_get_level')) {
+            while (ob_get_level() > 0) {
+                @ob_end_clean();
+            }
         }
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

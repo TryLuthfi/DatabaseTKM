@@ -10,8 +10,8 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-8">
-                    <h1 class="m-0 text-dark">Cashflow TEC</h1>
-                    <p class="text-muted mb-0">Kelola transaksi TEC dengan pencarian cepat, pagination, dan tampilan tabel yang lebih modern.</p>
+                    <h1 class="m-0 text-dark">List Cashflow</h1>
+                    <p class="text-muted mb-0">Kelola transaksi cashflow dengan pencarian cepat, pagination, dan tampilan tabel yang lebih modern.</p>
                 </div>
             </div>
         </div>
@@ -41,11 +41,27 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                     <?php endfor; ?>
                                 </select>
                             </div>
-                            <div class="col-md-6">
-                                <div class="d-flex flex-wrap justify-content-md-end budget-toolbar">
+                            <div class="col-md-3">
+                                <label class="budget-field-label">Range Tanggal</label>
+                                <?php
+                                $dateRangeValue = '';
+                                if (!empty($startDate) && !empty($endDate)) {
+                                    $dateRangeValue = $startDate . ' - ' . $endDate;
+                                }
+                                ?>
+                                <input type="text" class="form-control budget-input" id="cashflowDateRange"
+                                    value="<?= htmlspecialchars((string) $dateRangeValue, ENT_QUOTES) ?>" placeholder="Pilih range tanggal">
+                                <input type="hidden" name="start_date" id="cashflowStartDate" value="<?= htmlspecialchars((string) ($startDate ?? ''), ENT_QUOTES) ?>">
+                                <input type="hidden" name="end_date" id="cashflowEndDate" value="<?= htmlspecialchars((string) ($endDate ?? ''), ENT_QUOTES) ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex flex-nowrap justify-content-md-end budget-toolbar budget-toolbar--actions">
                                     <button type="submit" class="btn budget-btn budget-btn--primary">
                                         <i class="fas fa-search mr-1"></i> Tampilkan
                                     </button>
+                                    <a href="<?= base_url('Budget_Cashflow') ?>" class="btn budget-btn budget-btn--ghost">
+                                        <i class="fas fa-redo-alt mr-1"></i> Reset
+                                    </a>
                                     <button type="button" class="btn budget-btn budget-btn--success" onclick="openEntryModal('manual')">
                                         <i class="fas fa-plus-circle mr-1"></i> Input / Import
                                     </button>
@@ -80,8 +96,13 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
 
             <div class="card shadow-sm budget-card">
                 <div class="card-header budget-card__header d-flex align-items-center justify-content-between">
-                    <h3 class="card-title mb-0">Daftar Cashflow TEC</h3>
-                    <span class="badge badge-light"><?= count($headers) ?> header</span>
+                    <h3 class="card-title mb-0">Daftar Cashflow</h3>
+                    <div class="d-flex align-items-center budget-toolbar">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" onclick="openReportModal()">
+                            <i class="fas fa-download mr-1"></i> Download Report
+                        </button>
+                        <span class="badge badge-light"><?= count($headers) ?> header</span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -97,8 +118,8 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                     <th>Regional</th>
                                     <th>Kota</th>
                                     <th>Item</th>
-                                    <th class="text-right">Debit</th>
-                                    <th class="text-right">Kredit</th>
+                                    <th class="text-right">Cash In</th>
+                                    <th class="text-right">Cash Out</th>
                                     <th style="width: 220px;">Aksi</th>
                                 </tr>
                             </thead>
@@ -110,7 +131,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                 <?php else: ?>
                                     <?php $no = 1;
                                     foreach ($headers as $row): ?>
-                                        <tr>
+                                        <tr data-header-id="<?= (int) $row['id_cashflow_header'] ?>">
                                             <td><?= $no++ ?></td>
                                             <td><?= htmlspecialchars($row['nomor_tec']) ?></td>
                                             <td><?= htmlspecialchars($row['tanggal_cashflow']) ?></td>
@@ -161,12 +182,12 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
 </div>
 
 <div class="modal fade" id="entryModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-xxl">
         <div class="modal-content budget-modal">
             <div class="modal-header budget-modal__header">
                 <div>
                     <span class="budget-modal__eyebrow">Budget Cashflow</span>
-                    <h5 class="modal-title mb-1" id="entryModalTitle">Kelola Cashflow TEC</h5>
+                    <h5 class="modal-title mb-1" id="entryModalTitle">Kelola Cashflow</h5>
                     <p class="mb-0 budget-modal__subtitle" id="entryModalSubtitle">Pilih input manual atau import file dalam satu workflow yang lebih rapi.</p>
                 </div>
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
@@ -231,7 +252,14 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                     <div class="col-md-2">
                                         <div class="form-group">
                                             <label class="budget-field-label">Regional</label>
-                                            <input type="text" class="form-control budget-input" name="regional" id="regional">
+                                            <select class="form-control budget-input" name="regional" id="regional">
+                                                <option value="">Pilih Regional</option>
+                                                <option value="REGIONAL 1">REGIONAL 1</option>
+                                                <option value="REGIONAL 2">REGIONAL 2</option>
+                                                <option value="REGIONAL 3">REGIONAL 3</option>
+                                                <option value="REGIONAL 4">REGIONAL 4</option>
+                                                <option value="REGIONAL 5">REGIONAL 5</option>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-2">
@@ -252,11 +280,11 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                     <div class="budget-form-section__title mb-0">Detail Item TEC</div>
                                     <div class="d-flex flex-wrap align-items-center budget-toolbar">
                                         <div class="budget-monthly-summary">
-                                            <span>Total Debit</span>
+                                            <span>Total Cash In</span>
                                             <strong id="manualTotalDebit">0</strong>
                                         </div>
                                         <div class="budget-monthly-summary budget-monthly-summary--gap">
-                                            <span>Total Kredit</span>
+                                            <span>Total Cash Out</span>
                                             <strong id="manualTotalKredit">0</strong>
                                         </div>
                                         <button type="button" class="btn budget-btn budget-btn--ghost" onclick="addDetailRow()">
@@ -269,7 +297,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                         <thead class="bg-light">
                                             <tr>
                                                 <th>Item</th>
-                                                <th>Debit / Kredit</th>
+                                                <th>Status</th>
                                                 <th>Qty</th>
                                                 <th>Harga Satuan</th>
                                                 <th>Nominal</th>
@@ -374,8 +402,163 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
     </div>
 </div>
 
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-xxl">
+        <div class="modal-content budget-modal">
+            <div class="modal-header budget-modal__header">
+                <div>
+                    <span class="budget-modal__eyebrow">Cashflow Report</span>
+                    <h5 class="modal-title mb-1">Download Report Cashflow</h5>
+                    <p class="mb-0 budget-modal__subtitle">Pilih download sesuai tabel yang tampil sekarang atau susun report dengan filter dinamis yang saling sinkron.</p>
+                </div>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-pills budget-nav-tabs mb-4" id="cashflowReportTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="report-table-tab" data-toggle="pill" href="#report-table-pane" role="tab">Report Table</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="report-filter-tab" data-toggle="pill" href="#report-filter-pane" role="tab">Report Filter</a>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="report-table-pane" role="tabpanel">
+                        <div class="budget-form-section">
+                            <div class="budget-form-section__title">Report Dari Tabel Saat Ini</div>
+                            <div class="detail-summary-grid">
+                                <div class="detail-summary-card">
+                                    <span class="detail-summary-card__label">Total Baris Tampil</span>
+                                    <strong class="detail-summary-card__value" id="reportTableVisibleCount">0</strong>
+                                </div>
+                                <div class="detail-summary-card">
+                                    <span class="detail-summary-card__label">Range Tanggal</span>
+                                    <strong class="detail-summary-card__value" id="reportTableRangeLabel">-</strong>
+                                </div>
+                                <div class="detail-summary-card">
+                                    <span class="detail-summary-card__label">Filter Tahun/Bulan</span>
+                                    <strong class="detail-summary-card__value" id="reportTablePeriodLabel">-</strong>
+                                </div>
+                                <div class="detail-summary-card">
+                                    <span class="detail-summary-card__label">Mode Export</span>
+                                    <strong class="detail-summary-card__value">Semua row yang sedang tampil</strong>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-3">Report ini mengikuti data yang sedang tampil di tabel utama, termasuk hasil search DataTable yang aktif.</small>
+                        </div>
+                        <div class="budget-modal__footer px-0 pt-0">
+                            <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                            <button type="button" class="btn budget-btn budget-btn--primary" id="downloadCurrentTableBtn">
+                                <i class="fas fa-file-download mr-1"></i> Download Report Table
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="report-filter-pane" role="tabpanel">
+                        <form id="reportFilterForm">
+                            <div class="budget-form-section">
+                                <div class="budget-form-section__title">Filter Report</div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">Mulai Tanggal</label>
+                                            <input type="date" class="form-control budget-input" name="start_date" id="report_start_date" value="<?= htmlspecialchars((string) ($startDate ?? ''), ENT_QUOTES) ?>">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">Sampai Tanggal</label>
+                                            <input type="date" class="form-control budget-input" name="end_date" id="report_end_date" value="<?= htmlspecialchars((string) ($endDate ?? ''), ENT_QUOTES) ?>">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">Project</label>
+                                            <select class="form-control budget-input js-report-filter" name="project_name" id="report_project_name">
+                                                <option value="">Semua Project</option>
+                                                <?php foreach (($reportFilterOptions['projects'] ?? []) as $option): ?>
+                                                    <option value="<?= htmlspecialchars((string) $option['value'], ENT_QUOTES) ?>">
+                                                        <?= htmlspecialchars((string) $option['label']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">Bowheer</label>
+                                            <select class="form-control budget-input js-report-filter" name="id_bowheer" id="report_id_bowheer">
+                                                <option value="">Semua Bowheer</option>
+                                                <?php foreach (($reportFilterOptions['bowheers'] ?? []) as $option): ?>
+                                                    <option value="<?= (int) $option['value'] ?>">
+                                                        <?= htmlspecialchars((string) $option['label']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">Regional</label>
+                                            <select class="form-control budget-input js-report-filter" name="regional" id="report_regional">
+                                                <option value="">Semua Regional</option>
+                                                <?php foreach (($reportFilterOptions['regionals'] ?? []) as $option): ?>
+                                                    <option value="<?= htmlspecialchars((string) $option['value'], ENT_QUOTES) ?>">
+                                                        <?= htmlspecialchars((string) $option['label']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="budget-field-label">Kota</label>
+                                            <select class="form-control budget-input js-report-filter" name="kota" id="report_kota">
+                                                <option value="">Semua Kota</option>
+                                                <?php foreach (($reportFilterOptions['cities'] ?? []) as $option): ?>
+                                                    <option value="<?= htmlspecialchars((string) $option['value'], ENT_QUOTES) ?>">
+                                                        <?= htmlspecialchars((string) $option['label']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-0">
+                                            <label class="budget-field-label">PIC Project</label>
+                                            <select class="form-control budget-input js-report-filter" name="pic_project" id="report_pic_project">
+                                                <option value="">Semua PIC</option>
+                                                <?php foreach (($reportFilterOptions['pics'] ?? []) as $option): ?>
+                                                    <option value="<?= htmlspecialchars((string) $option['value'], ENT_QUOTES) ?>">
+                                                        <?= htmlspecialchars((string) $option['label']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="budget-modal__footer px-0 pt-0">
+                                <button type="button" class="btn budget-btn budget-btn--ghost" id="resetReportFiltersBtn">Reset Filter</button>
+                                <button type="button" class="btn budget-btn budget-btn--primary" id="downloadFilteredReportBtn">
+                                    <i class="fas fa-file-download mr-1"></i> Download Report
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="detailModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-xxl">
         <div class="modal-content budget-modal">
             <div class="modal-header budget-modal__header">
                 <div>
@@ -427,7 +610,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                 <th>No</th>
                                 <th>Kode Item</th>
                                 <th>Nama Item</th>
-                                <th>Debit / Kredit</th>
+                                <th>Status</th>
                                 <th>Qty</th>
                                 <th>Harga Satuan</th>
                                 <th>Nominal</th>
@@ -459,6 +642,9 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
             'direction' => $item['default_direction'],
         ];
     }, $items)) ?>;
+    const cashflowReportOptions = <?= json_encode($reportFilterOptions ?? []) ?>;
+    const currentCashflowYear = <?= (int) $selectedYear ?>;
+    const currentCashflowMonth = <?= (int) $selectedMonth ?>;
 
     function formatBudgetNumber(value) {
         return new Intl.NumberFormat('id-ID', {
@@ -481,10 +667,246 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         return isNaN(parsed) ? 0 : parsed;
     }
 
+    function normalizeInputNumberValue(value) {
+        if (typeof value === 'number') {
+            return value;
+        }
+
+        let raw = String(value || '').trim();
+        if (raw === '') {
+            return 0;
+        }
+
+        raw = raw.replace(/\s+/g, '');
+
+        const hasComma = raw.indexOf(',') !== -1;
+        const hasDot = raw.indexOf('.') !== -1;
+
+        if (hasComma && hasDot) {
+            if (raw.lastIndexOf(',') > raw.lastIndexOf('.')) {
+                raw = raw.replace(/\./g, '').replace(',', '.');
+            } else {
+                raw = raw.replace(/,/g, '');
+            }
+        } else if (hasComma) {
+            if (/,\d{1,4}$/.test(raw)) {
+                raw = raw.replace(/\./g, '').replace(',', '.');
+            } else {
+                raw = raw.replace(/,/g, '');
+            }
+        } else if (hasDot) {
+            if (!/\.\d{1,4}$/.test(raw)) {
+                raw = raw.replace(/\./g, '');
+            }
+        }
+
+        const parsed = parseFloat(raw);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+
+    function formatDirectionLabel(direction) {
+        const normalized = String(direction || '').toUpperCase();
+        if (normalized === 'DEBIT') {
+            return 'Cash In';
+        }
+        if (normalized === 'KREDIT') {
+            return 'Cash Out';
+        }
+        return direction || '-';
+    }
+
     function buildItemOptions() {
         return itemOptions.map(function (item) {
             return '<option value="' + item.id + '" data-direction="' + item.direction + '">' + item.label + '</option>';
         }).join('');
+    }
+
+    function buildSelectHtml(options, emptyLabel, selectedValue) {
+        let html = '<option value="">' + emptyLabel + '</option>';
+
+        (options || []).forEach(function (option) {
+            const value = String(option.value || '');
+            const label = String(option.label || option.value || '');
+            const selected = value === String(selectedValue || '') ? ' selected' : '';
+            html += '<option value="' + $('<div>').text(value).html() + '"' + selected + '>' + $('<div>').text(label).html() + '</option>';
+        });
+
+        return html;
+    }
+
+    function getVisibleHeaderIds() {
+        if ($.fn.DataTable && $.fn.DataTable.isDataTable('#cashflowTecTable')) {
+            const api = $('#cashflowTecTable').DataTable();
+            return api.rows({ search: 'applied' }).nodes().toArray().map(function (row) {
+                return $(row).data('header-id');
+            }).filter(Boolean);
+        }
+
+        return $('#cashflowTecTable tbody tr').map(function () {
+            return $(this).data('header-id');
+        }).get().filter(Boolean);
+    }
+
+    function updateReportTableSummary() {
+        const visibleIds = getVisibleHeaderIds();
+        $('#reportTableVisibleCount').text(formatBudgetNumber(visibleIds.length));
+
+        const startDate = $('#cashflowStartDate').val() || '-';
+        const endDate = $('#cashflowEndDate').val() || '-';
+        $('#reportTableRangeLabel').text(startDate !== '-' || endDate !== '-' ? startDate + ' s/d ' + endDate : '-');
+
+        let periodLabel = String(currentCashflowYear || '-');
+        if (currentCashflowMonth > 0) {
+            periodLabel += ' / ' + new Date(2000, currentCashflowMonth - 1, 1).toLocaleString('en-US', { month: 'long' });
+        } else {
+            periodLabel += ' / Semua Bulan';
+        }
+        $('#reportTablePeriodLabel').text(periodLabel);
+    }
+
+    function initReportFilterSelects() {
+        if (!$.fn.select2) {
+            return;
+        }
+
+        $('#reportModal .js-report-filter').each(function () {
+            const $select = $(this);
+
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.select2('destroy');
+            }
+
+            $select.select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: $('#reportModal'),
+                placeholder: $select.find('option:first').text(),
+                allowClear: true
+            });
+        });
+    }
+
+    function getReportFilterValues() {
+        return {
+            year: currentCashflowYear,
+            month: currentCashflowMonth,
+            start_date: $('#report_start_date').val() || '',
+            end_date: $('#report_end_date').val() || '',
+            project_name: $('#report_project_name').val() || '',
+            id_bowheer: $('#report_id_bowheer').val() || '',
+            regional: $('#report_regional').val() || '',
+            kota: $('#report_kota').val() || '',
+            pic_project: $('#report_pic_project').val() || ''
+        };
+    }
+
+    function syncReportFilterOptions() {
+        const params = getReportFilterValues();
+
+        $.ajax({
+            url: '<?= base_url('Budget_Cashflow/reportFilterOptions') ?>',
+            type: 'GET',
+            dataType: 'json',
+            data: params
+        }).done(function (response) {
+            if (!response || !response.status || !response.options) {
+                return;
+            }
+
+            const currentValues = getReportFilterValues();
+
+            $('#report_project_name').html(buildSelectHtml(response.options.projects, 'Semua Project', currentValues.project_name)).val(currentValues.project_name);
+            $('#report_id_bowheer').html(buildSelectHtml(response.options.bowheers, 'Semua Bowheer', currentValues.id_bowheer)).val(String(currentValues.id_bowheer || ''));
+            $('#report_regional').html(buildSelectHtml(response.options.regionals, 'Semua Regional', currentValues.regional)).val(currentValues.regional);
+            $('#report_kota').html(buildSelectHtml(response.options.cities, 'Semua Kota', currentValues.kota)).val(currentValues.kota);
+            $('#report_pic_project').html(buildSelectHtml(response.options.pics, 'Semua PIC', currentValues.pic_project)).val(currentValues.pic_project);
+            initReportFilterSelects();
+        });
+    }
+
+    function openReportModal() {
+        updateReportTableSummary();
+        initReportFilterSelects();
+        $('#reportModal').modal('show');
+    }
+
+    function buildQueryString(params) {
+        return Object.keys(params).filter(function (key) {
+            return params[key] !== '' && params[key] !== null && typeof params[key] !== 'undefined';
+        }).map(function (key) {
+            return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+        }).join('&');
+    }
+
+    function downloadCurrentTableReport() {
+        const params = {
+            mode: 'current_table',
+            year: currentCashflowYear,
+            month: currentCashflowMonth,
+            start_date: $('#cashflowStartDate').val() || '',
+            end_date: $('#cashflowEndDate').val() || '',
+            header_ids: getVisibleHeaderIds().join(',')
+        };
+
+        window.location.href = '<?= base_url('Budget_Cashflow/downloadReport') ?>?' + buildQueryString(params);
+    }
+
+    function downloadFilteredReport() {
+        const params = getReportFilterValues();
+        params.mode = 'report_filter';
+        window.location.href = '<?= base_url('Budget_Cashflow/downloadReport') ?>?' + buildQueryString(params);
+    }
+
+    function initCashflowModalSelects() {
+        if (!$.fn.select2) {
+            return;
+        }
+
+        const modal = $('#entryModal');
+
+        [
+            {
+                selector: '#id_bowheer',
+                placeholder: 'Pilih Bowheer'
+            },
+            {
+                selector: '#regional',
+                placeholder: 'Pilih Regional'
+            }
+        ].forEach(function (config) {
+            const $select = $(config.selector);
+            if (!$select.length) {
+                return;
+            }
+
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.select2('destroy');
+            }
+
+            $select.select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: modal,
+                placeholder: config.placeholder,
+                allowClear: true
+            });
+        });
+
+        $('#detailTable .item-select').each(function () {
+            const $select = $(this);
+
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.select2('destroy');
+            }
+
+            $select.select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: modal,
+                placeholder: 'Pilih Item',
+                allowClear: true
+            });
+        });
     }
 
     function updateManualSummary() {
@@ -517,8 +939,8 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                 '<option value="">Pilih Item</option>' + buildItemOptions() +
             '</select></td>' +
             '<td><select class="form-control form-control-sm budget-input direction-select" name="detail_direction[]">' +
-                '<option value="DEBIT">DEBIT</option>' +
-                '<option value="KREDIT">KREDIT</option>' +
+                '<option value="DEBIT">Cash In</option>' +
+                '<option value="KREDIT">Cash Out</option>' +
             '</select></td>' +
             '<td><input type="number" step="0.01" class="form-control form-control-sm budget-input qty-input" name="detail_qty[]" value="1"></td>' +
             '<td><input type="number" step="0.01" class="form-control form-control-sm budget-input unit-price-input" name="detail_unit_price[]" value="0"></td>' +
@@ -526,32 +948,33 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
             '<td><input type="text" class="form-control form-control-sm budget-input" name="detail_remarks[]"></td>' +
             '<td><button type="button" class="btn btn-sm budget-btn budget-btn--table-danger js-remove-detail-row">Hapus</button></td>';
         tbody.appendChild(tr);
+        initCashflowModalSelects();
         updateManualSummary();
     }
 
     function addDetailRowWithData(detail) {
         addDetailRow();
         const tr = $('#detailTable tbody tr:last');
-        tr.find('.item-select').val(detail.id_budget_item);
+        tr.find('.item-select').val(String(detail.id_budget_item || '')).trigger('change.select2');
         tr.find('.direction-select').val(detail.direction || 'DEBIT');
-        tr.find('.qty-input').val(detail.qty || 1);
-        tr.find('.unit-price-input').val(detail.unit_price || 0);
-        tr.find('.nominal-input').val(detail.nominal || 0);
+        tr.find('.qty-input').val(normalizeInputNumberValue(detail.qty || 1));
+        tr.find('.unit-price-input').val(normalizeInputNumberValue(detail.unit_price || 0));
+        tr.find('.nominal-input').val(normalizeInputNumberValue(detail.nominal || 0));
         tr.find('input[name="detail_remarks[]"]').val(detail.remarks_item || '');
         updateManualSummary();
     }
 
     function resetCashflowForm() {
-        $('#entryModalTitle').text('Kelola Cashflow TEC');
+        $('#entryModalTitle').text('Kelola Cashflow');
         $('#entryModalSubtitle').text('Pilih input manual atau import file dalam satu workflow yang lebih rapi.');
         $('#cashflowForm')[0].dataset.confirmed = 'false';
         $('#cashflow_header_id').val('');
         $('#nomor_tec').val('');
         $('#tanggal_cashflow').val('<?= date('Y-m-d') ?>');
-        $('#id_bowheer').val('');
+        $('#id_bowheer').val('').trigger('change.select2');
         $('#project_name').val('');
         $('#pic_project').val('');
-        $('#regional').val('');
+        $('#regional').val('').trigger('change.select2');
         $('#kota').val('');
         $('#remarks').val('');
         $('#detailTable tbody').html('');
@@ -575,7 +998,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
 
     function editCashflow(headerId) {
         openEntryModal('manual');
-        $('#entryModalTitle').text('Edit Cashflow TEC');
+        $('#entryModalTitle').text('Edit Cashflow');
         $('#entryModalSubtitle').text('Memuat detail cashflow untuk diedit...');
         $('#cashflowSubmitBtn').html('<i class="fas fa-spinner fa-spin mr-1"></i> Memuat...').prop('disabled', true);
 
@@ -600,15 +1023,15 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                 return;
             }
 
-            $('#entryModalTitle').text('Edit Cashflow TEC');
+            $('#entryModalTitle').text('Edit Cashflow');
             $('#entryModalSubtitle').text('Perbarui data header dan detail item cashflow, lalu simpan perubahan jika semuanya sudah sesuai.');
             $('#cashflow_header_id').val(response.header.id_cashflow_header);
             $('#nomor_tec').val(response.header.nomor_tec || '');
             $('#tanggal_cashflow').val(response.header.tanggal_cashflow || '');
-            $('#id_bowheer').val(response.header.id_bowheer || '');
+            $('#id_bowheer').val(String(response.header.id_bowheer || '')).trigger('change.select2');
             $('#project_name').val(response.header.project_name || '');
             $('#pic_project').val(response.header.pic_project || '');
-            $('#regional').val(response.header.regional || '');
+            $('#regional').val(response.header.regional || '').trigger('change.select2');
             $('#kota').val(response.header.kota || '');
             $('#remarks').val(response.header.remarks || '');
             $('#detailTable tbody').html('');
@@ -678,7 +1101,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                         '<td>' + (index + 1) + '</td>' +
                         '<td>' + row.item_code + '</td>' +
                         '<td>' + row.item_name + '</td>' +
-                        '<td><span class="budget-direction-badge budget-direction-badge--' + String(row.direction || '').toLowerCase() + '">' + row.direction + '</span></td>' +
+                        '<td><span class="budget-direction-badge budget-direction-badge--' + String(row.direction || '').toLowerCase() + '">' + formatDirectionLabel(row.direction) + '</span></td>' +
                         '<td class="text-right">' + Number(row.qty).toLocaleString('id-ID') + '</td>' +
                         '<td class="text-right">' + Number(row.unit_price).toLocaleString('id-ID') + '</td>' +
                         '<td class="text-right font-weight-bold">' + Number(row.nominal).toLocaleString('id-ID') + '</td>' +
@@ -815,6 +1238,70 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
     });
 
     $(function () {
+        initCashflowModalSelects();
+        initReportFilterSelects();
+
+        $(document).on('click', '#downloadCurrentTableBtn', function () {
+            downloadCurrentTableReport();
+        });
+
+        $(document).on('click', '#downloadFilteredReportBtn', function () {
+            downloadFilteredReport();
+        });
+
+        $(document).on('click', '#resetReportFiltersBtn', function () {
+            $('#report_start_date').val($('#cashflowStartDate').val() || '');
+            $('#report_end_date').val($('#cashflowEndDate').val() || '');
+            $('#report_project_name').val('');
+            $('#report_id_bowheer').val('');
+            $('#report_regional').val('');
+            $('#report_kota').val('');
+            $('#report_pic_project').val('');
+            initReportFilterSelects();
+            syncReportFilterOptions();
+        });
+
+        $(document).on('change', '#report_start_date, #report_end_date, .js-report-filter', function () {
+            syncReportFilterOptions();
+        });
+
+        $('#reportModal').on('shown.bs.modal', function () {
+            updateReportTableSummary();
+            initReportFilterSelects();
+            syncReportFilterOptions();
+        });
+
+        if ($('#cashflowDateRange').length && typeof moment !== 'undefined' && $.fn.daterangepicker) {
+            const hasDateRange = $('#cashflowStartDate').val() !== '' && $('#cashflowEndDate').val() !== '';
+            const startMoment = hasDateRange ? moment($('#cashflowStartDate').val(), 'YYYY-MM-DD') : moment();
+            const endMoment = hasDateRange ? moment($('#cashflowEndDate').val(), 'YYYY-MM-DD') : moment();
+
+            $('#cashflowDateRange').daterangepicker({
+                autoUpdateInput: hasDateRange,
+                opens: 'left',
+                locale: {
+                    format: 'YYYY-MM-DD',
+                    separator: ' - ',
+                    applyLabel: 'Pilih',
+                    cancelLabel: 'Reset'
+                },
+                startDate: startMoment,
+                endDate: endMoment
+            });
+
+            $('#cashflowDateRange').on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+                $('#cashflowStartDate').val(picker.startDate.format('YYYY-MM-DD'));
+                $('#cashflowEndDate').val(picker.endDate.format('YYYY-MM-DD'));
+            });
+
+            $('#cashflowDateRange').on('cancel.daterangepicker', function () {
+                $(this).val('');
+                $('#cashflowStartDate').val('');
+                $('#cashflowEndDate').val('');
+            });
+        }
+
         const sumColumn = function (api, index) {
             return api.column(index, { search: 'applied' }).data().reduce(function (a, b) {
                 return parseBudgetNumber(a) + parseBudgetNumber(b);
@@ -994,6 +1481,11 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
 <style>
     .budget-toolbar {
         gap: 10px;
+        align-items: center;
+    }
+
+    .budget-toolbar--actions {
+        white-space: nowrap;
     }
 
     .budget-field-label {
@@ -1172,6 +1664,59 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
     }
 
+    .budget-modal .select2-container {
+        width: 100% !important;
+    }
+
+    .budget-modal .select2-container--bootstrap4 .select2-selection {
+        min-height: 44px;
+        border-radius: 12px;
+        border: 1px solid #cfe0ee;
+        box-shadow: none;
+        background: #fff;
+    }
+
+    .budget-modal .select2-container--bootstrap4 .select2-selection--single {
+        display: flex;
+        align-items: center;
+        padding: 0.375rem 2.2rem 0.375rem 0.95rem;
+    }
+
+    .budget-modal .select2-container--bootstrap4 .select2-selection__rendered {
+        width: 100%;
+        padding: 0;
+        color: #495057;
+        line-height: 1.5;
+    }
+
+    .budget-modal .select2-container--bootstrap4 .select2-selection__placeholder {
+        color: #8aa0b4;
+    }
+
+    .budget-modal .select2-container--bootstrap4 .select2-selection__arrow {
+        height: 42px;
+        right: 10px;
+    }
+
+    .budget-modal .select2-container--bootstrap4.select2-container--focus .select2-selection,
+    .budget-modal .select2-container--bootstrap4.select2-container--open .select2-selection {
+        border-color: #55a7d5;
+        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
+    .select2-container--bootstrap4 .select2-dropdown {
+        border-color: #cfe0ee;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 18px 32px rgba(16, 59, 90, 0.14);
+    }
+
+    .select2-container--bootstrap4 .select2-search__field {
+        border-radius: 10px;
+        border-color: #cfe0ee;
+        min-height: 38px;
+    }
+
     .budget-monthly-summary {
         display: inline-flex;
         align-items: center;
@@ -1193,6 +1738,10 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         overflow: hidden;
         border: 1px solid #d8e7f2;
         background: #fff;
+    }
+
+    .modal-xxl {
+        max-width: 78vw;
     }
 
     .detail-summary-grid {
@@ -1342,6 +1891,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         .budget-toolbar {
             margin-top: 1rem;
             justify-content: flex-start !important;
+            flex-wrap: wrap !important;
         }
 
         .budget-btn {

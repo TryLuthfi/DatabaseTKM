@@ -6,18 +6,18 @@ class Budget_Cashflow extends CI_Controller
     public function __construct()
     {
         parent::__construct();
+        enforce_budgeting_access();
         $this->load->model('MBudget_Cashflow');
         $this->load->library('upload');
     }
 
     public function index()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
 
         $selectedYear = (int) $this->input->get('year');
         $selectedMonth = (int) $this->input->get('month');
+        $startDate = trim((string) $this->input->get('start_date'));
+        $endDate = trim((string) $this->input->get('end_date'));
         if ($selectedYear <= 0) {
             $selectedYear = (int) date('Y');
         }
@@ -26,9 +26,17 @@ class Budget_Cashflow extends CI_Controller
         $data['judul'] = 'Budgeting - Cashflow TEC';
         $data['selectedYear'] = $selectedYear;
         $data['selectedMonth'] = $selectedMonth;
-        $data['headers'] = $this->MBudget_Cashflow->getHeaders($selectedYear, $selectedMonth);
+        $data['startDate'] = $startDate;
+        $data['endDate'] = $endDate;
+        $data['headers'] = $this->MBudget_Cashflow->getHeaders($selectedYear, $selectedMonth, $startDate, $endDate);
         $data['items'] = $this->MBudget_Cashflow->getItems();
         $data['bowheers'] = $this->MBudget_Cashflow->getBowheers();
+        $data['reportFilterOptions'] = $this->MBudget_Cashflow->getReportFilterOptions([
+            'year' => $selectedYear,
+            'month' => $selectedMonth,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+        ]);
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -39,10 +47,6 @@ class Budget_Cashflow extends CI_Controller
 
     public function save()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
-
         $post = $this->input->post(NULL, true);
         $itemIds = $post['detail_item_id'] ?? [];
         $directions = $post['detail_direction'] ?? [];
@@ -147,10 +151,6 @@ class Budget_Cashflow extends CI_Controller
 
     public function import()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
-
         if (empty($_FILES['import_file']['name'])) {
             $this->session->set_flashdata('status', 'gagal_import');
             redirect('Budget_Cashflow');
@@ -207,17 +207,6 @@ class Budget_Cashflow extends CI_Controller
 
     public function detail($id)
     {
-        if (!$this->session->userdata('id_user')) {
-            $this->output
-                ->set_status_header(401)
-                ->set_content_type('application/json', 'utf-8')
-                ->set_output(json_encode([
-                    'status' => false,
-                    'message' => 'Unauthorized',
-                ]));
-            return;
-        }
-
         $header = $this->MBudget_Cashflow->getHeaderById((int) $id);
         $this->output
             ->set_content_type('application/json', 'utf-8')
@@ -230,17 +219,6 @@ class Budget_Cashflow extends CI_Controller
 
     public function editData($id)
     {
-        if (!$this->session->userdata('id_user')) {
-            $this->output
-                ->set_status_header(401)
-                ->set_content_type('application/json', 'utf-8')
-                ->set_output(json_encode([
-                    'status' => false,
-                    'message' => 'Unauthorized',
-                ]));
-            return;
-        }
-
         $header = $this->MBudget_Cashflow->getHeaderById((int) $id);
         if (!$header) {
             $this->output
@@ -263,13 +241,93 @@ class Budget_Cashflow extends CI_Controller
 
     public function delete($id)
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
-
         $success = $this->MBudget_Cashflow->deleteHeader((int) $id);
         $this->session->set_flashdata('status', $success ? 'sukses_hapus' : 'gagal_hapus');
         redirect('Budget_Cashflow');
+    }
+
+    public function reportFilterOptions()
+    {
+        $filters = [
+            'year' => (int) $this->input->get('year'),
+            'month' => (int) $this->input->get('month'),
+            'start_date' => trim((string) $this->input->get('start_date')),
+            'end_date' => trim((string) $this->input->get('end_date')),
+            'project_name' => trim((string) $this->input->get('project_name')),
+            'id_bowheer' => (int) $this->input->get('id_bowheer'),
+            'regional' => trim((string) $this->input->get('regional')),
+            'kota' => trim((string) $this->input->get('kota')),
+            'pic_project' => trim((string) $this->input->get('pic_project')),
+        ];
+
+        $this->output
+            ->set_content_type('application/json', 'utf-8')
+            ->set_output(json_encode([
+                'status' => true,
+                'options' => $this->MBudget_Cashflow->getReportFilterOptions($filters),
+            ]));
+    }
+
+    public function downloadReport()
+    {
+        $mode = trim((string) $this->input->get('mode'));
+        $filters = [
+            'year' => (int) $this->input->get('year'),
+            'month' => (int) $this->input->get('month'),
+            'start_date' => trim((string) $this->input->get('start_date')),
+            'end_date' => trim((string) $this->input->get('end_date')),
+            'project_name' => trim((string) $this->input->get('project_name')),
+            'id_bowheer' => (int) $this->input->get('id_bowheer'),
+            'regional' => trim((string) $this->input->get('regional')),
+            'kota' => trim((string) $this->input->get('kota')),
+            'pic_project' => trim((string) $this->input->get('pic_project')),
+        ];
+
+        $headerIds = [];
+        if ($mode === 'current_table') {
+            $headerIds = array_filter(array_map('intval', explode(',', (string) $this->input->get('header_ids'))));
+        }
+
+        $rows = $this->MBudget_Cashflow->getHeaderSummaries($filters, $headerIds);
+
+        $filename = 'report_cashflow_' . date('Ymd_His') . '.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $output = fopen('php://output', 'w');
+        fputcsv($output, [
+            'No',
+            'Nomor TEC',
+            'Tanggal',
+            'Bowheer',
+            'Project',
+            'PIC Project',
+            'Regional',
+            'Kota',
+            'Item',
+            'Debit',
+            'Kredit',
+        ], ';');
+
+        $no = 1;
+        foreach ($rows as $row) {
+            fputcsv($output, [
+                $no++,
+                $row['nomor_tec'],
+                $row['tanggal_cashflow'],
+                $row['nama_bowheer'] ?? '',
+                $row['project_name'] ?? '',
+                $row['pic_project'] ?? '',
+                $row['regional'] ?? '',
+                $row['kota'] ?? '',
+                (int) ($row['total_items'] ?? 0),
+                (float) ($row['total_debit'] ?? 0),
+                (float) ($row['total_kredit'] ?? 0),
+            ], ';');
+        }
+
+        fclose($output);
+        exit;
     }
 
     private function readSpreadsheetRows($filePath)
@@ -379,10 +437,6 @@ class Budget_Cashflow extends CI_Controller
 
     public function downloadCashflowTemplateCsv()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
-
         $filename = 'template_import_cashflow_tec.csv';
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -426,8 +480,9 @@ class Budget_Cashflow extends CI_Controller
 
     public function downloadCashflowTemplateXlsx()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
+        if (!class_exists('ZipArchive')) {
+            $this->downloadCashflowTemplateCsv();
+            return;
         }
 
         $spreadsheet = $this->createPHPExcelObject();
@@ -474,10 +529,6 @@ class Budget_Cashflow extends CI_Controller
 
     public function downloadBudgetTemplateCsv()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
-
         $filename = 'template_import_budget_annual_monthly.csv';
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -500,8 +551,9 @@ class Budget_Cashflow extends CI_Controller
 
     public function downloadBudgetTemplateXlsx()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
+        if (!class_exists('ZipArchive')) {
+            $this->downloadBudgetTemplateCsv();
+            return;
         }
 
         $spreadsheet = $this->createPHPExcelObject();

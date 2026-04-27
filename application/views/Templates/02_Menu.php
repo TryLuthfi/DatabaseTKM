@@ -1,5 +1,11 @@
 <?php
 $id_menu = $this->uri->segment('1');
+$canAccessBudgeting = $this->session->userdata('nama_level') == "Super Admin" || has_validation_access('Budgeting');
+$canAccessBilco = $this->session->userdata('nama_level') == "Super Admin" || has_validation_access('BILCO');
+$disabledBudgetLinkClass = $canAccessBudgeting ? '' : ' menu-access-disabled';
+$disabledBudgetLinkAttr = $canAccessBudgeting ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
+$disabledBilcoLinkClass = $canAccessBilco ? '' : ' menu-access-disabled';
+$disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
 ?>
 <div class="wrapper">
     <!-- Navbar -->
@@ -755,120 +761,114 @@ $id_menu = $this->uri->segment('1');
                             </li>
                         </ul>
                     </li>
-                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
-                        <li class="nav-header">Budgeting</li>
-                        <li class="nav-item has-treeview <?php if (
+                    <li class="nav-header">Budgeting</li>
+                    <li class="nav-item has-treeview <?php if (
+                        $id_menu == 'Budget_MasterAkunBiaya' ||
+                        $id_menu == 'Budget_Cashflow' ||
+                        $id_menu == 'Budget_Report' ||
+                        $id_menu == 'Budget_MasterBudgetYears'
+                    ) {
+                        echo 'menu-open';
+                    } ?>">
+
+                        <a href="#" class="nav-link <?php if (
                             $id_menu == 'Budget_MasterAkunBiaya' ||
                             $id_menu == 'Budget_Cashflow' ||
                             $id_menu == 'Budget_Report' ||
                             $id_menu == 'Budget_MasterBudgetYears'
                         ) {
-                            echo 'menu-open';
+                            echo 'active';
                         } ?>">
+                            <i class="nav-icon fas fa-boxes"></i>
+                            <p>
+                                Budget Ops
+                                <i class="right fas fa-angle-left"></i>
+                                <span class="badge badge-info right">5</span>
+                            </p>
+                        </a>
 
-                            <a href="#" class="nav-link <?php if (
+                        <ul class="nav nav-treeview">
+
+                            <li class="nav-item has-treeview <?php if (
                                 $id_menu == 'Budget_MasterAkunBiaya' ||
+                                $id_menu == 'Budget_MasterBudgetYears' ||
                                 $id_menu == 'Budget_Cashflow' ||
-                                $id_menu == 'Budget_Report' ||
-                                $id_menu == 'Budget_MasterBudgetYears'
+                                $id_menu == 'Budget_Report'
                             ) {
-                                echo 'active';
+                                echo 'menu-open';
                             } ?>">
-                                <i class="nav-icon fas fa-boxes"></i>
-                                <p>
-                                    Budget Ops
-                                    <i class="right fas fa-angle-left"></i>
-                                    <span class="badge badge-info right">5</span>
-                                </p>
-                            </a>
-
-                            <ul class="nav nav-treeview">
-
-                                <li class="nav-item has-treeview <?php if (
+                                <a href="#" class="nav-link <?php if (
                                     $id_menu == 'Budget_MasterAkunBiaya' ||
                                     $id_menu == 'Budget_MasterBudgetYears' ||
                                     $id_menu == 'Budget_Cashflow' ||
                                     $id_menu == 'Budget_Report'
                                 ) {
-                                    echo 'menu-open';
+                                    echo 'active';
                                 } ?>">
-                                    <a href="#" class="nav-link <?php if (
-                                        $id_menu == 'Budget_MasterAkunBiaya' ||
-                                        $id_menu == 'Budget_MasterBudgetYears' ||
-                                        $id_menu == 'Budget_Cashflow' ||
-                                        $id_menu == 'Budget_Report'
-                                    ) {
-                                        echo 'active';
-                                    } ?>">
-                                        <i class="far fa-folder nav-icon"></i>
-                                        <p>Master Budgeting
-                                            <i class="right fas fa-angle-left"></i>
-                                            <span class="badge badge-info right">3</span>
-                                        </p>
-                                    </a>
-                                    <ul class="nav nav-treeview">
-                                        <li class="nav-item">
-                                            <a href="<?= base_url('Budget_MasterAkunBiaya') ?>" class="nav-link <?php if ($id_menu == 'Budget_MasterAkunBiaya')
-                                                  echo 'active'; ?>">
-                                                <i class="far fa-circle nav-icon"></i>
-                                                <p>Master Item</p>
-                                            </a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a href="<?= base_url('Budget_MasterBudgetYears') ?>" class="nav-link <?php if ($id_menu == 'Budget_MasterBudgetYears')
-                                                  echo 'active'; ?>">
-                                                <i class="far fa-circle nav-icon"></i>
-                                                <p>Master Budget
-                                                </p>
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </li>
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>Master Budgeting
+                                        <i class="right fas fa-angle-left"></i>
+                                        <span class="badge badge-info right">3</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Budget_MasterAkunBiaya') ?>" class="nav-link<?= $disabledBudgetLinkClass ?> <?php if ($id_menu == 'Budget_MasterAkunBiaya')
+                                              echo ' active'; ?>"<?= $disabledBudgetLinkAttr ?>>
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master Item</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Budget_MasterBudgetYears') ?>" class="nav-link<?= $disabledBudgetLinkClass ?> <?php if ($id_menu == 'Budget_MasterBudgetYears')
+                                              echo ' active'; ?>"<?= $disabledBudgetLinkAttr ?>>
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master Budget
+                                            </p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
 
-                                <li class="nav-item">
-                                    <a href="<?= base_url('Budget_Cashflow') ?>" class="nav-link <?php if ($id_menu == 'Budget_Cashflow')
-                                          echo 'active'; ?>">
-                                        <i class="far fa-file nav-icon"></i>
-                                        <p>Cashflow TEC</p>
-                                    </a>
-                                </li>
-                                <!-- Master Logistik -->
+                            <li class="nav-item">
+                                <a href="<?= base_url('Budget_Cashflow') ?>" class="nav-link<?= $disabledBudgetLinkClass ?> <?php if ($id_menu == 'Budget_Cashflow')
+                                      echo ' active'; ?>"<?= $disabledBudgetLinkAttr ?>>
+                                    <i class="far fa-file nav-icon"></i>
+                                    <p>Cashflow TEC</p>
+                                </a>
+                            </li>
 
+                            <li class="nav-item">
+                                <a href="<?= base_url('Budget_Report') ?>" class="nav-link<?= $disabledBudgetLinkClass ?> <?php if ($id_menu == 'Budget_Report')
+                                      echo ' active'; ?>"<?= $disabledBudgetLinkAttr ?>>
+                                    <i class="far fa-file nav-icon"></i>
+                                    <p>Dashboard Budget</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
 
-                                <li class="nav-item">
-                                    <a href="<?= base_url('Budget_Report') ?>" class="nav-link <?php if ($id_menu == 'Budget_Report')
-                                          echo 'active'; ?>">
-                                        <i class="far fa-file nav-icon"></i>
-                                        <p>Dashboard Budget</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    <?php } ?>
-
-                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
-                        <li class="nav-header">Billing & Collection</li>
-                        <li class="nav-item">
-                            <a href="<?= base_url('BillingPayment') ?>" class="nav-link <?php if ($id_menu == 'BillingPayment') {
-                                  echo "active";
-                              } ?>">
-                                <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                                <p>
-                                    Account Receivable
-                                </p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="<?= base_url('PO_Monitor') ?>" class="nav-link <?php if ($id_menu == 'PO_Monitor') {
-                                  echo "active";
-                              } ?>">
-                                <i class="nav-icon fas fa-clipboard-list"></i>
-                                <p>
-                                    PO Monitor
-                                </p>
-                            </a>
-                        </li>
-                    <?php } ?>
+                    <li class="nav-header">Billing & Collection</li>
+                    <li class="nav-item">
+                        <a href="<?= base_url('BillingPayment') ?>" class="nav-link<?= $disabledBilcoLinkClass ?> <?php if ($id_menu == 'BillingPayment') {
+                              echo " active";
+                          } ?>"<?= $disabledBilcoLinkAttr ?>>
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Account Receivable
+                            </p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= base_url('PO_Monitor') ?>" class="nav-link<?= $disabledBilcoLinkClass ?> <?php if ($id_menu == 'PO_Monitor') {
+                              echo " active";
+                          } ?>"<?= $disabledBilcoLinkAttr ?>>
+                            <i class="nav-icon fas fa-clipboard-list"></i>
+                            <p>
+                                PO Monitor
+                            </p>
+                        </a>
+                    </li>
 
                 </ul>
             </nav>
@@ -887,3 +887,15 @@ $id_menu = $this->uri->segment('1');
     <script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
     <script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
     <script src="<?= base_url('assets') ?>/dist/js/pages/dashboard3.js"></script>
+
+    <style>
+        .menu-access-disabled {
+            opacity: 0.58;
+            cursor: not-allowed;
+        }
+
+        .menu-access-disabled:hover,
+        .menu-access-disabled:focus {
+            background-color: rgba(255, 255, 255, 0.08) !important;
+        }
+    </style>

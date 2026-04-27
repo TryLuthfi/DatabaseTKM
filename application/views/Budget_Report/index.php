@@ -76,19 +76,12 @@ $monthNames = [
                             <button type="submit" class="btn budget-btn budget-btn--primary">
                                 <i class="fas fa-search mr-1"></i> Tampilkan Dashboard
                             </button>
-                            <?php
-                            $queryString = http_build_query([
-                                'year' => $selectedYear,
-                                'start_month' => $startMonth,
-                                'end_month' => $endMonth,
-                            ]);
-                            ?>
-                            <a href="<?= base_url('Budget_Report/exportExcel?' . $queryString) ?>" class="btn budget-btn budget-btn--success">
+                            <button type="button" class="btn budget-btn budget-btn--success js-budget-report-export" data-export-type="excel">
                                 <i class="fas fa-file-excel mr-1"></i> Export Excel
-                            </a>
-                            <a href="<?= base_url('Budget_Report/exportCsv?' . $queryString) ?>" class="btn budget-btn budget-btn--ghost">
+                            </button>
+                            <button type="button" class="btn budget-btn budget-btn--ghost js-budget-report-export" data-export-type="csv">
                                 <i class="fas fa-file-csv mr-1"></i> Export CSV
-                            </a>
+                            </button>
                                 </div>
                             </div>
                         </div>
@@ -157,7 +150,7 @@ $monthNames = [
                     <div class="small-box bg-dark">
                         <div class="inner">
                             <h3><?= number_format((float) (($summaryCards['total_debit'] ?? 0) - ($summaryCards['total_kredit'] ?? 0)), 0, ',', '.') ?></h3>
-                            <p>Net Debit - Kredit</p>
+                            <p>Net Cash In - Cash Out</p>
                         </div>
                     </div>
                 </div>
@@ -165,7 +158,7 @@ $monthNames = [
 
             <div class="card shadow-sm budget-card">
                 <div class="card-header budget-card__header">
-                    <h3 class="card-title">1. List Debit vs Kredit</h3>
+                    <h3 class="card-title">1. List Cash In vs Cash Out</h3>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -173,8 +166,8 @@ $monthNames = [
                         <thead>
                             <tr>
                                 <th rowspan="2" style="vertical-align: middle;">Kategori</th>
-                                <th colspan="2" class="text-center">Debit</th>
-                                <th colspan="2" class="text-center">Kredit</th>
+                                <th colspan="2" class="text-center">Cash In</th>
+                                <th colspan="2" class="text-center">Cash Out</th>
                             </tr>
                             <tr>
                                 <th class="text-right">Budget</th>
@@ -635,6 +628,12 @@ $monthNames = [
                         <span class="summary-value" id="drilldownSummaryNominal">0</span>
                     </div>
                 </div>
+                <div class="drilldown-note mb-4">
+                    <div class="drilldown-note__title">Keterangan Detail Report</div>
+                    <p class="drilldown-note__text mb-0" id="drilldownDescription">
+                        Tabel di bawah menampilkan rincian transaksi sesuai kategori yang dipilih, lengkap dengan identitas TEC, project, area, kuantitas, harga satuan, dan nominal transaksi.
+                    </p>
+                </div>
                 <div class="table-responsive detail-table-shell">
                     <table id="drilldownTransactionsTable" class="table table-bordered table-sm table-striped js-budget-table-modal">
                         <thead class="bg-light">
@@ -678,11 +677,21 @@ $monthNames = [
                 </div>
                 </div>
             </div>
+            <div class="modal-footer budget-modal__footer">
+                <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn budget-btn budget-btn--success" id="downloadDrilldownExcelBtn">
+                    <i class="fas fa-file-excel mr-1"></i> Download Excel
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
+    let currentDrilldownRows = [];
+    let currentDrilldownTitle = 'Detail Transaksi';
+
     function formatBudgetNumber(value) {
         return new Intl.NumberFormat('id-ID', {
             minimumFractionDigits: 0,
@@ -815,15 +824,24 @@ $monthNames = [
     function openDrilldown(title, params) {
         params.year = reportYear;
         params.months = reportMonths;
+        currentDrilldownTitle = title;
+        currentDrilldownRows = [];
         $('#drilldownTitle').text(title);
         $('#drilldownSummaryTitle').text(title.replace('Detail ', ''));
         $('#drilldownSummaryPeriod').text('<?= htmlspecialchars($monthNames[$startMonth]) ?> - <?= htmlspecialchars($monthNames[$endMonth]) ?> <?= (int) $selectedYear ?>');
         $('#drilldownSummaryCount').text('0');
         $('#drilldownSummaryNominal').text('0');
+        $('#drilldownDescription').text('Tabel di bawah menampilkan rincian transaksi untuk ' + title.replace('Detail ', '').toLowerCase() + ', lengkap dengan identitas TEC, lokasi, item, kuantitas, harga satuan, dan nominal transaksi.');
 
         if ($.fn.DataTable && $.fn.DataTable.isDataTable('#drilldownTransactionsTable')) {
             $('#drilldownTransactionsTable').DataTable().clear().destroy();
         }
+
+        $('#drilldownTransactionsTable').removeAttr('style');
+        $('#drilldownTransactionsTable colgroup').remove();
+        $('#drilldownTransactionsTable thead th').removeAttr('style');
+        $('#drilldownTransactionsTable tbody td').removeAttr('style');
+        $('#drilldownTransactionsTable tfoot th').removeAttr('style');
 
         $('#drilldownBody').html('<tr><td colspan="14" class="text-center">Loading...</td></tr>');
         $('#drilldownModal').modal('show');
@@ -844,6 +862,7 @@ $monthNames = [
 
             let html = '';
             const rows = response.rows || [];
+            currentDrilldownRows = rows;
             let totalNominal = 0;
 
             if (!rows.length) {
@@ -873,68 +892,37 @@ $monthNames = [
             $('#drilldownBody').html(html);
             $('#drilldownSummaryCount').text(formatBudgetNumber(rows.length));
             $('#drilldownSummaryNominal').text(formatBudgetNumber(totalNominal));
-
-            if ($.fn.DataTable) {
-                $('#drilldownTransactionsTable').DataTable({
-                    paging: true,
-                    searching: true,
-                    info: true,
-                    ordering: true,
-                    responsive: false,
-                    autoWidth: false,
-                    scrollX: true,
-                    pageLength: 10,
-                    footerCallback: function () {
-                        const api = this.api();
-                        const sumColumn = function (index) {
-                            return api.column(index, { search: 'applied' }).data().reduce(function (a, b) {
-                                const parseNumber = function (value) {
-                                    if (typeof value === 'string') {
-                                        const cleaned = value.replace(/<[^>]*>/g, '').replace(/\./g, '').replace(/,/g, '.').replace(/[^\d.-]/g, '');
-                                        return parseFloat(cleaned) || 0;
-                                    }
-                                    return typeof value === 'number' ? value : 0;
-                                };
-                                return parseNumber(a) + parseNumber(b);
-                            }, 0);
-                        };
-
-                        $(api.column(0).footer()).html('Total');
-                        for (let columnIndex = 1; columnIndex < api.columns().count(); columnIndex++) {
-                            const columnData = api.column(columnIndex, { search: 'applied' }).data().toArray();
-                            const hasNumericValue = columnData.some(function (value) {
-                                if (typeof value === 'number') {
-                                    return true;
-                                }
-
-                                if (typeof value === 'string') {
-                                    const cleaned = value.replace(/<[^>]*>/g, '').replace(/\./g, '').replace(/,/g, '.').replace(/[^\d.-]/g, '');
-                                    return cleaned !== '' && !isNaN(parseFloat(cleaned));
-                                }
-
-                                return false;
-                            });
-
-                            $(api.column(columnIndex).footer()).html(
-                                hasNumericValue ? formatBudgetNumber(sumColumn(columnIndex)) : ''
-                            );
-                        }
-                    },
-                    language: {
-                        search: 'Search:',
-                        info: 'Menampilkan _START_ - _END_ dari _TOTAL_ data',
-                        paginate: {
-                            previous: 'Prev',
-                            next: 'Next'
-                        },
-                        zeroRecords: 'Tidak ada data yang cocok'
-                    }
-                });
-            }
+            $('#drilldownTransactionsTable tfoot th').html('');
+            $('#drilldownTransactionsTable tfoot th').eq(0).html('Total');
+            $('#drilldownTransactionsTable tfoot th').eq(10).html(formatBudgetNumber(rows.reduce(function(total, row) {
+                return total + (Number(row.qty || 0));
+            }, 0)));
+            $('#drilldownTransactionsTable tfoot th').eq(11).html(formatBudgetNumber(rows.reduce(function(total, row) {
+                return total + (Number(row.unit_price || 0));
+            }, 0)));
+            $('#drilldownTransactionsTable tfoot th').eq(12).html(formatBudgetNumber(totalNominal));
         }).fail(function () {
             $('#drilldownBody').html('<tr><td colspan="14" class="text-center text-danger">Data drilldown gagal dimuat.</td></tr>');
         });
     }
+
+    $('#drilldownModal').on('hidden.bs.modal', function() {
+        if ($.fn.DataTable && $.fn.DataTable.isDataTable('#drilldownTransactionsTable')) {
+            $('#drilldownTransactionsTable').DataTable().clear().destroy();
+        }
+
+        currentDrilldownRows = [];
+        currentDrilldownTitle = 'Detail Transaksi';
+        $('#drilldownTransactionsTable').removeAttr('style');
+        $('#drilldownTransactionsTable colgroup').remove();
+        $('#drilldownTransactionsTable thead th').removeAttr('style');
+        $('#drilldownTransactionsTable tbody td').removeAttr('style');
+        $('#drilldownTransactionsTable tfoot th').removeAttr('style').html('');
+        $('#drilldownBody').html('');
+        $('#drilldownSummaryCount').text('0');
+        $('#drilldownSummaryNominal').text('0');
+        $('#drilldownDescription').text('Tabel di bawah menampilkan rincian transaksi sesuai kategori yang dipilih, lengkap dengan identitas TEC, project, area, kuantitas, harga satuan, dan nominal transaksi.');
+    });
 
     $(document).on('click', '.drill-item', function() {
         const itemCode = $(this).data('item-code') || ($(this).text().trim());
@@ -972,6 +960,64 @@ $monthNames = [
     $(document).on('click', '.drill-tec', function() {
         const nomorTec = $(this).data('nomor-tec');
         openDrilldown('Detail TEC - ' + nomorTec, { type: 'tec', nomor_tec: nomorTec });
+    });
+
+    function buildBudgetReportExportUrl(type) {
+        const params = new URLSearchParams();
+        params.set('year', $('select[name="year"]').val() || '<?= (int) $selectedYear ?>');
+        params.set('start_month', $('select[name="start_month"]').val() || '<?= (int) $startMonth ?>');
+        params.set('end_month', $('select[name="end_month"]').val() || '<?= (int) $endMonth ?>');
+
+        if (type === 'excel') {
+            return '<?= base_url('Budget_Report/exportExcel') ?>?' + params.toString();
+        }
+
+        return '<?= base_url('Budget_Report/exportCsv') ?>?' + params.toString();
+    }
+
+    $(document).on('click', '.js-budget-report-export', function() {
+        const type = ($(this).data('export-type') || '').toString().toLowerCase();
+        if (!type) {
+            return;
+        }
+
+        window.location.href = buildBudgetReportExportUrl(type);
+    });
+
+    $('#downloadDrilldownExcelBtn').on('click', function() {
+        if (typeof XLSX === 'undefined') {
+            Swal.fire('Gagal', 'Library export Excel belum tersedia.', 'error');
+            return;
+        }
+
+        if (!currentDrilldownRows.length) {
+            Swal.fire('Info', 'Belum ada data detail untuk di-download.', 'info');
+            return;
+        }
+
+        const exportRows = currentDrilldownRows.map(function(row, index) {
+            return {
+                No: index + 1,
+                'Nomor TEC': row.nomor_tec || '-',
+                Tanggal: row.tanggal_cashflow || '-',
+                Bowheer: row.nama_bowheer || '-',
+                Project: row.project_name || '-',
+                PIC: row.pic_project || '-',
+                Regional: row.regional || '-',
+                Kota: row.kota || '-',
+                Item: ((row.item_code || '-') + ' - ' + (row.item_name || '-')),
+                Direction: row.direction || '-',
+                Qty: Number(row.qty || 0),
+                'Unit Price': Number(row.unit_price || 0),
+                Nominal: Number(row.nominal || 0),
+                Remarks: row.remarks_item || '-'
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(exportRows);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Detail Report');
+        XLSX.writeFile(workbook, (currentDrilldownTitle || 'detail_report').replace(/[^\w\s-]/g, '').replace(/\s+/g, '_') + '.xlsx');
     });
 </script>
 
@@ -1180,7 +1226,7 @@ $monthNames = [
     }
 
     .modal-xxl {
-        max-width: 96vw;
+        max-width: 86vw;
     }
 
     .drilldown-summary-grid {
@@ -1213,6 +1259,29 @@ $monthNames = [
         color: #0f172a;
         line-height: 1.2;
         word-break: break-word;
+    }
+
+    .drilldown-note {
+        padding: 1rem 1.1rem;
+        border-radius: 16px;
+        border: 1px solid #d9e8f3;
+        background: linear-gradient(180deg, #fdfefe 0%, #f2f8fc 100%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    }
+
+    .drilldown-note__title {
+        margin-bottom: 0.35rem;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #2e607f;
+    }
+
+    .drilldown-note__text {
+        color: #587389;
+        line-height: 1.6;
+        font-size: 0.94rem;
     }
 
     .js-budget-table thead th,

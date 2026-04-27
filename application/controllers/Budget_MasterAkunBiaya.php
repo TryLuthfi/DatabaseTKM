@@ -6,14 +6,12 @@ class Budget_MasterAkunBiaya extends CI_Controller
     public function __construct()
     {
         parent::__construct();
+        enforce_budgeting_access();
         $this->load->model('MBudget_MasterAkunBiaya');
     }
 
     public function index()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
 
         $keyword = trim((string) $this->input->get('keyword'));
 
@@ -31,10 +29,6 @@ class Budget_MasterAkunBiaya extends CI_Controller
 
     public function save()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
-
         $id = (int) $this->input->post('id_budget_item');
         $payload = $this->input->post(NULL, true);
 
@@ -56,10 +50,6 @@ class Budget_MasterAkunBiaya extends CI_Controller
 
     public function delete($id)
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
-
         $success = $this->MBudget_MasterAkunBiaya->deleteItem((int) $id);
         $this->session->set_flashdata('status', $success ? 'sukses_hapus' : 'gagal_hapus');
 

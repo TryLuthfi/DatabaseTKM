@@ -3,6 +3,55 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MBudget_Cashflow extends CI_Model
 {
+    private function applyHeaderFilters(array $filters = [], $ignoreField = '')
+    {
+        $year = isset($filters['year']) ? (int) $filters['year'] : 0;
+        $month = isset($filters['month']) ? (int) $filters['month'] : 0;
+        $startDate = trim((string) ($filters['start_date'] ?? ''));
+        $endDate = trim((string) ($filters['end_date'] ?? ''));
+        $projectName = trim((string) ($filters['project_name'] ?? ''));
+        $bowheerId = (int) ($filters['id_bowheer'] ?? 0);
+        $regional = trim((string) ($filters['regional'] ?? ''));
+        $kota = trim((string) ($filters['kota'] ?? ''));
+        $picProject = trim((string) ($filters['pic_project'] ?? ''));
+
+        if ($year > 0 && $ignoreField !== 'year') {
+            $this->db->where('YEAR(h.tanggal_cashflow)', $year);
+        }
+
+        if ($month > 0 && $ignoreField !== 'month') {
+            $this->db->where('MONTH(h.tanggal_cashflow)', $month);
+        }
+
+        if ($startDate !== '' && $ignoreField !== 'start_date') {
+            $this->db->where('DATE(h.tanggal_cashflow) >=', $startDate);
+        }
+
+        if ($endDate !== '' && $ignoreField !== 'end_date') {
+            $this->db->where('DATE(h.tanggal_cashflow) <=', $endDate);
+        }
+
+        if ($projectName !== '' && $ignoreField !== 'project_name') {
+            $this->db->where('h.project_name', $projectName);
+        }
+
+        if ($bowheerId > 0 && $ignoreField !== 'id_bowheer') {
+            $this->db->where('h.id_bowheer', $bowheerId);
+        }
+
+        if ($regional !== '' && $ignoreField !== 'regional') {
+            $this->db->where('h.regional', $regional);
+        }
+
+        if ($kota !== '' && $ignoreField !== 'kota') {
+            $this->db->where('h.kota', $kota);
+        }
+
+        if ($picProject !== '' && $ignoreField !== 'pic_project') {
+            $this->db->where('h.pic_project', $picProject);
+        }
+    }
+
     public function getBowheers()
     {
         return $this->db
@@ -19,7 +68,17 @@ class MBudget_Cashflow extends CI_Model
             ->result_array();
     }
 
-    public function getHeaders($year, $month = 0)
+    public function getHeaders($year, $month = 0, $startDate = '', $endDate = '')
+    {
+        return $this->getHeaderSummaries([
+            'year' => (int) $year,
+            'month' => (int) $month,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+        ]);
+    }
+
+    public function getHeaderSummaries(array $filters = [], array $headerIds = [])
     {
         $this->db->select('
             h.*,
@@ -31,13 +90,43 @@ class MBudget_Cashflow extends CI_Model
         $this->db->from('tb_budget_cashflow_header h');
         $this->db->join('tb_master_bowheer b', 'b.id_bowheer = h.id_bowheer', 'left');
         $this->db->join('tb_budget_cashflow_detail d', 'd.id_cashflow_header = h.id_cashflow_header', 'left');
-        $this->db->where('YEAR(h.tanggal_cashflow)', (int) $year);
-        if ((int) $month > 0) {
-            $this->db->where('MONTH(h.tanggal_cashflow)', (int) $month);
+        $this->applyHeaderFilters($filters);
+        if (!empty($headerIds)) {
+            $headerIds = array_values(array_unique(array_filter(array_map('intval', $headerIds))));
+            if (!empty($headerIds)) {
+                $this->db->where_in('h.id_cashflow_header', $headerIds);
+            }
         }
         $this->db->group_by('h.id_cashflow_header');
         $this->db->order_by('h.tanggal_cashflow', 'DESC');
         $this->db->order_by('h.nomor_tec', 'DESC');
+
+        return $this->db->get()->result_array();
+    }
+
+    public function getReportFilterOptions(array $filters = [])
+    {
+        return [
+            'projects' => $this->getDistinctHeaderOptions('h.project_name', 'project_name', $filters),
+            'bowheers' => $this->getDistinctHeaderOptions('h.id_bowheer', 'id_bowheer', $filters, 'b.nama_bowheer'),
+            'regionals' => $this->getDistinctHeaderOptions('h.regional', 'regional', $filters),
+            'cities' => $this->getDistinctHeaderOptions('h.kota', 'kota', $filters),
+            'pics' => $this->getDistinctHeaderOptions('h.pic_project', 'pic_project', $filters),
+        ];
+    }
+
+    private function getDistinctHeaderOptions($valueField, $fieldKey, array $filters = [], $labelField = '')
+    {
+        $labelField = $labelField !== '' ? $labelField : $valueField;
+
+        $this->db->distinct();
+        $this->db->select($valueField . ' AS value, ' . $labelField . ' AS label', false);
+        $this->db->from('tb_budget_cashflow_header h');
+        $this->db->join('tb_master_bowheer b', 'b.id_bowheer = h.id_bowheer', 'left');
+        $this->applyHeaderFilters($filters, $fieldKey);
+        $this->db->where($valueField . ' IS NOT NULL', null, false);
+        $this->db->where('TRIM(COALESCE(' . $valueField . ', "")) !=', '');
+        $this->db->order_by('label', 'ASC');
 
         return $this->db->get()->result_array();
     }

@@ -6,14 +6,12 @@ class Budget_MasterBudgetYears extends CI_Controller
     public function __construct()
     {
         parent::__construct();
+        enforce_budgeting_access();
         $this->load->model('MBudget_MasterBudgetYears');
     }
 
     public function index()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
 
         $selectedYear = (int) $this->input->get('year');
         if ($selectedYear <= 0) {
@@ -40,10 +38,6 @@ class Budget_MasterBudgetYears extends CI_Controller
 
     public function save()
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
-
         $payload = $this->input->post(NULL, true);
         $success = $this->MBudget_MasterBudgetYears->saveBudget($payload);
 
@@ -53,10 +47,6 @@ class Budget_MasterBudgetYears extends CI_Controller
 
     public function delete($id)
     {
-        if (!$this->session->userdata('id_user')) {
-            redirect('Auth');
-        }
-
         $year = (int) $this->input->get('year');
         if ($year <= 0) {
             $year = (int) date('Y');
@@ -69,17 +59,6 @@ class Budget_MasterBudgetYears extends CI_Controller
 
     public function getMonthlyDetail()
     {
-        if (!$this->session->userdata('id_user')) {
-            $this->output
-                ->set_status_header(401)
-                ->set_content_type('application/json', 'utf-8')
-                ->set_output(json_encode([
-                    'status' => false,
-                    'message' => 'Unauthorized',
-                ]));
-            return;
-        }
-
         $budgetId = (int) $this->input->post('id_budget_annual');
         $budget = $this->MBudget_MasterBudgetYears->getBudgetById($budgetId);
 

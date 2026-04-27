@@ -6,16 +6,12 @@ class PO_Monitor extends CI_Controller
     public function __construct()
     {
         parent::__construct();
+        enforce_bilco_access();
         $this->load->model('MPO_Monitor');
     }
 
     public function index()
     {
-        if (empty($this->session->userdata('id_user'))) {
-            redirect('Auth');
-            return;
-        }
-
         $selectedBowheer = $this->input->get('bowheer');
         $selectedSla = $this->input->get('sla');
 

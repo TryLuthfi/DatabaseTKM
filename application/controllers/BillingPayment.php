@@ -43,6 +43,7 @@ class BillingPayment extends CI_Controller
     public function __construct()
     {
         parent::__construct();
+        enforce_bilco_access();
         $this->load->library('form_validation');
         $this->load->library('upload');
         $this->load->model('MBillingPayment');
