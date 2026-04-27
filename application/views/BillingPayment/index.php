@@ -406,6 +406,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                             <th>Price</th>
                                             <th>Regional</th>
                                             <th>Area</th>
+                                            <th>Date Invoice</th>
                                             <th>Date Submit</th>
                                             <th>Due Date</th>
                                             <th>Agging</th>
@@ -418,7 +419,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                     <tbody></tbody>
                                     <tfoot>
                                         <tr>
-                                            <th colspan="8" style="text-align:right">Total:</th>
+                                            <th colspan="9" style="text-align:right">Total:</th>
                                             <th id="totalTarget">0</th>
                                             <th id="totalAchieved">0</th>
                                             <th id="totalSisa">0</th>
@@ -1269,6 +1270,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         break;
                                     case 'Area':
                                         tbodyHtml += `<td>${row.area_payment || '-'}</td>`;
+                                        break;
+                                    case 'Date Invoice':
+                                        tbodyHtml += `<td>${row.tgl_create_invoice || '-'}</td>`;
                                         break;
                                     case 'Date Submit':
                                         tbodyHtml += `<td>${row.tgl_submit_invoice || '-'}</td>`;

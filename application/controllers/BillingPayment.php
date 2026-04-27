@@ -340,7 +340,7 @@ class BillingPayment extends CI_Controller
 
         // Tentukan kolom yang tampil berdasarkan filter
         $priceHeader = $statusInvoice === 'partial' ? 'Outstanding Balance' : 'Price';
-        $columns = ['No', 'Bowheer', 'Invoice', $priceHeader, 'Regional', 'Area', 'Date Submit', 'Due Date', 'Aging', "Priority", "PO Number", "Status Invoice", "Action"];
+        $columns = ['No', 'Bowheer', 'Invoice', $priceHeader, 'Regional', 'Area', 'Date Invoice', 'Date Submit', 'Due Date', 'Aging', "Priority", "PO Number", "Status Invoice", "Action"];
 
         echo json_encode([
             'columns' => $columns,
