@@ -7,14 +7,22 @@ $statusOptions = [
     'WAITING MYREP' => 'WAITING EMR',
     'WAITING FINANCE' => 'WAITING FINANCE',
     'RELEASED' => 'RELEASED',
+    'WAITING DOC' => 'WAITING DOC',
+    'COMPLETED' => 'COMPLETED',
     'DONE BATCH APPROVAL' => 'DONE BATCH APPROVAL',
     'REJECTED' => 'REJECTED',
 ];
-$summaryTotal = count($clusterRows);
-$summaryWaiting = 0;
+$summaryNyBatch = 0;
+$summaryOnProses = 0;
 $summaryDone = 0;
 $summaryRejected = 0;
 $createCityOptions = [];
+$postBatchStatuses = [
+    'DRM',
+    'RFS',
+    'ATP',
+    'DONE',
+];
 
 foreach ($eligibleClusterOptions as $clusterOption) {
     $cityName = trim((string) ($clusterOption['city_name'] ?? ''));
@@ -27,17 +35,26 @@ asort($createCityOptions);
 
 foreach ($clusterRows as $row) {
     $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
-    $batchStatus = strtoupper(trim((string) ($row['staging_status'] ?? 'DRAFT')));
+    $batchStatus = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
+    $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
 
-    if ($batchStatus === 'WAITING HO' || $currentStatus === 'WAITING HO') {
-        $summaryWaiting++;
+    if (!$hasBatch && $currentStatus === 'VALSAL') {
+        $summaryNyBatch++;
     }
 
-    if ($batchStatus === 'DONE BATCH APPROVAL' || $currentStatus === 'DONE BATCH APPROVAL') {
+    if ($hasBatch && !in_array($batchStatus, ['COMPLETED', 'REJECTED'], true)) {
+        $summaryOnProses++;
+    }
+
+    if (
+        $hasBatch
+        && $batchStatus === 'COMPLETED'
+        && !in_array($currentStatus, $postBatchStatuses, true)
+    ) {
         $summaryDone++;
     }
 
-    if ($batchStatus === 'REJECTED' || $currentStatus === 'REJECTED') {
+    if ($hasBatch && ($batchStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
         $summaryRejected++;
     }
 }
@@ -49,7 +66,12 @@ if (!function_exists('batchBadgeClass')) {
             case 'APPROVED':
             case 'RELEASED':
             case 'DONE BATCH APPROVAL':
+            case 'COMPLETED':
                 return 'success';
+            case 'WAITING INPUT':
+                return 'info';
+            case 'WAITING DOC':
+                return 'warning';
             case 'REJECTED':
                 return 'danger';
             case 'WAITING HO':
@@ -132,17 +154,19 @@ if (!function_exists('batchStatusLabel')) {
 
             <div class="row">
                 <div class="col-md-12">
-                    <div class="card card-primary shadow-sm valsal-filter-card">
-                        <div class="card-header">
-                            <h3 class="card-title">Filter Data Batch Approval</h3>
+                    <div class="card card-outline card-primary shadow-sm batch-filter-card">
+                        <div class="card-header batch-section-header">
+                            <div>
+                                <h3 class="card-title mb-1">Filter Data Batch Approval</h3>
+                            </div>
                         </div>
                         <div class="card-body">
                             <form method="get" action="<?= base_url('Batch_Approval_MyRep') ?>">
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <label>Kota</label>
-                                            <select name="city" class="form-control">
+                                            <label class="batch-field-label">Kota</label>
+                                            <select name="city" class="form-control batch-input">
                                                 <option value="">Semua Kota</option>
                                                 <?php foreach ($cityOptions as $cityOption): ?>
                                                     <option value="<?= htmlspecialchars($cityOption) ?>" <?= $selectedCity === strtoupper($cityOption) ? 'selected' : '' ?>>
@@ -154,8 +178,8 @@ if (!function_exists('batchStatusLabel')) {
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <label>Status</label>
-                                            <select name="status" class="form-control">
+                                            <label class="batch-field-label">Status</label>
+                                            <select name="status" class="form-control batch-input">
                                                 <option value="">Semua Status</option>
                                                 <?php foreach ($statusOptions as $statusValue => $statusLabel): ?>
                                                     <option value="<?= $statusValue ?>" <?= $selectedStatus === $statusValue ? 'selected' : '' ?>>
@@ -166,10 +190,10 @@ if (!function_exists('batchStatusLabel')) {
                                         </div>
                                     </div>
                                     <div class="col-md-4 d-flex align-items-end">
-                                        <div class="form-group mb-0 w-100 d-flex justify-content-between">
-                                            <a href="<?= base_url('Batch_Approval_MyRep') ?>" class="btn btn-outline-secondary">Reset</a>
+                                        <div class="form-group mb-0 w-100 d-flex justify-content-between batch-filter-actions">
+                                            <a href="<?= base_url('Batch_Approval_MyRep') ?>" class="btn budget-btn budget-btn--ghost">Reset</a>
                                             <?php if ($isReady): ?>
-                                                <button type="submit" class="btn btn-primary">Terapkan Filter</button>
+                                                <button type="submit" class="btn budget-btn budget-btn--primary">Terapkan Filter</button>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -182,25 +206,25 @@ if (!function_exists('batchStatusLabel')) {
 
             <div class="row">
                 <div class="col-md-3">
-                    <div class="small-box bg-info shadow-sm">
+                    <div class="small-box bg-info shadow-sm batch-summary-box">
                         <div class="inner">
-                            <h3><?= number_format($summaryTotal, 0, ',', '.') ?></h3>
-                            <p>Total Batch Approval</p>
+                            <h3><?= number_format($summaryNyBatch, 0, ',', '.') ?></h3>
+                            <p>NY BATCH</p>
                         </div>
                         <div class="icon"><i class="fas fa-layer-group"></i></div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="small-box bg-primary shadow-sm">
+                    <div class="small-box bg-primary shadow-sm batch-summary-box">
                         <div class="inner">
-                            <h3><?= number_format($summaryWaiting, 0, ',', '.') ?></h3>
-                            <p>Waiting HO</p>
+                            <h3><?= number_format($summaryOnProses, 0, ',', '.') ?></h3>
+                            <p>On Proses</p>
                         </div>
                         <div class="icon"><i class="fas fa-folder-open"></i></div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="small-box bg-success shadow-sm">
+                    <div class="small-box bg-success shadow-sm batch-summary-box">
                         <div class="inner">
                             <h3><?= number_format($summaryDone, 0, ',', '.') ?></h3>
                             <p>Done Batch</p>
@@ -209,7 +233,7 @@ if (!function_exists('batchStatusLabel')) {
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="small-box bg-danger shadow-sm">
+                    <div class="small-box bg-danger shadow-sm batch-summary-box">
                         <div class="inner">
                             <h3><?= number_format($summaryRejected, 0, ',', '.') ?></h3>
                             <p>Rejected</p>
@@ -221,20 +245,27 @@ if (!function_exists('batchStatusLabel')) {
 
             <div class="row">
                 <div class="col-md-12">
-                    <div class="card card-outline card-primary shadow-sm valsal-table-card">
-                        <div class="card-header">
-                            <h3 class="card-title">Monitoring Batch Approval</h3>
-                            <div class="card-tools">
-                                <?php if ($isReady): ?>
-                                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modal-batch-create">
-                                        <i class="fas fa-plus"></i> Input Batch Approval
-                                    </button>
-                                <?php endif; ?>
+                    <div class="batch-toolbar">
+                        <?php if ($isReady): ?>
+                            <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-batch-create">
+                                <i class="fas fa-plus mr-1"></i> Input Batch Approval
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card card-outline card-primary shadow-sm batch-table-card">
+                        <div class="card-header batch-section-header">
+                            <div>
+                                <h3 class="card-title mb-1">Monitoring Batch Approval</h3>
                             </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table id="table_batch_myrep" class="table table-bordered table-hover">
+                                <table id="table_batch_myrep" class="table table-bordered table-hover batch-monitor-table">
                                     <thead>
                                         <tr>
                                             <th>No</th>
@@ -256,7 +287,13 @@ if (!function_exists('batchStatusLabel')) {
                                     </thead>
                                     <tbody>
                                         <?php foreach ($clusterRows as $index => $row): ?>
-                                            <?php $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-'; ?>
+                                            <?php
+                                            $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
+                                            $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
+                                            $batchStageLabel = $hasBatch ? batchStatusLabel($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT') : 'WAITING INPUT';
+                                            $batchDocStatusRaw = strtoupper(trim((string) ($row['batch_doc_status'] ?? '')));
+                                            $showUploadButton = $docReady && $hasBatch && in_array($batchDocStatusRaw, ['', 'REJECTED'], true);
+                                            ?>
                                             <tr>
                                                 <td><?= $index + 1 ?></td>
                                                 <td>
@@ -273,15 +310,21 @@ if (!function_exists('batchStatusLabel')) {
                                                 <td class="text-right"><?= !is_null($row['nominal_per_homepass'] ?? null) ? number_format((float) $row['nominal_per_homepass'], 0, ',', '.') : '-' ?></td>
                                                 <td class="text-right"><?= !is_null($row['nominal_nego_emr'] ?? null) ? number_format((float) $row['nominal_nego_emr'], 0, ',', '.') : '-' ?></td>
                                                 <td class="text-right"><?= !is_null($row['nominal_release_finance'] ?? null) ? number_format((float) $row['nominal_release_finance'], 0, ',', '.') : '-' ?></td>
-                                                <td><span class="badge badge-<?= batchBadgeClass($row['staging_status'] ?? 'DRAFT') ?>"><?= htmlspecialchars(batchStatusLabel($row['staging_status'] ?? 'DRAFT')) ?></span></td>
+                                                <td><span class="badge badge-<?= batchBadgeClass($batchStageLabel) ?>"><?= htmlspecialchars($batchStageLabel) ?></span></td>
                                                 <td>
-                                                    <span class="badge badge-<?= batchBadgeClass(batchDocLabel($row)) ?>"><?= htmlspecialchars(batchDocLabel($row)) ?></span>
-                                                    <?php if (!empty($row['batch_doc_file_name'])): ?>
+                                                    <?php if ($hasBatch): ?>
+                                                        <span class="badge badge-<?= batchBadgeClass(batchDocLabel($row)) ?>"><?= htmlspecialchars(batchDocLabel($row)) ?></span>
+                                                    <?php else: ?>
+                                                        <span class="badge badge-secondary">BELUM ADA DOC</span>
+                                                    <?php endif; ?>
+                                                    <?php if ($hasBatch && !empty($row['batch_doc_file_name'])): ?>
                                                         <div class="small text-muted mt-1"><?= htmlspecialchars((string) $row['batch_doc_file_name']) ?></div>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <?php if (!empty($row['batch_doc_reviewed_at'])): ?>
+                                                    <?php if (!$hasBatch): ?>
+                                                        <span class="text-muted small">Belum ada pengajuan</span>
+                                                    <?php elseif (!empty($row['batch_doc_reviewed_at'])): ?>
                                                         <div class="small text-muted">Reviewed</div>
                                                         <div><?= htmlspecialchars((string) $row['batch_doc_reviewed_at']) ?></div>
                                                     <?php elseif (!empty($row['batch_doc_file_id'])): ?>
@@ -292,9 +335,67 @@ if (!function_exists('batchStatusLabel')) {
                                                 </td>
                                                 <td><span class="badge badge-<?= batchBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
                                                 <td>
-                                                    <a href="<?= base_url('Batch_Approval_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="btn btn-sm btn-outline-secondary">
-                                                        Detail
-                                                    </a>
+                                                    <?php if ($hasBatch): ?>
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-sm btn-outline-primary js-edit-batch"
+                                                            data-toggle="modal"
+                                                            data-target="#modal-batch-edit"
+                                                            data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
+                                                            data-id_batch_approval="<?= (int) ($row['id_batch_approval'] ?? 0) ?>"
+                                                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-regional_name="<?= htmlspecialchars((string) ($row['regional_name'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-province_name="<?= htmlspecialchars((string) ($row['province_name'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-submission_date="<?= htmlspecialchars((string) ($row['submission_date'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-homepass_valsal="<?= (int) ($row['homepass_valsal'] ?? 0) ?>"
+                                                            data-hp_donasi="<?= (int) ($row['hp_donasi'] ?? 0) ?>"
+                                                            data-nominal_pengajuan_area="<?= htmlspecialchars((string) ($row['nominal_pengajuan_area'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-nominal_nego_emr="<?= htmlspecialchars((string) ($row['nominal_nego_emr'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-nominal_release_finance="<?= htmlspecialchars((string) ($row['nominal_release_finance'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-bank_name="<?= htmlspecialchars((string) ($row['bank_name'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-bank_account_number="<?= htmlspecialchars((string) ($row['bank_account_number'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-recipient_name="<?= htmlspecialchars((string) ($row['recipient_name'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-recipient_phone="<?= htmlspecialchars((string) ($row['recipient_phone'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-recipient_position="<?= htmlspecialchars((string) ($row['recipient_position'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-recipient_period="<?= htmlspecialchars((string) ($row['recipient_period'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-free_wifi_qty="<?= htmlspecialchars((string) ($row['free_wifi_qty'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-free_wifi_period_month="<?= htmlspecialchars((string) ($row['free_wifi_period_month'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-astri_batch_number="<?= htmlspecialchars((string) ($row['astri_batch_number'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-staging_status="<?= htmlspecialchars((string) ($row['staging_status'] ?? 'DRAFT'), ENT_QUOTES) ?>"
+                                                            data-remark_batch_approval="<?= htmlspecialchars((string) ($row['remark_batch_approval'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-pics='<?= htmlspecialchars(json_encode($this->MBatch_Approval_MyRep->getBatchPics((int) ($row["id_batch_approval"] ?? 0))), ENT_QUOTES) ?>'>
+                                                            Edit
+                                                        </button>
+                                                        <a href="<?= base_url('Batch_Approval_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="btn btn-sm btn-outline-secondary mt-1">
+                                                            Detail
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-sm btn-outline-primary js-start-batch"
+                                                            data-toggle="modal"
+                                                            data-target="#modal-batch-create"
+                                                            data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
+                                                            data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>">
+                                                            Input Batch
+                                                        </button>
+                                                    <?php endif; ?>
+                                                    <?php if ($docReady && $hasBatch): ?>
+                                                        <?php if ($showUploadButton): ?>
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-outline-info js-upload-doc mt-1"
+                                                                data-toggle="modal"
+                                                                data-target="#modal-batch-upload-doc"
+                                                                data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
+                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                                                                data-doc_status="<?= htmlspecialchars((string) batchDocLabel($row), ENT_QUOTES) ?>"
+                                                                data-doc_remark="<?= htmlspecialchars((string) ($row['batch_doc_remark'] ?? ''), ENT_QUOTES) ?>">
+                                                                <?= $batchDocStatusRaw === 'REJECTED' ? 'Re-Upload Doc' : 'Upload Doc' ?>
+                                                            </button>
+                                                        <?php endif; ?>
+                                                    <?php endif; ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -311,11 +412,15 @@ if (!function_exists('batchStatusLabel')) {
 
 <?php if ($isReady): ?>
     <div class="modal fade" id="modal-batch-create" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content">
                 <form method="post" action="<?= base_url('Batch_Approval_MyRep/saveBatchApproval') ?>" enctype="multipart/form-data" id="create-batch-approval-form">
-                    <div class="modal-header valsal-modal-header">
-                        <h5 class="modal-title">Input Batch Approval</h5>
+                    <div class="modal-header budget-modal__header">
+                        <div>
+                            <div class="budget-modal__eyebrow">MyRep Batch Approval</div>
+                            <h5 class="modal-title mb-1">Input Batch Approval</h5>
+                            <p class="budget-modal__subtitle mb-0">Pilih cluster eligible, lengkapi nominal, PIC, dan dokumen RAR dalam satu workflow.</p>
+                        </div>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
@@ -466,9 +571,9 @@ if (!function_exists('batchStatusLabel')) {
                             <div class="form-group mb-0"><textarea name="remark_batch_approval" rows="3" class="form-control"></textarea></div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
-                        <button type="submit" class="btn btn-primary">Simpan Batch Approval</button>
+                    <div class="modal-footer budget-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                        <button type="submit" class="btn budget-btn budget-btn--primary">Simpan Batch Approval</button>
                     </div>
                 </form>
             </div>
@@ -476,13 +581,17 @@ if (!function_exists('batchStatusLabel')) {
     </div>
 
     <div class="modal fade" id="modal-batch-edit" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content">
                 <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateBatchApproval') ?>">
                     <input type="hidden" name="cluster_id" id="edit_id_myrep_cluster">
                     <input type="hidden" name="id_batch_approval" id="edit_id_batch_approval">
-                    <div class="modal-header valsal-modal-header">
-                        <h5 class="modal-title">Edit Batch Approval</h5>
+                    <div class="modal-header budget-modal__header">
+                        <div>
+                            <div class="budget-modal__eyebrow">MyRep Batch Approval</div>
+                            <h5 class="modal-title mb-1">Edit Batch Approval</h5>
+                            <p class="budget-modal__subtitle mb-0">Sesuaikan data pengajuan, staging, PIC approval, dan nominal release dari cluster yang sudah berjalan.</p>
+                        </div>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
@@ -561,9 +670,9 @@ if (!function_exists('batchStatusLabel')) {
                             <div class="form-group mb-0"><textarea name="remark_batch_approval" id="edit_remark_batch_approval" rows="3" class="form-control"></textarea></div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
-                        <button type="submit" class="btn btn-primary">Update Batch Approval</button>
+                    <div class="modal-footer budget-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                        <button type="submit" class="btn budget-btn budget-btn--primary">Update Batch Approval</button>
                     </div>
                 </form>
             </div>
@@ -576,7 +685,7 @@ if (!function_exists('batchStatusLabel')) {
                 <div class="modal-content">
                     <form method="post" action="<?= base_url('Batch_Approval_MyRep/uploadDocument') ?>" enctype="multipart/form-data" id="batch-upload-document-form">
                         <input type="hidden" name="cluster_id" id="upload_cluster_id">
-                        <div class="modal-header" style="background: linear-gradient(135deg, #198754, #34c38f);">
+                        <div class="modal-header budget-modal__header budget-modal__header--success">
                             <div>
                                 <h4 class="modal-title mb-1">Upload Dokumen RAR</h4>
                                 <p class="mb-0" style="opacity:.9;" id="upload_doc_cluster_caption"></p>
@@ -647,9 +756,9 @@ if (!function_exists('batchStatusLabel')) {
                                 </div>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                            <button type="submit" class="btn btn-success" id="batch-upload-document-submit">Upload Dokumen</button>
+                        <div class="modal-footer budget-modal__footer">
+                            <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                            <button type="submit" class="btn budget-btn budget-btn--success" id="batch-upload-document-submit">Upload Dokumen</button>
                         </div>
                     </form>
                 </div>
@@ -662,7 +771,7 @@ if (!function_exists('batchStatusLabel')) {
                     <div class="modal-content">
                         <form method="post" action="<?= base_url('Batch_Approval_MyRep/approveDocument') ?>">
                             <input type="hidden" name="id_doc_file" id="approve_id_doc_file">
-                            <div class="modal-header" style="background: linear-gradient(135deg, #15803d, #16a34a);">
+                            <div class="modal-header budget-modal__header budget-modal__header--success">
                                 <div>
                                     <h4 class="modal-title mb-1">Approve Dokumen</h4>
                                     <p class="mb-0" style="opacity:.9;" id="approve_doc_name">RAR</p>
@@ -687,9 +796,9 @@ if (!function_exists('batchStatusLabel')) {
                                     </div>
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                                <button type="submit" class="btn btn-success">Approve Dokumen</button>
+                            <div class="modal-footer budget-modal__footer">
+                                <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                                <button type="submit" class="btn budget-btn budget-btn--success">Approve Dokumen</button>
                             </div>
                         </form>
                     </div>
@@ -701,7 +810,7 @@ if (!function_exists('batchStatusLabel')) {
                     <div class="modal-content">
                         <form method="post" action="<?= base_url('Batch_Approval_MyRep/rejectDocument') ?>">
                             <input type="hidden" name="id_doc_file" id="reject_id_doc_file">
-                            <div class="modal-header" style="background: linear-gradient(135deg, #b91c1c, #dc2626);">
+                            <div class="modal-header budget-modal__header budget-modal__header--danger">
                                 <div>
                                     <h4 class="modal-title mb-1">Reject Dokumen</h4>
                                     <p class="mb-0" style="opacity:.9;" id="reject_doc_name">RAR</p>
@@ -726,9 +835,9 @@ if (!function_exists('batchStatusLabel')) {
                                     </div>
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                                <button type="submit" class="btn btn-danger">Reject Dokumen</button>
+                            <div class="modal-footer budget-modal__footer">
+                                <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                                <button type="submit" class="btn budget-btn budget-btn--danger">Reject Dokumen</button>
                             </div>
                         </form>
                     </div>
@@ -739,7 +848,7 @@ if (!function_exists('batchStatusLabel')) {
         <div class="modal fade doc-modal" id="modal-batch-history-doc" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
-                    <div class="modal-header" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+                    <div class="modal-header budget-modal__header">
                         <div>
                             <h4 class="modal-title mb-1">History Dokumen</h4>
                             <p class="mb-0" style="opacity:.9;" id="history_doc_name">RAR</p>
@@ -759,8 +868,8 @@ if (!function_exists('batchStatusLabel')) {
                             </ul>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
+                    <div class="modal-footer budget-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
                     </div>
                 </div>
             </div>
@@ -772,7 +881,7 @@ if (!function_exists('batchStatusLabel')) {
                     <form method="post" action="<?= base_url('Batch_Approval_MyRep/uploadTransferProof') ?>" enctype="multipart/form-data">
                         <input type="hidden" name="cluster_id" id="transfer_cluster_id">
                         <input type="hidden" name="id_batch_approval" id="transfer_batch_id">
-                        <div class="modal-header" style="background: linear-gradient(135deg, #111827, #374151);">
+                        <div class="modal-header budget-modal__header budget-modal__header--dark">
                             <div>
                                 <h4 class="modal-title mb-1">Upload Bukti Transfer</h4>
                                 <p class="mb-0" style="opacity:.9;" id="transfer_cluster_name_caption"></p>
@@ -788,9 +897,9 @@ if (!function_exists('batchStatusLabel')) {
                                 </div>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                            <button type="submit" class="btn btn-dark">Upload Bukti Transfer</button>
+                        <div class="modal-footer budget-modal__footer">
+                            <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                            <button type="submit" class="btn budget-btn budget-btn--dark">Upload Bukti Transfer</button>
                         </div>
                     </form>
                 </div>
@@ -985,15 +1094,189 @@ if (!function_exists('batchStatusLabel')) {
         margin-bottom: 0;
     }
 
-    .valsal-filter-card .card-header,
-    .valsal-table-card .card-header {
+    .batch-filter-card,
+    .batch-table-card {
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 22px 48px rgba(15, 23, 42, 0.08);
+        background: #fff;
+    }
+
+    .batch-filter-card .card-header,
+    .batch-table-card .card-header {
         background: linear-gradient(135deg, #f8fbff, #eef6ff);
+        border-bottom: 1px solid #dbeafe;
+        padding: 1.15rem 1.35rem;
+    }
+
+    .batch-filter-card .card-body,
+    .batch-table-card .card-body {
+        padding: 1.35rem;
+    }
+
+    .batch-section-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .batch-section-subtitle {
+        color: #64748b;
+        font-size: .92rem;
+        margin-top: .2rem;
+    }
+
+    .batch-field-label {
+        display: block;
+        margin-bottom: .45rem;
+        font-size: .75rem;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #475569;
+    }
+
+    .batch-input,
+    #modal-batch-create .form-control,
+    #modal-batch-edit .form-control,
+    .doc-modal .form-control,
+    .doc-modal .form-control-file,
+    .doc-modal select.form-control {
+        min-height: 44px;
+        border-radius: 14px;
+        border: 1px solid #d7e0ea;
+        box-shadow: none;
+        transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+    }
+
+    .batch-input:focus,
+    #modal-batch-create .form-control:focus,
+    #modal-batch-edit .form-control:focus,
+    .doc-modal .form-control:focus,
+    .doc-modal select.form-control:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 .2rem rgba(96, 165, 250, 0.16);
+    }
+
+    #modal-batch-create .form-control[readonly],
+    #modal-batch-edit .form-control[readonly],
+    #modal-batch-create .form-control:disabled,
+    #modal-batch-edit .form-control:disabled,
+    .doc-modal .form-control[readonly],
+    .doc-modal .form-control:disabled {
+        background: #eef4fb;
+        border-color: #d7e3f1;
+        color: #64748b;
+        cursor: not-allowed;
+    }
+
+    .batch-summary-box {
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+    }
+
+    .batch-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 1rem;
+    }
+
+    .budget-btn {
+        border: 0;
+        border-radius: 999px;
+        padding: .72rem 1.2rem;
+        font-weight: 700;
+        letter-spacing: .01em;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+        transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+
+    .budget-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .budget-btn--primary {
+        background: linear-gradient(135deg, #0f4c81, #1d7ed6);
+        color: #fff;
+    }
+
+    .budget-btn--success {
+        background: linear-gradient(135deg, #198754, #34c38f);
+        color: #fff;
+    }
+
+    .budget-btn--danger {
+        background: linear-gradient(135deg, #b91c1c, #dc2626);
+        color: #fff;
+    }
+
+    .budget-btn--dark {
+        background: linear-gradient(135deg, #111827, #374151);
+        color: #fff;
+    }
+
+    .budget-btn--ghost {
+        background: #fff;
+        color: #334155;
+        border: 1px solid #d7e0ea;
+        box-shadow: none;
+    }
+
+    .batch-monitor-table thead th,
+    .batch-table-card .table thead th {
+        background: #eff6ff;
+        color: #1e3a8a;
+        font-weight: 700;
+        white-space: nowrap;
         border-bottom: 1px solid #dbeafe;
     }
 
-    .valsal-modal-header {
+    .batch-monitor-table tbody tr:hover {
+        background: #f8fbff;
+    }
+
+    .budget-modal__header {
         background: linear-gradient(135deg, #0f4c81, #1d7ed6);
         color: #fff;
+        padding: 1.25rem 1.35rem;
+        border-bottom: 0;
+    }
+
+    .budget-modal__header--success {
+        background: linear-gradient(135deg, #198754, #34c38f);
+    }
+
+    .budget-modal__header--danger {
+        background: linear-gradient(135deg, #b91c1c, #dc2626);
+    }
+
+    .budget-modal__header--dark {
+        background: linear-gradient(135deg, #111827, #374151);
+    }
+
+    .budget-modal__eyebrow {
+        font-size: .74rem;
+        text-transform: uppercase;
+        letter-spacing: .14em;
+        font-weight: 800;
+        opacity: .82;
+        margin-bottom: .35rem;
+    }
+
+    .budget-modal__subtitle {
+        color: rgba(255, 255, 255, 0.86);
+        font-size: .92rem;
+        line-height: 1.5;
+    }
+
+    .budget-modal__footer {
+        border-top: 1px solid #e7ecf3;
+        background: #fff;
+        padding: 1rem 1.25rem 1.15rem;
+        gap: .75rem;
     }
 
     #modal-batch-create .modal-content,
@@ -1008,6 +1291,10 @@ if (!function_exists('batchStatusLabel')) {
     #modal-batch-edit .modal-body {
         background: #f6f8fb;
         padding: 1.25rem;
+    }
+
+    .modal-xxl {
+        max-width: 78vw;
     }
 
     .batch-form-section {
@@ -1139,13 +1426,6 @@ if (!function_exists('batchStatusLabel')) {
         cursor: pointer;
     }
 
-    .valsal-table-card .table thead th {
-        background: #eff6ff;
-        color: #1e3a8a;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
     .small-box.shadow-sm {
         box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
         border-radius: 14px;
@@ -1161,10 +1441,44 @@ if (!function_exists('batchStatusLabel')) {
         z-index: 1065;
     }
 
+    .select2-container--default .select2-selection--single,
+    .select2-container--default .select2-selection--multiple {
+        min-height: 44px;
+        border-radius: 14px;
+        border: 1px solid #d7e0ea;
+        padding: .35rem .55rem;
+    }
+
+    .select2-container--default.select2-container--focus .select2-selection--single,
+    .select2-container--default.select2-container--focus .select2-selection--multiple {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 .2rem rgba(96, 165, 250, 0.16);
+    }
+
+    .select2-dropdown {
+        border-radius: 14px;
+        border: 1px solid #d7e0ea;
+        overflow: hidden;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+    }
+
     @media (max-width: 767.98px) {
         .batch-form-section__head,
         .batch-pic-card__head {
             flex-direction: column;
+        }
+
+        .batch-toolbar {
+            justify-content: stretch;
+        }
+
+        .batch-toolbar .budget-btn {
+            width: 100%;
+        }
+
+        .modal-xxl {
+            max-width: calc(100vw - 1rem);
+            margin: .5rem auto;
         }
     }
 </style>
@@ -1319,6 +1633,27 @@ if (!function_exists('batchStatusLabel')) {
             }
         }
 
+        function syncCityFromCluster(target) {
+            var $container = $(target).closest('#modal-batch-create, #modal-batch-edit');
+            if (!$container.length) {
+                $container = $(target);
+            }
+
+            var $clusterSelect = $container.find('.js-batch-cluster-selector');
+            var $citySelect = $container.find('.js-batch-city-selector');
+            if (!$clusterSelect.length || !$citySelect.length) {
+                return;
+            }
+
+            var selectedOption = $clusterSelect.find('option:selected');
+            var cityValue = ((selectedOption.data('city-filter') || '') + '').toUpperCase();
+            if (cityValue === '') {
+                return;
+            }
+
+            $citySelect.val(cityValue).trigger('change.select2');
+        }
+
         function filterBatchClusterOptions($modal) {
             var selectedCity = (($modal.find('.js-batch-city-selector').val() || '') + '').toUpperCase();
             var $clusterSelect = $modal.find('.js-batch-cluster-selector');
@@ -1347,6 +1682,19 @@ if (!function_exists('batchStatusLabel')) {
 
             $clusterSelect.trigger('change.select2');
             syncClusterMeta($modal);
+        }
+
+        function applyCreateBatchPreset($modal) {
+            var presetClusterId = ($modal.attr('data-preset-cluster-id') || '').toString();
+            var presetCity = ($modal.attr('data-preset-city') || '').toString().toUpperCase();
+
+            if (presetCity !== '') {
+                $modal.find('.js-batch-city-selector').val(presetCity).trigger('change.select2');
+            }
+
+            if (presetClusterId !== '') {
+                $modal.find('.js-batch-cluster-selector').val(presetClusterId).trigger('change');
+            }
         }
 
         function toggleStageFields(prefix) {
@@ -1529,6 +1877,9 @@ if (!function_exists('batchStatusLabel')) {
 
         $(function () {
             $(document).on('change', '.js-batch-cluster-selector', function () {
+                var $container = $(this).closest('#modal-batch-create, #modal-batch-edit');
+                syncCityFromCluster($container);
+                filterBatchClusterOptions($container);
                 syncClusterMeta(this);
             });
 
@@ -1541,6 +1892,7 @@ if (!function_exists('batchStatusLabel')) {
                 $(this).find('.js-batch-city-selector').val('').trigger('change');
                 $(this).find('.js-batch-cluster-selector').val('').trigger('change');
                 filterBatchClusterOptions($(this));
+                applyCreateBatchPreset($(this));
                 syncClusterMeta(this);
                 renderPicRows('create', []);
                 toggleStageFields('create');
@@ -1554,6 +1906,7 @@ if (!function_exists('batchStatusLabel')) {
 
             $('#modal-batch-create').on('hidden.bs.modal', function () {
                 this.querySelector('form').reset();
+                $(this).removeAttr('data-preset-cluster-id').removeAttr('data-preset-city');
                 var $citySelect = $(this).find('.js-batch-city-selector');
                 var $clusterSelect = $(this).find('.js-batch-cluster-select');
                 if ($citySelect.hasClass('select2-hidden-accessible')) {
@@ -1568,6 +1921,13 @@ if (!function_exists('batchStatusLabel')) {
                 fillCreateDefaults();
                 $(this).find('.js-dropzone-label').text('Belum ada file dipilih');
                 updateNominalPerHomepass('create');
+            });
+
+            $(document).on('click', '.js-start-batch', function () {
+                var $button = $(this);
+                $('#modal-batch-create')
+                    .attr('data-preset-cluster-id', ($button.data('cluster_id') || '').toString())
+                    .attr('data-preset-city', ($button.data('city_name') || '').toString().toUpperCase());
             });
 
             $(document).on('change', '#create_rar_not_required', function () {

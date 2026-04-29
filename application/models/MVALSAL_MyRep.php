@@ -50,9 +50,15 @@ class MVALSAL_MyRep extends CI_Model
             ->distinct()
             ->select('c.city_name')
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
+            ->where_in('UPPER(b.status_bak)', ['DONE', 'APPROVED'])
+            ->group_start()
+                ->where('v.id_valsal IS NOT NULL', null, false)
+                ->or_where('UPPER(c.status_current)', 'BAK')
+            ->group_end()
             ->order_by('c.city_name', 'ASC')
             ->get()
             ->result_array();
@@ -157,9 +163,16 @@ class MVALSAL_MyRep extends CI_Model
                 t.month_num
             ')
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left');
+
+        $this->db
+            ->where_in('UPPER(b.status_bak)', ['DONE', 'APPROVED'])
+            ->group_start()
+                ->where('v.id_valsal IS NOT NULL', null, false)
+                ->or_where('UPPER(c.status_current)', 'BAK')
+            ->group_end();
 
         if ($this->valsalDocumentTablesReady()) {
             $this->db

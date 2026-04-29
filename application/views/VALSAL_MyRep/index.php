@@ -3,11 +3,21 @@ $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
 $statusOptions = ['DRAFT', 'ON REVIEW', 'REJECTED', 'DONE'];
 $today = date('Y-m-d');
-$summaryTotal = count($clusterRows);
+$summaryNyValsal = 0;
 $summaryWaiting = 0;
 $summaryDone = 0;
 $summaryRejected = 0;
+$summaryNyValsalHp = 0;
+$summaryWaitingHp = 0;
+$summaryDoneHp = 0;
+$summaryRejectedHp = 0;
 $createCityOptions = [];
+$postValsalStatuses = [
+    'DRM',
+    'RFS',
+    'ATP',
+    'DONE',
+];
 
 foreach ($eligibleClusterOptions as $clusterOption) {
     $cityName = trim((string) ($clusterOption['city_name'] ?? ''));
@@ -21,17 +31,33 @@ asort($createCityOptions);
 foreach ($clusterRows as $row) {
     $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
     $valsalStatus = strtoupper(trim((string) ($row['status_valsal'] ?? 'DRAFT')));
+    $hasValsal = (int) ($row['id_valsal'] ?? 0) > 0;
+    $homepassBak = (float) ($row['homepass_bak'] ?? 0);
+    $homepassValsal = (float) ($row['homepass_valsal'] ?? 0);
+    $summaryHomepass = $homepassValsal > 0 ? $homepassValsal : $homepassBak;
 
-    if ($currentStatus === 'BAK') {
+    if (!$hasValsal && $currentStatus === 'BAK') {
+        $summaryNyValsal++;
+        $summaryNyValsalHp += $homepassBak;
+    }
+
+    if ($hasValsal && !in_array($valsalStatus, ['DONE', 'APPROVED', 'REJECTED'], true)) {
         $summaryWaiting++;
+        $summaryWaitingHp += $summaryHomepass;
     }
 
-    if ($valsalStatus === 'DONE' || $currentStatus === 'VALSAL') {
+    if (
+        $hasValsal
+        && in_array($valsalStatus, ['DONE', 'APPROVED'], true)
+        && !in_array($currentStatus, $postValsalStatuses, true)
+    ) {
         $summaryDone++;
+        $summaryDoneHp += $summaryHomepass;
     }
 
-    if ($valsalStatus === 'REJECTED' || $currentStatus === 'REJECTED') {
+    if ($hasValsal && ($valsalStatus === 'REJECTED' || $currentStatus === 'REJECTED')) {
         $summaryRejected++;
+        $summaryRejectedHp += $summaryHomepass;
     }
 }
 
@@ -43,6 +69,8 @@ if (!function_exists('valsalBadgeClass')) {
             case 'APPROVED':
             case 'VALSAL':
                 return 'success';
+            case 'WAITING INPUT':
+                return 'info';
             case 'REJECTED':
                 return 'danger';
             case 'BAK':
@@ -121,17 +149,19 @@ if (!function_exists('valsalDocLabel')) {
 
             <div class="row">
                 <div class="col-md-12">
-                    <div class="card card-primary shadow-sm valsal-filter-card">
-                        <div class="card-header">
-                            <h3 class="card-title">Filter Data VALSAL</h3>
+                    <div class="card card-outline card-primary shadow-sm valsal-filter-card">
+                        <div class="card-header valsal-section-header">
+                            <div>
+                                <h3 class="card-title mb-1">Filter Data VALSAL</h3>
+                            </div>
                         </div>
                         <div class="card-body">
                             <form method="get" action="<?= base_url('VALSAL_MyRep') ?>">
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <label>Kota</label>
-                                            <select name="city" class="form-control">
+                                            <label class="valsal-field-label">Kota</label>
+                                            <select name="city" class="form-control valsal-input">
                                                 <option value="">Semua Kota</option>
                                                 <?php foreach ($cityOptions as $cityOption): ?>
                                                     <option value="<?= htmlspecialchars($cityOption) ?>" <?= $selectedCity === strtoupper($cityOption) ? 'selected' : '' ?>>
@@ -143,8 +173,8 @@ if (!function_exists('valsalDocLabel')) {
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <label>Status</label>
-                                            <select name="status" class="form-control">
+                                            <label class="valsal-field-label">Status</label>
+                                            <select name="status" class="form-control valsal-input">
                                                 <option value="">Semua Status</option>
                                                 <option value="BAK" <?= $selectedStatus === 'BAK' ? 'selected' : '' ?>>BAK</option>
                                                 <?php foreach ($statusOptions as $statusOption): ?>
@@ -156,10 +186,10 @@ if (!function_exists('valsalDocLabel')) {
                                         </div>
                                     </div>
                                     <div class="col-md-4 d-flex align-items-end">
-                                        <div class="form-group mb-0 w-100 d-flex justify-content-between">
-                                            <a href="<?= base_url('VALSAL_MyRep') ?>" class="btn btn-outline-secondary">Reset</a>
+                                        <div class="form-group mb-0 w-100 d-flex justify-content-between valsal-filter-actions">
+                                            <a href="<?= base_url('VALSAL_MyRep') ?>" class="btn budget-btn budget-btn--ghost">Reset</a>
                                             <?php if ($isReady): ?>
-                                                <button type="submit" class="btn btn-primary">Terapkan Filter</button>
+                                                <button type="submit" class="btn budget-btn budget-btn--primary">Terapkan Filter</button>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -172,37 +202,41 @@ if (!function_exists('valsalDocLabel')) {
 
             <div class="row">
                 <div class="col-md-3">
-                    <div class="small-box bg-info shadow-sm">
+                    <div class="small-box bg-info shadow-sm valsal-summary-box">
                         <div class="inner">
-                            <h3><?= number_format($summaryTotal, 0, ',', '.') ?></h3>
-                            <p>Total Cluster VALSAL</p>
+                            <h3><?= number_format($summaryNyValsal, 0, ',', '.') ?></h3>
+                            <p>NY VALSAL</p>
+                            <p class="valsal-summary-box__meta mb-0">HP <?= number_format($summaryNyValsalHp, 0, ',', '.') ?></p>
                         </div>
                         <div class="icon"><i class="fas fa-layer-group"></i></div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="small-box bg-primary shadow-sm">
+                    <div class="small-box bg-primary shadow-sm valsal-summary-box">
                         <div class="inner">
                             <h3><?= number_format($summaryWaiting, 0, ',', '.') ?></h3>
                             <p>Waiting VALSAL</p>
+                            <p class="valsal-summary-box__meta mb-0">HP <?= number_format($summaryWaitingHp, 0, ',', '.') ?></p>
                         </div>
                         <div class="icon"><i class="fas fa-folder-open"></i></div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="small-box bg-success shadow-sm">
+                    <div class="small-box bg-success shadow-sm valsal-summary-box">
                         <div class="inner">
                             <h3><?= number_format($summaryDone, 0, ',', '.') ?></h3>
                             <p>Done VALSAL</p>
+                            <p class="valsal-summary-box__meta mb-0">HP <?= number_format($summaryDoneHp, 0, ',', '.') ?></p>
                         </div>
                         <div class="icon"><i class="fas fa-check-circle"></i></div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="small-box bg-danger shadow-sm">
+                    <div class="small-box bg-danger shadow-sm valsal-summary-box">
                         <div class="inner">
                             <h3><?= number_format($summaryRejected, 0, ',', '.') ?></h3>
                             <p>Rejected</p>
+                            <p class="valsal-summary-box__meta mb-0">HP <?= number_format($summaryRejectedHp, 0, ',', '.') ?></p>
                         </div>
                         <div class="icon"><i class="fas fa-times-circle"></i></div>
                     </div>
@@ -211,20 +245,27 @@ if (!function_exists('valsalDocLabel')) {
 
             <div class="row">
                 <div class="col-md-12">
+                    <div class="valsal-toolbar">
+                        <?php if ($isReady): ?>
+                            <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-valsal-create">
+                                <i class="fas fa-plus mr-1"></i> Input VALSAL
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
                     <div class="card card-outline card-primary shadow-sm valsal-table-card">
-                        <div class="card-header">
-                            <h3 class="card-title">Monitoring VALSAL Cluster</h3>
-                            <div class="card-tools">
-                                <?php if ($isReady): ?>
-                                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modal-valsal-create">
-                                        <i class="fas fa-plus"></i> Input VALSAL
-                                    </button>
-                                <?php endif; ?>
+                        <div class="card-header valsal-section-header d-flex align-items-center justify-content-between">
+                            <div>
+                                <h3 class="card-title mb-1">Monitoring VALSAL Cluster</h3>
                             </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table id="table_valsal_myrep" class="table table-bordered table-hover">
+                                <table id="table_valsal_myrep" class="table table-bordered table-hover valsal-monitor-table">
                                     <thead>
                                         <tr>
                                             <th>No</th>
@@ -248,7 +289,11 @@ if (!function_exists('valsalDocLabel')) {
                                             <?php
                                             $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
                                             $valsalDocStatusRaw = strtoupper(trim((string) ($row['valsal_doc_status'] ?? '')));
-                                            $showUploadButton = $docReady && in_array($valsalDocStatusRaw, ['', 'REJECTED'], true);
+                                            $hasValsal = (int) ($row['id_valsal'] ?? 0) > 0;
+                                            $statusValsalLabel = $hasValsal
+                                                ? (string) ($row['status_valsal'] ?? 'DRAFT')
+                                                : 'WAITING INPUT';
+                                            $showUploadButton = $docReady && $hasValsal && in_array($valsalDocStatusRaw, ['', 'REJECTED'], true);
                                             ?>
                                             <tr>
                                                 <td><?= $index + 1 ?></td>
@@ -265,15 +310,21 @@ if (!function_exists('valsalDocLabel')) {
                                                 <td class="text-right"><?= number_format((float) ($row['homepass_valsal'] ?? 0), 0, ',', '.') ?></td>
                                                 <td><?= !empty($row['bak_date']) ? htmlspecialchars((string) $row['bak_date']) : '-' ?></td>
                                                 <td><?= !empty($row['valsal_date']) ? htmlspecialchars((string) $row['valsal_date']) : '-' ?></td>
-                                                <td><span class="badge badge-<?= valsalBadgeClass($row['status_valsal'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_valsal'] ?? 'DRAFT')) ?></span></td>
+                                                <td><span class="badge badge-<?= valsalBadgeClass($statusValsalLabel) ?>"><?= htmlspecialchars($statusValsalLabel) ?></span></td>
                                                 <td>
-                                                    <span class="badge badge-<?= valsalBadgeClass(valsalDocLabel($row)) ?>"><?= htmlspecialchars(valsalDocLabel($row)) ?></span>
-                                                    <?php if (!empty($row['valsal_doc_file_name'])): ?>
+                                                    <?php if ($hasValsal): ?>
+                                                        <span class="badge badge-<?= valsalBadgeClass(valsalDocLabel($row)) ?>"><?= htmlspecialchars(valsalDocLabel($row)) ?></span>
+                                                    <?php else: ?>
+                                                        <span class="badge badge-secondary">BELUM ADA DOC</span>
+                                                    <?php endif; ?>
+                                                    <?php if ($hasValsal && !empty($row['valsal_doc_file_name'])): ?>
                                                         <div class="small text-muted mt-1"><?= htmlspecialchars((string) $row['valsal_doc_file_name']) ?></div>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <?php if (!empty($row['valsal_doc_reviewed_at'])): ?>
+                                                    <?php if (!$hasValsal): ?>
+                                                        <span class="text-muted small">Belum ada pengajuan</span>
+                                                    <?php elseif (!empty($row['valsal_doc_reviewed_at'])): ?>
                                                         <div class="small text-muted">Reviewed</div>
                                                         <div><?= htmlspecialchars((string) $row['valsal_doc_reviewed_at']) ?></div>
                                                     <?php elseif (!empty($row['valsal_doc_file_id'])): ?>
@@ -284,24 +335,36 @@ if (!function_exists('valsalDocLabel')) {
                                                 </td>
                                                 <td><span class="badge badge-<?= valsalBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
                                                 <td>
-                                                    <button
-                                                        type="button"
-                                                        class="btn btn-sm btn-outline-primary js-edit-valsal"
-                                                        data-toggle="modal"
-                                                        data-target="#modal-valsal-edit"
-                                                        data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
-                                                        data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-regional_name="<?= htmlspecialchars((string) ($row['regional_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-province_name="<?= htmlspecialchars((string) ($row['province_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-homepass_bak="<?= (int) ($row['homepass_bak'] ?? 0) ?>"
-                                                        data-homepass_valsal="<?= (int) ($row['homepass_valsal'] ?? 0) ?>"
-                                                        data-bak_date="<?= htmlspecialchars((string) ($row['bak_date'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-valsal_date="<?= htmlspecialchars((string) ($row['valsal_date'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-status_valsal="<?= htmlspecialchars((string) ($row['status_valsal'] ?? 'DRAFT'), ENT_QUOTES) ?>"
-                                                        data-remark_valsal="<?= htmlspecialchars((string) ($row['remark_valsal'] ?? ''), ENT_QUOTES) ?>">
-                                                        Edit
-                                                    </button>
+                                                    <?php if ($hasValsal): ?>
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-sm btn-outline-primary js-edit-valsal"
+                                                            data-toggle="modal"
+                                                            data-target="#modal-valsal-edit"
+                                                            data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
+                                                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-regional_name="<?= htmlspecialchars((string) ($row['regional_name'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-province_name="<?= htmlspecialchars((string) ($row['province_name'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-homepass_bak="<?= (int) ($row['homepass_bak'] ?? 0) ?>"
+                                                            data-homepass_valsal="<?= (int) ($row['homepass_valsal'] ?? 0) ?>"
+                                                            data-bak_date="<?= htmlspecialchars((string) ($row['bak_date'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-valsal_date="<?= htmlspecialchars((string) ($row['valsal_date'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-status_valsal="<?= htmlspecialchars((string) ($row['status_valsal'] ?? 'DRAFT'), ENT_QUOTES) ?>"
+                                                            data-remark_valsal="<?= htmlspecialchars((string) ($row['remark_valsal'] ?? ''), ENT_QUOTES) ?>">
+                                                            Edit
+                                                        </button>
+                                                    <?php else: ?>
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-sm btn-outline-primary js-start-valsal"
+                                                            data-toggle="modal"
+                                                            data-target="#modal-valsal-create"
+                                                            data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
+                                                            data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>">
+                                                            Input VALSAL
+                                                        </button>
+                                                    <?php endif; ?>
                                                     <?php if ($docReady): ?>
                                                         <?php if ($showUploadButton): ?>
                                                             <button
@@ -379,16 +442,21 @@ if (!function_exists('valsalDocLabel')) {
 
 <?php if ($isReady): ?>
     <div class="modal fade" id="modal-valsal-create" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
+        <div class="modal-dialog modal-xxl" role="document">
+            <div class="modal-content budget-modal valsal-modal-shell">
                 <form method="post" action="<?= base_url('VALSAL_MyRep/saveValsal') ?>" enctype="multipart/form-data">
-                    <div class="modal-header valsal-modal-header">
-                        <h5 class="modal-title">Input Cluster VALSAL Baru</h5>
+                    <div class="modal-header budget-modal__header">
+                        <div>
+                            <span class="budget-modal__eyebrow">VALSAL MyRep</span>
+                            <h5 class="modal-title mb-1">Input Cluster VALSAL Baru</h5>
+                            <p class="mb-0 budget-modal__subtitle">Pilih cluster yang sudah selesai BAK, isi data VALSAL, dan upload dokumen SND KASAR dalam satu workflow yang lebih rapi.</p>
+                        </div>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
+                        <div class="budget-form-section">
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
@@ -468,10 +536,11 @@ if (!function_exists('valsalDocLabel')) {
                                 </div>
                             <?php endif; ?>
                         </div>
+                        </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
-                        <button type="submit" class="btn btn-primary">Simpan VALSAL</button>
+                    <div class="modal-footer budget-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                        <button type="submit" class="btn budget-btn budget-btn--primary">Simpan VALSAL</button>
                     </div>
                 </form>
             </div>
@@ -479,17 +548,22 @@ if (!function_exists('valsalDocLabel')) {
     </div>
 
     <div class="modal fade" id="modal-valsal-edit" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
+        <div class="modal-dialog modal-xxl" role="document">
+            <div class="modal-content budget-modal valsal-modal-shell">
                 <form method="post" action="<?= base_url('VALSAL_MyRep/updateValsal') ?>">
                     <input type="hidden" name="cluster_id" id="edit_id_myrep_cluster">
-                    <div class="modal-header valsal-modal-header">
-                        <h5 class="modal-title">Edit Data VALSAL</h5>
+                    <div class="modal-header budget-modal__header">
+                        <div>
+                            <span class="budget-modal__eyebrow">VALSAL MyRep</span>
+                            <h5 class="modal-title mb-1">Edit Data VALSAL</h5>
+                            <p class="mb-0 budget-modal__subtitle">Perbarui informasi cluster, homepass, timeline BAK ke VALSAL, dan remark dengan tampilan yang lebih bersih.</p>
+                        </div>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
+                        <div class="budget-form-section">
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
@@ -507,10 +581,11 @@ if (!function_exists('valsalDocLabel')) {
                             <div class="col-md-4"><div class="form-group"><label>Status VALSAL</label><input type="text" id="edit_status_valsal" class="form-control" readonly></div></div>
                             <div class="col-md-12"><div class="form-group"><label>Remark</label><textarea name="remark_valsal" id="edit_remark_valsal" rows="3" class="form-control"></textarea></div></div>
                         </div>
+                        </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
-                        <button type="submit" class="btn btn-primary">Update VALSAL</button>
+                    <div class="modal-footer budget-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                        <button type="submit" class="btn budget-btn budget-btn--primary">Update VALSAL</button>
                     </div>
                 </form>
             </div>
@@ -520,13 +595,14 @@ if (!function_exists('valsalDocLabel')) {
     <?php if ($docReady): ?>
         <div class="modal fade doc-modal" id="modal-valsal-upload-doc" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog" role="document">
-                <div class="modal-content">
+                <div class="modal-content budget-modal valsal-modal-shell">
                     <form method="post" action="<?= base_url('VALSAL_MyRep/uploadDocument') ?>" enctype="multipart/form-data" id="valsal-upload-document-form">
                         <input type="hidden" name="cluster_id" id="upload_cluster_id">
-                        <div class="modal-header" style="background: linear-gradient(135deg, #198754, #34c38f);">
+                        <div class="modal-header budget-modal__header">
                             <div>
+                                <span class="budget-modal__eyebrow">Dokumen VALSAL</span>
                                 <h4 class="modal-title mb-1">Upload Dokumen SND KASAR</h4>
-                                <p class="mb-0" style="opacity:.9;" id="upload_doc_cluster_caption"></p>
+                                <p class="mb-0 budget-modal__subtitle" id="upload_doc_cluster_caption"></p>
                             </div>
                             <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
@@ -588,9 +664,9 @@ if (!function_exists('valsalDocLabel')) {
                                 </div>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                            <button type="submit" class="btn btn-success" id="valsal-upload-document-submit">Upload Dokumen</button>
+                        <div class="modal-footer budget-modal__footer">
+                            <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                            <button type="submit" class="btn budget-btn budget-btn--success" id="valsal-upload-document-submit">Upload Dokumen</button>
                         </div>
                     </form>
                 </div>
@@ -600,13 +676,14 @@ if (!function_exists('valsalDocLabel')) {
         <?php if ($canApprove): ?>
             <div class="modal fade doc-modal" id="modal-valsal-approve-doc" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog" role="document">
-                    <div class="modal-content">
+                    <div class="modal-content budget-modal valsal-modal-shell">
                         <form method="post" action="<?= base_url('VALSAL_MyRep/approveDocument') ?>">
                             <input type="hidden" name="id_doc_file" id="approve_id_doc_file">
-                            <div class="modal-header" style="background: linear-gradient(135deg, #15803d, #16a34a);">
+                            <div class="modal-header budget-modal__header">
                                 <div>
+                                    <span class="budget-modal__eyebrow">Dokumen VALSAL</span>
                                     <h4 class="modal-title mb-1">Approve Dokumen</h4>
-                                    <p class="mb-0" style="opacity:.9;" id="approve_doc_name">SND KASAR</p>
+                                    <p class="mb-0 budget-modal__subtitle" id="approve_doc_name">SND KASAR</p>
                                 </div>
                                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
@@ -628,9 +705,9 @@ if (!function_exists('valsalDocLabel')) {
                                     </div>
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                                <button type="submit" class="btn btn-success">Approve Dokumen</button>
+                            <div class="modal-footer budget-modal__footer">
+                                <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                                <button type="submit" class="btn budget-btn budget-btn--success">Approve Dokumen</button>
                             </div>
                         </form>
                     </div>
@@ -639,13 +716,14 @@ if (!function_exists('valsalDocLabel')) {
 
             <div class="modal fade doc-modal" id="modal-valsal-reject-doc" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog" role="document">
-                    <div class="modal-content">
+                    <div class="modal-content budget-modal valsal-modal-shell">
                         <form method="post" action="<?= base_url('VALSAL_MyRep/rejectDocument') ?>">
                             <input type="hidden" name="id_doc_file" id="reject_id_doc_file">
-                            <div class="modal-header" style="background: linear-gradient(135deg, #b91c1c, #dc2626);">
+                            <div class="modal-header budget-modal__header">
                                 <div>
+                                    <span class="budget-modal__eyebrow">Dokumen VALSAL</span>
                                     <h4 class="modal-title mb-1">Reject Dokumen</h4>
-                                    <p class="mb-0" style="opacity:.9;" id="reject_doc_name">SND KASAR</p>
+                                    <p class="mb-0 budget-modal__subtitle" id="reject_doc_name">SND KASAR</p>
                                 </div>
                                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
@@ -667,9 +745,9 @@ if (!function_exists('valsalDocLabel')) {
                                     </div>
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
-                                <button type="submit" class="btn btn-danger">Reject Dokumen</button>
+                            <div class="modal-footer budget-modal__footer">
+                                <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                                <button type="submit" class="btn budget-btn budget-btn--danger">Reject Dokumen</button>
                             </div>
                         </form>
                     </div>
@@ -679,11 +757,12 @@ if (!function_exists('valsalDocLabel')) {
 
         <div class="modal fade doc-modal" id="modal-valsal-history-doc" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
-                <div class="modal-content">
-                    <div class="modal-header" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
+                <div class="modal-content budget-modal valsal-modal-shell">
+                    <div class="modal-header budget-modal__header">
                         <div>
+                            <span class="budget-modal__eyebrow">Dokumen VALSAL</span>
                             <h4 class="modal-title mb-1">History Dokumen</h4>
-                            <p class="mb-0" style="opacity:.9;" id="history_doc_name">SND KASAR</p>
+                            <p class="mb-0 budget-modal__subtitle" id="history_doc_name">SND KASAR</p>
                         </div>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -700,8 +779,8 @@ if (!function_exists('valsalDocLabel')) {
                             </ul>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-light border" data-dismiss="modal">Tutup</button>
+                    <div class="modal-footer budget-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
                     </div>
                 </div>
             </div>
@@ -710,6 +789,194 @@ if (!function_exists('valsalDocLabel')) {
 <?php endif; ?>
 
 <style>
+    .valsal-filter-card,
+    .valsal-table-card {
+        border: 0;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 18px 42px rgba(14, 41, 64, 0.08);
+        background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%);
+    }
+
+    .valsal-section-header {
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 30%),
+            linear-gradient(135deg, #103b5a, #1f6da1 55%, #53a9d8);
+        color: #fff;
+        border-bottom: 0;
+        padding: 1rem 1.25rem;
+    }
+
+    .valsal-section-header .card-title {
+        font-weight: 700;
+    }
+
+    .valsal-section-subtitle {
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 0.92rem;
+        max-width: 760px;
+    }
+
+    .valsal-field-label {
+        display: block;
+        margin-bottom: 0.55rem;
+        font-size: 0.83rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #2d6287;
+    }
+
+    .valsal-input {
+        border-radius: 12px;
+        border: 1px solid #cfe0ee;
+        min-height: 44px;
+        box-shadow: none;
+    }
+
+    .valsal-input:focus {
+        border-color: #55a7d5;
+        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
+    .valsal-filter-actions {
+        gap: 10px;
+    }
+
+    .budget-btn {
+        border: 0;
+        border-radius: 12px;
+        padding: 0.68rem 1.15rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        transition: all 0.2s ease;
+        box-shadow: 0 12px 22px rgba(16, 59, 90, 0.12);
+    }
+
+    .budget-btn:hover,
+    .budget-btn:focus {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 28px rgba(16, 59, 90, 0.16);
+    }
+
+    .budget-btn--primary {
+        background: linear-gradient(135deg, #103b5a 0%, #1f6da1 100%);
+        color: #fff;
+    }
+
+    .budget-btn--success {
+        background: linear-gradient(135deg, #0f8b72 0%, #24b18f 100%);
+        color: #fff;
+    }
+
+    .budget-btn--ghost {
+        background: #fff;
+        color: #315d7f;
+        border: 1px solid #d7e6f2;
+        box-shadow: 0 10px 22px rgba(112, 141, 165, 0.12);
+    }
+
+    .budget-btn--danger {
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+        color: #fff;
+    }
+
+    .valsal-summary-box {
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
+    }
+
+    .valsal-summary-box .inner h3 {
+        font-weight: 800;
+    }
+
+    .valsal-summary-box__meta {
+        font-size: .88rem;
+        font-weight: 600;
+        opacity: .92;
+    }
+
+    .valsal-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 0.85rem;
+    }
+
+    .valsal-monitor-table thead th {
+        background: linear-gradient(180deg, #eef6fb 0%, #dcecf8 100%);
+        color: #1f5e8a;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        border-top: 0;
+    }
+
+    .valsal-monitor-table tbody tr:hover {
+        background: rgba(219, 236, 247, 0.22);
+    }
+
+    .modal-xxl {
+        max-width: 78vw;
+    }
+
+    .budget-modal {
+        border: 0;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 30px 50px rgba(8, 35, 55, 0.22);
+    }
+
+    .budget-modal__header {
+        border-bottom: 0;
+        padding: 1.4rem 1.5rem 1.1rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 30%),
+            linear-gradient(135deg, #103b5a 0%, #1f6da1 55%, #53a9d8 100%);
+        color: #fff;
+    }
+
+    .budget-modal__eyebrow {
+        display: inline-block;
+        margin-bottom: 6px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.76);
+    }
+
+    .budget-modal__subtitle {
+        max-width: 88%;
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 0.92rem;
+    }
+
+    .budget-modal .modal-body {
+        padding: 1.5rem;
+        background: linear-gradient(180deg, #fbfdff 0%, #f2f8fc 100%);
+    }
+
+    .budget-modal__footer {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        border-top: 0;
+        padding: 0 1.5rem 1.5rem;
+        background: transparent;
+    }
+
+    .budget-form-section {
+        margin-bottom: 0;
+        padding: 1rem 1rem 0.9rem;
+        border: 1px solid #dbe9f4;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
     .doc-modal .modal-content {
         border: 0;
         border-radius: 18px;
@@ -895,24 +1162,6 @@ if (!function_exists('valsalDocLabel')) {
         margin-bottom: 0;
     }
 
-    .valsal-filter-card .card-header,
-    .valsal-table-card .card-header {
-        background: linear-gradient(135deg, #f8fbff, #eef6ff);
-        border-bottom: 1px solid #dbeafe;
-    }
-
-    .valsal-modal-header {
-        background: linear-gradient(135deg, #0f4c81, #1d7ed6);
-        color: #fff;
-    }
-
-    .valsal-table-card .table thead th {
-        background: #eff6ff;
-        color: #1e3a8a;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
     .small-box.shadow-sm {
         box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
         border-radius: 14px;
@@ -926,6 +1175,77 @@ if (!function_exists('valsalDocLabel')) {
 
     .select2-container--open {
         z-index: 1065;
+    }
+
+    .valsal-modal-shell .form-group label,
+    .doc-modal .form-group label {
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #2d6287;
+    }
+
+    .valsal-modal-shell .form-control,
+    .doc-modal .form-control,
+    .doc-modal .select2-container--bootstrap4 .select2-selection {
+        min-height: 44px;
+        border-radius: 12px;
+        border: 1px solid #cfe0ee;
+        box-shadow: none;
+        background: #fff;
+    }
+
+    .valsal-modal-shell textarea.form-control,
+    .doc-modal textarea.form-control {
+        min-height: auto;
+    }
+
+    .valsal-modal-shell .form-control:focus,
+    .doc-modal .form-control:focus {
+        border-color: #55a7d5;
+        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
+    .valsal-modal-shell .form-control[readonly],
+    .valsal-modal-shell .form-control:disabled,
+    .doc-modal .form-control[readonly],
+    .doc-modal .form-control:disabled {
+        background: linear-gradient(180deg, #eef4f8 0%, #e3edf5 100%);
+        border-color: #c8d9e7;
+        color: #5f7488;
+        cursor: not-allowed;
+    }
+
+    .valsal-modal-shell textarea.form-control[readonly],
+    .valsal-modal-shell textarea.form-control:disabled,
+    .doc-modal textarea.form-control[readonly],
+    .doc-modal textarea.form-control:disabled {
+        background: linear-gradient(180deg, #eef4f8 0%, #e3edf5 100%);
+    }
+
+    @media (max-width: 991.98px) {
+        .modal-xxl {
+            max-width: 94vw;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .budget-modal__footer {
+            flex-direction: column;
+        }
+
+        .budget-modal__footer .btn {
+            width: 100%;
+        }
+
+        .valsal-filter-actions {
+            flex-direction: column;
+        }
+
+        .valsal-filter-actions .btn {
+            width: 100%;
+        }
     }
 </style>
 
@@ -1026,6 +1346,25 @@ if (!function_exists('valsalDocLabel')) {
             }
         }
 
+        function syncCityFromCluster($container) {
+            var $clusterSelect = $container.find('.js-valsal-cluster-selector').first();
+            var $citySelect = $container.find('.js-valsal-city-selector').first();
+            var $selected = $clusterSelect.find('option:selected');
+
+            if (!$clusterSelect.length || !$citySelect.length || !$selected.length || !$selected.val()) {
+                return;
+            }
+
+            var clusterCity = ($selected.data('city-filter') || '').toString().toUpperCase();
+            if (!clusterCity) {
+                return;
+            }
+
+            if (($citySelect.val() || '').toString().toUpperCase() !== clusterCity) {
+                $citySelect.val(clusterCity).trigger('change.select2');
+            }
+        }
+
         function filterValsalClusterOptions($modal) {
             var selectedCity = ($modal.find('.js-valsal-city-selector').val() || '').toUpperCase();
             var $clusterSelect = $modal.find('.js-valsal-cluster-selector');
@@ -1056,6 +1395,19 @@ if (!function_exists('valsalDocLabel')) {
             syncClusterMeta($modal);
         }
 
+        function applyCreateClusterPreset($modal) {
+            var presetClusterId = ($modal.attr('data-preset-cluster-id') || '').toString();
+            var presetCity = ($modal.attr('data-preset-city') || '').toString().toUpperCase();
+
+            if (presetCity !== '') {
+                $modal.find('.js-valsal-city-selector').val(presetCity).trigger('change.select2');
+            }
+
+            if (presetClusterId !== '') {
+                $modal.find('.js-valsal-cluster-selector').val(presetClusterId).trigger('change');
+            }
+        }
+
         $(function () {
             handleValsalFlashAlerts();
 
@@ -1071,7 +1423,10 @@ if (!function_exists('valsalDocLabel')) {
             initValsalSelect('.js-valsal-cluster-select', '#modal-valsal-create', 'Pilih cluster');
 
             $(document).on('change', '.js-valsal-cluster-selector', function () {
-                syncClusterMeta($(this).closest('.modal-body, .modal-content'));
+                var $container = $(this).closest('.modal-body, .modal-content');
+                syncCityFromCluster($container);
+                filterValsalClusterOptions($container);
+                syncClusterMeta($container);
             });
 
             $(document).on('change', '.js-valsal-city-selector', function () {
@@ -1084,6 +1439,7 @@ if (!function_exists('valsalDocLabel')) {
                 $(this).find('.js-valsal-city-selector').val('').trigger('change');
                 $(this).find('.js-valsal-cluster-selector').val('').trigger('change');
                 filterValsalClusterOptions($(this));
+                applyCreateClusterPreset($(this));
                 syncClusterMeta($(this));
                 $('#valsal-create-file-input').val('');
                 $('#valsal-create-file-name').text('Belum ada file dipilih');
@@ -1092,12 +1448,20 @@ if (!function_exists('valsalDocLabel')) {
             }).on('hidden.bs.modal', function () {
                 var $citySelect = $(this).find('.js-valsal-city-selector');
                 var $clusterSelect = $(this).find('.js-valsal-cluster-select');
+                $(this).removeAttr('data-preset-cluster-id').removeAttr('data-preset-city');
                 if ($citySelect.hasClass('select2-hidden-accessible')) {
                     $citySelect.select2('close');
                 }
                 if ($clusterSelect.hasClass('select2-hidden-accessible')) {
                     $clusterSelect.select2('close');
                 }
+            });
+
+            $(document).on('click', '.js-start-valsal', function () {
+                var $button = $(this);
+                $('#modal-valsal-create')
+                    .attr('data-preset-cluster-id', ($button.data('cluster_id') || '').toString())
+                    .attr('data-preset-city', ($button.data('city_name') || '').toString().toUpperCase());
             });
 
             $(document).on('click', '.js-edit-valsal', function () {
@@ -1280,4 +1644,3 @@ if (!function_exists('valsalDocLabel')) {
         });
     })();
 </script>
-

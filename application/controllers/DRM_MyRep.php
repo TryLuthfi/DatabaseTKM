@@ -118,9 +118,9 @@ class DRM_MyRep extends CI_Controller
             return;
         }
 
-        $allowedStatuses = ['DRAFT', 'SUBMITTED', 'ON REVIEW', 'APPROVED', 'REJECTED', 'DONE'];
+        $allowedStatuses = ['WAITING DOC', 'WAITING APPROVE', 'COMPLETE', 'REJECTED'];
         if (!in_array($statusDrm, $allowedStatuses, true)) {
-            $statusDrm = $drmDate ? 'DONE' : 'DRAFT';
+            $statusDrm = $drmDate ? 'WAITING DOC' : 'DRAFT';
         }
 
         $userId = (int) $this->session->userdata('id_user');
@@ -166,9 +166,9 @@ class DRM_MyRep extends CI_Controller
             return;
         }
 
-        $allowedStatuses = ['DRAFT', 'SUBMITTED', 'ON REVIEW', 'APPROVED', 'REJECTED', 'DONE'];
+        $allowedStatuses = ['WAITING DOC', 'WAITING APPROVE', 'COMPLETE', 'REJECTED'];
         if (!in_array($statusDrm, $allowedStatuses, true)) {
-            $statusDrm = $drmDate ? 'DONE' : 'DRAFT';
+            $statusDrm = $drmDate ? 'WAITING DOC' : 'DRAFT';
         }
 
         $userId = (int) $this->session->userdata('id_user');
@@ -517,7 +517,7 @@ class DRM_MyRep extends CI_Controller
             trim((string) $this->input->post('remark'))
         );
 
-        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-approve dan dijadikan baseline implementasi.' : 'Gagal approve BOQ DRM.');
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-approve, dijadikan baseline implementasi, dan dokumen DRM yang sudah ter-upload ikut di-approve.' : 'Gagal approve BOQ DRM.');
         redirect('DRM_MyRep/detail/' . $clusterId);
     }
 

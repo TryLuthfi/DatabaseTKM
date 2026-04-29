@@ -1918,6 +1918,7 @@ if (!empty($kpiDetailRowMap)) {
                                         <div class="modal-dialog modal-xl">
                                             <div class="modal-content">
                                                 <form method="post" action="<?= base_url('Monitoring_RFS_MyRep/submitClaim') ?>"
+                                                    class="js-claim-rfs-form"
                                                     enctype="multipart/form-data">
                                                     <div class="modal-header">
                                                         <h4 class="modal-title">Claim RFS -
@@ -1976,7 +1977,7 @@ if (!empty($kpiDetailRowMap)) {
                                                         <div class="form-group">
                                                             <label>Foto Claim</label>
                                                             <div class="claim-photo-dropzone">
-                                                                <input type="file" name="claim_photo" class="claim-photo-input" accept=".jpg,.jpeg,.png,.webp" hidden required>
+                                                                <input type="file" name="claim_photo" class="claim-photo-input" accept=".jpg,.jpeg,.png,.webp" hidden>
                                                                 <h6 class="mb-2">Drop foto claim di sini</h6>
                                                                 <p class="text-muted mb-2">atau klik area ini untuk pilih file gambar</p>
                                                                 <span class="btn btn-outline-primary btn-sm">Pilih Foto</span>
@@ -3331,6 +3332,27 @@ if (!empty($kpiDetailRowMap)) {
             $(this).find('.claim-rfs-qty-input').each(function () {
                 updateClaimRfsDeviasi($(this));
             });
+        });
+
+        $(document).on('submit', '.js-claim-rfs-form', function (e) {
+            var $form = $(this);
+            var photoInput = $form.find('.claim-photo-input')[0];
+            var claimDate = $.trim($form.find('input[name="claim_date"]').val() || '');
+            var claimQty = parseFloat($form.find('input[name="claim_qty"]').val() || '0');
+            var statusRfs = $.trim($form.find('select[name="status_rfs"]').val() || '');
+            var hasPhoto = photoInput && photoInput.files && photoInput.files.length > 0;
+
+            if (claimDate === '' || claimQty <= 0 || statusRfs === '') {
+                e.preventDefault();
+                alert('Tanggal RFS, HP RFS, dan Status RFS wajib diisi.');
+                return;
+            }
+
+            if (!hasPhoto) {
+                e.preventDefault();
+                alert('Foto claim RFS wajib dilampirkan.');
+                return;
+            }
         });
 
         $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function () {

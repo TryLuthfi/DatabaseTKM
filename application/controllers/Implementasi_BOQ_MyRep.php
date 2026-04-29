@@ -86,20 +86,19 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
-        $baselineItemId = (int) $this->input->post('id_boq_baseline_item');
         $progressDate = $this->normalizeDate($this->input->post('progress_date'));
-        $qtyProgress = $this->normalizeNumber($this->input->post('qty_progress'));
         $statusProgress = strtoupper(trim((string) $this->input->post('status_progress')));
         $remarkProgress = trim((string) $this->input->post('remark_progress'));
+        $progressItems = (array) $this->input->post('progress_items');
 
-        if ($clusterId <= 0 || $baselineItemId <= 0) {
-            $this->session->set_flashdata('error', 'Cluster atau item implementasi tidak valid.');
+        if ($clusterId <= 0) {
+            $this->session->set_flashdata('error', 'Cluster implementasi tidak valid.');
             redirect('Implementasi_BOQ_MyRep');
             return;
         }
 
-        if ($progressDate === null || $qtyProgress <= 0) {
-            $this->session->set_flashdata('error', 'Tanggal progress dan qty progress wajib diisi.');
+        if ($progressDate === null) {
+            $this->session->set_flashdata('error', 'Tanggal progress wajib diisi.');
             redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
             return;
         }
@@ -108,44 +107,59 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             $statusProgress = 'ON PROGRESS';
         }
 
-        if (empty($_FILES['photos']['name']) || !is_array($_FILES['photos']['name'])) {
-            $this->session->set_flashdata('error', 'Minimal 1 foto evidence wajib diupload.');
-            redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
-            return;
-        }
-
-        $photoRows = $this->uploadProgressPhotos($clusterId, $baselineItemId);
-        if ($photoRows === false) {
-            redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
-            return;
-        }
-
-        if (empty($photoRows)) {
-            $this->session->set_flashdata('error', 'Foto evidence tidak berhasil diupload.');
+        if (empty($progressItems)) {
+            $this->session->set_flashdata('error', 'Minimal 1 item implementasi wajib dipilih.');
             redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
             return;
         }
 
         $userId = (int) $this->session->userdata('id_user');
-        $result = $this->MImplementasi_BOQ_MyRep->createProgressEntry($clusterId, $baselineItemId, [
-            'progress_date' => $progressDate,
-            'qty_progress' => $qtyProgress,
-            'status_progress' => $statusProgress,
-            'remark_progress' => $remarkProgress,
-            'created_by' => $userId,
-            'updated_by' => $userId,
-        ], $photoRows);
+        $savedCount = 0;
 
-        $this->session->set_flashdata($result > 0 ? 'success' : 'error', $result > 0 ? 'Progress implementasi berhasil disimpan.' : 'Gagal menyimpan progress implementasi.');
+        foreach ($progressItems as $itemKey => $itemPayload) {
+            $baselineItemId = (int) ($itemPayload['id_boq_baseline_item'] ?? $itemKey);
+            $qtyProgress = $this->normalizeNumber($itemPayload['qty_progress'] ?? 0);
+
+            if ($baselineItemId <= 0 || $qtyProgress <= 0) {
+                continue;
+            }
+
+            $photoRows = $this->uploadProgressPhotos($clusterId, $baselineItemId, (string) $itemKey);
+            if ($photoRows === false) {
+                redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+                return;
+            }
+
+            if (empty($photoRows)) {
+                $this->session->set_flashdata('error', 'Setiap item wajib memiliki minimal 1 foto evidence.');
+                redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+                return;
+            }
+
+            $result = $this->MImplementasi_BOQ_MyRep->createProgressEntry($clusterId, $baselineItemId, [
+                'progress_date' => $progressDate,
+                'qty_progress' => $qtyProgress,
+                'status_progress' => $statusProgress,
+                'remark_progress' => $remarkProgress,
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ], $photoRows);
+
+            if ($result > 0) {
+                $savedCount++;
+            }
+        }
+
+        $this->session->set_flashdata($savedCount > 0 ? 'success' : 'error', $savedCount > 0 ? ('Progress implementasi berhasil disimpan untuk ' . $savedCount . ' item.') : 'Gagal menyimpan progress implementasi.');
         redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
     }
 
-    private function uploadProgressPhotos($clusterId, $baselineItemId)
+    private function uploadProgressPhotos($clusterId, $baselineItemId, $itemKey)
     {
         $clusterId = (int) $clusterId;
         $baselineItemId = (int) $baselineItemId;
-        $files = $_FILES['photos'] ?? null;
-        if (empty($files) || !is_array($files['name'])) {
+        $files = $_FILES['progress_photos'] ?? null;
+        if (empty($files['name'][$itemKey]) || !is_array($files['name'][$itemKey])) {
             return [];
         }
 
@@ -155,22 +169,22 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
 
         $uploadedRows = [];
-        $totalFiles = count($files['name']);
+        $totalFiles = count($files['name'][$itemKey]);
 
         for ($i = 0; $i < $totalFiles; $i++) {
-            if (empty($files['name'][$i])) {
+            if (empty($files['name'][$itemKey][$i])) {
                 continue;
             }
 
             $_FILES['single_progress_photo'] = [
-                'name' => $files['name'][$i],
-                'type' => $files['type'][$i],
-                'tmp_name' => $files['tmp_name'][$i],
-                'error' => $files['error'][$i],
-                'size' => $files['size'][$i],
+                'name' => $files['name'][$itemKey][$i],
+                'type' => $files['type'][$itemKey][$i],
+                'tmp_name' => $files['tmp_name'][$itemKey][$i],
+                'error' => $files['error'][$itemKey][$i],
+                'size' => $files['size'][$itemKey][$i],
             ];
 
-            $extension = pathinfo((string) $files['name'][$i], PATHINFO_EXTENSION);
+            $extension = pathinfo((string) $files['name'][$itemKey][$i], PATHINFO_EXTENSION);
             $fileName = 'BOQ_PROGRESS_' . $clusterId . '_' . $baselineItemId . '_' . date('YmdHis') . '_' . ($i + 1) . '.' . $extension;
             $config = [
                 'upload_path' => $uploadDir,

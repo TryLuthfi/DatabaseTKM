@@ -29,6 +29,9 @@ if (!function_exists('batchDetailStatusLabel')) {
     function batchDetailStatusLabel($status)
     {
         $status = strtoupper(trim((string) $status));
+        if ($status === 'WAITING MYREP') {
+            return 'WAITING EMR';
+        }
         return $status !== '' ? $status : 'DRAFT';
     }
 }
@@ -60,6 +63,10 @@ if (!function_exists('batchDetailStageMeta')) {
                 return ['percent' => 50, 'class' => 'bg-primary', 'label' => 'Menunggu approval EMR'];
             case 'WAITING FINANCE':
                 return ['percent' => 75, 'class' => 'bg-warning', 'label' => 'Menunggu release finance'];
+            case 'WAITING DOC':
+                return ['percent' => 90, 'class' => 'bg-warning', 'label' => 'Menunggu upload 12 dokumen post donasi'];
+            case 'COMPLETED':
+                return ['percent' => 100, 'class' => 'bg-success', 'label' => 'Dokumen post donasi lengkap'];
             case 'RELEASED':
             case 'DONE BATCH APPROVAL':
                 return ['percent' => 100, 'class' => 'bg-success', 'label' => 'Batch approval selesai'];
@@ -71,7 +78,8 @@ if (!function_exists('batchDetailStageMeta')) {
     }
 }
 
-$stageMeta = batchDetailStageMeta($cluster['staging_status'] ?? 'DRAFT');
+$displayStageStatus = (string) ($cluster['display_staging_status'] ?? $cluster['staging_status'] ?? 'DRAFT');
+$stageMeta = batchDetailStageMeta($displayStageStatus);
 $batchDocumentStatus = batchDetailDocumentLabel($batchDocument);
 $batchDocumentRawStatus = strtoupper(trim((string) ($batchDocument['status_file'] ?? '')));
 $batchDocumentCanUpload = in_array($batchDocumentStatus, ['BELUM UPLOAD', 'REJECTED'], true);
@@ -413,11 +421,54 @@ if ($canApprove) {
         color: #fff;
     }
 
+    .batch-stage-note {
+        border: 1px solid #dbeafe;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #f8fbff, #eef6ff);
+        padding: .9rem 1rem;
+        color: #475569;
+        font-size: .92rem;
+        line-height: 1.55;
+        margin-bottom: 1rem;
+    }
+
+    .batch-stage-cluster-box {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        background: #fff;
+        padding: 1rem 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+    .batch-stage-cluster-box__title {
+        font-size: .82rem;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #475569;
+        margin-bottom: .85rem;
+    }
+
+    .batch-stage-cluster-box strong {
+        display: block;
+        color: #334155;
+        margin-bottom: .18rem;
+    }
+
+    .modal-xxl {
+        max-width: 78vw;
+    }
+
     @media (max-width: 767.98px) {
         .batch-form-section__head,
         .batch-pic-card__head,
         .batch-progress-meta {
             flex-direction: column;
+        }
+
+        .modal-xxl {
+            max-width: calc(100vw - 1rem);
+            margin: .5rem auto;
         }
     }
 </style>
@@ -458,7 +509,7 @@ if ($canApprove) {
                         <div class="batch-progress-meta">
                             <div>Progress Batch Approval</div>
                             <div class="d-flex align-items-center" style="gap:.75rem;">
-                                <div><?= htmlspecialchars(batchDetailStatusLabel($cluster['staging_status'] ?? 'DRAFT')) ?> · <?= (int) $stageMeta['percent'] ?>%</div>
+                                <div><?= htmlspecialchars(batchDetailStatusLabel($displayStageStatus)) ?> · <?= (int) $stageMeta['percent'] ?>%</div>
                                 <?php if ($stageButtonTarget !== ''): ?>
                                     <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="<?= htmlspecialchars($stageButtonTarget) ?>">
                                         <i class="fas fa-edit"></i> <?= htmlspecialchars($stageButtonLabel) ?>
@@ -552,19 +603,14 @@ if ($canApprove) {
                                         data-can-upload="<?= $batchDocumentCanUpload ? '1' : '0' ?>">
                                         <?= $batchDocumentCanUpload ? 'Upload RAR' : 'Lihat RAR' ?>
                                     </button>
-                                    <?php if (!empty($cluster['transfer_proof_file_path'])): ?>
-                                        <button type="button" class="btn btn-sm btn-outline-dark js-open-transfer-modal" data-toggle="modal" data-target="#modal-transfer-proof" data-file-path="<?= htmlspecialchars((string) ($cluster['transfer_proof_file_path'] ?? ''), ENT_QUOTES) ?>">Upload Bukti Transfer</button>
-                                        <?php if ($isTransferProofImage): ?>
-                                            <div class="batch-transfer-preview">
-                                                <div class="small text-muted mb-2">Preview bukti transfer</div>
-                                                <img src="<?= base_url($transferProofPath) ?>" alt="Bukti Transfer" class="batch-transfer-preview__image">
-                                                <div class="mt-2">
-                                                    <a href="<?= base_url($transferProofPath) ?>" target="_blank" class="btn btn-sm btn-outline-secondary">Lihat Gambar</a>
-                                                </div>
+                                    <?php if (!empty($cluster['transfer_proof_file_path']) && $isTransferProofImage): ?>
+                                        <div class="batch-transfer-preview">
+                                            <div class="small text-muted mb-2">Preview bukti transfer</div>
+                                            <img src="<?= base_url($transferProofPath) ?>" alt="Bukti Transfer" class="batch-transfer-preview__image">
+                                            <div class="mt-2">
+                                                <a href="<?= base_url($transferProofPath) ?>" target="_blank" class="btn btn-sm btn-outline-secondary">Lihat Gambar</a>
                                             </div>
-                                        <?php endif; ?>
-                                    <?php else: ?>
-                                        <button type="button" class="btn btn-sm btn-outline-dark js-open-transfer-modal" data-toggle="modal" data-target="#modal-transfer-proof" data-file-path="">Upload Bukti Transfer</button>
+                                        </div>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -728,7 +774,7 @@ if ($canApprove) {
 </div>
 
 <div class="modal fade" id="modal-batch-edit-detail" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-dialog modal-xxl" role="document">
         <div class="modal-content batch-modal">
             <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateBatchApproval') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
@@ -903,7 +949,7 @@ if ($canApprove) {
 </div>
 
 <div class="modal fade" id="modal-stage-to-myrep" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-xxl" role="document">
         <div class="modal-content batch-modal">
             <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
@@ -915,9 +961,20 @@ if ($canApprove) {
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
+                    <div class="batch-stage-note">
+                        Stagging dirubah jika telah input batch approval ke system ASTRI.
+                    </div>
+                    <div class="batch-stage-cluster-box">
+                        <div class="batch-stage-cluster-box__title">Informasi Cluster</div>
+                        <div class="row">
+                            <div class="col-md-6"><strong>Cluster</strong><div><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div></div>
+                            <div class="col-md-3"><strong>Regional</strong><div><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div></div>
+                            <div class="col-md-3"><strong>Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label>Staging Saat Ini</label>
-                        <input type="text" class="form-control" value="<?= htmlspecialchars(batchDetailStatusLabel($cluster['staging_status'] ?? 'DRAFT')) ?>" readonly>
+                        <input type="text" class="form-control" value="<?= htmlspecialchars(batchDetailStatusLabel($displayStageStatus)) ?>" readonly>
                     </div>
                     <div class="form-group mb-0">
                         <label>Tanggal Input ke Astri</label>
@@ -934,7 +991,7 @@ if ($canApprove) {
 </div>
 
 <div class="modal fade" id="modal-stage-to-finance" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-xxl" role="document">
         <div class="modal-content batch-modal">
             <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
@@ -946,6 +1003,21 @@ if ($canApprove) {
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
+                    <div class="batch-stage-note">
+                        Stagging dirubah saat ASTRI APPROVED dan akan dilakukan pengajuan ke finance.
+                    </div>
+                    <div class="batch-stage-cluster-box">
+                        <div class="batch-stage-cluster-box__title">Informasi Cluster</div>
+                        <div class="row">
+                            <div class="col-md-6"><strong>Cluster</strong><div><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div></div>
+                            <div class="col-md-3"><strong>Regional</strong><div><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div></div>
+                            <div class="col-md-3"><strong>Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nominal Pengajuan Donasi</label>
+                        <input type="text" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['nominal_pengajuan_area'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_pengajuan_area'], 0, ',', '.')) : '' ?>" readonly>
+                    </div>
                     <div class="form-group">
                         <label>Nomor Batch</label>
                         <input type="text" name="astri_batch_number" class="form-control" value="<?= htmlspecialchars((string) ($cluster['astri_batch_number'] ?? '')) ?>" required>
@@ -969,7 +1041,7 @@ if ($canApprove) {
 </div>
 
 <div class="modal fade" id="modal-stage-to-released" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-xxl" role="document">
         <div class="modal-content batch-modal">
             <form method="post" action="<?= base_url('Batch_Approval_MyRep/updateStagingProgress') ?>" enctype="multipart/form-data">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
@@ -981,6 +1053,25 @@ if ($canApprove) {
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
+                    <div class="batch-stage-note">
+                        Stagging dirubah saat sudah pencarian dari finance terkait donasi.
+                    </div>
+                    <div class="batch-stage-cluster-box">
+                        <div class="batch-stage-cluster-box__title">Informasi Cluster</div>
+                        <div class="row">
+                            <div class="col-md-6"><strong>Cluster</strong><div><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div></div>
+                            <div class="col-md-3"><strong>Regional</strong><div><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div></div>
+                            <div class="col-md-3"><strong>Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nominal Pengajuan Donasi</label>
+                        <input type="text" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['nominal_pengajuan_area'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_pengajuan_area'], 0, ',', '.')) : '' ?>" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Nominal Approval EMR</label>
+                        <input type="text" class="form-control js-number-format" data-decimals="0" value="<?= !is_null($cluster['nominal_nego_emr'] ?? null) ? htmlspecialchars(number_format((float) $cluster['nominal_nego_emr'], 0, ',', '.')) : '' ?>" readonly>
+                    </div>
                     <div class="form-group">
                         <label>Tanggal Pencairan</label>
                         <input type="date" name="released_at" class="form-control" value="<?= !empty($cluster['released_at']) ? htmlspecialchars(substr((string) $cluster['released_at'], 0, 10)) : date('Y-m-d') ?>" required>
@@ -1010,39 +1101,6 @@ if ($canApprove) {
         </div>
     </div>
 </div>
-
-<div class="modal fade" id="modal-transfer-proof" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content batch-modal">
-            <form method="post" action="<?= base_url('Batch_Approval_MyRep/uploadTransferProof') ?>" enctype="multipart/form-data">
-                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
-                <input type="hidden" name="id_batch_approval" value="<?= (int) $cluster['id_batch_approval'] ?>">
-                <input type="hidden" name="redirect_to_detail" value="1">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title">Bukti Transfer</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <div class="batch-dropzone js-dropzone">
-                            <input type="file" name="transfer_proof" class="js-dropzone-input">
-                            <div class="batch-dropzone-content">
-                                <div class="batch-dropzone-icon"><i class="fas fa-file-upload"></i></div>
-                                <div class="batch-dropzone-title">Drag & drop bukti transfer</div>
-                                <div class="batch-dropzone-text">Atau klik area ini untuk memilih file</div>
-                                <div class="batch-dropzone-file js-dropzone-label">Belum ada file dipilih</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-dark btn-sm">Simpan Bukti Transfer</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <div class="modal fade" id="modal-post-upload" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content batch-modal">
@@ -1447,20 +1505,6 @@ if ($canApprove) {
                 $('#batch_rar_upload_section').toggle(canUpload);
                 $('#batch_rar_submit_btn').toggle(canUpload);
                 $('#batch_rar_readonly_note').toggleClass('d-none', canUpload);
-            });
-
-            $(document).on('click', '.js-open-transfer-modal', function () {
-                var dropzone = $('#modal-transfer-proof .js-dropzone').get(0);
-                if (dropzone) {
-                    var input = dropzone.querySelector('.js-dropzone-input');
-                    var label = dropzone.querySelector('.js-dropzone-label');
-                    if (input) {
-                        input.value = '';
-                    }
-                    if (label) {
-                        label.textContent = 'Belum ada file dipilih';
-                    }
-                }
             });
 
             $(document).on('click', '.js-open-batch-review-modal', function () {

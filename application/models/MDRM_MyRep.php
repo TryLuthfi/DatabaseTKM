@@ -83,9 +83,10 @@ class MDRM_MyRep extends CI_Model
         }
 
         return $this->db
-            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ba.hp_donasi, ba.released_at, d.id_drm, t.year_num, t.month_num')
+            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ba.hp_donasi, ba.released_at, v.homepass_valsal, d.id_drm, t.year_num, t.month_num')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->where('UPPER(ba.staging_status)', 'RELEASED')
@@ -115,11 +116,12 @@ class MDRM_MyRep extends CI_Model
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
         }
 
+        $filterByDisplayStatus = false;
         if ($status !== '') {
             if (in_array($status, ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'DONE'], true)) {
                 $this->db->where('UPPER(c.status_current)', $status);
             } else {
-                $this->db->where('UPPER(COALESCE(d.status_drm, \'DRAFT\')) = ' . $this->db->escape($status), null, false);
+                $filterByDisplayStatus = true;
             }
         }
 
@@ -131,12 +133,20 @@ class MDRM_MyRep extends CI_Model
 
         $docSummaryMap = $this->getDocumentSummaryMap(array_column($rows, 'id_myrep_cluster'));
         foreach ($rows as &$row) {
-            $summary = $docSummaryMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ['total' => 0, 'uploaded' => 0, 'approved' => 0];
+            $summary = $docSummaryMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ['total' => 0, 'uploaded' => 0, 'approved' => 0, 'rejected' => 0];
             $row['doc_total'] = $summary['total'];
             $row['doc_uploaded'] = $summary['uploaded'];
             $row['doc_approved'] = $summary['approved'];
+            $row['doc_rejected'] = $summary['rejected'];
+            $row['display_status_drm'] = $this->resolveDisplayDrmStatus($row, $summary);
         }
         unset($row);
+
+        if ($filterByDisplayStatus) {
+            $rows = array_values(array_filter($rows, function ($row) use ($status) {
+                return strtoupper(trim((string) ($row['display_status_drm'] ?? ''))) === strtoupper($status);
+            }));
+        }
 
         return $rows;
     }
@@ -187,7 +197,18 @@ class MDRM_MyRep extends CI_Model
             ->get()
             ->row_array();
 
-        return $row ?: [];
+        if (!$row) {
+            return [];
+        }
+
+        $summary = $this->getDocumentSummaryMap([(int) $clusterId])[(int) $clusterId] ?? ['total' => 0, 'uploaded' => 0, 'approved' => 0, 'rejected' => 0];
+        $row['doc_total'] = $summary['total'];
+        $row['doc_uploaded'] = $summary['uploaded'];
+        $row['doc_approved'] = $summary['approved'];
+        $row['doc_rejected'] = $summary['rejected'];
+        $row['display_status_drm'] = $this->resolveDisplayDrmStatus($row, $summary);
+
+        return $row;
     }
 
     public function getBoqMasterItems()
@@ -552,7 +573,7 @@ class MDRM_MyRep extends CI_Model
 
     public function approveDrmBoq($clusterId, $userId, $remark = '')
     {
-        if (!$this->drmBoqTablesReady()) {
+        if (!$this->drmBoqTablesReady() || !$this->drmDocumentTablesReady()) {
             return false;
         }
 
@@ -606,6 +627,48 @@ class MDRM_MyRep extends CI_Model
                 'target_foto_required' => (int) ($item['target_foto_required'] ?? 0),
                 'item_note' => !empty($item['item_note']) ? (string) $item['item_note'] : null,
             ]);
+        }
+
+        $documentFiles = $this->db
+            ->select('f.id_doc_file, f.id_doc_package, f.id_doc_item, f.file_name, f.status_file')
+            ->from('tb_myrep_flow_doc_package p')
+            ->join('tb_myrep_flow_doc_file f', 'f.id_doc_package = p.id_doc_package', 'inner')
+            ->where('p.id_myrep_cluster', (int) $clusterId)
+            ->where('p.flow_type', 'DRM')
+            ->get()
+            ->result_array();
+
+        $packageIds = [];
+        foreach ($documentFiles as $file) {
+            $packageIds[(int) $file['id_doc_package']] = true;
+            if (strtoupper((string) ($file['status_file'] ?? '')) !== 'UPLOADED') {
+                continue;
+            }
+
+            $this->db
+                ->where('id_doc_file', (int) $file['id_doc_file'])
+                ->update('tb_myrep_flow_doc_file', [
+                    'status_file' => 'APPROVED',
+                    'remark' => $remark !== '' ? $remark : 'Approved via BOQ review',
+                    'approved_by' => $userId,
+                    'reviewed_at' => $approvedAt,
+                    'approved_at' => $approvedAt,
+                ]);
+
+            $this->createFileLog([
+                'id_doc_file' => (int) $file['id_doc_file'],
+                'id_doc_package' => (int) $file['id_doc_package'],
+                'id_doc_item' => (int) $file['id_doc_item'],
+                'action_type' => 'APPROVE',
+                'status_after' => 'APPROVED',
+                'file_name' => (string) ($file['file_name'] ?? ''),
+                'remark' => $remark !== '' ? $remark : 'Approved via BOQ review',
+                'action_by' => $userId,
+            ]);
+        }
+
+        foreach (array_keys($packageIds) as $packageId) {
+            $this->refreshPackageStatus((int) $packageId);
         }
 
         $this->db->trans_complete();
@@ -677,7 +740,7 @@ class MDRM_MyRep extends CI_Model
         }
 
         $rows = $this->db
-            ->select("p.id_myrep_cluster, COUNT(i.id_doc_item) AS total_doc, SUM(CASE WHEN f.id_doc_file IS NOT NULL THEN 1 ELSE 0 END) AS uploaded_doc, SUM(CASE WHEN UPPER(COALESCE(f.status_file, '')) = 'APPROVED' THEN 1 ELSE 0 END) AS approved_doc", false)
+            ->select("p.id_myrep_cluster, COUNT(i.id_doc_item) AS total_doc, SUM(CASE WHEN f.id_doc_file IS NOT NULL THEN 1 ELSE 0 END) AS uploaded_doc, SUM(CASE WHEN UPPER(COALESCE(f.status_file, '')) = 'APPROVED' THEN 1 ELSE 0 END) AS approved_doc, SUM(CASE WHEN UPPER(COALESCE(f.status_file, '')) = 'REJECTED' THEN 1 ELSE 0 END) AS rejected_doc", false)
             ->from('md_myrep_flow_doc_group g')
             ->join('md_myrep_flow_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1', 'inner')
             ->join('tb_myrep_flow_doc_package p', 'p.flow_type = \'DRM\' AND p.id_doc_group = g.id_doc_group', 'left', false)
@@ -694,6 +757,7 @@ class MDRM_MyRep extends CI_Model
                 'total' => (int) $row['total_doc'],
                 'uploaded' => (int) $row['uploaded_doc'],
                 'approved' => (int) $row['approved_doc'],
+                'rejected' => (int) $row['rejected_doc'],
             ];
         }
 
@@ -782,5 +846,32 @@ class MDRM_MyRep extends CI_Model
         }
 
         return $requestedStatus !== '' ? $requestedStatus : 'RELEASED';
+    }
+
+    private function resolveDisplayDrmStatus($row, $summary)
+    {
+        $hasDrm = (int) ($row['id_drm'] ?? 0) > 0;
+        if (!$hasDrm) {
+            return 'WAITING INPUT';
+        }
+
+        $rawStatus = strtoupper(trim((string) ($row['status_drm'] ?? '')));
+        if ($rawStatus === 'REJECTED' || (int) ($summary['rejected'] ?? 0) > 0) {
+            return 'REJECTED';
+        }
+
+        $total = (int) ($summary['total'] ?? 0);
+        $uploaded = (int) ($summary['uploaded'] ?? 0);
+        $approved = (int) ($summary['approved'] ?? 0);
+
+        if ($total > 0 && $approved >= $total) {
+            return 'COMPLETE';
+        }
+
+        if ($total > 0 && $uploaded >= $total) {
+            return 'WAITING APPROVE';
+        }
+
+        return 'WAITING DOC';
     }
 }

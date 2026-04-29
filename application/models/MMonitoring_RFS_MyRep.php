@@ -490,8 +490,14 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     public function getClustersWithPlan($year, $startMonth, $endMonth, $city = '')
     {
+        if (!$this->hasMyrepClusterTables() || !$this->hasMyrepDrmDocumentTables()) {
+            return [];
+        }
+
         $sql = "SELECT
                 c.*,
+                mc.id_myrep_cluster,
+                mc.status_current AS myrep_status_current,
                 mt.id_target,
                 mt.year_num,
                 mt.month_num,
@@ -517,11 +523,36 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 ), 0) AS claimed_qty
              FROM tb_rfs_myrep_cluster c
              INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
+             INNER JOIN tb_myrep_cluster mc ON mc.rfs_cluster_id = c.id_cluster
+             INNER JOIN tb_myrep_drm md ON md.id_myrep_cluster = mc.id_myrep_cluster
              LEFT JOIN tb_rfs_myrep_cluster_plan p
                ON p.cluster_id = c.id_cluster
                AND p.year_num = ?
                AND p.month_num = ?
-             WHERE 1=1";
+             WHERE UPPER(COALESCE(mc.status_current, '')) IN ('DRM', 'RFS', 'ATP', 'DONE')
+               AND (
+                    SELECT COUNT(1)
+                    FROM md_myrep_flow_doc_group dg
+                    INNER JOIN md_myrep_flow_doc_item di
+                        ON di.id_doc_group = dg.id_doc_group
+                       AND di.is_active = 1
+                    LEFT JOIN tb_myrep_flow_doc_package dp
+                        ON dp.id_myrep_cluster = mc.id_myrep_cluster
+                       AND dp.flow_type = 'DRM'
+                       AND dp.id_doc_group = dg.id_doc_group
+                    LEFT JOIN tb_myrep_flow_doc_file df
+                        ON df.id_doc_package = dp.id_doc_package
+                       AND df.id_doc_item = di.id_doc_item
+                    WHERE dg.flow_type = 'DRM'
+                      AND UPPER(COALESCE(df.status_file, '')) = 'APPROVED'
+               ) = (
+                    SELECT COUNT(1)
+                    FROM md_myrep_flow_doc_group dg2
+                    INNER JOIN md_myrep_flow_doc_item di2
+                        ON di2.id_doc_group = dg2.id_doc_group
+                       AND di2.is_active = 1
+                    WHERE dg2.flow_type = 'DRM'
+               )";
 
         $params = [$year, $endMonth];
 
@@ -952,6 +983,15 @@ class MMonitoring_RFS_MyRep extends CI_Model
     private function hasMyrepClusterTables()
     {
         return $this->db->table_exists('tb_myrep_cluster');
+    }
+
+    private function hasMyrepDrmDocumentTables()
+    {
+        return $this->db->table_exists('tb_myrep_drm')
+            && $this->db->table_exists('md_myrep_flow_doc_group')
+            && $this->db->table_exists('md_myrep_flow_doc_item')
+            && $this->db->table_exists('tb_myrep_flow_doc_package')
+            && $this->db->table_exists('tb_myrep_flow_doc_file');
     }
 
     private function syncEligibleMyrepClustersToRfs($year, $month, $city = '')

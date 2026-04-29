@@ -283,7 +283,7 @@ if (!function_exists('drmDocumentLabel')) {
                         <div class="col-md-2"><strong>HP Donasi</strong><div><?= number_format((float) ($cluster['hp_donasi'] ?? 0), 0, ',', '.') ?></div></div>
                         <div class="col-md-2"><strong>HP DRM</strong><div><?= !is_null($cluster['homepass_drm'] ?? null) ? number_format((float) $cluster['homepass_drm'], 0, ',', '.') : '-' ?></div></div>
                         <div class="col-md-3"><strong>Tanggal DRM</strong><div><?= !empty($cluster['drm_date']) ? htmlspecialchars((string) $cluster['drm_date']) : '-' ?></div></div>
-                        <div class="col-md-3"><strong>Status DRM</strong><div><?= !empty($cluster['status_drm']) ? htmlspecialchars((string) $cluster['status_drm']) : 'DRAFT' ?></div></div>
+                        <div class="col-md-3"><strong>Status DRM</strong><div><?= !empty($cluster['display_status_drm']) ? htmlspecialchars((string) $cluster['display_status_drm']) : (!empty($cluster['status_drm']) ? htmlspecialchars((string) $cluster['status_drm']) : 'WAITING INPUT') ?></div></div>
                     </div>
                     <hr>
                     <div class="row drm-info-grid">
@@ -393,6 +393,9 @@ if (!function_exists('drmDocumentLabel')) {
                                                         Status BOQ:
                                                         <span class="badge badge-<?= drmDetailBadgeClass($boqReviewStatus) ?>"><?= htmlspecialchars($boqReviewStatus !== '' ? $boqReviewStatus : 'DRAFT') ?></span>
                                                     </div>
+                                                    <?php if ($canApprove && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
+                                                        <button type="button" class="btn btn-sm btn-outline-success mt-2" data-toggle="modal" data-target="#modal-boq-review">Review BOQ</button>
+                                                    <?php endif; ?>
                                                     <?php if (!empty($boqHeader['ho_review_remark'])): ?>
                                                         <div class="small text-info mt-1">Catatan HO: <?= htmlspecialchars((string) $boqHeader['ho_review_remark']) ?></div>
                                                     <?php endif; ?>
@@ -415,24 +418,7 @@ if (!function_exists('drmDocumentLabel')) {
                                             <?php if ($canApprove): ?>
                                                 <td style="min-width:240px;">
                                                     <?php if ($docCanReview): ?>
-                                                        <button
-                                                            type="button"
-                                                            class="btn btn-sm btn-success js-open-drm-review-modal"
-                                                            data-toggle="modal"
-                                                            data-target="#modal-drm-approve"
-                                                            data-file-id="<?= (int) $row['id_doc_file'] ?>"
-                                                            data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>">
-                                                            Approve
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            class="btn btn-sm btn-danger js-open-drm-review-modal"
-                                                            data-toggle="modal"
-                                                            data-target="#modal-drm-reject"
-                                                            data-file-id="<?= (int) $row['id_doc_file'] ?>"
-                                                            data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>">
-                                                            Reject
-                                                        </button>
+                                                        <span class="text-info small font-weight-bold">Review mengikuti approval BOQ</span>
                                                     <?php elseif ($docRawStatus === 'APPROVED'): ?>
                                                         <span class="text-success small font-weight-bold">Sudah approved</span>
                                                     <?php elseif ($docRawStatus === 'REJECTED'): ?>
@@ -481,7 +467,7 @@ if (!function_exists('drmDocumentLabel')) {
                         <div class="row">
                             <div class="col-md-4"><div class="form-group"><label>Tanggal DRM</label><input type="date" name="drm_date" class="form-control" value="<?= htmlspecialchars((string) ($cluster['drm_date'] ?? '')) ?>"></div></div>
                             <div class="col-md-4"><div class="form-group"><label>HP DRM</label><input type="number" name="homepass_drm" class="form-control" min="1" value="<?= htmlspecialchars((string) ($cluster['homepass_drm'] ?? '')) ?>" required></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Status DRM</label><select name="status_drm" class="form-control"><?php foreach (['DRAFT', 'SUBMITTED', 'ON REVIEW', 'APPROVED', 'REJECTED', 'DONE'] as $statusOption): ?><option value="<?= $statusOption ?>" <?= strtoupper((string) ($cluster['status_drm'] ?? 'DRAFT')) === $statusOption ? 'selected' : '' ?>><?= $statusOption ?></option><?php endforeach; ?></select></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>Status DRM</label><input type="text" name="status_drm" class="form-control" value="<?= htmlspecialchars((string) ($cluster['display_status_drm'] ?? 'WAITING DOC')) ?>" readonly></div></div>
                             <div class="col-md-12"><div class="form-group mb-0"><label>Remark DRM</label><textarea name="remark_drm" rows="3" class="form-control"><?= htmlspecialchars((string) ($cluster['remark_drm'] ?? '')) ?></textarea></div></div>
                         </div>
                     </div>
@@ -709,37 +695,56 @@ if (!function_exists('drmDocumentLabel')) {
         </div>
     </div>
 
-    <?php if ($canApprove && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
-        <div class="card card-outline card-primary shadow-sm drm-boq-card">
-            <div class="card-header">
-                <h3 class="card-title">Review BOQ DRM</h3>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <form method="post" action="<?= base_url('DRM_MyRep/approveBoq') ?>">
-                            <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
-                            <div class="form-group">
-                                <label>Remark Approve BOQ</label>
-                                <textarea name="remark" rows="3" class="form-control" placeholder="Catatan approval jika diperlukan"></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-success">Approve BOQ Jadi Baseline</button>
-                        </form>
+<?php endif; ?>
+
+<?php if ($boqReady && $canApprove && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
+    <div class="modal fade" id="modal-boq-review" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content drm-modal">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Review BOQ DRM</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="drm-form-box">
+                        <div class="drm-form-box__title">Informasi Review</div>
+                        <div class="small text-muted">Approve BOQ akan sekaligus meng-approve dokumen DRM yang sudah berstatus upload.</div>
                     </div>
-                    <div class="col-md-6">
-                        <form method="post" action="<?= base_url('DRM_MyRep/rejectBoq') ?>">
-                            <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
-                            <div class="form-group">
-                                <label>Alasan Reject BOQ</label>
-                                <textarea name="remark" rows="3" class="form-control" required placeholder="Wajib diisi jika BOQ manual tidak sesuai file APD BOQ"></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-danger">Reject BOQ</button>
-                        </form>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <form method="post" action="<?= base_url('DRM_MyRep/approveBoq') ?>">
+                                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                                <div class="drm-form-box mb-0">
+                                    <div class="drm-form-box__title">Approve BOQ</div>
+                                    <div class="form-group">
+                                        <label>Remark Approve BOQ</label>
+                                        <textarea name="remark" rows="3" class="form-control" placeholder="Catatan approval jika diperlukan"></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Approve BOQ dan Dokumen</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <form method="post" action="<?= base_url('DRM_MyRep/rejectBoq') ?>">
+                                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                                <div class="drm-form-box mb-0">
+                                    <div class="drm-form-box__title">Reject BOQ</div>
+                                    <div class="form-group">
+                                        <label>Alasan Reject BOQ</label>
+                                        <textarea name="remark" rows="3" class="form-control" required placeholder="Wajib diisi jika BOQ manual tidak sesuai file APD BOQ"></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-danger">Reject BOQ</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
                 </div>
             </div>
         </div>
-    <?php endif; ?>
+    </div>
 <?php endif; ?>
 
 <script>

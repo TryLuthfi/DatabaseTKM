@@ -51,9 +51,15 @@ class MBatch_Approval_MyRep extends CI_Model
             ->distinct()
             ->select('c.city_name')
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
+            ->where_in('UPPER(v.status_valsal)', ['DONE', 'APPROVED'])
+            ->group_start()
+                ->where('ba.id_batch_approval IS NOT NULL', null, false)
+                ->or_where('UPPER(c.status_current)', 'VALSAL')
+            ->group_end()
             ->order_by('c.city_name', 'ASC')
             ->get()
             ->result_array();
@@ -176,8 +182,15 @@ class MBatch_Approval_MyRep extends CI_Model
             ')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left');
+
+        $this->db
+            ->where_in('UPPER(v.status_valsal)', ['DONE', 'APPROVED'])
+            ->group_start()
+                ->where('ba.id_batch_approval IS NOT NULL', null, false)
+                ->or_where('UPPER(c.status_current)', 'VALSAL')
+            ->group_end();
 
         if ($this->batchDocumentTablesReady()) {
             $this->db
@@ -213,12 +226,34 @@ class MBatch_Approval_MyRep extends CI_Model
             }
         }
 
-        return $this->db
+        $rows = $this->db
             ->group_by('c.id_myrep_cluster')
             ->order_by('c.created_at', 'DESC')
             ->order_by('c.cluster_name', 'ASC')
             ->get()
             ->result_array();
+
+        $summaryMap = $this->getPostDonasiSummaryMap(array_column($rows, 'id_myrep_cluster'));
+        foreach ($rows as &$row) {
+            $summary = $summaryMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ['total' => $this->getPostDonasiRequiredDocTotal(), 'uploaded' => 0, 'approved' => 0];
+            $row['post_doc_total'] = $summary['total'];
+            $row['post_doc_uploaded'] = $summary['uploaded'];
+            $row['post_doc_approved'] = $summary['approved'];
+            $row['display_staging_status'] = $this->resolveDisplayStagingStatus(
+                (string) ($row['staging_status'] ?? 'DRAFT'),
+                (int) $summary['total'],
+                (int) $summary['uploaded']
+            );
+        }
+        unset($row);
+
+        if (in_array(strtoupper($status), ['WAITING DOC', 'COMPLETED'], true)) {
+            $rows = array_values(array_filter($rows, static function ($row) use ($status) {
+                return strtoupper((string) ($row['display_staging_status'] ?? '')) === strtoupper($status);
+            }));
+        }
+
+        return $rows;
     }
 
     public function getBatchCandidateById($clusterId)
@@ -244,7 +279,7 @@ class MBatch_Approval_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
+        $row = $this->db
             ->select('c.*, v.id_valsal, v.valsal_date, v.homepass_valsal, v.status_valsal, ba.*')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
@@ -252,6 +287,23 @@ class MBatch_Approval_MyRep extends CI_Model
             ->where('c.id_myrep_cluster', (int) $clusterId)
             ->get()
             ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        $summaryMap = $this->getPostDonasiSummaryMap([(int) $clusterId]);
+        $summary = $summaryMap[(int) $clusterId] ?? ['total' => $this->getPostDonasiRequiredDocTotal(), 'uploaded' => 0, 'approved' => 0];
+        $row['post_doc_total'] = $summary['total'];
+        $row['post_doc_uploaded'] = $summary['uploaded'];
+        $row['post_doc_approved'] = $summary['approved'];
+        $row['display_staging_status'] = $this->resolveDisplayStagingStatus(
+            (string) ($row['staging_status'] ?? 'DRAFT'),
+            (int) $summary['total'],
+            (int) $summary['uploaded']
+        );
+
+        return $row;
     }
 
     public function getBatchPics($batchId)
@@ -665,11 +717,6 @@ class MBatch_Approval_MyRep extends CI_Model
         $requestedStatus = strtoupper(trim((string) $requestedStatus));
 
         $lockedStatuses = [
-            'WAITING HO',
-            'WAITING MYREP',
-            'WAITING FINANCE',
-            'RELEASED',
-            'DONE BATCH APPROVAL',
             'DRM',
             'RFS',
             'ATP',
@@ -681,5 +728,70 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         return $requestedStatus !== '' ? $requestedStatus : 'DRAFT';
+    }
+
+    private function getPostDonasiRequiredDocTotal()
+    {
+        if (!$this->batchDocumentTablesReady()) {
+            return 0;
+        }
+
+        return (int) $this->db
+            ->from('md_myrep_flow_doc_group g')
+            ->join('md_myrep_flow_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1', 'inner')
+            ->where('g.flow_type', 'POST_DONASI')
+            ->where('g.is_active', 1)
+            ->count_all_results();
+    }
+
+    private function getPostDonasiSummaryMap($clusterIds)
+    {
+        $clusterIds = array_values(array_filter(array_map('intval', (array) $clusterIds)));
+        if (empty($clusterIds) || !$this->batchDocumentTablesReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select("p.id_myrep_cluster, SUM(CASE WHEN f.id_doc_file IS NOT NULL THEN 1 ELSE 0 END) AS uploaded_doc, SUM(CASE WHEN UPPER(COALESCE(f.status_file, '')) = 'APPROVED' THEN 1 ELSE 0 END) AS approved_doc", false)
+            ->from('tb_myrep_flow_doc_package p')
+            ->join('tb_myrep_flow_doc_file f', 'f.id_doc_package = p.id_doc_package', 'left')
+            ->where('p.flow_type', 'POST_DONASI')
+            ->where_in('p.id_myrep_cluster', $clusterIds)
+            ->group_by('p.id_myrep_cluster')
+            ->get()
+            ->result_array();
+
+        $total = $this->getPostDonasiRequiredDocTotal();
+        $map = [];
+        foreach ($clusterIds as $clusterId) {
+            $map[$clusterId] = [
+                'total' => $total,
+                'uploaded' => 0,
+                'approved' => 0,
+            ];
+        }
+
+        foreach ($rows as $row) {
+            $map[(int) $row['id_myrep_cluster']] = [
+                'total' => $total,
+                'uploaded' => (int) ($row['uploaded_doc'] ?? 0),
+                'approved' => (int) ($row['approved_doc'] ?? 0),
+            ];
+        }
+
+        return $map;
+    }
+
+    private function resolveDisplayStagingStatus($stagingStatus, $postDocTotal, $postDocUploaded)
+    {
+        $stagingStatus = strtoupper(trim((string) $stagingStatus));
+        $postDocTotal = (int) $postDocTotal;
+        $postDocUploaded = (int) $postDocUploaded;
+
+        if (in_array($stagingStatus, ['RELEASED', 'DONE BATCH APPROVAL'], true) && $postDocTotal > 0) {
+            return $postDocUploaded >= $postDocTotal ? 'COMPLETED' : 'WAITING DOC';
+        }
+
+        return $stagingStatus !== '' ? $stagingStatus : 'DRAFT';
     }
 }

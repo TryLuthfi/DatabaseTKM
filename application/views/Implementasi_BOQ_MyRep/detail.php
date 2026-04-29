@@ -1176,6 +1176,15 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                         </div>
 
                         <div class="tab-pane fade" id="impl-breakdown-pane" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                                <div>
+                                    <div class="font-weight-bold text-dark">Breakdown Implementasi per Item</div>
+                                    <div class="small text-muted">Input beberapa item sekaligus dalam satu tanggal progress untuk mempercepat pelaporan lapangan.</div>
+                                </div>
+                                <button type="button" class="btn btn-primary js-open-progress-modal" data-toggle="modal" data-target="#modal-progress">
+                                    <i class="fas fa-layer-group mr-1"></i>Input Progress Sekaligus
+                                </button>
+                            </div>
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover">
                                     <thead>
@@ -1222,7 +1231,9 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                                                         data-target="#modal-progress"
                                                         data-baseline-item-id="<?= (int) $row['id_boq_baseline_item'] ?>"
                                                         data-item-name="<?= htmlspecialchars((string) ($row['item_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-item-type="<?= htmlspecialchars((string) ($row['item_type'] ?? ''), ENT_QUOTES) ?>">
+                                                        data-item-type="<?= htmlspecialchars((string) ($row['item_type'] ?? ''), ENT_QUOTES) ?>"
+                                                        data-qty-target="<?= htmlspecialchars((string) implHistoryNumber((float) ($row['qty_boq'] ?? 0)), ENT_QUOTES) ?>"
+                                                        data-photo-target="<?= (int) ($row['target_foto_required'] ?? 0) ?>">
                                                         Input Progress
                                                     </button>
                                                     <button
@@ -1310,45 +1321,24 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
 <div class="modal fade" id="modal-progress" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
-            <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/saveProgress') ?>" enctype="multipart/form-data">
+            <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/saveProgress') ?>" enctype="multipart/form-data" id="form-bulk-progress">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
-                <input type="hidden" name="id_boq_baseline_item" id="progress_baseline_item_id">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Input Progress Implementasi</h5>
+                    <h5 class="modal-title">Input Progress Implementasi Sekaligus</h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <div class="row">
-                        <div class="col-md-5">
+                        <div class="col-md-6">
                             <div class="form-group">
                                 <label>Cluster</label>
                                 <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?>" readonly>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Item</label>
-                                <input type="text" class="form-control" id="progress_item_name" readonly>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Jenis</label>
-                                <input type="text" class="form-control" id="progress_item_type" readonly>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>Tanggal Progress</label>
                                 <input type="date" name="progress_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Qty Progress</label>
-                                <input type="number" step="0.01" min="0.01" name="qty_progress" class="form-control" required>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -1360,29 +1350,89 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label>Jumlah Foto</label>
-                                <input type="text" class="form-control" value="Bisa upload multiple" readonly>
-                            </div>
-                        </div>
                     </div>
                     <div class="form-group">
                         <label>Remark Progress</label>
-                        <textarea name="remark_progress" class="form-control" rows="3" placeholder="Catatan progress harian"></textarea>
+                        <textarea name="remark_progress" class="form-control" rows="3" placeholder="Catatan progress harian untuk seluruh input pada tanggal ini"></textarea>
                     </div>
-                    <div class="impl-dropzone js-dropzone">
-                        <input type="file" name="photos[]" class="js-dropzone-input" multiple accept=".jpg,.jpeg,.png,.webp">
-                        <div class="impl-dropzone-content">
-                            <div class="mb-2"><i class="fas fa-images fa-2x text-success"></i></div>
-                            <div class="font-weight-bold">Drag & drop foto progress di sini</div>
-                            <div class="text-muted small">Atau klik area ini untuk memilih beberapa foto</div>
-                            <div class="impl-dropzone-file js-dropzone-label">Belum ada foto dipilih</div>
+                    <div class="card shadow-sm border-0 mb-3">
+                        <div class="card-body">
+                            <div class="row align-items-end">
+                                <div class="col-md-9">
+                                    <div class="form-group mb-md-0">
+                                        <label>Pilih Item Breakdown</label>
+                                        <select class="form-control js-progress-item-selector">
+                                            <option value="">Pilih item implementasi</option>
+                                            <?php foreach ($compareRows as $row): ?>
+                                                <option
+                                                    value="<?= (int) $row['id_boq_baseline_item'] ?>"
+                                                    data-item-name="<?= htmlspecialchars((string) ($row['item_name'] ?? '-'), ENT_QUOTES) ?>"
+                                                    data-item-type="<?= htmlspecialchars((string) ($row['item_type'] ?? '-'), ENT_QUOTES) ?>"
+                                                    data-qty-target="<?= htmlspecialchars((string) implHistoryNumber((float) ($row['qty_boq'] ?? 0)), ENT_QUOTES) ?>"
+                                                    data-photo-target="<?= (int) ($row['target_foto_required'] ?? 0) ?>"
+                                                >
+                                                    <?= htmlspecialchars((string) ($row['item_name'] ?? '-')) ?><?= !empty($row['item_type']) ? ' - ' . htmlspecialchars((string) ($row['item_type'] ?? '-')) : '' ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 text-md-right">
+                                    <button type="button" class="btn btn-outline-primary btn-block js-add-progress-item">
+                                        <i class="fas fa-plus-circle mr-1"></i>Tambah Item
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="alert alert-light border mt-3 mb-0 js-progress-empty-state">Belum ada item dipilih. Tambahkan item seperti Tiang, FAT, ODC, atau item lainnya lalu isi qty dan foto masing-masing.</div>
                         </div>
                     </div>
+                    <div class="js-progress-item-list"></div>
+                    <template id="progress-item-card-template">
+                        <div class="card border-0 shadow-sm mb-3 js-progress-item-card" data-baseline-item-id="">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <div class="font-weight-bold text-dark js-progress-item-title"></div>
+                                        <div class="small text-muted js-progress-item-meta"></div>
+                                    </div>
+                                    <button type="button" class="btn btn-link text-danger p-0 js-remove-progress-item">Hapus</button>
+                                </div>
+                                <input type="hidden" class="js-progress-item-id-input" value="">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label class="js-progress-qty-label">Qty Progress</label>
+                                            <input type="number" step="0.01" min="0.01" class="form-control js-progress-qty-input" value="">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>Target Qty BOQ</label>
+                                            <input type="text" class="form-control js-progress-target-qty" value="" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label>Target Foto</label>
+                                            <input type="text" class="form-control js-progress-target-photo" value="" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="impl-dropzone js-dropzone">
+                                    <input type="file" class="js-dropzone-input js-progress-photo-input" multiple accept=".jpg,.jpeg,.png,.webp">
+                                    <div class="impl-dropzone-content">
+                                        <div class="mb-2"><i class="fas fa-images fa-2x text-success"></i></div>
+                                        <div class="font-weight-bold js-progress-photo-title">Upload foto item</div>
+                                        <div class="text-muted small">Atau klik area ini untuk memilih beberapa foto</div>
+                                        <div class="impl-dropzone-file js-dropzone-label">Belum ada foto dipilih</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary btn-sm">Simpan Progress</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Simpan dan Submit Sekaligus</button>
                 </div>
             </form>
         </div>
@@ -1427,6 +1477,13 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
 
 <script>
     (function () {
+        var progressModal = document.getElementById('modal-progress');
+        var progressSelector = document.querySelector('.js-progress-item-selector');
+        var progressAddButton = document.querySelector('.js-add-progress-item');
+        var progressList = document.querySelector('.js-progress-item-list');
+        var progressEmptyState = document.querySelector('.js-progress-empty-state');
+        var progressCardTemplate = document.getElementById('progress-item-card-template');
+
         function bindDropzones() {
             var dropzones = document.querySelectorAll('.js-dropzone');
             Array.prototype.forEach.call(dropzones, function (dropzone) {
@@ -1473,7 +1530,68 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
             });
         }
 
+        function toggleProgressEmptyState() {
+            if (!progressEmptyState || !progressList) {
+                return;
+            }
+
+            progressEmptyState.style.display = progressList.querySelectorAll('.js-progress-item-card').length > 0 ? 'none' : '';
+        }
+
+        function addProgressItemCard(option) {
+            if (!progressCardTemplate || !progressList || !option || !option.value) {
+                return;
+            }
+
+            var baselineItemId = option.value;
+            if (progressList.querySelector('.js-progress-item-card[data-baseline-item-id="' + baselineItemId + '"]')) {
+                alert('Item ini sudah ada di daftar input.');
+                return;
+            }
+
+            var card = progressCardTemplate.content.firstElementChild.cloneNode(true);
+            var itemName = option.getAttribute('data-item-name') || option.textContent.trim();
+            var itemType = option.getAttribute('data-item-type') || '-';
+            var qtyTarget = option.getAttribute('data-qty-target') || '0';
+            var photoTarget = option.getAttribute('data-photo-target') || '0';
+
+            card.setAttribute('data-baseline-item-id', baselineItemId);
+            card.querySelector('.js-progress-item-title').textContent = itemName;
+            card.querySelector('.js-progress-item-meta').textContent = itemType !== '-' ? itemType : 'Jenis item belum tersedia';
+            card.querySelector('.js-progress-qty-label').textContent = 'Qty ' + itemName;
+            card.querySelector('.js-progress-target-qty').value = qtyTarget;
+            card.querySelector('.js-progress-target-photo').value = photoTarget + ' foto';
+            card.querySelector('.js-progress-photo-title').textContent = 'Upload foto ' + itemName;
+
+            var hiddenInput = card.querySelector('.js-progress-item-id-input');
+            hiddenInput.name = 'progress_items[' + baselineItemId + '][id_boq_baseline_item]';
+            hiddenInput.value = baselineItemId;
+
+            var qtyInput = card.querySelector('.js-progress-qty-input');
+            qtyInput.name = 'progress_items[' + baselineItemId + '][qty_progress]';
+
+            var photoInput = card.querySelector('.js-progress-photo-input');
+            photoInput.name = 'progress_photos[' + baselineItemId + '][]';
+
+            progressList.appendChild(card);
+            bindDropzones();
+            toggleProgressEmptyState();
+        }
+
         bindDropzones();
+        toggleProgressEmptyState();
+
+        if (progressAddButton && progressSelector) {
+            progressAddButton.addEventListener('click', function () {
+                if (!progressSelector.value) {
+                    alert('Pilih item implementasi terlebih dahulu.');
+                    return;
+                }
+
+                addProgressItemCard(progressSelector.options[progressSelector.selectedIndex]);
+                progressSelector.value = '';
+            });
+        }
 
         var lightbox = document.getElementById('impl-lightbox');
         var lightboxImage = document.getElementById('impl-lightbox-image');
@@ -1677,9 +1795,19 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
 
             var progressButton = event.target.closest('.js-open-progress-modal');
             if (progressButton) {
-                document.getElementById('progress_baseline_item_id').value = progressButton.getAttribute('data-baseline-item-id') || '';
-                document.getElementById('progress_item_name').value = progressButton.getAttribute('data-item-name') || '';
-                document.getElementById('progress_item_type').value = progressButton.getAttribute('data-item-type') || '';
+                if (!progressSelector) {
+                    return;
+                }
+
+                var baselineItemId = progressButton.getAttribute('data-baseline-item-id') || '';
+                if (!baselineItemId) {
+                    return;
+                }
+
+                var option = progressSelector.querySelector('option[value="' + baselineItemId + '"]');
+                if (option) {
+                    addProgressItemCard(option);
+                }
                 return;
             }
 
@@ -1735,5 +1863,64 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
 
             document.getElementById('history_item_rows').innerHTML = html;
         });
+
+        if (progressList) {
+            progressList.addEventListener('click', function (event) {
+                var removeButton = event.target.closest('.js-remove-progress-item');
+                if (!removeButton) {
+                    return;
+                }
+
+                var card = removeButton.closest('.js-progress-item-card');
+                if (card) {
+                    card.remove();
+                    toggleProgressEmptyState();
+                }
+            });
+        }
+
+        document.addEventListener('submit', function (event) {
+            if (event.target.id !== 'form-bulk-progress') {
+                return;
+            }
+
+            var cards = event.target.querySelectorAll('.js-progress-item-card');
+            if (!cards.length) {
+                event.preventDefault();
+                alert('Tambahkan minimal 1 item implementasi terlebih dahulu.');
+                return;
+            }
+
+            var isValid = true;
+            Array.prototype.forEach.call(cards, function (card) {
+                var qtyInput = card.querySelector('.js-progress-qty-input');
+                var photoInput = card.querySelector('.js-progress-photo-input');
+                var qtyValue = parseFloat(qtyInput && qtyInput.value ? qtyInput.value : '0');
+                var hasPhotos = photoInput && photoInput.files && photoInput.files.length > 0;
+
+                if (qtyValue <= 0 || !hasPhotos) {
+                    isValid = false;
+                }
+            });
+
+            if (!isValid) {
+                event.preventDefault();
+                alert('Setiap item wajib memiliki qty progress dan minimal 1 foto evidence.');
+            }
+        });
+
+        if (window.jQuery && progressModal) {
+            window.jQuery(progressModal).on('hidden.bs.modal', function () {
+                var form = progressModal.querySelector('form');
+                if (form) {
+                    form.reset();
+                }
+                if (progressList) {
+                    progressList.innerHTML = '';
+                }
+                toggleProgressEmptyState();
+                bindDropzones();
+            });
+        }
     })();
 </script>
