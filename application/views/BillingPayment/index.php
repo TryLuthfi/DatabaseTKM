@@ -3260,7 +3260,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     }
 
     .premium-summary-card .info-box-text {
-        font-size: 0.74rem;
+        font-size: 1.04rem;
         font-weight: 800;
         letter-spacing: 0.14em;
         color: #475569;
