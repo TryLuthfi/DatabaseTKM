@@ -149,21 +149,20 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     <section class="content">
         <div class="container-fluid">
             <!-- Info boxes -->
-            <div class="row billing-summary-row">
-                <div class="col-12 col-sm-6 col-lg billing-summary-col">
-                    <div class="info-box mb-3 premium-summary-card premium-total">
-                        <span class="info-box-icon premium-summary-icon">
-                            <i class="fas fa-layer-group"></i>
-                        </span>
+            <div class="row billing-summary-row billing-summary-row--hero justify-content-center">
+                <div class="col-12 col-sm-8 col-lg-5 col-xl-3 billing-summary-col billing-summary-col--hero">
+                    <div class="info-box mb-3 premium-summary-card premium-summary-card--hero premium-total">
                         <div class="info-box-content">
                             <span class="info-box-text">TOTAL BILLING</span>
-                            <span class="summary-caption">Akumulasi outstanding invoice</span>
+                            <span class="summary-caption">Akumulasi outstanding invoice seluruh prioritas</span>
                             <span class="info-box-number" id="dashboardTotalBilling">Rp. 0</span>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-12 col-sm-6 col-lg billing-summary-col">
+            <div class="row billing-summary-row billing-summary-row--detail">
+                <div class="col-12 col-sm-6 col-xl-3 billing-summary-col">
                     <div class="info-box mb-3 premium-summary-card premium-p1">
                         <span class="info-box-icon premium-summary-icon">
                             <i class="fas fa-bolt"></i>
@@ -176,7 +175,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-lg billing-summary-col">
+                <div class="col-12 col-sm-6 col-xl-3 billing-summary-col">
                     <div class="info-box mb-3 premium-summary-card premium-p2">
                         <span class="info-box-icon premium-summary-icon">
                             <i class="fas fa-fire-alt"></i>
@@ -189,7 +188,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-lg billing-summary-col">
+                <div class="col-12 col-sm-6 col-xl-3 billing-summary-col">
                     <div class="info-box mb-3 premium-summary-card premium-p3">
                         <span class="info-box-icon premium-summary-icon">
                             <i class="fas fa-hourglass-half"></i>
@@ -202,7 +201,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-lg billing-summary-col">
+                <div class="col-12 col-sm-6 col-xl-3 billing-summary-col">
                     <div class="info-box mb-3 premium-summary-card premium-bjt">
                         <span class="info-box-icon premium-summary-icon">
                             <i class="fas fa-shield-alt"></i>
@@ -3629,8 +3628,21 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         margin-bottom: 0.5rem;
     }
 
+    .billing-summary-row--hero {
+        margin-bottom: 0.9rem;
+    }
+
+    .billing-summary-row--detail {
+        margin-bottom: 0.6rem;
+    }
+
     .billing-summary-col {
         min-width: 0;
+    }
+
+    .billing-summary-col--hero {
+        display: flex;
+        justify-content: center;
     }
 
     .premium-summary-card {
@@ -3645,6 +3657,27 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             linear-gradient(145deg, #ffffff 0%, #f5f8ff 100%);
         box-shadow: 0 16px 35px rgba(15, 23, 42, 0.12);
         transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+
+    .premium-summary-card--hero {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 150px;
+        border-radius: 22px;
+        padding: 1rem 1.15rem 1.1rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0) 38%),
+            linear-gradient(145deg, #ffffff 0%, #eef5ff 100%);
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.13);
+    }
+
+    .premium-summary-card--hero .info-box-content {
+        width: 100%;
+        padding: 0;
+        align-items: center;
+        text-align: center;
     }
 
     .premium-summary-card::before {
@@ -3694,6 +3727,15 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         box-shadow: 0 14px 28px var(--summary-shadow, rgba(29, 78, 216, 0.24));
     }
 
+    .premium-summary-icon--hero {
+        width: 56px;
+        min-width: 56px;
+        height: 56px;
+        border-radius: 17px;
+        margin: 0 0 0.85rem;
+        font-size: 1.1rem;
+    }
+
     .premium-summary-card .info-box-text {
         font-size: 1.04rem;
         font-weight: 800;
@@ -3717,6 +3759,23 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         color: #0f172a;
         white-space: normal;
         word-break: break-word;
+    }
+
+    .premium-summary-card--hero .info-box-text {
+        font-size: 1.32rem;
+        letter-spacing: 0.22em;
+    }
+
+    .premium-summary-card--hero .summary-caption {
+        margin-top: 0.2rem;
+        font-size: 0.74rem;
+        max-width: 88%;
+    }
+
+    .premium-summary-card--hero .info-box-number {
+        margin-top: 0.58rem;
+        font-size: 2rem;
+        line-height: 1.04;
     }
 
     .premium-total {
@@ -3864,6 +3923,14 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     }
 
     @media (max-width: 767.98px) {
+        .premium-summary-card--hero .info-box-number {
+            font-size: 1.62rem;
+        }
+
+        .premium-summary-card--hero .summary-caption {
+            max-width: 100%;
+        }
+
         .billing-filter-card__header {
             align-items: flex-start;
         }
