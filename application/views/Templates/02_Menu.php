@@ -834,7 +834,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                 <a href="<?= base_url('Budget_Cashflow') ?>" class="nav-link<?= $disabledBudgetLinkClass ?> <?php if ($id_menu == 'Budget_Cashflow')
                                       echo ' active'; ?>"<?= $disabledBudgetLinkAttr ?>>
                                     <i class="far fa-file nav-icon"></i>
-                                    <p>Cashflow TEC</p>
+                                    <p>Cashflow</p>
                                 </a>
                             </li>
 

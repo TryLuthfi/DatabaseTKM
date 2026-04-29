@@ -118,7 +118,7 @@ $monthNames = [
                     <div class="small-box bg-warning">
                         <div class="inner">
                             <h3><?= number_format((float) ($summaryCards['total_tec'] ?? 0), 0, ',', '.') ?></h3>
-                            <p>Total TEC</p>
+                            <p>Total Operasional</p>
                         </div>
                     </div>
                 </div>
@@ -344,7 +344,7 @@ $monthNames = [
                                 <thead>
                                     <tr>
                                         <th>Item</th>
-                                        <th class="text-right">TEC</th>
+                                        <th class="text-right">Nomor Pengajuan</th>
                                         <th class="text-right">Project</th>
                                         <th class="text-right">Realisasi</th>
                                     </tr>
@@ -372,7 +372,7 @@ $monthNames = [
                                 <tfoot>
                                     <tr>
                                         <th>Item</th>
-                                        <th class="text-right">TEC</th>
+                                        <th class="text-right">Nomor Pengajuan</th>
                                         <th class="text-right">Project</th>
                                         <th class="text-right">Realisasi</th>
                                     </tr>
@@ -386,14 +386,14 @@ $monthNames = [
 
             <div class="card shadow-sm budget-card">
                 <div class="card-header budget-card__header">
-                    <h3 class="card-title">5. Detail per Nomor TEC</h3>
+                    <h3 class="card-title">5. Detail per Nomor Pengajuan</h3>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                     <table id="tecDetailsTable" class="table table-bordered table-hover table-sm table-striped js-budget-table">
                         <thead>
                             <tr>
-                                <th>Nomor TEC</th>
+                                <th>Nomor Pengajuan</th>
                                 <th>Tanggal</th>
                                 <th>Bowheer</th>
                                 <th>Project</th>
@@ -428,7 +428,7 @@ $monthNames = [
                         </tbody>
                         <tfoot>
                             <tr>
-                                <th>Nomor TEC</th>
+                                <th>Nomor Pengajuan</th>
                                 <th>Tanggal</th>
                                 <th>Bowheer</th>
                                 <th>Project</th>
@@ -455,7 +455,7 @@ $monthNames = [
                                 <thead>
                                     <tr>
                                         <th>Project</th>
-                                        <th class="text-right">TEC</th>
+                                        <th class="text-right">Pengajuan</th>
                                         <th class="text-right">PIC</th>
                                         <th class="text-right">Realisasi</th>
                                     </tr>
@@ -482,7 +482,7 @@ $monthNames = [
                                 <tfoot>
                                     <tr>
                                         <th>Project</th>
-                                        <th class="text-right">TEC</th>
+                                        <th class="text-right">Pengajuan</th>
                                         <th class="text-right">PIC</th>
                                         <th class="text-right">Realisasi</th>
                                     </tr>
@@ -505,7 +505,7 @@ $monthNames = [
                                     <tr>
                                         <th>PIC Project</th>
                                         <th class="text-right">Project</th>
-                                        <th class="text-right">TEC</th>
+                                        <th class="text-right">Pengajuan</th>
                                         <th class="text-right">Realisasi</th>
                                     </tr>
                                 </thead>
@@ -555,7 +555,7 @@ $monthNames = [
                                 <th>Regional</th>
                                 <th>Kota</th>
                                 <th class="text-right">Project</th>
-                                <th class="text-right">TEC</th>
+                                <th class="text-right">Pengajuan</th>
                                 <th class="text-right">Realisasi</th>
                             </tr>
                         </thead>
@@ -585,7 +585,7 @@ $monthNames = [
                                 <th>Regional</th>
                                 <th>Kota</th>
                                 <th class="text-right">Project</th>
-                                <th class="text-right">TEC</th>
+                                <th class="text-right">Pengajuan</th>
                                 <th class="text-right">Realisasi</th>
                             </tr>
                         </tfoot>
@@ -604,7 +604,7 @@ $monthNames = [
                 <div>
                     <span class="budget-modal__eyebrow">Budget Report</span>
                     <h5 class="modal-title mb-1" id="drilldownTitle">Detail Transaksi</h5>
-                    <p class="mb-0 budget-modal__subtitle">Drilldown transaksi berdasarkan item, project, PIC, area, atau nomor TEC.</p>
+                    <p class="mb-0 budget-modal__subtitle">Drilldown transaksi berdasarkan item, project, PIC, area, atau Nomor Pengajuan.</p>
                 </div>
                 <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
             </div>
@@ -639,7 +639,7 @@ $monthNames = [
                         <thead class="bg-light">
                             <tr>
                                 <th>No</th>
-                                <th>Nomor TEC</th>
+                                <th>Nomor Pengajuan</th>
                                 <th>Tanggal</th>
                                 <th>Bowheer</th>
                                 <th>Project</th>
@@ -658,7 +658,7 @@ $monthNames = [
                         <tfoot>
                             <tr>
                                 <th>No</th>
-                                <th>Nomor TEC</th>
+                                <th>Nomor Pengajuan</th>
                                 <th>Tanggal</th>
                                 <th>Bowheer</th>
                                 <th>Project</th>
@@ -998,7 +998,7 @@ $monthNames = [
         const exportRows = currentDrilldownRows.map(function(row, index) {
             return {
                 No: index + 1,
-                'Nomor TEC': row.nomor_tec || '-',
+                'Nomor Pengajuan': row.nomor_tec || '-',
                 Tanggal: row.tanggal_cashflow || '-',
                 Bowheer: row.nama_bowheer || '-',
                 Project: row.project_name || '-',
