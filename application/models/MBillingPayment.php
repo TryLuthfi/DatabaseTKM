@@ -157,7 +157,8 @@ WHERE tbp.status_invoice IN ("open", "partial")
             SUM($outstandingSql) AS total_all,
             SUM(CASE WHEN $agingDueExpr > 45 THEN $outstandingSql ELSE 0 END) AS total_p1,
             SUM(CASE WHEN $agingDueExpr BETWEEN 31 AND 45 THEN $outstandingSql ELSE 0 END) AS total_p2,
-            SUM(CASE WHEN $agingDueExpr BETWEEN 0 AND 30 THEN $outstandingSql ELSE 0 END) AS total_p3
+            SUM(CASE WHEN $agingDueExpr BETWEEN 0 AND 30 THEN $outstandingSql ELSE 0 END) AS total_p3,
+            SUM(CASE WHEN $agingDueExpr < 0 THEN $outstandingSql ELSE 0 END) AS total_bjt
         ", false);
         $this->db->from('tb_billingpayment tbp');
         $this->db->join('tb_master_bowheer_bilco tmbi', 'tbp.id_bowheer = tmbi.id_bowheer');

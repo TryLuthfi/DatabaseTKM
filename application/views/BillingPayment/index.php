@@ -151,67 +151,70 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     <section class="content">
         <div class="container-fluid">
             <!-- Info boxes -->
-            <div class="row">
-                <!-- /.col -->
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="info-box mb-3">
-                        <span class="info-box-icon bg-grey elevation-1"><i
-                                class="fas fa-file-invoice-dollar"></i></span>
+            <div class="row billing-summary-row">
+                <div class="col-12 col-sm-6 col-lg billing-summary-col">
+                    <div class="info-box mb-3 premium-summary-card premium-total">
+                        <span class="info-box-icon premium-summary-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </span>
                         <div class="info-box-content">
                             <span class="info-box-text">TOTAL BILLING</span>
-                            <span class="info-box-number" id="dashboardTotalBilling">Rp. 0
-                            </span>
+                            <span class="summary-caption">Akumulasi outstanding invoice</span>
+                            <span class="info-box-number" id="dashboardTotalBilling">Rp. 0</span>
                         </div>
-                        <!-- /.info-box-content -->
                     </div>
-                    </a>
-                    <!-- /.info-box -->
                 </div>
 
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="info-box mb-3 glow-green">
-                        <span class="info-box-icon bg-grey elevation-1"><i
-                                class="fas fa-file-invoice-dollar"></i></span>
+                <div class="col-12 col-sm-6 col-lg billing-summary-col">
+                    <div class="info-box mb-3 premium-summary-card premium-p1">
+                        <span class="info-box-icon premium-summary-icon">
+                            <i class="fas fa-bolt"></i>
+                        </span>
                         <div class="info-box-content">
                             <span class="info-box-text">BILLING ( P1 )</span>
-                            <h4 class="info-box-number" style="color: #33cc33;" id="dashboardBillingP1">
-                                Rp. 0
-                            </h4>
+                            <span class="summary-caption">Prioritas sangat urgent</span>
+                            <span class="info-box-number" id="dashboardBillingP1">Rp. 0</span>
                         </div>
-                        <!-- /.info-box-content -->
                     </div>
-                    </a>
-                    <!-- /.info-box -->
                 </div>
 
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="info-box mb-3 glow-red">
-                        <span class="info-box-icon bg-grey elevation-1"><i class="fas fa-money-check-alt"></i></span>
+                <div class="col-12 col-sm-6 col-lg billing-summary-col">
+                    <div class="info-box mb-3 premium-summary-card premium-p2">
+                        <span class="info-box-icon premium-summary-icon">
+                            <i class="fas fa-fire-alt"></i>
+                        </span>
                         <div class="info-box-content">
                             <span class="info-box-text">BILLING ( P2 )</span>
-                            <h4 class="info-box-number" style="color: #ce0808ff;" id="dashboardBillingP2">
-                                Rp. 0
-                            </h4>
+                            <span class="summary-caption">Mendekati overdue window</span>
+                            <span class="info-box-number" id="dashboardBillingP2">Rp. 0</span>
                         </div>
-                        <!-- /.info-box-content -->
                     </div>
-                    </a>
-                    <!-- /.info-box -->
                 </div>
 
-                <div class="col-12 col-sm-6 col-md-3">
-                    <div class="info-box mb-3">
-                        <span class="info-box-icon bg-grey elevation-1"><i class="fas fa-money-check-alt"></i></span>
+                <div class="col-12 col-sm-6 col-lg billing-summary-col">
+                    <div class="info-box mb-3 premium-summary-card premium-p3">
+                        <span class="info-box-icon premium-summary-icon">
+                            <i class="fas fa-hourglass-half"></i>
+                        </span>
                         <div class="info-box-content">
                             <span class="info-box-text">BILLING ( P3 )</span>
-                            <span class="info-box-number" id="dashboardBillingP3">
-                                0%
-                            </span>
+                            <span class="summary-caption">Masih dalam masa monitor</span>
+                            <span class="info-box-number" id="dashboardBillingP3">Rp. 0</span>
                         </div>
-                        <!-- /.info-box-content -->
                     </div>
-                    </a>
-                    <!-- /.info-box -->
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg billing-summary-col">
+                    <div class="info-box mb-3 premium-summary-card premium-bjt">
+                        <span class="info-box-icon premium-summary-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </span>
+                        <div class="info-box-content">
+                            <span class="info-box-text">BILLING ( BJT )</span>
+                            <span class="summary-caption">Belum jatuh tempo</span>
+                            <span class="info-box-number" id="dashboardBillingBJT">Rp. 0</span>
+                        </div>
+                    </div>
                 </div>
             </div>
     </section>
@@ -1237,6 +1240,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                         animateValue('dashboardBillingP1', 0, parseFloat(outstandingSummary.total_p1 || 0), 600, true);
                         animateValue('dashboardBillingP2', 0, parseFloat(outstandingSummary.total_p2 || 0), 600, true);
                         animateValue('dashboardBillingP3', 0, parseFloat(outstandingSummary.total_p3 || 0), 600, true);
+                        animateValue('dashboardBillingBJT', 0, parseFloat(outstandingSummary.total_bjt || 0), 600, true);
                     }
 
                     // === BODY ===
@@ -1489,7 +1493,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
     function formatRupiah(value) {
         let num = parseFloat(value.toString().replace(/[^\d]/g, '')) || 0;
-        return '' + formatTitik(num);
+        return 'Rp. ' + formatTitik(num);
     }
 
     // === ANIMASI ANGKA DASHBOARD ===
@@ -2985,35 +2989,166 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
 
 <style>
+    .billing-summary-row {
+        margin-bottom: 0.5rem;
+    }
+
+    .billing-summary-col {
+        min-width: 0;
+    }
+
+    .premium-summary-card {
+        position: relative;
+        overflow: hidden;
+        min-height: 148px;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 22px;
+        padding: 0.35rem 0.4rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 35%),
+            linear-gradient(145deg, #ffffff 0%, #f5f8ff 100%);
+        box-shadow: 0 16px 35px rgba(15, 23, 42, 0.12);
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+
+    .premium-summary-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto auto 0;
+        width: 100%;
+        height: 5px;
+        background: var(--summary-accent, #1d4ed8);
+    }
+
+    .premium-summary-card::after {
+        content: "";
+        position: absolute;
+        right: -35px;
+        bottom: -40px;
+        width: 130px;
+        height: 130px;
+        border-radius: 50%;
+        background: var(--summary-soft, rgba(29, 78, 216, 0.12));
+        pointer-events: none;
+    }
+
+    .premium-summary-card:hover {
+        transform: translateY(-6px);
+        border-color: var(--summary-border, rgba(29, 78, 216, 0.28));
+        box-shadow: 0 22px 44px rgba(15, 23, 42, 0.16);
+    }
+
+    .premium-summary-card .info-box-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.22rem;
+        min-width: 0;
+        padding: 0.2rem 0;
+    }
+
+    .premium-summary-icon {
+        width: 62px;
+        min-width: 62px;
+        height: 62px;
+        border-radius: 18px;
+        margin: 0.8rem 1rem;
+        background: linear-gradient(145deg, var(--summary-light, #60a5fa), var(--summary-accent, #1d4ed8));
+        color: #ffffff;
+        box-shadow: 0 14px 28px var(--summary-shadow, rgba(29, 78, 216, 0.24));
+    }
+
+    .premium-summary-card .info-box-text {
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        color: #475569;
+        text-transform: uppercase;
+        white-space: normal;
+    }
+
+    .premium-summary-card .summary-caption {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #94a3b8;
+    }
+
+    .premium-summary-card .info-box-number {
+        margin-top: 0.3rem;
+        font-size: 1.45rem;
+        font-weight: 800;
+        line-height: 1.15;
+        color: #0f172a;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    .premium-total {
+        --summary-accent: #1d4ed8;
+        --summary-light: #60a5fa;
+        --summary-soft: rgba(29, 78, 216, 0.12);
+        --summary-border: rgba(29, 78, 216, 0.28);
+        --summary-shadow: rgba(29, 78, 216, 0.24);
+    }
+
+    .premium-p1 {
+        --summary-accent: #16a34a;
+        --summary-light: #4ade80;
+        --summary-soft: rgba(22, 163, 74, 0.12);
+        --summary-border: rgba(22, 163, 74, 0.28);
+        --summary-shadow: rgba(22, 163, 74, 0.24);
+    }
+
+    .premium-p2 {
+        --summary-accent: #dc2626;
+        --summary-light: #f87171;
+        --summary-soft: rgba(220, 38, 38, 0.12);
+        --summary-border: rgba(220, 38, 38, 0.28);
+        --summary-shadow: rgba(220, 38, 38, 0.24);
+    }
+
+    .premium-p3 {
+        --summary-accent: #f59e0b;
+        --summary-light: #fbbf24;
+        --summary-soft: rgba(245, 158, 11, 0.14);
+        --summary-border: rgba(245, 158, 11, 0.3);
+        --summary-shadow: rgba(245, 158, 11, 0.24);
+    }
+
+    .premium-bjt {
+        --summary-accent: #0f766e;
+        --summary-light: #2dd4bf;
+        --summary-soft: rgba(15, 118, 110, 0.12);
+        --summary-border: rgba(15, 118, 110, 0.28);
+        --summary-shadow: rgba(15, 118, 110, 0.24);
+    }
+
     #tabel_list_open_invoice tfoot th {
         text-align: right;
         background-color: #f8f9fa;
         font-weight: bold;
     }
 
-    /* upgrade warna header merah */
-
     .glow-red {
-        border: 1px solid rgba(255, 0, 0, 0.7);
-        box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+        border: 1px solid rgba(220, 38, 38, 0.35);
+        box-shadow: 0 10px 24px rgba(220, 38, 38, 0.12);
         transition: box-shadow 0.3s ease-in-out;
-        border-radius: 10px;
+        border-radius: 16px;
     }
 
     .glow-red:hover {
-        box-shadow: 0 0 25px rgba(255, 0, 0, 0.9);
+        box-shadow: 0 16px 32px rgba(220, 38, 38, 0.2);
     }
 
-    /* upgrade warna header hijau */
     .glow-green {
-        border: 1px solid rgba(0, 255, 0, 0.7);
-        box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+        border: 1px solid rgba(22, 163, 74, 0.35);
+        box-shadow: 0 10px 24px rgba(22, 163, 74, 0.12);
         transition: box-shadow 0.3s ease-in-out;
-        border-radius: 10px;
+        border-radius: 16px;
     }
 
     .glow-green:hover {
-        box-shadow: 0 0 25px rgba(0, 255, 0, 0.9);
+        box-shadow: 0 16px 32px rgba(22, 163, 74, 0.2);
     }
 
 
