@@ -7,9 +7,9 @@ $disabledBudgetLinkAttr = $canAccessBudgeting ? '' : ' tabindex="-1" aria-disabl
 $disabledBilcoLinkClass = $canAccessBilco ? '' : ' menu-access-disabled';
 $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
 ?>
-<div class="wrapper">
+<div class="wrapper premium-shell">
     <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-grey-dark navbar-dark">
+    <nav class="main-header navbar navbar-expand navbar-dark premium-topbar">
         <!-- Left navbar links -->
         <ul class="navbar-nav">
             <li class="nav-item">
@@ -43,18 +43,18 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
     <!-- /.navbar -->
 
     <!-- Main Sidebar Container -->
-    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <aside class="main-sidebar sidebar-dark-primary elevation-4 premium-sidebar">
         <!-- Brand Logo -->
-        <a href="index3.html" class="brand-link">
+        <a href="<?= base_url('Dashboard') ?>" class="brand-link premium-brand-link">
             <img src="<?= base_url('assets') ?>/dist/img/logotkmsolid.png" alt="AdminLTE Logo"
-                class="brand-image img-circle elevation-3" style="opacity: .8">
-            <span class="brand-text font-weight-light">PT. TKM</span>
+                class="brand-image img-circle elevation-3 premium-brand-image" style="opacity: .9">
+            <span class="brand-text font-weight-light premium-brand-text">PT. TKM</span>
         </a>
 
         <!-- Sidebar -->
         <div class="sidebar">
             <!-- Sidebar user panel (optional) -->
-            <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+            <div class="user-panel mt-3 pb-3 mb-3 d-flex premium-user-panel">
                 <div class="image">
                     <img src="<?= base_url('assets') ?>/dist/img/avatar5.png" class="img-circle elevation-2"
                         alt="User Image">
@@ -888,18 +888,192 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
         <!-- /.sidebar -->
     </aside>
 
-    <script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
-    <!-- Bootstrap -->
-    <script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <!-- AdminLTE -->
-    <script src="<?= base_url('assets') ?>dist/js/adminlte.js"></script>
-
-    <!-- OPTIONAL SCRIPTS -->
-    <script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
-    <script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
-    <script src="<?= base_url('assets') ?>/dist/js/pages/dashboard3.js"></script>
-
     <style>
+        .premium-shell .main-header,
+        .premium-shell .main-sidebar,
+        .premium-shell .brand-link,
+        .premium-shell .user-panel,
+        .premium-shell .nav-link,
+        .premium-shell .nav-header,
+        .premium-shell .badge {
+            font-family: "Plus Jakarta Sans", "Source Sans Pro", sans-serif;
+        }
+
+        .premium-topbar {
+            border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+            background:
+                radial-gradient(circle at top right, rgba(96, 165, 250, 0.14), transparent 26%),
+                linear-gradient(135deg, rgba(8, 23, 39, 0.97), rgba(15, 61, 96, 0.95));
+            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.14);
+            backdrop-filter: blur(12px);
+        }
+
+        .premium-topbar .nav-link {
+            color: rgba(241, 245, 249, 0.88) !important;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .premium-topbar .nav-link:hover,
+        .premium-topbar .nav-link:focus {
+            color: #ffffff !important;
+        }
+
+        .premium-sidebar {
+            border-right: 1px solid rgba(148, 163, 184, 0.14);
+            background:
+                radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 18%),
+                linear-gradient(180deg, #081423 0%, #0d2237 46%, #102d46 100%);
+            box-shadow: 16px 0 36px rgba(15, 23, 42, 0.12);
+        }
+
+        .premium-brand-link {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            min-height: 72px;
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .premium-brand-image {
+            float: none !important;
+            margin: 0 !important;
+            width: 40px;
+            height: 40px;
+            padding: 0.16rem;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.22);
+        }
+
+        .premium-brand-text {
+            font-size: 1.02rem;
+            font-weight: 800 !important;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #f8fafc !important;
+        }
+
+        .premium-sidebar .sidebar {
+            padding: 0 0.8rem 1rem;
+        }
+
+        .premium-user-panel {
+            margin: 1rem 0.25rem 1rem !important;
+            padding: 0.85rem 0.9rem !important;
+            align-items: center;
+            gap: 0.78rem;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 16px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.035));
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .premium-user-panel .image img {
+            width: 38px;
+            height: 38px;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .premium-user-panel .info {
+            padding: 0 !important;
+        }
+
+        .premium-user-panel .info a {
+            color: #f8fafc !important;
+            font-weight: 700;
+            font-size: 0.94rem;
+        }
+
+        .premium-sidebar .nav-header {
+            padding: 1rem 0.9rem 0.45rem;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: rgba(191, 219, 254, 0.72);
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link {
+            display: flex;
+            align-items: center;
+            min-height: 46px;
+            margin-bottom: 0.18rem;
+            padding: 0.74rem 0.88rem;
+            border-radius: 14px;
+            color: rgba(226, 232, 240, 0.9);
+            font-size: 0.94rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link .nav-icon {
+            margin-right: 0.7rem;
+            font-size: 0.98rem !important;
+            color: rgba(147, 197, 253, 0.84);
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link p {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link p .right {
+            margin-left: auto;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link:hover,
+        .premium-sidebar .nav-sidebar .nav-link:focus {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.075);
+            transform: translateX(2px);
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link:hover .nav-icon,
+        .premium-sidebar .nav-sidebar .nav-link:focus .nav-icon {
+            color: #ffffff;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link.active {
+            color: #ffffff !important;
+            background:
+                radial-gradient(circle at top right, rgba(255, 255, 255, 0.16), transparent 34%),
+                linear-gradient(135deg, #2563eb 0%, #3b82f6 45%, #38bdf8 100%);
+            box-shadow: 0 14px 28px rgba(37, 99, 235, 0.24);
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link.active .nav-icon {
+            color: #ffffff !important;
+        }
+
+        .premium-sidebar .nav-treeview {
+            margin-left: 0.5rem;
+            padding-left: 0.75rem;
+            border-left: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .premium-sidebar .nav-treeview .nav-link {
+            min-height: 42px;
+            padding: 0.64rem 0.8rem;
+            font-size: 0.91rem;
+            border-radius: 12px;
+        }
+
+        .premium-sidebar .nav-sidebar .badge.badge-info {
+            min-width: 24px;
+            padding: 0.24rem 0.42rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.16);
+            color: #e0f2fe;
+            font-size: 0.68rem;
+            font-weight: 700;
+        }
+
         .menu-access-disabled {
             opacity: 0.58;
             cursor: not-allowed;
@@ -908,5 +1082,20 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
         .menu-access-disabled:hover,
         .menu-access-disabled:focus {
             background-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        @media (max-width: 991.98px) {
+            .premium-sidebar .sidebar {
+                padding: 0 0.65rem 1rem;
+            }
+
+            .premium-user-panel {
+                margin-left: 0;
+                margin-right: 0;
+            }
+
+            .premium-brand-text {
+                letter-spacing: 0.12em;
+            }
         }
     </style>
