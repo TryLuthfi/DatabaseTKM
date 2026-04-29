@@ -598,78 +598,89 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     <div class="modal fade" id="modal-download-billing-report" data-backdrop="static" tabindex="-1" role="dialog"
         aria-labelledby="modalBillingReportLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
+            <div class="modal-content billing-report-modal">
                 <form id="formDownloadBillingReport" method="GET" target="_blank"
                     action="<?= base_url('BillingPayment/downloadBillingReport') ?>">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalBillingReportLabel">Download Billing Report</h5>
+                    <div class="modal-header billing-report-modal__header">
+                        <div>
+                            <span class="billing-report-modal__eyebrow">Billing Report</span>
+                            <h5 class="modal-title mb-1" id="modalBillingReportLabel">Download Billing Report</h5>
+                            <p class="mb-0 billing-report-modal__subtitle">Susun export invoice berdasarkan filter aktif agar file report yang diunduh lebih presisi dan siap dibagikan.</p>
+                        </div>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Bowheer</label>
-                                    <select name="bowheer[]" id="report_filter_bowheer" class="select2" multiple="multiple"
-                                        data-placeholder="Pilih bowheer" style="width: 100%;">
-                                        <?php foreach ($unique_bowheer as $bowheer): ?>
-                                            <option value="<?= $bowheer ?>"><?= $bowheer ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
+                        <div class="billing-report-section">
+                            <div class="billing-report-section__title">Filter Report</div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="billing-field-label">Bowheer</label>
+                                        <select name="bowheer[]" id="report_filter_bowheer" class="select2" multiple="multiple"
+                                            data-placeholder="Pilih bowheer" style="width: 100%;">
+                                            <?php foreach ($unique_bowheer as $bowheer): ?>
+                                                <option value="<?= $bowheer ?>"><?= $bowheer ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Regional</label>
-                                    <select name="regional[]" id="report_filter_regional" class="select2"
-                                        multiple="multiple" data-placeholder="Pilih regional" style="width: 100%;">
-                                        <?php foreach ($unique_regional as $regional): ?>
-                                            <option value="<?= $regional ?>"><?= $regional ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="billing-field-label">Regional</label>
+                                        <select name="regional[]" id="report_filter_regional" class="select2"
+                                            multiple="multiple" data-placeholder="Pilih regional" style="width: 100%;">
+                                            <?php foreach ($unique_regional as $regional): ?>
+                                                <option value="<?= $regional ?>"><?= $regional ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Area</label>
-                                    <select name="city[]" id="report_filter_city" class="select2" multiple="multiple"
-                                        data-placeholder="Pilih area" style="width: 100%;">
-                                        <?php foreach ($unique_city as $city): ?>
-                                            <option value="<?= $city ?>"><?= $city ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="billing-field-label">Area</label>
+                                        <select name="city[]" id="report_filter_city" class="select2" multiple="multiple"
+                                            data-placeholder="Pilih area" style="width: 100%;">
+                                            <?php foreach ($unique_city as $city): ?>
+                                                <option value="<?= $city ?>"><?= $city ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Priority</label>
-                                    <select name="priority[]" id="report_filter_priority" class="select2"
-                                        multiple="multiple" data-placeholder="Pilih priority" style="width: 100%;">
-                                        <?php foreach ($unique_priority as $priority): ?>
-                                            <option value="<?= $priority ?>"><?= $priority ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="billing-field-label">Priority</label>
+                                        <select name="priority[]" id="report_filter_priority" class="select2"
+                                            multiple="multiple" data-placeholder="Pilih priority" style="width: 100%;">
+                                            <?php foreach ($unique_priority as $priority): ?>
+                                                <option value="<?= $priority ?>"><?= $priority ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label>Status Invoice</label>
-                                    <select name="status_invoice" id="report_filter_status" class="form-control">
-                                        <option value="open">Open</option>
-                                        <option value="partial">Partial</option>
-                                        <option value="paid">Paid</option>
-                                        <option value="reject">Reject</option>
-                                        <option value="all">Semua Status</option>
-                                    </select>
+                                <div class="col-md-12">
+                                    <div class="form-group mb-0">
+                                        <label class="billing-field-label">Status Invoice</label>
+                                        <select name="status_invoice" id="report_filter_status" class="form-control billing-report-input">
+                                            <option value="open">Open</option>
+                                            <option value="partial">Partial</option>
+                                            <option value="paid">Paid</option>
+                                            <option value="reject">Reject</option>
+                                            <option value="all">Semua Status</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">Download Excel</button>
+                    <div class="modal-footer billing-report-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn budget-btn budget-btn--success">
+                            <i class="fas fa-file-excel mr-1"></i> Download Excel
+                        </button>
                     </div>
                 </form>
             </div>
@@ -3188,6 +3199,134 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         color: #fff;
         background: rgba(255, 255, 255, 0.12);
         border-radius: 10px;
+    }
+
+    .billing-report-modal {
+        border: 0;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 30px 50px rgba(8, 35, 55, 0.22);
+    }
+
+    .billing-report-modal__header {
+        border-bottom: 0;
+        padding: 1.4rem 1.5rem 1.1rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 30%),
+            linear-gradient(135deg, #103b5a 0%, #1f6da1 55%, #53a9d8 100%);
+        color: #fff;
+    }
+
+    .billing-report-modal__eyebrow {
+        display: inline-block;
+        margin-bottom: 6px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.76);
+    }
+
+    .billing-report-modal__subtitle {
+        max-width: 88%;
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 0.92rem;
+    }
+
+    .billing-report-modal .modal-body {
+        padding: 1.5rem;
+        background: linear-gradient(180deg, #fbfdff 0%, #f2f8fc 100%);
+    }
+
+    .billing-report-modal__footer {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        border-top: 0;
+        padding: 0 1.5rem 1.5rem;
+        background: transparent;
+    }
+
+    .billing-report-section {
+        margin-bottom: 0;
+        padding: 1rem 1rem 0.9rem;
+        border: 1px solid #dbe9f4;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    .billing-report-section__title {
+        margin-bottom: 0.9rem;
+        font-size: 0.86rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #2d6287;
+    }
+
+    .billing-report-modal .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .billing-report-modal .select2-container {
+        width: 100% !important;
+    }
+
+    .billing-report-modal .select2-container--bootstrap4 .select2-selection,
+    .billing-report-input {
+        min-height: 44px;
+        border-radius: 12px;
+        border: 1px solid #cfe0ee;
+        box-shadow: none;
+        background: #fff;
+    }
+
+    .billing-report-modal .select2-container--bootstrap4 .select2-selection--multiple {
+        padding: 0.35rem 0.6rem 0.28rem;
+    }
+
+    .billing-report-modal .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__rendered {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 0;
+    }
+
+    .billing-report-modal .select2-container--bootstrap4 .select2-selection__choice {
+        margin-top: 0;
+        border: 1px solid #cfe0ee;
+        border-radius: 999px;
+        padding: 0.22rem 0.65rem;
+        background: linear-gradient(135deg, #eff7fc 0%, #dfeef8 100%);
+        color: #27587c;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .billing-report-modal .select2-container--bootstrap4 .select2-selection__choice__remove {
+        color: #5f86a4;
+        margin-right: 6px;
+    }
+
+    .billing-report-modal .select2-container--bootstrap4.select2-container--focus .select2-selection,
+    .billing-report-modal .select2-container--bootstrap4.select2-container--open .select2-selection,
+    .billing-report-input:focus {
+        border-color: #55a7d5;
+        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
+    .billing-report-modal .select2-container--bootstrap4 .select2-dropdown {
+        border-color: #cfe0ee;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 18px 32px rgba(16, 59, 90, 0.14);
+    }
+
+    .billing-report-modal .select2-container--bootstrap4 .select2-search__field {
+        border-radius: 10px;
+        border-color: #cfe0ee;
+        min-height: 38px;
     }
 
     .billing-summary-row {
