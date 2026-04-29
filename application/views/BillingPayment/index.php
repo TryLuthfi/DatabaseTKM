@@ -150,7 +150,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         <div class="container-fluid">
             <!-- Info boxes -->
             <div class="row billing-summary-row billing-summary-row--hero justify-content-center">
-                <div class="col-12 col-sm-8 col-lg-5 col-xl-3 billing-summary-col billing-summary-col--hero">
+                <div class="col-12 col-sm-8 col-lg-5 col-xl-4 billing-summary-col billing-summary-col--hero">
                     <div class="info-box mb-3 premium-summary-card premium-summary-card--hero premium-total">
                         <div class="info-box-content">
                             <span class="info-box-text">TOTAL BILLING</span>
