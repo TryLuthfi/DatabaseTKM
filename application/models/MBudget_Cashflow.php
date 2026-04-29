@@ -68,6 +68,40 @@ class MBudget_Cashflow extends CI_Model
             ->result_array();
     }
 
+    public function getActivePicUsers()
+    {
+        if (!$this->db->table_exists('tb_master_user')) {
+            return [];
+        }
+
+        return $this->db
+            ->distinct()
+            ->select('nama_user AS value, nama_user AS label')
+            ->from('tb_master_user')
+            ->where('status_user', 'ACTIVE')
+            ->where('nama_user IS NOT NULL', null, false)
+            ->where('TRIM(nama_user) !=', '')
+            ->order_by('nama_user', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+    public function findActivePicUserByName($namaUser)
+    {
+        $namaUser = trim((string) $namaUser);
+        if ($namaUser === '' || !$this->db->table_exists('tb_master_user')) {
+            return [];
+        }
+
+        return $this->db
+            ->select('nama_user')
+            ->from('tb_master_user')
+            ->where('nama_user', $namaUser)
+            ->where('status_user', 'ACTIVE')
+            ->get()
+            ->row_array();
+    }
+
     public function getHeaders($year, $month = 0, $startDate = '', $endDate = '')
     {
         return $this->getHeaderSummaries([
@@ -154,11 +188,10 @@ class MBudget_Cashflow extends CI_Model
             ->row_array();
     }
 
-    public function isDuplicateHeader($nomorTec, $tanggalCashflow, $projectName, $excludeHeaderId = 0)
+    public function isDuplicateHeader($nomorTec, $projectName, $excludeHeaderId = 0)
     {
         $this->db->from('tb_budget_cashflow_header');
         $this->db->where('nomor_tec', trim($nomorTec));
-        $this->db->where('tanggal_cashflow', $tanggalCashflow);
         $this->db->where('project_name', trim($projectName));
 
         if ((int) $excludeHeaderId > 0) {

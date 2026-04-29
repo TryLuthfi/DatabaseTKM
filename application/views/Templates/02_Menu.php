@@ -764,6 +764,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                     <li class="nav-header">Budgeting</li>
                     <li class="nav-item has-treeview <?php if (
                         $id_menu == 'Budget_MasterAkunBiaya' ||
+                        $id_menu == 'Budget_MasterPic' ||
                         $id_menu == 'Budget_Cashflow' ||
                         $id_menu == 'Budget_Report' ||
                         $id_menu == 'Budget_MasterBudgetYears'
@@ -773,6 +774,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
 
                         <a href="#" class="nav-link <?php if (
                             $id_menu == 'Budget_MasterAkunBiaya' ||
+                            $id_menu == 'Budget_MasterPic' ||
                             $id_menu == 'Budget_Cashflow' ||
                             $id_menu == 'Budget_Report' ||
                             $id_menu == 'Budget_MasterBudgetYears'
@@ -783,7 +785,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                             <p>
                                 Budget Ops
                                 <i class="right fas fa-angle-left"></i>
-                                <span class="badge badge-info right">5</span>
+                                <span class="badge badge-info right">6</span>
                             </p>
                         </a>
 
@@ -791,6 +793,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
 
                             <li class="nav-item has-treeview <?php if (
                                 $id_menu == 'Budget_MasterAkunBiaya' ||
+                                $id_menu == 'Budget_MasterPic' ||
                                 $id_menu == 'Budget_MasterBudgetYears' ||
                                 $id_menu == 'Budget_Cashflow' ||
                                 $id_menu == 'Budget_Report'
@@ -799,6 +802,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                             } ?>">
                                 <a href="#" class="nav-link <?php if (
                                     $id_menu == 'Budget_MasterAkunBiaya' ||
+                                    $id_menu == 'Budget_MasterPic' ||
                                     $id_menu == 'Budget_MasterBudgetYears' ||
                                     $id_menu == 'Budget_Cashflow' ||
                                     $id_menu == 'Budget_Report'
@@ -808,7 +812,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                     <i class="far fa-folder nav-icon"></i>
                                     <p>Master Budgeting
                                         <i class="right fas fa-angle-left"></i>
-                                        <span class="badge badge-info right">3</span>
+                                        <span class="badge badge-info right">4</span>
                                     </p>
                                 </a>
                                 <ul class="nav nav-treeview">
@@ -817,6 +821,13 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                               echo ' active'; ?>"<?= $disabledBudgetLinkAttr ?>>
                                             <i class="far fa-circle nav-icon"></i>
                                             <p>Master Item</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Budget_MasterPic') ?>" class="nav-link<?= $disabledBudgetLinkClass ?> <?php if ($id_menu == 'Budget_MasterPic')
+                                              echo ' active'; ?>"<?= $disabledBudgetLinkAttr ?>>
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master PIC</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">

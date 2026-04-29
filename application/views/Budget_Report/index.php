@@ -411,7 +411,8 @@ $monthNames = [
                                     <tr>
                                         <td>
                                             <button type="button" class="btn btn-link p-0 text-left drill-tec"
-                                                data-nomor-tec="<?= htmlspecialchars($row['nomor_tec'], ENT_QUOTES) ?>">
+                                                data-nomor-tec="<?= htmlspecialchars($row['nomor_tec'], ENT_QUOTES) ?>"
+                                                data-project-name="<?= htmlspecialchars((string) ($row['project_name'] ?? ''), ENT_QUOTES) ?>">
                                                 <?= htmlspecialchars($row['nomor_tec']) ?>
                                             </button>
                                         </td>
@@ -959,7 +960,8 @@ $monthNames = [
 
     $(document).on('click', '.drill-tec', function() {
         const nomorTec = $(this).data('nomor-tec');
-        openDrilldown('Detail TEC - ' + nomorTec, { type: 'tec', nomor_tec: nomorTec });
+        const projectName = $(this).data('project-name') || '';
+        openDrilldown('Detail TEC - ' + nomorTec + (projectName ? ' / ' + projectName : ''), { type: 'tec', nomor_tec: nomorTec, project_name: projectName });
     });
 
     function buildBudgetReportExportUrl(type) {

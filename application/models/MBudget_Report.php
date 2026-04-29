@@ -247,7 +247,7 @@ class MBudget_Report extends CI_Model
     {
         $this->db->select("
             h.project_name,
-            COUNT(DISTINCT h.nomor_tec) AS total_tec,
+            COUNT(DISTINCT h.id_cashflow_header) AS total_tec,
             COUNT(DISTINCT h.pic_project) AS total_pic,
             COALESCE(SUM(d.nominal), 0) AS total_realisasi
         ");
@@ -267,7 +267,7 @@ class MBudget_Report extends CI_Model
         $this->db->select("
             h.pic_project,
             COUNT(DISTINCT h.project_name) AS total_project,
-            COUNT(DISTINCT h.nomor_tec) AS total_tec,
+            COUNT(DISTINCT h.id_cashflow_header) AS total_tec,
             COALESCE(SUM(d.nominal), 0) AS total_realisasi
         ");
         $this->db->from('tb_budget_cashflow_header h');
@@ -287,7 +287,7 @@ class MBudget_Report extends CI_Model
             h.regional,
             h.kota,
             COUNT(DISTINCT h.project_name) AS total_project,
-            COUNT(DISTINCT h.nomor_tec) AS total_tec,
+            COUNT(DISTINCT h.id_cashflow_header) AS total_tec,
             COALESCE(SUM(d.nominal), 0) AS total_realisasi
         ");
         $this->db->from('tb_budget_cashflow_header h');
@@ -365,7 +365,7 @@ class MBudget_Report extends CI_Model
             case 'area':
                 return $this->getTransactionsByArea($year, $months, (string) ($filters['regional'] ?? ''), (string) ($filters['kota'] ?? ''));
             case 'tec':
-                return $this->getTransactionsByTec($year, $months, (string) ($filters['nomor_tec'] ?? ''));
+                return $this->getTransactionsByTec($year, $months, (string) ($filters['nomor_tec'] ?? ''), (string) ($filters['project_name'] ?? ''));
             default:
                 return [];
         }
@@ -456,10 +456,13 @@ class MBudget_Report extends CI_Model
         return $this->db->get()->result_array();
     }
 
-    private function getTransactionsByTec($year, array $months, $nomorTec)
+    private function getTransactionsByTec($year, array $months, $nomorTec, $projectName = '')
     {
         $this->getTransactionsBase($year, $months);
         $this->db->where('h.nomor_tec', $nomorTec);
+        if (trim((string) $projectName) !== '') {
+            $this->db->where('h.project_name', trim((string) $projectName));
+        }
         $this->db->order_by('h.tanggal_cashflow', 'DESC');
         return $this->db->get()->result_array();
     }

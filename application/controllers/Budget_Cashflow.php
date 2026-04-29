@@ -31,6 +31,7 @@ class Budget_Cashflow extends CI_Controller
         $data['headers'] = $this->MBudget_Cashflow->getHeaders($selectedYear, $selectedMonth, $startDate, $endDate);
         $data['items'] = $this->MBudget_Cashflow->getItems();
         $data['bowheers'] = $this->MBudget_Cashflow->getBowheers();
+        $data['picUsers'] = $this->MBudget_Cashflow->getActivePicUsers();
         $data['reportFilterOptions'] = $this->MBudget_Cashflow->getReportFilterOptions([
             'year' => $selectedYear,
             'month' => $selectedMonth,
@@ -108,10 +109,19 @@ class Budget_Cashflow extends CI_Controller
             redirect('Budget_Cashflow');
         }
 
-        if ($this->MBudget_Cashflow->isDuplicateHeader($post['nomor_tec'], $post['tanggal_cashflow'], $post['project_name'], $headerId)) {
+        $picProject = trim((string) ($post['pic_project'] ?? ''));
+        if ($picProject !== '' && !$this->MBudget_Cashflow->findActivePicUserByName($picProject)) {
             $this->session->set_flashdata('status', 'gagal_simpan');
             $this->session->set_flashdata('validation_errors', [
-                'Kombinasi Nomor TEC, Tanggal Cashflow, dan Nama Project sudah ada.',
+                'PIC Project harus dipilih dari master user aktif.',
+            ]);
+            redirect('Budget_Cashflow');
+        }
+
+        if ($this->MBudget_Cashflow->isDuplicateHeader($post['nomor_tec'], $post['project_name'], $headerId)) {
+            $this->session->set_flashdata('status', 'gagal_simpan');
+            $this->session->set_flashdata('validation_errors', [
+                'Kombinasi Nomor TEC dan Nama Project sudah ada.',
             ]);
             redirect('Budget_Cashflow');
         }
@@ -121,7 +131,7 @@ class Budget_Cashflow extends CI_Controller
             'tanggal_cashflow' => $post['tanggal_cashflow'],
             'id_bowheer' => !empty($post['id_bowheer']) ? (int) $post['id_bowheer'] : null,
             'project_name' => trim($post['project_name']),
-            'pic_project' => trim((string) ($post['pic_project'] ?? '')),
+            'pic_project' => $picProject,
             'regional' => trim((string) ($post['regional'] ?? '')),
             'kota' => trim((string) ($post['kota'] ?? '')),
             'remarks' => trim((string) ($post['remarks'] ?? '')),
@@ -383,6 +393,7 @@ class Budget_Cashflow extends CI_Controller
                 $tanggal === '' ||
                 $projectName === '' ||
                 $nomorTec === '' ||
+                ($picProject !== '' && !$this->MBudget_Cashflow->findActivePicUserByName($picProject)) ||
                 $nominal <= 0 ||
                 !in_array($direction, ['DEBIT', 'KREDIT'], true) ||
                 $qty <= 0 ||
@@ -474,6 +485,58 @@ class Budget_Cashflow extends CI_Controller
             'Header sample',
             'Item sample',
         ], ';');
+        fclose($output);
+        exit;
+    }
+
+    public function downloadReferenceBowheerCsv()
+    {
+        $filename = 'referensi_bowheer_budget.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $output = fopen('php://output', 'w');
+        fputcsv($output, ['id_bowheer', 'nama_bowheer'], ';');
+        foreach ($this->MBudget_Cashflow->getBowheers() as $row) {
+            fputcsv($output, [
+                $row['id_bowheer'] ?? '',
+                $row['nama_bowheer'] ?? '',
+            ], ';');
+        }
+        fclose($output);
+        exit;
+    }
+
+    public function downloadReferencePicCsv()
+    {
+        $filename = 'referensi_pic_project_budget.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $output = fopen('php://output', 'w');
+        fputcsv($output, ['nama_user'], ';');
+        foreach ($this->MBudget_Cashflow->getActivePicUsers() as $row) {
+            fputcsv($output, [$row['value'] ?? ''], ';');
+        }
+        fclose($output);
+        exit;
+    }
+
+    public function downloadReferenceItemsCsv()
+    {
+        $filename = 'referensi_master_item_budget.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $output = fopen('php://output', 'w');
+        fputcsv($output, ['item_code', 'item_name', 'default_direction'], ';');
+        foreach ($this->MBudget_Cashflow->getItems() as $row) {
+            fputcsv($output, [
+                $row['item_code'] ?? '',
+                $row['item_name'] ?? '',
+                $row['default_direction'] ?? '',
+            ], ';');
+        }
         fclose($output);
         exit;
     }

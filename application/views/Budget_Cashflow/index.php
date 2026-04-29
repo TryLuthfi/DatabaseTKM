@@ -246,7 +246,14 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label class="budget-field-label">PIC Project</label>
-                                            <input type="text" class="form-control budget-input" name="pic_project" id="pic_project">
+                                            <select class="form-control budget-input" name="pic_project" id="pic_project">
+                                                <option value="">Pilih PIC Project</option>
+                                                <?php foreach (($picUsers ?? []) as $picUser): ?>
+                                                    <option value="<?= htmlspecialchars((string) ($picUser['value'] ?? '')) ?>">
+                                                        <?= htmlspecialchars((string) ($picUser['label'] ?? $picUser['value'] ?? '')) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-2">
@@ -336,6 +343,9 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                     <a href="<?= base_url('Budget_Cashflow/downloadCashflowTemplateXlsx') ?>" class="btn budget-btn budget-btn--ghost btn-sm mb-2">Template Cashflow XLSX</a>
                                     <a href="<?= base_url('Budget_Cashflow/downloadBudgetTemplateCsv') ?>" class="btn budget-btn budget-btn--ghost btn-sm mb-2">Template Budget CSV</a>
                                     <a href="<?= base_url('Budget_Cashflow/downloadBudgetTemplateXlsx') ?>" class="btn budget-btn budget-btn--ghost btn-sm mb-2">Template Budget XLSX</a>
+                                    <a href="<?= base_url('Budget_Cashflow/downloadReferenceBowheerCsv') ?>" class="btn budget-btn budget-btn--ghost btn-sm mb-2">Referensi Bowheer</a>
+                                    <a href="<?= base_url('Budget_Cashflow/downloadReferencePicCsv') ?>" class="btn budget-btn budget-btn--ghost btn-sm mb-2">Referensi PIC</a>
+                                    <a href="<?= base_url('Budget_Cashflow/downloadReferenceItemsCsv') ?>" class="btn budget-btn budget-btn--ghost btn-sm mb-2">Referensi Master Item</a>
                                 </div>
                                 <small class="text-muted d-block">
                                     A `nomor_tec`, B `tanggal_cashflow`, C `id_bowheer`, D `project_name`, E `pic_project`,
@@ -872,6 +882,10 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
             {
                 selector: '#regional',
                 placeholder: 'Pilih Regional'
+            },
+            {
+                selector: '#pic_project',
+                placeholder: 'Pilih PIC Project'
             }
         ].forEach(function (config) {
             const $select = $(config.selector);
@@ -916,7 +930,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
 
         $('#detailTable tbody tr').each(function () {
             const nominal = parseBudgetNumber($(this).find('.nominal-input').val());
-            const direction = ($(this).find('.direction-select').val() || 'DEBIT').toUpperCase();
+            const direction = ($(this).find('.direction-input').val() || 'DEBIT').toUpperCase();
 
             totalNominal += nominal;
             if (direction === 'DEBIT') {
@@ -938,10 +952,12 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
             '<td><select class="form-control form-control-sm budget-input item-select" name="detail_item_id[]" required>' +
                 '<option value="">Pilih Item</option>' + buildItemOptions() +
             '</select></td>' +
-            '<td><select class="form-control form-control-sm budget-input direction-select" name="detail_direction[]">' +
-                '<option value="DEBIT">Cash In</option>' +
-                '<option value="KREDIT">Cash Out</option>' +
-            '</select></td>' +
+            '<td>' +
+                '<select class="form-control form-control-sm budget-input direction-input" name="detail_direction[]">' +
+                    '<option value="DEBIT" selected>Cash In</option>' +
+                    '<option value="KREDIT">Cash Out</option>' +
+                '</select>' +
+            '</td>' +
             '<td><input type="number" step="0.01" class="form-control form-control-sm budget-input qty-input" name="detail_qty[]" value="1"></td>' +
             '<td><input type="number" step="0.01" class="form-control form-control-sm budget-input unit-price-input" name="detail_unit_price[]" value="0"></td>' +
             '<td><input type="number" step="0.01" class="form-control form-control-sm budget-input nominal-input" name="detail_nominal[]" value="0"></td>' +
@@ -956,7 +972,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         addDetailRow();
         const tr = $('#detailTable tbody tr:last');
         tr.find('.item-select').val(String(detail.id_budget_item || '')).trigger('change.select2');
-        tr.find('.direction-select').val(detail.direction || 'DEBIT');
+        tr.find('.direction-input').val(detail.direction || 'DEBIT');
         tr.find('.qty-input').val(normalizeInputNumberValue(detail.qty || 1));
         tr.find('.unit-price-input').val(normalizeInputNumberValue(detail.unit_price || 0));
         tr.find('.nominal-input').val(normalizeInputNumberValue(detail.nominal || 0));
@@ -973,7 +989,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         $('#tanggal_cashflow').val('<?= date('Y-m-d') ?>');
         $('#id_bowheer').val('').trigger('change.select2');
         $('#project_name').val('');
-        $('#pic_project').val('');
+        $('#pic_project').val('').trigger('change.select2');
         $('#regional').val('').trigger('change.select2');
         $('#kota').val('');
         $('#remarks').val('');
@@ -1030,7 +1046,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
             $('#tanggal_cashflow').val(response.header.tanggal_cashflow || '');
             $('#id_bowheer').val(String(response.header.id_bowheer || '')).trigger('change.select2');
             $('#project_name').val(response.header.project_name || '');
-            $('#pic_project').val(response.header.pic_project || '');
+            $('#pic_project').val(response.header.pic_project || '').trigger('change.select2');
             $('#regional').val(response.header.regional || '').trigger('change.select2');
             $('#kota').val(response.header.kota || '');
             $('#remarks').val(response.header.remarks || '');
@@ -1212,7 +1228,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         const selected = $(this).find(':selected');
         const direction = selected.data('direction');
         if (direction) {
-            $(this).closest('tr').find('.direction-select').val(direction);
+            $(this).closest('tr').find('.direction-input').val(direction);
         }
         updateManualSummary();
     });
@@ -1225,7 +1241,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         updateManualSummary();
     });
 
-    $(document).on('input change', '.nominal-input, .direction-select', function () {
+    $(document).on('input change', '.nominal-input, .direction-input', function () {
         updateManualSummary();
     });
 
