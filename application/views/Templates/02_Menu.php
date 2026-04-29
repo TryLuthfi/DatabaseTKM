@@ -52,7 +52,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
         </a>
 
         <!-- Sidebar -->
-        <div class="sidebar">
+        <div class="sidebar" style="padding-top: 20px;">
             <!-- Sidebar user panel (optional) -->
             <div class="user-panel mt-3 pb-3 mb-3 d-flex premium-user-panel">
                 <div class="image">
