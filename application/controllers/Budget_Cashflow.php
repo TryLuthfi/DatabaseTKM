@@ -475,7 +475,7 @@ class Budget_Cashflow extends CI_Controller
             '11',
             'Project Alpha',
             'Budi',
-            'JABODETABEK',
+            'REGIONAL 3',
             'Jakarta',
             '4100-99-010',
             'DEBIT',

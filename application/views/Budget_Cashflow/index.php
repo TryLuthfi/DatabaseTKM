@@ -731,6 +731,40 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         }).join('');
     }
 
+    function normalizeDirectionValue(direction) {
+        const value = String(direction || '').trim().toUpperCase();
+        if (value === 'KREDIT') {
+            return 'KREDIT';
+        }
+        return 'DEBIT';
+    }
+
+    function findItemDirectionById(itemId) {
+        const selectedId = String(itemId || '').trim();
+        if (selectedId === '') {
+            return 'DEBIT';
+        }
+
+        const matchedItem = itemOptions.find(function (item) {
+            return String(item.id) === selectedId;
+        });
+
+        return normalizeDirectionValue(matchedItem ? matchedItem.direction : 'DEBIT');
+    }
+
+    function syncDirectionForRow($row) {
+        if (!$row || !$row.length) {
+            return;
+        }
+
+        const itemId = $row.find('.item-select').val() || '';
+        const direction = findItemDirectionById(itemId);
+        $row.find('.direction-input').html(
+            '<option value="DEBIT"' + (direction === 'DEBIT' ? ' selected' : '') + '>Cash In</option>' +
+            '<option value="KREDIT"' + (direction === 'KREDIT' ? ' selected' : '') + '>Cash Out</option>'
+        );
+    }
+
     function buildSelectHtml(options, emptyLabel, selectedValue) {
         let html = '<option value="">' + emptyLabel + '</option>';
 
@@ -965,6 +999,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
             '<td><button type="button" class="btn btn-sm budget-btn budget-btn--table-danger js-remove-detail-row">Hapus</button></td>';
         tbody.appendChild(tr);
         initCashflowModalSelects();
+        syncDirectionForRow($(tr));
         updateManualSummary();
     }
 
@@ -972,7 +1007,12 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         addDetailRow();
         const tr = $('#detailTable tbody tr:last');
         tr.find('.item-select').val(String(detail.id_budget_item || '')).trigger('change.select2');
-        tr.find('.direction-input').val(detail.direction || 'DEBIT');
+        syncDirectionForRow(tr);
+        const savedDirection = normalizeDirectionValue(detail.direction || 'DEBIT');
+        tr.find('.direction-input').html(
+            '<option value="DEBIT"' + (savedDirection === 'DEBIT' ? ' selected' : '') + '>Cash In</option>' +
+            '<option value="KREDIT"' + (savedDirection === 'KREDIT' ? ' selected' : '') + '>Cash Out</option>'
+        );
         tr.find('.qty-input').val(normalizeInputNumberValue(detail.qty || 1));
         tr.find('.unit-price-input').val(normalizeInputNumberValue(detail.unit_price || 0));
         tr.find('.nominal-input').val(normalizeInputNumberValue(detail.nominal || 0));
@@ -1224,12 +1264,8 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         return dataTransfer.files;
     }
 
-    $(document).on('change', '.item-select', function () {
-        const selected = $(this).find(':selected');
-        const direction = selected.data('direction');
-        if (direction) {
-            $(this).closest('tr').find('.direction-input').val(direction);
-        }
+    $(document).on('change select2:select select2:clear', '.item-select', function () {
+        syncDirectionForRow($(this).closest('tr'));
         updateManualSummary();
     });
 
