@@ -9,7 +9,7 @@
 <script src="<?= base_url('assets') ?>/dist/js/adminlte.js"></script>
 
 <!-- OPTIONAL SCRIPTS -->
-<script src="<?= base_url('assets') ?>dist/js/demo.js"></script>
+<script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
 
 <!-- PAGE PLUGINS -->
 <!-- jQuery Mapael -->
@@ -29,7 +29,10 @@
 <script src="<?= base_url('assets') ?>/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
 <script src="<?= base_url('assets') ?>/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
 <!-- PAGE SCRIPTS -->
+<?php $currentController = $this->uri->segment(1); ?>
+<?php if ($currentController === 'Dashboard') : ?>
 <script src="<?= base_url('assets') ?>/dist/js/pages/dashboard2.js"></script>
+<?php endif; ?>
 <!-- date-range-picker -->
 <!-- <script src="<?= base_url('assets') ?>/plugins/daterangepicker/daterangepicker.js"></script> -->
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
@@ -38,28 +41,35 @@
 
 <script>
     $(function() {
-        $("#tabel_pemasukan").DataTable({
-            "responsive": true,
-            "autoWidth": true
-        });
-        $('#example2').DataTable({
-            "paging": true,
-            "lengthChange": false,
-            "searching": false,
-            "ordering": true,
-            "info": true,
-            "autoWidth": false,
-            "responsive": true,
-        });
+        if ($("#tabel_pemasukan").length) {
+            $("#tabel_pemasukan").DataTable({
+                "responsive": true,
+                "autoWidth": true
+            });
+        }
+
+        if ($('#example2').length) {
+            $('#example2').DataTable({
+                "paging": true,
+                "lengthChange": false,
+                "searching": false,
+                "ordering": true,
+                "info": true,
+                "autoWidth": false,
+                "responsive": true,
+            });
+        }
     });
 </script>
 <script>
     $(function() {
-        $('input[name="date"]').daterangepicker({
-            opens: 'left'
-        }, function(start, end, label) {
-            console.log("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
-        });
+        if ($('input[name="date"]').length) {
+            $('input[name="date"]').daterangepicker({
+                opens: 'left'
+            }, function(start, end, label) {
+                console.log("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+            });
+        }
     });
 </script>
 

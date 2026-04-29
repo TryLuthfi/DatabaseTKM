@@ -2292,13 +2292,12 @@ if (!empty($kpiDetailRowMap)) {
         var kpiDetailRows = <?= json_encode($kpiDetailRows) ?>;
         var importedClusterRows = [];
 
-        if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable) {
+        if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable || !window.jQuery.fn.dataTable) {
             window.setTimeout(bootstrapMonitoringRfsMyRep, 150);
             return;
         }
 
         var $ = window.jQuery;
-
         $.fn.dataTable.ext.type.detect.unshift(function (data) {
             var text = $('<div>').html(data === null || data === undefined ? '' : String(data)).text().trim();
 
@@ -3286,6 +3285,34 @@ if (!empty($kpiDetailRowMap)) {
             updateClaimRfsDeviasi($(this));
         });
 
+        $(document).on('click', '.js-open-claim-rfs-modal', function () {
+            var $button = $(this);
+            var $modal = $('#claimRfsModal');
+            var clusterId = String($button.data('cluster-id') || '');
+            var clusterName = String($button.data('cluster-name') || '-');
+            var homepass = parseLocaleNumber($button.data('homepass') || 0);
+            var statusRfs = String($button.data('status-rfs') || '');
+            var $qtyInput = $modal.find('.claim-rfs-qty-input');
+            var $photoInput = $modal.find('.claim-photo-input');
+
+            $('#claim_rfs_cluster_id').val(clusterId);
+            $('#claim_rfs_cluster_name').text(clusterName);
+            $('#claim_rfs_homepass_label').text(formatLocaleNumber(homepass, 0));
+
+            $modal.find('input[name="claim_date"]').val('<?= date('Y-m-d') ?>');
+            $qtyInput.val('');
+            $qtyInput.attr('max', homepass > 0 ? homepass : '');
+            $qtyInput.data('homepass', homepass);
+            $modal.find('.claim-rfs-deviasi-output').val(formatLocaleNumber(homepass, 0));
+            $modal.find('select[name="status_rfs"]').val(statusRfs === 'PARTIAL' || statusRfs === 'FULL RFS' ? statusRfs : '');
+            $modal.find('textarea[name="claim_note"]').val('');
+            $modal.find('.claim-photo-filename').text('Belum ada file dipilih');
+
+            if ($photoInput.length) {
+                $photoInput.val('');
+            }
+        });
+
         $(document).on('click', '.claim-photo-dropzone', function (e) {
             if ($(e.target).is('.claim-photo-input')) {
                 return;
@@ -3337,14 +3364,12 @@ if (!empty($kpiDetailRowMap)) {
         $(document).on('submit', '.js-claim-rfs-form', function (e) {
             var $form = $(this);
             var photoInput = $form.find('.claim-photo-input')[0];
-            var claimDate = $.trim($form.find('input[name="claim_date"]').val() || '');
-            var claimQty = parseFloat($form.find('input[name="claim_qty"]').val() || '0');
-            var statusRfs = $.trim($form.find('select[name="status_rfs"]').val() || '');
             var hasPhoto = photoInput && photoInput.files && photoInput.files.length > 0;
+            var formElement = $form.get(0);
 
-            if (claimDate === '' || claimQty <= 0 || statusRfs === '') {
+            if (formElement && !formElement.checkValidity()) {
                 e.preventDefault();
-                alert('Tanggal RFS, HP RFS, dan Status RFS wajib diisi.');
+                formElement.reportValidity();
                 return;
             }
 
@@ -3390,5 +3415,156 @@ if (!empty($kpiDetailRowMap)) {
         $('#targetMyrepTab a[data-toggle="tab"]').on('shown.bs.tab', function () {
             syncTargetModalFooterButtons();
         });
+    })();
+</script>
+
+<script>
+    (function bootstrapMonitoringRfsFallback() {
+        if (!window.jQuery) {
+            window.setTimeout(bootstrapMonitoringRfsFallback, 150);
+            return;
+        }
+
+        var $ = window.jQuery;
+
+        function parseLocaleNumber(value) {
+            if (value === null || value === undefined) {
+                return 0;
+            }
+
+            var text = String(value).trim();
+            if (text === '') {
+                return 0;
+            }
+
+            text = text.replace(/[^0-9,.\-]/g, '');
+            if (text.indexOf(',') !== -1) {
+                text = text.replace(/\./g, '').replace(',', '.');
+            }
+
+            var parsed = parseFloat(text);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        function formatLocaleNumber(value, decimals) {
+            return Number(value || 0).toLocaleString('id-ID', {
+                minimumFractionDigits: decimals || 0,
+                maximumFractionDigits: decimals || 0
+            });
+        }
+
+        function resetClonedRow($row) {
+            $row.find('input[type="text"], input[type="number"], input[type="hidden"], textarea').val('');
+            $row.find('select').each(function () {
+                this.selectedIndex = 0;
+            });
+            $row.find('.cluster-target-info').text('Pilih kota terlebih dulu.');
+            $row.find('.city-master-info').text('Jika kota sudah ada, data akan otomatis terisi.');
+            $row.find('.monthly-target-info').text('Pilih / ketik kota untuk memunculkan data existing.');
+            $row.find('.monthly-target-realization-current, .monthly-target-myrep, .monthly-target-rkap').val(0);
+            $row.find('.monthly-target-additional-wrapper').addClass('d-none');
+            $row.find('.cluster-row-number, .city-row-number, .target-row-number').text('');
+        }
+
+        function refreshRowNumbers(selector, numberSelector) {
+            $(selector).find(numberSelector).each(function (index) {
+                $(this).text(index + 1);
+            });
+        }
+
+        $(document)
+            .off('click.monitoringRfsFallback', '#btnAddManualClusterRow')
+            .on('click.monitoringRfsFallback', '#btnAddManualClusterRow', function () {
+                var $firstRow = $('#manualClusterTableBody').find('.manual-cluster-row').first();
+                if (!$firstRow.length) {
+                    return;
+                }
+
+                var $clone = $firstRow.clone(false, false);
+                resetClonedRow($clone);
+                $('#manualClusterTableBody').append($clone);
+                refreshRowNumbers('#manualClusterTableBody .manual-cluster-row', '.cluster-row-number');
+            });
+
+        $(document)
+            .off('click.monitoringRfsFallback', '#btnAddCityMasterRow')
+            .on('click.monitoringRfsFallback', '#btnAddCityMasterRow', function () {
+                var $firstRow = $('#manualCityMasterBody').find('.manual-city-row').first();
+                if (!$firstRow.length) {
+                    return;
+                }
+
+                var $clone = $firstRow.clone(false, false);
+                resetClonedRow($clone);
+                $('#manualCityMasterBody').append($clone);
+                refreshRowNumbers('#manualCityMasterBody .manual-city-row', '.city-row-number');
+            });
+
+        $(document)
+            .off('click.monitoringRfsFallback', '#btnAddMonthlyTargetRow')
+            .on('click.monitoringRfsFallback', '#btnAddMonthlyTargetRow', function () {
+                var $firstRow = $('#manualTargetBatchBody').find('.manual-target-row').first();
+                if (!$firstRow.length) {
+                    return;
+                }
+
+                var $clone = $firstRow.clone(false, false);
+                resetClonedRow($clone);
+                $('#manualTargetBatchBody').append($clone);
+                refreshRowNumbers('#manualTargetBatchBody .manual-target-row', '.target-row-number');
+            });
+
+        $(document)
+            .off('input.monitoringRfsFallback keyup.monitoringRfsFallback change.monitoringRfsFallback', '.claim-rfs-qty-input')
+            .on('input.monitoringRfsFallback keyup.monitoringRfsFallback change.monitoringRfsFallback', '.claim-rfs-qty-input', function () {
+                var $input = $(this);
+                var homepass = parseLocaleNumber($input.data('homepass') || 0);
+                var claimQty = parseLocaleNumber($input.val() || 0);
+                var deviasi = Math.max(homepass - claimQty, 0);
+                $input.closest('.modal-content').find('.claim-rfs-deviasi-output').first().val(formatLocaleNumber(deviasi, 0));
+            });
+
+        $(document)
+            .off('click.monitoringRfsFallback', '.js-open-claim-rfs-modal')
+            .on('click.monitoringRfsFallback', '.js-open-claim-rfs-modal', function () {
+                var $button = $(this);
+                var $modal = $('#claimRfsModal');
+                var clusterId = String($button.data('cluster-id') || '');
+                var clusterName = String($button.data('cluster-name') || '-');
+                var homepass = parseLocaleNumber($button.data('homepass') || 0);
+                var statusRfs = String($button.data('status-rfs') || '');
+                var $qtyInput = $modal.find('.claim-rfs-qty-input');
+
+                $('#claim_rfs_cluster_id').val(clusterId);
+                $('#claim_rfs_cluster_name').text(clusterName);
+                $('#claim_rfs_homepass_label').text(formatLocaleNumber(homepass, 0));
+                $qtyInput.val('');
+                $qtyInput.attr('max', homepass > 0 ? homepass : '');
+                $qtyInput.data('homepass', homepass);
+                $modal.find('.claim-rfs-deviasi-output').val(formatLocaleNumber(homepass, 0));
+                $modal.find('select[name="status_rfs"]').val(statusRfs === 'PARTIAL' || statusRfs === 'FULL RFS' ? statusRfs : '');
+                $modal.find('.claim-photo-input').val('');
+                $modal.find('.claim-photo-filename').text('Belum ada file dipilih');
+            });
+
+        $(document)
+            .off('click.monitoringRfsFallback', '.claim-photo-dropzone')
+            .on('click.monitoringRfsFallback', '.claim-photo-dropzone', function (e) {
+                if ($(e.target).closest('.claim-photo-input').length) {
+                    return;
+                }
+
+                var input = $(this).find('.claim-photo-input').get(0);
+                if (input) {
+                    input.click();
+                }
+            });
+
+        $(document)
+            .off('change.monitoringRfsFallback', '.claim-photo-input')
+            .on('change.monitoringRfsFallback', '.claim-photo-input', function () {
+                var file = this.files && this.files[0] ? this.files[0] : null;
+                $(this).closest('.claim-photo-dropzone').find('.claim-photo-filename').text(file ? file.name : 'Belum ada file dipilih');
+            });
     })();
 </script>
