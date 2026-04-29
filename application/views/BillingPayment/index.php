@@ -169,7 +169,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                         </span>
                         <div class="info-box-content">
                             <span class="info-box-text">BILLING ( P1 )</span>
-                            <span class="summary-caption">Prioritas sangat urgent</span>
+                            <span class="summary-caption">Tagihan diatas 45 hari sejak jatuh tempo</span>
                             <span class="info-box-number" id="dashboardBillingP1">Rp. 0</span>
                         </div>
                     </div>
@@ -182,7 +182,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                         </span>
                         <div class="info-box-content">
                             <span class="info-box-text">BILLING ( P2 )</span>
-                            <span class="summary-caption">Mendekati overdue window</span>
+                            <span class="summary-caption">Tagihan 31-45 hari sejak jatuh tempo</span>
                             <span class="info-box-number" id="dashboardBillingP2">Rp. 0</span>
                         </div>
                     </div>
@@ -195,7 +195,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                         </span>
                         <div class="info-box-content">
                             <span class="info-box-text">BILLING ( P3 )</span>
-                            <span class="summary-caption">Masih dalam masa monitor</span>
+                            <span class="summary-caption">Tagihan 1-30 hari sejak jatuh tempo</span>
                             <span class="info-box-number" id="dashboardBillingP3">Rp. 0</span>
                         </div>
                     </div>
