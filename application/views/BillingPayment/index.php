@@ -340,18 +340,16 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2 justify-content-center">
-                <div class="d-flex gap-3">
+                <div class="billing-detail-toolbar">
 
-                    <button type="button" class="btn btn-gradient-primary btn-lg shadow pulse mr-2" data-toggle="modal"
+                    <button type="button" class="btn budget-btn budget-btn--primary billing-detail-toolbar__btn" data-toggle="modal"
                         data-target="#modal-download-report">
-                        <i class="fas fa-plus-circle mr-2"></i>
-                        <strong>ADD INVOICE</strong>
+                        <i class="fas fa-plus-circle mr-2"></i> Add Invoice
                     </button>
 
-                    <button type="button" class="btn btn-gradient-success btn-lg shadow pulse mr-2" data-toggle="modal"
+                    <button type="button" class="btn budget-btn budget-btn--success billing-detail-toolbar__btn" data-toggle="modal"
                         data-target="#modal-payment">
-                        <i class="fas fa-money-bill mr-2"></i>
-                        <strong>ADD PAYMENT</strong>
+                        <i class="fas fa-money-bill-wave mr-2"></i> Add Payment
                     </button>
 
                 </div>
@@ -368,39 +366,42 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 <div class="clearfix hidden-md-up"></div>
 
                 <div class="col-12">
-                    <div class="card">
-                        <!-- /.card-header -->
-                        <div class="card-header p-0 pt-1">
-                            <ul class="nav nav-tabs" id="invoice-status-tab" role="tablist">
-                                <li class="pt-2 px-3">
-                                    <h3 class="card-title">DETAIL</h3>
-                                </li>
+                    <div class="card card-outline card-primary shadow-sm billing-workbench-card">
+                        <div class="card-header billing-workbench-card__header">
+                            <div>
+                                <h3 class="card-title mb-1">Invoice Detail Workbench</h3>
+                            </div>
+                        </div>
+
+                        <div class="billing-workbench-tabs-wrap">
+                            <ul class="nav nav-pills" id="invoice-status-tab" role="tablist">
                                 <li class="nav-item">
                                     <a class="nav-link active tab-status-invoice" data-status="open"
-                                        href="javascript:void(0)">OUTSTANDING</a>
+                                        href="javascript:void(0)">Outstanding</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link tab-status-invoice" data-status="partial"
-                                        href="javascript:void(0)">PARTIAL PAYMENT</a>
+                                        href="javascript:void(0)">Partial Payment</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link tab-status-invoice" data-status="paid"
-                                        href="javascript:void(0)">FULL PAYMENT</a>
+                                        href="javascript:void(0)">Full Payment</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link tab-status-invoice" data-status="all"
-                                        href="javascript:void(0)">ALL INVOICE</a>
+                                        href="javascript:void(0)">All Invoice</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link tab-status-invoice" data-status="reject"
-                                        href="javascript:void(0)">REJECT PAYMENT</a>
+                                        href="javascript:void(0)">Reject Payment</a>
                                 </li>
                             </ul>
                         </div>
 
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table id="tabel_list_open_invoice" class="table table-bordered table-hover">
+                        <div class="card-body billing-workbench-card__body">
+                            <div class="detail-table-shell billing-workbench-table-shell">
+                                <div class="table-responsive">
+                                <table id="tabel_list_open_invoice" class="table table-bordered table-hover js-billing-detail-table">
                                     <thead class="bg-info">
                                         <tr>
                                             <th>No</th>
@@ -432,6 +433,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         </tr>
                                     </tfoot>
                                 </table>
+                                </div>
                             </div>
                         </div>
                         <div class="row">
@@ -444,14 +446,18 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     <div class="modal fade" id="modal-download-report" data-backdrop="static" tabindex="-1" role="dialog"
         aria-labelledby="exampleModalLongTitle" aria-hidden="true">
         <div class="modal-dialog modal-xxl" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">TAMBAH INVOICE</h5>
+            <div class="modal-content billing-workflow-modal">
+                <div class="modal-header billing-workflow-modal__header">
+                    <div>
+                        <span class="billing-workflow-modal__eyebrow">Invoice Intake</span>
+                        <h5 class="modal-title mb-1" id="modalTitle">Tambah Invoice</h5>
+                        <p class="mb-0 billing-workflow-modal__subtitle">Kelola input invoice manual maupun import Excel dalam workflow yang lebih nyaman dipindai.</p>
+                    </div>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body billing-workflow-modal__body">
                     <ul class="nav nav-tabs" id="invoiceUploadTab" role="tablist">
                         <li class="nav-item">
                             <a class="nav-link active" id="tab-manual-invoice-link" data-toggle="tab"
@@ -588,8 +594,8 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                <div class="modal-footer billing-workflow-modal__footer">
+                    <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
                 </div>
             </div>
         </div>
@@ -690,16 +696,20 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     <div class="modal fade" id="modal-payment" tabindex="-1" role="dialog" aria-labelledby="modalPaymentLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-xxl" role="document">
-            <div class="modal-content">
+            <div class="modal-content billing-workflow-modal">
                 <form id="formBatchPayment">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalPaymentLabel">Tambah Pencairan Invoice</h5>
+                    <div class="modal-header billing-workflow-modal__header">
+                        <div>
+                            <span class="billing-workflow-modal__eyebrow">Payment Batch</span>
+                            <h5 class="modal-title mb-1" id="modalPaymentLabel">Tambah Pencairan Invoice</h5>
+                            <p class="mb-0 billing-workflow-modal__subtitle">Pilih beberapa invoice sekaligus lalu input pencairannya dalam satu batch yang lebih terstruktur.</p>
+                        </div>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span>&times;</span>
                         </button>
                     </div>
 
-                    <div class="modal-body">
+                    <div class="modal-body billing-workflow-modal__body">
                         <div class="form-group">
                             <label>Pilih Nomor Invoice</label>
                             <select id="select_invoice_payment" class="form-control" multiple="multiple"
@@ -738,9 +748,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                         </div>
                     </div>
 
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-                        <button type="submit" class="btn btn-success">Simpan Pembayaran</button>
+                    <div class="modal-footer billing-workflow-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                        <button type="submit" class="btn budget-btn budget-btn--success">Simpan Pembayaran</button>
                     </div>
                 </form>
             </div>
@@ -750,15 +760,19 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     <div class="modal fade" id="modal-edit-partial-payment" tabindex="-1" role="dialog"
         aria-labelledby="modalEditPartialPaymentLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
-            <div class="modal-content">
+            <div class="modal-content billing-workflow-modal">
                 <form id="formEditPartialPayment">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalEditPartialPaymentLabel">Edit Partial Payment</h5>
+                    <div class="modal-header billing-workflow-modal__header">
+                        <div>
+                            <span class="billing-workflow-modal__eyebrow">Partial Payment</span>
+                            <h5 class="modal-title mb-1" id="modalEditPartialPaymentLabel">Edit Partial Payment</h5>
+                            <p class="mb-0 billing-workflow-modal__subtitle">Sesuaikan nominal, sisa invoice, tanggal payment, dan status secara lebih jelas.</p>
+                        </div>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span>&times;</span>
                         </button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body billing-workflow-modal__body">
                         <input type="hidden" name="id_billing" id="edit_partial_id_billing">
 
                         <div class="form-group">
@@ -802,9 +816,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                             </select>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-                        <button type="submit" class="btn btn-primary">Update Payment</button>
+                    <div class="modal-footer billing-workflow-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                        <button type="submit" class="btn budget-btn budget-btn--primary">Update Payment</button>
                     </div>
                 </form>
             </div>
@@ -814,14 +828,18 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     <div class="modal fade" id="modal-detail-partial-payment" tabindex="-1" role="dialog"
         aria-labelledby="modalDetailPartialPaymentLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalDetailPartialPaymentLabel">Detail Partial Payment</h5>
+            <div class="modal-content billing-workflow-modal">
+                <div class="modal-header billing-workflow-modal__header">
+                    <div>
+                        <span class="billing-workflow-modal__eyebrow">Partial Detail</span>
+                        <h5 class="modal-title mb-1" id="modalDetailPartialPaymentLabel">Detail Partial Payment</h5>
+                        <p class="mb-0 billing-workflow-modal__subtitle">Lihat snapshot nilai invoice, pembayaran, dan sisa outstanding dengan lebih cepat.</p>
+                    </div>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span>&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body billing-workflow-modal__body">
                     <div class="form-group">
                         <label>Nama Bowheer</label>
                         <input type="text" class="form-control" id="detail_partial_bowheer" readonly>
@@ -843,8 +861,8 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                         <input type="text" class="form-control text-right" id="detail_partial_remaining" readonly>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                <div class="modal-footer billing-workflow-modal__footer">
+                    <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
                 </div>
             </div>
         </div>
@@ -853,15 +871,19 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     <div class="modal fade" id="modal-edit-billing" tabindex="-1" role="dialog"
         aria-labelledby="modalEditBillingLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
-            <div class="modal-content">
+            <div class="modal-content billing-workflow-modal">
                 <form id="formEditBillingInvoice">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="modalEditBillingLabel">Edit Invoice</h5>
+                    <div class="modal-header billing-workflow-modal__header">
+                        <div>
+                            <span class="billing-workflow-modal__eyebrow">Invoice Editor</span>
+                            <h5 class="modal-title mb-1" id="modalEditBillingLabel">Edit Invoice</h5>
+                            <p class="mb-0 billing-workflow-modal__subtitle">Perbarui informasi invoice, payment, regional, dan deskripsi dalam form yang lebih modern.</p>
+                        </div>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span>&times;</span>
                         </button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body billing-workflow-modal__body">
                         <input type="hidden" name="id_billing" id="edit_billing_id">
                         <div class="row">
                             <div class="col-md-6">
@@ -955,9 +977,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Update Invoice</button>
+                    <div class="modal-footer billing-workflow-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn budget-btn budget-btn--primary">Update Invoice</button>
                     </div>
                 </form>
             </div>
@@ -3329,6 +3351,280 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         min-height: 38px;
     }
 
+    .billing-detail-toolbar {
+        display: inline-flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        padding: 0.35rem 0.75rem;
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(242, 248, 252, 0.92));
+        box-shadow: 0 18px 40px rgba(14, 41, 64, 0.08);
+    }
+
+    .billing-detail-toolbar__btn {
+        min-width: 180px;
+    }
+
+    .billing-workbench-card {
+        border: 0;
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 20px 46px rgba(14, 41, 64, 0.08);
+        background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+    }
+
+    .billing-workbench-card__header {
+        padding: 1.15rem 1.35rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.16), transparent 32%),
+            linear-gradient(135deg, #103b5a 0%, #165f90 55%, #58acd8 100%);
+        color: #fff;
+        border-bottom: 0;
+    }
+
+    .billing-workbench-subtitle {
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 0.92rem;
+        max-width: 820px;
+    }
+
+    .billing-workbench-tabs-wrap {
+        padding: 1rem 1.35rem 0;
+    }
+
+    #invoice-status-tab {
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    #invoice-status-tab .nav-link {
+        border: 1px solid #d4e5f1;
+        border-radius: 999px;
+        padding: 0.62rem 1rem;
+        background: linear-gradient(180deg, #ffffff 0%, #f4f9fd 100%);
+        color: #3b6b8e;
+        font-weight: 700;
+        transition: all 0.2s ease;
+    }
+
+    #invoice-status-tab .nav-link:hover,
+    #invoice-status-tab .nav-link:focus {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 22px rgba(16, 59, 90, 0.1);
+    }
+
+    #invoice-status-tab .nav-link.active {
+        border-color: transparent;
+        background: linear-gradient(135deg, #103b5a 0%, #1f6da1 100%);
+        color: #fff;
+        box-shadow: 0 14px 26px rgba(16, 59, 90, 0.18);
+    }
+
+    .billing-workbench-card__body {
+        padding: 1.15rem 1.35rem 1.35rem;
+    }
+
+    .billing-workbench-table-shell {
+        border-radius: 18px;
+        border: 1px solid #d8e7f2;
+        background: #fff;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .js-billing-detail-table {
+        margin-bottom: 0;
+    }
+
+    .js-billing-detail-table thead th {
+        border-top: 0;
+        background: linear-gradient(180deg, #eef6fb 0%, #dcecf8 100%);
+        color: #1f5e8a;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .js-billing-detail-table tbody td {
+        vertical-align: middle;
+    }
+
+    .js-billing-detail-table tbody tr:hover {
+        background: rgba(219, 236, 247, 0.26);
+    }
+
+    .js-billing-detail-table tfoot th {
+        background: #f7fbff;
+        color: #315d7f;
+        font-weight: 800;
+    }
+
+    .billing-workflow-modal {
+        border: 0;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 30px 50px rgba(8, 35, 55, 0.22);
+    }
+
+    .billing-workflow-modal__header {
+        border-bottom: 0;
+        padding: 1.35rem 1.5rem 1.1rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 30%),
+            linear-gradient(135deg, #103b5a 0%, #1f6da1 55%, #53a9d8 100%);
+        color: #fff;
+    }
+
+    .billing-workflow-modal__eyebrow {
+        display: inline-block;
+        margin-bottom: 6px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.76);
+    }
+
+    .billing-workflow-modal__subtitle {
+        max-width: 88%;
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 0.92rem;
+    }
+
+    .billing-workflow-modal__body {
+        padding: 1.5rem;
+        background: linear-gradient(180deg, #fbfdff 0%, #f2f8fc 100%);
+    }
+
+    .billing-workflow-modal__footer {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        border-top: 0;
+        padding: 0 1.5rem 1.5rem;
+        background: transparent;
+    }
+
+    .billing-workflow-modal .form-group label {
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #2d6287;
+    }
+
+    .billing-workflow-modal .form-control,
+    .billing-workflow-modal .select2-container--bootstrap4 .select2-selection {
+        min-height: 44px;
+        border-radius: 12px;
+        border: 1px solid #cfe0ee;
+        box-shadow: none;
+        background: #fff;
+    }
+
+    .billing-workflow-modal .form-control:focus,
+    .billing-workflow-modal .select2-container--bootstrap4.select2-container--focus .select2-selection,
+    .billing-workflow-modal .select2-container--bootstrap4.select2-container--open .select2-selection {
+        border-color: #55a7d5;
+        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
+    .billing-workflow-modal .select2-container {
+        width: 100% !important;
+    }
+
+    .billing-workflow-modal .select2-container--bootstrap4 .select2-selection--multiple {
+        padding: 0.35rem 0.6rem 0.28rem;
+    }
+
+    .billing-workflow-modal .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__rendered {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 0;
+    }
+
+    .billing-workflow-modal .select2-container--bootstrap4 .select2-selection__choice {
+        margin-top: 0;
+        border: 1px solid #cfe0ee;
+        border-radius: 999px;
+        padding: 0.22rem 0.65rem;
+        background: linear-gradient(135deg, #eff7fc 0%, #dfeef8 100%);
+        color: #27587c;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .billing-workflow-modal .select2-container--bootstrap4 .select2-dropdown {
+        border-color: #cfe0ee;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 18px 32px rgba(16, 59, 90, 0.14);
+    }
+
+    .billing-workflow-modal .table {
+        background: #fff;
+    }
+
+    .billing-workflow-modal .table thead th {
+        border-top: 0;
+        background: linear-gradient(180deg, #eef6fb 0%, #dcecf8 100%);
+        color: #1f5e8a;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .billing-workflow-modal .table tfoot th {
+        background: #f7fbff;
+        color: #315d7f;
+        font-weight: 800;
+    }
+
+    .billing-workflow-modal .btn-primary {
+        border: 0;
+        background: linear-gradient(135deg, #103b5a 0%, #1f6da1 100%);
+        box-shadow: 0 12px 22px rgba(16, 59, 90, 0.12);
+    }
+
+    .billing-workflow-modal .btn-success {
+        border: 0;
+        background: linear-gradient(135deg, #0f8b72 0%, #24b18f 100%);
+        box-shadow: 0 12px 22px rgba(15, 139, 114, 0.14);
+    }
+
+    .billing-workflow-modal .btn-outline-info,
+    .billing-workflow-modal .btn-outline-success,
+    .billing-workflow-modal .btn-outline-primary {
+        border-radius: 12px;
+        font-weight: 700;
+    }
+
+    #invoiceUploadTab {
+        border-bottom: 0;
+        gap: 10px;
+    }
+
+    #invoiceUploadTab .nav-link {
+        border: 1px solid #d4e5f1;
+        border-radius: 14px;
+        padding: 0.7rem 1rem;
+        font-weight: 700;
+        color: #3b6b8e;
+        background: linear-gradient(180deg, #ffffff 0%, #f4f9fd 100%);
+    }
+
+    #invoiceUploadTab .nav-link.active {
+        color: #fff;
+        border-color: transparent;
+        background: linear-gradient(135deg, #103b5a 0%, #1f6da1 100%);
+        box-shadow: 0 14px 26px rgba(16, 59, 90, 0.18);
+    }
+
     .billing-summary-row {
         margin-bottom: 0.5rem;
     }
@@ -3579,6 +3875,35 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         .billing-filter-btn {
             width: 100%;
             min-width: 0;
+        }
+
+        .billing-detail-toolbar {
+            width: 100%;
+        }
+
+        .billing-detail-toolbar__btn {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .billing-workbench-tabs-wrap,
+        .billing-workbench-card__body,
+        .billing-workflow-modal__body,
+        .billing-report-modal .modal-body {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .billing-workflow-modal__footer,
+        .billing-report-modal__footer {
+            flex-direction: column;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .billing-workflow-modal__footer .btn,
+        .billing-report-modal__footer .btn {
+            width: 100%;
         }
     }
 
