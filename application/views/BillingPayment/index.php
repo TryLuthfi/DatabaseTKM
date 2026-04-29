@@ -60,30 +60,27 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
         <div class="row">
             <div class="col-md-12">
-                <!-- DIRECT CHAT DANGER -->
-                <div class="card card-primary direct-chat direct-chat-primary shadow-lg">
-                    <div class="card-header">
-                        <h3 class="card-title">FILTER DATA</h3>
+                <div class="card card-outline card-primary shadow-sm billing-filter-card">
+                    <div class="card-header billing-filter-card__header">
+                        <div>
+                            <h3 class="card-title mb-1">Filter Data</h3>
+                        </div>
 
-                        <div class="card-tools">
-                            <button id="cardfiltercollapse" type="button" class="btn btn-tool"
+                        <div class="card-tools billing-card-tools">
+                            <button id="cardfiltercollapse" type="button" class="btn btn-tool billing-filter-collapse"
                                 data-card-widget="collapse">
                                 <i class="fas fa-plus"></i>
                             </button>
                         </div>
                     </div>
 
-                    <div class="card-body" style="margin-top:10px;">
+                    <div class="card-body billing-filter-card__body">
                         <div class="container-fluid">
-                            <!-- Info boxes -->
                             <div class="row">
                                 <div class="col-sm-3">
                                     <div class="form-group">
-                                        <label
-                                            style="display: flex; justify-content: center; align-items: center;">PROJECT
-                                            / BOWHEER
-                                        </label>
-                                        <select id="filter_bowheer_up" class="select2" multiple="multiple"
+                                        <label class="billing-field-label">Project / Bowheer</label>
+                                        <select id="filter_bowheer_up" class="select2 billing-filter-select" multiple="multiple"
                                             data-placeholder="Pilih bowheer" style="width: 100%;">
                                             <?php foreach ($unique_bowheer as $bowheer): ?>
                                                 <option value="<?= $bowheer ?>"><?= $bowheer ?></option>
@@ -93,11 +90,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                 </div>
                                 <div class="col-sm-3">
                                     <div class="form-group">
-                                        <label
-                                            style="display: flex; justify-content: center; align-items: center;">REGIONAL
-                                        </label>
-                                        <select id="filter_regional_up" class="select2" multiple="multiple"
-                                            data-placeholder="Pilih bowheer" style="width: 100%;">
+                                        <label class="billing-field-label">Regional</label>
+                                        <select id="filter_regional_up" class="select2 billing-filter-select" multiple="multiple"
+                                            data-placeholder="Pilih regional" style="width: 100%;">
                                             <?php foreach ($unique_regional as $regional): ?>
                                                 <option value="<?= $regional ?>"><?= $regional ?></option>
                                             <?php endforeach; ?>
@@ -106,10 +101,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                 </div>
                                 <div class="col-sm-3">
                                     <div class="form-group">
-                                        <label style="display: flex; justify-content: center; align-items: center;">KOTA
-                                        </label>
-                                        <select id="filter_city_up" class="select2" multiple="multiple"
-                                            data-placeholder="Pilih bowheer" style="width: 100%;">
+                                        <label class="billing-field-label">Kota</label>
+                                        <select id="filter_city_up" class="select2 billing-filter-select" multiple="multiple"
+                                            data-placeholder="Pilih kota" style="width: 100%;">
                                             <?php foreach ($unique_city as $city): ?>
                                                 <option value="<?= $city ?>"><?= $city ?></option>
                                             <?php endforeach; ?>
@@ -118,9 +112,8 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                 </div>
                                 <div class="col-sm-3">
                                     <div class="form-group">
-                                        <label
-                                            style="display: flex; justify-content: center; align-items: center;">PRIORITY</label>
-                                        <select id="filter_priority_up" class="select2" multiple="multiple"
+                                        <label class="billing-field-label">Priority</label>
+                                        <select id="filter_priority_up" class="select2 billing-filter-select" multiple="multiple"
                                             data-placeholder="Pilih Prioritas" style="width: 100%;">
                                             <?php foreach ($unique_priority as $priority): ?>
                                                 <option value="<?= $priority ?>"><?= $priority ?></option>
@@ -129,16 +122,21 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                     </div>
                                 </div>
 
-                                <div class="modal-footer col-sm-12">
-                                    <button type="button" id="reset_filter" class="btn btn-danger"
-                                        data-dismiss="modal">Delete</button>
-                                    <button id="btnFilterDataProject" class="btn btn-primary"><i
-                                            class="fa fa-spinner fa-spin loading" style="display:none"></i> Search
-                                    </button>
-                                    <button type="button" class="btn btn-success"
+                                <div class="col-sm-12">
+                                    <div class="billing-filter-actions">
+                                        <button id="btnFilterDataProject" type="button" class="btn budget-btn budget-btn--primary billing-filter-btn">
+                                            <i class="fa fa-spinner fa-spin loading mr-1" style="display:none"></i>
+                                            <i class="fas fa-search mr-1"></i> Search
+                                        </button>
+                                        <button type="button" id="reset_filter" class="btn budget-btn budget-btn--ghost billing-filter-btn"
+                                            data-dismiss="modal">
+                                            <i class="fas fa-redo-alt mr-1"></i> Reset
+                                        </button>
+                                        <button type="button" class="btn budget-btn budget-btn--success billing-filter-btn"
                                         data-target="#modal-download-billing-report" data-toggle="modal">
-                                        Download Report &nbsp; <i class="fas fa-print"></i>
-                                    </button>
+                                            <i class="fas fa-file-download mr-1"></i> Download Report
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -235,12 +233,14 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             <div class="row">
 
                 <div class="col-12">
-                    <div class="card card-primary">
-                        <div class="card-header">
-                            <h3 class="card-title">DETAILS</h3>
+                    <div class="card card-outline card-primary shadow-sm billing-detail-card">
+                        <div class="card-header billing-detail-card__header">
+                            <div>
+                                <h3 class="card-title mb-1">Details</h3>
+                            </div>
 
-                            <div class="card-tools">
-                                <button id="cardfiltercollapse" type="button" class="btn btn-tool"
+                            <div class="card-tools billing-card-tools">
+                                <button id="carddetailcollapse" type="button" class="btn btn-tool billing-filter-collapse"
                                     data-card-widget="collapse">
                                     <i class="fas fa-plus"></i>
                                 </button>
@@ -1132,6 +1132,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         };
 
         $('.select2').select2({
+            theme: 'bootstrap4',
             width: '100%',
             allowClear: true,
             placeholder: function () {
@@ -2989,6 +2990,206 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
 
 <style>
+    .billing-filter-card {
+        border: 0;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 18px 42px rgba(14, 41, 64, 0.08);
+        background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%);
+    }
+
+    .billing-filter-card__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 30%),
+            linear-gradient(135deg, #103b5a, #1f6da1 55%, #53a9d8);
+        color: #fff;
+    }
+
+    .billing-card-tools {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .billing-filter-card .card-title {
+        font-weight: 700;
+    }
+
+    .billing-filter-subtitle {
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 0.92rem;
+        max-width: 760px;
+    }
+
+    .billing-filter-card__body {
+        padding: 1.25rem 1.25rem 1.35rem;
+    }
+
+    .billing-detail-card {
+        border: 0;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 18px 42px rgba(14, 41, 64, 0.08);
+        background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+    }
+
+    .billing-detail-card__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.16), transparent 30%),
+            linear-gradient(135deg, #0f3a57 0%, #145f8f 55%, #3f91c3 100%);
+        color: #fff;
+    }
+
+    .billing-detail-subtitle {
+        color: rgba(255, 255, 255, 0.82);
+        font-size: 0.9rem;
+        max-width: 720px;
+    }
+
+    .billing-field-label {
+        display: block;
+        margin-bottom: 0.55rem;
+        font-size: 0.83rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #2d6287;
+    }
+
+    .billing-filter-card .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .billing-filter-card .select2-container {
+        width: 100% !important;
+    }
+
+    .billing-filter-card .select2-container--bootstrap4 .select2-selection {
+        min-height: 46px;
+        border-radius: 14px;
+        border: 1px solid #cfe0ee;
+        box-shadow: none;
+        background: #fff;
+    }
+
+    .billing-filter-card .select2-container--bootstrap4 .select2-selection--multiple {
+        padding: 0.4rem 0.65rem 0.3rem;
+    }
+
+    .billing-filter-card .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__rendered {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 0;
+    }
+
+    .billing-filter-card .select2-container--bootstrap4 .select2-selection__choice {
+        margin-top: 0;
+        border: 1px solid #cfe0ee;
+        border-radius: 999px;
+        padding: 0.22rem 0.65rem;
+        background: linear-gradient(135deg, #eff7fc 0%, #dfeef8 100%);
+        color: #27587c;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .billing-filter-card .select2-container--bootstrap4 .select2-selection__choice__remove {
+        color: #5f86a4;
+        margin-right: 6px;
+    }
+
+    .billing-filter-card .select2-container--bootstrap4 .select2-selection__placeholder,
+    .billing-filter-card .select2-container--bootstrap4 .select2-search__field::placeholder {
+        color: #8aa0b4;
+    }
+
+    .billing-filter-card .select2-container--bootstrap4.select2-container--focus .select2-selection,
+    .billing-filter-card .select2-container--bootstrap4.select2-container--open .select2-selection {
+        border-color: #55a7d5;
+        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
+    .billing-filter-card .select2-container--bootstrap4 .select2-dropdown {
+        border-color: #cfe0ee;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 18px 32px rgba(16, 59, 90, 0.14);
+    }
+
+    .billing-filter-card .select2-container--bootstrap4 .select2-search__field {
+        border-radius: 10px;
+        border-color: #cfe0ee;
+        min-height: 38px;
+    }
+
+    .billing-filter-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 12px;
+        padding-top: 0.25rem;
+    }
+
+    .budget-btn {
+        border: 0;
+        border-radius: 12px;
+        padding: 0.68rem 1.15rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        transition: all 0.2s ease;
+        box-shadow: 0 12px 22px rgba(16, 59, 90, 0.12);
+    }
+
+    .budget-btn:hover,
+    .budget-btn:focus {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 28px rgba(16, 59, 90, 0.16);
+    }
+
+    .budget-btn--primary {
+        background: linear-gradient(135deg, #103b5a 0%, #1f6da1 100%);
+        color: #fff;
+    }
+
+    .budget-btn--success {
+        background: linear-gradient(135deg, #0f8b72 0%, #24b18f 100%);
+        color: #fff;
+    }
+
+    .budget-btn--ghost {
+        background: #fff;
+        color: #315d7f;
+        border: 1px solid #d7e6f2;
+        box-shadow: 0 10px 22px rgba(112, 141, 165, 0.12);
+    }
+
+    .billing-filter-btn {
+        min-width: 158px;
+    }
+
+    .billing-filter-collapse {
+        color: #fff;
+    }
+
+    .billing-filter-collapse:hover,
+    .billing-filter-collapse:focus {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 10px;
+    }
+
     .billing-summary-row {
         margin-bottom: 0.5rem;
     }
@@ -3224,6 +3425,21 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
         100% {
             box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .billing-filter-card__header {
+            align-items: flex-start;
+        }
+
+        .billing-filter-actions {
+            justify-content: stretch;
+        }
+
+        .billing-filter-btn {
+            width: 100%;
+            min-width: 0;
         }
     }
 
