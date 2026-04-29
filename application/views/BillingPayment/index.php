@@ -1437,8 +1437,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
         // === RESET FILTER ===
         $('#reset_filter').on('click', function () {
-            $('#filter_bowheer_up, #filter_regional_up, #filter_city_up, #filter_priority_up').val(null).trigger('change');
-            setTimeout(() => $('#btnFilterDataProject').trigger('click'), 300);
+            window.location.reload();
         });
     });
 
@@ -3004,6 +3003,11 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             }
         });
     });
+
+    document.addEventListener("DOMContentLoaded", function () {
+    let cardfilter = document.getElementById("cardfiltercollapse").closest(".card");
+    cardfilter.classList.add("collapsed-card");
+  });
 </script>
 <script>
     function showLoader() {
