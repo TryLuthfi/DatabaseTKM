@@ -1,7 +1,7 @@
 <?php
 $status = $this->session->flashdata('status');
-$flashSuccess = $this->session->flashdata('success');
-$flashError = $this->session->flashdata('error');
+$flashSuccess = $this->session->flashdata('stockopname_success');
+$flashError = $this->session->flashdata('stockopname_error');
 
 $periode = $getDetailSoPeriode[0] ?? [];
 $periodeLabel = trim((string) (($periode['sop_bulan'] ?? '-') . ' ' . ($periode['sop_tahun'] ?? '')));
@@ -13,9 +13,9 @@ $reviewCount = 0;
 
 foreach ($rows as $row) {
     $statusArea = strtoupper(trim((string) ($row['sok_status'] ?? '')));
-    if ($statusArea === 'DONE') {
+    if (in_array($statusArea, ['DONE', 'ADJUSTED', 'CLOSED'], true)) {
         $doneCount++;
-    } elseif ($statusArea === 'REVIEW' || $statusArea === 'APPROVED' || $statusArea === 'NEED BA') {
+    } elseif (in_array($statusArea, ['REVIEW', 'APPROVED', 'NEED BA', 'BA DRAFT', 'WAITING APPROVAL'], true)) {
         $reviewCount++;
     } else {
         $pendingCount++;
@@ -336,9 +336,6 @@ $coverage = count($rows) > 0 ? ($doneCount / count($rows)) * 100 : 0;
                                     <a href="<?= base_url('StockOpname/revamp') ?>" class="so-area-btn so-area-btn--light">
                                         <i class="fas fa-arrow-left"></i> Kembali ke Periode
                                     </a>
-                                    <a href="<?= base_url('StockOpname/periode/' . $id_sop) ?>" class="so-area-btn so-area-btn--ghost">
-                                        <i class="fas fa-columns"></i> Versi Lama
-                                    </a>
                                 </div>
                             </div>
 
@@ -396,9 +393,9 @@ $coverage = count($rows) > 0 ? ($doneCount / count($rows)) * 100 : 0;
                                         <?php
                                         $statusArea = strtoupper(trim((string) ($row['sok_status'] ?? 'NOT YET')));
                                         $chipClass = 'so-area-chip--pending';
-                                        if ($statusArea === 'DONE') {
+                                        if (in_array($statusArea, ['DONE', 'ADJUSTED', 'CLOSED'], true)) {
                                             $chipClass = 'so-area-chip--done';
-                                        } elseif ($statusArea === 'NEED BA' || $statusArea === 'REVIEW' || $statusArea === 'APPROVED') {
+                                        } elseif (in_array($statusArea, ['NEED BA', 'REVIEW', 'APPROVED', 'BA DRAFT', 'WAITING APPROVAL'], true)) {
                                             $chipClass = 'so-area-chip--review';
                                         }
                                         $detailUrl = base_url('StockOpname/revamp/periode/' . $id_sop . '/lokasi/' . $row['id_lokasi_gudang'] . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
@@ -458,20 +455,55 @@ $coverage = count($rows) > 0 ? ($doneCount / count($rows)) * 100 : 0;
     </section>
 </div>
 
-<?php $this->session->set_flashdata('status', 'kosong'); ?>
-
 <script>
     (function() {
         var successMessage = <?= json_encode($flashSuccess) ?>;
         var errorMessage = <?= json_encode($flashError) ?>;
         var statusFlag = <?= json_encode($status) ?>;
+        var noticeKey = <?= json_encode('stockopname-revamp-sokota|' . md5((string) $status . '|' . (string) $flashSuccess . '|' . (string) $flashError . '|' . (string) $id_sop)) ?>;
 
-        if (successMessage && typeof swal === 'function') {
-            swal('Success!', successMessage, 'success');
-        } else if (errorMessage && typeof swal === 'function') {
-            swal('Gagal!', errorMessage, 'warning');
-        } else if (statusFlag === 'sukses_hapus' && typeof swal === 'function') {
-            swal('Success!', 'Data area berhasil dihapus.', 'success');
+        function showNotice(title, text, icon) {
+            try {
+                if (window.sessionStorage && text && sessionStorage.getItem(noticeKey) === 'shown') {
+                    return;
+                }
+            } catch (error) {
+                console.error('sessionStorage notice area gagal dibaca:', error);
+            }
+
+            try {
+                if (window.Swal && typeof window.Swal.fire === 'function') {
+                    window.Swal.fire({ title: title, text: text, icon: icon });
+                    if (window.sessionStorage && text) {
+                        sessionStorage.setItem(noticeKey, 'shown');
+                    }
+                    return;
+                }
+            } catch (error) {
+                console.error('Swal.fire StockOpname revamp area gagal dijalankan:', error);
+            }
+
+            try {
+                if (typeof window.swal === 'function') {
+                    window.swal(title, text, icon);
+                    if (window.sessionStorage && text) {
+                        sessionStorage.setItem(noticeKey, 'shown');
+                    }
+                    return;
+                }
+            } catch (error) {
+                console.error('swal StockOpname revamp area gagal dijalankan:', error);
+            }
+
+            console.warn('SweetAlert tidak tersedia untuk notifikasi StockOpname:', title, text, icon);
+        }
+
+        if (successMessage) {
+            showNotice('Success!', successMessage, 'success');
+        } else if (errorMessage) {
+            showNotice('Gagal!', errorMessage, 'warning');
+        } else if (statusFlag === 'sukses_hapus') {
+            showNotice('Success!', 'Data area berhasil dihapus.', 'success');
         }
     })();
 </script>

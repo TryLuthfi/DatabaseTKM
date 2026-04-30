@@ -15,8 +15,7 @@ class StockOpname extends CI_Controller
     public function index()
     {
         if (!empty($this->session->userdata('id_user'))) {
-            $data = $this->buildPeriodeData();
-            $this->renderStockOpnameView('StockOpname/soperiode', $data);
+            redirect('StockOpname/revamp');
         } else {
             redirect('Auth');
         }
@@ -37,9 +36,13 @@ class StockOpname extends CI_Controller
     public function periode($id_sop = null, $id_lokasi_gudang = null)
     {
         if (!empty($this->session->userdata('id_user'))) {
-            $data = $this->buildPeriodeDetailData($id_sop, $id_lokasi_gudang);
-            $view = ($id_lokasi_gudang !== null) ? 'StockOpname/soitem' : 'StockOpname/sokota';
-            $this->renderStockOpnameView($view, $data);
+            $queryString = $this->input->server('QUERY_STRING');
+            if ($id_lokasi_gudang !== null) {
+                redirect('StockOpname/revamp/periode/' . $id_sop . '/lokasi/' . $id_lokasi_gudang . ($queryString ? '?' . $queryString : ''));
+                return;
+            }
+
+            redirect('StockOpname/revamp/periode/' . $id_sop);
         } else {
             redirect('Auth');
         }
@@ -70,10 +73,11 @@ class StockOpname extends CI_Controller
             $keterangan = $this->input->post('keterangan');
             $redirectTarget = $this->input->post('redirect_target');
             $userId = (int) $this->session->userdata('id_user');
+            $successRedirect = $this->getStockOpnameSuccessRedirect($id_sop, $redirectTarget);
 
             if (!$this->validateStockOpnameRemarks($id_kode_item, $total_jumlah_stok, $stok_so, $stok_soi_edit, $keterangan)) {
-                $this->session->set_flashdata('error', 'Remarks wajib diisi untuk setiap item yang memiliki selisih stok.');
-                redirect($redirectTarget ? $redirectTarget : 'StockOpname/periode/' . $id_sop);
+                $this->setStockOpnameFlash('error', 'Remarks wajib diisi untuk setiap item yang memiliki selisih stok.');
+                redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $id_sop);
                 return;
             }
 
@@ -119,7 +123,7 @@ class StockOpname extends CI_Controller
                 $this->MStockOpname->updatePeriodeStatusFromItems($id_sop);
 
                 $this->db->trans_complete();
-                $this->session->set_flashdata('success', $hasDiscrepancy
+                $this->setStockOpnameFlash('success', $hasDiscrepancy
                     ? 'Data stok opname berhasil disimpan. Item selisih wajib ditindaklanjuti dengan BA kronologi.'
                     : 'Data stok opname berhasil disimpan.');
             } else {
@@ -164,14 +168,14 @@ class StockOpname extends CI_Controller
                     ]);
                     $this->MStockOpname->updatePeriodeStatusFromItems($id_sop);
                     $this->db->trans_complete();
-                    $this->session->set_flashdata('success', $hasDiscrepancy
+                    $this->setStockOpnameFlash('success', $hasDiscrepancy
                         ? 'Data stok opname berhasil disimpan. Terdapat selisih stok, siapkan BA kronologi sebelum adjustment.'
                         : 'Data stok opname berhasil disimpan.');
                 } else {
-                    $this->session->set_flashdata('error', 'Tidak ada data stok opname yang disimpan.');
+                    $this->setStockOpnameFlash('error', 'Tidak ada data stok opname yang disimpan.');
                 }
             }
-            redirect($redirectTarget ? $redirectTarget : 'StockOpname/periode/' . $id_sop);
+            redirect($successRedirect);
         } else {
             redirect('Auth');
         }
@@ -185,13 +189,13 @@ class StockOpname extends CI_Controller
 
         $context = $this->buildBAContext($id_sop, $id_lokasi_gudang);
         if (empty($context['soKota'])) {
-            $this->session->set_flashdata('error', 'Data stock opname area belum tersedia.');
+            $this->setStockOpnameFlash('error', 'Data stock opname area belum tersedia.');
             redirect('StockOpname/revamp/periode/' . $id_sop . '/lokasi/' . $id_lokasi_gudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
 
         if (empty($context['discrepancyItems'])) {
-            $this->session->set_flashdata('error', 'Tidak ada item selisih yang perlu dibuatkan BA.');
+            $this->setStockOpnameFlash('error', 'Tidak ada item selisih yang perlu dibuatkan BA.');
             redirect('StockOpname/revamp/periode/' . $id_sop . '/lokasi/' . $id_lokasi_gudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
@@ -199,7 +203,7 @@ class StockOpname extends CI_Controller
         foreach ($context['discrepancyItems'] as $item) {
             $remarks = trim((string) (($item['soi_remarks'] ?? '') !== '' ? $item['soi_remarks'] : ($item['soi_keterangan'] ?? '')));
             if ($remarks === '') {
-                $this->session->set_flashdata('error', 'Masih ada item selisih tanpa remarks. Lengkapi dulu sebelum generate BA.');
+                $this->setStockOpnameFlash('error', 'Masih ada item selisih tanpa remarks. Lengkapi dulu sebelum generate BA.');
                 redirect('StockOpname/revamp/periode/' . $id_sop . '/lokasi/' . $id_lokasi_gudang . '?mode=de95b43bceeb4b998aed4aed5cef1ae7');
                 return;
             }
@@ -275,7 +279,7 @@ class StockOpname extends CI_Controller
 
         $data = $this->buildBAContext($id_sop, $id_lokasi_gudang);
         if (empty($data['soKota']) || empty($data['existingBA'])) {
-            $this->session->set_flashdata('error', 'BA kronologi belum tersedia untuk area ini.');
+            $this->setStockOpnameFlash('error', 'BA kronologi belum tersedia untuk area ini.');
             redirect('StockOpname/revamp/periode/' . $id_sop . '/lokasi/' . $id_lokasi_gudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
@@ -297,13 +301,13 @@ class StockOpname extends CI_Controller
         $ba = $this->db->get_where('tb_so_ba', ['id_so_ba' => $idSoBa])->row_array();
 
         if (empty($ba)) {
-            $this->session->set_flashdata('error', 'BA tidak ditemukan.');
+            $this->setStockOpnameFlash('error', 'BA tidak ditemukan.');
             redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
 
         if (empty($_FILES['ba_file_signed']['name'])) {
-            $this->session->set_flashdata('error', 'File BA signed wajib dipilih.');
+            $this->setStockOpnameFlash('error', 'File BA signed wajib dipilih.');
             redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
@@ -322,7 +326,7 @@ class StockOpname extends CI_Controller
         $this->upload->initialize($config);
 
         if (!$this->upload->do_upload('ba_file_signed')) {
-            $this->session->set_flashdata('error', strip_tags($this->upload->display_errors('', '')));
+            $this->setStockOpnameFlash('error', strip_tags($this->upload->display_errors('', '')));
             redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
@@ -351,7 +355,7 @@ class StockOpname extends CI_Controller
         }
         $this->db->trans_complete();
 
-        $this->session->set_flashdata('success', 'BA signed berhasil diupload dan menunggu approval.');
+        $this->setStockOpnameFlash('success', 'BA signed berhasil diupload dan menunggu approval.');
         redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
     }
 
@@ -373,20 +377,20 @@ class StockOpname extends CI_Controller
         $soKota = $context['soKota'];
 
         if (empty($ba) || (int) ($ba['id_so_ba'] ?? 0) !== $idSoBa) {
-            $this->session->set_flashdata('error', 'BA tidak ditemukan untuk diproses approval.');
+            $this->setStockOpnameFlash('error', 'BA tidak ditemukan untuk diproses approval.');
             redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
 
         if (empty($ba['ba_file_signed'])) {
-            $this->session->set_flashdata('error', 'BA signed belum diupload.');
+            $this->setStockOpnameFlash('error', 'BA signed belum diupload.');
             redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
 
         $baItems = $this->MStockOpname->getSOBAItems($idSoBa);
         if (empty($baItems)) {
-            $this->session->set_flashdata('error', 'Item BA tidak ditemukan.');
+            $this->setStockOpnameFlash('error', 'Item BA tidak ditemukan.');
             redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
@@ -394,7 +398,7 @@ class StockOpname extends CI_Controller
         $sourceIn = $this->MStockOpname->getMasterSumberMaterialByName('SO Adjustment In');
         $sourceOut = $this->MStockOpname->getMasterSumberMaterialByName('SO Adjustment Out');
         if (empty($sourceIn) || empty($sourceOut)) {
-            $this->session->set_flashdata('error', 'Master sumber material SO Adjustment belum tersedia.');
+            $this->setStockOpnameFlash('error', 'Master sumber material SO Adjustment belum tersedia.');
             redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
@@ -406,7 +410,7 @@ class StockOpname extends CI_Controller
             ->count_all_results();
 
         if ($existingAdjustments > 0) {
-            $this->session->set_flashdata('error', 'Adjustment untuk BA ini sudah pernah dibuat.');
+            $this->setStockOpnameFlash('error', 'Adjustment untuk BA ini sudah pernah dibuat.');
             redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
@@ -458,29 +462,33 @@ class StockOpname extends CI_Controller
         }
 
         if (empty($adjustmentRows)) {
-            $this->session->set_flashdata('error', 'Tidak ada adjustment yang perlu dibuat.');
+            $this->setStockOpnameFlash('error', 'Tidak ada adjustment yang perlu dibuat.');
             redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
 
         $this->db->trans_start();
-        $this->db->insert_batch('tb_logistik_stok', $adjustmentRows);
-        $this->db->where('id_so_ba', $idSoBa)->update('tb_so_ba', [
+        $insertAdjustment = $this->db->insert_batch('tb_logistik_stok', $adjustmentRows);
+        $updateBa = $this->db->where('id_so_ba', $idSoBa)->update('tb_so_ba', [
             'ba_status' => 'APPROVED',
             'ba_approved_by' => $userId,
             'ba_approved_at' => $now,
             'ba_approval_notes' => $approvalNote,
         ]);
+        $itemAdjustmentOk = true;
         foreach ($baItems as $item) {
             $selisih = (int) ($item['selisih'] ?? 0);
-            $this->db->where('id_so_item', (int) $item['id_so_item'])->update('tb_so_item', [
+            $updated = $this->db->where('id_so_item', (int) $item['id_so_item'])->update('tb_so_item', [
                 'soi_adjustment_status' => $selisih === 0 ? 'SYNC' : 'ADJUSTED',
                 'soi_adjusted_qty' => abs($selisih),
                 'soi_adjusted_at' => $now,
                 'soi_adjusted_by' => $userId,
             ]);
+            if ($updated === false) {
+                $itemAdjustmentOk = false;
+            }
         }
-        $this->MStockOpname->updateSoKotaById((int) $soKota['id_so_kota'], [
+        $updateSoKota = $this->MStockOpname->updateSoKotaById((int) $soKota['id_so_kota'], [
             'sok_status' => 'ADJUSTED',
             'approved_by' => $userId,
             'approved_at' => $now,
@@ -488,7 +496,7 @@ class StockOpname extends CI_Controller
             'adjusted_at' => $now,
             'needs_ba' => 0,
         ]);
-        $this->MStockOpname->addSOApprovalLog([
+        $insertLog = $this->MStockOpname->addSOApprovalLog([
             'id_so_kota' => (int) $soKota['id_so_kota'],
             'status_from' => $soKota['sok_status'] ?? 'WAITING APPROVAL',
             'status_to' => 'ADJUSTED',
@@ -498,7 +506,26 @@ class StockOpname extends CI_Controller
         $this->MStockOpname->updatePeriodeStatusFromItems($idSop);
         $this->db->trans_complete();
 
-        $this->session->set_flashdata('success', 'BA disetujui dan adjustment otomatis berhasil dibuat.');
+        if (
+            $this->db->trans_status() === false ||
+            $insertAdjustment === false ||
+            $updateBa === false ||
+            $updateSoKota === false ||
+            $insertLog === false ||
+            $itemAdjustmentOk === false
+        ) {
+            $dbError = $this->db->error();
+            log_message('error', 'Approve BA gagal diproses. id_so_ba=' . $idSoBa . ', id_so_kota=' . ((int) ($soKota['id_so_kota'] ?? 0)) . ', error=' . json_encode($dbError));
+            $message = 'Approval BA gagal diproses.';
+            if (!empty($dbError['message'])) {
+                $message .= ' ' . $dbError['message'];
+            }
+            $this->setStockOpnameFlash('error', $message);
+            redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
+            return;
+        }
+
+        $this->setStockOpnameFlash('success', 'BA disetujui dan adjustment otomatis berhasil dibuat.');
         redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
     }
 
@@ -521,10 +548,10 @@ class StockOpname extends CI_Controller
                 $this->MStockOpname->updateSOItem($id_sop, $kode_item, $data_update);
             }
 
-            $this->session->set_flashdata('success', 'Data stok opname berhasil diperbarui.');
+            $this->setStockOpnameFlash('success', 'Data stok opname berhasil diperbarui.');
 
             // Redirect kembali ke halaman periode
-            redirect('StockOpname/periode/' . $id_sop);
+            redirect('StockOpname/revamp/periode/' . $id_sop);
         } else {
             redirect('Auth');
         }
@@ -572,11 +599,13 @@ class StockOpname extends CI_Controller
             $id_sop = $data_kota['id_so_periode'];
             $id_lokasi_gudang = $data_kota['id_kota'];
 
-            // Hapus item stok opname sebelum hapus kota
+            $this->db->trans_start();
+            $this->MStockOpname->hapusApprovalLogBySoKota($id_so_kota);
+            $this->MStockOpname->hapusBABySoKota($id_so_kota);
             $this->MStockOpname->hapusItemSO($id_sop, $id_lokasi_gudang);
-
-            // Hapus kota dengan fungsi yang sudah diperbaiki
             $res = $this->MStockOpname->hapusKotaById($id_so_kota);
+            $this->MStockOpname->updatePeriodeStatusFromItems($id_sop);
+            $this->db->trans_complete();
 
             if ($res) {
                 $this->session->set_flashdata('status', 'sukses_hapus');
@@ -587,7 +616,7 @@ class StockOpname extends CI_Controller
             $this->session->set_flashdata('status', 'data_tidak_ditemukan');
         }
 
-        redirect("StockOpname/periode/" . $id_sop);
+        redirect("StockOpname/revamp/periode/" . $id_sop);
     }
 
     public function cekPeriode()
@@ -654,8 +683,9 @@ class StockOpname extends CI_Controller
         if ($id_lokasi_gudang !== null) {
             $data['id_lokasi_gudang'] = $id_lokasi_gudang;
             $data['getDetailSoPeriode'] = $this->MStockOpname->getDetailSoPeriode($id_sop);
-            $bulan = $data['getDetailSoPeriode'][0]['sop_bulan'];
-            $tahun = $data['getDetailSoPeriode'][0]['sop_tahun'];
+            $periodeDetail = $data['getDetailSoPeriode'][0] ?? [];
+            $bulan = (string) ($periodeDetail['sop_bulan'] ?? '');
+            $tahun = (string) ($periodeDetail['sop_tahun'] ?? date('Y'));
             $bulan_angka = isset($bulan_mapping[$bulan]) ? $bulan_mapping[$bulan] : '01';
             $tanggal_sekarang = date('Y-m-d');
             $jam_menit = date('H:i:s');
@@ -692,6 +722,11 @@ class StockOpname extends CI_Controller
             return true;
         }
 
+        $stokAplikasi = is_array($stokAplikasi) ? $stokAplikasi : [];
+        $stokSo = is_array($stokSo) ? $stokSo : [];
+        $stokSoEdit = is_array($stokSoEdit) ? $stokSoEdit : [];
+        $keterangan = is_array($keterangan) ? $keterangan : [];
+
         foreach ($idKodeItem as $index => $kodeItem) {
             $appValue = $this->normalizeStockValue($stokAplikasi[$index] ?? ($this->input->post('soi_stok_asli')[$index] ?? 0));
             $soValue = $this->normalizeStockValue($stokSo[$index] ?? ($stokSoEdit[$index] ?? 0));
@@ -719,5 +754,20 @@ class StockOpname extends CI_Controller
             'periode' => $this->MStockOpname->getPeriodeById($idSop),
             'lokasi' => $this->MStockOpname->getLokasiGudangById($idLokasiGudang),
         ];
+    }
+
+    private function getStockOpnameSuccessRedirect($idSop, $redirectTarget = null)
+    {
+        $redirectTarget = (string) $redirectTarget;
+        if ($redirectTarget !== '' && strpos($redirectTarget, 'StockOpname/revamp') !== false) {
+            return 'StockOpname/revamp/periode/' . $idSop;
+        }
+
+        return 'StockOpname/revamp/periode/' . $idSop;
+    }
+
+    private function setStockOpnameFlash($type, $message)
+    {
+        $this->session->set_flashdata('stockopname_' . $type, $message);
     }
 }

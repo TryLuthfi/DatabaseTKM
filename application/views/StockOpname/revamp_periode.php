@@ -1,7 +1,7 @@
 <?php
 $status = $this->session->flashdata('status');
-$flashSuccess = $this->session->flashdata('success');
-$flashError = $this->session->flashdata('error');
+$flashSuccess = $this->session->flashdata('stockopname_success');
+$flashError = $this->session->flashdata('stockopname_error');
 
 $bulanArr = [
     'JANUARI',
@@ -433,9 +433,6 @@ $currentYear = (int) date('Y');
                                             <i class="fas fa-plus"></i> Tambah Periode
                                         </button>
                                     <?php } ?>
-                                    <a href="<?= base_url('StockOpname') ?>" class="so-btn so-btn--ghost">
-                                        <i class="fas fa-columns"></i> Lihat Versi Lama
-                                    </a>
                                 </div>
                             </div>
 
@@ -646,30 +643,61 @@ $currentYear = (int) date('Y');
     </div>
 </form>
 
-<?php $this->session->set_flashdata('status', 'kosong'); ?>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var successMessage = <?= json_encode($flashSuccess) ?>;
         var errorMessage = <?= json_encode($flashError) ?>;
         var statusFlag = <?= json_encode($status) ?>;
+        var noticeKey = <?= json_encode('stockopname-revamp-periode|' . md5((string) $status . '|' . (string) $flashSuccess . '|' . (string) $flashError)) ?>;
         var submitButton = document.getElementById('btn-submit-periode-revamp');
         var bulanSelect = document.getElementById('so_bulan');
         var tahunSelect = document.getElementById('so_tahun');
         var form = document.getElementById('form-tambah-periode-revamp');
 
-        try {
-            if (successMessage && typeof swal === 'function') {
-                swal('Success!', successMessage, 'success');
-            } else if (errorMessage && typeof swal === 'function') {
-                swal('Gagal!', errorMessage, 'warning');
-            } else if (statusFlag === 'sukses_tambah' && typeof swal === 'function') {
-                swal('Success!', 'Periode berhasil ditambahkan.', 'success');
-            } else if (statusFlag === 'sukses_hapus' && typeof swal === 'function') {
-                swal('Success!', 'Periode berhasil dihapus.', 'success');
+        function showNotice(title, text, icon) {
+            try {
+                if (window.sessionStorage && text && sessionStorage.getItem(noticeKey) === 'shown') {
+                    return;
+                }
+            } catch (error) {
+                console.error('sessionStorage notice periode gagal dibaca:', error);
             }
-        } catch (error) {
-            console.error('SweetAlert StockOpname revamp periode gagal dijalankan:', error);
+
+            try {
+                if (window.Swal && typeof window.Swal.fire === 'function') {
+                    window.Swal.fire({ title: title, text: text, icon: icon });
+                    if (window.sessionStorage && text) {
+                        sessionStorage.setItem(noticeKey, 'shown');
+                    }
+                    return;
+                }
+            } catch (error) {
+                console.error('Swal.fire StockOpname revamp periode gagal dijalankan:', error);
+            }
+
+            try {
+                if (typeof window.swal === 'function') {
+                    window.swal(title, text, icon);
+                    if (window.sessionStorage && text) {
+                        sessionStorage.setItem(noticeKey, 'shown');
+                    }
+                    return;
+                }
+            } catch (error) {
+                console.error('swal StockOpname revamp periode gagal dijalankan:', error);
+            }
+
+            console.warn('SweetAlert tidak tersedia untuk notifikasi StockOpname:', title, text, icon);
+        }
+
+        if (successMessage) {
+            showNotice('Success!', successMessage, 'success');
+        } else if (errorMessage) {
+            showNotice('Gagal!', errorMessage, 'warning');
+        } else if (statusFlag === 'sukses_tambah') {
+            showNotice('Success!', 'Periode berhasil ditambahkan.', 'success');
+        } else if (statusFlag === 'sukses_hapus') {
+            showNotice('Success!', 'Periode berhasil dihapus.', 'success');
         }
 
         try {
@@ -692,10 +720,8 @@ $currentYear = (int) date('Y');
             var selectedBulan = bulanSelect.value;
             var selectedTahun = tahunSelect.value;
 
-            if (!selectedBulan || !selectedTahun) {
-                if (typeof swal === 'function') {
-                    swal('Perhatian!', 'Bulan dan tahun periode wajib dipilih.', 'warning');
-                }
+                if (!selectedBulan || !selectedTahun) {
+                showNotice('Perhatian!', 'Bulan dan tahun periode wajib dipilih.', 'warning');
                 return;
             }
 
@@ -716,9 +742,7 @@ $currentYear = (int) date('Y');
                     }
 
                     if (response.status === 'exists') {
-                        if (typeof swal === 'function') {
-                            swal('Periode Sudah Ada', 'Periode ' + selectedBulan + ' ' + selectedTahun + ' sudah tersedia. Pilih periode lain.', 'warning');
-                        }
+                        showNotice('Periode Sudah Ada', 'Periode ' + selectedBulan + ' ' + selectedTahun + ' sudah tersedia. Pilih periode lain.', 'warning');
                         return;
                     }
 
@@ -726,22 +750,10 @@ $currentYear = (int) date('Y');
                     return;
                 }
 
-                try {
-                    if (typeof swal === 'function') {
-                        swal('Gagal!', 'Terjadi kesalahan saat mengecek periode. Coba lagi.', 'warning');
-                    }
-                } catch (error) {
-                    console.error('SweetAlert error AJAX periode gagal dijalankan:', error);
-                }
+                showNotice('Gagal!', 'Terjadi kesalahan saat mengecek periode. Coba lagi.', 'warning');
             };
             xhr.onerror = function() {
-                try {
-                    if (typeof swal === 'function') {
-                        swal('Gagal!', 'Terjadi kesalahan saat mengecek periode. Coba lagi.', 'warning');
-                    }
-                } catch (error) {
-                    console.error('SweetAlert network error periode gagal dijalankan:', error);
-                }
+                showNotice('Gagal!', 'Terjadi kesalahan saat mengecek periode. Coba lagi.', 'warning');
             };
             xhr.send(
                 'selectedBulan=' + encodeURIComponent(selectedBulan) +

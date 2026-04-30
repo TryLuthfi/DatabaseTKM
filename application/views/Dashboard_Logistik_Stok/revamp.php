@@ -687,10 +687,6 @@ $itemCount = count($getUniqueItemLogistik);
                                 <i class="fas fa-file-export"></i>
                                 Download Report
                             </button>
-                            <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="stock-btn stock-btn--ghost">
-                                <i class="fas fa-history"></i>
-                                Buka Dashboard Lama
-                            </a>
                         </div>
                     </div>
 

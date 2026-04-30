@@ -25,7 +25,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                 <a href="<?= base_url('MyRepublik_Project') ?>" class="nav-link">My Republik</a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link">Logistik</a>
+                <a href="<?= base_url('Dashboard_Logistik_Stok/revamp') ?>" class="nav-link">Logistik</a>
             </li>
         </ul>
         <ul class="navbar-nav ml-auto">
@@ -244,35 +244,19 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
 
                             <!-- Stock Material -->
                             <li class="nav-item">
-                                <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok' && $this->uri->segment(2) != 'revamp')
-                                      echo 'active'; ?>">
-                                    <i class="far fa-file nav-icon"></i>
-                                    <p>Stock Material</p>
-                                </a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a href="<?= base_url('Dashboard_Logistik_Stok/revamp') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok' && $this->uri->segment(2) == 'revamp')
+                                <a href="<?= base_url('Dashboard_Logistik_Stok/revamp') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok')
                                       echo 'active'; ?>">
                                     <i class="far fa-star nav-icon"></i>
-                                    <p>Stock Material Revamp</p>
+                                    <p>Stock Material</p>
                                 </a>
                             </li>
 
                             <!-- Stock Opname -->
                             <li class="nav-item">
-                                <a href="<?= base_url('StockOpname') ?>" class="nav-link <?php if ($id_menu == 'StockOpname' && $this->uri->segment(2) != 'revamp')
-                                      echo 'active'; ?>">
-                                    <i class="far fa-file nav-icon"></i>
-                                    <p>Stock Opname</p>
-                                </a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a href="<?= base_url('StockOpname/revamp') ?>" class="nav-link <?php if ($id_menu == 'StockOpname' && $this->uri->segment(2) == 'revamp')
+                                <a href="<?= base_url('StockOpname/revamp') ?>" class="nav-link <?php if ($id_menu == 'StockOpname')
                                       echo 'active'; ?>">
                                     <i class="far fa-star nav-icon"></i>
-                                    <p>Stock Opname Revamp</p>
+                                    <p>Stock Opname</p>
                                 </a>
                             </li>
                         </ul>

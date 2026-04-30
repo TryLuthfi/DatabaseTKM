@@ -15,13 +15,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
     public function index()
     {
         if (!empty($this->session->userdata('id_user'))) {
-            $data = $this->buildDashboardData();
-
-            $this->load->view('Templates/01_Header', $data);
-            $this->load->view('Templates/02_Menu');
-            $this->load->view('Dashboard_Logistik_Stok/index', $data);
-            $this->load->view('Templates/03_Footer');
-            $this->load->view('Templates/99_JS');
+            redirect('Dashboard_Logistik_Stok/revamp');
         } else {
             redirect('Auth');
         }
@@ -117,7 +111,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
                 if (!$this->upload->do_upload($field_name)) {
                     $this->session->set_flashdata('error', 'Format file tidak sesuai atau file terlalu besar!');
-                    redirect('Dashboard_Logistik_Stok/index/');
+                    redirect('Dashboard_Logistik_Stok/revamp');
                 } else {
                     $uploaded_files[$field_name] = $this->upload->data('file_name');
                 }
@@ -126,7 +120,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
         if (empty($uploaded_files)) {
             $this->session->set_flashdata('error', 'Gagal mengupload dokumen.');
-            redirect('Dashboard_Logistik_Stok/index/');
+            redirect('Dashboard_Logistik_Stok/revamp');
         }
 
         $data_insert = [];
@@ -168,7 +162,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
         }
 
         $this->session->set_flashdata('success', 'Dokumen berhasil diupload!');
-        redirect('Dashboard_Logistik_Stok/index/');
+        redirect('Dashboard_Logistik_Stok/revamp');
     }
 
     public function cekNomorSuratJalan()

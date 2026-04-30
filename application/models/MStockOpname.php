@@ -47,21 +47,23 @@ GROUP BY sp.id_sop, sp.sop_bulan, sp.sop_tahun, sp.sop_status;
 
     public function getSOKota($id_sop)
     {
-
-        $data = $this->db->query('SELECT
-    tmllg.*,
-    tsk.*,
-    tsp.*
-FROM
-    tb_master_logistik_lokasi_gudang tmllg
-LEFT JOIN tb_so_kota tsk 
-    ON tmllg.id_lokasi_gudang = tsk.id_kota 
-    AND (tsk.id_so_periode = "'.$id_sop.'" OR tsk.id_so_periode IS NULL)
-LEFT JOIN tb_so_periode tsp 
-    ON tsk.id_so_periode = tsp.id_sop
-GROUP BY 
-    tmllg.id_lokasi_gudang')->result_array();
-        return $data;
+        return $this->db
+            ->select('tmllg.*, tsk.*, tsp.*')
+            ->from('tb_master_logistik_lokasi_gudang tmllg')
+            ->join(
+                'tb_so_kota tsk',
+                'tmllg.id_lokasi_gudang = tsk.id_kota AND tsk.id_so_periode = ' . (int) $id_sop,
+                'left'
+            )
+            ->join(
+                'tb_so_periode tsp',
+                'tsp.id_sop = ' . (int) $id_sop,
+                'left'
+            )
+            ->order_by('tmllg.regional_lokasi_gudang', 'ASC')
+            ->order_by('tmllg.kota_lokasi_gudang', 'ASC')
+            ->get()
+            ->result_array();
     }
 
     public function getSOItem($id_lokasi_gudang, $tanggal_format)
@@ -160,15 +162,36 @@ WHERE tsi.id_sop = "' . $id_sop . '" AND tsi.id_kota_gudang = "' . $id_lokasi_gu
     }
 
     public function hapusKotaById($id_so_kota)
-{
-    return $this->db->delete("tb_so_kota", ['id_so_kota' => $id_so_kota]);
-}
+    {
+        return $this->db->delete("tb_so_kota", ['id_so_kota' => $id_so_kota]);
+    }
 
     public function hapusItemSO($id_sop, $id_lokasi_gudang)
     {
         $this->db->where('id_sop', $id_sop);
         $this->db->where('id_kota_gudang', $id_lokasi_gudang);
         return $this->db->delete("tb_so_item");
+    }
+
+    public function hapusApprovalLogBySoKota($idSoKota)
+    {
+        return $this->db->delete('tb_so_approval_log', ['id_so_kota' => (int) $idSoKota]);
+    }
+
+    public function hapusBABySoKota($idSoKota)
+    {
+        $baRows = $this->db
+            ->select('id_so_ba')
+            ->from('tb_so_ba')
+            ->where('id_so_kota', (int) $idSoKota)
+            ->get()
+            ->result_array();
+
+        foreach ($baRows as $baRow) {
+            $this->db->delete('tb_so_ba_item', ['id_so_ba' => (int) $baRow['id_so_ba']]);
+        }
+
+        return $this->db->delete('tb_so_ba', ['id_so_kota' => (int) $idSoKota]);
     }
 
     public function syncSOItemDiscrepancy($idSop, $idLokasiGudang)

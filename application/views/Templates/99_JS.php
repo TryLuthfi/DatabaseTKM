@@ -63,12 +63,18 @@
     });
 </script>
 
-<!-- <?php
-        $jml_tanpa_akhir = $jml_hari_kosong['jml'];
-        // var_dump($jml_hari_kosong['jml']);
-        // die;
-        for ($i = 0; $i < $jml_tanpa_akhir; $i++) {
-        ?>
+<?php if (
+    false &&
+    isset($jml_hari_kosong) &&
+    is_array($jml_hari_kosong) &&
+    isset($jml_hari_kosong['jml']) &&
+    isset($sisa_kemarin) &&
+    is_array($sisa_kemarin) &&
+    isset($sisa_kemarin['sisa'])
+) {
+    $jml_tanpa_akhir = (int) $jml_hari_kosong['jml'];
+    for ($i = 0; $i < $jml_tanpa_akhir; $i++) {
+?>
     <script type="text/javascript">
         $(window).on('load', function() {
             $('#sisamodal').modal('show');
@@ -99,8 +105,8 @@
         </div>
     </div>
 <?php
-        }
-?> -->
+    }
+} ?>
 </body>
 
 </html>

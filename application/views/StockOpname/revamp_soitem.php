@@ -1,7 +1,7 @@
 <?php
 $status = $this->session->flashdata('status');
-$flashSuccess = $this->session->flashdata('success');
-$flashError = $this->session->flashdata('error');
+$flashSuccess = $this->session->flashdata('stockopname_success');
+$flashError = $this->session->flashdata('stockopname_error');
 
 $isView = $mode === '1bda80f2be4d3658e0baa43fbe7ae8c1';
 $isInput = $mode === 'a43c1b0aa53a0c908810c06ab1ff3967';
@@ -530,9 +530,6 @@ if ($isInput) {
                                     <a href="<?= base_url('StockOpname/revamp/periode/' . $id_sop) ?>" class="so-item-btn so-item-btn--light">
                                         <i class="fas fa-arrow-left"></i> Kembali ke Area
                                     </a>
-                                    <a href="<?= base_url('StockOpname/periode/' . $id_sop . '/lokasi/' . $locationId . '?mode=' . $mode) ?>" class="so-item-btn so-item-btn--ghost">
-                                        <i class="fas fa-columns"></i> Versi Lama
-                                    </a>
                                 </div>
                             </div>
 
@@ -881,7 +878,7 @@ if ($isInput) {
 
                                 <?php if ($isInput || $isEdit) { ?>
                                     <div class="d-flex justify-content-end mt-3">
-                                        <button type="submit" class="btn btn-primary font-weight-bold">
+                                        <button type="submit" class="btn btn-primary font-weight-bold" id="btn-submit-stockopname-revamp">
                                             <i class="fas fa-save mr-1"></i>
                                             <?= $isEdit ? 'Simpan Edit Stock Opname' : 'Simpan Stock Opname' ?>
                                         </button>
@@ -901,24 +898,55 @@ if ($isInput) {
     </section>
 </div>
 
-<?php $this->session->set_flashdata('status', 'kosong'); ?>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var successMessage = <?= json_encode($flashSuccess) ?>;
         var errorMessage = <?= json_encode($flashError) ?>;
         var statusFlag = <?= json_encode($status) ?>;
+        var noticeKey = <?= json_encode('stockopname-revamp-soitem|' . md5((string) $status . '|' . (string) $flashSuccess . '|' . (string) $flashError . '|' . (string) $id_sop . '|' . (string) $locationId . '|' . (string) $mode)) ?>;
 
-        try {
-            if (successMessage && typeof swal === 'function') {
-                swal('Success!', successMessage, 'success');
-            } else if (errorMessage && typeof swal === 'function') {
-                swal('Gagal!', errorMessage, 'warning');
-            } else if (statusFlag === 'sukses_edit' && typeof swal === 'function') {
-                swal('Success!', 'Data stock opname berhasil diperbarui.', 'success');
+        function showNotice(title, text, icon) {
+            try {
+                if (window.sessionStorage && text && sessionStorage.getItem(noticeKey) === 'shown') {
+                    return;
+                }
+            } catch (error) {
+                console.error('sessionStorage notice item gagal dibaca:', error);
             }
-        } catch (error) {
-            console.error('SweetAlert StockOpname revamp item gagal dijalankan:', error);
+
+            try {
+                if (window.Swal && typeof window.Swal.fire === 'function') {
+                    window.Swal.fire({ title: title, text: text, icon: icon });
+                    if (window.sessionStorage && text) {
+                        sessionStorage.setItem(noticeKey, 'shown');
+                    }
+                    return;
+                }
+            } catch (error) {
+                console.error('Swal.fire StockOpname revamp item gagal dijalankan:', error);
+            }
+
+            try {
+                if (typeof window.swal === 'function') {
+                    window.swal(title, text, icon);
+                    if (window.sessionStorage && text) {
+                        sessionStorage.setItem(noticeKey, 'shown');
+                    }
+                    return;
+                }
+            } catch (error) {
+                console.error('swal StockOpname revamp item gagal dijalankan:', error);
+            }
+
+            console.warn('SweetAlert tidak tersedia untuk notifikasi StockOpname:', title, text, icon);
+        }
+
+        if (successMessage) {
+            showNotice('Success!', successMessage, 'success');
+        } else if (errorMessage) {
+            showNotice('Gagal!', errorMessage, 'warning');
+        } else if (statusFlag === 'sukses_edit') {
+            showNotice('Success!', 'Data stock opname berhasil diperbarui.', 'success');
         }
 
         function formatNumber(value) {
@@ -1001,8 +1029,57 @@ if ($isInput) {
             });
         });
 
+        var form = document.getElementById('form-stockopname-revamp');
+        var submitButton = document.getElementById('btn-submit-stockopname-revamp');
+
+        function hasInvalidRemarksState() {
+            var hasInvalidRemarks = false;
+
+            Array.prototype.forEach.call(rows, function(row) {
+                var fisikInput = row.querySelector('.js-stok-fisik');
+                var remarksInput = row.querySelector('.js-remarks');
+                if (!fisikInput || !remarksInput) {
+                    return;
+                }
+
+                var stokAplikasi = parseInt(row.getAttribute('data-stok-aplikasi') || '0', 10);
+                var hasValue = fisikInput.value.trim() !== '';
+                var stokFisik = parseInt(fisikInput.value || '0', 10);
+                var selisih = hasValue ? (stokAplikasi - stokFisik) : 0;
+                var needsRemarks = hasValue && selisih !== 0;
+                var remarks = remarksInput.value.trim();
+
+                remarksInput.classList.toggle('so-item-remarks-required', needsRemarks && remarks === '');
+                if (needsRemarks && remarks === '') {
+                    hasInvalidRemarks = true;
+                }
+            });
+
+            if (submitButton) {
+                submitButton.disabled = hasInvalidRemarks;
+                submitButton.classList.toggle('disabled', hasInvalidRemarks);
+            }
+
+            return hasInvalidRemarks;
+        }
+
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                if (hasInvalidRemarksState()) {
+                    event.preventDefault();
+                    showNotice('Tidak Bisa Disubmit', 'Remarks wajib diisi untuk setiap item yang memiliki selisih stok.', 'warning');
+                }
+            });
+        }
+
+        Array.prototype.forEach.call(document.querySelectorAll('.js-stok-fisik, .js-remarks'), function(input) {
+            input.addEventListener('input', hasInvalidRemarksState);
+            input.addEventListener('change', hasInvalidRemarksState);
+        });
+
         if (rows.length > 0) {
             recalculateRows();
+            hasInvalidRemarksState();
         }
     });
 </script>
