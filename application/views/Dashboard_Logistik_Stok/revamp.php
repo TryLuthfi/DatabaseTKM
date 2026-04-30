@@ -394,7 +394,7 @@ $itemCount = count($getUniqueItemLogistik);
 
     .stock-grid-two {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
         gap: 1rem;
         margin-top: 1.2rem;
     }
@@ -670,11 +670,11 @@ $itemCount = count($getUniqueItemLogistik);
                             <i class="fas fa-warehouse"></i>
                             Logistik Stock Intelligence
                         </span>
-                        <h1>Dashboard stok dengan tampilan baru, flow tetap utuh.</h1>
+                        <h1>Dashboard monitoring stok material PT. TKM</h1>
                         <p>
-                            Versi revamp ini tetap memakai sumber data, proses tambah stok, detail surat jalan, filter,
-                            dan export yang sama. Fokusnya ada di pembacaan data yang lebih cepat, visual yang lebih rapi,
-                            dan workflow harian yang lebih nyaman.
+                            Dashboard monitoring stok material PT. TKM adalah tampilan digital untuk memantau ketersediaan 
+                            dan pergerakan material secara real-time. Dashboard ini membantu tim dalam mengontrol stok dan 
+                            mengambil keputusan dengan lebih cepat dan efisien.
                         </p>
                         <div class="stock-hero__actions">
                             <button type="button" class="stock-btn stock-btn--light" data-toggle="modal"

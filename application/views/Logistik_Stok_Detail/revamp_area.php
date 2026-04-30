@@ -372,7 +372,7 @@ foreach ($getSummaryDetailArea as $stokKategory) {
                         </span>
                         <h1><?= strtoupper($lokasi) ?></h1>
                         <p>
-                            Tampilan revamp ini merangkum stok per kategori, detail item lintas project,
+                            Tampilan ini merangkum stok per kategori, detail item lintas project,
                             dan histori mutasi material untuk area atau regional yang sedang dibuka.
                         </p>
                         <div class="stock-detail-actions">
