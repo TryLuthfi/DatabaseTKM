@@ -260,11 +260,19 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                             </li>
 
                             <!-- Stock Opname -->
-                            <li class="nav-item" style="pointer-events: none;">
-                                <a href="<?= base_url('StockOpname') ?>" class="nav-link <?php if ($id_menu == 'StockOpname')
+                            <li class="nav-item">
+                                <a href="<?= base_url('StockOpname') ?>" class="nav-link <?php if ($id_menu == 'StockOpname' && $this->uri->segment(2) != 'revamp')
                                       echo 'active'; ?>">
                                     <i class="far fa-file nav-icon"></i>
                                     <p>Stock Opname</p>
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a href="<?= base_url('StockOpname/revamp') ?>" class="nav-link <?php if ($id_menu == 'StockOpname' && $this->uri->segment(2) == 'revamp')
+                                      echo 'active'; ?>">
+                                    <i class="far fa-star nav-icon"></i>
+                                    <p>Stock Opname Revamp</p>
                                 </a>
                             </li>
                         </ul>

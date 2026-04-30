@@ -66,6 +66,13 @@ $route['backup/download_backup/(:any)'] = 'backup/download_backup/$1';
 
 $route['StockOpname/periode/(:num)'] = 'StockOpname/periode/$1';
 $route['StockOpname/periode/(:num)/lokasi/(:num)'] = 'StockOpname/periode/$1/$2';
+$route['StockOpname/revamp'] = 'StockOpname/revamp';
+$route['StockOpname/revamp/periode/(:num)'] = 'StockOpname/periode_revamp/$1';
+$route['StockOpname/revamp/periode/(:num)/lokasi/(:num)'] = 'StockOpname/periode_revamp/$1/$2';
+$route['StockOpname/generateBA/(:num)/(:num)'] = 'StockOpname/generateBA/$1/$2';
+$route['StockOpname/print_ba/(:num)/(:num)'] = 'StockOpname/print_ba/$1/$2';
+$route['StockOpname/uploadSignedBA'] = 'StockOpname/uploadSignedBA';
+$route['StockOpname/approveBA'] = 'StockOpname/approveBA';
 $route['Dashboard_Logistik_Stok/getReportStokByData'] = 'Dashboard_Logistik_Stok/getReportStokByData';
 $route['Dashboard_Logistik_Stok/revamp'] = 'Dashboard_Logistik_Stok/revamp';
 
