@@ -292,7 +292,7 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                     </div>
         </section>
 
-        <form action="<?php echo site_url('RincianInvoice/addInvoice'); ?>" method="post">
+        <form id="formTambahInvoice" action="<?php echo site_url('RincianInvoice/addInvoice'); ?>" method="post">
             <div class="modal fade" id="modal-lg-tambah-invoice">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
@@ -942,8 +942,9 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
             $('#addfilter_bowheer, #addfilter_area, #addfilter_month, #addfilter_week').on('change', loadTargetInvoice);
 
             // === VALIDASI SAAT SIMPAN ===
-            $("form").on("submit", function (e) {
+            $("#formTambahInvoice").on("submit", function (e) {
                 e.preventDefault();
+                const $form = $(this);
 
                 // 🔹 Validasi tetap dipertahankan (jangan dihapus)
                 let bowheer = $("#addfilter_bowheer").val();
@@ -1000,7 +1001,7 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                     cancelButtonText: 'Batal'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        const formData = $("form").serialize();
+                        const formData = $form.serialize();
 
                         $.ajax({
                             url: "<?= base_url('RincianInvoice/addInvoice') ?>",
@@ -1065,8 +1066,19 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
 
             // Reset form ketika modal dibuka
             $('#modal-lg-tambah-invoice').on('show.bs.modal', function () {
-                $(this).find('form')[0].reset();
-                $("[name='achiev_invoice'], [name='tambahan_invoice'], [name='total_invoice']").val("");
+                const $form = $('#formTambahInvoice');
+
+                if ($form.length && $form[0]) {
+                    $form[0].reset();
+                }
+
+                $('#addfilter_area').prop('disabled', false).val('');
+                $('#inputRegionalBaru').hide().val('');
+                $('#inputKotaBaruContainer, #inputPICBaruContainer').hide();
+                $('#inputKotaBaru, #inputPICBaru').val('');
+                $('#btnTambahKota').text('+ Tambah Kota Baru');
+                $("[name='target_invoice'], [name='achiev_invoice'], [name='tambahan_invoice'], [name='total_invoice']").val("");
+                $("[name='achiev_invoice']").prop('disabled', false);
                 $("[name='tambahan_invoice']").closest('.form-group').hide();
                 $("[name='total_invoice']").closest('.form-group').hide();
             });
@@ -1075,6 +1087,10 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
 
         $(document).ready(function () {
             let isTambahKotaActive = false;
+
+            $('#modal-lg-tambah-invoice').on('show.bs.modal', function () {
+                isTambahKotaActive = false;
+            });
 
             // Toggle form tambah kota
             $('#btnTambahKota').on('click', function () {
@@ -1106,7 +1122,8 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
             });
 
             // Pastikan saat submit form, area_target diambil sesuai yang aktif
-            $('form').on('submit', function (e) {
+            $('#formTambahInvoice').on('submit', function (e) {
+                const $form = $(this);
                 const isInputBaru = isTambahKotaActive;
                 const areaDropdown = $('#addfilter_area').val();
                 const areaBaru = $('#inputKotaBaru').val().trim();
@@ -1145,11 +1162,12 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
 
                 // Jika kota baru aktif, gunakan nilainya sebagai area_target
                 if (isInputBaru) {
+                    $form.find('input[type="hidden"][name="addfilter_area"]').remove();
                     $('<input>').attr({
                         type: 'hidden',
                         name: 'addfilter_area',
                         value: areaBaru
-                    }).appendTo('form');
+                    }).appendTo($form);
                 } else if (!areaDropdown) {
                     e.preventDefault();
                     Swal.fire({
