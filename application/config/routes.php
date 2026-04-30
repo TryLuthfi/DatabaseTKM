@@ -67,4 +67,5 @@ $route['backup/download_backup/(:any)'] = 'backup/download_backup/$1';
 $route['StockOpname/periode/(:num)'] = 'StockOpname/periode/$1';
 $route['StockOpname/periode/(:num)/lokasi/(:num)'] = 'StockOpname/periode/$1/$2';
 $route['Dashboard_Logistik_Stok/getReportStokByData'] = 'Dashboard_Logistik_Stok/getReportStokByData';
+$route['Dashboard_Logistik_Stok/revamp'] = 'Dashboard_Logistik_Stok/revamp';
 

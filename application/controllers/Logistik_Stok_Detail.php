@@ -13,27 +13,23 @@ class Logistik_Stok_Detail extends CI_Controller
 
     public function detail()
     {
-
-        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
-        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
-        $last_segment = end($segments); // Ambil bagian terakhir dari URL
-
-        $decoded_url_area = urldecode($last_segment);
-
         if (!empty($this->session->userdata('id_user'))) {
+            $decoded_url_area = $this->getDecodedLastSegment();
+            $data = $this->buildAreaDetailData($decoded_url_area);
+            $this->renderView('Logistik_Stok_Detail/index', $data, false);
+        } else {
+            redirect('Auth');
+        }
+    }
 
-            $data['title'] = 'Detail Stok ' . strtoupper($decoded_url_area);
-            $data['judul'] = 'Detail Stok ' . strtoupper($decoded_url_area);
-            $data['lokasi'] = strtoupper($decoded_url_area);
-            $data['getStokDetailArea'] = $this->MLogistik_Stok_Detail->getStokDetailArea();
-            $data['getSummaryDetailArea'] = $this->MLogistik_Stok_Detail->getSummaryDetailArea();
-            $data['getHistoriInOUtLogistikArea'] = $this->MLogistik_Stok_Detail->getHistoriInOUtLogistikArea();
-
-            $this->load->view('Templates/01_Header', $data);
-            $this->load->view('Templates/02_Menu');
-            $this->load->view('Logistik_Stok_Detail/index', $data);
-            // $this->load->view('Templates/03_Footer');
-            $this->load->view('Templates/99_JS');
+    public function detail_revamp()
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+            $decoded_url_area = $this->getDecodedLastSegment();
+            $data = $this->buildAreaDetailData($decoded_url_area);
+            $data['title'] = 'Detail Stok Revamp ' . strtoupper($decoded_url_area);
+            $data['judul'] = 'Detail Stok Revamp ' . strtoupper($decoded_url_area);
+            $this->renderView('Logistik_Stok_Detail/revamp_area', $data);
         } else {
             redirect('Auth');
         }
@@ -41,28 +37,23 @@ class Logistik_Stok_Detail extends CI_Controller
 
     public function detail_kategori($kategori_item)
     {
-
-        $url_path = $_SERVER['REQUEST_URI']; // Ambil seluruh URL setelah domain
-        $segments = explode("/", $url_path); // Pecah berdasarkan "/"
-        $last_segment = end($segments); // Ambil bagian terakhir dari URL
-
-        $decoded_url_area = urldecode($last_segment);
-
         if (!empty($this->session->userdata('id_user'))) {
+            $decoded_url_area = $this->getDecodedLastSegment();
+            $data = $this->buildCategoryDetailData($decoded_url_area);
+            $this->renderView('Logistik_Stok_Detail/indexkategori', $data, false);
+        } else {
+            redirect('Auth');
+        }
+    }
 
-            $data['title'] = 'Detail Stok ' . strtoupper($decoded_url_area);
-            $data['judul'] = 'Detail Stok ' . $decoded_url_area;
-            $data['kategori_item'] = strtoupper($decoded_url_area);
-            $data['getStokPerBowheer'] = $this->MLogistik_Stok_Detail->getStokPerBowheer();
-            $data['getDistribusiPerBowheer'] = $this->MLogistik_Stok_Detail->getDistribusiPerBowheer();
-            $data['getHistoriInOUtLogistikKategori'] = $this->MLogistik_Stok_Detail->getHistoriInOUtLogistikKategori();
-
-            $this->load->view('Templates/01_Header', $data);
-            $this->load->view('Templates/02_Menu');
-            $this->load->view('Logistik_Stok_Detail/indexkategori', $data);
-            // $this->load->view('Templates/03_Footer');
-            $this->load->view('Templates/99_JS');
-
+    public function detail_kategori_revamp($kategori_item)
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+            $decoded_url_area = $this->getDecodedLastSegment();
+            $data = $this->buildCategoryDetailData($decoded_url_area);
+            $data['title'] = 'Detail Stok Revamp ' . strtoupper($decoded_url_area);
+            $data['judul'] = 'Detail Stok Revamp ' . $decoded_url_area;
+            $this->renderView('Logistik_Stok_Detail/revamp_category', $data);
         } else {
             redirect('Auth');
         }
@@ -93,22 +84,75 @@ class Logistik_Stok_Detail extends CI_Controller
     {
 
         if (!empty($this->session->userdata('id_user'))) {
-            $data['rincianFilterDashboardLogistik'] = $this->session->userdata('rincianFilterDashboardLogistik');
-            $data['getRincianDashboardFilteredBowheer'] = $this->session->userdata('getRincianDashboardFilteredBowheer');
-            $data['getInOutHistoryFiltered'] = $this->session->userdata('getInOutHistoryFiltered');
-            $data['kategori_item'] = $this->input->get('kategori'); // Ambil kategori dari query string
-    
-            $data['title'] = strtoupper($data['kategori_item']);
-    
-            $this->load->view('Templates/01_Header', $data);
-            $this->load->view('Templates/02_Menu');
-            $this->load->view('Logistik_Stok_Detail/indexfilter', $data);
-            $this->load->view('Templates/03_Footer');
-            $this->load->view('Templates/99_JS');
+            $data = $this->buildFilteredCategoryData();
+            $this->renderView('Logistik_Stok_Detail/indexfilter', $data);
         } else {
             redirect('Auth');
         }
     }
 
+    public function filter_kategori_rdr_revamp()
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+            $data = $this->buildFilteredCategoryData();
+            $data['title'] = 'Detail Stok Revamp ' . strtoupper($data['kategori_item']);
+            $data['judul'] = 'Detail Stok Revamp ' . strtoupper($data['kategori_item']);
+            $this->renderView('Logistik_Stok_Detail/revamp_category', $data);
+        } else {
+            redirect('Auth');
+        }
+    }
+
+    private function buildAreaDetailData($decoded_url_area)
+    {
+        $data['title'] = 'Detail Stok ' . strtoupper($decoded_url_area);
+        $data['judul'] = 'Detail Stok ' . strtoupper($decoded_url_area);
+        $data['lokasi'] = strtoupper($decoded_url_area);
+        $data['getStokDetailArea'] = $this->MLogistik_Stok_Detail->getStokDetailArea();
+        $data['getSummaryDetailArea'] = $this->MLogistik_Stok_Detail->getSummaryDetailArea();
+        $data['getHistoriInOUtLogistikArea'] = $this->MLogistik_Stok_Detail->getHistoriInOUtLogistikArea();
+        return $data;
+    }
+
+    private function buildCategoryDetailData($decoded_url_area)
+    {
+        $data['title'] = 'Detail Stok ' . strtoupper($decoded_url_area);
+        $data['judul'] = 'Detail Stok ' . $decoded_url_area;
+        $data['kategori_item'] = strtoupper($decoded_url_area);
+        $data['getStokPerBowheer'] = $this->MLogistik_Stok_Detail->getStokPerBowheer();
+        $data['getDistribusiPerBowheer'] = $this->MLogistik_Stok_Detail->getDistribusiPerBowheer();
+        $data['getHistoriInOUtLogistikKategori'] = $this->MLogistik_Stok_Detail->getHistoriInOUtLogistikKategori();
+        return $data;
+    }
+
+    private function buildFilteredCategoryData()
+    {
+        $data['rincianFilterDashboardLogistik'] = $this->session->userdata('rincianFilterDashboardLogistik');
+        $data['getRincianDashboardFilteredBowheer'] = $this->session->userdata('getRincianDashboardFilteredBowheer');
+        $data['getInOutHistoryFiltered'] = $this->session->userdata('getInOutHistoryFiltered');
+        $data['kategori_item'] = $this->input->get('kategori');
+        $data['title'] = strtoupper($data['kategori_item']);
+        $data['judul'] = strtoupper($data['kategori_item']);
+        return $data;
+    }
+
+    private function getDecodedLastSegment()
+    {
+        $url_path = $_SERVER['REQUEST_URI'];
+        $segments = explode("/", $url_path);
+        $last_segment = end($segments);
+        return urldecode($last_segment);
+    }
+
+    private function renderView($view, $data, $includeFooter = true)
+    {
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view($view, $data);
+        if ($includeFooter) {
+            $this->load->view('Templates/03_Footer');
+        }
+        $this->load->view('Templates/99_JS');
+    }
 
 }

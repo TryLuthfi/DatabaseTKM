@@ -225,9 +225,9 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                             </li>
 
                             <!-- Purchase Request -->
-                            <li class="nav-item">
+                            <li class="nav-item" style="pointer-events: none">
                                 <a href="<?= base_url('Logistik_Purchase_Request') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Purchase_Request')
-                                      echo 'active'; ?>">
+                                      echo 'active'; ?> ">
                                     <i class="far fa-file nav-icon"></i>
                                     <p>Purchase Request</p>
                                 </a>
@@ -244,15 +244,23 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
 
                             <!-- Stock Material -->
                             <li class="nav-item">
-                                <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok')
+                                <a href="<?= base_url('Dashboard_Logistik_Stok') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok' && $this->uri->segment(2) != 'revamp')
                                       echo 'active'; ?>">
                                     <i class="far fa-file nav-icon"></i>
                                     <p>Stock Material</p>
                                 </a>
                             </li>
 
-                            <!-- Stock Opname -->
                             <li class="nav-item">
+                                <a href="<?= base_url('Dashboard_Logistik_Stok/revamp') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok' && $this->uri->segment(2) == 'revamp')
+                                      echo 'active'; ?>">
+                                    <i class="far fa-star nav-icon"></i>
+                                    <p>Stock Material Revamp</p>
+                                </a>
+                            </li>
+
+                            <!-- Stock Opname -->
+                            <li class="nav-item" style="pointer-events: none;">
                                 <a href="<?= base_url('StockOpname') ?>" class="nav-link <?php if ($id_menu == 'StockOpname')
                                       echo 'active'; ?>">
                                     <i class="far fa-file nav-icon"></i>

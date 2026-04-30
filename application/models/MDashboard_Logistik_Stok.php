@@ -308,7 +308,7 @@ ORDER BY
         return $data;
     }
 
-    public function getAllStokByKategoryFilterCityFiltered($tanggal)
+    public function getAllStokByKategoryFilterCityFiltered($tanggal, $statusArray = null, $lokasiArray = null, $bowheerArray = null, $itemArray = null)
     {
         $sql = "SELECT 
     lg.regional_lokasi_gudang,
@@ -384,6 +384,22 @@ LEFT JOIN
             $sql .= " AND ls.tanggal_upload_stok <= '$tanggal 23:59:59'";
         }
 
+        if (!empty($statusArray)) {
+            $sql .= " AND sm.nama_sumber_material IN ($statusArray)";
+        }
+
+        if (!empty($lokasiArray)) {
+            $sql .= " AND lg.id_lokasi_gudang IN ($lokasiArray)";
+        }
+
+        if (!empty($bowheerArray)) {
+            $sql .= " AND ki.project_item IN ($bowheerArray)";
+        }
+
+        if (!empty($itemArray)) {
+            $sql .= " AND ki.nama_item IN ($itemArray)";
+        }
+
         // Tambahkan GROUP BY & ORDER BY
         $sql .= " GROUP BY 
     lg.kota_lokasi_gudang
@@ -399,7 +415,7 @@ ORDER BY
 
     }
 
-    public function getDashboardFiltered($lokasiArray, $bowheerArray, $itemArray, $tanggal)
+    public function getDashboardFiltered($lokasiArray, $bowheerArray, $itemArray, $tanggal, $statusArray = null)
     {
         $sql = "SELECT 
                 lg.regional_lokasi_gudang,
@@ -485,6 +501,10 @@ ORDER BY
             $sql .= " AND ki.nama_item IN ($itemArray)";
         }
 
+        if (!empty($statusArray)) {
+            $sql .= " AND sm.nama_sumber_material IN ($statusArray)";
+        }
+
         if (!empty($tanggal)) {
             $sql .= " AND ls.tanggal_upload_stok <= '$tanggal 23:59:59'";
         }
@@ -501,7 +521,7 @@ ORDER BY
 
     }
 
-    public function getRincianDashboardFiltered($lokasiArray, $bowheerArray, $itemArray, $tanggal)
+    public function getRincianDashboardFiltered($lokasiArray, $bowheerArray, $itemArray, $tanggal, $statusArray = null)
     {
 
         $sql = "SELECT 
@@ -543,6 +563,10 @@ LEFT JOIN tb_master_logistik_sumber_material sm
             $sql .= " AND ki.nama_item IN ($itemArray)";
         }
 
+        if (!empty($statusArray)) {
+            $sql .= " AND sm.nama_sumber_material IN ($statusArray)";
+        }
+
         if (!empty($tanggal)) {
             $sql .= " AND ls.tanggal_upload_stok <= '$tanggal 23:59:59'";
         }
@@ -559,7 +583,7 @@ ORDER BY lg.regional_lokasi_gudang, lg.kota_lokasi_gudang";
 
     }
 
-    public function getRincianDashboardFilteredBowheer($lokasiArray, $bowheerArray, $itemArray, $tanggal)
+    public function getRincianDashboardFilteredBowheer($lokasiArray, $bowheerArray, $itemArray, $tanggal, $statusArray = null)
     {
 
         $sql = "SELECT 
@@ -599,6 +623,10 @@ LEFT JOIN tb_master_logistik_sumber_material sm
             $sql .= " AND ki.nama_item IN ($itemArray)";
         }
 
+        if (!empty($statusArray)) {
+            $sql .= " AND sm.nama_sumber_material IN ($statusArray)";
+        }
+
         if (!empty($tanggal)) {
             $sql .= " AND ls.tanggal_upload_stok <= '$tanggal 23:59:59'";
         }
@@ -615,7 +643,7 @@ ORDER BY ki.kategori_item;";
 
     }
 
-    public function getInOutHistoryFiltered($lokasiArray, $bowheerArray, $itemArray, $tanggal)
+    public function getInOutHistoryFiltered($lokasiArray, $bowheerArray, $itemArray, $tanggal, $statusArray = null)
     {
 
         $sql = "SELECT * FROM `tb_logistik_stok` JOIN tb_master_logistik_lokasi_gudang ON tb_logistik_stok.id_lokasi_gudang = tb_master_logistik_lokasi_gudang.id_lokasi_gudang
@@ -634,6 +662,10 @@ ORDER BY ki.kategori_item;";
 
         if (!empty($itemArray)) {
             $sql .= " AND nama_item IN ($itemArray)";
+        }
+
+        if (!empty($statusArray)) {
+            $sql .= " AND nama_sumber_material IN ($statusArray)";
         }
 
         if (!empty($tanggal)) {

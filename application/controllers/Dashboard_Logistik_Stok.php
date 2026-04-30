@@ -15,36 +15,28 @@ class Dashboard_Logistik_Stok extends CI_Controller
     public function index()
     {
         if (!empty($this->session->userdata('id_user'))) {
-
-            $dateStart = $this->input->get('dateStart');
-
-
-            $data['title'] = 'DASHBOARD LOGISTIK';
-            $data['judul'] = 'DASHBOARD LOGISTIK';
-            $data['getAllStokLogistik'] = $this->MDashboard_Logistik_Stok->getAllStokLogistik();
-            $data['getAllStokByKategory'] = $this->MDashboard_Logistik_Stok->getAllStokByKategory();
-            $data['getAllStokByKategoryFilterCity'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterCity();
-            $data['getAllStokByKategoryFilterRegional'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterRegional();
-            if ($this->session->userdata('lokasi_user') == "HO") {
-                $data['getListGudangLokasiUser'] = $this->MDashboard_Logistik_Stok->getListGudangLokasiUserAll();
-            } else {
-                $data['getListGudangLokasiUser'] = $this->MDashboard_Logistik_Stok->getListGudangLokasiUser();
-            }
-            $data['getMasterProject'] = $this->MDashboard_Logistik_Stok->getMasterProject();
-            $data['getMasterSumberMaterial'] = $this->MDashboard_Logistik_Stok->getMasterSumberMaterial();
-            $data['getMasterKodeItem'] = $this->MDashboard_Logistik_Stok->getMasterKodeItem();
-            $data['getUniqueKotaGudang'] = $this->MDashboard_Logistik_Stok->getUniqueKotaGudang();
-            $data['getUniqueProjectLogistik'] = $this->MDashboard_Logistik_Stok->getUniqueProjectLogistik();
-            $data['getUniqueItemLogistik'] = $this->MDashboard_Logistik_Stok->getUniqueItemLogistik();
-            $data['getUniqueSumberMaterial'] = $this->MDashboard_Logistik_Stok->getUniqueSumberMaterial();
-
-            // Download Report Excel Without Filter
-            $data['getReportInOutMaterial'] = $this->MDashboard_Logistik_Stok->getReportInOutMaterial();
-            $data['getReportStokMaterial'] = $this->MDashboard_Logistik_Stok->getReportStokMaterial($dateStart);
+            $data = $this->buildDashboardData();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
             $this->load->view('Dashboard_Logistik_Stok/index', $data);
+            $this->load->view('Templates/03_Footer');
+            $this->load->view('Templates/99_JS');
+        } else {
+            redirect('Auth');
+        }
+    }
+
+    public function revamp()
+    {
+        if (!empty($this->session->userdata('id_user'))) {
+            $data = $this->buildDashboardData();
+            $data['title'] = 'DASHBOARD LOGISTIK REVAMP';
+            $data['judul'] = 'DASHBOARD LOGISTIK REVAMP';
+
+            $this->load->view('Templates/01_Header', $data);
+            $this->load->view('Templates/02_Menu');
+            $this->load->view('Dashboard_Logistik_Stok/revamp', $data);
             $this->load->view('Templates/03_Footer');
             $this->load->view('Templates/99_JS');
         } else {
@@ -252,15 +244,44 @@ class Dashboard_Logistik_Stok extends CI_Controller
         $lokasi = json_decode($this->input->post('lokasi'), true);
         $bowheer = json_decode($this->input->post('bowheer'), true);
         $item = json_decode($this->input->post('item'), true);
+        $status = json_decode($this->input->post('status'), true);
         $tanggal = $this->input->post('tanggal');
 
-        $data['getDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getDashboardFiltered($lokasi, $bowheer, $item, $tanggal);
-        $data['getRincianDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFiltered($lokasi, $bowheer, $item, $tanggal);
-        $data['getRincianDashboardFilteredBowheer'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFilteredBowheer($lokasi, $bowheer, $item, $tanggal);
-        $data['getInOutHistoryFiltered'] = $this->MDashboard_Logistik_Stok->getInOutHistoryFiltered($lokasi, $bowheer, $item, $tanggal);
-        $data['getAllStokByKategoryFilterCityFiltered'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterCityFiltered($tanggal);
+        $data['getDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getDashboardFiltered($lokasi, $bowheer, $item, $tanggal, $status);
+        $data['getRincianDashboardFiltered'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFiltered($lokasi, $bowheer, $item, $tanggal, $status);
+        $data['getRincianDashboardFilteredBowheer'] = $this->MDashboard_Logistik_Stok->getRincianDashboardFilteredBowheer($lokasi, $bowheer, $item, $tanggal, $status);
+        $data['getInOutHistoryFiltered'] = $this->MDashboard_Logistik_Stok->getInOutHistoryFiltered($lokasi, $bowheer, $item, $tanggal, $status);
+        $data['getAllStokByKategoryFilterCityFiltered'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterCityFiltered($tanggal, $status, $lokasi, $bowheer, $item);
 
         echo json_encode($data, JSON_PRETTY_PRINT);
         exit;
+    }
+
+    private function buildDashboardData()
+    {
+        $dateStart = $this->input->get('dateStart');
+
+        $data['title'] = 'DASHBOARD LOGISTIK';
+        $data['judul'] = 'DASHBOARD LOGISTIK';
+        $data['getAllStokLogistik'] = $this->MDashboard_Logistik_Stok->getAllStokLogistik();
+        $data['getAllStokByKategory'] = $this->MDashboard_Logistik_Stok->getAllStokByKategory();
+        $data['getAllStokByKategoryFilterCity'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterCity();
+        $data['getAllStokByKategoryFilterRegional'] = $this->MDashboard_Logistik_Stok->getAllStokByKategoryFilterRegional();
+        if ($this->session->userdata('lokasi_user') == "HO") {
+            $data['getListGudangLokasiUser'] = $this->MDashboard_Logistik_Stok->getListGudangLokasiUserAll();
+        } else {
+            $data['getListGudangLokasiUser'] = $this->MDashboard_Logistik_Stok->getListGudangLokasiUser();
+        }
+        $data['getMasterProject'] = $this->MDashboard_Logistik_Stok->getMasterProject();
+        $data['getMasterSumberMaterial'] = $this->MDashboard_Logistik_Stok->getMasterSumberMaterial();
+        $data['getMasterKodeItem'] = $this->MDashboard_Logistik_Stok->getMasterKodeItem();
+        $data['getUniqueKotaGudang'] = $this->MDashboard_Logistik_Stok->getUniqueKotaGudang();
+        $data['getUniqueProjectLogistik'] = $this->MDashboard_Logistik_Stok->getUniqueProjectLogistik();
+        $data['getUniqueItemLogistik'] = $this->MDashboard_Logistik_Stok->getUniqueItemLogistik();
+        $data['getUniqueSumberMaterial'] = $this->MDashboard_Logistik_Stok->getUniqueSumberMaterial();
+        $data['getReportInOutMaterial'] = $this->MDashboard_Logistik_Stok->getReportInOutMaterial();
+        $data['getReportStokMaterial'] = $this->MDashboard_Logistik_Stok->getReportStokMaterial($dateStart);
+
+        return $data;
     }
 }
