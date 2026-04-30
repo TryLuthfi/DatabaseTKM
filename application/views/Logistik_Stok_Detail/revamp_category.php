@@ -308,19 +308,8 @@ foreach ($distributionRows as $row) {
                         <div class="stock-category-actions">
                             <a href="<?= base_url('Dashboard_Logistik_Stok/revamp') ?>" class="stock-category-btn stock-category-btn--light">
                                 <i class="fas fa-arrow-left"></i>
-                                Kembali ke Dashboard Revamp
+                                Kembali ke Dashboard
                             </a>
-                            <?php if ($isFiltered): ?>
-                                <a href="<?= base_url('Logistik_Stok_Detail/filter_kategori_rdr') ?>?kategori=<?= rawurlencode($categoryLabel) ?>" class="stock-category-btn stock-category-btn--ghost">
-                                    <i class="fas fa-history"></i>
-                                    Buka Versi Lama
-                                </a>
-                            <?php else: ?>
-                                <a href="<?= base_url('Logistik_Stok_Detail/detail_kategori/' . rawurlencode($categoryLabel)) ?>" class="stock-category-btn stock-category-btn--ghost">
-                                    <i class="fas fa-history"></i>
-                                    Buka Versi Lama
-                                </a>
-                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="stock-category-metrics">

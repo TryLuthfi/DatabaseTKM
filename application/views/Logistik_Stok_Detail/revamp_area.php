@@ -378,11 +378,7 @@ foreach ($getSummaryDetailArea as $stokKategory) {
                         <div class="stock-detail-actions">
                             <a href="<?= base_url('Dashboard_Logistik_Stok/revamp') ?>" class="stock-detail-btn stock-detail-btn--light">
                                 <i class="fas fa-arrow-left"></i>
-                                Kembali ke Dashboard Revamp
-                            </a>
-                            <a href="<?= base_url('Logistik_Stok_Detail/detail/' . rawurlencode($lokasi)) ?>" class="stock-detail-btn stock-detail-btn--ghost">
-                                <i class="fas fa-history"></i>
-                                Buka Detail Lama
+                                Kembali ke Dashboard
                             </a>
                         </div>
                     </div>
