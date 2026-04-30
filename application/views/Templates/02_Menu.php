@@ -244,7 +244,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
 
                             <!-- Stock Material -->
                             <li class="nav-item">
-                                <a href="<?= base_url('Dashboard_Logistik_Stok/revamp') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok')
+                                <a href="<?= base_url('Dashboard_Logistik_Stok/revamp') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok' || $id_menu == 'Logistik_Stok_Detail')
                                       echo 'active'; ?>">
                                     <i class="far fa-star nav-icon"></i>
                                     <p>Stock Material</p>
