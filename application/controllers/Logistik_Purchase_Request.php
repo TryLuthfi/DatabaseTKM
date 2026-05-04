@@ -3,6 +3,16 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Logistik_Purchase_Request extends CI_Controller
 {
+    private $approvalMap = [
+        'sm' => 'approved_sm',
+        'rpm' => 'approved_rpm',
+        'planning' => 'approved_planning',
+        'manager_konstruksi' => 'approved_manager_konstruksi',
+        'finance' => 'approved_finance',
+        'gm' => 'approved_gm',
+        'manager_logistik' => 'approved_manager_logistik',
+        'direktur' => 'approved_direktur',
+    ];
 
     public function __construct()
     {
@@ -17,10 +27,15 @@ class Logistik_Purchase_Request extends CI_Controller
         if (!empty($this->session->userdata('id_user'))) {
 
             $data['title'] = 'Purchase Request';
-            $data['list_purchase_request_area'] = $this->MLogistik_Purchase_Request->get_all_purchase_request('area');
-            $data['list_purchase_request_ho'] = $this->MLogistik_Purchase_Request->get_all_purchase_request('ho');
+            $data['list_purchase_request_area'] = $this->MLogistik_Purchase_Request->decorate_purchase_request_rows(
+                $this->MLogistik_Purchase_Request->get_all_purchase_request('area')
+            );
+            $data['list_purchase_request_ho'] = $this->MLogistik_Purchase_Request->decorate_purchase_request_rows(
+                $this->MLogistik_Purchase_Request->get_all_purchase_request('ho')
+            );
             $data['list_master_gudang'] = $this->MLogistik_Purchase_Request->get_all_gudang();
             $data['get_master_project'] = $this->MDashboard_Logistik_Stok->getMasterProject();
+            $data['available_approval_columns'] = $this->MLogistik_Purchase_Request->resolve_available_approval_columns();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -83,6 +98,30 @@ class Logistik_Purchase_Request extends CI_Controller
         }
     }
 
+    public function get_material_options()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $projectItem = trim((string) $this->input->get('id_bowheer'));
+        $idLokasiGudang = $this->input->get('id_lokasi_gudang');
+
+        if ($projectItem === '') {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([]));
+            return;
+        }
+
+        $data = $this->MLogistik_Purchase_Request->get_material_options($projectItem, $idLokasiGudang);
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode($data));
+    }
+
     public function delete_purchase_request($id_purchase_request)
     {
         $this->db->trans_start();
@@ -106,6 +145,12 @@ class Logistik_Purchase_Request extends CI_Controller
             $data['title'] = 'Purchase Request';
             $data['type'] = 'view';
             $data['detail_purchase_request'] = $this->MLogistik_Purchase_Request->get_detail_purchase_request($id_purchase_request);
+            if (empty($data['detail_purchase_request'])) {
+                $this->session->set_flashdata('error', 'Data purchase request tidak ditemukan.');
+                redirect('Logistik_Purchase_Request');
+                return;
+            }
+            $data['purchase_request_meta'] = $this->MLogistik_Purchase_Request->decorate_purchase_request_row($data['detail_purchase_request'][0]);
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -120,10 +165,21 @@ class Logistik_Purchase_Request extends CI_Controller
     public function edit_purchase_request($id_purchase_request)
     {
         if (!empty($this->session->userdata('id_user'))) {
+            if (!$this->can_manage_planning()) {
+                $this->session->set_flashdata('error', 'Anda tidak memiliki akses untuk mengedit review planning.');
+                redirect('Logistik_Purchase_Request/view_purchase_request/' . $id_purchase_request);
+                return;
+            }
 
             $data['title'] = 'Purchase Request';
             $data['type'] = 'edit';
             $data['detail_purchase_request'] = $this->MLogistik_Purchase_Request->get_detail_purchase_request($id_purchase_request);
+            if (empty($data['detail_purchase_request'])) {
+                $this->session->set_flashdata('error', 'Data purchase request tidak ditemukan.');
+                redirect('Logistik_Purchase_Request');
+                return;
+            }
+            $data['purchase_request_meta'] = $this->MLogistik_Purchase_Request->decorate_purchase_request_row($data['detail_purchase_request'][0]);
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -137,20 +193,28 @@ class Logistik_Purchase_Request extends CI_Controller
     public function edit_purchase_request_by_planning()
     {
         if (!empty($this->session->userdata('id_user'))) {
+            if (!$this->can_manage_planning()) {
+                $this->session->set_flashdata('error', 'Anda tidak memiliki akses untuk menyimpan review planning.');
+                redirect('Logistik_Purchase_Request');
+                return;
+            }
 
             $id_purchase_request = $this->input->post('id_purchase_request');
             $id_detail = $this->input->post('id_purchase_request_detail_');
-            $boq = $this->input->post('boq_');
-            $qty_planning = $this->input->post('qty_planning_');
+            $volume_planning = $this->input->post('volume_planning_');
             $ket_planning = $this->input->post('keterangan_planning_');
-            if (!empty($id_detail) && !empty($boq) && !empty($qty_planning)) {
+            if (!empty($id_detail) && !empty($volume_planning)) {
+                $hasVolumePlanningColumn = $this->db->field_exists('volume_planning', 'tb_logistik_purchase_request_detail');
 
                 foreach ($id_detail as $key => $id) {
                     $data = [
-                        'boq' => $boq[$key],
-                        'qty_planning' => $qty_planning[$key],
+                        'qty_planning' => $volume_planning[$key],
                         'keterangan_planning' => $ket_planning[$key]
                     ];
+
+                    if ($hasVolumePlanningColumn) {
+                        $data['volume_planning'] = $volume_planning[$key];
+                    }
 
                     $this->db->where('id_purchase_request_detail', $id);
                     $this->db->update('tb_logistik_purchase_request_detail', $data);
@@ -230,12 +294,24 @@ class Logistik_Purchase_Request extends CI_Controller
     {
         if (!empty($this->session->userdata('id_user'))) {
             $id_purchase_request = $this->input->post('id_purchase_request');
-            $tipe = strtolower($this->input->post('tipe')); // Konversi tipe ke lowercase
-
-            // Pastikan tipe valid sebelum update
-            $column = ($tipe == 'finance') ? 'approved_finance' : (($tipe == 'direktur') ? 'approved_direktur' : null);
+            $tipe = strtolower(trim((string) $this->input->post('tipe')));
+            $column = isset($this->approvalMap[$tipe]) ? $this->approvalMap[$tipe] : null;
+            if ($column && !$this->db->field_exists($column, 'tb_logistik_purchase_request')) {
+                $column = null;
+            }
 
             if ($column) {
+                if (!$this->can_approve_stage($tipe)) {
+                    $this->output
+                        ->set_status_header(403)
+                        ->set_content_type('application/json')
+                        ->set_output(json_encode([
+                            'status' => 'error',
+                            'message' => 'Anda tidak memiliki akses untuk approval tahap ini.'
+                        ]));
+                    return;
+                }
+
                 $this->db->where('id_purchase_request', $id_purchase_request);
                 $update = $this->db->update('tb_logistik_purchase_request', [$column => 1]);
 
@@ -282,5 +358,29 @@ class Logistik_Purchase_Request extends CI_Controller
         $uniqid = substr(str_replace('.', '', $uniqid), 0, 6);
         $timestamp = time(); // Ambil timestamp saat ini
         return strtoupper($prefix . '_' . $uniqid . '_' . $timestamp);
+    }
+
+    private function is_super_admin()
+    {
+        return (string) $this->session->userdata('nama_level') === 'Super Admin';
+    }
+
+    private function get_validation_key()
+    {
+        return strtolower(str_replace(' ', '_', trim((string) $this->session->userdata('validation'))));
+    }
+
+    private function can_manage_planning()
+    {
+        return $this->is_super_admin() || $this->get_validation_key() === 'planning';
+    }
+
+    private function can_approve_stage($stageKey)
+    {
+        if ($this->is_super_admin()) {
+            return true;
+        }
+
+        return $this->get_validation_key() === strtolower(trim((string) $stageKey));
     }
 }

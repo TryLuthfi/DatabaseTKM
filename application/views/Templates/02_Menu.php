@@ -225,7 +225,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                             </li>
 
                             <!-- Purchase Request -->
-                            <li class="nav-item" style="pointer-events: none">
+                            <li class="nav-item">
                                 <a href="<?= base_url('Logistik_Purchase_Request') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Purchase_Request')
                                       echo 'active'; ?> ">
                                     <i class="far fa-file nav-icon"></i>
@@ -234,7 +234,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                             </li>
 
                             <!-- Purchase Order -->
-                            <li class="nav-item" style="pointer-events: none">
+                            <li class="nav-item">
                                 <a href="<?= base_url('Logistik_Pesanan_Pabrik') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Pesanan_Pabrik')
                                       echo 'active'; ?>">
                                     <i class="far fa-file nav-icon"></i>
