@@ -365,10 +365,16 @@ class Logistik_Purchase_Request extends CI_Controller
     public function generateUniqId($prefix)
     {
         $prefix = substr($prefix, 0, 3);
-        $uniqid = uniqid('', true);
-        $uniqid = substr(str_replace('.', '', $uniqid), 0, 6);
-        $timestamp = time(); // Ambil timestamp saat ini
-        return strtoupper($prefix . '_' . $uniqid . '_' . $timestamp);
+        try {
+            $random = strtoupper(bin2hex(random_bytes(4)));
+        } catch (Exception $e) {
+            $random = strtoupper(substr(md5(uniqid((string) mt_rand(), true)), 0, 8));
+        }
+
+        $microtimeDigits = preg_replace('/\D/', '', (string) microtime(true));
+        $suffix = substr($microtimeDigits, -6);
+
+        return strtoupper($prefix . '_' . $random . '_' . $suffix);
     }
 
     public function save_nodin()
@@ -428,6 +434,11 @@ class Logistik_Purchase_Request extends CI_Controller
         }
 
         $outstandingMap = $this->MLogistik_Pesanan_Pabrik->getOutstandingPrItemMap($idPurchaseRequest);
+        $masterPabrikMap = [];
+        foreach ($this->MLogistik_Pesanan_Pabrik->getMasterPabrikActive() as $pabrikRow) {
+            $masterPabrikMap[(int) ($pabrikRow['id_pabrik'] ?? 0)] = $pabrikRow;
+        }
+
         $details = [];
         foreach ($detailIds as $index => $detailId) {
             $detailId = trim((string) $detailId);
@@ -437,8 +448,8 @@ class Logistik_Purchase_Request extends CI_Controller
 
             $qtyPo = (float) ($qtyPoItems[$index] ?? 0);
             $maxOutstanding = (float) ($outstandingMap[$detailId]['qty_outstanding_pr'] ?? 0);
-            if ($qtyPo <= 0 || $qtyPo > $maxOutstanding) {
-                $this->session->set_flashdata('error', 'Qty PO usulan pada NODIN harus lebih dari 0 dan tidak boleh melebihi outstanding PR.');
+            if ($qtyPo <= 0) {
+                $this->session->set_flashdata('error', 'Qty PO usulan pada NODIN harus lebih dari 0.');
                 redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
                 return;
             }
@@ -446,6 +457,12 @@ class Logistik_Purchase_Request extends CI_Controller
             $idPabrik = !empty($pabrikItems[$index]) ? (int) $pabrikItems[$index] : 0;
             if ($idPabrik <= 0) {
                 $this->session->set_flashdata('error', 'Vendor / pabrik pada setiap item NODIN wajib dipilih dari master pabrik.');
+                redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
+                return;
+            }
+
+            if (!isset($masterPabrikMap[$idPabrik])) {
+                $this->session->set_flashdata('error', 'Pabrik yang dipilih tidak valid atau sudah tidak aktif.');
                 redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
                 return;
             }
@@ -459,6 +476,7 @@ class Logistik_Purchase_Request extends CI_Controller
                 'id_purchase_request_detail' => $detailId,
                 'id_kode_item' => (int) ($kodeItems[$index] ?? 0),
                 'id_pabrik' => $idPabrik,
+                'vendor_pabrik' => (string) ($masterPabrikMap[$idPabrik]['nama_pabrik'] ?? ''),
                 'kebutuhan_project' => (float) ($kebutuhanItems[$index] ?? ($outstandingMap[$detailId]['volume_planning_final'] ?? 0)),
                 'outstanding_pr' => (float) ($outstandingItems[$index] ?? $maxOutstanding),
                 'qty_po_nodin' => $qtyPo,

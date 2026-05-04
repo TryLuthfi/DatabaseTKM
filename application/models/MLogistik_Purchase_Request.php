@@ -203,17 +203,26 @@ class MLogistik_Purchase_Request extends CI_Model
             return [];
         }
 
+        $hasIdPabrik = $this->has_column('tb_logistik_nota_dinas_po_detail', 'id_pabrik');
+        $hasVendorText = $this->has_column('tb_logistik_nota_dinas_po_detail', 'vendor_pabrik');
+        $vendorSelect = $hasIdPabrik
+            ? "p.nama_pabrik AS vendor_pabrik"
+            : ($hasVendorText ? "d.vendor_pabrik AS vendor_pabrik" : "NULL AS vendor_pabrik");
+        $vendorJoin = $hasIdPabrik
+            ? "LEFT JOIN tb_master_logistik_pabrik p
+                ON p.id_pabrik = d.id_pabrik"
+            : '';
+
         return $this->db->query("
             SELECT
                 d.*,
                 ki.nama_item,
                 ki.satuan_item,
-                p.nama_pabrik AS vendor_pabrik
+                {$vendorSelect}
             FROM tb_logistik_nota_dinas_po_detail d
             LEFT JOIN tb_master_logistik_kode_item ki
                 ON ki.id_kode_item = d.id_kode_item
-            LEFT JOIN tb_master_logistik_pabrik p
-                ON p.id_pabrik = d.id_pabrik
+            {$vendorJoin}
             WHERE d.id_nota_dinas_po = ?
             ORDER BY ki.nama_item ASC, d.id_nota_dinas_po_detail ASC
         ", [$idNodin])->result_array();
@@ -223,6 +232,23 @@ class MLogistik_Purchase_Request extends CI_Model
     {
         if (!$this->relation_exists('tb_logistik_nota_dinas_po') || !$this->relation_exists('tb_logistik_nota_dinas_po_detail')) {
             return false;
+        }
+
+        $header = $this->filterPayloadByColumns('tb_logistik_nota_dinas_po', $header);
+        $supportsIdPabrik = $this->has_column('tb_logistik_nota_dinas_po_detail', 'id_pabrik');
+        $supportsVendorText = $this->has_column('tb_logistik_nota_dinas_po_detail', 'vendor_pabrik');
+        $normalizedDetails = [];
+
+        foreach ($details as $detail) {
+            if (!$supportsIdPabrik) {
+                unset($detail['id_pabrik']);
+            }
+
+            if (!$supportsVendorText) {
+                unset($detail['vendor_pabrik']);
+            }
+
+            $normalizedDetails[] = $this->filterPayloadByColumns('tb_logistik_nota_dinas_po_detail', $detail);
         }
 
         $this->db->trans_start();
@@ -237,8 +263,8 @@ class MLogistik_Purchase_Request extends CI_Model
             $nodinId = (string) $header['id_nota_dinas_po'];
         }
 
-        if (!empty($details)) {
-            $this->db->insert_batch('tb_logistik_nota_dinas_po_detail', $details);
+        if (!empty($normalizedDetails)) {
+            $this->db->insert_batch('tb_logistik_nota_dinas_po_detail', $normalizedDetails);
         }
 
         $this->db->trans_complete();
@@ -400,6 +426,25 @@ class MLogistik_Purchase_Request extends CI_Model
         }
 
         return $this->columnCache[$key];
+    }
+
+    private function get_table_columns($table)
+    {
+        if (!$this->relation_exists($table)) {
+            return [];
+        }
+
+        return $this->db->list_fields($table);
+    }
+
+    private function filterPayloadByColumns($table, array $payload)
+    {
+        $fields = $this->get_table_columns($table);
+        if (empty($fields)) {
+            return $payload;
+        }
+
+        return array_intersect_key($payload, array_flip($fields));
     }
 
     private function relation_exists($name)

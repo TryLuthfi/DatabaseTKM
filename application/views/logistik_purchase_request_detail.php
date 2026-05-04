@@ -422,6 +422,25 @@ $nodinTotalNominal = array_sum(array_map(static function ($row) {
         white-space: nowrap;
     }
 
+    .prd-modal .select2-container {
+        width: 100% !important;
+    }
+
+    .prd-modal .select2-container--bootstrap4 .select2-selection {
+        min-height: calc(2.25rem + 2px);
+        border-radius: 0.375rem;
+        border-color: #ced4da;
+    }
+
+    .prd-modal .select2-container--bootstrap4 .select2-selection__rendered {
+        line-height: calc(2.25rem + 2px);
+        padding-left: 0.75rem;
+    }
+
+    .prd-modal .select2-container--bootstrap4 .select2-selection__arrow {
+        height: calc(2.25rem + 2px);
+    }
+
     .prd-toolbar {
         display: flex;
         flex-wrap: wrap;
@@ -1003,11 +1022,11 @@ $nodinTotalNominal = array_sum(array_map(static function ($row) {
                                                 <td><?= $nodinItem['satuan_item'] ?: '-' ?></td>
                                                 <td class="text-number js-nodin-kebutuhan"><?= number_format($nodinItem['volume_planning_final'] ?? 0, 0, ',', '.') ?></td>
                                                 <td class="text-number js-nodin-outstanding"><?= number_format($nodinItem['qty_outstanding_pr'] ?? 0, 0, ',', '.') ?></td>
-                                                <td><input type="number" class="form-control text-right js-nodin-qty" name="qty_po_nodin[<?= $nodinItemIndex ?>]" min="0" max="<?= (float) ($nodinItem['qty_outstanding_pr'] ?? 0) ?>" step="1" value="<?= htmlspecialchars((string) ($existingDetail['qty_po_nodin'] ?? (int) ($nodinItem['qty_outstanding_pr'] ?? 0)), ENT_QUOTES) ?>" required></td>
+                                                <td><input type="number" class="form-control text-right js-nodin-qty" name="qty_po_nodin[<?= $nodinItemIndex ?>]" min="0" step="1" value="<?= htmlspecialchars((string) ($existingDetail['qty_po_nodin'] ?? (int) ($nodinItem['qty_outstanding_pr'] ?? 0)), ENT_QUOTES) ?>" required></td>
                                                 <td><input type="number" class="form-control text-right js-nodin-harga" name="harga_satuan[<?= $nodinItemIndex ?>]" min="0" step="1" value="<?= htmlspecialchars((string) ($existingDetail['harga_satuan'] ?? '0'), ENT_QUOTES) ?>"></td>
                                                 <td class="text-number js-nodin-line-total"><?= number_format(((float) ($existingDetail['qty_po_nodin'] ?? (int) ($nodinItem['qty_outstanding_pr'] ?? 0))) * ((float) ($existingDetail['harga_satuan'] ?? 0)), 0, ',', '.') ?></td>
                                                 <td>
-                                                    <select class="form-control" name="id_pabrik[<?= $nodinItemIndex ?>]">
+                                                    <select class="form-control js-select-pabrik" name="id_pabrik[<?= $nodinItemIndex ?>]" data-placeholder="Pilih Pabrik">
                                                         <option value="">Pilih Pabrik</option>
                                                         <?php foreach (($masterPabrikOptions ?? []) as $pabrikOption): ?>
                                                             <option value="<?= $pabrikOption['id_pabrik'] ?>" <?= (string) ($existingDetail['id_pabrik'] ?? '') === (string) $pabrikOption['id_pabrik'] ? 'selected' : '' ?>>
@@ -1132,6 +1151,27 @@ $nodinTotalNominal = array_sum(array_map(static function ($row) {
         $('#nodin-total-nilai').text(formatNodinNumber(totalNilai));
     }
 
+    function initNodinPabrikSelect() {
+        if (!$.fn.select2 || !$('#modal-nodin').length) {
+            return;
+        }
+
+        $('#modal-nodin .js-select-pabrik').each(function() {
+            const $select = $(this);
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.select2('destroy');
+            }
+
+            $select.select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                placeholder: $select.data('placeholder') || 'Pilih Pabrik',
+                allowClear: true,
+                dropdownParent: $('#modal-nodin')
+            });
+        });
+    }
+
     function hitungTotal() {
         let totalBoq = 0;
         let totalStokArea = 0;
@@ -1163,6 +1203,7 @@ $nodinTotalNominal = array_sum(array_map(static function ($row) {
     $(document).ready(function() {
         hitungTotal();
         refreshNodinFooter();
+        initNodinPabrikSelect();
 
         $(".volume_planning").on("input", function() {
             hitungTotal();
@@ -1276,15 +1317,14 @@ $nodinTotalNominal = array_sum(array_map(static function ($row) {
             let hasInvalidQty = false;
             $("#form-nodin input[name^='qty_po_nodin']").each(function() {
                 const value = parseFloat($(this).val() || 0);
-                const maxValue = parseFloat($(this).attr('max') || 0);
-                if (value <= 0 || value > maxValue) {
+                if (value <= 0) {
                     hasInvalidQty = true;
                 }
             });
 
             if (hasInvalidQty) {
                 event.preventDefault();
-                Swal.fire('Qty NODIN tidak valid', 'Qty PO usulan pada NODIN harus lebih dari 0 dan tidak boleh melebihi outstanding PR.', 'warning');
+                Swal.fire('Qty NODIN tidak valid', 'Qty PO usulan pada NODIN harus lebih dari 0.', 'warning');
             }
         });
 
