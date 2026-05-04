@@ -59,6 +59,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
     .nodin-table tbody tr:hover { background:rgba(239,246,255,.7); }
     .nodin-table tfoot td { background:#f8fafc; color:#0f172a; font-weight:800; }
     .text-number { text-align:right; white-space:nowrap; }
+    .nodin-table .is-merged-cell { vertical-align:middle !important; }
     .nodin-chip { display:inline-flex; align-items:center; gap:.35rem; padding:.35rem .7rem; border-radius:999px; font-size:.76rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
     .nodin-chip--approved { background:rgba(16,185,129,.12); color:#047857; }
     .nodin-chip--waiting { background:rgba(245,158,11,.12); color:#b45309; }
@@ -284,7 +285,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                                                 $selectedPabrikId = $masterPabrikByName[strtolower(trim((string) $existingDetail['vendor_pabrik']))] ?? '';
                                             }
                                             ?>
-                                            <tr class="js-nodin-row" data-detail-id="<?= htmlspecialchars((string) ($item['id_purchase_request_detail'] ?? ''), ENT_QUOTES) ?>">
+                                            <tr class="js-nodin-row" data-detail-id="<?= htmlspecialchars((string) ($item['id_purchase_request_detail'] ?? ''), ENT_QUOTES) ?>" data-item-key="<?= htmlspecialchars((string) ($item['id_kode_item'] ?? ($item['nama_item'] ?? '')), ENT_QUOTES) ?>">
                                                 <td>
                                                     <span class="js-nodin-pr-label"><?= htmlspecialchars((string) ($item['nomor_purchase_request'] ?? '-'), ENT_QUOTES) ?></span>
                                                     <input type="hidden" name="id_purchase_request_detail[<?= $rowIndex ?>]" value="<?= htmlspecialchars((string) ($item['id_purchase_request_detail'] ?? ''), ENT_QUOTES) ?>">
@@ -418,7 +419,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
         const optionHtml = getPabrikOptionHtml();
 
         return '' +
-            '<tr class="js-nodin-row" data-detail-id="' + detailId + '">' +
+            '<tr class="js-nodin-row" data-detail-id="' + detailId + '" data-item-key="' + (sourceRow.data('item-key') || '') + '">' +
                 '<td>' +
                     '<span class="js-nodin-pr-label">' + prLabel + '</span>' +
                     '<input type="hidden" name="id_purchase_request_detail[' + rowIndex + ']" value="' + detailId + '">' +
@@ -477,6 +478,59 @@ foreach ($masterPabrikOptions as $pabrikOption) {
         });
     }
 
+    function resetNodinMergedCells() {
+        $('#table_nodin_items tbody .js-nodin-row').each(function() {
+            $(this).children('td').each(function() {
+                $(this).show().attr('rowspan', 1).removeClass('is-merged-cell');
+            });
+        });
+    }
+
+    function mergeNodinColumnByRowData(columnIndex, dataKey) {
+        let currentKey = null;
+        let $masterCell = null;
+        let rowspan = 1;
+
+        $('#table_nodin_items tbody .js-nodin-row').each(function() {
+            const $row = $(this);
+            const rowKey = String($row.data(dataKey) || '');
+            const $cell = $row.children('td').eq(columnIndex);
+
+            if (!rowKey || !$cell.length) {
+                currentKey = null;
+                $masterCell = null;
+                rowspan = 1;
+                return;
+            }
+
+            if (rowKey === currentKey && $masterCell) {
+                rowspan += 1;
+                $masterCell.attr('rowspan', rowspan).addClass('is-merged-cell');
+                $cell.hide();
+                return;
+            }
+
+            currentKey = rowKey;
+            $masterCell = $cell;
+            rowspan = 1;
+        });
+    }
+
+    function applyNodinRowMerging() {
+        resetNodinMergedCells();
+
+        const $rows = $('#table_nodin_items tbody .js-nodin-row');
+        if (!$rows.length) {
+            return;
+        }
+
+        mergeNodinColumnByRowData(0, 'detail-id');
+        mergeNodinColumnByRowData(1, 'item-key');
+        mergeNodinColumnByRowData(2, 'item-key');
+        mergeNodinColumnByRowData(3, 'detail-id');
+        mergeNodinColumnByRowData(4, 'detail-id');
+    }
+
     function renderNodinItems(rows) {
         const tbody = $('#table_nodin_items tbody');
         tbody.empty();
@@ -495,7 +549,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
             const rowIndex = nodinRowSequence++;
 
             tbody.append(
-                '<tr class="js-nodin-row" data-detail-id="' + (item.id_purchase_request_detail || '') + '">' +
+                '<tr class="js-nodin-row" data-detail-id="' + (item.id_purchase_request_detail || '') + '" data-item-key="' + (item.id_kode_item || item.nama_item || '') + '">' +
                     '<td>' + (item.nomor_purchase_request || '-') +
                         '<span class="js-nodin-pr-label" style="display:none;">' + (item.nomor_purchase_request || '-') + '</span>' +
                         '<input type="hidden" name="id_purchase_request_detail[' + rowIndex + ']" value="' + (item.id_purchase_request_detail || '') + '">' +
@@ -519,6 +573,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
 
         initPabrikSelects();
         refreshNodinFooter();
+        applyNodinRowMerging();
     }
 
     $(document).ready(function() {
@@ -542,6 +597,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
         initPurchaseRequestSelect();
         initPabrikSelects();
         refreshNodinFooter();
+        applyNodinRowMerging();
 
         $('#nodin_selected_purchase_request').on('change', function() {
             const values = $(this).val() || [];
@@ -555,7 +611,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
 
             const currentToken = ++nodinItemsRequestToken;
             const tbody = $('#table_nodin_items tbody');
-            tbody.html('<tr><td colspan="10" class="text-center text-muted">Memuat item PR terpilih...</td></tr>');
+            tbody.html('<tr><td colspan="11" class="text-center text-muted">Memuat item PR terpilih...</td></tr>');
 
             if (nodinItemsRequest && nodinItemsRequest.readyState !== 4) {
                 nodinItemsRequest.abort();
@@ -594,6 +650,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
             $sourceRow.after(html);
             initPabrikSelects();
             refreshNodinFooter();
+            applyNodinRowMerging();
         });
 
         $('#table_nodin_items').on('click', '.js-nodin-remove-split', function() {
@@ -607,6 +664,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                 $(this).closest('tr').remove();
             }
             refreshNodinFooter();
+            applyNodinRowMerging();
         });
 
         $('.btn-approve-nodin').click(function(e) {
