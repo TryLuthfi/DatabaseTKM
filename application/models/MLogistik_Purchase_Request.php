@@ -185,11 +185,45 @@ class MLogistik_Purchase_Request extends CI_Model
             return null;
         }
 
+        if ($this->relation_exists('tb_logistik_nota_dinas_po_detail')) {
+            $row = $this->db->query("
+                SELECT h.*
+                FROM tb_logistik_nota_dinas_po h
+                INNER JOIN tb_logistik_nota_dinas_po_detail d
+                    ON d.id_nota_dinas_po = h.id_nota_dinas_po
+                INNER JOIN tb_logistik_purchase_request_detail prd
+                    ON prd.id_purchase_request_detail = d.id_purchase_request_detail
+                WHERE prd.id_purchase_request = ?
+                ORDER BY h.tanggal_nota_dinas DESC, h.id_nota_dinas_po DESC
+                LIMIT 1
+            ", [$idPurchaseRequest])->row_array();
+
+            if (!empty($row)) {
+                return $this->decorate_nodin_row($row);
+            }
+        }
+
         $row = $this->db
             ->from('tb_logistik_nota_dinas_po')
             ->where('id_purchase_request', $idPurchaseRequest)
             ->order_by('tanggal_nota_dinas', 'DESC')
             ->order_by('id_nota_dinas_po', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return $this->decorate_nodin_row($row);
+    }
+
+    public function getNodinById($idNodin)
+    {
+        if (!$this->relation_exists('tb_logistik_nota_dinas_po')) {
+            return null;
+        }
+
+        $row = $this->db
+            ->from('tb_logistik_nota_dinas_po')
+            ->where('id_nota_dinas_po', $idNodin)
             ->limit(1)
             ->get()
             ->row_array();
@@ -226,6 +260,55 @@ class MLogistik_Purchase_Request extends CI_Model
             WHERE d.id_nota_dinas_po = ?
             ORDER BY ki.nama_item ASC, d.id_nota_dinas_po_detail ASC
         ", [$idNodin])->result_array();
+    }
+
+    public function getNodinPurchaseRequestIds($idNodin)
+    {
+        if (!$this->relation_exists('tb_logistik_nota_dinas_po_detail')) {
+            return [];
+        }
+
+        $rows = $this->db->query("
+            SELECT DISTINCT prd.id_purchase_request
+            FROM tb_logistik_nota_dinas_po_detail d
+            INNER JOIN tb_logistik_purchase_request_detail prd
+                ON prd.id_purchase_request_detail = d.id_purchase_request_detail
+            WHERE d.id_nota_dinas_po = ?
+            ORDER BY prd.id_purchase_request ASC
+        ", [$idNodin])->result_array();
+
+        return array_values(array_filter(array_map(static function ($row) {
+            return (string) ($row['id_purchase_request'] ?? '');
+        }, $rows)));
+    }
+
+    public function getNodinSummaryRows()
+    {
+        if (!$this->relation_exists('tb_logistik_nota_dinas_po') || !$this->relation_exists('tb_logistik_nota_dinas_po_detail')) {
+            return [];
+        }
+
+        $rows = $this->db->query("
+            SELECT
+                h.*,
+                COUNT(DISTINCT d.id_nota_dinas_po_detail) AS total_item,
+                COUNT(DISTINCT prd.id_purchase_request) AS total_pr,
+                SUM(COALESCE(d.qty_po_nodin, 0)) AS total_qty_nodin,
+                SUM(COALESCE(d.qty_po_nodin, 0) * COALESCE(d.harga_satuan, 0)) AS total_nominal_nodin,
+                GROUP_CONCAT(DISTINCT pr.nomor_purchase_request ORDER BY pr.nomor_purchase_request SEPARATOR ', ') AS nomor_purchase_request_refs,
+                GROUP_CONCAT(DISTINCT COALESCE(pr.nama_project, pr.id_project) ORDER BY COALESCE(pr.nama_project, pr.id_project) SEPARATOR ', ') AS nama_project_refs
+            FROM tb_logistik_nota_dinas_po h
+            LEFT JOIN tb_logistik_nota_dinas_po_detail d
+                ON d.id_nota_dinas_po = h.id_nota_dinas_po
+            LEFT JOIN tb_logistik_purchase_request_detail prd
+                ON prd.id_purchase_request_detail = d.id_purchase_request_detail
+            LEFT JOIN tb_logistik_purchase_request pr
+                ON pr.id_purchase_request = prd.id_purchase_request
+            GROUP BY h.id_nota_dinas_po
+            ORDER BY h.tanggal_nota_dinas DESC, h.id_nota_dinas_po DESC
+        ")->result_array();
+
+        return array_map([$this, 'decorate_nodin_row'], $rows);
     }
 
     public function saveNodin($header, $details, $existingNodinId = null)
@@ -286,6 +369,20 @@ class MLogistik_Purchase_Request extends CI_Model
         return $this->db
             ->where('id_nota_dinas_po', $idNodin)
             ->update('tb_logistik_nota_dinas_po', $payload);
+    }
+
+    public function deleteNodin($idNodin)
+    {
+        if (!$this->relation_exists('tb_logistik_nota_dinas_po') || !$this->relation_exists('tb_logistik_nota_dinas_po_detail')) {
+            return false;
+        }
+
+        $this->db->trans_start();
+        $this->db->delete('tb_logistik_nota_dinas_po_detail', ['id_nota_dinas_po' => $idNodin]);
+        $this->db->delete('tb_logistik_nota_dinas_po', ['id_nota_dinas_po' => $idNodin]);
+        $this->db->trans_complete();
+
+        return $this->db->trans_status();
     }
 
     public function get_nodin_workflow()

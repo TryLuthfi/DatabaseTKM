@@ -8,7 +8,7 @@
 
 CREATE TABLE IF NOT EXISTS tb_logistik_nota_dinas_po (
     id_nota_dinas_po VARCHAR(20) NOT NULL,
-    id_purchase_request VARCHAR(20) NOT NULL,
+    id_purchase_request VARCHAR(20) DEFAULT NULL,
     nomor_nota_dinas VARCHAR(100) NOT NULL,
     tanggal_nota_dinas DATE NOT NULL,
     ditujukan_kepada VARCHAR(255) DEFAULT NULL,
@@ -57,3 +57,15 @@ ALTER TABLE tb_logistik_nota_dinas_po_detail
     ADD CONSTRAINT fk_nodin_detail_pr
         FOREIGN KEY (id_purchase_request_detail) REFERENCES tb_logistik_purchase_request_detail (id_purchase_request_detail);
 */
+
+/* =========================================================
+   UPDATE untuk database existing agar mendukung 1 NODIN > 1 PR
+   Jalankan bila tabel sudah terlanjur ada:
+
+ALTER TABLE tb_logistik_nota_dinas_po
+    MODIFY COLUMN id_purchase_request VARCHAR(20) NULL;
+
+   Catatan:
+   - Kolom header id_purchase_request dipertahankan sebagai referensi utama / legacy.
+   - Relasi PR yang sebenarnya dibaca dari tb_logistik_nota_dinas_po_detail -> tb_logistik_purchase_request_detail.
+   ========================================================= */

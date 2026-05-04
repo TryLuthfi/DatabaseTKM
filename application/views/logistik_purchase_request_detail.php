@@ -735,12 +735,6 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                     </div>
                     <div class="prd-table-wrap">
                         <div class="prd-toolbar mb-3">
-                            <?php if (!$isEditMode && !empty($purchaseRequest['is_fully_approved']) && $canManageNodin): ?>
-                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-nodin">
-                                    <i class="fas fa-plus-circle mr-1"></i>
-                                    <?= empty($nodinData) ? 'Buat NODIN' : 'Update NODIN' ?>
-                                </button>
-                            <?php endif; ?>
                             <?php if (!$isEditMode && !empty($nodinData) && !empty($nodinCurrentApprovalKey)): ?>
                                 <a href="#" class="btn btn-success btn-approve-nodin <?= $canApproveCurrentNodinStage ? '' : 'disabled' ?>" data-id="<?= $nodinData['id_nota_dinas_po'] ?>" data-pr="<?= $purchaseRequest['id_purchase_request'] ?>" data-tipe="<?= $nodinCurrentApprovalKey ?>">
                                     <i class="fa fa-check mr-1"></i>

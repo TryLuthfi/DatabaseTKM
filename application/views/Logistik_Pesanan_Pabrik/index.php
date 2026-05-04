@@ -474,28 +474,24 @@ $formatStatus = function ($row) {
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>PR + NODIN Approved</label>
-                                <select name="id_purchase_request" id="po_id_purchase_request" class="form-control" required>
-                                    <option value="">Pilih Purchase Request</option>
-                                    <?php foreach ($approvedPurchaseRequests as $pr): ?>
-                                        <option value="<?= $pr['id_purchase_request'] ?>" data-nomor-pr="<?= htmlspecialchars($pr['nomor_purchase_request'], ENT_QUOTES) ?>">
-                                            <?= $pr['nomor_purchase_request'] ?> | <?= $pr['nama_project'] ?: '-' ?> | <?= $pr['kota_lokasi_gudang'] ?: '-' ?> | Outstanding <?= number_format($pr['total_qty_outstanding_pr'] ?? 0, 0, ',', '.') ?>
+                                <label>NODIN Approved</label>
+                                <select name="id_nota_dinas_po" id="po_id_nota_dinas_po" class="form-control" required>
+                                    <option value="">Pilih Nota Dinas</option>
+                                    <?php foreach ($approvedNodins as $nodin): ?>
+                                        <option value="<?= $nodin['id_nota_dinas_po'] ?>" data-nomor-nodin="<?= htmlspecialchars($nodin['nomor_nota_dinas'], ENT_QUOTES) ?>" data-nomor-pr-refs="<?= htmlspecialchars($nodin['nomor_purchase_request_refs'] ?? '', ENT_QUOTES) ?>" data-vendor-options="<?= htmlspecialchars(json_encode($nodin['vendor_options'] ?? []), ENT_QUOTES) ?>">
+                                            <?= $nodin['nomor_nota_dinas'] ?> | PR <?= $nodin['nomor_purchase_request_refs'] ?: '-' ?> | Vendor <?= number_format($nodin['total_vendor'] ?? 0, 0, ',', '.') ?> | Outstanding <?= number_format($nodin['total_qty_outstanding_nodin'] ?? 0, 0, ',', '.') ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                                <input type="hidden" name="nomor_purchase_request" id="po_nomor_purchase_request">
+                                <input type="hidden" name="nomor_nota_dinas" id="po_nomor_nota_dinas">
+                                <input type="hidden" name="nomor_purchase_request_refs" id="po_nomor_purchase_request_refs">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Pabrik</label>
-                                <select name="id_pabrik" id="po_id_pabrik" class="form-control" required>
-                                    <option value="">Pilih Pabrik</option>
-                                    <?php foreach ($masterPabrik as $pabrik): ?>
-                                        <option value="<?= $pabrik['id_pabrik'] ?>">
-                                            <?= $pabrik['nama_pabrik'] ?> | <?= $pabrik['jenis_pabrik'] ?>
-                                        </option>
-                                    <?php endforeach; ?>
+                                <select name="id_pabrik" id="po_id_pabrik" class="form-control" required disabled>
+                                    <option value="">Pilih Nomor NODIN terlebih dahulu</option>
                                 </select>
                             </div>
                         </div>
@@ -533,7 +529,7 @@ $formatStatus = function ($row) {
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="10" class="text-center text-muted">Pilih PR approved untuk memuat item.</td>
+                                    <td colspan="10" class="text-center text-muted">Pilih NODIN approved dan pabrik untuk memuat detail item.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -567,10 +563,48 @@ $formatStatus = function ($row) {
             });
         }
 
-        $('#po_id_purchase_request, #po_id_pabrik').select2({
+        $('#po_id_nota_dinas_po, #po_id_pabrik').select2({
             width: '100%',
             dropdownParent: $('#modalCreatePoFromPr')
         });
+
+        function resetPoPabrikOptions(placeholderText) {
+            const $pabrikSelect = $('#po_id_pabrik');
+            const currentPlaceholder = placeholderText || 'Pilih Nomor NODIN terlebih dahulu';
+            $pabrikSelect.empty().append('<option value="">' + currentPlaceholder + '</option>');
+            $pabrikSelect.val('').trigger('change.select2');
+            $pabrikSelect.prop('disabled', true);
+        }
+
+        function syncPoPabrikOptions() {
+            const $selectedNodin = $('#po_id_nota_dinas_po option:selected');
+            const rawVendorOptions = $selectedNodin.data('vendor-options');
+            const vendorOptions = Array.isArray(rawVendorOptions)
+                ? rawVendorOptions
+                : (typeof rawVendorOptions === 'string' && rawVendorOptions !== '' ? JSON.parse(rawVendorOptions) : []);
+            const $pabrikSelect = $('#po_id_pabrik');
+
+            if (!$selectedNodin.val()) {
+                resetPoPabrikOptions('Pilih Nomor NODIN terlebih dahulu');
+                return;
+            }
+
+            if (!vendorOptions.length) {
+                resetPoPabrikOptions('Tidak ada pabrik pada NODIN ini');
+                return;
+            }
+
+            $pabrikSelect.prop('disabled', false);
+            $pabrikSelect.empty().append('<option value="">Pilih Pabrik</option>');
+
+            vendorOptions.forEach(function(vendor) {
+                const vendorId = vendor.id_pabrik || '';
+                const vendorName = vendor.nama_pabrik || vendorId;
+                $pabrikSelect.append('<option value="' + vendorId + '">' + vendorName + '</option>');
+            });
+
+            $pabrikSelect.val('').trigger('change.select2');
+        }
 
         function renderPoItems(rows) {
             const tbody = $('#table_create_po_items tbody');
@@ -584,35 +618,39 @@ $formatStatus = function ($row) {
             rows.forEach(function(item, index) {
                 const volumePlanning = parseFloat(item.volume_planning_final || 0);
                 const qtySudahPo = parseFloat(item.qty_po_teralokasi || 0);
-                const qtyOutstanding = parseFloat(item.qty_outstanding_pr || 0);
+                const qtyOutstanding = parseFloat(item.qty_outstanding_nodin || 0);
                 tbody.append(`
                     <tr>
                         <td>
                             <input type="checkbox" name="selected_item[]" value="${index}" checked>
+                            <input type="hidden" name="id_nota_dinas_po_detail[${index}]" value="${item.id_nota_dinas_po_detail}">
                             <input type="hidden" name="id_purchase_request_detail[${index}]" value="${item.id_purchase_request_detail}">
                             <input type="hidden" name="id_kode_item[${index}]" value="${item.id_kode_item}">
                             <input type="hidden" name="volume_planning_snapshot[${index}]" value="${volumePlanning}">
                         </td>
-                        <td>${item.nama_item || '-'}</td>
+                        <td>${item.nomor_purchase_request || '-'}<br><strong>${item.nama_item || '-'}</strong></td>
                         <td>${item.satuan_item || '-'}</td>
                         <td>${item.qty_request || 0}</td>
                         <td>${volumePlanning}</td>
                         <td>${qtySudahPo}</td>
                         <td><strong>${qtyOutstanding}</strong></td>
                         <td><input type="number" class="form-control" name="qty_item[${index}]" value="${qtyOutstanding}" min="0" max="${qtyOutstanding}" step="1"></td>
-                        <td><input type="number" class="form-control" name="harga_item[${index}]" value="0" min="0" step="1"></td>
+                        <td><input type="number" class="form-control" name="harga_item[${index}]" value="${item.harga_satuan || 0}" min="0" step="1"></td>
                         <td>${item.keterangan_planning || item.keterangan || '-'}</td>
                     </tr>
                 `);
             });
         }
 
-        $('#po_id_purchase_request').on('change', function() {
-            const idPurchaseRequest = $(this).val();
-            const nomorPr = $('#po_id_purchase_request option:selected').data('nomor-pr') || '';
-            $('#po_nomor_purchase_request').val(nomorPr);
+        function loadPoNodinItems() {
+            const idNodin = $('#po_id_nota_dinas_po').val();
+            const idPabrik = $('#po_id_pabrik').val();
+            const nomorNodin = $('#po_id_nota_dinas_po option:selected').data('nomor-nodin') || '';
+            const nomorPrRefs = $('#po_id_nota_dinas_po option:selected').data('nomor-pr-refs') || '';
+            $('#po_nomor_nota_dinas').val(nomorNodin);
+            $('#po_nomor_purchase_request_refs').val(nomorPrRefs);
 
-            if (!idPurchaseRequest) {
+            if (!idNodin || !idPabrik) {
                 renderPoItems([]);
                 return;
             }
@@ -622,17 +660,24 @@ $formatStatus = function ($row) {
                 type: "GET",
                 dataType: "json",
                 data: {
-                    id_purchase_request: idPurchaseRequest
+                    id_nota_dinas_po: idNodin,
+                    id_pabrik: idPabrik
                 },
                 success: function(response) {
                     renderPoItems(response || []);
                 },
                 error: function() {
                     renderPoItems([]);
-                    Swal.fire('Gagal', 'Tidak bisa memuat item PR.', 'error');
+                    Swal.fire('Gagal', 'Tidak bisa memuat detail item NODIN.', 'error');
                 }
             });
+        }
+
+        $('#po_id_nota_dinas_po').on('change', function() {
+            syncPoPabrikOptions();
+            loadPoNodinItems();
         });
+        $('#po_id_pabrik').on('change', loadPoNodinItems);
 
         $('#form-create-po').on('submit', function(e) {
             const checkedItems = $('#table_create_po_items tbody input[type="checkbox"]:checked').length;
@@ -660,7 +705,7 @@ $formatStatus = function ($row) {
 
             if (hasInvalidQty) {
                 e.preventDefault();
-                Swal.fire('Qty PO tidak valid', 'Qty PO tiap item harus lebih dari 0 dan tidak boleh melebihi outstanding PR.', 'warning');
+                Swal.fire('Qty PO tidak valid', 'Qty PO tiap item harus lebih dari 0 dan tidak boleh melebihi outstanding detail NODIN.', 'warning');
             }
         });
     });

@@ -26,6 +26,7 @@ ADD COLUMN closed_at DATETIME NULL AFTER closed_by;
    ========================================================= */
 ALTER TABLE tb_logistik_pesanan_pabrik_detail
 ADD COLUMN id_purchase_request_detail VARCHAR(20) NULL AFTER id_pesanan_pabrik,
+ADD COLUMN id_nota_dinas_po_detail VARCHAR(20) NULL AFTER id_purchase_request_detail,
 ADD COLUMN volume_planning_snapshot INT(11) DEFAULT NULL AFTER id_purchase_request_detail,
 ADD COLUMN qty_closed_manual INT(11) NOT NULL DEFAULT 0 AFTER qty_item,
 ADD COLUMN alasan_close_detail TEXT NULL AFTER qty_closed_manual;
@@ -98,6 +99,7 @@ ADD INDEX idx_po_status (status_po);
 
 ALTER TABLE tb_logistik_pesanan_pabrik_detail
 ADD INDEX idx_po_detail_header (id_pesanan_pabrik),
+ADD INDEX idx_po_detail_nodin (id_nota_dinas_po_detail),
 ADD INDEX idx_po_detail_pr (id_purchase_request_detail);
 
 ALTER TABLE tb_logistik_pengiriman_pabrik

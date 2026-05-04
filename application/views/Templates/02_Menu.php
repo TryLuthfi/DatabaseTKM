@@ -139,6 +139,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                         $id_menu == 'Master_Logistik_Sumber_Material' ||
                         $id_menu == 'Master_Logistik_Pabrik' ||
                         $id_menu == 'Logistik_Purchase_Request' ||
+                        $id_menu == 'Logistik_Nota_Dinas_Po' ||
                         $id_menu == 'Logistik_Pesanan_Pabrik' ||
                         $id_menu == 'Dashboard_Logistik_Stok' ||
                         $id_menu == 'Logistik_Stok_Detail' ||
@@ -153,6 +154,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                             $id_menu == 'Master_Logistik_Sumber_Material' ||
                             $id_menu == 'Master_Logistik_Pabrik' ||
                             $id_menu == 'Logistik_Purchase_Request' ||
+                            $id_menu == 'Logistik_Nota_Dinas_Po' ||
                             $id_menu == 'Logistik_Pesanan_Pabrik' ||
                             $id_menu == 'Dashboard_Logistik_Stok' ||
                             $id_menu == 'Logistik_Stok_Detail' ||
@@ -230,6 +232,14 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                       echo 'active'; ?> ">
                                     <i class="far fa-file nav-icon"></i>
                                     <p>Purchase Request</p>
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a href="<?= base_url('Logistik_Nota_Dinas_Po') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Nota_Dinas_Po')
+                                      echo 'active'; ?> ">
+                                    <i class="far fa-file-alt nav-icon"></i>
+                                    <p>Nota Dinas PO</p>
                                 </a>
                             </li>
 

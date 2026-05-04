@@ -23,7 +23,7 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         $data['poRows'] = $this->MLogistik_Pesanan_Pabrik->getPoSummaryRows();
         $data['poStats'] = $this->MLogistik_Pesanan_Pabrik->getPoDashboardStats();
         $data['masterPabrik'] = $this->MLogistik_Pesanan_Pabrik->getMasterPabrikActive();
-        $data['approvedPurchaseRequests'] = $this->getApprovedPurchaseRequestOptions();
+        $data['approvedNodins'] = $this->MLogistik_Pesanan_Pabrik->getApprovedNodinOptions();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -39,15 +39,16 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
             return;
         }
 
-        $idPurchaseRequest = trim((string) $this->input->get('id_purchase_request'));
-        if ($idPurchaseRequest === '') {
+        $idNodin = trim((string) $this->input->get('id_nota_dinas_po'));
+        $idPabrik = (int) $this->input->get('id_pabrik');
+        if ($idNodin === '' || $idPabrik <= 0) {
             $this->output
                 ->set_content_type('application/json')
                 ->set_output(json_encode([]));
             return;
         }
 
-        $items = $this->MLogistik_Pesanan_Pabrik->getApprovedPurchaseRequestItems($idPurchaseRequest);
+        $items = $this->MLogistik_Pesanan_Pabrik->getApprovedNodinItems($idNodin, $idPabrik);
         $this->output
             ->set_content_type('application/json')
             ->set_output(json_encode($items));
@@ -60,26 +61,29 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
             return;
         }
 
-        $idPurchaseRequest = trim((string) $this->input->post('id_purchase_request'));
+        $idNodin = trim((string) $this->input->post('id_nota_dinas_po'));
         $idPabrik = (int) $this->input->post('id_pabrik');
         $nomorPo = trim((string) $this->input->post('nomor_po_pabrik'));
         $tanggalPo = trim((string) $this->input->post('tanggal_po_pabrik'));
         $selectedItems = (array) $this->input->post('selected_item');
+        $nodinDetailIds = (array) $this->input->post('id_nota_dinas_po_detail');
         $detailIds = (array) $this->input->post('id_purchase_request_detail');
         $kodeItems = (array) $this->input->post('id_kode_item');
         $qtyItems = (array) $this->input->post('qty_item');
         $hargaItems = (array) $this->input->post('harga_item');
         $volumeSnapshots = (array) $this->input->post('volume_planning_snapshot');
+        $nomorNodin = trim((string) $this->input->post('nomor_nota_dinas'));
+        $nomorPurchaseRequestRefs = trim((string) $this->input->post('nomor_purchase_request_refs'));
 
-        if ($idPurchaseRequest === '' || $idPabrik <= 0 || $nomorPo === '' || $tanggalPo === '' || empty($selectedItems)) {
-            $this->session->set_flashdata('error', 'Data PO belum lengkap. Pastikan PR, pabrik, nomor PO, tanggal PO, dan item sudah dipilih.');
+        if ($idNodin === '' || $idPabrik <= 0 || $nomorPo === '' || $tanggalPo === '' || empty($selectedItems)) {
+            $this->session->set_flashdata('error', 'Data PO belum lengkap. Pastikan NODIN, pabrik, nomor PO, tanggal PO, dan item sudah dipilih.');
             redirect('Logistik_Pesanan_Pabrik');
             return;
         }
 
-        $nodin = $this->MLogistik_Purchase_Request->getLatestNodinByPurchaseRequest($idPurchaseRequest);
+        $nodin = $this->MLogistik_Purchase_Request->getNodinById($idNodin);
         if (empty($nodin) || empty($nodin['is_fully_approved'])) {
-            $this->session->set_flashdata('error', 'PR belum memiliki NODIN approved penuh, sehingga belum bisa dibuatkan PO.');
+            $this->session->set_flashdata('error', 'NODIN belum approved penuh, sehingga belum bisa dibuatkan PO.');
             redirect('Logistik_Pesanan_Pabrik');
             return;
         }
@@ -95,36 +99,46 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
             'id_user' => $this->session->userdata('id_user'),
         ];
 
+        $nodinPrIds = $this->MLogistik_Purchase_Request->getNodinPurchaseRequestIds($idNodin);
         if ($this->db->field_exists('id_purchase_request', 'tb_logistik_pesanan_pabrik')) {
-            $header['id_purchase_request'] = $idPurchaseRequest;
+            $header['id_purchase_request'] = !empty($nodinPrIds) ? $nodinPrIds[0] : null;
         }
         if ($this->db->field_exists('nomor_purchase_request', 'tb_logistik_pesanan_pabrik')) {
-            $header['nomor_purchase_request'] = trim((string) $this->input->post('nomor_purchase_request'));
+            $header['nomor_purchase_request'] = $nomorPurchaseRequestRefs !== '' ? $nomorPurchaseRequestRefs : $nomorNodin;
         }
         if ($this->db->field_exists('status_po', 'tb_logistik_pesanan_pabrik')) {
             $header['status_po'] = 'APPROVED';
         }
+        if ($this->db->field_exists('catatan_po', 'tb_logistik_pesanan_pabrik')) {
+            $header['catatan_po'] = 'Sumber NODIN: ' . $nomorNodin;
+        }
 
         $supportsPrDetail = $this->db->field_exists('id_purchase_request_detail', 'tb_logistik_pesanan_pabrik_detail');
+        $supportsNodinDetail = $this->db->field_exists('id_nota_dinas_po_detail', 'tb_logistik_pesanan_pabrik_detail');
         $supportsVolumeSnapshot = $this->db->field_exists('volume_planning_snapshot', 'tb_logistik_pesanan_pabrik_detail');
-        $outstandingItemMap = $this->MLogistik_Pesanan_Pabrik->getOutstandingPrItemMap($idPurchaseRequest);
+        $outstandingItems = $this->MLogistik_Pesanan_Pabrik->getApprovedNodinItems($idNodin, $idPabrik);
+        $outstandingItemMap = [];
+        foreach ($outstandingItems as $item) {
+            $outstandingItemMap[(string) ($item['id_nota_dinas_po_detail'] ?? '')] = $item;
+        }
 
         $details = [];
         $selectedDetailIds = [];
         foreach ($selectedItems as $index) {
-            if (!isset($detailIds[$index], $kodeItems[$index], $qtyItems[$index])) {
+            if (!isset($nodinDetailIds[$index], $detailIds[$index], $kodeItems[$index], $qtyItems[$index])) {
                 continue;
             }
 
+            $nodinDetailId = trim((string) $nodinDetailIds[$index]);
             $detailId = trim((string) $detailIds[$index]);
-            if ($detailId === '' || !isset($outstandingItemMap[$detailId])) {
-                $this->session->set_flashdata('error', 'Ada item PR yang sudah tidak outstanding atau sudah teralokasi penuh ke PO lain. Silakan muat ulang data PR.');
+            if ($nodinDetailId === '' || !isset($outstandingItemMap[$nodinDetailId])) {
+                $this->session->set_flashdata('error', 'Ada detail NODIN yang sudah tidak outstanding atau sudah teralokasi penuh ke PO lain. Silakan muat ulang data NODIN.');
                 redirect('Logistik_Pesanan_Pabrik');
                 return;
             }
 
-            if (isset($selectedDetailIds[$detailId])) {
-                $this->session->set_flashdata('error', 'Terdapat item PR yang dipilih dobel dalam satu PO. Periksa kembali item yang dipilih.');
+            if (isset($selectedDetailIds[$nodinDetailId])) {
+                $this->session->set_flashdata('error', 'Terdapat detail NODIN yang dipilih dobel dalam satu PO. Periksa kembali item yang dipilih.');
                 redirect('Logistik_Pesanan_Pabrik');
                 return;
             }
@@ -134,10 +148,10 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
                 continue;
             }
 
-            $maxOutstanding = (float) ($outstandingItemMap[$detailId]['qty_outstanding_pr'] ?? 0);
+            $maxOutstanding = (float) ($outstandingItemMap[$nodinDetailId]['qty_outstanding_nodin'] ?? 0);
             if ($maxOutstanding <= 0 || $qty > $maxOutstanding) {
-                $itemName = (string) ($outstandingItemMap[$detailId]['nama_item'] ?? 'Item');
-                $this->session->set_flashdata('error', $itemName . ' hanya memiliki outstanding ' . number_format($maxOutstanding, 0, ',', '.') . '. Nilai PO tidak boleh melebihi outstanding PR.');
+                $itemName = (string) ($outstandingItemMap[$nodinDetailId]['nama_item'] ?? 'Item');
+                $this->session->set_flashdata('error', $itemName . ' hanya memiliki outstanding NODIN ' . number_format($maxOutstanding, 0, ',', '.') . '. Nilai PO tidak boleh melebihi outstanding detail NODIN.');
                 redirect('Logistik_Pesanan_Pabrik');
                 return;
             }
@@ -152,13 +166,16 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
             if ($supportsPrDetail) {
                 $detailRow['id_purchase_request_detail'] = $detailId;
             }
+            if ($supportsNodinDetail) {
+                $detailRow['id_nota_dinas_po_detail'] = $nodinDetailId;
+            }
 
             if ($supportsVolumeSnapshot) {
-                $detailRow['volume_planning_snapshot'] = (float) ($volumeSnapshots[$index] ?? $outstandingItemMap[$detailId]['volume_planning_final'] ?? $qty);
+                $detailRow['volume_planning_snapshot'] = (float) ($volumeSnapshots[$index] ?? $outstandingItemMap[$nodinDetailId]['volume_planning_final'] ?? $qty);
             }
 
             $details[] = $detailRow;
-            $selectedDetailIds[$detailId] = true;
+            $selectedDetailIds[$nodinDetailId] = true;
         }
 
         if (empty($details)) {
@@ -168,7 +185,7 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         }
 
         $isSuccess = $this->MLogistik_Pesanan_Pabrik->createPoFromApprovedPr($header, $details);
-        $this->session->set_flashdata($isSuccess ? 'success' : 'error', $isSuccess ? 'PO berhasil dibuat dari PR approved.' : 'Gagal membuat PO dari PR approved.');
+        $this->session->set_flashdata($isSuccess ? 'success' : 'error', $isSuccess ? 'PO berhasil dibuat dari detail NODIN approved.' : 'Gagal membuat PO dari detail NODIN approved.');
         redirect('Logistik_Pesanan_Pabrik');
     }
 
@@ -177,51 +194,4 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         return substr((string) time() . mt_rand(10, 99), 0, 11);
     }
 
-    private function getApprovedPurchaseRequestOptions()
-    {
-        $rows = array_merge(
-            $this->MLogistik_Purchase_Request->decorate_purchase_request_rows(
-                $this->MLogistik_Purchase_Request->get_all_purchase_request('area')
-            ),
-            $this->MLogistik_Purchase_Request->decorate_purchase_request_rows(
-                $this->MLogistik_Purchase_Request->get_all_purchase_request('ho')
-            )
-        );
-
-        $approvedRows = [];
-        foreach ($rows as $row) {
-            if (empty($row['is_fully_approved'])) {
-                continue;
-            }
-
-            $nodin = $this->MLogistik_Purchase_Request->getLatestNodinByPurchaseRequest((string) $row['id_purchase_request']);
-            if (empty($nodin) || empty($nodin['is_fully_approved'])) {
-                continue;
-            }
-
-            $outstandingItems = $this->MLogistik_Pesanan_Pabrik->getOutstandingPrItemMap((string) $row['id_purchase_request']);
-            if (empty($outstandingItems)) {
-                continue;
-            }
-
-            $row['total_qty_outstanding_pr'] = array_sum(array_map(static function ($item) {
-                return (float) ($item['qty_outstanding_pr'] ?? 0);
-            }, $outstandingItems));
-            $row['nodin_data'] = $nodin;
-
-            $approvedRows[] = $row;
-        }
-
-        usort($approvedRows, static function ($left, $right) {
-            $leftDate = (string) ($left['tanggal_pembuatan'] ?? '');
-            $rightDate = (string) ($right['tanggal_pembuatan'] ?? '');
-            if ($leftDate === $rightDate) {
-                return strcmp((string) ($right['nomor_purchase_request'] ?? ''), (string) ($left['nomor_purchase_request'] ?? ''));
-            }
-
-            return strcmp($rightDate, $leftDate);
-        });
-
-        return $approvedRows;
-    }
 }

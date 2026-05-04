@@ -144,6 +144,168 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
         }));
     }
 
+    public function getApprovedNodinOptions()
+    {
+        if (!$this->relationExists('tb_logistik_nota_dinas_po') || !$this->relationExists('tb_logistik_nota_dinas_po_detail')) {
+            return [];
+        }
+
+        $rows = $this->db->query("
+            SELECT
+                h.*,
+                GROUP_CONCAT(DISTINCT pr.nomor_purchase_request ORDER BY pr.nomor_purchase_request SEPARATOR ', ') AS nomor_purchase_request_refs,
+                GROUP_CONCAT(DISTINCT COALESCE(pr.nama_project, pr.id_project) ORDER BY COALESCE(pr.nama_project, pr.id_project) SEPARATOR ', ') AS nama_project_refs,
+                COUNT(DISTINCT d.id_nota_dinas_po_detail) AS total_item
+            FROM tb_logistik_nota_dinas_po h
+            INNER JOIN tb_logistik_nota_dinas_po_detail d
+                ON d.id_nota_dinas_po = h.id_nota_dinas_po
+            LEFT JOIN tb_logistik_purchase_request_detail prd
+                ON prd.id_purchase_request_detail = d.id_purchase_request_detail
+            LEFT JOIN tb_logistik_purchase_request pr
+                ON pr.id_purchase_request = prd.id_purchase_request
+            GROUP BY h.id_nota_dinas_po
+            ORDER BY h.tanggal_nota_dinas DESC, h.id_nota_dinas_po DESC
+        ")->result_array();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $workflowColumns = [
+                'approved_manager_logistik',
+                'approved_purchasing',
+                'approved_gm_project',
+                'approved_gm_finance',
+                'approved_direktur',
+            ];
+
+            $isFullyApproved = true;
+            foreach ($workflowColumns as $column) {
+                if (array_key_exists($column, $row) && (int) $row[$column] !== 1) {
+                    $isFullyApproved = false;
+                    break;
+                }
+            }
+
+            if (!$isFullyApproved) {
+                continue;
+            }
+
+            $outstandingItems = $this->getApprovedNodinItems((string) $row['id_nota_dinas_po']);
+            if (empty($outstandingItems)) {
+                continue;
+            }
+
+            $row['total_qty_outstanding_nodin'] = array_sum(array_map(static function ($item) {
+                return (float) ($item['qty_outstanding_nodin'] ?? 0);
+            }, $outstandingItems));
+            $vendorMap = [];
+            foreach ($outstandingItems as $item) {
+                $vendorId = (string) ($item['id_pabrik'] ?? '');
+                if ($vendorId === '') {
+                    continue;
+                }
+
+                $vendorMap[$vendorId] = [
+                    'id_pabrik' => $vendorId,
+                    'nama_pabrik' => (string) ($item['nama_pabrik'] ?? ''),
+                ];
+            }
+
+            $row['total_vendor'] = count($vendorMap);
+            $row['vendor_options'] = array_values($vendorMap);
+
+            $result[] = $row;
+        }
+
+        return $result;
+    }
+
+    public function getApprovedNodinItems($idNodin, $idPabrik = 0)
+    {
+        if (!$this->relationExists('tb_logistik_nota_dinas_po_detail')) {
+            return [];
+        }
+
+        $supportsNodinDetailRelation = $this->fieldExists('tb_logistik_pesanan_pabrik_detail', 'id_nota_dinas_po_detail');
+        $supportsPrDetailRelation = $this->fieldExists('tb_logistik_pesanan_pabrik_detail', 'id_purchase_request_detail');
+
+        if ($supportsNodinDetailRelation) {
+            $allocationSelect = "COALESCE(alloc.qty_po_teralokasi, 0) AS qty_po_teralokasi,";
+            $allocationJoin = "LEFT JOIN (
+                SELECT
+                    id_nota_dinas_po_detail,
+                    SUM(COALESCE(qty_item, 0)) AS qty_po_teralokasi
+                FROM tb_logistik_pesanan_pabrik_detail
+                WHERE id_nota_dinas_po_detail IS NOT NULL
+                    AND id_nota_dinas_po_detail <> ''
+                GROUP BY id_nota_dinas_po_detail
+            ) alloc ON alloc.id_nota_dinas_po_detail = d.id_nota_dinas_po_detail";
+        } elseif ($supportsPrDetailRelation) {
+            $allocationSelect = "COALESCE(alloc.qty_po_teralokasi, 0) AS qty_po_teralokasi,";
+            $allocationJoin = "LEFT JOIN (
+                SELECT
+                    id_purchase_request_detail,
+                    SUM(COALESCE(qty_item, 0)) AS qty_po_teralokasi
+                FROM tb_logistik_pesanan_pabrik_detail
+                WHERE id_purchase_request_detail IS NOT NULL
+                    AND id_purchase_request_detail <> ''
+                GROUP BY id_purchase_request_detail
+            ) alloc ON alloc.id_purchase_request_detail = d.id_purchase_request_detail";
+        } else {
+            $allocationSelect = "0 AS qty_po_teralokasi,";
+            $allocationJoin = "";
+        }
+
+        $pabrikFilterSql = $idPabrik > 0 ? " AND d.id_pabrik = " . (int) $idPabrik : "";
+
+        $rows = $this->db->query("
+            SELECT
+                d.id_nota_dinas_po_detail,
+                d.id_nota_dinas_po,
+                d.id_purchase_request_detail,
+                d.id_kode_item,
+                d.id_pabrik,
+                d.kebutuhan_project,
+                d.outstanding_pr,
+                d.qty_po_nodin,
+                d.harga_satuan,
+                d.keterangan,
+                pr.nomor_purchase_request,
+                pr.nama_project,
+                ki.nama_item,
+                ki.satuan_item,
+                mp.nama_pabrik,
+                {$allocationSelect}
+                prd.qty_request,
+                prd.qty_planning,
+                prd.keterangan_planning
+            FROM tb_logistik_nota_dinas_po_detail d
+            LEFT JOIN tb_logistik_purchase_request_detail prd
+                ON prd.id_purchase_request_detail = d.id_purchase_request_detail
+            LEFT JOIN tb_logistik_purchase_request pr
+                ON pr.id_purchase_request = prd.id_purchase_request
+            LEFT JOIN tb_master_logistik_kode_item ki
+                ON ki.id_kode_item = d.id_kode_item
+            LEFT JOIN tb_master_logistik_pabrik mp
+                ON mp.id_pabrik = d.id_pabrik
+            {$allocationJoin}
+            WHERE d.id_nota_dinas_po = ?
+            {$pabrikFilterSql}
+            ORDER BY pr.nomor_purchase_request ASC, ki.nama_item ASC, d.id_nota_dinas_po_detail ASC
+        ", [$idNodin])->result_array();
+
+        foreach ($rows as &$row) {
+            $row['qty_po_teralokasi'] = (float) ($row['qty_po_teralokasi'] ?? 0);
+            $row['qty_outstanding_nodin'] = max((float) ($row['qty_po_nodin'] ?? 0) - $row['qty_po_teralokasi'], 0);
+            $row['volume_planning_final'] = (float) ($row['kebutuhan_project'] ?? 0);
+            $row['is_selectable'] = $row['qty_outstanding_nodin'] > 0;
+        }
+        unset($row);
+
+        return array_values(array_filter($rows, static function ($row) {
+            return !empty($row['is_selectable']);
+        }));
+    }
+
     public function createPoFromApprovedPr($header, $details)
     {
         $this->db->trans_start();
