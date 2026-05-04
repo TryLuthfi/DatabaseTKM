@@ -82,6 +82,7 @@ class Logistik_Purchase_Request extends CI_Controller
                     'id_purchase_request_detail' => $this->generateUniqId('PR' . $key),
                     'id_purchase_request' => $id_purchase_request,
                     'id_kode_item' => $this->input->post('id_kode_item_')[$key],
+                    'boq' => $this->input->post('boq_')[$key] ?? 0,
                     'stok_area' => $this->input->post('stok_area_')[$key],
                     'qty_request' => $this->input->post('stok_request_')[$key],
                     'keterangan' => $this->input->post('keterangan_')[$key],

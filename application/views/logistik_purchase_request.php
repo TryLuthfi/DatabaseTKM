@@ -911,6 +911,7 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                                         <th style="width: 30%;">Nama</th>
                                         <th>Kepemilikan</th>
                                         <th>Satuan</th>
+                                        <th style="width: 15%;">BOQ</th>
                                         <th style="width: 15%;">Stock Area</th>
                                         <th style="width: 15%;">Stok Request</th>
                                         <th>Keterangan</th>
@@ -920,8 +921,10 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                                 <tbody></tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colspan="5">TOTAL</td>
-                                        <td><b>0</b></td>
+                                        <td colspan="4">TOTAL</td>
+                                        <td><b id="pr_total_boq">0</b></td>
+                                        <td><b id="pr_total_stok_area">0</b></td>
+                                        <td><b id="pr_total_qty_request">0</b></td>
                                         <td colspan="2"></td>
                                     </tr>
                                 </tfoot>
@@ -1028,7 +1031,21 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
         }
 
         function updateTotalKeseluruhan() {
+            let totalBoq = 0;
+            let totalStokArea = 0;
             let totalSemua = 0;
+
+            $('[name^="boq_"]').each(function () {
+                const rawValue = ($(this).val() || '').toString();
+                const total = parseFloat(rawValue.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
+                totalBoq += total;
+            });
+
+            $('[name^="stok_area_"]').each(function () {
+                const rawValue = ($(this).val() || '').toString();
+                const total = parseFloat(rawValue.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
+                totalStokArea += total;
+            });
 
             $('[name^="stok_request_"]').each(function () {
                 const rawValue = ($(this).val() || '').toString();
@@ -1036,7 +1053,9 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                 totalSemua += total;
             });
 
-            $('#table_item_purchase_request tfoot tr td b').eq(0).text(totalSemua || 0);
+            $('#pr_total_boq').text(totalBoq || 0);
+            $('#pr_total_stok_area').text(totalStokArea || 0);
+            $('#pr_total_qty_request').text(totalSemua || 0);
             updateItemHint();
         }
 
@@ -1122,6 +1141,7 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                     </td>
                     <td>${selectedKepemilikan || '-'}</td>
                     <td>${selectedSatuan || '-'}</td>
+                    <td><input type="number" class="form-control" name="boq_[${counter}]" autocomplete="off" placeholder="0" min="0"></td>
                     <td><input type="number" class="form-control" name="stok_area_[${counter}]" autocomplete="off" value="${selectedStokArea}" readonly></td>
                     <td><input type="number" class="form-control" name="stok_request_[${counter}]" autocomplete="off" placeholder="5.000" required></td>
                     <td><input type="text" class="form-control" name="keterangan_[${counter}]" autocomplete="off" placeholder="Keterangan"></td>
@@ -1162,6 +1182,10 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
         });
 
         $(document).on('input', '[name^="stok_request_["]', function () {
+            updateTotalKeseluruhan();
+        });
+
+        $(document).on('input', '[name^="boq_["]', function () {
             updateTotalKeseluruhan();
         });
 
