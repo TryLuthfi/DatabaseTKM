@@ -656,21 +656,21 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                 </div>
                 <div class="pr-table-wrap">
                     <div class="pr-tabs">
-                        <button type="button" class="pr-tab is-active" data-pane="area">
-                            <i class="fas fa-map-marked-alt"></i>
-                            PR Area
-                            <span class="pr-chip pr-chip--slate"><?= number_format($totalArea, 0, ',', '.') ?></span>
-                        </button>
                         <?php if ($isHoUser): ?>
-                            <button type="button" class="pr-tab" data-pane="ho">
+                            <button type="button" class="pr-tab is-active" data-pane="ho">
                                 <i class="fas fa-city"></i>
                                 PR Head Office
                                 <span class="pr-chip pr-chip--slate"><?= number_format($totalHo, 0, ',', '.') ?></span>
                             </button>
                         <?php endif; ?>
+                        <button type="button" class="pr-tab" data-pane="area">
+                            <i class="fas fa-map-marked-alt"></i>
+                            PR Area
+                            <span class="pr-chip pr-chip--slate"><?= number_format($totalArea, 0, ',', '.') ?></span>
+                        </button>
                     </div>
 
-                    <div class="pr-tab-pane is-active" data-pane="area">
+                    <div class="pr-tab-pane" data-pane="area">
                         <table id="tabel_purchase_request_area" class="table pr-table table-hover" style="width:100%">
                             <thead>
                                 <tr>
@@ -737,7 +737,7 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                     </div>
 
                     <?php if ($isHoUser): ?>
-                        <div class="pr-tab-pane" data-pane="ho">
+                        <div class="pr-tab-pane is-active" data-pane="ho">
                             <table id="tabel_purchase_request_ho" class="table pr-table table-hover" style="width:100%">
                                 <thead>
                                     <tr>

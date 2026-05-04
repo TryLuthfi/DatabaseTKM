@@ -120,6 +120,7 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
         $ditujukanKepada = trim((string) $this->input->post('ditujukan_kepada'));
         $tujuanPo = trim((string) $this->input->post('tujuan_penerbitan_po'));
         $detailIds = (array) $this->input->post('id_purchase_request_detail');
+        $sourceDetailIdsItems = (array) $this->input->post('source_detail_ids');
         $kodeItems = (array) $this->input->post('id_kode_item');
         $kebutuhanItems = (array) $this->input->post('kebutuhan_project');
         $outstandingItems = (array) $this->input->post('outstanding_pr');
@@ -134,7 +135,7 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
             return;
         }
 
-        $candidateItems = $this->buildCandidateItems($selectedPrIds);
+        $candidateItems = $this->buildRawCandidateItems($selectedPrIds);
         $candidateMap = [];
         foreach ($candidateItems as $item) {
             $candidateMap[(string) ($item['id_purchase_request_detail'] ?? '')] = $item;
@@ -147,21 +148,32 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
 
         $nodinId = $idNodin !== '' ? $idNodin : $this->generateUniqId('NOD');
         $details = [];
-        $qtyPerDetail = [];
-        foreach ($detailIds as $index => $detailId) {
-            $detailId = trim((string) $detailId);
-            if ($detailId === '' || !isset($candidateMap[$detailId])) {
+        foreach ($qtyPoItems as $index => $qtyRowValue) {
+            $detailId = trim((string) ($detailIds[$index] ?? ''));
+            $sourceDetailIds = array_values(array_filter(array_map('trim', explode(',', (string) ($sourceDetailIdsItems[$index] ?? '')))));
+            if (empty($sourceDetailIds) && $detailId !== '') {
+                $sourceDetailIds = [$detailId];
+            }
+
+            $sourceCandidates = [];
+            foreach ($sourceDetailIds as $sourceDetailId) {
+                if (!isset($candidateMap[$sourceDetailId])) {
+                    continue;
+                }
+
+                $sourceCandidates[] = $candidateMap[$sourceDetailId];
+            }
+
+            if (empty($sourceCandidates)) {
                 continue;
             }
 
-            $qtyPo = (float) ($qtyPoItems[$index] ?? 0);
+            $qtyPo = (float) $qtyRowValue;
             if ($qtyPo <= 0) {
                 $this->session->set_flashdata('error', 'Qty PO usulan pada NODIN harus lebih dari 0.');
                 redirect('Logistik_Nota_Dinas_Po' . ($idNodin !== '' ? '?id=' . rawurlencode($idNodin) : ''));
                 return;
             }
-
-            $qtyPerDetail[$detailId] = ($qtyPerDetail[$detailId] ?? 0) + $qtyPo;
 
             $idPabrik = !empty($pabrikItems[$index]) ? (int) $pabrikItems[$index] : 0;
             if ($idPabrik <= 0 || !isset($masterPabrikMap[$idPabrik])) {
@@ -170,19 +182,32 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
                 return;
             }
 
-            $details[] = [
-                'id_nota_dinas_po_detail' => $this->generateUniqId('NDD'),
-                'id_nota_dinas_po' => $nodinId,
-                'id_purchase_request_detail' => $detailId,
-                'id_kode_item' => (int) ($kodeItems[$index] ?? 0),
-                'id_pabrik' => $idPabrik,
-                'vendor_pabrik' => (string) ($masterPabrikMap[$idPabrik]['nama_pabrik'] ?? ''),
-                'kebutuhan_project' => (float) ($kebutuhanItems[$index] ?? ($candidateMap[$detailId]['volume_planning_final'] ?? 0)),
-                'outstanding_pr' => (float) ($outstandingItems[$index] ?? ($candidateMap[$detailId]['qty_outstanding_pr'] ?? 0)),
-                'qty_po_nodin' => $qtyPo,
-                'harga_satuan' => (float) ($hargaItems[$index] ?? 0),
-                'keterangan' => trim((string) ($keteranganItems[$index] ?? '')),
-            ];
+            $allocatedQuantities = $this->allocateGroupedQtyToDetails($qtyPo, $sourceCandidates);
+            foreach ($sourceCandidates as $sourceIndex => $sourceCandidate) {
+                $allocatedQty = (float) ($allocatedQuantities[$sourceIndex] ?? 0);
+                if ($allocatedQty <= 0) {
+                    continue;
+                }
+
+                $sourceDetailId = (string) ($sourceCandidate['id_purchase_request_detail'] ?? '');
+                if ($sourceDetailId === '') {
+                    continue;
+                }
+
+                $details[] = [
+                    'id_nota_dinas_po_detail' => $this->generateUniqId('NDD'),
+                    'id_nota_dinas_po' => $nodinId,
+                    'id_purchase_request_detail' => $sourceDetailId,
+                    'id_kode_item' => (int) ($kodeItems[$index] ?? ($sourceCandidate['id_kode_item'] ?? 0)),
+                    'id_pabrik' => $idPabrik,
+                    'vendor_pabrik' => (string) ($masterPabrikMap[$idPabrik]['nama_pabrik'] ?? ''),
+                    'kebutuhan_project' => (float) ($sourceCandidate['volume_planning_final'] ?? 0),
+                    'outstanding_pr' => (float) ($sourceCandidate['qty_outstanding_pr'] ?? 0),
+                    'qty_po_nodin' => $allocatedQty,
+                    'harga_satuan' => (float) ($hargaItems[$index] ?? 0),
+                    'keterangan' => trim((string) ($keteranganItems[$index] ?? '')),
+                ];
+            }
         }
 
         if (empty($details)) {
@@ -339,6 +364,11 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
 
     private function buildCandidateItems($purchaseRequestIds)
     {
+        return $this->groupCandidateItems($this->buildRawCandidateItems($purchaseRequestIds));
+    }
+
+    private function buildRawCandidateItems($purchaseRequestIds)
+    {
         $purchaseRequestIds = array_values(array_unique(array_filter(array_map('trim', (array) $purchaseRequestIds))));
         if (empty($purchaseRequestIds)) {
             return [];
@@ -364,6 +394,98 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
         });
 
         return $rows;
+    }
+
+    private function groupCandidateItems($rows)
+    {
+        $grouped = [];
+        foreach ($rows as $row) {
+            $itemKey = (string) ($row['id_kode_item'] ?? '');
+            if ($itemKey === '') {
+                $itemKey = strtolower(trim((string) ($row['nama_item'] ?? '')));
+            }
+
+            if (!isset($grouped[$itemKey])) {
+                $grouped[$itemKey] = [
+                    'group_key' => $itemKey,
+                    'id_kode_item' => (int) ($row['id_kode_item'] ?? 0),
+                    'nama_item' => (string) ($row['nama_item'] ?? '-'),
+                    'satuan_item' => (string) ($row['satuan_item'] ?? '-'),
+                    'volume_planning_final' => 0,
+                    'qty_outstanding_pr' => 0,
+                    'nomor_purchase_request_refs' => [],
+                    'source_details' => [],
+                ];
+            }
+
+            $grouped[$itemKey]['volume_planning_final'] += (float) ($row['volume_planning_final'] ?? 0);
+            $grouped[$itemKey]['qty_outstanding_pr'] += (float) ($row['qty_outstanding_pr'] ?? 0);
+            $grouped[$itemKey]['nomor_purchase_request_refs'][(string) ($row['nomor_purchase_request'] ?? '')] = (string) ($row['nomor_purchase_request'] ?? '');
+            $grouped[$itemKey]['source_details'][] = [
+                'id_purchase_request_detail' => (string) ($row['id_purchase_request_detail'] ?? ''),
+                'nomor_purchase_request' => (string) ($row['nomor_purchase_request'] ?? ''),
+                'volume_planning_final' => (float) ($row['volume_planning_final'] ?? 0),
+                'qty_outstanding_pr' => (float) ($row['qty_outstanding_pr'] ?? 0),
+                'id_kode_item' => (int) ($row['id_kode_item'] ?? 0),
+            ];
+        }
+
+        foreach ($grouped as &$item) {
+            $item['nomor_purchase_request_refs'] = array_values(array_filter($item['nomor_purchase_request_refs']));
+            $item['nomor_purchase_request_refs_label'] = !empty($item['nomor_purchase_request_refs'])
+                ? implode(', ', $item['nomor_purchase_request_refs'])
+                : '-';
+            $item['source_detail_ids_csv'] = implode(',', array_values(array_filter(array_map(static function ($sourceRow) {
+                return (string) ($sourceRow['id_purchase_request_detail'] ?? '');
+            }, $item['source_details']))));
+        }
+        unset($item);
+
+        usort($grouped, static function ($left, $right) {
+            return strcmp((string) ($left['nama_item'] ?? ''), (string) ($right['nama_item'] ?? ''));
+        });
+
+        return array_values($grouped);
+    }
+
+    private function allocateGroupedQtyToDetails($totalQty, $sourceCandidates)
+    {
+        $totalQty = (float) $totalQty;
+        $sourceCandidates = array_values($sourceCandidates);
+        if ($totalQty <= 0 || empty($sourceCandidates)) {
+            return [];
+        }
+
+        $basisTotal = array_sum(array_map(static function ($candidate) {
+            return max(0, (float) ($candidate['qty_outstanding_pr'] ?? 0));
+        }, $sourceCandidates));
+
+        $allocations = [];
+        $remaining = $totalQty;
+        $lastIndex = count($sourceCandidates) - 1;
+
+        foreach ($sourceCandidates as $index => $candidate) {
+            if ($index === $lastIndex) {
+                $allocations[$index] = round($remaining, 2);
+                break;
+            }
+
+            if ($basisTotal > 0) {
+                $basis = max(0, (float) ($candidate['qty_outstanding_pr'] ?? 0));
+                $share = round(($totalQty * $basis) / $basisTotal, 2);
+            } else {
+                $share = $index === 0 ? round($remaining, 2) : 0;
+            }
+
+            if ($share > $remaining) {
+                $share = $remaining;
+            }
+
+            $allocations[$index] = $share;
+            $remaining = round($remaining - $share, 2);
+        }
+
+        return $allocations;
     }
 
     private function is_super_admin()

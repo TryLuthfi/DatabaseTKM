@@ -15,19 +15,36 @@ $totalNominal = array_sum(array_map(static function ($row) {
     return ((float) ($row['qty_po_nodin'] ?? 0)) * ((float) ($row['harga_satuan'] ?? 0));
 }, $activeNodinDetailRows));
 
-$detailByPrDetail = [];
+$existingDisplayRowsByItem = [];
 foreach ($activeNodinDetailRows as $row) {
-    $detailKey = (string) ($row['id_purchase_request_detail'] ?? '');
-    if ($detailKey === '') {
-        continue;
+    $itemKey = (string) ($row['id_kode_item'] ?? '');
+    if ($itemKey === '') {
+        $itemKey = strtolower(trim((string) ($row['nama_item'] ?? '')));
     }
 
-    if (!isset($detailByPrDetail[$detailKey])) {
-        $detailByPrDetail[$detailKey] = [];
+    $signature = implode('|', [
+        $itemKey,
+        (string) ($row['id_pabrik'] ?? ''),
+        (string) ($row['harga_satuan'] ?? '0'),
+        trim((string) ($row['keterangan'] ?? '')),
+    ]);
+
+    if (!isset($existingDisplayRowsByItem[$itemKey][$signature])) {
+        $existingDisplayRowsByItem[$itemKey][$signature] = [
+            'id_pabrik' => (string) ($row['id_pabrik'] ?? ''),
+            'vendor_pabrik' => (string) ($row['vendor_pabrik'] ?? ''),
+            'harga_satuan' => (float) ($row['harga_satuan'] ?? 0),
+            'keterangan' => (string) ($row['keterangan'] ?? ''),
+            'qty_po_nodin' => 0,
+        ];
     }
 
-    $detailByPrDetail[$detailKey][] = $row;
+    $existingDisplayRowsByItem[$itemKey][$signature]['qty_po_nodin'] += (float) ($row['qty_po_nodin'] ?? 0);
 }
+
+$existingDisplayRowsByItem = array_map(static function ($rowsBySignature) {
+    return array_values($rowsBySignature);
+}, $existingDisplayRowsByItem);
 $masterPabrikByName = [];
 foreach ($masterPabrikOptions as $pabrikOption) {
     $masterPabrikByName[strtolower(trim((string) ($pabrikOption['nama_pabrik'] ?? '')))] = (string) ($pabrikOption['id_pabrik'] ?? '');
@@ -273,10 +290,10 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                                     <?php $rowIndex = 0; ?>
                                     <?php foreach ($activeNodinCandidateItems as $item): ?>
                                         <?php
-                                        $existingDetails = $detailByPrDetail[(string) ($item['id_purchase_request_detail'] ?? '')] ?? [];
-                                        if (empty($existingDetails)) {
-                                            $existingDetails = [[]];
-                                        }
+                                        $itemKey = (string) ($item['id_kode_item'] ?? ($item['group_key'] ?? ($item['nama_item'] ?? '')));
+                                        $existingDetails = $existingDisplayRowsByItem[$itemKey] ?? [[]];
+                                        $sourceDetailIdsCsv = (string) ($item['source_detail_ids_csv'] ?? '');
+                                        $prRefsLabel = (string) ($item['nomor_purchase_request_refs_label'] ?? '-');
                                         ?>
                                         <?php foreach ($existingDetails as $existingDetail): ?>
                                             <?php
@@ -285,10 +302,11 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                                                 $selectedPabrikId = $masterPabrikByName[strtolower(trim((string) $existingDetail['vendor_pabrik']))] ?? '';
                                             }
                                             ?>
-                                            <tr class="js-nodin-row" data-detail-id="<?= htmlspecialchars((string) ($item['id_purchase_request_detail'] ?? ''), ENT_QUOTES) ?>" data-item-key="<?= htmlspecialchars((string) ($item['id_kode_item'] ?? ($item['nama_item'] ?? '')), ENT_QUOTES) ?>">
+                                            <tr class="js-nodin-row" data-detail-id="<?= htmlspecialchars($sourceDetailIdsCsv, ENT_QUOTES) ?>" data-item-key="<?= htmlspecialchars($itemKey, ENT_QUOTES) ?>">
                                                 <td>
-                                                    <span class="js-nodin-pr-label"><?= htmlspecialchars((string) ($item['nomor_purchase_request'] ?? '-'), ENT_QUOTES) ?></span>
-                                                    <input type="hidden" name="id_purchase_request_detail[<?= $rowIndex ?>]" value="<?= htmlspecialchars((string) ($item['id_purchase_request_detail'] ?? ''), ENT_QUOTES) ?>">
+                                                    <span class="js-nodin-pr-label"><?= htmlspecialchars($prRefsLabel, ENT_QUOTES) ?></span>
+                                                    <input type="hidden" name="id_purchase_request_detail[<?= $rowIndex ?>]" value="">
+                                                    <input type="hidden" name="source_detail_ids[<?= $rowIndex ?>]" value="<?= htmlspecialchars($sourceDetailIdsCsv, ENT_QUOTES) ?>">
                                                     <input type="hidden" name="id_kode_item[<?= $rowIndex ?>]" value="<?= htmlspecialchars((string) ($item['id_kode_item'] ?? ''), ENT_QUOTES) ?>">
                                                     <input type="hidden" name="kebutuhan_project[<?= $rowIndex ?>]" value="<?= htmlspecialchars((string) ($item['volume_planning_final'] ?? 0), ENT_QUOTES) ?>">
                                                     <input type="hidden" name="outstanding_pr[<?= $rowIndex ?>]" value="<?= htmlspecialchars((string) ($item['qty_outstanding_pr'] ?? 0), ENT_QUOTES) ?>">
@@ -408,6 +426,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
     function buildNodinSplitRowHtml(sourceRow) {
         const rowIndex = nodinRowSequence++;
         const detailId = sourceRow.data('detail-id') || '';
+        const sourceDetailIds = sourceRow.find('input[name^="source_detail_ids["]').val() || detailId;
         const prLabel = sourceRow.find('.js-nodin-pr-label').text().trim();
         const itemLabel = sourceRow.find('.js-nodin-item-label').text().trim();
         const satuanLabel = sourceRow.find('.js-nodin-satuan-label').text().trim();
@@ -422,7 +441,8 @@ foreach ($masterPabrikOptions as $pabrikOption) {
             '<tr class="js-nodin-row" data-detail-id="' + detailId + '" data-item-key="' + (sourceRow.data('item-key') || '') + '">' +
                 '<td>' +
                     '<span class="js-nodin-pr-label">' + prLabel + '</span>' +
-                    '<input type="hidden" name="id_purchase_request_detail[' + rowIndex + ']" value="' + detailId + '">' +
+                    '<input type="hidden" name="id_purchase_request_detail[' + rowIndex + ']" value="">' +
+                    '<input type="hidden" name="source_detail_ids[' + rowIndex + ']" value="' + sourceDetailIds + '">' +
                     '<input type="hidden" name="id_kode_item[' + rowIndex + ']" value="' + kodeItem + '">' +
                     '<input type="hidden" name="kebutuhan_project[' + rowIndex + ']" value="' + kebutuhanValue + '">' +
                     '<input type="hidden" name="outstanding_pr[' + rowIndex + ']" value="' + outstandingValue + '">' +
@@ -547,12 +567,15 @@ foreach ($masterPabrikOptions as $pabrikOption) {
             const outstanding = parseFloat(item.qty_outstanding_pr || 0);
             const optionHtml = getPabrikOptionHtml();
             const rowIndex = nodinRowSequence++;
+            const sourceDetailIds = item.source_detail_ids_csv || '';
+            const prRefsLabel = item.nomor_purchase_request_refs_label || '-';
 
             tbody.append(
-                '<tr class="js-nodin-row" data-detail-id="' + (item.id_purchase_request_detail || '') + '" data-item-key="' + (item.id_kode_item || item.nama_item || '') + '">' +
-                    '<td>' + (item.nomor_purchase_request || '-') +
-                        '<span class="js-nodin-pr-label" style="display:none;">' + (item.nomor_purchase_request || '-') + '</span>' +
-                        '<input type="hidden" name="id_purchase_request_detail[' + rowIndex + ']" value="' + (item.id_purchase_request_detail || '') + '">' +
+                '<tr class="js-nodin-row" data-detail-id="' + sourceDetailIds + '" data-item-key="' + (item.id_kode_item || item.group_key || item.nama_item || '') + '">' +
+                    '<td>' + prRefsLabel +
+                        '<span class="js-nodin-pr-label" style="display:none;">' + prRefsLabel + '</span>' +
+                        '<input type="hidden" name="id_purchase_request_detail[' + rowIndex + ']" value="">' +
+                        '<input type="hidden" name="source_detail_ids[' + rowIndex + ']" value="' + sourceDetailIds + '">' +
                         '<input type="hidden" name="id_kode_item[' + rowIndex + ']" value="' + (item.id_kode_item || '') + '">' +
                         '<input type="hidden" name="kebutuhan_project[' + rowIndex + ']" value="' + kebutuhan + '">' +
                         '<input type="hidden" name="outstanding_pr[' + rowIndex + ']" value="' + outstanding + '">' +
