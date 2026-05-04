@@ -4,6 +4,13 @@ defined('BASEPATH') or exit('No direct script access allowed');
 class MLogistik_Purchase_Request extends CI_Model
 {
     private $columnCache = [];
+    private $nodinStageLibrary = [
+        'approved_manager_logistik' => ['label' => 'Manager Logistik', 'column' => 'approved_manager_logistik'],
+        'approved_purchasing' => ['label' => 'Purchasing', 'column' => 'approved_purchasing'],
+        'approved_gm_project' => ['label' => 'General Manager Project', 'column' => 'approved_gm_project'],
+        'approved_gm_finance' => ['label' => 'General Manager Finance', 'column' => 'approved_gm_finance'],
+        'approved_direktur' => ['label' => 'Direktur', 'column' => 'approved_direktur'],
+    ];
 
     public function get_all_purchase_request($tipe)
     {
@@ -140,6 +147,12 @@ class MLogistik_Purchase_Request extends CI_Model
         $row['is_fully_approved'] = $progress['completed'] >= count($workflow);
         $row['hardcopy_uploaded'] = !empty($row['hardcopy_file']);
 
+        $nodin = $this->getLatestNodinByPurchaseRequest((string) ($row['id_purchase_request'] ?? ''));
+        $row['nodin_data'] = $nodin;
+        $row['nodin_status_label'] = !empty($nodin['workflow_status_label']) ? $nodin['workflow_status_label'] : 'Belum dibuat';
+        $row['nodin_status_tone'] = !empty($nodin['workflow_status_tone']) ? $nodin['workflow_status_tone'] : 'waiting';
+        $row['is_nodin_fully_approved'] = !empty($nodin['is_fully_approved']);
+
         return $row;
     }
 
@@ -164,6 +177,125 @@ class MLogistik_Purchase_Request extends CI_Model
         }
 
         return $available;
+    }
+
+    public function getLatestNodinByPurchaseRequest($idPurchaseRequest)
+    {
+        if (!$this->relation_exists('tb_logistik_nota_dinas_po')) {
+            return null;
+        }
+
+        $row = $this->db
+            ->from('tb_logistik_nota_dinas_po')
+            ->where('id_purchase_request', $idPurchaseRequest)
+            ->order_by('tanggal_nota_dinas', 'DESC')
+            ->order_by('id_nota_dinas_po', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return $this->decorate_nodin_row($row);
+    }
+
+    public function getNodinDetailRows($idNodin)
+    {
+        if (!$this->relation_exists('tb_logistik_nota_dinas_po_detail')) {
+            return [];
+        }
+
+        return $this->db->query("
+            SELECT
+                d.*,
+                ki.nama_item,
+                ki.satuan_item,
+                p.nama_pabrik AS vendor_pabrik
+            FROM tb_logistik_nota_dinas_po_detail d
+            LEFT JOIN tb_master_logistik_kode_item ki
+                ON ki.id_kode_item = d.id_kode_item
+            LEFT JOIN tb_master_logistik_pabrik p
+                ON p.id_pabrik = d.id_pabrik
+            WHERE d.id_nota_dinas_po = ?
+            ORDER BY ki.nama_item ASC, d.id_nota_dinas_po_detail ASC
+        ", [$idNodin])->result_array();
+    }
+
+    public function saveNodin($header, $details, $existingNodinId = null)
+    {
+        if (!$this->relation_exists('tb_logistik_nota_dinas_po') || !$this->relation_exists('tb_logistik_nota_dinas_po_detail')) {
+            return false;
+        }
+
+        $this->db->trans_start();
+
+        if ($existingNodinId) {
+            $header['updated_at'] = date('Y-m-d H:i:s');
+            $this->db->where('id_nota_dinas_po', $existingNodinId)->update('tb_logistik_nota_dinas_po', $header);
+            $this->db->delete('tb_logistik_nota_dinas_po_detail', ['id_nota_dinas_po' => $existingNodinId]);
+            $nodinId = $existingNodinId;
+        } else {
+            $this->db->insert('tb_logistik_nota_dinas_po', $header);
+            $nodinId = (string) $header['id_nota_dinas_po'];
+        }
+
+        if (!empty($details)) {
+            $this->db->insert_batch('tb_logistik_nota_dinas_po_detail', $details);
+        }
+
+        $this->db->trans_complete();
+
+        return $this->db->trans_status() ? $nodinId : false;
+    }
+
+    public function approveNodin($idNodin, $column)
+    {
+        if (!$this->relation_exists('tb_logistik_nota_dinas_po') || !$this->has_column('tb_logistik_nota_dinas_po', $column)) {
+            return false;
+        }
+
+        $payload = [
+            $column => 1,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        return $this->db
+            ->where('id_nota_dinas_po', $idNodin)
+            ->update('tb_logistik_nota_dinas_po', $payload);
+    }
+
+    public function get_nodin_workflow()
+    {
+        if (!$this->relation_exists('tb_logistik_nota_dinas_po')) {
+            return [];
+        }
+
+        $workflow = [];
+        foreach ($this->nodinStageLibrary as $stageKey => $stage) {
+            if ($this->has_column('tb_logistik_nota_dinas_po', $stageKey)) {
+                $workflow[] = $stage;
+            }
+        }
+
+        return $workflow;
+    }
+
+    public function decorate_nodin_row($row)
+    {
+        if (empty($row)) {
+            return null;
+        }
+
+        $workflow = $this->get_nodin_workflow();
+        $progress = $this->resolve_workflow_progress($row, $workflow);
+
+        $row['workflow_stages'] = $workflow;
+        $row['workflow_progress'] = $progress['completed'];
+        $row['workflow_total'] = count($workflow);
+        $row['workflow_current_label'] = $progress['current_label'];
+        $row['workflow_status_label'] = $progress['status_label'];
+        $row['workflow_status_tone'] = $progress['status_tone'];
+        $row['is_fully_approved'] = !empty($workflow) && $progress['completed'] >= count($workflow);
+
+        return $row;
     }
 
     private function resolve_origin($row)
@@ -258,10 +390,21 @@ class MLogistik_Purchase_Request extends CI_Model
     {
         $key = $table . '.' . $column;
         if (!array_key_exists($key, $this->columnCache)) {
+            if (!$this->relation_exists($table)) {
+                $this->columnCache[$key] = false;
+                return $this->columnCache[$key];
+            }
+
             $fields = $this->db->list_fields($table);
             $this->columnCache[$key] = in_array($column, $fields, true);
         }
 
         return $this->columnCache[$key];
+    }
+
+    private function relation_exists($name)
+    {
+        $row = $this->db->query("SHOW FULL TABLES LIKE ?", [$name])->row_array();
+        return !empty($row);
     }
 }

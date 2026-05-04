@@ -13,6 +13,13 @@ class Logistik_Purchase_Request extends CI_Controller
         'manager_logistik' => 'approved_manager_logistik',
         'direktur' => 'approved_direktur',
     ];
+    private $nodinApprovalMap = [
+        'manager_logistik' => 'approved_manager_logistik',
+        'purchasing' => 'approved_purchasing',
+        'general_manager_project' => 'approved_gm_project',
+        'general_manager_finance' => 'approved_gm_finance',
+        'direktur' => 'approved_direktur',
+    ];
 
     public function __construct()
     {
@@ -20,6 +27,7 @@ class Logistik_Purchase_Request extends CI_Controller
         $this->load->library('form_validation');
         $this->load->model('MLogistik_Purchase_Request');
         $this->load->model('MDashboard_Logistik_Stok');
+        $this->load->model('MLogistik_Pesanan_Pabrik');
     }
 
     public function index()
@@ -36,6 +44,7 @@ class Logistik_Purchase_Request extends CI_Controller
             $data['list_master_gudang'] = $this->MLogistik_Purchase_Request->get_all_gudang();
             $data['get_master_project'] = $this->MDashboard_Logistik_Stok->getMasterProject();
             $data['available_approval_columns'] = $this->MLogistik_Purchase_Request->resolve_available_approval_columns();
+            $data['masterPabrikOptions'] = $this->MLogistik_Pesanan_Pabrik->getMasterPabrikActive();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -151,6 +160,7 @@ class Logistik_Purchase_Request extends CI_Controller
                 return;
             }
             $data['purchase_request_meta'] = $this->MLogistik_Purchase_Request->decorate_purchase_request_row($data['detail_purchase_request'][0]);
+            $data = array_merge($data, $this->buildNodinContext($id_purchase_request, $data['purchase_request_meta']));
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -180,6 +190,7 @@ class Logistik_Purchase_Request extends CI_Controller
                 return;
             }
             $data['purchase_request_meta'] = $this->MLogistik_Purchase_Request->decorate_purchase_request_row($data['detail_purchase_request'][0]);
+            $data = array_merge($data, $this->buildNodinContext($id_purchase_request, $data['purchase_request_meta']));
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -360,6 +371,169 @@ class Logistik_Purchase_Request extends CI_Controller
         return strtoupper($prefix . '_' . $uniqid . '_' . $timestamp);
     }
 
+    public function save_nodin()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $idPurchaseRequest = trim((string) $this->input->post('id_purchase_request'));
+        $purchaseRequest = $this->MLogistik_Purchase_Request->decorate_purchase_request_row(
+            $this->MLogistik_Purchase_Request->get_detail_purchase_request($idPurchaseRequest)[0] ?? []
+        );
+
+        if (empty($purchaseRequest)) {
+            $this->session->set_flashdata('error', 'Data PR tidak ditemukan.');
+            redirect('Logistik_Purchase_Request');
+            return;
+        }
+
+        if (empty($purchaseRequest['is_fully_approved'])) {
+            $this->session->set_flashdata('error', 'NODIN hanya bisa dibuat setelah PR selesai approval.');
+            redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
+            return;
+        }
+
+        if (!$this->can_manage_nodin()) {
+            $this->session->set_flashdata('error', 'Hanya admin logistik HO yang dapat membuat NODIN.');
+            redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
+            return;
+        }
+
+        $existingNodin = $this->MLogistik_Purchase_Request->getLatestNodinByPurchaseRequest($idPurchaseRequest);
+        if (!empty($existingNodin['is_fully_approved'])) {
+            $this->session->set_flashdata('error', 'NODIN yang sudah approved tidak dapat diubah lagi.');
+            redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
+            return;
+        }
+
+        $nomorNodin = trim((string) $this->input->post('nomor_nota_dinas'));
+        $tanggalNodin = trim((string) $this->input->post('tanggal_nota_dinas'));
+        $ditujukanKepada = trim((string) $this->input->post('ditujukan_kepada'));
+        $tujuanPo = trim((string) $this->input->post('tujuan_penerbitan_po'));
+        $detailIds = (array) $this->input->post('id_purchase_request_detail');
+        $kodeItems = (array) $this->input->post('id_kode_item');
+        $kebutuhanItems = (array) $this->input->post('kebutuhan_project');
+        $outstandingItems = (array) $this->input->post('outstanding_pr');
+        $qtyPoItems = (array) $this->input->post('qty_po_nodin');
+        $hargaItems = (array) $this->input->post('harga_satuan');
+        $pabrikItems = (array) $this->input->post('id_pabrik');
+        $keteranganItems = (array) $this->input->post('keterangan_nodin');
+
+        if ($nomorNodin === '' || $tanggalNodin === '' || $tujuanPo === '') {
+            $this->session->set_flashdata('error', 'Nomor NODIN, tanggal NODIN, dan tujuan penerbitan PO wajib diisi.');
+            redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
+            return;
+        }
+
+        $outstandingMap = $this->MLogistik_Pesanan_Pabrik->getOutstandingPrItemMap($idPurchaseRequest);
+        $details = [];
+        foreach ($detailIds as $index => $detailId) {
+            $detailId = trim((string) $detailId);
+            if ($detailId === '' || !isset($outstandingMap[$detailId])) {
+                continue;
+            }
+
+            $qtyPo = (float) ($qtyPoItems[$index] ?? 0);
+            $maxOutstanding = (float) ($outstandingMap[$detailId]['qty_outstanding_pr'] ?? 0);
+            if ($qtyPo <= 0 || $qtyPo > $maxOutstanding) {
+                $this->session->set_flashdata('error', 'Qty PO usulan pada NODIN harus lebih dari 0 dan tidak boleh melebihi outstanding PR.');
+                redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
+                return;
+            }
+
+            $idPabrik = !empty($pabrikItems[$index]) ? (int) $pabrikItems[$index] : 0;
+            if ($idPabrik <= 0) {
+                $this->session->set_flashdata('error', 'Vendor / pabrik pada setiap item NODIN wajib dipilih dari master pabrik.');
+                redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
+                return;
+            }
+
+            $detailNodinId = $this->generateUniqId('NDD');
+            $nodinId = !empty($existingNodin['id_nota_dinas_po']) ? $existingNodin['id_nota_dinas_po'] : $this->generateUniqId('NOD');
+
+            $details[] = [
+                'id_nota_dinas_po_detail' => $detailNodinId,
+                'id_nota_dinas_po' => $nodinId,
+                'id_purchase_request_detail' => $detailId,
+                'id_kode_item' => (int) ($kodeItems[$index] ?? 0),
+                'id_pabrik' => $idPabrik,
+                'kebutuhan_project' => (float) ($kebutuhanItems[$index] ?? ($outstandingMap[$detailId]['volume_planning_final'] ?? 0)),
+                'outstanding_pr' => (float) ($outstandingItems[$index] ?? $maxOutstanding),
+                'qty_po_nodin' => $qtyPo,
+                'harga_satuan' => (float) ($hargaItems[$index] ?? 0),
+                'keterangan' => trim((string) ($keteranganItems[$index] ?? '')),
+            ];
+        }
+
+        if (empty($details)) {
+            $this->session->set_flashdata('error', 'Tidak ada item NODIN yang valid untuk disimpan.');
+            redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
+            return;
+        }
+
+        $nodinId = !empty($existingNodin['id_nota_dinas_po']) ? $existingNodin['id_nota_dinas_po'] : $details[0]['id_nota_dinas_po'];
+        $header = [
+            'id_nota_dinas_po' => $nodinId,
+            'id_purchase_request' => $idPurchaseRequest,
+            'nomor_nota_dinas' => $nomorNodin,
+            'tanggal_nota_dinas' => $tanggalNodin,
+            'ditujukan_kepada' => $ditujukanKepada,
+            'dibuat_oleh' => (int) $this->session->userdata('id_user'),
+            'tujuan_penerbitan_po' => $tujuanPo,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        if (empty($existingNodin)) {
+            $header['created_at'] = date('Y-m-d H:i:s');
+        }
+
+        $isSuccess = $this->MLogistik_Purchase_Request->saveNodin($header, $details, $existingNodin['id_nota_dinas_po'] ?? null);
+        $this->session->set_flashdata($isSuccess ? 'success' : 'error', $isSuccess ? 'NODIN berhasil disimpan.' : 'Gagal menyimpan NODIN.');
+        redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
+    }
+
+    public function approve_nodin()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $idPurchaseRequest = trim((string) $this->input->post('id_purchase_request'));
+        $idNodin = trim((string) $this->input->post('id_nota_dinas_po'));
+        $tipe = strtolower(trim((string) $this->input->post('tipe')));
+        $column = $this->nodinApprovalMap[$tipe] ?? null;
+
+        if ($column === null) {
+            $this->output
+                ->set_status_header(400)
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['status' => 'error', 'message' => 'Tahap approval NODIN tidak valid.']));
+            return;
+        }
+
+        if (!$this->can_approve_nodin_stage($tipe)) {
+            $this->output
+                ->set_status_header(403)
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['status' => 'error', 'message' => 'Anda tidak memiliki akses untuk approval NODIN tahap ini.']));
+            return;
+        }
+
+        $updated = $this->MLogistik_Purchase_Request->approveNodin($idNodin, $column);
+        if ($updated) {
+            $this->session->set_flashdata('success', 'Approval NODIN berhasil diperbarui.');
+        } else {
+            $this->session->set_flashdata('error', 'Gagal memperbarui approval NODIN.');
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode(['status' => $updated ? 'success' : 'error']));
+    }
+
     private function is_super_admin()
     {
         return (string) $this->session->userdata('nama_level') === 'Super Admin';
@@ -375,6 +549,11 @@ class Logistik_Purchase_Request extends CI_Controller
         return $this->is_super_admin() || $this->get_validation_key() === 'planning';
     }
 
+    private function can_manage_nodin()
+    {
+        return $this->is_super_admin() || strtoupper((string) $this->session->userdata('lokasi_user')) === 'HO';
+    }
+
     private function can_approve_stage($stageKey)
     {
         if ($this->is_super_admin()) {
@@ -382,5 +561,48 @@ class Logistik_Purchase_Request extends CI_Controller
         }
 
         return $this->get_validation_key() === strtolower(trim((string) $stageKey));
+    }
+
+    private function can_approve_nodin_stage($stageKey)
+    {
+        if ($this->is_super_admin()) {
+            return true;
+        }
+
+        return $this->get_validation_key() === strtolower(trim((string) $stageKey));
+    }
+
+    private function buildNodinContext($idPurchaseRequest, $purchaseRequestMeta)
+    {
+        $nodin = $this->MLogistik_Purchase_Request->getLatestNodinByPurchaseRequest($idPurchaseRequest);
+        $nodinDetailRows = !empty($nodin['id_nota_dinas_po'])
+            ? $this->MLogistik_Purchase_Request->getNodinDetailRows($nodin['id_nota_dinas_po'])
+            : [];
+        $candidateItems = !empty($purchaseRequestMeta['is_fully_approved'])
+            ? $this->MLogistik_Pesanan_Pabrik->getApprovedPurchaseRequestItems($idPurchaseRequest)
+            : [];
+
+        $nodinApprovalStages = $nodin['workflow_stages'] ?? $this->MLogistik_Purchase_Request->get_nodin_workflow();
+        $nodinCurrentApprovalKey = '';
+        $nodinCurrentApprovalLabel = '';
+        foreach ($nodinApprovalStages as $stage) {
+            if (empty($nodin[$stage['column']])) {
+                $nodinCurrentApprovalKey = strtolower(str_replace(' ', '_', $stage['label']));
+                $nodinCurrentApprovalLabel = $stage['label'];
+                break;
+            }
+        }
+
+        return [
+            'nodinData' => $nodin,
+            'nodinDetailRows' => $nodinDetailRows,
+            'nodinCandidateItems' => $candidateItems,
+            'masterPabrikOptions' => $this->MLogistik_Pesanan_Pabrik->getMasterPabrikActive(),
+            'canManageNodin' => $this->can_manage_nodin(),
+            'nodinApprovalStages' => $nodinApprovalStages,
+            'nodinCurrentApprovalKey' => $nodinCurrentApprovalKey,
+            'nodinCurrentApprovalLabel' => $nodinCurrentApprovalLabel,
+            'canApproveCurrentNodinStage' => !empty($nodinCurrentApprovalKey) && $this->can_approve_nodin_stage($nodinCurrentApprovalKey),
+        ];
     }
 }

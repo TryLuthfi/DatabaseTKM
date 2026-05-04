@@ -352,7 +352,7 @@ $formatStatus = function ($row) {
                         </p>
                         <div style="margin-top:1.25rem;">
                             <button type="button" class="btn btn-light font-weight-bold" data-toggle="modal" data-target="#modalCreatePoFromPr">
-                                <i class="fas fa-plus-circle mr-1"></i> Buat PO dari PR Approved
+                                <i class="fas fa-plus-circle mr-1"></i> Buat PO dari NODIN Approved
                             </button>
                         </div>
                     </div>
@@ -390,71 +390,6 @@ $formatStatus = function ($row) {
                 <div class="alert alert-danger po-alert"><?= $flashError ?></div>
             <?php endif; ?>
 
-            <div class="po-grid">
-                <section class="po-panel">
-                    <div class="po-panel__head">
-                        <div>
-                            <h2 class="po-panel__title">Flow Besar PO</h2>
-                            <p class="po-panel__subtitle">PO dibuat dari PR approved, lalu dimonitor sampai pengiriman selesai.</p>
-                        </div>
-                        <span class="po-chip po-chip--blue"><i class="fas fa-route"></i> Workflow</span>
-                    </div>
-                    <div class="po-panel__body">
-                        <div class="po-flow">
-                            <article class="po-flow-card">
-                                <span class="po-flow-card__step"><i class="fas fa-check-circle"></i> Approved PR</span>
-                                <h3 class="po-flow-card__title">PR yang lolos approval diteruskan ke PO</h3>
-                                <p class="po-flow-card__text">
-                                    Volume pada PO sebaiknya mengacu ke volume planning final di PR, lalu tiap detail PO tetap disimpan per item untuk memudahkan monitoring outstanding.
-                                </p>
-                            </article>
-                            <article class="po-flow-card">
-                                <span class="po-flow-card__step"><i class="fas fa-industry"></i> PO ke Pabrik</span>
-                                <h3 class="po-flow-card__title">Satu PO dapat berisi banyak item</h3>
-                                <p class="po-flow-card__text">
-                                    Nilai, qty, dan referensi PR dipantau di level detail, sehingga satu PO bisa didekomposisi dengan jelas pada item yang dipesan.
-                                </p>
-                            </article>
-                            <article class="po-flow-card">
-                                <span class="po-flow-card__step"><i class="fas fa-truck"></i> Partial Delivery</span>
-                                <h3 class="po-flow-card__title">Pengiriman dapat berjalan bertahap</h3>
-                                <p class="po-flow-card__text">
-                                    Outstanding tidak diambil dari asumsi header tunggal, tetapi dari total item detail dikurangi histori pengiriman aktual.
-                                </p>
-                            </article>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="po-panel">
-                    <div class="po-panel__head">
-                        <div>
-                            <h2 class="po-panel__title">Health Check PO</h2>
-                            <p class="po-panel__subtitle">Ringkasan cepat untuk membedakan PO selesai dan PO yang masih bergerak.</p>
-                        </div>
-                        <span class="po-chip po-chip--slate"><i class="fas fa-layer-group"></i> Summary</span>
-                    </div>
-                    <div class="po-panel__body">
-                        <div class="po-flow">
-                            <article class="po-flow-card">
-                                <span class="po-flow-card__step"><i class="fas fa-box"></i> Total Item</span>
-                                <h3 class="po-flow-card__title"><?= number_format($poStats['total_item'] ?? 0, 0, ',', '.') ?> item PO dipantau</h3>
-                                <p class="po-flow-card__text">Termasuk seluruh item detail yang membentuk dokumen PO di sistem.</p>
-                            </article>
-                            <article class="po-flow-card">
-                                <span class="po-flow-card__step"><i class="fas fa-check-double"></i> Completed</span>
-                                <h3 class="po-flow-card__title"><?= number_format($poStats['completed_po'] ?? 0, 0, ',', '.') ?> PO selesai</h3>
-                                <p class="po-flow-card__text">Outstanding sudah nol atau status dokumen sudah tertutup seluruhnya.</p>
-                            </article>
-                            <article class="po-flow-card">
-                                <span class="po-flow-card__step"><i class="fas fa-hourglass-half"></i> Partial</span>
-                                <h3 class="po-flow-card__title"><?= number_format($poStats['partial_po'] ?? 0, 0, ',', '.') ?> PO partial delivery</h3>
-                                <p class="po-flow-card__text">Pengiriman sudah dimulai, tetapi masih ada outstanding yang belum tertutup.</p>
-                            </article>
-                        </div>
-                    </div>
-                </section>
-            </div>
 
             <section class="po-table-shell" style="margin-top: 1.2rem;">
                 <div class="po-table-head">
@@ -529,7 +464,7 @@ $formatStatus = function ($row) {
                 <div class="modal-header text-white" style="border-bottom:0;background:linear-gradient(135deg, #0f172a, #1d4ed8);">
                     <div>
                         <h4 class="modal-title mb-1">Buat PO dari PR Approved</h4>
-                        <small>Pilih PR yang sudah approved, lalu tentukan item mana yang akan diteruskan menjadi PO.</small>
+                        <small>Pilih PR yang NODIN-nya sudah approved penuh, lalu tentukan item mana yang akan diteruskan menjadi PO.</small>
                     </div>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
@@ -539,7 +474,7 @@ $formatStatus = function ($row) {
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>PR Approved</label>
+                                <label>PR + NODIN Approved</label>
                                 <select name="id_purchase_request" id="po_id_purchase_request" class="form-control" required>
                                     <option value="">Pilih Purchase Request</option>
                                     <?php foreach ($approvedPurchaseRequests as $pr): ?>

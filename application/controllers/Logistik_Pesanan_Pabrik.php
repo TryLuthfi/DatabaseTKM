@@ -8,6 +8,7 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         parent::__construct();
         $this->load->library('form_validation');
         $this->load->model('MLogistik_Pesanan_Pabrik');
+        $this->load->model('MLogistik_Purchase_Request');
     }
 
     public function index()
@@ -22,7 +23,7 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         $data['poRows'] = $this->MLogistik_Pesanan_Pabrik->getPoSummaryRows();
         $data['poStats'] = $this->MLogistik_Pesanan_Pabrik->getPoDashboardStats();
         $data['masterPabrik'] = $this->MLogistik_Pesanan_Pabrik->getMasterPabrikActive();
-        $data['approvedPurchaseRequests'] = $this->MLogistik_Pesanan_Pabrik->getApprovedPurchaseRequests();
+        $data['approvedPurchaseRequests'] = $this->getApprovedPurchaseRequestOptions();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -72,6 +73,13 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
 
         if ($idPurchaseRequest === '' || $idPabrik <= 0 || $nomorPo === '' || $tanggalPo === '' || empty($selectedItems)) {
             $this->session->set_flashdata('error', 'Data PO belum lengkap. Pastikan PR, pabrik, nomor PO, tanggal PO, dan item sudah dipilih.');
+            redirect('Logistik_Pesanan_Pabrik');
+            return;
+        }
+
+        $nodin = $this->MLogistik_Purchase_Request->getLatestNodinByPurchaseRequest($idPurchaseRequest);
+        if (empty($nodin) || empty($nodin['is_fully_approved'])) {
+            $this->session->set_flashdata('error', 'PR belum memiliki NODIN approved penuh, sehingga belum bisa dibuatkan PO.');
             redirect('Logistik_Pesanan_Pabrik');
             return;
         }
@@ -167,5 +175,53 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
     private function generatePoId()
     {
         return substr((string) time() . mt_rand(10, 99), 0, 11);
+    }
+
+    private function getApprovedPurchaseRequestOptions()
+    {
+        $rows = array_merge(
+            $this->MLogistik_Purchase_Request->decorate_purchase_request_rows(
+                $this->MLogistik_Purchase_Request->get_all_purchase_request('area')
+            ),
+            $this->MLogistik_Purchase_Request->decorate_purchase_request_rows(
+                $this->MLogistik_Purchase_Request->get_all_purchase_request('ho')
+            )
+        );
+
+        $approvedRows = [];
+        foreach ($rows as $row) {
+            if (empty($row['is_fully_approved'])) {
+                continue;
+            }
+
+            $nodin = $this->MLogistik_Purchase_Request->getLatestNodinByPurchaseRequest((string) $row['id_purchase_request']);
+            if (empty($nodin) || empty($nodin['is_fully_approved'])) {
+                continue;
+            }
+
+            $outstandingItems = $this->MLogistik_Pesanan_Pabrik->getOutstandingPrItemMap((string) $row['id_purchase_request']);
+            if (empty($outstandingItems)) {
+                continue;
+            }
+
+            $row['total_qty_outstanding_pr'] = array_sum(array_map(static function ($item) {
+                return (float) ($item['qty_outstanding_pr'] ?? 0);
+            }, $outstandingItems));
+            $row['nodin_data'] = $nodin;
+
+            $approvedRows[] = $row;
+        }
+
+        usort($approvedRows, static function ($left, $right) {
+            $leftDate = (string) ($left['tanggal_pembuatan'] ?? '');
+            $rightDate = (string) ($right['tanggal_pembuatan'] ?? '');
+            if ($leftDate === $rightDate) {
+                return strcmp((string) ($right['nomor_purchase_request'] ?? ''), (string) ($left['nomor_purchase_request'] ?? ''));
+            }
+
+            return strcmp($rightDate, $leftDate);
+        });
+
+        return $approvedRows;
     }
 }

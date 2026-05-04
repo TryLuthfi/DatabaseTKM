@@ -609,10 +609,6 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                                 <i class="fas fa-plus-circle"></i>
                                 Tambah Purchase Request
                             </button>
-                            <a href="#pr-flow-panel" class="pr-btn pr-btn--ghost">
-                                <i class="fas fa-stream"></i>
-                                Lihat Flow PR
-                            </a>
                         </div>
                     </div>
 
@@ -649,89 +645,6 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                 <div class="alert alert-danger pr-alert"><?= $flashError ?></div>
             <?php endif; ?>
 
-            <div class="pr-grid">
-                <section class="pr-panel" id="pr-flow-panel">
-                    <div class="pr-panel__head">
-                        <div>
-                            <h2 class="pr-panel__title">Flow Besar PR</h2>
-                            <p class="pr-panel__subtitle">Tampilan ini mengikuti kebutuhan bisnis PR sebelum lanjut ke PO.</p>
-                        </div>
-                        <span class="pr-chip pr-chip--blue"><i class="fas fa-route"></i> Workflow</span>
-                    </div>
-                    <div class="pr-panel__body">
-                        <div class="pr-flow">
-                            <article class="pr-flow-card">
-                                <div class="pr-flow-card__top">
-                                    <span class="pr-flow-card__step"><i class="fas fa-map-marker-alt"></i> Entry Point</span>
-                                    <span class="pr-chip pr-chip--slate">Dynamic Workflow</span>
-                                </div>
-                                <h3 class="pr-flow-card__title">PR dibuat oleh area atau planning</h3>
-                                <p class="pr-flow-card__text">
-                                    Dokumen diawali dari kebutuhan lapangan atau hasil review planning. Sistem saat ini tetap memakai struktur dokumen PR yang sama,
-                                    lalu membedakan tindak lanjut lewat origin PR dan tahapan approval yang tersedia di database.
-                                </p>
-                            </article>
-
-                            <article class="pr-flow-card">
-                                <div class="pr-flow-card__top">
-                                    <span class="pr-flow-card__step"><i class="fas fa-drafting-compass"></i> Review Planning</span>
-                                    <span class="pr-chip pr-chip--amber">Qty Planning</span>
-                                </div>
-                                <h3 class="pr-flow-card__title">BOQ, stok area, dan qty PR divalidasi</h3>
-                                <p class="pr-flow-card__text">
-                                    Tim planning melengkapi BOQ, qty planning, dan catatan teknis. Dari titik ini dokumen jadi lebih siap untuk dilanjutkan ke approval berikutnya.
-                                </p>
-                            </article>
-
-                            <article class="pr-flow-card">
-                                <div class="pr-flow-card__top">
-                                    <span class="pr-flow-card__step"><i class="fas fa-check-double"></i> Approval</span>
-                                    <span class="pr-chip pr-chip--emerald">Berjenjang</span>
-                                </div>
-                                <h3 class="pr-flow-card__title">Pantau approval hingga siap diproses logistik</h3>
-                                <p class="pr-flow-card__text">
-                                    Badge status pada list sekarang membaca tahapan approval aktif secara dinamis, sehingga siap mengikuti perluasan flow area maupun planning.
-                                </p>
-                            </article>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="pr-panel">
-                    <div class="pr-panel__head">
-                        <div>
-                            <h2 class="pr-panel__title">Ringkasan Kanal PR</h2>
-                            <p class="pr-panel__subtitle">Pisahkan monitoring PR area dan HO tanpa kehilangan konteks status approval.</p>
-                        </div>
-                        <span class="pr-chip pr-chip--blue"><i class="fas fa-layer-group"></i> Segmentasi</span>
-                    </div>
-                    <div class="pr-panel__body">
-                        <div class="pr-flow">
-                            <article class="pr-flow-card">
-                                <div class="pr-flow-card__top">
-                                    <span class="pr-flow-card__step"><i class="fas fa-map"></i> Area</span>
-                                    <span class="pr-chip pr-chip--slate"><?= number_format($totalArea, 0, ',', '.') ?> Dokumen</span>
-                                </div>
-                                <h3 class="pr-flow-card__title">Purchase Request Lapangan</h3>
-                                <p class="pr-flow-card__text">
-                                    Fokus pada kebutuhan material per lokasi proyek, dengan indikator siapa pembuat, lokasi gudang, dan progres approval dokumen.
-                                </p>
-                            </article>
-
-                            <article class="pr-flow-card">
-                                <div class="pr-flow-card__top">
-                                    <span class="pr-flow-card__step"><i class="fas fa-building"></i> Head Office</span>
-                                    <span class="pr-chip pr-chip--slate"><?= number_format($totalHo, 0, ',', '.') ?> Dokumen</span>
-                                </div>
-                                <h3 class="pr-flow-card__title">Purchase Request Kantor Pusat</h3>
-                                <p class="pr-flow-card__text">
-                                    PR HO tetap tersedia dalam lane terpisah supaya lebih mudah dipakai untuk koordinasi approval dan follow up procurement.
-                                </p>
-                            </article>
-                        </div>
-                    </div>
-                </section>
-            </div>
 
             <section class="pr-table-shell" style="margin-top: 1.2rem;">
                 <div class="pr-table-head">
@@ -769,6 +682,7 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                                     <th>Nama Project</th>
                                     <th>Pembuat</th>
                                     <th>Status</th>
+                                    <th>Status NODIN</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -792,6 +706,12 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                                             <span class="pr-status pr-status--<?= $value['workflow_status_tone'] ?>">
                                                 <i class="fas fa-circle"></i>
                                                 <?= $value['workflow_status_label'] ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="pr-status pr-status--<?= $value['nodin_status_tone'] ?>">
+                                                <i class="fas fa-file-signature"></i>
+                                                <?= $value['nodin_status_label'] ?>
                                             </span>
                                         </td>
                                         <td>
@@ -829,6 +749,7 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                                         <th>Nama Project</th>
                                         <th>Pembuat</th>
                                         <th>Status</th>
+                                        <th>Status NODIN</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
@@ -852,6 +773,12 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                                                 <span class="pr-status pr-status--<?= $value['workflow_status_tone'] ?>">
                                                     <i class="fas fa-circle"></i>
                                                     <?= $value['workflow_status_label'] ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="pr-status pr-status--<?= $value['nodin_status_tone'] ?>">
+                                                    <i class="fas fa-file-signature"></i>
+                                                    <?= $value['nodin_status_label'] ?>
                                                 </span>
                                             </td>
                                             <td>
@@ -941,8 +868,8 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Nama Project</label>
-                                    <input type="text" class="form-control" name="nama_project" id="nama_project" placeholder="Fiberisasi">
+                                    <label>Nama Project / Cluster</label>
+                                    <input type="text" class="form-control" name="nama_project" id="nama_project" placeholder="MF RING 03 / CLUSTER MELATI JAYA">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -954,7 +881,7 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Tanggal SP</label>
-                                    <input type="date" class="form-control" name="tanggal_sp" value="<?= (new \DateTime())->format('Y-m-d'); ?>">
+                                    <input type="date" class="form-control" name="tanggal_sp">
                                 </div>
                             </div>
                             <div class="col-md-6">

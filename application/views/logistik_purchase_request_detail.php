@@ -57,6 +57,18 @@ $showSeparateApproveButton = !$isEditMode && $currentApprovalKey !== '' && $curr
 $savePlanningLabel = ($currentApprovalKey === 'planning' || (int) ($purchaseRequest['approved_planning'] ?? 0) === 0)
     ? 'Simpan Review Planning'
     : 'Update Review Planning';
+$nodinData = $nodinData ?? null;
+$nodinDetailRows = $nodinDetailRows ?? [];
+$nodinCandidateItems = $nodinCandidateItems ?? [];
+$canManageNodin = !empty($canManageNodin);
+$nodinApprovalStages = $nodinApprovalStages ?? [];
+$nodinCurrentApprovalKey = $nodinCurrentApprovalKey ?? '';
+$nodinCurrentApprovalLabel = $nodinCurrentApprovalLabel ?? '';
+$canApproveCurrentNodinStage = !empty($canApproveCurrentNodinStage);
+$nodinTotalQty = array_sum(array_map('floatval', array_column($nodinDetailRows, 'qty_po_nodin')));
+$nodinTotalNominal = array_sum(array_map(static function ($row) {
+    return ((float) ($row['qty_po_nodin'] ?? 0)) * ((float) ($row['harga_satuan'] ?? 0));
+}, $nodinDetailRows));
 ?>
 
 <style>
@@ -405,6 +417,11 @@ $savePlanningLabel = ($currentApprovalKey === 'planning' || (int) ($purchaseRequ
         font-weight: 800;
     }
 
+    .prd-table .text-number {
+        text-align: right;
+        white-space: nowrap;
+    }
+
     .prd-toolbar {
         display: flex;
         flex-wrap: wrap;
@@ -417,6 +434,19 @@ $savePlanningLabel = ($currentApprovalKey === 'planning' || (int) ($purchaseRequ
         overflow: hidden;
         border: 1px solid rgba(148, 163, 184, 0.16);
         box-shadow: 0 34px 80px rgba(15, 23, 42, 0.26);
+    }
+
+    .prd-modal .modal-dialog.modal-xxl {
+        width: 78vw;
+        max-width: 78vw;
+    }
+
+    @media (max-width: 767.98px) {
+        .prd-modal .modal-dialog.modal-xxl {
+            width: calc(100vw - 1rem);
+            max-width: calc(100vw - 1rem);
+            margin: 0.5rem auto;
+        }
     }
 
     .prd-modal .modal-header {
@@ -534,6 +564,11 @@ $savePlanningLabel = ($currentApprovalKey === 'planning' || (int) ($purchaseRequ
                             <span class="prd-metric__label">Hardcopy</span>
                             <span class="prd-metric__value"><?= empty($purchaseRequest['hardcopy_file']) ? 'No' : 'Yes' ?></span>
                             <span class="prd-metric__hint">Indikator apakah PR sudah punya lampiran dokumen PDF.</span>
+                        </div>
+                        <div class="prd-metric">
+                            <span class="prd-metric__label">Status NODIN</span>
+                            <span class="prd-metric__value" style="font-size:1.15rem;line-height:1.2;"><?= !empty($nodinData['workflow_status_label']) ? $nodinData['workflow_status_label'] : 'Belum dibuat' ?></span>
+                            <span class="prd-metric__hint">NODIN wajib approved penuh sebelum PR bisa dilanjutkan ke PO pabrik.</span>
                         </div>
                     </div>
                 </div>
@@ -664,6 +699,133 @@ $savePlanningLabel = ($currentApprovalKey === 'planning' || (int) ($purchaseRequ
                 <section class="prd-table-shell">
                     <div class="prd-table-head">
                         <div>
+                            <h2 class="prd-panel__title">Nota Dinas PO</h2>
+                            <p class="prd-panel__subtitle">Tahap persetujuan internal HO sebelum PR approved boleh diterbitkan menjadi PO pabrik.</p>
+                        </div>
+                        <span class="prd-chip <?= !empty($nodinData['is_fully_approved']) ? 'prd-chip--emerald' : 'prd-chip--amber' ?>">
+                            <i class="fas fa-file-signature"></i>
+                            <?= !empty($nodinData['workflow_status_label']) ? $nodinData['workflow_status_label'] : 'Belum dibuat' ?>
+                        </span>
+                    </div>
+                    <div class="prd-table-wrap">
+                        <div class="prd-toolbar mb-3">
+                            <?php if (!$isEditMode && !empty($purchaseRequest['is_fully_approved']) && $canManageNodin): ?>
+                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-nodin">
+                                    <i class="fas fa-plus-circle mr-1"></i>
+                                    <?= empty($nodinData) ? 'Buat NODIN' : 'Update NODIN' ?>
+                                </button>
+                            <?php endif; ?>
+                            <?php if (!$isEditMode && !empty($nodinData) && !empty($nodinCurrentApprovalKey)): ?>
+                                <a href="#" class="btn btn-success btn-approve-nodin <?= $canApproveCurrentNodinStage ? '' : 'disabled' ?>" data-id="<?= $nodinData['id_nota_dinas_po'] ?>" data-pr="<?= $purchaseRequest['id_purchase_request'] ?>" data-tipe="<?= $nodinCurrentApprovalKey ?>">
+                                    <i class="fa fa-check mr-1"></i>
+                                    Approve NODIN <?= $nodinCurrentApprovalLabel ?>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php if (empty($nodinData)): ?>
+                            <div class="prd-overview">
+                                <div class="prd-overview__item">
+                                    <span class="prd-overview__label">Status</span>
+                                    <span class="prd-overview__value">NODIN belum dibuat. Setelah PR fully approved, admin logistik HO membuat NODIN sebagai dasar approval sebelum lanjut ke PO.</span>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div class="prd-grid" style="margin-top:0;">
+                                <section class="prd-panel">
+                                    <div class="prd-panel__body">
+                                        <div class="prd-overview">
+                                            <div class="prd-overview__item">
+                                                <span class="prd-overview__label">Nomor NODIN</span>
+                                                <span class="prd-overview__value"><?= $nodinData['nomor_nota_dinas'] ?: '-' ?></span>
+                                            </div>
+                                            <div class="prd-overview__item">
+                                                <span class="prd-overview__label">Tanggal NODIN</span>
+                                                <span class="prd-overview__value"><?= $nodinData['tanggal_nota_dinas'] ?: '-' ?></span>
+                                            </div>
+                                            <div class="prd-overview__item">
+                                                <span class="prd-overview__label">Ditujukan Kepada</span>
+                                                <span class="prd-overview__value"><?= $nodinData['ditujukan_kepada'] ?: '-' ?></span>
+                                            </div>
+                                            <div class="prd-overview__item">
+                                                <span class="prd-overview__label">Tujuan Penerbitan PO</span>
+                                                <span class="prd-overview__value"><?= $nodinData['tujuan_penerbitan_po'] ?: '-' ?></span>
+                                            </div>
+                                            <div class="prd-overview__item">
+                                                <span class="prd-overview__label">Total Qty Usulan PO</span>
+                                                <span class="prd-overview__value"><?= number_format($nodinTotalQty, 0, ',', '.') ?></span>
+                                            </div>
+                                            <div class="prd-overview__item">
+                                                <span class="prd-overview__label">Total Nominal</span>
+                                                <span class="prd-overview__value"><?= number_format($nodinTotalNominal, 0, ',', '.') ?></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="prd-panel">
+                                    <div class="prd-panel__body">
+                                        <div class="prd-approval-list">
+                                            <?php foreach ($nodinApprovalStages as $stage): ?>
+                                                <?php $nodinStageApproved = !empty($nodinData[$stage['column']]); ?>
+                                                <article class="prd-approval-card <?= $nodinStageApproved ? 'is-approved' : 'is-waiting' ?>">
+                                                    <div class="prd-approval-card__icon">
+                                                        <i class="fas <?= $nodinStageApproved ? 'fa-check-circle' : 'fa-hourglass-half' ?>"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h3 class="prd-approval-card__title"><?= $stage['label'] ?></h3>
+                                                        <p class="prd-approval-card__text">
+                                                            <?= $nodinStageApproved ? 'Tahap approval NODIN ini sudah selesai.' : 'Tahap approval NODIN ini masih menunggu tindak lanjut.' ?>
+                                                        </p>
+                                                    </div>
+                                                </article>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <div class="table-responsive mt-3">
+                                <table class="table prd-table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Nama Material</th>
+                                            <th>Satuan</th>
+                                            <th>Kebutuhan Project</th>
+                                            <th>Outstanding PR</th>
+                                            <th>PO Usulan</th>
+                                            <th>Harga Satuan</th>
+                                            <th>Harga Total</th>
+                                            <th>Vendor / Pabrik</th>
+                                            <th>Keterangan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($nodinDetailRows as $nodinIndex => $nodinDetail): ?>
+                                            <tr>
+                                                <td><?= $nodinIndex + 1 ?></td>
+                                                <td><?= $nodinDetail['nama_item'] ?: '-' ?></td>
+                                                <td><?= $nodinDetail['satuan_item'] ?: '-' ?></td>
+                                                <td><?= number_format($nodinDetail['kebutuhan_project'] ?? 0, 0, ',', '.') ?></td>
+                                                <td><?= number_format($nodinDetail['outstanding_pr'] ?? 0, 0, ',', '.') ?></td>
+                                                <td><?= number_format($nodinDetail['qty_po_nodin'] ?? 0, 0, ',', '.') ?></td>
+                                                <td><?= number_format($nodinDetail['harga_satuan'] ?? 0, 0, ',', '.') ?></td>
+                                                <td><?= number_format(((float) ($nodinDetail['qty_po_nodin'] ?? 0)) * ((float) ($nodinDetail['harga_satuan'] ?? 0)), 0, ',', '.') ?></td>
+                                                <td><?= $nodinDetail['vendor_pabrik'] ?: '-' ?></td>
+                                                <td><?= $nodinDetail['keterangan'] ?: '-' ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </section>
+
+                <section class="prd-table-shell">
+                    <div class="prd-table-head">
+                        <div>
                             <h2 class="prd-panel__title">Rincian Material PR</h2>
                             <p class="prd-panel__subtitle">Planning cukup mengisi volume planning. BOQ dan stock area hanya ditampilkan sebagai referensi.</p>
                         </div>
@@ -750,6 +912,145 @@ $savePlanningLabel = ($currentApprovalKey === 'planning' || (int) ($purchaseRequ
     </div>
 </div>
 
+<?php if (!$isEditMode && !empty($purchaseRequest['is_fully_approved']) && $canManageNodin): ?>
+    <div class="modal fade prd-modal" id="modal-nodin" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xxl" role="document">
+            <div class="modal-content">
+                <form action="<?= base_url('Logistik_Purchase_Request/save_nodin') ?>" method="post" id="form-nodin">
+                    <div class="modal-header">
+                        <div>
+                            <h4 class="modal-title">Nota Dinas - PO</h4>
+                            <small>NODIN menjadi persetujuan internal HO sebelum PR approved boleh diterbitkan ke PO pabrik.</small>
+                        </div>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="id_purchase_request" value="<?= $purchaseRequest['id_purchase_request'] ?>">
+                        <div class="prd-modal__panel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Nomor Nota Dinas</label>
+                                        <input type="text" name="nomor_nota_dinas" class="form-control" value="<?= htmlspecialchars($nodinData['nomor_nota_dinas'] ?? '', ENT_QUOTES) ?>" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Tanggal Nota Dinas</label>
+                                        <input type="date" name="tanggal_nota_dinas" class="form-control" value="<?= !empty($nodinData['tanggal_nota_dinas']) ? $nodinData['tanggal_nota_dinas'] : date('Y-m-d') ?>" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Ditujukan Kepada</label>
+                                        <input type="text" name="ditujukan_kepada" class="form-control" value="<?= htmlspecialchars($nodinData['ditujukan_kepada'] ?? '', ENT_QUOTES) ?>" placeholder="Direktur / approver tujuan">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Dibuat Oleh</label>
+                                        <input type="text" class="form-control" value="<?= htmlspecialchars((string) $this->session->userdata('nama_user'), ENT_QUOTES) ?>" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group mb-0">
+                                        <label>Tujuan Penerbitan PO</label>
+                                        <input type="text" name="tujuan_penerbitan_po" class="form-control" value="<?= htmlspecialchars($nodinData['tujuan_penerbitan_po'] ?? ($purchaseRequest['nama_project'] ?: $purchaseRequest['id_project']), ENT_QUOTES) ?>" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive mt-3">
+                            <table class="table prd-table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Nama Material</th>
+                                        <th>Satuan</th>
+                                        <th class="text-number">Kebutuhan Project</th>
+                                        <th class="text-number">Outstanding PR</th>
+                                        <th class="text-number">PO Usulan</th>
+                                        <th class="text-number">Harga Satuan</th>
+                                        <th class="text-number">Harga Total</th>
+                                        <th>Vendor / Pabrik</th>
+                                        <th>Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (!empty($nodinCandidateItems)): ?>
+                                        <?php foreach ($nodinCandidateItems as $nodinItemIndex => $nodinItem): ?>
+                                            <?php
+                                            $existingDetail = [];
+                                            foreach ($nodinDetailRows as $row) {
+                                                if (($row['id_purchase_request_detail'] ?? '') === ($nodinItem['id_purchase_request_detail'] ?? '')) {
+                                                    $existingDetail = $row;
+                                                    break;
+                                                }
+                                            }
+                                            ?>
+                                            <tr>
+                                                <td>
+                                                    <?= $nodinItemIndex + 1 ?>
+                                                    <input type="hidden" name="id_purchase_request_detail[<?= $nodinItemIndex ?>]" value="<?= $nodinItem['id_purchase_request_detail'] ?>">
+                                                    <input type="hidden" name="id_kode_item[<?= $nodinItemIndex ?>]" value="<?= $nodinItem['id_kode_item'] ?>">
+                                                    <input type="hidden" name="kebutuhan_project[<?= $nodinItemIndex ?>]" value="<?= $nodinItem['volume_planning_final'] ?>">
+                                                    <input type="hidden" name="outstanding_pr[<?= $nodinItemIndex ?>]" value="<?= $nodinItem['qty_outstanding_pr'] ?>">
+                                                </td>
+                                                <td><?= $nodinItem['nama_item'] ?></td>
+                                                <td><?= $nodinItem['satuan_item'] ?: '-' ?></td>
+                                                <td class="text-number js-nodin-kebutuhan"><?= number_format($nodinItem['volume_planning_final'] ?? 0, 0, ',', '.') ?></td>
+                                                <td class="text-number js-nodin-outstanding"><?= number_format($nodinItem['qty_outstanding_pr'] ?? 0, 0, ',', '.') ?></td>
+                                                <td><input type="number" class="form-control text-right js-nodin-qty" name="qty_po_nodin[<?= $nodinItemIndex ?>]" min="0" max="<?= (float) ($nodinItem['qty_outstanding_pr'] ?? 0) ?>" step="1" value="<?= htmlspecialchars((string) ($existingDetail['qty_po_nodin'] ?? (int) ($nodinItem['qty_outstanding_pr'] ?? 0)), ENT_QUOTES) ?>" required></td>
+                                                <td><input type="number" class="form-control text-right js-nodin-harga" name="harga_satuan[<?= $nodinItemIndex ?>]" min="0" step="1" value="<?= htmlspecialchars((string) ($existingDetail['harga_satuan'] ?? '0'), ENT_QUOTES) ?>"></td>
+                                                <td class="text-number js-nodin-line-total"><?= number_format(((float) ($existingDetail['qty_po_nodin'] ?? (int) ($nodinItem['qty_outstanding_pr'] ?? 0))) * ((float) ($existingDetail['harga_satuan'] ?? 0)), 0, ',', '.') ?></td>
+                                                <td>
+                                                    <select class="form-control" name="id_pabrik[<?= $nodinItemIndex ?>]">
+                                                        <option value="">Pilih Pabrik</option>
+                                                        <?php foreach (($masterPabrikOptions ?? []) as $pabrikOption): ?>
+                                                            <option value="<?= $pabrikOption['id_pabrik'] ?>" <?= (string) ($existingDetail['id_pabrik'] ?? '') === (string) $pabrikOption['id_pabrik'] ? 'selected' : '' ?>>
+                                                                <?= $pabrikOption['nama_pabrik'] ?> | <?= $pabrikOption['jenis_pabrik'] ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </td>
+                                                <td><input type="text" class="form-control" name="keterangan_nodin[<?= $nodinItemIndex ?>]" value="<?= htmlspecialchars((string) ($existingDetail['keterangan'] ?? ''), ENT_QUOTES) ?>"></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="10" class="text-center text-muted">Tidak ada item outstanding PR yang bisa dibawa ke NODIN.</td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                                <?php if (!empty($nodinCandidateItems)): ?>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="3">TOTAL</td>
+                                            <td class="text-number" id="nodin-total-kebutuhan">0</td>
+                                            <td class="text-number" id="nodin-total-outstanding">0</td>
+                                            <td class="text-number" id="nodin-total-qty">0</td>
+                                            <td class="text-number" id="nodin-total-harga-satuan">0</td>
+                                            <td class="text-number" id="nodin-total-nilai">0</td>
+                                            <td colspan="2"></td>
+                                        </tr>
+                                    </tfoot>
+                                <?php endif; ?>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan NODIN</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
 <div class="modal fade prd-modal" id="modal-upload-hardcopy" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -782,6 +1083,55 @@ $savePlanningLabel = ($currentApprovalKey === 'planning' || (int) ($purchaseRequ
 </div>
 
 <script>
+    function formatNodinNumber(value) {
+        return new Intl.NumberFormat('id-ID', {
+            maximumFractionDigits: 0
+        }).format(value || 0);
+    }
+
+    function parseNodinNumber(value) {
+        if (typeof value === 'number') {
+            return value;
+        }
+
+        const normalized = String(value || '')
+            .replace(/\./g, '')
+            .replace(',', '.')
+            .replace(/[^0-9.-]/g, '');
+
+        return parseFloat(normalized) || 0;
+    }
+
+    function refreshNodinFooter() {
+        let totalKebutuhan = 0;
+        let totalOutstanding = 0;
+        let totalQty = 0;
+        let totalHargaSatuan = 0;
+        let totalNilai = 0;
+
+        $("#form-nodin tbody tr").each(function() {
+            const kebutuhan = parseNodinNumber($(this).find('.js-nodin-kebutuhan').text());
+            const outstanding = parseNodinNumber($(this).find('.js-nodin-outstanding').text());
+            const qty = parseFloat($(this).find('.js-nodin-qty').val() || 0);
+            const harga = parseFloat($(this).find('.js-nodin-harga').val() || 0);
+            const lineTotal = qty * harga;
+
+            totalKebutuhan += kebutuhan;
+            totalOutstanding += outstanding;
+            totalQty += qty;
+            totalHargaSatuan += harga;
+            totalNilai += lineTotal;
+
+            $(this).find('.js-nodin-line-total').text(formatNodinNumber(lineTotal));
+        });
+
+        $('#nodin-total-kebutuhan').text(formatNodinNumber(totalKebutuhan));
+        $('#nodin-total-outstanding').text(formatNodinNumber(totalOutstanding));
+        $('#nodin-total-qty').text(formatNodinNumber(totalQty));
+        $('#nodin-total-harga-satuan').text(formatNodinNumber(totalHargaSatuan));
+        $('#nodin-total-nilai').text(formatNodinNumber(totalNilai));
+    }
+
     function hitungTotal() {
         let totalBoq = 0;
         let totalStokArea = 0;
@@ -812,9 +1162,14 @@ $savePlanningLabel = ($currentApprovalKey === 'planning' || (int) ($purchaseRequ
 
     $(document).ready(function() {
         hitungTotal();
+        refreshNodinFooter();
 
         $(".volume_planning").on("input", function() {
             hitungTotal();
+        });
+
+        $("#form-nodin").on("input", ".js-nodin-qty, .js-nodin-harga", function() {
+            refreshNodinFooter();
         });
 
         $(".btn-save-planning").click(function() {
@@ -872,6 +1227,65 @@ $savePlanningLabel = ($currentApprovalKey === 'planning' || (int) ($purchaseRequ
                     });
                 }
             });
+        });
+
+        $(".btn-approve-nodin").click(function(e) {
+            e.preventDefault();
+
+            if ($(this).hasClass('disabled')) {
+                return false;
+            }
+
+            const idNodin = $(this).data("id");
+            const idPurchaseRequest = $(this).data("pr");
+            const tipe = $(this).data("tipe");
+
+            Swal.fire({
+                title: "Approve NODIN ini?",
+                text: "Setelah tahap ini disetujui, NODIN akan maju ke approver berikutnya.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#28a745",
+                cancelButtonColor: "#dc3545",
+                confirmButtonText: "Ya, Setujui!",
+                cancelButtonText: "Batal"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "<?= base_url('Logistik_Purchase_Request/approve_nodin') ?>",
+                        type: "POST",
+                        data: {
+                            id_purchase_request: idPurchaseRequest,
+                            id_nota_dinas_po: idNodin,
+                            tipe: tipe
+                        },
+                        success: function() {
+                            Swal.fire("Berhasil!", "Approval NODIN berhasil diperbarui.", "success")
+                                .then(() => location.reload());
+                        },
+                        error: function(xhr) {
+                            const responseMessage = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Terjadi kesalahan, coba lagi.';
+                            Swal.fire("Gagal!", responseMessage, "error");
+                        }
+                    });
+                }
+            });
+        });
+
+        $("#form-nodin").submit(function(event) {
+            let hasInvalidQty = false;
+            $("#form-nodin input[name^='qty_po_nodin']").each(function() {
+                const value = parseFloat($(this).val() || 0);
+                const maxValue = parseFloat($(this).attr('max') || 0);
+                if (value <= 0 || value > maxValue) {
+                    hasInvalidQty = true;
+                }
+            });
+
+            if (hasInvalidQty) {
+                event.preventDefault();
+                Swal.fire('Qty NODIN tidak valid', 'Qty PO usulan pada NODIN harus lebih dari 0 dan tidak boleh melebihi outstanding PR.', 'warning');
+            }
         });
 
         $('.custom-file-input').on('change', function() {
