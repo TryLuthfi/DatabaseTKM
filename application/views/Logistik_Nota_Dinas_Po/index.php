@@ -100,7 +100,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                 <div class="nodin-hero__grid">
                     <div>
                         <span class="nodin-hero__eyebrow"><i class="fas fa-file-signature"></i> Nota Dinas PO</span>
-                        <h1>Kelola NODIN sebagai approval internal HO sebelum item diterbitkan menjadi PO pabrik.</h1>
+                        <h1>Kelola NOTA DINAS sebagai approval internal HO sebelum item diterbitkan menjadi PO pabrik.</h1>
                         <p>Modul ini sudah dipisah dari PR, sehingga satu NODIN bisa menampung beberapa PR approved dan nantinya bisa dipecah ke banyak PO sesuai pabrik.</p>
                         <div style="margin-top:1.25rem;">
                             <button type="button" class="btn btn-light font-weight-bold" data-toggle="modal" data-target="#modalNodin">
@@ -373,7 +373,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
 <script>
     let nodinRowSequence = <?= !empty($activeNodinCandidateItems) ? (int) (array_sum(array_map(static function ($rows) {
         return is_array($rows) ? count($rows) : 0;
-    }, $detailByPrDetail)) ?: count($activeNodinCandidateItems)) : 0 ?>;
+    }, $existingDisplayRowsByItem)) ?: count($activeNodinCandidateItems)) : 0 ?>;
 
     function formatNodinNumber(value) {
         return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(value || 0);

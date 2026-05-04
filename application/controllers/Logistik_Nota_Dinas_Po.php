@@ -38,6 +38,7 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
         $data['canApproveCurrentNodinStage'] = false;
         $data['activeNodinEditMode'] = false;
         $data['activeNodinReadOnly'] = false;
+        $data['canManageNodin'] = $this->can_manage_nodin();
 
         $editId = trim((string) $this->input->get('id'));
         $isEditRequest = trim((string) $this->input->get('edit')) === '1';
