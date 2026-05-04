@@ -191,16 +191,6 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
             return;
         }
 
-        foreach ($qtyPerDetail as $detailId => $totalQty) {
-            $maxOutstanding = (float) ($candidateMap[$detailId]['qty_outstanding_pr'] ?? 0);
-            if ($totalQty > $maxOutstanding) {
-                $itemName = (string) ($candidateMap[$detailId]['nama_item'] ?? 'Item');
-                $this->session->set_flashdata('error', $itemName . ' memiliki total split NODIN ' . number_format($totalQty, 0, ',', '.') . ', melebihi outstanding PR ' . number_format($maxOutstanding, 0, ',', '.') . '.');
-                redirect('Logistik_Nota_Dinas_Po' . ($idNodin !== '' ? '?id=' . rawurlencode($idNodin) : ''));
-                return;
-            }
-        }
-
         $header = [
             'id_nota_dinas_po' => $nodinId,
             'id_purchase_request' => $selectedPrIds[0],
