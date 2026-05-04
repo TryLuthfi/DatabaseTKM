@@ -65,7 +65,10 @@ $nodinApprovalStages = $nodinApprovalStages ?? [];
 $nodinCurrentApprovalKey = $nodinCurrentApprovalKey ?? '';
 $nodinCurrentApprovalLabel = $nodinCurrentApprovalLabel ?? '';
 $canApproveCurrentNodinStage = !empty($canApproveCurrentNodinStage);
+$nodinTotalKebutuhan = array_sum(array_map('floatval', array_column($nodinDetailRows, 'kebutuhan_project')));
+$nodinTotalOutstanding = array_sum(array_map('floatval', array_column($nodinDetailRows, 'outstanding_pr')));
 $nodinTotalQty = array_sum(array_map('floatval', array_column($nodinDetailRows, 'qty_po_nodin')));
+$nodinTotalHargaSatuan = array_sum(array_map('floatval', array_column($nodinDetailRows, 'harga_satuan')));
 $nodinTotalNominal = array_sum(array_map(static function ($row) {
     return ((float) ($row['qty_po_nodin'] ?? 0)) * ((float) ($row['harga_satuan'] ?? 0));
 }, $nodinDetailRows));
@@ -840,6 +843,17 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="4">TOTAL</td>
+                                            <td class="text-number"><?= number_format($nodinTotalKebutuhan, 0, ',', '.') ?></td>
+                                            <td class="text-number"><?= number_format($nodinTotalOutstanding, 0, ',', '.') ?></td>
+                                            <td class="text-number"><?= number_format($nodinTotalQty, 0, ',', '.') ?></td>
+                                            <td class="text-number"><?= number_format($nodinTotalHargaSatuan, 0, ',', '.') ?></td>
+                                            <td class="text-number"><?= number_format($nodinTotalNominal, 0, ',', '.') ?></td>
+                                            <td colspan="2"></td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         <?php endif; ?>
