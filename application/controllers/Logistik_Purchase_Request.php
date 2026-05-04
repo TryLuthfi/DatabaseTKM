@@ -440,6 +440,10 @@ class Logistik_Purchase_Request extends CI_Controller
             $masterPabrikMap[(int) ($pabrikRow['id_pabrik'] ?? 0)] = $pabrikRow;
         }
 
+        $nodinId = !empty($existingNodin['id_nota_dinas_po'])
+            ? $existingNodin['id_nota_dinas_po']
+            : $this->generateUniqId('NOD');
+
         $details = [];
         foreach ($detailIds as $index => $detailId) {
             $detailId = trim((string) $detailId);
@@ -469,7 +473,6 @@ class Logistik_Purchase_Request extends CI_Controller
             }
 
             $detailNodinId = $this->generateUniqId('NDD');
-            $nodinId = !empty($existingNodin['id_nota_dinas_po']) ? $existingNodin['id_nota_dinas_po'] : $this->generateUniqId('NOD');
 
             $details[] = [
                 'id_nota_dinas_po_detail' => $detailNodinId,
@@ -492,7 +495,6 @@ class Logistik_Purchase_Request extends CI_Controller
             return;
         }
 
-        $nodinId = !empty($existingNodin['id_nota_dinas_po']) ? $existingNodin['id_nota_dinas_po'] : $details[0]['id_nota_dinas_po'];
         $header = [
             'id_nota_dinas_po' => $nodinId,
             'id_purchase_request' => $idPurchaseRequest,
@@ -506,10 +508,17 @@ class Logistik_Purchase_Request extends CI_Controller
 
         if (empty($existingNodin)) {
             $header['created_at'] = date('Y-m-d H:i:s');
+        } else {
+            foreach ($this->nodinApprovalMap as $approvalColumn) {
+                $header[$approvalColumn] = 0;
+            }
         }
 
         $isSuccess = $this->MLogistik_Purchase_Request->saveNodin($header, $details, $existingNodin['id_nota_dinas_po'] ?? null);
-        $this->session->set_flashdata($isSuccess ? 'success' : 'error', $isSuccess ? 'NODIN berhasil disimpan.' : 'Gagal menyimpan NODIN.');
+        $successMessage = empty($existingNodin)
+            ? 'NODIN berhasil disimpan.'
+            : 'NODIN berhasil diperbarui dan proses approval diulang dari awal.';
+        $this->session->set_flashdata($isSuccess ? 'success' : 'error', $isSuccess ? $successMessage : 'Gagal menyimpan NODIN.');
         redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
     }
 

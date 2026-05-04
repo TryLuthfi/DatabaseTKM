@@ -69,6 +69,10 @@ $nodinTotalQty = array_sum(array_map('floatval', array_column($nodinDetailRows, 
 $nodinTotalNominal = array_sum(array_map(static function ($row) {
     return ((float) ($row['qty_po_nodin'] ?? 0)) * ((float) ($row['harga_satuan'] ?? 0));
 }, $nodinDetailRows));
+$masterPabrikByName = [];
+foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
+    $masterPabrikByName[strtolower(trim((string) ($pabrikOption['nama_pabrik'] ?? '')))] = (string) ($pabrikOption['id_pabrik'] ?? '');
+}
 ?>
 
 <style>
@@ -935,7 +939,7 @@ $nodinTotalNominal = array_sum(array_map(static function ($row) {
     <div class="modal fade prd-modal" id="modal-nodin" data-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content">
-                <form action="<?= base_url('Logistik_Purchase_Request/save_nodin') ?>" method="post" id="form-nodin">
+                <form action="<?= base_url('Logistik_Purchase_Request/save_nodin') ?>" method="post" id="form-nodin" data-is-update="<?= empty($nodinData) ? '0' : '1' ?>" data-approval-progress="<?= (int) ($nodinData['workflow_progress'] ?? 0) ?>">
                     <div class="modal-header">
                         <div>
                             <h4 class="modal-title">Nota Dinas - PO</h4>
@@ -1009,6 +1013,11 @@ $nodinTotalNominal = array_sum(array_map(static function ($row) {
                                                     break;
                                                 }
                                             }
+
+                                            $selectedPabrikId = (string) ($existingDetail['id_pabrik'] ?? '');
+                                            if ($selectedPabrikId === '' && !empty($existingDetail['vendor_pabrik'])) {
+                                                $selectedPabrikId = $masterPabrikByName[strtolower(trim((string) $existingDetail['vendor_pabrik']))] ?? '';
+                                            }
                                             ?>
                                             <tr>
                                                 <td>
@@ -1029,7 +1038,7 @@ $nodinTotalNominal = array_sum(array_map(static function ($row) {
                                                     <select class="form-control js-select-pabrik" name="id_pabrik[<?= $nodinItemIndex ?>]" data-placeholder="Pilih Pabrik">
                                                         <option value="">Pilih Pabrik</option>
                                                         <?php foreach (($masterPabrikOptions ?? []) as $pabrikOption): ?>
-                                                            <option value="<?= $pabrikOption['id_pabrik'] ?>" <?= (string) ($existingDetail['id_pabrik'] ?? '') === (string) $pabrikOption['id_pabrik'] ? 'selected' : '' ?>>
+                                                            <option value="<?= $pabrikOption['id_pabrik'] ?>" <?= $selectedPabrikId === (string) $pabrikOption['id_pabrik'] ? 'selected' : '' ?>>
                                                                 <?= $pabrikOption['nama_pabrik'] ?> | <?= $pabrikOption['jenis_pabrik'] ?>
                                                             </option>
                                                         <?php endforeach; ?>
@@ -1062,7 +1071,7 @@ $nodinTotalNominal = array_sum(array_map(static function ($row) {
                     </div>
                     <div class="modal-footer justify-content-between">
                         <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary">Simpan NODIN</button>
+                        <button type="submit" class="btn btn-primary"><?= empty($nodinData) ? 'Simpan NODIN' : 'Update NODIN' ?></button>
                     </div>
                 </form>
             </div>
@@ -1325,6 +1334,33 @@ $nodinTotalNominal = array_sum(array_map(static function ($row) {
             if (hasInvalidQty) {
                 event.preventDefault();
                 Swal.fire('Qty NODIN tidak valid', 'Qty PO usulan pada NODIN harus lebih dari 0.', 'warning');
+                return;
+            }
+
+            const $form = $(this);
+            const isUpdate = $form.data('is-update') === 1 || $form.data('is-update') === '1';
+            const approvalProgress = parseInt($form.data('approval-progress') || 0, 10);
+            const confirmationMessage = approvalProgress > 0
+                ? 'Perubahan NODIN ini akan mengulang proses approval dari awal. Lanjutkan update?'
+                : 'Edit NODIN ini akan tetap mengulang proses approval dari awal. Lanjutkan update?';
+
+            if (isUpdate && !$form.data('confirmed')) {
+                event.preventDefault();
+                Swal.fire({
+                    title: 'Update NODIN?',
+                    text: confirmationMessage,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#2563eb',
+                    cancelButtonColor: '#dc3545',
+                    confirmButtonText: 'Ya, Update NODIN',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $form.data('confirmed', true);
+                        $form.trigger('submit');
+                    }
+                });
             }
         });
 
