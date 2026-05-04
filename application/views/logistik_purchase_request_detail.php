@@ -818,11 +818,11 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                                             <th>No</th>
                                             <th>Nama Material</th>
                                             <th>Satuan</th>
-                                            <th>Kebutuhan Project</th>
-                                            <th>Outstanding PR</th>
-                                            <th>PO Usulan</th>
-                                            <th>Harga Satuan</th>
-                                            <th>Harga Total</th>
+                                            <th class="text-number">Kebutuhan Project</th>
+                                            <th class="text-number">Outstanding PR</th>
+                                            <th class="text-number">PO Usulan</th>
+                                            <th class="text-number">Harga Satuan</th>
+                                            <th class="text-number">Harga Total</th>
                                             <th>Vendor / Pabrik</th>
                                             <th>Keterangan</th>
                                         </tr>
@@ -833,11 +833,11 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                                                 <td><?= $nodinIndex + 1 ?></td>
                                                 <td><?= $nodinDetail['nama_item'] ?: '-' ?></td>
                                                 <td><?= $nodinDetail['satuan_item'] ?: '-' ?></td>
-                                                <td><?= number_format($nodinDetail['kebutuhan_project'] ?? 0, 0, ',', '.') ?></td>
-                                                <td><?= number_format($nodinDetail['outstanding_pr'] ?? 0, 0, ',', '.') ?></td>
-                                                <td><?= number_format($nodinDetail['qty_po_nodin'] ?? 0, 0, ',', '.') ?></td>
-                                                <td><?= number_format($nodinDetail['harga_satuan'] ?? 0, 0, ',', '.') ?></td>
-                                                <td><?= number_format(((float) ($nodinDetail['qty_po_nodin'] ?? 0)) * ((float) ($nodinDetail['harga_satuan'] ?? 0)), 0, ',', '.') ?></td>
+                                                <td class="text-number"><?= number_format($nodinDetail['kebutuhan_project'] ?? 0, 0, ',', '.') ?></td>
+                                                <td class="text-number"><?= number_format($nodinDetail['outstanding_pr'] ?? 0, 0, ',', '.') ?></td>
+                                                <td class="text-number"><?= number_format($nodinDetail['qty_po_nodin'] ?? 0, 0, ',', '.') ?></td>
+                                                <td class="text-number"><?= number_format($nodinDetail['harga_satuan'] ?? 0, 0, ',', '.') ?></td>
+                                                <td class="text-number"><?= number_format(((float) ($nodinDetail['qty_po_nodin'] ?? 0)) * ((float) ($nodinDetail['harga_satuan'] ?? 0)), 0, ',', '.') ?></td>
                                                 <td><?= $nodinDetail['vendor_pabrik'] ?: '-' ?></td>
                                                 <td><?= $nodinDetail['keterangan'] ?: '-' ?></td>
                                             </tr>
@@ -845,7 +845,7 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="4">TOTAL</td>
+                                            <td colspan="3">TOTAL</td>
                                             <td class="text-number"><?= number_format($nodinTotalKebutuhan, 0, ',', '.') ?></td>
                                             <td class="text-number"><?= number_format($nodinTotalOutstanding, 0, ',', '.') ?></td>
                                             <td class="text-number"><?= number_format($nodinTotalQty, 0, ',', '.') ?></td>
