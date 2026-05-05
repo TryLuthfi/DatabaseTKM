@@ -76,6 +76,26 @@ class Dashboard_Logistik_Stok extends CI_Controller
         }
     }
 
+    public function getStockItemsByGudang()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $idLokasiGudang = (int) $this->input->get('id_lokasi_gudang');
+        $projectItem = trim((string) $this->input->get('project_item'));
+
+        $items = [];
+        if ($idLokasiGudang > 0) {
+            $items = $this->MDashboard_Logistik_Stok->getAvailableStockItemsByGudang($idLokasiGudang, $projectItem);
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode($items));
+    }
+
     public function tambahReportStokLogistik()
     {
         $id_sumber_material = $this->input->post('id_sumber_material');

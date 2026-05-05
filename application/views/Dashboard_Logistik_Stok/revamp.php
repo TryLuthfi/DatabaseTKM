@@ -1475,6 +1475,19 @@ $itemCount = count($getUniqueItemLogistik);
             return new Intl.NumberFormat('id-ID').format(Number(value) || 0);
         }
 
+        function parseNumber(value) {
+            if (typeof value === 'number') {
+                return value;
+            }
+
+            const normalized = String(value || '')
+                .replace(/\./g, '')
+                .replace(',', '.')
+                .replace(/[^0-9.-]/g, '');
+
+            return parseFloat(normalized) || 0;
+        }
+
         function formatCardValue(value, unit) {
             const suffix = unit ? ` ${unit}` : '';
             return `${formatNumber(value)}${suffix}`;
@@ -1482,6 +1495,27 @@ $itemCount = count($getUniqueItemLogistik);
 
         function sanitizeText(value) {
             return $('<div>').text(value == null ? '' : value).html();
+        }
+
+        function isPabrikReceiptMode() {
+            return String($('#revamp_id_sumber_material').val() || '') === '7';
+        }
+
+        function isHoReceiptMode() {
+            return String($('#revamp_id_sumber_material').val() || '') === '1';
+        }
+
+        function isHoGudangSelected() {
+            const selectedLabel = String($('#revamp_id_lokasi_gudang option:selected').text() || '').trim().toUpperCase();
+            return selectedLabel !== '' && selectedLabel.indexOf('HO') !== -1;
+        }
+
+        function isHoTransferMode() {
+            return String($('#revamp_id_sumber_material').val() || '') === '10' && isHoGudangSelected();
+        }
+
+        function isShipmentReceiptMode() {
+            return isPabrikReceiptMode() || isHoReceiptMode();
         }
 
         function toSqlList(values) {
@@ -1860,6 +1894,8 @@ $itemCount = count($getUniqueItemLogistik);
         }
 
         function initTambahModal() {
+            let gudangStockRequest = null;
+            let gudangStockRequestToken = 0;
             const sumberMaterialHoId = '1';
             const sumberMaterialPabrikId = '7';
 
@@ -1871,8 +1907,74 @@ $itemCount = count($getUniqueItemLogistik);
                 return String($('#revamp_id_sumber_material').val() || '') === sumberMaterialHoId;
             }
 
+            function isHoGudangSelected() {
+                const selectedLabel = String($('#revamp_id_lokasi_gudang option:selected').text() || '').trim().toUpperCase();
+                return selectedLabel !== '' && selectedLabel.indexOf('HO') !== -1;
+            }
+
+            function isHoTransferMode() {
+                return String($('#revamp_id_sumber_material').val() || '') === '10' && isHoGudangSelected();
+            }
+
             function isShipmentReceiptMode() {
                 return isPabrikReceiptMode() || isHoReceiptMode();
+            }
+
+            function loadGudangStockItems() {
+                if (isShipmentReceiptMode()) {
+                    return;
+                }
+
+                const idGudang = $('#revamp_id_lokasi_gudang').val();
+                const projectItem = $('#revamp_id_project option:selected').text().trim();
+                const $select = $('#revamp_id_kode_item');
+                const requestToken = ++gudangStockRequestToken;
+
+                $select.empty().append('<option value="">Pilih jenis material</option>');
+
+                if (!idGudang) {
+                    $select.trigger('change');
+                    return;
+                }
+
+                if (gudangStockRequest && gudangStockRequest.readyState !== 4) {
+                    gudangStockRequest.abort();
+                }
+
+                gudangStockRequest = $.ajax({
+                    url: "<?= base_url('Dashboard_Logistik_Stok/getStockItemsByGudang') ?>",
+                    type: "GET",
+                    dataType: "json",
+                    data: {
+                        id_lokasi_gudang: idGudang,
+                        project_item: projectItem
+                    },
+                    success: function(response) {
+                        if (requestToken !== gudangStockRequestToken) {
+                            return;
+                        }
+
+                        let optionsHtml = '<option value="">Pilih jenis material</option>';
+                        $.each(response || [], function(_, item) {
+                            if (isHoTransferMode() && parseNumber(item.total_stok || 0) <= 0) {
+                                return true;
+                            }
+
+                            const stockLabel = formatNumber(item.total_stok || 0);
+                            const bowheerLabel = sanitizeText(item.nama_bowheer || '');
+                            const optionLabel = `${sanitizeText(item.nama_item)} | Stok ${stockLabel} ${sanitizeText(item.satuan_item || '')}${bowheerLabel ? ' | ' + bowheerLabel : ''}`;
+                            optionsHtml += `<option value="${item.id_kode_item}" data-satuan-item="${sanitizeText(item.satuan_item || '')}" data-stock-item="${sanitizeText(item.total_stok || 0)}">${optionLabel}</option>`;
+                        });
+                        $select.html(optionsHtml);
+                        $select.trigger('change');
+                    },
+                    error: function(xhr, status) {
+                        if (status === 'abort' || requestToken !== gudangStockRequestToken) {
+                            return;
+                        }
+                        $select.empty().append('<option value="">Tidak ada material yang dapat dimuat</option>').trigger('change');
+                    }
+                });
             }
 
             function loadHoReceiptItems() {
@@ -2067,28 +2169,11 @@ $itemCount = count($getUniqueItemLogistik);
 
                 $('#revamp_table_item_stok tbody').empty();
                 currentTambahCounter = 1;
-
-                const bowheerName = $(this).find(':selected').data('id-bowheer');
-                if (!bowheerName) {
-                    $('#revamp_id_kode_item').empty().append('<option value="">Pilih jenis material</option>').trigger('change');
-                    return;
+                if (isHoTransferMode()) {
+                    $('#revamp_id_project').val('');
                 }
 
-                $.ajax({
-                    url: "<?= base_url('Dashboard_Logistik_Stok/getProjectByBowheer') ?>",
-                    type: "GET",
-                    dataType: "json",
-                    data: { id_bowheer: bowheerName.toString() },
-                    success: function(response) {
-                        const $select = $('#revamp_id_kode_item');
-                        $select.empty().append('<option value="">Pilih jenis material</option>');
-
-                        $.each(response, function(_, project) {
-                            $select.append(`<option value="${project.id_kode_item}" data-satuan-item="${project.satuan_item}">${sanitizeText(project.nama_item)} - ${sanitizeText(project.nama_bowheer)}</option>`);
-                        });
-                        $select.trigger('change');
-                    }
-                });
+                loadGudangStockItems();
             });
 
             $('#revamp_id_kode_item').on('change', function() {
@@ -2103,6 +2188,7 @@ $itemCount = count($getUniqueItemLogistik);
 
                 const selectedText = $('#revamp_id_kode_item option:selected').text();
                 const selectedSatuan = $('#revamp_id_kode_item option:selected').data('satuan-item') || '';
+                const selectedStock = parseNumber($('#revamp_id_kode_item option:selected').data('stock-item') || 0);
 
                 $('#revamp_table_item_stok tbody').append(`
                     <tr>
@@ -2110,8 +2196,9 @@ $itemCount = count($getUniqueItemLogistik);
                         <td>
                             <input type="hidden" name="id_kode_item[${currentTambahCounter}]" value="${selectedValue}">
                             ${sanitizeText(selectedText)}
+                            ${isHoTransferMode() ? `<br><small class="text-muted">Stok tersedia: ${formatNumber(selectedStock)} ${sanitizeText(selectedSatuan)}</small>` : ''}
                         </td>
-                        <td><input type="text" class="form-control revamp-qty-input" name="jumlah_stok[${currentTambahCounter}]" placeholder="1.000" required></td>
+                        <td><input type="text" class="form-control revamp-qty-input" name="jumlah_stok[${currentTambahCounter}]" placeholder="1.000" ${isHoTransferMode() ? `max="${selectedStock}"` : ''} required></td>
                         <td class="stock-hidden revamp-qty-diterima-placeholder"></td>
                         <td><input type="text" class="form-control revamp-qty-selisih-input" name="qty_selisih[${currentTambahCounter}]" value="0" readonly></td>
                         <td><input type="text" class="form-control" name="satuan_stok[${currentTambahCounter}]" value="${sanitizeText(selectedSatuan)}" readonly></td>
@@ -2213,6 +2300,26 @@ $itemCount = count($getUniqueItemLogistik);
                     }
                 }
 
+                if (isHoTransferMode()) {
+                    let hasInvalidTransferQty = false;
+                    $('#revamp_table_item_stok tbody tr').each(function() {
+                        const qtyInput = $(this).find('input[name^="jumlah_stok["]');
+                        const qtyValue = parseNumber(qtyInput.val() || 0);
+                        const maxStock = parseNumber(qtyInput.attr('max') || 0);
+                        if (qtyValue <= 0 || (maxStock > 0 && qtyValue > maxStock)) {
+                            hasInvalidTransferQty = true;
+                        }
+                    });
+
+                    if (!$('#revamp_id_lokasi_gudang_pengiriman').val()) {
+                        errors.push('Tujuan gudang wajib dipilih untuk transfer dari HO.');
+                    }
+
+                    if (hasInvalidTransferQty) {
+                        errors.push('Qty transfer tidak boleh melebihi stok material yang tersedia di gudang HO.');
+                    }
+                }
+
                 if (isHoReceiptMode()) {
                     let hasInvalidHoQty = false;
                     let totalSelisihHo = 0;
@@ -2254,6 +2361,8 @@ $itemCount = count($getUniqueItemLogistik);
                     loadPabrikReceiptItems();
                 } else if (isHoReceiptMode()) {
                     loadHoReceiptItems();
+                } else {
+                    loadGudangStockItems();
                 }
             });
 
@@ -2299,6 +2408,20 @@ $itemCount = count($getUniqueItemLogistik);
                 $('#revamp_no_po_logistik').attr('placeholder', 'Otomatis terisi dari surat jalan internal HO');
                 $('#revamp_pabrik_receive_panel .stock-empty').html('<strong>IN dari HO</strong><br>Masukkan surat jalan internal HO. Jika cocok, sistem akan menarik qty pengiriman dari mutasi HO ke area ini.');
                 $('#revamp_ba_selisih_wrapper').addClass('stock-hidden');
+                return;
+            }
+
+            if (isHoTransferMode()) {
+                $('#revamp_project_wrapper').removeClass('stock-hidden');
+                $('#revamp_id_project').prop('disabled', false);
+                $('#revamp_ho_out_nomor_pr').addClass('stock-hidden');
+                $('#revamp_ho_out_lokasi_pengiriman').removeClass('stock-hidden');
+                $('#revamp_ho_in_nomor_po').addClass('stock-hidden');
+                $('#revamp_no_pr_logistik').val('');
+                $('#revamp_no_po_logistik').val('');
+                if (!$('#revamp_table_item_stok tbody .revamp-pabrik-row').length && !$('#revamp_table_item_stok tbody .revamp-ho-row').length) {
+                    $('#revamp_table_item_stok tbody').empty();
+                }
                 return;
             }
 

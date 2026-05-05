@@ -294,6 +294,58 @@ ORDER BY
         return $data;
     }
 
+    public function getAvailableStockItemsByGudang($idLokasiGudang, $projectItem = ''): array
+    {
+        $items = $this->buildStockItemsByGudangQuery($idLokasiGudang, $projectItem);
+        if (!empty($items) || trim((string) $projectItem) === '') {
+            return $items;
+        }
+
+        return $this->buildStockItemsByGudangQuery($idLokasiGudang, '');
+    }
+
+    private function buildStockItemsByGudangQuery($idLokasiGudang, $projectItem = ''): array
+    {
+        $params = [(int) $idLokasiGudang];
+        $projectSql = '';
+        if (trim((string) $projectItem) !== '') {
+            $projectSql = ' WHERE LOWER(TRIM(COALESCE(ki.project_item, ""))) = LOWER(TRIM(?)) ';
+            $params[] = trim((string) $projectItem);
+        }
+
+        return $this->db->query("
+            SELECT
+                ki.id_kode_item,
+                ki.nama_item,
+                ki.satuan_item,
+                ki.id_bowheer_pemilik_item,
+                b.nama_bowheer,
+                COALESCE(stok.total_stok, 0) AS total_stok
+            FROM tb_master_logistik_kode_item ki
+            LEFT JOIN tb_master_bowheer b
+                ON b.id_bowheer = ki.id_bowheer_pemilik_item
+            LEFT JOIN (
+                SELECT
+                    ls.id_kode_item,
+                    SUM(
+                        CASE
+                            WHEN sm.status_sumber_material = 'IN' THEN COALESCE(ls.jumlah_stok, 0)
+                            WHEN sm.status_sumber_material = 'OUT' THEN -COALESCE(ls.jumlah_stok, 0)
+                            ELSE 0
+                        END
+                    ) AS total_stok
+                FROM tb_logistik_stok ls
+                INNER JOIN tb_master_logistik_sumber_material sm
+                    ON sm.id_sumber_material = ls.id_sumber_material
+                WHERE ls.id_lokasi_gudang = ?
+                GROUP BY ls.id_kode_item
+            ) stok
+                ON stok.id_kode_item = ki.id_kode_item
+            {$projectSql}
+            ORDER BY ki.nama_item ASC
+        ", $params)->result_array();
+    }
+
     public function tambahReportStokLogistik($data_array)
     {
         $res = $this->db->insert("tb_logistik_stok", $data_array);
