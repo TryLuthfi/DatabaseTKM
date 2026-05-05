@@ -7,6 +7,8 @@ $totalQtyKirim = array_sum(array_map('floatval', array_column($poItems, 'qty_ter
 $totalQtyDiterima = array_sum(array_map('floatval', array_column($poItems, 'qty_diterima')));
 $totalOutstanding = array_sum(array_map('floatval', array_column($poItems, 'outstanding_pengiriman')));
 $totalNominal = array_sum(array_map('floatval', array_column($poItems, 'total_nominal_detail')));
+$totalDpp = ($totalNominal * 11) / 12;
+$totalPpn = $totalNominal * 0.12;
 $totalHistoryQtyKirim = array_sum(array_map('floatval', array_column($poDeliveries, 'qty_kirim')));
 $totalHistoryQtyDiterima = array_sum(array_map('floatval', array_column($poDeliveries, 'qty_diterima')));
 $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
@@ -321,6 +323,10 @@ $statusMeta = (function () use ($poHeader, $totalQtyPo, $totalQtyKirim, $totalQt
                                 <i class="fas fa-arrow-left"></i>
                                 Kembali ke List PO
                             </a>
+                            <a href="<?= base_url('Logistik_Pesanan_Pabrik_Detail/print_po/' . rawurlencode($poHeader['nomor_po_pabrik'])) ?>" target="_blank" class="pod-btn pod-btn--light">
+                                <i class="fas fa-print"></i>
+                                Print PO
+                            </a>
                             <?php if ($totalOutstanding > 0): ?>
                                 <button type="button" class="pod-btn pod-btn--light" data-toggle="modal" data-target="#modalCreateDelivery">
                                     <i class="fas fa-truck-loading"></i>
@@ -350,6 +356,16 @@ $statusMeta = (function () use ($poHeader, $totalQtyPo, $totalQtyKirim, $totalQt
                             <span class="pod-metric__label">Total Nominal</span>
                             <span class="pod-metric__value"><?= number_format($totalNominal, 0, ',', '.') ?></span>
                             <span class="pod-metric__hint">Penjumlahan nominal seluruh detail item pada PO.</span>
+                        </div>
+                        <div class="pod-metric">
+                            <span class="pod-metric__label">DPP</span>
+                            <span class="pod-metric__value"><?= number_format($totalDpp, 0, ',', '.') ?></span>
+                            <span class="pod-metric__hint">DPP dihitung dengan rumus 11/12 x harga total PO.</span>
+                        </div>
+                        <div class="pod-metric">
+                            <span class="pod-metric__label">PPN 12%</span>
+                            <span class="pod-metric__value"><?= number_format($totalPpn, 0, ',', '.') ?></span>
+                            <span class="pod-metric__hint">PPN dihitung dari harga total PO x 12%.</span>
                         </div>
                     </div>
                 </div>

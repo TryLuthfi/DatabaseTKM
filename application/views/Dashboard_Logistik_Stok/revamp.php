@@ -1065,7 +1065,7 @@ $itemCount = count($getUniqueItemLogistik);
                             </div>
                             <div class="col-md-4 mt-3">
                                 <label for="revamp_id_lokasi_gudang">Area Gudang</label>
-                                <select name="id_lokasi_gudang" id="revamp_id_lokasi_gudang" class="form-control">
+                                <select name="id_lokasi_gudang" id="revamp_id_lokasi_gudang" class="form-control revamp-modal-select">
                                     <option value="">Pilih salah satu</option>
                                     <?php foreach ($getListGudangLokasiUser as $data2): ?>
                                         <option value="<?= $data2['id_lokasi_gudang'] ?>"><?= $data2['kota_lokasi_gudang'] ?></option>
@@ -1074,7 +1074,7 @@ $itemCount = count($getUniqueItemLogistik);
                             </div>
                             <div class="col-md-4 mt-3" id="revamp_project_wrapper">
                                 <label for="revamp_id_project">Project</label>
-                                <select name="id_bowheer" id="revamp_id_project" class="form-control">
+                                <select name="id_bowheer" id="revamp_id_project" class="form-control revamp-modal-select">
                                     <option value="">Pilih salah satu</option>
                                     <?php foreach ($getMasterProject as $data2): ?>
                                         <option value="<?= $data2['id_bowheer'] ?>"
@@ -1084,7 +1084,7 @@ $itemCount = count($getUniqueItemLogistik);
                             </div>
                             <div class="col-md-4 mt-3">
                                 <label for="revamp_id_sumber_material">Sumber Material</label>
-                                <select name="id_sumber_material" id="revamp_id_sumber_material" class="form-control">
+                                <select name="id_sumber_material" id="revamp_id_sumber_material" class="form-control revamp-modal-select">
                                     <option value="">Pilih salah satu</option>
                                     <?php foreach ($getMasterSumberMaterial as $data2): ?>
                                         <option value="<?= $data2['id_sumber_material'] ?>">
@@ -1105,10 +1105,16 @@ $itemCount = count($getUniqueItemLogistik);
                                     id="revamp_no_pr_logistik" autocomplete="off"
                                     placeholder="TEC.005/TKM-04/PR/MDN/II/2025">
                             </div>
+                            <div class="col-md-6 mt-3 stock-hidden" id="revamp_nomor_spk_wrapper">
+                                <label for="revamp_nomor_spk">Nomor SPK</label>
+                                <input type="text" class="form-control" name="nomor_spk"
+                                    id="revamp_nomor_spk" autocomplete="off"
+                                    placeholder="SPK/PROJECT/05/2026">
+                            </div>
                             <div class="col-md-6 mt-3 stock-hidden" id="revamp_ho_out_lokasi_pengiriman">
                                 <label for="revamp_id_lokasi_gudang_pengiriman">Lokasi Gudang Pengiriman</label>
                                 <select name="id_lokasi_gudang_pengiriman" id="revamp_id_lokasi_gudang_pengiriman"
-                                    class="form-control">
+                                    class="form-control revamp-modal-select">
                                     <option value="">Pilih salah satu</option>
                                     <?php foreach ($getListGudangLokasiUser as $data2): ?>
                                         <option value="<?= $data2['id_lokasi_gudang'] ?>"><?= $data2['kota_lokasi_gudang'] ?></option>
@@ -1172,15 +1178,15 @@ $itemCount = count($getUniqueItemLogistik);
                             <div class="col-md-6">
                                 <label for="revamp_file_sj">Upload Surat Jalan</label>
                                 <div class="custom-file">
-                                    <input type="file" class="custom-file-input" id="revamp_file_sj" name="file-sj" required>
-                                    <label class="custom-file-label" for="revamp_file_sj">Choose file</label>
+                                    <input type="file" class="custom-file-input" id="revamp_file_sj" name="file-sj" accept=".pdf,.jpg,.jpeg,.png,image/*" required>
+                                    <label class="custom-file-label" for="revamp_file_sj">Pilih PDF / Foto</label>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <label for="revamp_file_evidence">Upload Evidence</label>
                                 <div class="custom-file">
-                                    <input type="file" class="custom-file-input" id="revamp_file_evidence" name="file-evidence" required>
-                                    <label class="custom-file-label" for="revamp_file_evidence">Choose file</label>
+                                    <input type="file" class="custom-file-input" id="revamp_file_evidence" name="file-evidence" accept=".pdf,.jpg,.jpeg,.png,image/*" required>
+                                    <label class="custom-file-label" for="revamp_file_evidence">Pilih PDF / Foto</label>
                                 </div>
                             </div>
                         </div>
@@ -1512,6 +1518,14 @@ $itemCount = count($getUniqueItemLogistik);
 
         function isHoTransferMode() {
             return String($('#revamp_id_sumber_material').val() || '') === '10' && isHoGudangSelected();
+        }
+
+        function isOutCustomerMode() {
+            return String($('#revamp_id_sumber_material').val() || '') === '13';
+        }
+
+        function isOutProjectMode() {
+            return String($('#revamp_id_sumber_material').val() || '') === '9';
         }
 
         function isShipmentReceiptMode() {
@@ -2189,6 +2203,7 @@ $itemCount = count($getUniqueItemLogistik);
                 const selectedText = $('#revamp_id_kode_item option:selected').text();
                 const selectedSatuan = $('#revamp_id_kode_item option:selected').data('satuan-item') || '';
                 const selectedStock = parseNumber($('#revamp_id_kode_item option:selected').data('stock-item') || 0);
+                const shouldLimitOutStock = !isShipmentReceiptMode() && !isOutCustomerMode() && String($('#revamp_id_sumber_material option:selected').text() || '').includes('OUT');
 
                 $('#revamp_table_item_stok tbody').append(`
                     <tr>
@@ -2196,9 +2211,9 @@ $itemCount = count($getUniqueItemLogistik);
                         <td>
                             <input type="hidden" name="id_kode_item[${currentTambahCounter}]" value="${selectedValue}">
                             ${sanitizeText(selectedText)}
-                            ${isHoTransferMode() ? `<br><small class="text-muted">Stok tersedia: ${formatNumber(selectedStock)} ${sanitizeText(selectedSatuan)}</small>` : ''}
+                            ${shouldLimitOutStock ? `<br><small class="text-muted">Stok tersedia: ${formatNumber(selectedStock)} ${sanitizeText(selectedSatuan)}</small>` : ''}
                         </td>
-                        <td><input type="text" class="form-control revamp-qty-input" name="jumlah_stok[${currentTambahCounter}]" placeholder="1.000" ${isHoTransferMode() ? `max="${selectedStock}"` : ''} required></td>
+                        <td><input type="text" class="form-control revamp-qty-input" name="jumlah_stok[${currentTambahCounter}]" placeholder="1.000" ${shouldLimitOutStock ? `max="${selectedStock}"` : ''} required></td>
                         <td class="stock-hidden revamp-qty-diterima-placeholder"></td>
                         <td><input type="text" class="form-control revamp-qty-selisih-input" name="qty_selisih[${currentTambahCounter}]" value="0" readonly></td>
                         <td><input type="text" class="form-control" name="satuan_stok[${currentTambahCounter}]" value="${sanitizeText(selectedSatuan)}" readonly></td>
@@ -2249,6 +2264,12 @@ $itemCount = count($getUniqueItemLogistik);
                     $(this).val('');
                     $(this).siblings('.custom-file-label').text('Choose file');
                 }
+            });
+
+            $('.revamp-modal-select').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: $('#modalRevampTambahStok')
             });
 
             $('#revamp_form_tambah_stok').on('submit', function(event) {
@@ -2320,6 +2341,26 @@ $itemCount = count($getUniqueItemLogistik);
                     }
                 }
 
+                if (!isShipmentReceiptMode() && !isOutCustomerMode()) {
+                    let hasInvalidOutQty = false;
+                    $('#revamp_table_item_stok tbody tr').each(function() {
+                        const qtyInput = $(this).find('input[name^="jumlah_stok["]');
+                        const qtyValue = parseNumber(qtyInput.val() || 0);
+                        const maxStock = parseNumber(qtyInput.attr('max') || 0);
+                        if (qtyValue > 0 && maxStock > 0 && qtyValue > maxStock) {
+                            hasInvalidOutQty = true;
+                        }
+                    });
+
+                    if (hasInvalidOutQty) {
+                        errors.push('Qty out material tidak boleh melebihi stok tersedia di gudang, kecuali untuk Out (ke Customer).');
+                    }
+                }
+
+                if (isOutProjectMode() && !$('#revamp_nomor_spk').val().trim()) {
+                    errors.push('Nomor SPK wajib diisi untuk Out (ke Project).');
+                }
+
                 if (isHoReceiptMode()) {
                     let hasInvalidHoQty = false;
                     let totalSelisihHo = 0;
@@ -2388,12 +2429,13 @@ $itemCount = count($getUniqueItemLogistik);
             $('#revamp_id_project').prop('disabled', isSpecialMode);
             $('#revamp_id_kode_item').prop('disabled', isSpecialMode);
             $('#revamp_no_po_logistik').prop('readonly', isSpecialMode);
+            $('#revamp_nomor_spk_wrapper').toggleClass('stock-hidden', !isOutProjectMode());
 
             if (isPabrikMode) {
                 $('#revamp_id_project').val('');
                 $('#revamp_ho_in_nomor_po').removeClass('stock-hidden');
                 $('#revamp_ho_out_nomor_pr, #revamp_ho_out_lokasi_pengiriman').addClass('stock-hidden');
-                $('#revamp_no_pr_logistik, #revamp_id_lokasi_gudang_pengiriman').val('');
+                $('#revamp_no_pr_logistik, #revamp_id_lokasi_gudang_pengiriman, #revamp_nomor_spk').val('');
                 $('#revamp_no_po_logistik').attr('placeholder', 'Otomatis terisi dari surat jalan pabrik');
                 $('#revamp_pabrik_receive_panel .stock-empty').html('<strong>IN dari Pabrik</strong><br>Masukkan nomor surat jalan pabrik, bukan nomor PO. Jika surat jalan cocok, sistem akan menarik qty pengiriman otomatis dari histori pengiriman pabrik untuk gudang tujuan ini.');
                 $('#revamp_ba_selisih_wrapper').toggleClass('stock-hidden', false);
@@ -2404,7 +2446,7 @@ $itemCount = count($getUniqueItemLogistik);
                 $('#revamp_id_project').val('');
                 $('#revamp_ho_in_nomor_po').removeClass('stock-hidden');
                 $('#revamp_ho_out_nomor_pr, #revamp_ho_out_lokasi_pengiriman').addClass('stock-hidden');
-                $('#revamp_no_pr_logistik, #revamp_id_lokasi_gudang_pengiriman').val('');
+                $('#revamp_no_pr_logistik, #revamp_id_lokasi_gudang_pengiriman, #revamp_nomor_spk').val('');
                 $('#revamp_no_po_logistik').attr('placeholder', 'Otomatis terisi dari surat jalan internal HO');
                 $('#revamp_pabrik_receive_panel .stock-empty').html('<strong>IN dari HO</strong><br>Masukkan surat jalan internal HO. Jika cocok, sistem akan menarik qty pengiriman dari mutasi HO ke area ini.');
                 $('#revamp_ba_selisih_wrapper').addClass('stock-hidden');
@@ -2417,7 +2459,7 @@ $itemCount = count($getUniqueItemLogistik);
                 $('#revamp_ho_out_nomor_pr').addClass('stock-hidden');
                 $('#revamp_ho_out_lokasi_pengiriman').removeClass('stock-hidden');
                 $('#revamp_ho_in_nomor_po').addClass('stock-hidden');
-                $('#revamp_no_pr_logistik').val('');
+                $('#revamp_no_pr_logistik, #revamp_nomor_spk').val('');
                 $('#revamp_no_po_logistik').val('');
                 if (!$('#revamp_table_item_stok tbody .revamp-pabrik-row').length && !$('#revamp_table_item_stok tbody .revamp-ho-row').length) {
                     $('#revamp_table_item_stok tbody').empty();
@@ -2434,7 +2476,7 @@ $itemCount = count($getUniqueItemLogistik);
                 if (selectedSumberMaterial.includes('IN')) {
                     $('#revamp_ho_in_nomor_po').removeClass('stock-hidden');
                     $('#revamp_ho_out_nomor_pr, #revamp_ho_out_lokasi_pengiriman').addClass('stock-hidden');
-                    $('#revamp_no_pr_logistik, #revamp_id_lokasi_gudang_pengiriman').val('');
+                    $('#revamp_no_pr_logistik, #revamp_id_lokasi_gudang_pengiriman, #revamp_nomor_spk').val('');
                     return;
                 }
 
@@ -2447,7 +2489,7 @@ $itemCount = count($getUniqueItemLogistik);
             }
 
             $('#revamp_ho_in_nomor_po, #revamp_ho_out_nomor_pr, #revamp_ho_out_lokasi_pengiriman').addClass('stock-hidden');
-            $('#revamp_no_po_logistik, #revamp_no_pr_logistik, #revamp_id_lokasi_gudang_pengiriman').val('');
+            $('#revamp_no_po_logistik, #revamp_no_pr_logistik, #revamp_id_lokasi_gudang_pengiriman, #revamp_nomor_spk').val('');
             $('#revamp_no_po_logistik').attr('placeholder', 'TEC.005/TKM-04/PO/MDN/II/2025').prop('readonly', false);
         }
 

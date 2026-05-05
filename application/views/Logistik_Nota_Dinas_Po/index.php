@@ -83,12 +83,16 @@ foreach ($masterPabrikOptions as $pabrikOption) {
     .nodin-chip--waiting { background:rgba(245,158,11,.12); color:#b45309; }
     .nodin-chip--blue { background:rgba(59,130,246,.1); color:#1d4ed8; }
     .nodin-modal .select2-container { width:100% !important; }
+    .nodin-modal .modal-dialog.modal-xxl { width:78vw; max-width:78vw; }
+    .nodin-modal .modal-content { max-height:calc(100vh - 1rem); }
+    .nodin-modal .modal-body { overflow-y:auto; max-height:calc(100vh - 170px); }
     @media (max-width: 1199.98px) { .nodin-hero__grid { grid-template-columns:1fr; } }
     @media (max-width: 767.98px) {
         .nodin-shell { padding:.8rem; }
         .nodin-hero__grid { padding:1rem; }
         .nodin-hero h1 { font-size:1.5rem; }
         .nodin-metrics { grid-template-columns:1fr; }
+        .nodin-modal .modal-dialog.modal-xxl { width:calc(100vw - 1rem); max-width:calc(100vw - 1rem); margin:.5rem auto; }
     }
 </style>
 
@@ -176,6 +180,9 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                                             <div class="d-flex flex-wrap" style="gap:.4rem;">
                                                 <a href="<?= base_url('Logistik_Nota_Dinas_Po?id=' . rawurlencode((string) $row['id_nota_dinas_po'])) ?>" class="btn btn-sm btn-outline-primary">Kelola</a>
                                                 <a href="<?= base_url('Logistik_Nota_Dinas_Po?id=' . rawurlencode((string) $row['id_nota_dinas_po']) . '&edit=1') ?>" class="btn btn-sm btn-outline-warning">Edit</a>
+                                                <?php if (!empty($row['is_fully_approved'])): ?>
+                                                    <a href="#" class="btn btn-sm btn-outline-secondary btn-print-nodin" data-id="<?= htmlspecialchars((string) $row['id_nota_dinas_po'], ENT_QUOTES) ?>" data-nomor="<?= htmlspecialchars((string) ($row['nomor_nota_dinas'] ?? ''), ENT_QUOTES) ?>">Print</a>
+                                                <?php endif; ?>
                                                 <a href="<?= base_url('Logistik_Nota_Dinas_Po/delete_nodin/' . rawurlencode((string) $row['id_nota_dinas_po'])) ?>" class="btn btn-sm btn-outline-danger btn-delete-nodin" data-nomor="<?= htmlspecialchars((string) ($row['nomor_nota_dinas'] ?? ''), ENT_QUOTES) ?>" data-status="<?= htmlspecialchars((string) ($row['workflow_status_label'] ?? ''), ENT_QUOTES) ?>">Hapus</a>
                                             </div>
                                         </td>
@@ -798,6 +805,46 @@ foreach ($masterPabrikOptions as $pabrikOption) {
             }).then((result) => {
                 if (result.isConfirmed) {
                     window.location.href = url;
+                }
+            });
+        });
+
+        $('.btn-print-nodin').click(function(e) {
+            e.preventDefault();
+
+            const idNodin = $(this).data('id') || '';
+            const nomorNodin = $(this).data('nomor') || 'NODIN';
+            if (!idNodin) {
+                return;
+            }
+
+            Swal.fire({
+                title: 'Print ' + nomorNodin,
+                input: 'select',
+                inputOptions: {
+                    'a4-landscape': 'A4 Landscape',
+                    'a4-portrait': 'A4 Portrait',
+                    'a3-landscape': 'A3 Landscape',
+                    'a3-portrait': 'A3 Portrait',
+                    'legal-landscape': 'Legal Landscape',
+                    'legal-portrait': 'Legal Portrait'
+                },
+                inputValue: 'a4-landscape',
+                inputPlaceholder: 'Pilih layout print',
+                showCancelButton: true,
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Buka Print',
+                cancelButtonText: 'Batal',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'Layout print wajib dipilih.';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    const url = "<?= base_url('Logistik_Nota_Dinas_Po/print_nodin/') ?>" + encodeURIComponent(idNodin) + '?layout=' + encodeURIComponent(result.value);
+                    window.open(url, '_blank');
                 }
             });
         });

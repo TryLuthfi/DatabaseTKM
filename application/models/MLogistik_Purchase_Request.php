@@ -252,10 +252,15 @@ class MLogistik_Purchase_Request extends CI_Model
                 d.*,
                 ki.nama_item,
                 ki.satuan_item,
+                pr.nomor_purchase_request,
                 {$vendorSelect}
             FROM tb_logistik_nota_dinas_po_detail d
             LEFT JOIN tb_master_logistik_kode_item ki
                 ON ki.id_kode_item = d.id_kode_item
+            LEFT JOIN tb_logistik_purchase_request_detail prd
+                ON prd.id_purchase_request_detail = d.id_purchase_request_detail
+            LEFT JOIN tb_logistik_purchase_request pr
+                ON pr.id_purchase_request = prd.id_purchase_request
             {$vendorJoin}
             WHERE d.id_nota_dinas_po = ?
             ORDER BY ki.nama_item ASC, d.id_nota_dinas_po_detail ASC

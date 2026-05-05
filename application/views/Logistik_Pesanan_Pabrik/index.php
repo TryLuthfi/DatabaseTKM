@@ -389,6 +389,16 @@ $formatStatus = function ($row) {
                             <span class="po-metric__value"><?= number_format($poStats['total_outstanding'] ?? 0, 0, ',', '.') ?></span>
                             <span class="po-metric__hint">Sisa volume yang belum tertutup oleh pengiriman atau close manual.</span>
                         </div>
+                        <div class="po-metric">
+                            <span class="po-metric__label">Total Subtotal</span>
+                            <span class="po-metric__value"><?= number_format($poStats['total_nominal_po'] ?? 0, 0, ',', '.') ?></span>
+                            <span class="po-metric__hint">Akumulasi harga asli seluruh PO sebelum tambahan pajak.</span>
+                        </div>
+                        <div class="po-metric">
+                            <span class="po-metric__label">Total Grand Total</span>
+                            <span class="po-metric__value"><?= number_format(($poStats['total_nominal_po'] ?? 0) + ($poStats['total_ppn_po'] ?? 0), 0, ',', '.') ?></span>
+                            <span class="po-metric__hint">Subtotal ditambah komponen PPN 12% pada seluruh PO.</span>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -418,12 +428,14 @@ $formatStatus = function ($row) {
                                     <th>No</th>
                                     <th>Dokumen PO</th>
                                     <th>Pabrik</th>
+                                    <th>Bowheer</th>
                                     <th>Referensi NODIN</th>
                                     <th>Item</th>
                                     <th>Qty PO</th>
                                     <th>Qty Terkirim</th>
                                     <th>Outstanding</th>
-                                    <th>Nominal</th>
+                                    <th>Subtotal</th>
+                                    <th>Grand Total</th>
                                     <th>Status</th>
                                     <th>Aksi</th>
                                 </tr>
@@ -441,12 +453,14 @@ $formatStatus = function ($row) {
                                             </div>
                                         </td>
                                         <td><?= $row['nama_pabrik'] ?: '-' ?></td>
+                                        <td><?= $row['bowheer_refs'] ?: '-' ?></td>
                                         <td><?= $row['nomor_nota_dinas_refs'] ?: '-' ?></td>
                                         <td><?= number_format($row['total_item'] ?? 0, 0, ',', '.') ?></td>
                                         <td><?= number_format($row['total_qty_po'] ?? 0, 0, ',', '.') ?></td>
                                         <td><?= number_format($row['total_qty_terkirim'] ?? 0, 0, ',', '.') ?></td>
                                         <td><?= number_format($row['total_outstanding'] ?? 0, 0, ',', '.') ?></td>
                                         <td><?= number_format($row['total_nominal_po'] ?? 0, 0, ',', '.') ?></td>
+                                        <td><?= number_format(((float) ($row['total_nominal_po'] ?? 0)) + ((float) ($row['total_ppn_po'] ?? 0)), 0, ',', '.') ?></td>
                                         <td><span class="po-chip po-chip--<?= $status['tone'] ?>"><?= $status['label'] ?></span></td>
                                         <td>
                                             <div class="po-actions">
@@ -463,12 +477,13 @@ $formatStatus = function ($row) {
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="4">TOTAL</td>
+                                    <td colspan="5">TOTAL</td>
                                     <td><?= number_format(array_sum(array_map('floatval', array_column($poRows, 'total_item'))), 0, ',', '.') ?></td>
                                     <td><?= number_format(array_sum(array_map('floatval', array_column($poRows, 'total_qty_po'))), 0, ',', '.') ?></td>
                                     <td><?= number_format(array_sum(array_map('floatval', array_column($poRows, 'total_qty_terkirim'))), 0, ',', '.') ?></td>
                                     <td><?= number_format(array_sum(array_map('floatval', array_column($poRows, 'total_outstanding'))), 0, ',', '.') ?></td>
                                     <td><?= number_format(array_sum(array_map('floatval', array_column($poRows, 'total_nominal_po'))), 0, ',', '.') ?></td>
+                                    <td><?= number_format(array_sum(array_map(static function ($row) { return ((float) ($row['total_nominal_po'] ?? 0)) + ((float) ($row['total_ppn_po'] ?? 0)); }, $poRows)), 0, ',', '.') ?></td>
                                     <td colspan="2"></td>
                                 </tr>
                             </tfoot>
@@ -503,13 +518,21 @@ $formatStatus = function ($row) {
                                 <select name="id_nota_dinas_po" id="po_id_nota_dinas_po" class="form-control" required>
                                     <option value="">Pilih Nota Dinas</option>
                                     <?php foreach ($approvedNodins as $nodin): ?>
-                                        <option value="<?= $nodin['id_nota_dinas_po'] ?>" data-nomor-nodin="<?= htmlspecialchars($nodin['nomor_nota_dinas'], ENT_QUOTES) ?>" data-nomor-pr-refs="<?= htmlspecialchars($nodin['nomor_purchase_request_refs'] ?? '', ENT_QUOTES) ?>" data-vendor-options="<?= htmlspecialchars(json_encode($nodin['vendor_options'] ?? []), ENT_QUOTES) ?>">
+                                        <option value="<?= $nodin['id_nota_dinas_po'] ?>" data-nomor-nodin="<?= htmlspecialchars($nodin['nomor_nota_dinas'], ENT_QUOTES) ?>" data-nomor-pr-refs="<?= htmlspecialchars($nodin['nomor_purchase_request_refs'] ?? '', ENT_QUOTES) ?>" data-vendor-options="<?= htmlspecialchars(json_encode($nodin['vendor_options'] ?? []), ENT_QUOTES) ?>" data-bowheer-options="<?= htmlspecialchars(json_encode($nodin['bowheer_options'] ?? []), ENT_QUOTES) ?>">
                                             <?= $nodin['nomor_nota_dinas'] ?> | PR <?= $nodin['nomor_purchase_request_refs'] ?: '-' ?> | Vendor <?= number_format($nodin['total_vendor'] ?? 0, 0, ',', '.') ?> | Outstanding <?= number_format($nodin['total_qty_outstanding_nodin'] ?? 0, 0, ',', '.') ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
                                 <input type="hidden" name="nomor_nota_dinas" id="po_nomor_nota_dinas">
                                 <input type="hidden" name="nomor_purchase_request_refs" id="po_nomor_purchase_request_refs">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Bowheer</label>
+                                <select name="bowheer_label" id="po_bowheer_label" class="form-control" required disabled>
+                                    <option value="">Pilih Nomor NODIN terlebih dahulu</option>
+                                </select>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -532,14 +555,46 @@ $formatStatus = function ($row) {
                                 <input type="date" name="tanggal_po_pabrik" id="po_tanggal_po_pabrik" class="form-control" value="<?= date('Y-m-d') ?>" required>
                             </div>
                         </div>
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label>Upload File PO</label>
-                                <div class="custom-file">
-                                    <input type="file" name="file_po" id="po_file_po" class="custom-file-input" accept=".pdf,.jpg,.jpeg,.png">
-                                    <label class="custom-file-label" for="po_file_po">Choose file</label>
+                        <?php if (!empty($masterSystemPembayaran)): ?>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Sistem Pembayaran</label>
+                                    <select name="id_system_pembayaran" class="form-control">
+                                        <option value="">Pilih Sistem Pembayaran</option>
+                                        <?php foreach ($masterSystemPembayaran as $systemPembayaran): ?>
+                                            <option value="<?= $systemPembayaran['id_system_pembayaran'] ?>">
+                                                <?= $systemPembayaran['harga_system_pembayaran'] ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
                                 </div>
-                                <small class="text-muted">Opsional. Format yang didukung: PDF, JPG, JPEG, PNG.</small>
+                            </div>
+                        <?php endif; ?>
+                        <?php if (!empty($masterJenisPembayaran)): ?>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Jenis Pembayaran</label>
+                                    <select name="id_jenis_pembayaran" class="form-control">
+                                        <option value="">Pilih Jenis Pembayaran</option>
+                                        <?php foreach ($masterJenisPembayaran as $jenisPembayaran): ?>
+                                            <option value="<?= $jenisPembayaran['id_jenis_pembayaran'] ?>">
+                                                <?= $jenisPembayaran['detail_jenis_pembayaran'] ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Waktu Pengiriman Material</label>
+                                <input type="text" name="waktu_pengiriman_material" class="form-control" placeholder="Sesuai dengan kesepakatan">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Keterangan PO</label>
+                                <input type="text" name="keterangan_po" class="form-control" placeholder="Keterangan tambahan PO">
                             </div>
                         </div>
                     </div>
@@ -613,11 +668,19 @@ $formatStatus = function ($row) {
             });
         }
 
-        $('#po_id_nota_dinas_po, #po_id_pabrik').select2({
+        $('#po_id_nota_dinas_po, #po_id_pabrik, #po_bowheer_label').select2({
             theme: 'bootstrap4',
             width: '100%',
             dropdownParent: $('#modalCreatePoFromPr')
         });
+
+        function resetPoBowheerOptions(placeholderText) {
+            const $bowheerSelect = $('#po_bowheer_label');
+            const currentPlaceholder = placeholderText || 'Pilih Nomor NODIN terlebih dahulu';
+            $bowheerSelect.empty().append('<option value="">' + currentPlaceholder + '</option>');
+            $bowheerSelect.val('').trigger('change.select2');
+            $bowheerSelect.prop('disabled', true);
+        }
 
         function resetPoPabrikOptions(placeholderText) {
             const $pabrikSelect = $('#po_id_pabrik');
@@ -625,6 +688,33 @@ $formatStatus = function ($row) {
             $pabrikSelect.empty().append('<option value="">' + currentPlaceholder + '</option>');
             $pabrikSelect.val('').trigger('change.select2');
             $pabrikSelect.prop('disabled', true);
+        }
+
+        function syncPoBowheerOptions() {
+            const $selectedNodin = $('#po_id_nota_dinas_po option:selected');
+            const rawBowheerOptions = $selectedNodin.data('bowheer-options');
+            const bowheerOptions = Array.isArray(rawBowheerOptions)
+                ? rawBowheerOptions
+                : (typeof rawBowheerOptions === 'string' && rawBowheerOptions !== '' ? JSON.parse(rawBowheerOptions) : []);
+            const $bowheerSelect = $('#po_bowheer_label');
+
+            if (!$selectedNodin.val()) {
+                resetPoBowheerOptions('Pilih Nomor NODIN terlebih dahulu');
+                return;
+            }
+
+            if (!bowheerOptions.length) {
+                resetPoBowheerOptions('Tidak ada bowheer pada NODIN ini');
+                return;
+            }
+
+            $bowheerSelect.prop('disabled', false);
+            $bowheerSelect.empty().append('<option value="">Pilih Bowheer</option>');
+            bowheerOptions.forEach(function(bowheer) {
+                const label = bowheer.label || '';
+                $bowheerSelect.append('<option value="' + label + '">' + label + '</option>');
+            });
+            $bowheerSelect.val('').trigger('change.select2');
         }
 
         function syncPoPabrikOptions() {
@@ -745,12 +835,13 @@ $formatStatus = function ($row) {
         function loadPoNodinItems() {
             const idNodin = $('#po_id_nota_dinas_po').val();
             const idPabrik = $('#po_id_pabrik').val();
+            const bowheerLabel = $('#po_bowheer_label').val() || '';
             const nomorNodin = $('#po_id_nota_dinas_po option:selected').data('nomor-nodin') || '';
             const nomorPrRefs = $('#po_id_nota_dinas_po option:selected').data('nomor-pr-refs') || '';
             $('#po_nomor_nota_dinas').val(nomorNodin);
             $('#po_nomor_purchase_request_refs').val(nomorPrRefs);
 
-            if (!idNodin || !idPabrik) {
+            if (!idNodin || !idPabrik || !bowheerLabel) {
                 renderPoItems([]);
                 return;
             }
@@ -761,7 +852,8 @@ $formatStatus = function ($row) {
                 dataType: "json",
                 data: {
                     id_nota_dinas_po: idNodin,
-                    id_pabrik: idPabrik
+                    id_pabrik: idPabrik,
+                    bowheer_label: bowheerLabel
                 },
                 success: function(response) {
                     renderPoItems(response || []);
@@ -774,9 +866,11 @@ $formatStatus = function ($row) {
         }
 
         $('#po_id_nota_dinas_po').on('change', function() {
+            syncPoBowheerOptions();
             syncPoPabrikOptions();
             loadPoNodinItems();
         });
+        $('#po_bowheer_label').on('change', loadPoNodinItems);
         $('#po_id_pabrik').on('change', loadPoNodinItems);
 
         $('#form-create-po').on('submit', function(e) {
@@ -786,11 +880,6 @@ $formatStatus = function ($row) {
                 Swal.fire('Item belum tersedia', 'Belum ada detail NODIN outstanding yang bisa dibuatkan PO untuk pabrik ini.', 'warning');
                 return;
             }
-        });
-
-        $('#po_file_po').on('change', function() {
-            const file = this.files && this.files[0] ? this.files[0].name : 'Choose file';
-            $(this).siblings('.custom-file-label').text(file);
         });
 
         $(document).on('click', '[data-delete-po]', function(e) {

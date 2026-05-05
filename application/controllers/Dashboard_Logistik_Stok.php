@@ -38,6 +38,63 @@ class Dashboard_Logistik_Stok extends CI_Controller
         }
     }
 
+    public function transit_history()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $shipmentRows = $this->MDashboard_Logistik_Stok->getTransitShipmentRows();
+        $transitRows = array_values(array_filter($shipmentRows, static function ($row) {
+            return (float) ($row['total_qty_outstanding'] ?? 0) > 0;
+        }));
+
+        $data = [
+            'title' => 'PENGIRIMAN HO TRANSIT & HISTORY',
+            'judul' => 'PENGIRIMAN HO TRANSIT & HISTORY',
+            'shipmentRows' => $shipmentRows,
+            'transitRows' => $transitRows,
+            'transitCategoryCards' => $this->MDashboard_Logistik_Stok->getTransitShipmentCategoryCards(),
+            'historyCategoryCards' => $this->MDashboard_Logistik_Stok->getHistoryShipmentCategoryCards(),
+        ];
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('Dashboard_Logistik_Stok/transit_history', $data);
+        $this->load->view('Templates/99_JS');
+    }
+
+    public function getTransitHistoryDetail()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $noSuratJalan = trim((string) $this->input->get('nomor_surat_jalan'));
+        if ($noSuratJalan === '') {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'items' => [],
+                    'message' => 'Nomor surat jalan belum diisi.',
+                ]));
+            return;
+        }
+
+        $items = $this->MDashboard_Logistik_Stok->getHoShipmentDetailBySuratJalan($noSuratJalan);
+        $header = !empty($items) ? $items[0] : null;
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'header' => $header,
+                'items' => $items,
+                'message' => empty($items) ? 'Detail pengiriman HO tidak ditemukan.' : '',
+            ]));
+    }
+
     public function getReportStokByData()
     {
         $dateStart = $this->input->get('dateStart');
@@ -117,6 +174,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
         $id_lokasi_gudang = $this->input->post('id_lokasi_gudang');
         $id_bowheer = $this->input->post('id_bowheer');
         $id_sumber_material = $this->input->post('id_sumber_material');
+        $nomor_spk = trim((string) $this->input->post('nomor_spk'));
         $tanggal_upload_stok = $this->input->post('tanggal_upload_stok');
         $tanggal_pembuatan_stok = $this->input->post('tanggal_pembuatan_stok');
         $timestamp = date('_h_i_s');
@@ -131,7 +189,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
                 $file_ext = pathinfo($_FILES[$field_name]['name'], PATHINFO_EXTENSION);
                 $config = [
                     'upload_path' => $upload_path,
-                    'allowed_types' => 'pdf',
+                    'allowed_types' => 'pdf|jpg|jpeg|png',
                     'max_size' => 5120,
                     'file_name' => "{$new_filename}.{$file_ext}"
                 ];
@@ -154,10 +212,40 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
         $data_insert = [];
         $jumlah_stok = preg_replace('/\D/', '', $this->input->post('jumlah_stok'));
+        $idKodeItems = (array) $this->input->post('id_kode_item');
+        $sumberMaterial = $this->MDashboard_Logistik_Stok->getSumberMaterialById($id_sumber_material);
+        $isOutMaterial = strtoupper((string) ($sumberMaterial['status_sumber_material'] ?? '')) === 'OUT';
+
+        if ((string) $id_sumber_material === '9' && $nomor_spk === '') {
+            $this->session->set_flashdata('error', 'Nomor SPK wajib diisi untuk Out (ke Project).');
+            redirect('Dashboard_Logistik_Stok/revamp');
+            return;
+        }
+
+        if ($isOutMaterial && (string) $id_sumber_material !== '13') {
+            foreach ($jumlah_stok as $key => $value) {
+                $qtyRequest = (float) ($jumlah_stok[$key] ?? 0);
+                $idKodeItem = (int) ($idKodeItems[$key] ?? 0);
+                if ($idKodeItem <= 0 || $qtyRequest <= 0) {
+                    continue;
+                }
+
+                $availableStock = $this->MDashboard_Logistik_Stok->getCurrentStockByGudangItem($id_lokasi_gudang, $idKodeItem);
+                if ($qtyRequest > $availableStock) {
+                    $this->session->set_flashdata('error', 'Qty out material tidak boleh melebihi stok tersedia di gudang. Kecuali sumber material Out (ke Customer).');
+                    redirect('Dashboard_Logistik_Stok/revamp');
+                    return;
+                }
+            }
+        }
 
         foreach ($jumlah_stok as $key => $value) {
             $tanggalFormatted = "{$tanggal_upload_stok} " . date('H:i:s');
             $tanggaCreated = "{$tanggal_pembuatan_stok} " . date('H:i:s');
+            $keteranganStok = trim((string) $this->input->post('keterangan_stok'));
+            if ((string) $id_sumber_material === '9' && $nomor_spk !== '') {
+                $keteranganStok = trim('Nomor SPK: ' . $nomor_spk . ($keteranganStok !== '' ? ' | ' . $keteranganStok : ''));
+            }
 
             $data_insert[] = [
                 'no_surat_jalan' => $this->input->post('nomor_surat_jalan'),
@@ -170,7 +258,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
                 'merk_stok' => $this->input->post('merk_item')[$key],
                 'no_haspel_stok' => $this->input->post('no_haspel_item')[$key],
                 'no_ref_stok' => $this->input->post('no_ref_item')[$key],
-                'keterangan_stok' => $this->input->post('keterangan_stok'),
+                'keterangan_stok' => $keteranganStok,
                 'tanggal_upload_stok' => $tanggalFormatted,
                 'surat_jalan' => $upload_path . $uploaded_files['file-sj'],
                 'evidence' => $upload_path . $uploaded_files['file-evidence'],
@@ -650,6 +738,10 @@ class Dashboard_Logistik_Stok extends CI_Controller
                 'id_user' => $this->session->userdata('id_user'),
                 'CREATED_AT' => $tanggaCreated
             ];
+
+            if ($this->db->field_exists('nomor_spk', 'tb_logistik_stok')) {
+                $data_insert[count($data_insert) - 1]['nomor_spk'] = ((string) $id_sumber_material === '9' && $nomor_spk !== '') ? $nomor_spk : null;
+            }
         }
 
         if (empty($dataInsert)) {

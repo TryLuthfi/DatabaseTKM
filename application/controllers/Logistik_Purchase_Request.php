@@ -341,26 +341,41 @@ class Logistik_Purchase_Request extends CI_Controller
         }
     }
 
-    public function print_purchase_request()
+    public function print_purchase_request($idPurchaseRequest = '')
     {
-        if (!empty($this->session->userdata('id_user'))) {
-            // $data['title'] = 'Purchase Request';
-            // $this->load->view('format_purchase_request_print', $data);
-            $this->load->library('Mpdf_lib');
-            $mpdf = $this->mpdf_lib->load();
-
-            // Load view ke dalam variabel
-            $data['title'] = "Laporan Data";
-            $html = $this->load->view('laporan', $data, TRUE);
-
-            // Tambahkan HTML ke PDF
-            $mpdf->WriteHTML('<h1>tes</h1>');
-
-            // Download PDF langsung
-            $mpdf->Output("Laporan.pdf", "D");
-        } else {
+        if (empty($this->session->userdata('id_user'))) {
             redirect('Auth');
+            return;
         }
+
+        $idPurchaseRequest = trim((string) $idPurchaseRequest);
+        if ($idPurchaseRequest === '') {
+            $this->session->set_flashdata('error', 'Data purchase request tidak ditemukan.');
+            redirect('Logistik_Purchase_Request');
+            return;
+        }
+
+        $detailRows = $this->MLogistik_Purchase_Request->get_detail_purchase_request($idPurchaseRequest);
+        if (empty($detailRows)) {
+            $this->session->set_flashdata('error', 'Data purchase request tidak ditemukan.');
+            redirect('Logistik_Purchase_Request');
+            return;
+        }
+
+        $purchaseRequest = $this->MLogistik_Purchase_Request->decorate_purchase_request_row($detailRows[0]);
+        if (empty($purchaseRequest['is_fully_approved'])) {
+            $this->session->set_flashdata('error', 'PR hanya bisa dicetak setelah full approved.');
+            redirect('Logistik_Purchase_Request/view_purchase_request/' . $idPurchaseRequest);
+            return;
+        }
+
+        $data = [
+            'title' => 'Print Purchase Request',
+            'purchaseRequest' => $purchaseRequest,
+            'detailPurchaseRequest' => $detailRows,
+        ];
+
+        $this->load->view('format_purchase_request_print', $data);
     }
 
     public function generateUniqId($prefix)

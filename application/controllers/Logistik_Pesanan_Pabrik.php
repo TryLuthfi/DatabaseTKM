@@ -24,6 +24,8 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         $data['poStats'] = $this->MLogistik_Pesanan_Pabrik->getPoDashboardStats();
         $data['masterPabrik'] = $this->MLogistik_Pesanan_Pabrik->getMasterPabrikActive();
         $data['approvedNodins'] = $this->MLogistik_Pesanan_Pabrik->getApprovedNodinOptions();
+        $data['masterSystemPembayaran'] = $this->MLogistik_Pesanan_Pabrik->getMasterSystemPembayaran();
+        $data['masterJenisPembayaran'] = $this->MLogistik_Pesanan_Pabrik->getMasterJenisPembayaran();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -41,6 +43,7 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
 
         $idNodin = trim((string) $this->input->get('id_nota_dinas_po'));
         $idPabrik = (int) $this->input->get('id_pabrik');
+        $bowheerLabel = trim((string) $this->input->get('bowheer_label'));
         if ($idNodin === '' || $idPabrik <= 0) {
             $this->output
                 ->set_content_type('application/json')
@@ -48,7 +51,7 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
             return;
         }
 
-        $items = $this->MLogistik_Pesanan_Pabrik->getApprovedNodinItems($idNodin, $idPabrik);
+        $items = $this->MLogistik_Pesanan_Pabrik->getApprovedNodinItems($idNodin, $idPabrik, $bowheerLabel);
         $this->output
             ->set_content_type('application/json')
             ->set_output(json_encode($items));
@@ -65,6 +68,11 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         $idPabrik = (int) $this->input->post('id_pabrik');
         $nomorPo = trim((string) $this->input->post('nomor_po_pabrik'));
         $tanggalPo = trim((string) $this->input->post('tanggal_po_pabrik'));
+        $bowheerLabel = trim((string) $this->input->post('bowheer_label'));
+        $idSystemPembayaran = (int) $this->input->post('id_system_pembayaran');
+        $idJenisPembayaran = (int) $this->input->post('id_jenis_pembayaran');
+        $keteranganPo = trim((string) $this->input->post('keterangan_po'));
+        $waktuPengirimanMaterial = trim((string) $this->input->post('waktu_pengiriman_material'));
         $nodinDetailIds = (array) $this->input->post('id_nota_dinas_po_detail');
         $detailIds = (array) $this->input->post('id_purchase_request_detail');
         $kodeItems = (array) $this->input->post('id_kode_item');
@@ -89,18 +97,12 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
 
         $poId = $this->generatePoId();
 
-        $uploadedPoDocument = $this->uploadPoDocument($poId, $nomorPo);
-        if ($uploadedPoDocument === false) {
-            redirect('Logistik_Pesanan_Pabrik');
-            return;
-        }
-
         $header = [
             'id_pesanan_pabrik' => $poId,
             'id_pabrik' => $idPabrik,
             'nomor_po_pabrik' => $nomorPo,
             'tanggal_po_pabrik' => $tanggalPo,
-            'purchase_order_document' => $uploadedPoDocument,
+            'purchase_order_document' => null,
             'id_user' => $this->session->userdata('id_user'),
         ];
 
@@ -114,14 +116,26 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         if ($this->db->field_exists('status_po', 'tb_logistik_pesanan_pabrik')) {
             $header['status_po'] = 'APPROVED';
         }
+        if ($this->db->field_exists('id_system_pembayaran', 'tb_logistik_pesanan_pabrik')) {
+            $header['id_system_pembayaran'] = $idSystemPembayaran > 0 ? $idSystemPembayaran : null;
+        }
+        if ($this->db->field_exists('id_jenis_pembayaran', 'tb_logistik_pesanan_pabrik')) {
+            $header['id_jenis_pembayaran'] = $idJenisPembayaran > 0 ? $idJenisPembayaran : null;
+        }
+        if ($this->db->field_exists('keterangan_po', 'tb_logistik_pesanan_pabrik')) {
+            $header['keterangan_po'] = $keteranganPo !== '' ? $keteranganPo : null;
+        }
+        if ($this->db->field_exists('waktu_pengiriman_material', 'tb_logistik_pesanan_pabrik')) {
+            $header['waktu_pengiriman_material'] = $waktuPengirimanMaterial !== '' ? $waktuPengirimanMaterial : null;
+        }
         if ($this->db->field_exists('catatan_po', 'tb_logistik_pesanan_pabrik')) {
-            $header['catatan_po'] = 'Sumber NODIN: ' . $nomorNodin;
+            $header['catatan_po'] = 'Sumber NODIN: ' . $nomorNodin . ($bowheerLabel !== '' ? ' | Bowheer: ' . $bowheerLabel : '');
         }
 
         $supportsPrDetail = $this->db->field_exists('id_purchase_request_detail', 'tb_logistik_pesanan_pabrik_detail');
         $supportsNodinDetail = $this->db->field_exists('id_nota_dinas_po_detail', 'tb_logistik_pesanan_pabrik_detail');
         $supportsVolumeSnapshot = $this->db->field_exists('volume_planning_snapshot', 'tb_logistik_pesanan_pabrik_detail');
-        $outstandingItems = $this->MLogistik_Pesanan_Pabrik->getApprovedNodinItems($idNodin, $idPabrik);
+        $outstandingItems = $this->MLogistik_Pesanan_Pabrik->getApprovedNodinItems($idNodin, $idPabrik, $bowheerLabel);
         $outstandingItemMap = [];
         foreach ($outstandingItems as $item) {
             $outstandingItemMap[(string) ($item['id_nota_dinas_po_detail'] ?? '')] = $item;

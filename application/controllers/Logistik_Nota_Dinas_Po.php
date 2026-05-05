@@ -111,6 +111,58 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
             ->set_output(json_encode($this->buildCandidateItems($prIds)));
     }
 
+    public function print_nodin($idNodin = '')
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $idNodin = trim((string) $idNodin);
+        if ($idNodin === '') {
+            $this->session->set_flashdata('error', 'Data NODIN tidak ditemukan.');
+            redirect('Logistik_Nota_Dinas_Po');
+            return;
+        }
+
+        $nodin = $this->MLogistik_Purchase_Request->getNodinById($idNodin);
+        if (empty($nodin)) {
+            $this->session->set_flashdata('error', 'Data NODIN tidak ditemukan.');
+            redirect('Logistik_Nota_Dinas_Po');
+            return;
+        }
+
+        if (empty($nodin['is_fully_approved'])) {
+            $this->session->set_flashdata('error', 'NODIN hanya bisa dicetak setelah full approved.');
+            redirect('Logistik_Nota_Dinas_Po?id=' . rawurlencode($idNodin));
+            return;
+        }
+
+        $data = [
+            'title' => 'Print Nota Dinas PO',
+            'nodin' => $nodin,
+            'nodinDetails' => $this->MLogistik_Purchase_Request->getNodinDetailRows($idNodin),
+            'pageLayout' => $this->resolvePrintLayout((string) $this->input->get('layout')),
+        ];
+
+        $this->load->view('format_nodin_print', $data);
+    }
+
+    private function resolvePrintLayout($layout)
+    {
+        $normalized = strtolower(trim((string) $layout));
+        $allowed = [
+            'a4-landscape' => ['size' => 'A4', 'orientation' => 'landscape'],
+            'a4-portrait' => ['size' => 'A4', 'orientation' => 'portrait'],
+            'a3-landscape' => ['size' => 'A3', 'orientation' => 'landscape'],
+            'a3-portrait' => ['size' => 'A3', 'orientation' => 'portrait'],
+            'legal-landscape' => ['size' => 'legal', 'orientation' => 'landscape'],
+            'legal-portrait' => ['size' => 'legal', 'orientation' => 'portrait'],
+        ];
+
+        return $allowed[$normalized] ?? $allowed['a4-landscape'];
+    }
+
     public function save_nodin()
     {
         if (empty($this->session->userdata('id_user'))) {

@@ -288,6 +288,27 @@ ORDER BY
             ->get_where('tb_master_logistik_sumber_material', ['id_sumber_material' => $idSumberMaterial])
             ->row_array();
     }
+
+    public function getCurrentStockByGudangItem($idLokasiGudang, $idKodeItem): float
+    {
+        $row = $this->db->query("
+            SELECT
+                COALESCE(SUM(
+                    CASE
+                        WHEN sm.status_sumber_material = 'IN' THEN COALESCE(ls.jumlah_stok, 0)
+                        WHEN sm.status_sumber_material = 'OUT' THEN -COALESCE(ls.jumlah_stok, 0)
+                        ELSE 0
+                    END
+                ), 0) AS total_stok
+            FROM tb_logistik_stok ls
+            INNER JOIN tb_master_logistik_sumber_material sm
+                ON sm.id_sumber_material = ls.id_sumber_material
+            WHERE ls.id_lokasi_gudang = ?
+              AND ls.id_kode_item = ?
+        ", [(int) $idLokasiGudang, (int) $idKodeItem])->row_array();
+
+        return (float) ($row['total_stok'] ?? 0);
+    }
     public function getMasterKodeItem(): mixed
     {
         $data = $this->db->query('SELECT * FROM tb_master_logistik_kode_item tmlki join tb_master_bowheer tmb ON tmlki.id_bowheer_pemilik_item = tmb.id_bowheer')->result_array();
@@ -879,7 +900,7 @@ ORDER BY tls.id_logistik_stok DESC;")->result_array();
         return $data;
     }
 
-    public function getReportStokMaterial($dateStart = null)
+public function getReportStokMaterial($dateStart = null)
 {
     // Default filter tanggal menggunakan hari ini jika tidak diisi
     if (empty($dateStart)) {
@@ -927,6 +948,223 @@ ORDER BY tls.id_logistik_stok DESC;")->result_array();
     return $data;
 
 }
+
+    public function getTransitShipmentRows(): array
+    {
+        $rows = $this->db->query("
+            SELECT
+                'HO_TO_AREA' AS shipment_type,
+                s.no_surat_jalan,
+                s.tanggal_upload_stok AS tanggal_pengiriman,
+                COALESCE(asal.kota_lokasi_gudang, 'HO') AS asal_gudang,
+                COALESCE(tujuan.kota_lokasi_gudang, '-') AS tujuan_gudang,
+                GROUP_CONCAT(DISTINCT COALESCE(ki.kategori_item, '-') ORDER BY ki.kategori_item SEPARATOR ', ') AS kategori_refs,
+                GROUP_CONCAT(DISTINCT COALESCE(ki.nama_item, '-') ORDER BY ki.nama_item SEPARATOR ', ') AS item_refs,
+                GROUP_CONCAT(DISTINCT COALESCE(b.nama_bowheer, '-') ORDER BY b.nama_bowheer SEPARATOR ', ') AS bowheer_refs,
+                GROUP_CONCAT(DISTINCT COALESCE(s.no_pr_logistik, '-') ORDER BY s.no_pr_logistik SEPARATOR ', ') AS pr_refs,
+                GROUP_CONCAT(DISTINCT COALESCE(s.no_po_logistik, '-') ORDER BY s.no_po_logistik SEPARATOR ', ') AS po_refs,
+                SUM(COALESCE(s.jumlah_stok, 0)) AS total_qty_kirim,
+                SUM(COALESCE(r.qty_diterima, 0)) AS total_qty_diterima,
+                SUM(GREATEST(COALESCE(s.jumlah_stok, 0) - COALESCE(r.qty_diterima, 0), 0)) AS total_qty_outstanding
+            FROM tb_logistik_stok s
+            INNER JOIN tb_master_logistik_sumber_material sm
+                ON sm.id_sumber_material = s.id_sumber_material
+            LEFT JOIN tb_master_logistik_kode_item ki
+                ON ki.id_kode_item = s.id_kode_item
+            LEFT JOIN tb_master_bowheer b
+                ON b.id_bowheer = s.id_bowheer
+            LEFT JOIN tb_master_logistik_lokasi_gudang asal
+                ON asal.id_lokasi_gudang = s.id_lokasi_gudang
+            LEFT JOIN tb_master_logistik_lokasi_gudang tujuan
+                ON tujuan.id_lokasi_gudang = s.id_lokasi_gudang_pengiriman
+            LEFT JOIN (
+                SELECT
+                    no_surat_jalan,
+                    id_lokasi_gudang,
+                    id_kode_item,
+                    COALESCE(NULLIF(no_haspel_stok, ''), '-') AS no_haspel_key,
+                    COALESCE(NULLIF(no_ref_stok, ''), '-') AS no_ref_key,
+                    SUM(jumlah_stok) AS qty_diterima
+                FROM tb_logistik_stok
+                WHERE id_sumber_material = 1
+                GROUP BY
+                    no_surat_jalan,
+                    id_lokasi_gudang,
+                    id_kode_item,
+                    COALESCE(NULLIF(no_haspel_stok, ''), '-'),
+                    COALESCE(NULLIF(no_ref_stok, ''), '-')
+            ) r
+                ON r.no_surat_jalan = s.no_surat_jalan
+                AND r.id_lokasi_gudang = s.id_lokasi_gudang_pengiriman
+                AND r.id_kode_item = s.id_kode_item
+                AND r.no_haspel_key = COALESCE(NULLIF(s.no_haspel_stok, ''), '-')
+                AND r.no_ref_key = COALESCE(NULLIF(s.no_ref_stok, ''), '-')
+            WHERE s.id_sumber_material = 10
+            GROUP BY
+                s.no_surat_jalan,
+                s.tanggal_upload_stok,
+                asal.kota_lokasi_gudang,
+                tujuan.kota_lokasi_gudang
+        ")->result_array();
+
+        foreach ($rows as &$row) {
+            $qtyKirim = (float) ($row['total_qty_kirim'] ?? 0);
+            $qtyDiterima = (float) ($row['total_qty_diterima'] ?? 0);
+            $qtyOutstanding = (float) ($row['total_qty_outstanding'] ?? 0);
+
+            if ($qtyOutstanding <= 0 && $qtyKirim > 0) {
+                $status = 'FULL DELIVERED';
+            } elseif ($qtyDiterima > 0) {
+                $status = 'PARTIAL DELIVERED';
+            } else {
+                $status = 'PENGIRIMAN';
+            }
+
+            $row['status_pengiriman'] = $status;
+        }
+        unset($row);
+
+        usort($rows, static function ($left, $right) {
+            $leftTime = strtotime((string) ($left['tanggal_pengiriman'] ?? '')) ?: 0;
+            $rightTime = strtotime((string) ($right['tanggal_pengiriman'] ?? '')) ?: 0;
+            return $rightTime <=> $leftTime;
+        });
+
+        return $rows;
+    }
+
+    public function getTransitShipmentCategoryCards(): array
+    {
+        return $this->db->query("
+            SELECT
+                kategori_item,
+                SUM(total_qty_outstanding) AS total_qty_outstanding,
+                MAX(satuan_item) AS satuan_item
+            FROM (
+                SELECT
+                    ki.kategori_item,
+                    ki.satuan_item,
+                    GREATEST(COALESCE(s.jumlah_stok, 0) - COALESCE(r.qty_diterima, 0), 0) AS total_qty_outstanding
+                FROM tb_logistik_stok s
+                INNER JOIN tb_master_logistik_sumber_material sm
+                    ON sm.id_sumber_material = s.id_sumber_material
+                LEFT JOIN tb_master_logistik_kode_item ki
+                    ON ki.id_kode_item = s.id_kode_item
+                LEFT JOIN (
+                    SELECT
+                        no_surat_jalan,
+                        id_lokasi_gudang,
+                        id_kode_item,
+                        COALESCE(NULLIF(no_haspel_stok, ''), '-') AS no_haspel_key,
+                        COALESCE(NULLIF(no_ref_stok, ''), '-') AS no_ref_key,
+                        SUM(jumlah_stok) AS qty_diterima
+                    FROM tb_logistik_stok
+                    WHERE id_sumber_material = 1
+                    GROUP BY
+                        no_surat_jalan,
+                        id_lokasi_gudang,
+                        id_kode_item,
+                        COALESCE(NULLIF(no_haspel_stok, ''), '-'),
+                        COALESCE(NULLIF(no_ref_stok, ''), '-')
+                ) r
+                    ON r.no_surat_jalan = s.no_surat_jalan
+                    AND r.id_lokasi_gudang = s.id_lokasi_gudang_pengiriman
+                    AND r.id_kode_item = s.id_kode_item
+                    AND r.no_haspel_key = COALESCE(NULLIF(s.no_haspel_stok, ''), '-')
+                    AND r.no_ref_key = COALESCE(NULLIF(s.no_ref_stok, ''), '-')
+                WHERE s.id_sumber_material = 10
+            ) transit_rows
+            WHERE total_qty_outstanding > 0
+            GROUP BY kategori_item
+            ORDER BY kategori_item ASC
+        ")->result_array();
+    }
+
+    public function getHistoryShipmentCategoryCards(): array
+    {
+        return $this->db->query("
+            SELECT
+                kategori_item,
+                SUM(total_qty_kirim) AS total_qty_kirim,
+                MAX(satuan_item) AS satuan_item
+            FROM (
+                SELECT
+                    ki.kategori_item,
+                    ki.satuan_item,
+                    COALESCE(s.jumlah_stok, 0) AS total_qty_kirim
+                FROM tb_logistik_stok s
+                INNER JOIN tb_master_logistik_sumber_material sm
+                    ON sm.id_sumber_material = s.id_sumber_material
+                LEFT JOIN tb_master_logistik_kode_item ki
+                    ON ki.id_kode_item = s.id_kode_item
+                WHERE s.id_sumber_material = 10
+            ) history_rows
+            GROUP BY kategori_item
+            ORDER BY kategori_item ASC
+        ")->result_array();
+    }
+
+    public function getHoShipmentDetailBySuratJalan($noSuratJalan): array
+    {
+        return $this->db->query("
+            SELECT
+                s.no_surat_jalan,
+                s.tanggal_upload_stok AS tanggal_pengiriman,
+                COALESCE(asal.kota_lokasi_gudang, 'HO') AS asal_gudang,
+                COALESCE(tujuan.kota_lokasi_gudang, '-') AS tujuan_gudang,
+                s.no_po_logistik,
+                s.no_pr_logistik,
+                s.surat_jalan,
+                s.evidence,
+                ki.kategori_item,
+                ki.nama_item,
+                ki.satuan_item,
+                b.nama_bowheer,
+                s.merk_stok,
+                s.no_haspel_stok,
+                s.no_ref_stok,
+                COALESCE(s.jumlah_stok, 0) AS qty_kirim,
+                COALESCE(r.qty_diterima, 0) AS qty_diterima,
+                GREATEST(COALESCE(s.jumlah_stok, 0) - COALESCE(r.qty_diterima, 0), 0) AS qty_outstanding,
+                s.keterangan_stok
+            FROM tb_logistik_stok s
+            INNER JOIN tb_master_logistik_sumber_material sm
+                ON sm.id_sumber_material = s.id_sumber_material
+            LEFT JOIN tb_master_logistik_kode_item ki
+                ON ki.id_kode_item = s.id_kode_item
+            LEFT JOIN tb_master_bowheer b
+                ON b.id_bowheer = s.id_bowheer
+            LEFT JOIN tb_master_logistik_lokasi_gudang asal
+                ON asal.id_lokasi_gudang = s.id_lokasi_gudang
+            LEFT JOIN tb_master_logistik_lokasi_gudang tujuan
+                ON tujuan.id_lokasi_gudang = s.id_lokasi_gudang_pengiriman
+            LEFT JOIN (
+                SELECT
+                    no_surat_jalan,
+                    id_lokasi_gudang,
+                    id_kode_item,
+                    COALESCE(NULLIF(no_haspel_stok, ''), '-') AS no_haspel_key,
+                    COALESCE(NULLIF(no_ref_stok, ''), '-') AS no_ref_key,
+                    SUM(jumlah_stok) AS qty_diterima
+                FROM tb_logistik_stok
+                WHERE id_sumber_material = 1
+                GROUP BY
+                    no_surat_jalan,
+                    id_lokasi_gudang,
+                    id_kode_item,
+                    COALESCE(NULLIF(no_haspel_stok, ''), '-'),
+                    COALESCE(NULLIF(no_ref_stok, ''), '-')
+            ) r
+                ON r.no_surat_jalan = s.no_surat_jalan
+                AND r.id_lokasi_gudang = s.id_lokasi_gudang_pengiriman
+                AND r.id_kode_item = s.id_kode_item
+                AND r.no_haspel_key = COALESCE(NULLIF(s.no_haspel_stok, ''), '-')
+                AND r.no_ref_key = COALESCE(NULLIF(s.no_ref_stok, ''), '-')
+            WHERE s.id_sumber_material = 10
+              AND s.no_surat_jalan = ?
+            ORDER BY ki.kategori_item ASC, ki.nama_item ASC, s.id_logistik_stok ASC
+        ", [$noSuratJalan])->result_array();
+    }
 
 }
 

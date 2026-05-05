@@ -722,9 +722,11 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                                                 <a class="pr-action-btn pr-action-btn--view" href="<?= base_url('Logistik_Purchase_Request/view_purchase_request') . '/' . $value['id_purchase_request'] ?>" title="Lihat detail">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <a class="pr-action-btn pr-action-btn--print" href="javascript:void(0);" title="Print">
-                                                    <i class="fas fa-print"></i>
-                                                </a>
+                                                <?php if (!empty($value['is_fully_approved'])): ?>
+                                                    <a class="pr-action-btn pr-action-btn--print" href="<?= base_url('Logistik_Purchase_Request/print_purchase_request/' . $value['id_purchase_request']) ?>" target="_blank" title="Print">
+                                                        <i class="fas fa-print"></i>
+                                                    </a>
+                                                <?php endif; ?>
                                                 <a class="pr-action-btn pr-action-btn--planning" href="<?= base_url('Logistik_Purchase_Request/edit_purchase_request') . '/' . $value['id_purchase_request'] ?>" <?= ((!$isSuperAdmin && $userValidation != 'Planning') || (int) ($value['approved_planning'] ?? 0) === 1) ? 'hidden' : '' ?>>
                                                     Planning
                                                 </a>
@@ -789,9 +791,11 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                                                     <a class="pr-action-btn pr-action-btn--view" href="<?= base_url('Logistik_Purchase_Request/view_purchase_request') . '/' . $value['id_purchase_request'] ?>" title="Lihat detail">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <a class="pr-action-btn pr-action-btn--print" href="javascript:void(0);" title="Print">
-                                                        <i class="fas fa-print"></i>
-                                                    </a>
+                                                    <?php if (!empty($value['is_fully_approved'])): ?>
+                                                        <a class="pr-action-btn pr-action-btn--print" href="<?= base_url('Logistik_Purchase_Request/print_purchase_request/' . $value['id_purchase_request']) ?>" target="_blank" title="Print">
+                                                            <i class="fas fa-print"></i>
+                                                        </a>
+                                                    <?php endif; ?>
                                                     <a class="pr-action-btn pr-action-btn--planning" href="<?= base_url('Logistik_Purchase_Request/edit_purchase_request') . '/' . $value['id_purchase_request'] ?>" <?= ((!$isSuperAdmin && $userValidation != 'Planning') || (int) ($value['approved_planning'] ?? 0) === 1) ? 'hidden' : '' ?>>
                                                         Planning
                                                     </a>

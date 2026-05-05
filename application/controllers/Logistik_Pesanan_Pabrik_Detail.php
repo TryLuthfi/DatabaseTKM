@@ -50,6 +50,37 @@ class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
         $this->load->view('Templates/99_JS');
     }
 
+    public function print_po($nomor_po_pabrik = null)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if ($nomor_po_pabrik === null || $nomor_po_pabrik === '') {
+            $this->session->set_flashdata('error', 'Nomor PO tidak ditemukan.');
+            redirect('Logistik_Pesanan_Pabrik');
+            return;
+        }
+
+        $this->MLogistik_Pesanan_Pabrik->ensurePoDetailIdsByNomor($nomor_po_pabrik);
+        $header = $this->MLogistik_Pesanan_Pabrik->getPoPrintHeaderByNomor($nomor_po_pabrik);
+        if (empty($header)) {
+            $this->session->set_flashdata('error', 'Data PO untuk print tidak ditemukan.');
+            redirect('Logistik_Pesanan_Pabrik');
+            return;
+        }
+
+        $items = $this->MLogistik_Pesanan_Pabrik->getPoItemsByNomor($nomor_po_pabrik);
+        $data = [
+            'title' => 'Print PO',
+            'poHeader' => $header,
+            'poItems' => $items,
+        ];
+
+        $this->load->view('format_po_print', $data);
+    }
+
     public function create_delivery()
     {
         if (empty($this->session->userdata('id_user'))) {

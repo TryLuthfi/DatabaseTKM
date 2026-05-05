@@ -42,6 +42,7 @@ $totalVolumePlanning = array_sum(array_map('floatval', array_column($detail_purc
 $approvalCompleted = count(array_filter($approvalStages, function ($stage) {
     return $stage['approved'];
 }));
+$isPrFullyApproved = !empty($purchaseRequest['is_fully_approved']) || (!empty($approvalStages) && $approvalCompleted === count($approvalStages));
 $currentApprovalKey = '';
 $currentApprovalLabel = '';
 foreach ($approvalStages as $stage) {
@@ -703,7 +704,9 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                             </div>
 
                             <div class="prd-toolbar mt-4">
-                                <a href="javascript:void(0);" class="btn btn-primary"><i class="fa fa-print mr-1"></i> Print</a>
+                                <?php if ($isPrFullyApproved): ?>
+                                    <a href="<?= base_url('Logistik_Purchase_Request/print_purchase_request/' . $purchaseRequest['id_purchase_request']) ?>" target="_blank" class="btn btn-primary"><i class="fa fa-print mr-1"></i> Print</a>
+                                <?php endif; ?>
                                 <?php if (!$isEditMode): ?>
                                     <?php if ($showSeparateApproveButton): ?>
                                         <a href="#" class="btn btn-success btn-approve <?= $canApproveCurrentStage ? '' : 'disabled' ?>" data-id="<?= $purchaseRequest['id_purchase_request'] ?>" data-tipe="<?= $currentApprovalKey ?>">
@@ -810,6 +813,7 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                                     <thead>
                                         <tr>
                                             <th>No</th>
+                                            <th>Nomor PR</th>
                                             <th>Nama Material</th>
                                             <th>Satuan</th>
                                             <th class="text-number">Kebutuhan Project</th>
@@ -825,6 +829,7 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                                         <?php foreach ($nodinDetailRows as $nodinIndex => $nodinDetail): ?>
                                             <tr>
                                                 <td><?= $nodinIndex + 1 ?></td>
+                                                <td><?= $nodinDetail['nomor_purchase_request'] ?? '-' ?></td>
                                                 <td><?= $nodinDetail['nama_item'] ?: '-' ?></td>
                                                 <td><?= $nodinDetail['satuan_item'] ?: '-' ?></td>
                                                 <td class="text-number"><?= number_format($nodinDetail['kebutuhan_project'] ?? 0, 0, ',', '.') ?></td>
@@ -839,7 +844,7 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="3">TOTAL</td>
+                                            <td colspan="4">TOTAL</td>
                                             <td class="text-number"><?= number_format($nodinTotalKebutuhan, 0, ',', '.') ?></td>
                                             <td class="text-number"><?= number_format($nodinTotalOutstanding, 0, ',', '.') ?></td>
                                             <td class="text-number"><?= number_format($nodinTotalQty, 0, ',', '.') ?></td>

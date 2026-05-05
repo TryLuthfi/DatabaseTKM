@@ -6,10 +6,36 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
     public function getMasterPabrikActive()
     {
         return $this->db->query("
-            SELECT id_pabrik, nama_pabrik, lokasi_pabrik, jenis_pabrik, status_pabrik
+            SELECT id_pabrik, nama_pabrik, lokasi_pabrik, jenis_pabrik, pic_pabrik, tlp_pabrik, status_pabrik
             FROM tb_master_logistik_pabrik
             WHERE status_pabrik = 'ACTIVE'
             ORDER BY nama_pabrik ASC
+        ")->result_array();
+    }
+
+    public function getMasterSystemPembayaran(): array
+    {
+        if (!$this->relationExists('tb_master_logistik_system_pembayaran')) {
+            return [];
+        }
+
+        return $this->db->query("
+            SELECT id_system_pembayaran, harga_system_pembayaran
+            FROM tb_master_logistik_system_pembayaran
+            ORDER BY id_system_pembayaran ASC
+        ")->result_array();
+    }
+
+    public function getMasterJenisPembayaran(): array
+    {
+        if (!$this->relationExists('tb_master_logistik_jenis_pembayaran')) {
+            return [];
+        }
+
+        return $this->db->query("
+            SELECT id_jenis_pembayaran, detail_jenis_pembayaran
+            FROM tb_master_logistik_jenis_pembayaran
+            ORDER BY id_jenis_pembayaran ASC
         ")->result_array();
     }
 
@@ -212,8 +238,21 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 ];
             }
 
+            $bowheerMap = [];
+            foreach ($outstandingItems as $item) {
+                $bowheerLabel = trim((string) (($item['bowheer_label'] ?? $item['id_project'] ?? $item['nama_project'] ?? '')));
+                if ($bowheerLabel === '') {
+                    continue;
+                }
+
+                $bowheerMap[$bowheerLabel] = [
+                    'label' => $bowheerLabel,
+                ];
+            }
+
             $row['total_vendor'] = count($vendorMap);
             $row['vendor_options'] = array_values($vendorMap);
+            $row['bowheer_options'] = array_values($bowheerMap);
 
             $result[] = $row;
         }
@@ -221,7 +260,7 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
         return $result;
     }
 
-    public function getApprovedNodinItems($idNodin, $idPabrik = 0)
+    public function getApprovedNodinItems($idNodin, $idPabrik = 0, $bowheerLabel = '')
     {
         if (!$this->relationExists('tb_logistik_nota_dinas_po_detail')) {
             return [];
@@ -258,6 +297,12 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
         }
 
         $pabrikFilterSql = $idPabrik > 0 ? " AND d.id_pabrik = " . (int) $idPabrik : "";
+        $bowheerFilterSql = '';
+        $params = [$idNodin];
+        if (trim((string) $bowheerLabel) !== '') {
+            $bowheerFilterSql = " AND LOWER(TRIM(COALESCE(pr.id_project, pr.nama_project, ''))) = LOWER(TRIM(?)) ";
+            $params[] = trim((string) $bowheerLabel);
+        }
 
         $rows = $this->db->query("
             SELECT
@@ -272,7 +317,9 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 d.harga_satuan,
                 d.keterangan,
                 pr.nomor_purchase_request,
+                pr.id_project,
                 pr.nama_project,
+                COALESCE(pr.id_project, pr.nama_project) AS bowheer_label,
                 ki.nama_item,
                 ki.satuan_item,
                 mp.nama_pabrik,
@@ -292,8 +339,9 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
             {$allocationJoin}
             WHERE d.id_nota_dinas_po = ?
             {$pabrikFilterSql}
+            {$bowheerFilterSql}
             ORDER BY pr.nomor_purchase_request ASC, ki.nama_item ASC, d.id_nota_dinas_po_detail ASC
-        ", [$idNodin])->result_array();
+        ", $params)->result_array();
 
         foreach ($rows as &$row) {
             $row['qty_po_teralokasi'] = (float) ($row['qty_po_teralokasi'] ?? 0);
@@ -411,7 +459,7 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
         $qtyClosedExpression = $supportsQtyClosedManual ? 'd.qty_closed_manual' : '0';
 
         $referenceJoinSql = '';
-        $referenceSelectSql = "NULL AS nomor_nota_dinas_refs, NULL AS nomor_purchase_request_refs,";
+        $referenceSelectSql = "NULL AS nomor_nota_dinas_refs, NULL AS nomor_purchase_request_refs, NULL AS bowheer_refs,";
         $referenceGroupSql = '';
 
         if ($supportsNodinReference) {
@@ -420,7 +468,8 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                     SELECT
                         pd.id_pesanan_pabrik,
                         GROUP_CONCAT(DISTINCT h.nomor_nota_dinas ORDER BY h.nomor_nota_dinas SEPARATOR ', ') AS nomor_nota_dinas_refs,
-                        GROUP_CONCAT(DISTINCT pr.nomor_purchase_request ORDER BY pr.nomor_purchase_request SEPARATOR ', ') AS nomor_purchase_request_refs
+                        GROUP_CONCAT(DISTINCT pr.nomor_purchase_request ORDER BY pr.nomor_purchase_request SEPARATOR ', ') AS nomor_purchase_request_refs,
+                        GROUP_CONCAT(DISTINCT COALESCE(pr.id_project, pr.nama_project) ORDER BY COALESCE(pr.id_project, pr.nama_project) SEPARATOR ', ') AS bowheer_refs
                     FROM tb_logistik_pesanan_pabrik_detail pd
                     LEFT JOIN tb_logistik_nota_dinas_po_detail nd
                         ON nd.id_nota_dinas_po_detail = pd.id_nota_dinas_po_detail
@@ -436,10 +485,12 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
             $referenceSelectSql = "
                 refs.nomor_nota_dinas_refs,
                 refs.nomor_purchase_request_refs,
+                refs.bowheer_refs,
             ";
             $referenceGroupSql = ",
                     refs.nomor_nota_dinas_refs,
-                    refs.nomor_purchase_request_refs";
+                    refs.nomor_purchase_request_refs,
+                    refs.bowheer_refs";
         }
 
         return $this->db->query("
@@ -455,18 +506,38 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 COALESCE(NULLIF(p.status_po, ''), 'APPROVED') AS status_po,
                 p.id_user,
                 mp.nama_pabrik,
+                mp.lokasi_pabrik,
+                mp.jenis_pabrik,
+                mp.pic_pabrik,
+                mp.tlp_pabrik,
                 mu.nama_user,
+                " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'id_system_pembayaran') ? 'p.id_system_pembayaran' : 'NULL AS id_system_pembayaran') . ",
+                " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'id_jenis_pembayaran') ? 'p.id_jenis_pembayaran' : 'NULL AS id_jenis_pembayaran') . ",
+                " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'keterangan_po') ? 'p.keterangan_po' : 'NULL AS keterangan_po') . ",
+                " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'waktu_pengiriman_material') ? 'p.waktu_pengiriman_material' : 'NULL AS waktu_pengiriman_material') . ",
+                sp.harga_system_pembayaran,
+                jp.detail_jenis_pembayaran,
                 COUNT(DISTINCT d.id_pesanan_pabrik_detail) AS total_item,
                 COALESCE(SUM(d.qty_item), 0) AS total_qty_po,
                 COALESCE(SUM(gd.qty_item), 0) AS total_qty_terkirim,
                 COALESCE(SUM(COALESCE(gd.qty_diterima, 0)), 0) AS total_qty_diterima,
                 (COALESCE(SUM(d.qty_item), 0) - COALESCE(SUM(gd.qty_item), 0) - COALESCE(SUM({$qtyClosedExpression}), 0)) AS total_outstanding,
-                COALESCE(SUM(COALESCE(d.harga_item, 0) * COALESCE(d.qty_item, 0)), 0) AS total_nominal_po
+                COALESCE(SUM(COALESCE(d.harga_item, 0) * COALESCE(d.qty_item, 0)), 0) AS total_nominal_po,
+                (COALESCE(SUM(COALESCE(d.harga_item, 0) * COALESCE(d.qty_item, 0)), 0) * 11 / 12) AS total_dpp_po,
+                (COALESCE(SUM(COALESCE(d.harga_item, 0) * COALESCE(d.qty_item, 0)), 0) * 0.12) AS total_ppn_po
             FROM tb_logistik_pesanan_pabrik p
             LEFT JOIN tb_master_logistik_pabrik mp
                 ON mp.id_pabrik = p.id_pabrik
             LEFT JOIN tb_master_user mu
                 ON mu.id_user = p.id_user
+            " . ($this->relationExists('tb_master_logistik_system_pembayaran') && $this->fieldExists('tb_logistik_pesanan_pabrik', 'id_system_pembayaran')
+                ? "LEFT JOIN tb_master_logistik_system_pembayaran sp
+                ON sp.id_system_pembayaran = p.id_system_pembayaran"
+                : "LEFT JOIN (SELECT NULL AS id_system_pembayaran, NULL AS harga_system_pembayaran) sp ON 1=0") . "
+            " . ($this->relationExists('tb_master_logistik_jenis_pembayaran') && $this->fieldExists('tb_logistik_pesanan_pabrik', 'id_jenis_pembayaran')
+                ? "LEFT JOIN tb_master_logistik_jenis_pembayaran jp
+                ON jp.id_jenis_pembayaran = p.id_jenis_pembayaran"
+                : "LEFT JOIN (SELECT NULL AS id_jenis_pembayaran, NULL AS detail_jenis_pembayaran) jp ON 1=0") . "
             {$referenceJoinSql}
             LEFT JOIN tb_logistik_pesanan_pabrik_detail d
                 ON d.id_pesanan_pabrik = p.id_pesanan_pabrik
@@ -483,10 +554,25 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 p.status_po,
                 p.id_user,
                 mp.nama_pabrik,
+                mp.lokasi_pabrik,
+                mp.jenis_pabrik,
+                mp.pic_pabrik,
+                mp.tlp_pabrik,
                 mu.nama_user
+                " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'id_system_pembayaran') ? ', p.id_system_pembayaran' : '') . "
+                " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'id_jenis_pembayaran') ? ', p.id_jenis_pembayaran' : '') . "
+                " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'keterangan_po') ? ', p.keterangan_po' : '') . "
+                " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'waktu_pengiriman_material') ? ', p.waktu_pengiriman_material' : '') . "
+                , sp.harga_system_pembayaran
+                , jp.detail_jenis_pembayaran
                 {$referenceGroupSql}
             ORDER BY p.tanggal_po_pabrik DESC, p.nomor_po_pabrik DESC
         ")->result_array();
+    }
+
+    public function getPoPrintHeaderByNomor($nomorPo)
+    {
+        return $this->getPoHeaderByNomor($nomorPo);
     }
 
     public function getPoDashboardStats()
@@ -499,6 +585,8 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
             'total_qty_terkirim' => 0,
             'total_outstanding' => 0,
             'total_nominal_po' => 0,
+            'total_dpp_po' => 0,
+            'total_ppn_po' => 0,
             'completed_po' => 0,
             'partial_po' => 0,
         ];
@@ -509,6 +597,8 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
             $stats['total_qty_terkirim'] += (float) ($row['total_qty_terkirim'] ?? 0);
             $stats['total_outstanding'] += (float) ($row['total_outstanding'] ?? 0);
             $stats['total_nominal_po'] += (float) ($row['total_nominal_po'] ?? 0);
+            $stats['total_dpp_po'] += (float) ($row['total_dpp_po'] ?? 0);
+            $stats['total_ppn_po'] += (float) ($row['total_ppn_po'] ?? 0);
 
             if ((float) ($row['total_outstanding'] ?? 0) <= 0) {
                 $stats['completed_po']++;
@@ -560,6 +650,7 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
             return (int) ($row['id_pesanan_pabrik_detail'] ?? 0);
         }, $poDetailIds)));
 
+        $hasReceivedShipment = false;
         if (!empty($detailIds) && $this->relationExists('tb_logistik_pengiriman_pabrik_detail')) {
             $receivedShipment = $this->db
                 ->select('MAX(COALESCE(qty_diterima, 0)) AS max_qty_diterima', false)
@@ -568,10 +659,19 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 ->get()
                 ->row_array();
 
-            if ((float) ($receivedShipment['max_qty_diterima'] ?? 0) > 0) {
+            $hasReceivedShipment = (float) ($receivedShipment['max_qty_diterima'] ?? 0) > 0;
+        }
+
+        if ($hasReceivedShipment && $this->relationExists('tb_logistik_stok') && $this->fieldExists('tb_logistik_stok', 'no_po_logistik')) {
+            $stockCount = (int) $this->db
+                ->from('tb_logistik_stok')
+                ->where('no_po_logistik', $nomorPo)
+                ->count_all_results();
+
+            if ($stockCount > 0) {
                 return [
                     'success' => false,
-                    'message' => 'PO tidak bisa dihapus karena sudah ada material yang diterima gudang.',
+                    'message' => 'PO tidak bisa dihapus karena masih ada histori stok yang mengacu ke PO ini.',
                 ];
             }
         }
