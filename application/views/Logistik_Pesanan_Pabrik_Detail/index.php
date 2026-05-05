@@ -4,9 +4,46 @@ $flashError = $this->session->flashdata('error');
 
 $totalQtyPo = array_sum(array_map('floatval', array_column($poItems, 'qty_po')));
 $totalQtyKirim = array_sum(array_map('floatval', array_column($poItems, 'qty_terkirim')));
+$totalQtyDiterima = array_sum(array_map('floatval', array_column($poItems, 'qty_diterima')));
 $totalOutstanding = array_sum(array_map('floatval', array_column($poItems, 'outstanding_pengiriman')));
 $totalNominal = array_sum(array_map('floatval', array_column($poItems, 'total_nominal_detail')));
+$totalHistoryQtyKirim = array_sum(array_map('floatval', array_column($poDeliveries, 'qty_kirim')));
+$totalHistoryQtyDiterima = array_sum(array_map('floatval', array_column($poDeliveries, 'qty_diterima')));
 $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
+$renderFileLink = static function ($filePath) {
+    $filePath = trim((string) $filePath);
+    if ($filePath === '') {
+        return '-';
+    }
+
+    $normalizedPath = preg_replace('#^(\./)+#', '', $filePath);
+    if (stripos($normalizedPath, 'uploads/') !== 0) {
+        $normalizedPath = 'uploads/' . ltrim($normalizedPath, '/');
+    }
+
+    $href = base_url($normalizedPath);
+    $label = basename($filePath);
+    return '<a href="' . $href . '" target="_blank">' . htmlspecialchars($label, ENT_QUOTES) . '</a>';
+};
+$statusMeta = (function () use ($poHeader, $totalQtyPo, $totalQtyKirim, $totalQtyDiterima) {
+    $statusPo = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
+    if ($statusPo === 'CLOSED') {
+        return ['label' => 'Closed', 'tone' => 'pod-chip--slate'];
+    }
+    if ($totalQtyKirim <= 0) {
+        return ['label' => 'Produksi', 'tone' => 'pod-chip--blue'];
+    }
+    if ($totalQtyDiterima <= 0) {
+        if ($totalQtyKirim < $totalQtyPo) {
+            return ['label' => 'Partial Pengiriman', 'tone' => 'pod-chip--waiting'];
+        }
+        return ['label' => 'Pengiriman', 'tone' => 'pod-chip--waiting'];
+    }
+    if ($totalQtyDiterima < $totalQtyPo) {
+        return ['label' => 'Partial Delivered', 'tone' => 'pod-chip--waiting'];
+    }
+    return ['label' => 'Full Delivered', 'tone' => 'pod-chip--approved'];
+})();
 ?>
 
 <style>
@@ -350,20 +387,24 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
                                 <span class="pod-overview__value"><?= $poHeader['nama_pabrik'] ?: '-' ?></span>
                             </div>
                             <div class="pod-overview__item">
+                                <span class="pod-overview__label">Referensi NODIN</span>
+                                <span class="pod-overview__value"><?= $poHeader['nomor_nota_dinas_refs'] ?: '-' ?></span>
+                            </div>
+                            <div class="pod-overview__item">
                                 <span class="pod-overview__label">Referensi PR</span>
-                                <span class="pod-overview__value"><?= $poHeader['nomor_purchase_request'] ?: '-' ?></span>
+                                <span class="pod-overview__value"><?= $poHeader['nomor_purchase_request_refs'] ?: ($poHeader['nomor_purchase_request'] ?: '-') ?></span>
                             </div>
                             <div class="pod-overview__item">
                                 <span class="pod-overview__label">Status PO</span>
                                 <span class="pod-overview__value">
                                     <span class="pod-chip <?= $totalOutstanding <= 0 ? 'pod-chip--approved' : 'pod-chip--waiting' ?>">
-                                        <?= $statusLabel ?>
+                                        <?= $statusMeta['label'] ?>
                                     </span>
                                 </span>
                             </div>
                             <div class="pod-overview__item">
                                 <span class="pod-overview__label">Dokumen PO</span>
-                                <span class="pod-overview__value"><?= empty($poHeader['purchase_order_document']) ? '-' : $poHeader['purchase_order_document'] ?></span>
+                                <span class="pod-overview__value"><?= $renderFileLink($poHeader['purchase_order_document'] ?? '') ?></span>
                             </div>
                         </div>
                     </div>
@@ -375,9 +416,9 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
                             <h2 class="pod-panel__title">Ringkasan Pengiriman</h2>
                             <p class="pod-panel__subtitle">Baca cepat kondisi PO: siap kirim, partial, atau selesai.</p>
                         </div>
-                        <span class="pod-chip <?= $totalOutstanding <= 0 ? 'pod-chip--approved' : 'pod-chip--waiting' ?>">
+                        <span class="pod-chip <?= $statusMeta['tone'] ?>">
                             <i class="fas fa-truck"></i>
-                            <?= $totalOutstanding <= 0 ? 'Completed' : ($totalQtyKirim > 0 ? 'Partial Delivery' : 'Waiting Delivery') ?>
+                            <?= $statusMeta['label'] ?>
                         </span>
                     </div>
                     <div class="pod-panel__body">
@@ -393,6 +434,10 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
                             <div class="pod-overview__item">
                                 <span class="pod-overview__label">Qty Terkirim</span>
                                 <span class="pod-overview__value"><?= number_format($totalQtyKirim, 0, ',', '.') ?></span>
+                            </div>
+                            <div class="pod-overview__item">
+                                <span class="pod-overview__label">Qty Diterima</span>
+                                <span class="pod-overview__value"><?= number_format($totalQtyDiterima, 0, ',', '.') ?></span>
                             </div>
                             <div class="pod-overview__item">
                                 <span class="pod-overview__label">Outstanding</span>
@@ -417,6 +462,8 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
                             <thead>
                                 <tr>
                                     <th>No</th>
+                                    <th>Referensi NODIN</th>
+                                    <th>Referensi PR</th>
                                     <th>Nama Item</th>
                                     <th>Satuan</th>
                                     <th>Volume Planning</th>
@@ -432,6 +479,8 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
                                 <?php foreach ($poItems as $item): ?>
                                     <tr>
                                         <td><?= $number++ ?></td>
+                                        <td><?= $item['nomor_nota_dinas'] ?: '-' ?></td>
+                                        <td><?= $item['nomor_purchase_request'] ?: '-' ?></td>
                                         <td><?= $item['nama_item'] ?: '-' ?></td>
                                         <td><?= $item['satuan_item'] ?: '-' ?></td>
                                         <td><?= $item['volume_planning_snapshot'] !== null ? number_format($item['volume_planning_snapshot'], 0, ',', '.') : '-' ?></td>
@@ -445,7 +494,7 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="4">TOTAL</td>
+                                    <td colspan="6">TOTAL</td>
                                     <td><?= number_format($totalQtyPo, 0, ',', '.') ?></td>
                                     <td><?= number_format($totalQtyKirim, 0, ',', '.') ?></td>
                                     <td><?= number_format($totalOutstanding, 0, ',', '.') ?></td>
@@ -478,6 +527,7 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
                                     <th>No Surat Jalan</th>
                                     <th>Lokasi Gudang</th>
                                     <th>Item</th>
+                                    <th>Status</th>
                                     <th>Qty Kirim</th>
                                     <th>Qty Diterima</th>
                                     <th>SJ Pabrik</th>
@@ -487,19 +537,33 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
                             <tbody>
                                 <?php $number = 1; ?>
                                 <?php foreach ($poDeliveries as $delivery): ?>
+                                    <?php
+                                    $deliveryStatus = (float) ($delivery['qty_diterima'] ?? 0) > 0
+                                        ? ['label' => 'Delivered', 'tone' => 'pod-chip--approved']
+                                        : ['label' => 'Pengiriman', 'tone' => 'pod-chip--waiting'];
+                                    ?>
                                     <tr>
                                         <td><?= $number++ ?></td>
                                         <td><?= $delivery['tanggal_pengiriman_pabrik'] ?: '-' ?></td>
                                         <td><?= $delivery['no_surat_jalan'] ?: '-' ?></td>
                                         <td><?= $delivery['kota_lokasi_gudang'] ?: '-' ?></td>
                                         <td><?= $delivery['nama_item'] ?: '-' ?></td>
+                                        <td><span class="pod-chip <?= $deliveryStatus['tone'] ?>"><?= $deliveryStatus['label'] ?></span></td>
                                         <td><?= number_format($delivery['qty_kirim'] ?? 0, 0, ',', '.') ?></td>
                                         <td><?= number_format($delivery['qty_diterima'] ?? 0, 0, ',', '.') ?></td>
-                                        <td><?= $delivery['surat_jalan_pabrik'] ?: '-' ?></td>
-                                        <td><?= $delivery['surat_jalan_ho'] ?: '-' ?></td>
+                                        <td><?= $renderFileLink($delivery['surat_jalan_pabrik'] ?? '') ?></td>
+                                        <td><?= $renderFileLink($delivery['surat_jalan_ho'] ?? '') ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="6">TOTAL</td>
+                                    <td><?= number_format($totalHistoryQtyKirim, 0, ',', '.') ?></td>
+                                    <td><?= number_format($totalHistoryQtyDiterima, 0, ',', '.') ?></td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     <?php else: ?>
                         <div class="pod-empty">Belum ada histori pengiriman untuk PO ini.</div>
@@ -512,13 +576,13 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
 
 <?php if (!empty($poItems)): ?>
     <div class="modal fade" id="modalCreateDelivery" data-backdrop="static">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog modal-xxl">
             <div class="modal-content" style="border-radius:24px;overflow:hidden;">
-                <form action="<?= base_url('Logistik_Pesanan_Pabrik_Detail/create_delivery') ?>" method="post" id="form-create-delivery">
+                <form action="<?= base_url('Logistik_Pesanan_Pabrik_Detail/create_delivery') ?>" method="post" id="form-create-delivery" enctype="multipart/form-data">
                     <div class="modal-header text-white" style="border-bottom:0;background:linear-gradient(135deg, #0f172a, #1d4ed8);">
                         <div>
                             <h4 class="modal-title mb-1">Input Pengiriman Pabrik</h4>
-                            <small>Pilih item outstanding yang benar-benar dikirim, lalu sistem akan otomatis menambah stok masuk logistik.</small>
+                            <small>Pilih item outstanding yang benar-benar dikirim. Stok gudang akan bertambah setelah proses penerimaan `IN dari Pabrik` di gudang tujuan.</small>
                         </div>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -541,27 +605,39 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>Gudang Tujuan</label>
-                                    <select name="id_lokasi_gudang" class="form-control" required>
-                                        <option value="">Pilih Gudang Tujuan</option>
-                                        <?php foreach ($gudangOptions as $gudang): ?>
-                                            <option value="<?= $gudang['id_lokasi_gudang'] ?>">
-                                                <?= $gudang['regional_lokasi_gudang'] ?> | <?= $gudang['kota_lokasi_gudang'] ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                    <label>Gudang Penerimaan</label>
+                                    <?php if (!empty($defaultHoGudang['id_lokasi_gudang'])): ?>
+                                        <input type="hidden" name="id_lokasi_gudang" value="<?= (int) $defaultHoGudang['id_lokasi_gudang'] ?>">
+                                        <input type="text" class="form-control" value="<?= ($defaultHoGudang['regional_lokasi_gudang'] ?: 'HO') . ' | ' . ($defaultHoGudang['kota_lokasi_gudang'] ?: 'HO') ?>" readonly>
+                                        <small class="text-muted">Pengiriman dari pabrik otomatis diterima ke gudang HO.</small>
+                                    <?php else: ?>
+                                        <select name="id_lokasi_gudang" id="delivery_id_lokasi_gudang" class="form-control" required>
+                                            <option value="">Pilih Gudang Tujuan</option>
+                                            <?php foreach ($gudangOptions as $gudang): ?>
+                                                <option value="<?= $gudang['id_lokasi_gudang'] ?>">
+                                                    <?= $gudang['regional_lokasi_gudang'] ?> | <?= $gudang['kota_lokasi_gudang'] ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label>Referensi SJ Pabrik</label>
-                                    <input type="text" name="surat_jalan_pabrik" class="form-control" placeholder="Nama file / nomor">
+                                    <label>Upload Surat Jalan</label>
+                                    <div class="custom-file">
+                                        <input type="file" name="file_surat_jalan_pabrik" id="delivery_file_sj" class="custom-file-input" accept=".pdf,.jpg,.jpeg,.png" required>
+                                        <label class="custom-file-label" for="delivery_file_sj">Choose file</label>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label>Referensi SJ HO</label>
-                                    <input type="text" name="surat_jalan_ho" class="form-control" placeholder="Nama file / nomor">
+                                    <label>Upload Evidence</label>
+                                    <div class="custom-file">
+                                        <input type="file" name="file_evidence_ho" id="delivery_file_evidence" class="custom-file-input" accept=".pdf,.jpg,.jpeg,.png" required>
+                                        <label class="custom-file-label" for="delivery_file_evidence">Choose file</label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -589,8 +665,8 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
                                         } ?>
                                         <tr>
                                             <td>
-                                                <input type="checkbox" name="selected_item[]" value="<?= $index ?>" checked>
-                                                <input type="hidden" name="id_pesanan_pabrik_detail[<?= $index ?>]" value="<?= $item['id_pesanan_pabrik_detail'] ?>">
+                                                <input type="checkbox" name="selected_item[]" value="<?= (int) $item['id_pesanan_pabrik_detail'] ?>" checked>
+                                                <input type="hidden" name="id_pesanan_pabrik_detail[<?= $index ?>]" value="<?= (int) $item['id_pesanan_pabrik_detail'] ?>">
                                             </td>
                                             <td><?= $item['nama_item'] ?: '-' ?></td>
                                             <td><?= $item['satuan_item'] ?: '-' ?></td>
@@ -601,7 +677,8 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
                                                 <input
                                                     type="number"
                                                     class="form-control"
-                                                    name="qty_kirim[<?= $index ?>]"
+                                                    name="qty_kirim[<?= (int) $item['id_pesanan_pabrik_detail'] ?>]"
+                                                    data-detail-id="<?= (int) $item['id_pesanan_pabrik_detail'] ?>"
                                                     value="<?= (int) $outstandingQty ?>"
                                                     min="0"
                                                     max="<?= (int) $outstandingQty ?>"
@@ -626,6 +703,20 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
 
 <script>
     $(document).ready(function() {
+        if ($.fn.select2 && $('#delivery_id_lokasi_gudang').length) {
+            $('#delivery_id_lokasi_gudang').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: $('#modalCreateDelivery'),
+                placeholder: 'Pilih Gudang Tujuan'
+            });
+        }
+
+        $('.custom-file-input').on('change', function() {
+            const fileName = this.files && this.files[0] ? this.files[0].name : 'Choose file';
+            $(this).siblings('.custom-file-label').text(fileName);
+        });
+
         $('#form-create-delivery').on('submit', function(e) {
             const checkedItems = $('#form-create-delivery tbody input[type="checkbox"]:checked').length;
             if (!checkedItems) {
@@ -653,6 +744,12 @@ $statusLabel = strtoupper((string) ($poHeader['status_po'] ?? 'APPROVED'));
             if (hasInvalidQty) {
                 e.preventDefault();
                 Swal.fire('Qty kirim tidak valid', 'Qty kirim tiap item harus lebih dari 0 dan tidak boleh melebihi outstanding PO.', 'warning');
+                return;
+            }
+
+            if (!$('#delivery_file_sj').val() || !$('#delivery_file_evidence').val()) {
+                e.preventDefault();
+                Swal.fire('Dokumen belum lengkap', 'Upload surat jalan dan evidence wajib dilengkapi sebelum menyimpan pengiriman.', 'warning');
             }
         });
     });

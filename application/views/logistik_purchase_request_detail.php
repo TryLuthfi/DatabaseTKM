@@ -1039,8 +1039,8 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                                                 <td><?= $nodinItem['satuan_item'] ?: '-' ?></td>
                                                 <td class="text-number js-nodin-kebutuhan"><?= number_format($nodinItem['volume_planning_final'] ?? 0, 0, ',', '.') ?></td>
                                                 <td class="text-number js-nodin-outstanding"><?= number_format($nodinItem['qty_outstanding_pr'] ?? 0, 0, ',', '.') ?></td>
-                                                <td><input type="number" class="form-control text-right js-nodin-qty" name="qty_po_nodin[<?= $nodinItemIndex ?>]" min="0" step="1" value="<?= htmlspecialchars((string) ($existingDetail['qty_po_nodin'] ?? (int) ($nodinItem['qty_outstanding_pr'] ?? 0)), ENT_QUOTES) ?>" required></td>
-                                                <td><input type="number" class="form-control text-right js-nodin-harga" name="harga_satuan[<?= $nodinItemIndex ?>]" min="0" step="1" value="<?= htmlspecialchars((string) ($existingDetail['harga_satuan'] ?? '0'), ENT_QUOTES) ?>"></td>
+                                                <td><input type="text" inputmode="numeric" class="form-control text-right js-live-number js-nodin-qty" name="qty_po_nodin[<?= $nodinItemIndex ?>]" value="<?= htmlspecialchars(number_format((float) ($existingDetail['qty_po_nodin'] ?? (int) ($nodinItem['qty_outstanding_pr'] ?? 0)), 0, ',', '.'), ENT_QUOTES) ?>" required></td>
+                                                <td><input type="text" inputmode="numeric" class="form-control text-right js-live-number js-nodin-harga" name="harga_satuan[<?= $nodinItemIndex ?>]" value="<?= htmlspecialchars(number_format((float) ($existingDetail['harga_satuan'] ?? 0), 0, ',', '.'), ENT_QUOTES) ?>"></td>
                                                 <td class="text-number js-nodin-line-total"><?= number_format(((float) ($existingDetail['qty_po_nodin'] ?? (int) ($nodinItem['qty_outstanding_pr'] ?? 0))) * ((float) ($existingDetail['harga_satuan'] ?? 0)), 0, ',', '.') ?></td>
                                                 <td>
                                                     <select class="form-control js-select-pabrik" name="id_pabrik[<?= $nodinItemIndex ?>]" data-placeholder="Pilih Pabrik">
@@ -1138,6 +1138,21 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
         return parseFloat(normalized) || 0;
     }
 
+    function formatLiveNodinInputValue(value) {
+        return formatNodinNumber(parseNodinNumber(value));
+    }
+
+    function normalizeLiveNodinInputs(scope) {
+        $(scope || document).find('.js-live-number').each(function() {
+            const $input = $(this);
+            if ($input.val() === '') {
+                return;
+            }
+
+            $input.val(formatLiveNodinInputValue($input.val()));
+        });
+    }
+
     function refreshNodinFooter() {
         let totalKebutuhan = 0;
         let totalOutstanding = 0;
@@ -1148,8 +1163,8 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
         $("#form-nodin tbody tr").each(function() {
             const kebutuhan = parseNodinNumber($(this).find('.js-nodin-kebutuhan').text());
             const outstanding = parseNodinNumber($(this).find('.js-nodin-outstanding').text());
-            const qty = parseFloat($(this).find('.js-nodin-qty').val() || 0);
-            const harga = parseFloat($(this).find('.js-nodin-harga').val() || 0);
+            const qty = parseNodinNumber($(this).find('.js-nodin-qty').val() || 0);
+            const harga = parseNodinNumber($(this).find('.js-nodin-harga').val() || 0);
             const lineTotal = qty * harga;
 
             totalKebutuhan += kebutuhan;
@@ -1221,12 +1236,14 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
         hitungTotal();
         refreshNodinFooter();
         initNodinPabrikSelect();
+        normalizeLiveNodinInputs('#form-nodin');
 
         $(".volume_planning").on("input", function() {
             hitungTotal();
         });
 
         $("#form-nodin").on("input", ".js-nodin-qty, .js-nodin-harga", function() {
+            $(this).val(formatLiveNodinInputValue($(this).val()));
             refreshNodinFooter();
         });
 
@@ -1333,7 +1350,7 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
         $("#form-nodin").submit(function(event) {
             let hasInvalidQty = false;
             $("#form-nodin input[name^='qty_po_nodin']").each(function() {
-                const value = parseFloat($(this).val() || 0);
+                const value = parseNodinNumber($(this).val() || 0);
                 if (value <= 0) {
                     hasInvalidQty = true;
                 }
@@ -1344,6 +1361,10 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                 Swal.fire('Qty NODIN tidak valid', 'Qty PO usulan pada NODIN harus lebih dari 0.', 'warning');
                 return;
             }
+
+            $('#form-nodin .js-live-number').each(function() {
+                $(this).val(parseNodinNumber($(this).val() || 0));
+            });
 
             const $form = $(this);
             const isUpdate = $form.data('is-update') === 1 || $form.data('is-update') === '1';

@@ -27,6 +27,10 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
 
         $data['title'] = 'Nota Dinas PO';
         $data['nodinRows'] = $this->MLogistik_Purchase_Request->getNodinSummaryRows();
+        $nodinSummaryMap = [];
+        foreach ($data['nodinRows'] as $summaryRow) {
+            $nodinSummaryMap[(string) ($summaryRow['id_nota_dinas_po'] ?? '')] = $summaryRow;
+        }
         $data['approvedPurchaseRequests'] = [];
         $data['masterPabrikOptions'] = $this->MLogistik_Pesanan_Pabrik->getMasterPabrikActive();
         $data['activeNodin'] = null;
@@ -39,6 +43,7 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
         $data['activeNodinEditMode'] = false;
         $data['activeNodinReadOnly'] = false;
         $data['canManageNodin'] = $this->can_manage_nodin();
+        $data['activeNodinProjectLabel'] = '';
 
         $editId = trim((string) $this->input->get('id'));
         $isEditRequest = trim((string) $this->input->get('edit')) === '1';
@@ -47,9 +52,16 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
             if (!empty($activeNodin)) {
                 $purchaseRequestIds = $this->MLogistik_Purchase_Request->getNodinPurchaseRequestIds($editId);
                 $data['activeNodin'] = $activeNodin;
+                if (isset($nodinSummaryMap[$editId])) {
+                    $data['activeNodin'] = array_merge($nodinSummaryMap[$editId], $data['activeNodin']);
+                }
                 $data['activeNodinDetailRows'] = $this->MLogistik_Purchase_Request->getNodinDetailRows($editId);
                 $data['activeNodinPurchaseRequestIds'] = $purchaseRequestIds;
                 $data['activeNodinCandidateItems'] = $this->buildCandidateItems($purchaseRequestIds);
+                $data['activeNodinProjectLabel'] = (string) ($activeNodin['nama_project_refs'] ?? '');
+                if ($data['activeNodinProjectLabel'] === '' && isset($nodinSummaryMap[$editId])) {
+                    $data['activeNodinProjectLabel'] = (string) ($nodinSummaryMap[$editId]['nama_project_refs'] ?? '');
+                }
 
                 foreach (($activeNodin['workflow_stages'] ?? []) as $stage) {
                     if (empty($activeNodin[$stage['column']])) {
@@ -415,6 +427,7 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
                     'volume_planning_final' => 0,
                     'qty_outstanding_pr' => 0,
                     'nomor_purchase_request_refs' => [],
+                    'nama_project_refs' => [],
                     'source_details' => [],
                 ];
             }
@@ -422,9 +435,14 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
             $grouped[$itemKey]['volume_planning_final'] += (float) ($row['volume_planning_final'] ?? 0);
             $grouped[$itemKey]['qty_outstanding_pr'] += (float) ($row['qty_outstanding_pr'] ?? 0);
             $grouped[$itemKey]['nomor_purchase_request_refs'][(string) ($row['nomor_purchase_request'] ?? '')] = (string) ($row['nomor_purchase_request'] ?? '');
+            $projectLabel = (string) ($row['id_project'] ?? $row['nama_project'] ?? '');
+            if ($projectLabel !== '') {
+                $grouped[$itemKey]['nama_project_refs'][$projectLabel] = $projectLabel;
+            }
             $grouped[$itemKey]['source_details'][] = [
                 'id_purchase_request_detail' => (string) ($row['id_purchase_request_detail'] ?? ''),
                 'nomor_purchase_request' => (string) ($row['nomor_purchase_request'] ?? ''),
+                'nama_project' => $projectLabel,
                 'volume_planning_final' => (float) ($row['volume_planning_final'] ?? 0),
                 'qty_outstanding_pr' => (float) ($row['qty_outstanding_pr'] ?? 0),
                 'id_kode_item' => (int) ($row['id_kode_item'] ?? 0),
@@ -433,8 +451,12 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
 
         foreach ($grouped as &$item) {
             $item['nomor_purchase_request_refs'] = array_values(array_filter($item['nomor_purchase_request_refs']));
+            $item['nama_project_refs'] = array_values(array_filter($item['nama_project_refs'] ?? []));
             $item['nomor_purchase_request_refs_label'] = !empty($item['nomor_purchase_request_refs'])
                 ? implode(', ', $item['nomor_purchase_request_refs'])
+                : '-';
+            $item['nama_project_refs_label'] = !empty($item['nama_project_refs'])
+                ? implode(', ', $item['nama_project_refs'])
                 : '-';
             $item['source_detail_ids_csv'] = implode(',', array_values(array_filter(array_map(static function ($sourceRow) {
                 return (string) ($sourceRow['id_purchase_request_detail'] ?? '');

@@ -100,11 +100,62 @@
       border-color: rgba(148, 163, 184, 0.32);
     }
 
+    .select2-container--bootstrap4 .select2-selection--single {
+      min-height: 42px;
+      padding: .375rem .75rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+      color: var(--shell-text);
+      padding-left: 0;
+      line-height: 1.4;
+    }
+
+    .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+      height: 40px;
+      top: 0;
+      right: 6px;
+    }
+
+    .select2-container--bootstrap4 .select2-selection--multiple {
+      min-height: 42px;
+      padding: .2rem .45rem;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: .25rem;
+    }
+
+    .select2-container--bootstrap4 .select2-selection--multiple .select2-search__field {
+      margin-top: 0 !important;
+    }
+
+    .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice {
+      margin-top: 0;
+      border-radius: 999px;
+      padding: .2rem .5rem;
+    }
+
     .form-control,
     .custom-select {
       border-radius: 12px;
       min-height: 42px;
       border-color: rgba(148, 163, 184, 0.32);
+    }
+
+    .modal-dialog.modal-xxl {
+      width: 78vw;
+      max-width: 78vw;
+    }
+
+    @media (max-width: 767.98px) {
+      .modal-dialog.modal-xxl {
+        width: calc(100vw - 1rem);
+        max-width: calc(100vw - 1rem);
+        margin: .5rem auto;
+      }
     }
   </style>
 </head>

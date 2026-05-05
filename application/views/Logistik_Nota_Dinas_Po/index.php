@@ -7,6 +7,7 @@ $activeNodinPurchaseRequestIds = $activeNodinPurchaseRequestIds ?? [];
 $activeNodinCandidateItems = $activeNodinCandidateItems ?? [];
 $activeNodinEditMode = !empty($activeNodinEditMode);
 $activeNodinReadOnly = !empty($activeNodinReadOnly);
+$activeNodinProjectLabel = $activeNodinProjectLabel ?? '';
 $masterPabrikOptions = $masterPabrikOptions ?? [];
 $approvedPurchaseRequests = $approvedPurchaseRequests ?? [];
 
@@ -81,7 +82,6 @@ foreach ($masterPabrikOptions as $pabrikOption) {
     .nodin-chip--approved { background:rgba(16,185,129,.12); color:#047857; }
     .nodin-chip--waiting { background:rgba(245,158,11,.12); color:#b45309; }
     .nodin-chip--blue { background:rgba(59,130,246,.1); color:#1d4ed8; }
-    .nodin-modal .modal-dialog.modal-xxl { width:84vw; max-width:84vw; }
     .nodin-modal .select2-container { width:100% !important; }
     @media (max-width: 1199.98px) { .nodin-hero__grid { grid-template-columns:1fr; } }
     @media (max-width: 767.98px) {
@@ -89,7 +89,6 @@ foreach ($masterPabrikOptions as $pabrikOption) {
         .nodin-hero__grid { padding:1rem; }
         .nodin-hero h1 { font-size:1.5rem; }
         .nodin-metrics { grid-template-columns:1fr; }
-        .nodin-modal .modal-dialog.modal-xxl { width:calc(100vw - 1rem); max-width:calc(100vw - 1rem); margin:.5rem auto; }
     }
 </style>
 
@@ -148,7 +147,8 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                                     <th>No</th>
                                     <th>Dokumen NODIN</th>
                                     <th>Referensi PR</th>
-                                    <th>Project</th>
+                                    <th>Bowheer</th>
+                                    <th>Status PO</th>
                                     <th class="text-number">Item</th>
                                     <th class="text-number">Qty NODIN</th>
                                     <th class="text-number">Nominal</th>
@@ -167,6 +167,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                                         </td>
                                         <td><?= htmlspecialchars((string) ($row['nomor_purchase_request_refs'] ?? '-'), ENT_QUOTES) ?></td>
                                         <td><?= htmlspecialchars((string) ($row['nama_project_refs'] ?? '-'), ENT_QUOTES) ?></td>
+                                        <td><span class="nodin-chip nodin-chip--<?= htmlspecialchars((string) ($row['po_status_tone'] ?? 'waiting'), ENT_QUOTES) ?>"><?= htmlspecialchars((string) ($row['po_status_label'] ?? 'Belum PO'), ENT_QUOTES) ?></span></td>
                                         <td class="text-number"><?= number_format($row['total_item'] ?? 0, 0, ',', '.') ?></td>
                                         <td class="text-number"><?= number_format($row['total_qty_nodin'] ?? 0, 0, ',', '.') ?></td>
                                         <td class="text-number"><?= number_format($row['total_nominal_nodin'] ?? 0, 0, ',', '.') ?></td>
@@ -219,11 +220,17 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                                 <select name="selected_purchase_request[]" id="nodin_selected_purchase_request" class="form-control" multiple required <?= $activeNodinReadOnly ? 'disabled' : '' ?>>
                                     <?php foreach ($approvedPurchaseRequests as $pr): ?>
                                         <?php $selectedPr = in_array((string) $pr['id_purchase_request'], array_map('strval', $activeNodinPurchaseRequestIds), true); ?>
-                                        <option value="<?= $pr['id_purchase_request'] ?>" <?= $selectedPr ? 'selected' : '' ?>>
-                                            <?= $pr['nomor_purchase_request'] ?> | <?= $pr['nama_project'] ?: '-' ?> | Outstanding <?= number_format($pr['total_qty_outstanding_pr'] ?? 0, 0, ',', '.') ?>
+                                        <option value="<?= $pr['id_purchase_request'] ?>" data-project-name="<?= htmlspecialchars((string) ($pr['id_project'] ?: $pr['nama_project'] ?: '-'), ENT_QUOTES) ?>" <?= $selectedPr ? 'selected' : '' ?>>
+                                            <?= $pr['nomor_purchase_request'] ?> | <?= $pr['id_project'] ?: '-' ?> | Outstanding <?= number_format($pr['total_qty_outstanding_pr'] ?? 0, 0, ',', '.') ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Nama Bowheer</label>
+                                <input type="text" id="nodin_nama_project" class="form-control" value="<?= htmlspecialchars((string) $activeNodinProjectLabel, ENT_QUOTES) ?>" readonly>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -273,6 +280,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                             <thead>
                                 <tr>
                                     <th>PR</th>
+                                    <th>Bowheer</th>
                                     <th>Nama Material</th>
                                     <th>Satuan</th>
                                     <th class="text-number">Kebutuhan Project</th>
@@ -294,6 +302,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                                         $existingDetails = $existingDisplayRowsByItem[$itemKey] ?? [[]];
                                         $sourceDetailIdsCsv = (string) ($item['source_detail_ids_csv'] ?? '');
                                         $prRefsLabel = (string) ($item['nomor_purchase_request_refs_label'] ?? '-');
+                                        $projectRefsLabel = (string) ($item['nama_project_refs_label'] ?? '-');
                                         ?>
                                         <?php foreach ($existingDetails as $existingDetail): ?>
                                             <?php
@@ -311,12 +320,13 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                                                     <input type="hidden" name="kebutuhan_project[<?= $rowIndex ?>]" value="<?= htmlspecialchars((string) ($item['volume_planning_final'] ?? 0), ENT_QUOTES) ?>">
                                                     <input type="hidden" name="outstanding_pr[<?= $rowIndex ?>]" value="<?= htmlspecialchars((string) ($item['qty_outstanding_pr'] ?? 0), ENT_QUOTES) ?>">
                                                 </td>
+                                                <td><span class="js-nodin-project-label"><?= htmlspecialchars($projectRefsLabel, ENT_QUOTES) ?></span></td>
                                                 <td><span class="js-nodin-item-label"><?= htmlspecialchars((string) ($item['nama_item'] ?? '-'), ENT_QUOTES) ?></span></td>
                                                 <td><span class="js-nodin-satuan-label"><?= htmlspecialchars((string) ($item['satuan_item'] ?? '-'), ENT_QUOTES) ?></span></td>
                                                 <td class="text-number js-nodin-kebutuhan"><?= number_format($item['volume_planning_final'] ?? 0, 0, ',', '.') ?></td>
                                                 <td class="text-number js-nodin-outstanding"><?= number_format($item['qty_outstanding_pr'] ?? 0, 0, ',', '.') ?></td>
-                                                <td><input type="number" class="form-control text-right js-nodin-qty" name="qty_po_nodin[<?= $rowIndex ?>]" min="0" step="1" value="<?= htmlspecialchars((string) ($existingDetail['qty_po_nodin'] ?? (int) ($item['qty_outstanding_pr'] ?? 0)), ENT_QUOTES) ?>" required <?= $activeNodinReadOnly ? 'readonly' : '' ?>></td>
-                                                <td><input type="number" class="form-control text-right js-nodin-harga" name="harga_satuan[<?= $rowIndex ?>]" min="0" step="1" value="<?= htmlspecialchars((string) ($existingDetail['harga_satuan'] ?? '0'), ENT_QUOTES) ?>" <?= $activeNodinReadOnly ? 'readonly' : '' ?>></td>
+                                                <td><input type="text" inputmode="numeric" class="form-control text-right js-live-number js-nodin-qty" name="qty_po_nodin[<?= $rowIndex ?>]" value="<?= htmlspecialchars(number_format((float) ($existingDetail['qty_po_nodin'] ?? (int) ($item['qty_outstanding_pr'] ?? 0)), 0, ',', '.'), ENT_QUOTES) ?>" required <?= $activeNodinReadOnly ? 'readonly' : '' ?>></td>
+                                                <td><input type="text" inputmode="numeric" class="form-control text-right js-live-number js-nodin-harga" name="harga_satuan[<?= $rowIndex ?>]" value="<?= htmlspecialchars(number_format((float) ($existingDetail['harga_satuan'] ?? 0), 0, ',', '.'), ENT_QUOTES) ?>" <?= $activeNodinReadOnly ? 'readonly' : '' ?>></td>
                                                 <td class="text-number js-nodin-line-total"><?= number_format(((float) ($existingDetail['qty_po_nodin'] ?? (int) ($item['qty_outstanding_pr'] ?? 0))) * ((float) ($existingDetail['harga_satuan'] ?? 0)), 0, ',', '.') ?></td>
                                                 <td>
                                                     <select class="form-control js-select-pabrik" name="id_pabrik[<?= $rowIndex ?>]" <?= $activeNodinReadOnly ? 'disabled' : '' ?>>
@@ -342,12 +352,12 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                                         <?php endforeach; ?>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <tr><td colspan="11" class="text-center text-muted">Pilih PR approved untuk memuat item NODIN.</td></tr>
+                                    <tr><td colspan="12" class="text-center text-muted">Pilih PR approved untuk memuat item NODIN.</td></tr>
                                 <?php endif; ?>
                             </tbody>
                             <tfoot>
                                 <tr>
-                                    <td colspan="3">TOTAL</td>
+                                    <td colspan="4">TOTAL</td>
                                     <td class="text-number" id="nodin-total-kebutuhan">0</td>
                                     <td class="text-number" id="nodin-total-outstanding">0</td>
                                     <td class="text-number" id="nodin-total-qty">0</td>
@@ -384,6 +394,22 @@ foreach ($masterPabrikOptions as $pabrikOption) {
         return parseFloat(normalized) || 0;
     }
 
+    function formatLiveNumberInputValue(value) {
+        const numericValue = parseNodinNumber(value);
+        return formatNodinNumber(numericValue);
+    }
+
+    function normalizeLiveNumberInputs(scope) {
+        $(scope || document).find('.js-live-number').each(function() {
+            const $input = $(this);
+            if ($input.val() === '') {
+                return;
+            }
+
+            $input.val(formatLiveNumberInputValue($input.val()));
+        });
+    }
+
     function refreshNodinFooter() {
         let totalKebutuhan = 0;
         let totalOutstanding = 0;
@@ -394,8 +420,8 @@ foreach ($masterPabrikOptions as $pabrikOption) {
         $('#table_nodin_items tbody tr').each(function() {
             const kebutuhan = parseNodinNumber($(this).find('.js-nodin-kebutuhan').text());
             const outstanding = parseNodinNumber($(this).find('.js-nodin-outstanding').text());
-            const qty = parseFloat($(this).find('.js-nodin-qty').val() || 0);
-            const harga = parseFloat($(this).find('.js-nodin-harga').val() || 0);
+            const qty = parseNodinNumber($(this).find('.js-nodin-qty').val() || 0);
+            const harga = parseNodinNumber($(this).find('.js-nodin-harga').val() || 0);
             const total = qty * harga;
             totalKebutuhan += kebutuhan;
             totalOutstanding += outstanding;
@@ -423,11 +449,24 @@ foreach ($masterPabrikOptions as $pabrikOption) {
         }).join('');
     }
 
+    function syncSelectedProjectLabel() {
+        const projectNames = [];
+        $('#nodin_selected_purchase_request option:selected').each(function() {
+            const projectName = String($(this).data('project-name') || '').trim();
+            if (projectName !== '' && projectNames.indexOf(projectName) === -1) {
+                projectNames.push(projectName);
+            }
+        });
+
+        $('#nodin_nama_project').val(projectNames.length ? projectNames.join(', ') : '');
+    }
+
     function buildNodinSplitRowHtml(sourceRow) {
         const rowIndex = nodinRowSequence++;
         const detailId = sourceRow.data('detail-id') || '';
         const sourceDetailIds = sourceRow.find('input[name^="source_detail_ids["]').val() || detailId;
         const prLabel = sourceRow.find('.js-nodin-pr-label').text().trim();
+        const projectLabel = sourceRow.find('.js-nodin-project-label').text().trim();
         const itemLabel = sourceRow.find('.js-nodin-item-label').text().trim();
         const satuanLabel = sourceRow.find('.js-nodin-satuan-label').text().trim();
         const kebutuhanText = sourceRow.find('.js-nodin-kebutuhan').text().trim();
@@ -447,12 +486,13 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                     '<input type="hidden" name="kebutuhan_project[' + rowIndex + ']" value="' + kebutuhanValue + '">' +
                     '<input type="hidden" name="outstanding_pr[' + rowIndex + ']" value="' + outstandingValue + '">' +
                 '</td>' +
+                '<td><span class="js-nodin-project-label">' + projectLabel + '</span></td>' +
                 '<td><span class="js-nodin-item-label">' + itemLabel + '</span></td>' +
                 '<td><span class="js-nodin-satuan-label">' + satuanLabel + '</span></td>' +
                 '<td class="text-number js-nodin-kebutuhan">' + kebutuhanText + '</td>' +
                 '<td class="text-number js-nodin-outstanding">' + outstandingText + '</td>' +
-                '<td><input type="number" class="form-control text-right js-nodin-qty" name="qty_po_nodin[' + rowIndex + ']" min="0" step="1" value="0" required></td>' +
-                '<td><input type="number" class="form-control text-right js-nodin-harga" name="harga_satuan[' + rowIndex + ']" min="0" step="1" value="0"></td>' +
+                '<td><input type="text" inputmode="numeric" class="form-control text-right js-live-number js-nodin-qty" name="qty_po_nodin[' + rowIndex + ']" value="0" required></td>' +
+                '<td><input type="text" inputmode="numeric" class="form-control text-right js-live-number js-nodin-harga" name="harga_satuan[' + rowIndex + ']" value="0"></td>' +
                 '<td class="text-number js-nodin-line-total">0</td>' +
                 '<td><select class="form-control js-select-pabrik" name="id_pabrik[' + rowIndex + ']"><option value="">Pilih Pabrik</option>' + optionHtml + '</select></td>' +
                 '<td><input type="text" class="form-control" name="keterangan_nodin[' + rowIndex + ']" value=""></td>' +
@@ -471,6 +511,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
         }
 
         $select.select2({
+            theme: 'bootstrap4',
             width: '100%',
             dropdownParent: $('#modalNodin'),
             placeholder: 'Pilih satu atau beberapa PR'
@@ -545,10 +586,11 @@ foreach ($masterPabrikOptions as $pabrikOption) {
         }
 
         mergeNodinColumnByRowData(0, 'detail-id');
-        mergeNodinColumnByRowData(1, 'item-key');
+        mergeNodinColumnByRowData(1, 'detail-id');
         mergeNodinColumnByRowData(2, 'item-key');
-        mergeNodinColumnByRowData(3, 'detail-id');
+        mergeNodinColumnByRowData(3, 'item-key');
         mergeNodinColumnByRowData(4, 'detail-id');
+        mergeNodinColumnByRowData(5, 'detail-id');
     }
 
     function renderNodinItems(rows) {
@@ -557,7 +599,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
         nodinRowSequence = 0;
 
         if (!rows.length) {
-            tbody.append('<tr><td colspan="11" class="text-center text-muted">Tidak ada item outstanding dari PR yang dipilih.</td></tr>');
+            tbody.append('<tr><td colspan="12" class="text-center text-muted">Tidak ada item outstanding dari PR yang dipilih.</td></tr>');
             refreshNodinFooter();
             return;
         }
@@ -569,6 +611,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
             const rowIndex = nodinRowSequence++;
             const sourceDetailIds = item.source_detail_ids_csv || '';
             const prRefsLabel = item.nomor_purchase_request_refs_label || '-';
+            const projectRefsLabel = item.nama_project_refs_label || '-';
 
             tbody.append(
                 '<tr class="js-nodin-row" data-detail-id="' + sourceDetailIds + '" data-item-key="' + (item.id_kode_item || item.group_key || item.nama_item || '') + '">' +
@@ -580,12 +623,13 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                         '<input type="hidden" name="kebutuhan_project[' + rowIndex + ']" value="' + kebutuhan + '">' +
                         '<input type="hidden" name="outstanding_pr[' + rowIndex + ']" value="' + outstanding + '">' +
                     '</td>' +
+                    '<td><span class="js-nodin-project-label">' + projectRefsLabel + '</span></td>' +
                     '<td><span class="js-nodin-item-label">' + (item.nama_item || '-') + '</span></td>' +
                     '<td><span class="js-nodin-satuan-label">' + (item.satuan_item || '-') + '</span></td>' +
                     '<td class="text-number js-nodin-kebutuhan">' + formatNodinNumber(kebutuhan) + '</td>' +
                     '<td class="text-number js-nodin-outstanding">' + formatNodinNumber(outstanding) + '</td>' +
-                    '<td><input type="number" class="form-control text-right js-nodin-qty" name="qty_po_nodin[' + rowIndex + ']" min="0" step="1" value="' + outstanding + '" required></td>' +
-                    '<td><input type="number" class="form-control text-right js-nodin-harga" name="harga_satuan[' + rowIndex + ']" min="0" step="1" value="0"></td>' +
+                    '<td><input type="text" inputmode="numeric" class="form-control text-right js-live-number js-nodin-qty" name="qty_po_nodin[' + rowIndex + ']" value="' + formatNodinNumber(outstanding) + '" required></td>' +
+                    '<td><input type="text" inputmode="numeric" class="form-control text-right js-live-number js-nodin-harga" name="harga_satuan[' + rowIndex + ']" value="0"></td>' +
                     '<td class="text-number js-nodin-line-total">0</td>' +
                     '<td><select class="form-control js-select-pabrik" name="id_pabrik[' + rowIndex + ']"><option value="">Pilih Pabrik</option>' + optionHtml + '</select></td>' +
                     '<td><input type="text" class="form-control" name="keterangan_nodin[' + rowIndex + ']" value=""></td>' +
@@ -619,11 +663,14 @@ foreach ($masterPabrikOptions as $pabrikOption) {
 
         initPurchaseRequestSelect();
         initPabrikSelects();
+        normalizeLiveNumberInputs('#form-nodin');
+        syncSelectedProjectLabel();
         refreshNodinFooter();
         applyNodinRowMerging();
 
         $('#nodin_selected_purchase_request').on('change', function() {
             const values = $(this).val() || [];
+            syncSelectedProjectLabel();
             if (!values.length) {
                 if (nodinItemsRequest && nodinItemsRequest.readyState !== 4) {
                     nodinItemsRequest.abort();
@@ -634,7 +681,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
 
             const currentToken = ++nodinItemsRequestToken;
             const tbody = $('#table_nodin_items tbody');
-            tbody.html('<tr><td colspan="11" class="text-center text-muted">Memuat item PR terpilih...</td></tr>');
+            tbody.html('<tr><td colspan="12" class="text-center text-muted">Memuat item PR terpilih...</td></tr>');
 
             if (nodinItemsRequest && nodinItemsRequest.readyState !== 4) {
                 nodinItemsRequest.abort();
@@ -664,6 +711,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
         });
 
         $('#table_nodin_items').on('input', '.js-nodin-qty, .js-nodin-harga', function() {
+            $(this).val(formatLiveNumberInputValue($(this).val()));
             refreshNodinFooter();
         });
 
@@ -672,6 +720,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
             const html = buildNodinSplitRowHtml($sourceRow);
             $sourceRow.after(html);
             initPabrikSelects();
+            normalizeLiveNumberInputs($sourceRow.next());
             refreshNodinFooter();
             applyNodinRowMerging();
         });
@@ -756,7 +805,7 @@ foreach ($masterPabrikOptions as $pabrikOption) {
         $('#form-nodin').submit(function(event) {
             let hasInvalidQty = false;
             $('#form-nodin input[name^="qty_po_nodin"]').each(function() {
-                if ((parseFloat($(this).val() || 0)) <= 0) {
+                if (parseNodinNumber($(this).val() || 0) <= 0) {
                     hasInvalidQty = true;
                 }
             });
@@ -766,6 +815,10 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                 Swal.fire('Qty NODIN tidak valid', 'Qty PO usulan pada NODIN harus lebih dari 0.', 'warning');
                 return;
             }
+
+            $('#form-nodin .js-live-number').each(function() {
+                $(this).val(parseNodinNumber($(this).val() || 0));
+            });
 
             const $form = $(this);
             const isUpdate = $form.data('is-update') === 1 || $form.data('is-update') === '1';

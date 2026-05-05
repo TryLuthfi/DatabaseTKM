@@ -516,7 +516,16 @@ $itemCount = count($getUniqueItemLogistik);
     }
 
     .stock-modal .modal-dialog {
-        max-width: 1180px;
+        width: 78vw;
+        max-width: 78vw;
+    }
+
+    @media (max-width: 767.98px) {
+        .stock-modal .modal-dialog {
+            width: calc(100vw - 1rem);
+            max-width: calc(100vw - 1rem);
+            margin: 0.5rem auto;
+        }
     }
 
     .stock-modal .modal-content {
@@ -1042,6 +1051,7 @@ $itemCount = count($getUniqueItemLogistik);
                                 <input type="text" class="form-control" name="nomor_surat_jalan"
                                     id="revamp_nomor_surat_jalan" autocomplete="off"
                                     placeholder="TEC.005/TKM-04/SJ/II/2025" required>
+                                <small class="text-danger stock-hidden" id="revamp_pabrik_sj_feedback">Tidak ada surat jalan yang cocok.</small>
                             </div>
                             <div class="col-md-4">
                                 <label for="revamp_tanggal_upload_stok">Tanggal Surat</label>
@@ -1062,7 +1072,7 @@ $itemCount = count($getUniqueItemLogistik);
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-md-4 mt-3">
+                            <div class="col-md-4 mt-3" id="revamp_project_wrapper">
                                 <label for="revamp_id_project">Project</label>
                                 <select name="id_bowheer" id="revamp_id_project" class="form-control">
                                     <option value="">Pilih salah satu</option>
@@ -1084,7 +1094,7 @@ $itemCount = count($getUniqueItemLogistik);
                                 </select>
                             </div>
                             <div class="col-md-6 mt-3 stock-hidden" id="revamp_ho_in_nomor_po">
-                                <label for="revamp_no_po_logistik">Nomor PO</label>
+                                <label for="revamp_no_po_logistik">Referensi PO</label>
                                 <input type="text" class="form-control" name="no_po_logistik"
                                     id="revamp_no_po_logistik" autocomplete="off"
                                     placeholder="TEC.005/TKM-04/PO/MDN/II/2025">
@@ -1105,6 +1115,18 @@ $itemCount = count($getUniqueItemLogistik);
                                     <?php endforeach; ?>
                                 </select>
                             </div>
+                            <div class="col-md-12 mt-3 stock-hidden" id="revamp_pabrik_receive_panel">
+                                <div class="stock-empty text-left">
+                                    <strong>IN dari Pabrik</strong><br>
+                                    Masukkan nomor surat jalan pabrik, bukan nomor PO. Jika surat jalan cocok, sistem akan menarik qty pengiriman otomatis dari histori pengiriman pabrik untuk gudang tujuan ini.
+                                </div>
+                            </div>
+                            <div class="col-md-6 mt-3 stock-hidden" id="revamp_ba_selisih_wrapper">
+                                <label for="revamp_nomor_ba_selisih">Nomor BA Selisih / Rusak</label>
+                                <input type="text" class="form-control" name="nomor_ba_selisih"
+                                    id="revamp_nomor_ba_selisih" autocomplete="off"
+                                    placeholder="BA/LOG/SELISIH/05/2026">
+                            </div>
                         </div>
                     </div>
 
@@ -1123,7 +1145,9 @@ $itemCount = count($getUniqueItemLogistik);
                                         <tr>
                                             <th>No</th>
                                             <th>Nama</th>
-                                            <th>Qty</th>
+                                            <th id="revamp_table_qty_primary_label">Qty</th>
+                                            <th id="revamp_table_qty_secondary_label" class="stock-hidden">Qty Diterima</th>
+                                            <th>Qty Selisih</th>
                                             <th>Satuan</th>
                                             <th>Merk Item</th>
                                             <th>No Haspel</th>
@@ -1836,6 +1860,183 @@ $itemCount = count($getUniqueItemLogistik);
         }
 
         function initTambahModal() {
+            const sumberMaterialHoId = '1';
+            const sumberMaterialPabrikId = '7';
+
+            function isPabrikReceiptMode() {
+                return String($('#revamp_id_sumber_material').val() || '') === sumberMaterialPabrikId;
+            }
+
+            function isHoReceiptMode() {
+                return String($('#revamp_id_sumber_material').val() || '') === sumberMaterialHoId;
+            }
+
+            function isShipmentReceiptMode() {
+                return isPabrikReceiptMode() || isHoReceiptMode();
+            }
+
+            function loadHoReceiptItems() {
+                if (!isHoReceiptMode()) {
+                    return;
+                }
+
+                const nomorSurat = $('#revamp_nomor_surat_jalan').val().trim();
+                const idGudang = $('#revamp_id_lokasi_gudang').val();
+                const $tbody = $('#revamp_table_item_stok tbody');
+
+                $tbody.empty();
+                $('#revamp_no_po_logistik').val('');
+                $('#revamp_pabrik_sj_feedback').addClass('stock-hidden').text('Tidak ada surat jalan yang cocok.');
+
+                if (!nomorSurat || !idGudang) {
+                    $('#revamp_btn_submit_stok').prop('disabled', true);
+                    return;
+                }
+
+                $.ajax({
+                    url: "<?= site_url('Dashboard_Logistik_Stok/getPengirimanHoBySuratJalan') ?>",
+                    type: "GET",
+                    dataType: "json",
+                    data: {
+                        nomor_surat_jalan: nomorSurat,
+                        id_lokasi_gudang: idGudang
+                    },
+                    success: function(response) {
+                        const rows = response.items || [];
+                        $tbody.empty();
+
+                        if (!rows.length) {
+                            $tbody.append('<tr><td colspan="10" class="text-center text-muted">' + sanitizeText(response.message || 'Tidak ada surat jalan yang cocok.') + '</td></tr>');
+                            $('#revamp_nomor_surat_jalan').addClass('is-invalid');
+                            $('#revamp_pabrik_sj_feedback').removeClass('stock-hidden').text(response.message || 'Tidak ada surat jalan yang cocok.');
+                            $('#revamp_btn_submit_stok').prop('disabled', true);
+                            return;
+                        }
+
+                        rows.forEach(function(item, index) {
+                            const qtyOutstanding = formatNumber(item.qty_outstanding_terima || 0);
+                            const qtyKirim = formatNumber(item.qty_kirim || 0);
+                            $tbody.append(`
+                                <tr class="revamp-ho-row">
+                                    <td>${index + 1}</td>
+                                    <td>
+                                        <input type="hidden" name="id_stock_pengiriman[${index}]" value="${sanitizeText(item.id_stock_pengiriman)}">
+                                        <input type="hidden" name="id_kode_item[${index}]" value="${sanitizeText(item.id_kode_item)}">
+                                        <input type="hidden" name="id_bowheer_item[${index}]" value="${sanitizeText(item.id_bowheer_pemilik_item || item.id_bowheer || '')}">
+                                        <input type="hidden" name="qty_pengiriman_outstanding[${index}]" value="${sanitizeText(item.qty_outstanding_terima || 0)}">
+                                        <strong>${sanitizeText(item.nama_item || '-')}</strong><br>
+                                        <small class="text-muted">Asal ${sanitizeText(item.kota_gudang_asal || 'HO')} | PO ${sanitizeText(item.no_po_logistik || '-')} | Outstanding ${qtyOutstanding}</small>
+                                    </td>
+                                    <td><input type="text" class="form-control" value="${qtyKirim}" readonly disabled></td>
+                                    <td><input type="text" class="form-control revamp-qty-input" name="jumlah_stok[${index}]" placeholder="0" value="${qtyOutstanding}" required></td>
+                                    <td><input type="text" class="form-control revamp-qty-selisih-input" name="qty_selisih[${index}]" value="0" readonly></td>
+                                    <td><input type="text" class="form-control" name="satuan_stok[${index}]" value="${sanitizeText(item.satuan_stok || '')}" readonly></td>
+                                    <td><input type="text" class="form-control" name="merk_item[${index}]" value="${sanitizeText(item.merk_stok || '')}" readonly></td>
+                                    <td><input type="text" class="form-control" name="no_haspel_item[${index}]" value="${sanitizeText(item.no_haspel_stok || '')}" readonly></td>
+                                    <td><input type="text" class="form-control" name="no_ref_item[${index}]" value="${sanitizeText(item.no_ref_stok || '')}" readonly></td>
+                                    <td><span class="text-muted">Auto</span></td>
+                                </tr>
+                            `);
+                        });
+
+                        $('#revamp_no_po_logistik').val(response.po_refs || '');
+                        $('#revamp_nomor_surat_jalan').removeClass('is-invalid');
+                        $('#revamp_pabrik_sj_feedback').addClass('stock-hidden').text('Tidak ada surat jalan yang cocok.');
+                        $('#revamp_btn_submit_stok').prop('disabled', false);
+                    },
+                    error: function() {
+                        $tbody.empty().append('<tr><td colspan="10" class="text-center text-danger">Gagal memuat data pengiriman HO.</td></tr>');
+                        $('#revamp_nomor_surat_jalan').addClass('is-invalid');
+                        $('#revamp_pabrik_sj_feedback').removeClass('stock-hidden').text('Gagal memuat data surat jalan internal HO.');
+                        $('#revamp_btn_submit_stok').prop('disabled', true);
+                    }
+                });
+            }
+
+            function loadPabrikReceiptItems() {
+                if (!isPabrikReceiptMode()) {
+                    return;
+                }
+
+                const nomorSurat = $('#revamp_nomor_surat_jalan').val().trim();
+                const idGudang = $('#revamp_id_lokasi_gudang').val();
+                const $tbody = $('#revamp_table_item_stok tbody');
+
+                $tbody.empty();
+                $('#revamp_no_po_logistik').val('');
+                $('#revamp_pabrik_sj_feedback').addClass('stock-hidden').text('Tidak ada surat jalan yang cocok.');
+
+                if (!nomorSurat || !idGudang) {
+                    $('#revamp_btn_submit_stok').prop('disabled', true);
+                    return;
+                }
+
+                $.ajax({
+                    url: "<?= site_url('Dashboard_Logistik_Stok/getPengirimanPabrikBySuratJalan') ?>",
+                    type: "GET",
+                    dataType: "json",
+                    data: {
+                        nomor_surat_jalan: nomorSurat,
+                        id_lokasi_gudang: idGudang
+                    },
+                    success: function(response) {
+                        const rows = response.items || [];
+                        $tbody.empty();
+
+                        if (!rows.length) {
+                            $tbody.append('<tr><td colspan="10" class="text-center text-muted">' + sanitizeText(response.message || 'Tidak ada surat jalan yang cocok.') + '</td></tr>');
+                            $('#revamp_nomor_surat_jalan').addClass('is-invalid');
+                            $('#revamp_pabrik_sj_feedback').removeClass('stock-hidden').text(response.message || 'Tidak ada surat jalan yang cocok.');
+                            $('#revamp_btn_submit_stok').prop('disabled', true);
+                            return;
+                        }
+
+                        rows.forEach(function(item, index) {
+                            const qtyOutstanding = formatNumber(item.qty_outstanding_terima || 0);
+                            const qtyKirim = formatNumber(item.qty_kirim || 0);
+                            $tbody.append(`
+                                <tr class="revamp-pabrik-row">
+                                    <td>${index + 1}</td>
+                                    <td>
+                                        <input type="hidden" name="id_pengiriman_pabrik_detail[${index}]" value="${sanitizeText(item.id_pengiriman_pabrik_detail)}">
+                                        <input type="hidden" name="id_kode_item[${index}]" value="${sanitizeText(item.id_kode_item)}">
+                                        <input type="hidden" name="id_bowheer_item[${index}]" value="${sanitizeText(item.id_bowheer_pemilik_item || '')}">
+                                        <input type="hidden" name="qty_pengiriman_outstanding[${index}]" value="${sanitizeText(item.qty_outstanding_terima || 0)}">
+                                        <strong>${sanitizeText(item.nama_item || '-')}</strong><br>
+                                        <small class="text-muted">PO ${sanitizeText(item.nomor_po_pabrik || '-')} | PR ${sanitizeText(item.nomor_purchase_request || '-')} | Outstanding ${qtyOutstanding}</small>
+                                    </td>
+                                    <td><input type="text" class="form-control" value="${qtyKirim}" readonly disabled></td>
+                                    <td><input type="text" class="form-control revamp-qty-input" name="jumlah_stok[${index}]" placeholder="0" value="${qtyOutstanding}" required></td>
+                                    <td><input type="text" class="form-control revamp-qty-input revamp-qty-selisih-input" name="qty_selisih[${index}]" placeholder="0" value="0"></td>
+                                    <td><input type="text" class="form-control" name="satuan_stok[${index}]" value="${sanitizeText(item.satuan_item || '')}" readonly></td>
+                                    <td><input type="text" class="form-control" name="merk_item[${index}]" placeholder="Merk item"></td>
+                                    <td><input type="text" class="form-control" name="no_haspel_item[${index}]" placeholder="No haspel"></td>
+                                    <td><input type="text" class="form-control" name="no_ref_item[${index}]" placeholder="No ref"></td>
+                                    <td><span class="text-muted">Auto</span></td>
+                                </tr>
+                            `);
+                        });
+
+                        $('#revamp_no_po_logistik').val(response.po_refs || '');
+                        $('#revamp_nomor_surat_jalan').removeClass('is-invalid');
+                        $('#revamp_pabrik_sj_feedback').addClass('stock-hidden').text('Tidak ada surat jalan yang cocok.');
+                        $('#revamp_btn_submit_stok').prop('disabled', false);
+                    },
+                    error: function() {
+                        $tbody.empty().append('<tr><td colspan="10" class="text-center text-danger">Gagal memuat data pengiriman pabrik.</td></tr>');
+                        $('#revamp_nomor_surat_jalan').addClass('is-invalid');
+                        $('#revamp_pabrik_sj_feedback').removeClass('stock-hidden').text('Gagal memuat data surat jalan pabrik.');
+                        $('#revamp_btn_submit_stok').prop('disabled', true);
+                    }
+                });
+            }
+
+            function refreshTambahTableHeader() {
+                const isSpecialMode = isShipmentReceiptMode();
+                $('#revamp_table_qty_primary_label').text(isSpecialMode ? 'Qty Pengiriman' : 'Qty');
+                $('#revamp_table_qty_secondary_label').toggleClass('stock-hidden', !isSpecialMode);
+            }
+
             $('#modalRevampTambahStok').on('shown.bs.modal', function() {
                 $('#revamp_id_kode_item').select2({
                     placeholder: "Pilih jenis material",
@@ -1851,11 +2052,19 @@ $itemCount = count($getUniqueItemLogistik);
                 $('#revamp_id_kode_item').empty().append('<option value="">Pilih jenis material</option>').trigger('change');
                 $('#revamp_btn_submit_stok').prop('disabled', false);
                 $('.custom-file-label').text('Choose file');
+                $('#revamp_nomor_ba_selisih, #revamp_no_po_logistik').val('');
+                $('#revamp_pabrik_sj_feedback').addClass('stock-hidden').text('Tidak ada surat jalan yang cocok.');
+                $('#revamp_nomor_surat_jalan').removeClass('is-invalid');
                 currentTambahCounter = 1;
                 toggleHoFields();
+                refreshTambahTableHeader();
             });
 
             $('#revamp_id_project').on('change', function() {
+                if (isShipmentReceiptMode()) {
+                    return;
+                }
+
                 $('#revamp_table_item_stok tbody').empty();
                 currentTambahCounter = 1;
 
@@ -1883,6 +2092,10 @@ $itemCount = count($getUniqueItemLogistik);
             });
 
             $('#revamp_id_kode_item').on('change', function() {
+                if (isShipmentReceiptMode()) {
+                    return;
+                }
+
                 const selectedValue = $(this).val();
                 if (!selectedValue) {
                     return;
@@ -1899,6 +2112,8 @@ $itemCount = count($getUniqueItemLogistik);
                             ${sanitizeText(selectedText)}
                         </td>
                         <td><input type="text" class="form-control revamp-qty-input" name="jumlah_stok[${currentTambahCounter}]" placeholder="1.000" required></td>
+                        <td class="stock-hidden revamp-qty-diterima-placeholder"></td>
+                        <td><input type="text" class="form-control revamp-qty-selisih-input" name="qty_selisih[${currentTambahCounter}]" value="0" readonly></td>
                         <td><input type="text" class="form-control" name="satuan_stok[${currentTambahCounter}]" value="${sanitizeText(selectedSatuan)}" readonly></td>
                         <td><input type="text" class="form-control" name="merk_item[${currentTambahCounter}]" placeholder="Merk item"></td>
                         <td><input type="text" class="form-control" name="no_haspel_item[${currentTambahCounter}]" placeholder="No haspel"></td>
@@ -1932,11 +2147,11 @@ $itemCount = count($getUniqueItemLogistik);
                     return;
                 }
 
-                const allowedExtensions = /\.pdf$/i;
+                const allowedExtensions = /\.(pdf|jpg|jpeg|png)$/i;
                 const maxSize = 5120 * 1024;
 
                 if (!allowedExtensions.test(file.name)) {
-                    Swal.fire({ icon: 'warning', title: 'Format file salah', text: 'File harus berupa PDF.' });
+                    Swal.fire({ icon: 'warning', title: 'Format file salah', text: 'File harus berupa PDF, JPG, JPEG, atau PNG.' });
                     $(this).val('');
                     $(this).siblings('.custom-file-label').text('Choose file');
                     return;
@@ -1958,13 +2173,13 @@ $itemCount = count($getUniqueItemLogistik);
                 if (!$('#revamp_id_lokasi_gudang').val()) {
                     errors.push('Area gudang harus dipilih.');
                 }
-                if (!$('#revamp_id_project').val()) {
+                if (!isShipmentReceiptMode() && !$('#revamp_id_project').val()) {
                     errors.push('Project harus dipilih.');
                 }
                 if (!$('#revamp_id_sumber_material').val()) {
                     errors.push('Sumber material harus dipilih.');
                 }
-                if ($('#revamp_table_item_stok tbody tr').length === 0) {
+                if ($('#revamp_table_item_stok tbody tr').length === 0 || (isPabrikReceiptMode() && $('#revamp_table_item_stok tbody input[name^="id_pengiriman_pabrik_detail["]').length === 0) || (isHoReceiptMode() && $('#revamp_table_item_stok tbody input[name^="id_stock_pengiriman["]').length === 0)) {
                     errors.push('Minimal harus ada satu item stok.');
                 }
                 if (!$('#revamp_file_sj').val()) {
@@ -1972,6 +2187,53 @@ $itemCount = count($getUniqueItemLogistik);
                 }
                 if (!$('#revamp_file_evidence').val()) {
                     errors.push('File evidence wajib diunggah.');
+                }
+
+                if (isPabrikReceiptMode()) {
+                    let totalSelisih = 0;
+                    let hasInvalidPabrikQty = false;
+
+                    $('#revamp_table_item_stok tbody tr').each(function() {
+                        const qtyTerima = parseNumber($(this).find('input[name^="jumlah_stok["]').val() || 0);
+                        const qtySelisih = parseNumber($(this).find('input[name^="qty_selisih["]').val() || 0);
+                        const qtyOutstanding = parseNumber($(this).find('input[name^="qty_pengiriman_outstanding["]').val() || 0);
+
+                        totalSelisih += qtySelisih;
+                        if ((qtyTerima + qtySelisih) <= 0 || (qtyTerima + qtySelisih) > qtyOutstanding) {
+                            hasInvalidPabrikQty = true;
+                        }
+                    });
+
+                    if (hasInvalidPabrikQty) {
+                        errors.push('Qty terima + qty selisih tiap item harus lebih dari 0 dan tidak boleh melebihi outstanding pengiriman.');
+                    }
+
+                    if (totalSelisih > 0 && !$('#revamp_nomor_ba_selisih').val().trim()) {
+                        errors.push('Nomor BA selisih wajib diisi jika ada material rusak / selisih.');
+                    }
+                }
+
+                if (isHoReceiptMode()) {
+                    let hasInvalidHoQty = false;
+                    let totalSelisihHo = 0;
+
+                    $('#revamp_table_item_stok tbody tr').each(function() {
+                        const qtyTerima = parseNumber($(this).find('input[name^="jumlah_stok["]').val() || 0);
+                        const qtySelisih = parseNumber($(this).find('input[name^="qty_selisih["]').val() || 0);
+                        const qtyOutstanding = parseNumber($(this).find('input[name^="qty_pengiriman_outstanding["]').val() || 0);
+                        totalSelisihHo += qtySelisih;
+                        if (qtyTerima <= 0 || qtyTerima > qtyOutstanding) {
+                            hasInvalidHoQty = true;
+                        }
+                    });
+
+                    if (hasInvalidHoQty) {
+                        errors.push('Qty diterima dari HO harus lebih dari 0 dan tidak boleh melebihi outstanding pengiriman.');
+                    }
+
+                    if (totalSelisihHo > 0) {
+                        errors.push('Selisih untuk penerimaan dari HO belum didukung pada flow transit ini.');
+                    }
                 }
 
                 if (errors.length) {
@@ -1987,12 +2249,63 @@ $itemCount = count($getUniqueItemLogistik);
             $('#revamp_nomor_surat_jalan, #revamp_id_lokasi_gudang, #revamp_id_sumber_material').on('blur change', function() {
                 checkNomorSuratJalan();
                 toggleHoFields();
+                refreshTambahTableHeader();
+                if (isPabrikReceiptMode()) {
+                    loadPabrikReceiptItems();
+                } else if (isHoReceiptMode()) {
+                    loadHoReceiptItems();
+                }
+            });
+
+            $('#revamp_table_item_stok').on('input', '.revamp-qty-selisih-input', function() {
+                const value = $(this).val().replace(/[^\d]/g, '');
+                $(this).val(value.replace(/\B(?=(\d{3})+(?!\d))/g, '.'));
+            });
+
+            $('#revamp_table_item_stok').on('loadPabrikItems', function() {
+                loadPabrikReceiptItems();
             });
         }
 
         function toggleHoFields() {
             const selectedKota = $('#revamp_id_lokasi_gudang option:selected').text().trim();
             const selectedSumberMaterial = $('#revamp_id_sumber_material option:selected').text().trim();
+            const isPabrikMode = String($('#revamp_id_sumber_material').val() || '') === '7';
+            const isHoMode = String($('#revamp_id_sumber_material').val() || '') === '1';
+            const isSpecialMode = isPabrikMode || isHoMode;
+
+            $('#revamp_pabrik_receive_panel, #revamp_ba_selisih_wrapper').toggleClass('stock-hidden', !isSpecialMode);
+            $('#revamp_project_wrapper').toggleClass('stock-hidden', isSpecialMode);
+            $('#revamp_id_project').prop('disabled', isSpecialMode);
+            $('#revamp_id_kode_item').prop('disabled', isSpecialMode);
+            $('#revamp_no_po_logistik').prop('readonly', isSpecialMode);
+
+            if (isPabrikMode) {
+                $('#revamp_id_project').val('');
+                $('#revamp_ho_in_nomor_po').removeClass('stock-hidden');
+                $('#revamp_ho_out_nomor_pr, #revamp_ho_out_lokasi_pengiriman').addClass('stock-hidden');
+                $('#revamp_no_pr_logistik, #revamp_id_lokasi_gudang_pengiriman').val('');
+                $('#revamp_no_po_logistik').attr('placeholder', 'Otomatis terisi dari surat jalan pabrik');
+                $('#revamp_pabrik_receive_panel .stock-empty').html('<strong>IN dari Pabrik</strong><br>Masukkan nomor surat jalan pabrik, bukan nomor PO. Jika surat jalan cocok, sistem akan menarik qty pengiriman otomatis dari histori pengiriman pabrik untuk gudang tujuan ini.');
+                $('#revamp_ba_selisih_wrapper').toggleClass('stock-hidden', false);
+                return;
+            }
+
+            if (isHoMode) {
+                $('#revamp_id_project').val('');
+                $('#revamp_ho_in_nomor_po').removeClass('stock-hidden');
+                $('#revamp_ho_out_nomor_pr, #revamp_ho_out_lokasi_pengiriman').addClass('stock-hidden');
+                $('#revamp_no_pr_logistik, #revamp_id_lokasi_gudang_pengiriman').val('');
+                $('#revamp_no_po_logistik').attr('placeholder', 'Otomatis terisi dari surat jalan internal HO');
+                $('#revamp_pabrik_receive_panel .stock-empty').html('<strong>IN dari HO</strong><br>Masukkan surat jalan internal HO. Jika cocok, sistem akan menarik qty pengiriman dari mutasi HO ke area ini.');
+                $('#revamp_ba_selisih_wrapper').addClass('stock-hidden');
+                return;
+            }
+
+            if ($('#revamp_table_item_stok tbody .revamp-pabrik-row').length) {
+                $('#revamp_table_item_stok tbody').empty();
+            }
+            $('#revamp_nomor_ba_selisih').val('');
 
             if (selectedKota === 'HO') {
                 if (selectedSumberMaterial.includes('IN')) {
@@ -2012,9 +2325,21 @@ $itemCount = count($getUniqueItemLogistik);
 
             $('#revamp_ho_in_nomor_po, #revamp_ho_out_nomor_pr, #revamp_ho_out_lokasi_pengiriman').addClass('stock-hidden');
             $('#revamp_no_po_logistik, #revamp_no_pr_logistik, #revamp_id_lokasi_gudang_pengiriman').val('');
+            $('#revamp_no_po_logistik').attr('placeholder', 'TEC.005/TKM-04/PO/MDN/II/2025').prop('readonly', false);
         }
 
         function checkNomorSuratJalan() {
+            if (isShipmentReceiptMode()) {
+                $('#revamp_nomor_surat_jalan').removeClass('is-invalid');
+                $('#revamp_pabrik_sj_feedback').addClass('stock-hidden').text('Tidak ada surat jalan yang cocok.');
+                $('#revamp_btn_submit_stok').prop('disabled', true);
+                if ($('#revamp_nomor_surat_jalan').val() && $('#revamp_id_lokasi_gudang').val()) {
+                    const event = $.Event('loadPabrikItems');
+                    $('#revamp_table_item_stok').trigger(event);
+                }
+                return;
+            }
+
             const nomorSurat = $('#revamp_nomor_surat_jalan').val();
             const idGudang = $('#revamp_id_lokasi_gudang').val();
 

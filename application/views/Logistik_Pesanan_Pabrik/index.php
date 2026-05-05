@@ -4,20 +4,31 @@ $flashError = $this->session->flashdata('error');
 
 $formatStatus = function ($row) {
     $statusPo = strtoupper((string) ($row['status_po'] ?? 'APPROVED'));
-    if ($statusPo === 'COMPLETED') {
-        return ['label' => 'Completed', 'tone' => 'approved'];
-    }
+    $totalQtyPo = (float) ($row['total_qty_po'] ?? 0);
+    $totalQtyTerkirim = (float) ($row['total_qty_terkirim'] ?? 0);
+    $totalQtyDiterima = (float) ($row['total_qty_diterima'] ?? 0);
+
     if ($statusPo === 'CLOSED') {
         return ['label' => 'Closed', 'tone' => 'slate'];
     }
-    if ((float) ($row['total_outstanding'] ?? 0) <= 0) {
-        return ['label' => 'Completed', 'tone' => 'approved'];
-    }
-    if ((float) ($row['total_qty_terkirim'] ?? 0) > 0) {
-        return ['label' => 'Partial Delivery', 'tone' => 'waiting'];
+
+    if ($totalQtyTerkirim <= 0) {
+        return ['label' => 'Produksi', 'tone' => 'blue'];
     }
 
-    return ['label' => 'Approved', 'tone' => 'blue'];
+    if ($totalQtyDiterima <= 0) {
+        if ($totalQtyTerkirim < $totalQtyPo) {
+            return ['label' => 'Partial Pengiriman', 'tone' => 'amber'];
+        }
+
+        return ['label' => 'Pengiriman', 'tone' => 'waiting'];
+    }
+
+    if ($totalQtyDiterima < $totalQtyPo) {
+        return ['label' => 'Partial Delivered', 'tone' => 'waiting'];
+    }
+
+    return ['label' => 'Full Delivered', 'tone' => 'approved'];
 };
 ?>
 
@@ -407,7 +418,7 @@ $formatStatus = function ($row) {
                                     <th>No</th>
                                     <th>Dokumen PO</th>
                                     <th>Pabrik</th>
-                                    <th>Referensi PR</th>
+                                    <th>Referensi NODIN</th>
                                     <th>Item</th>
                                     <th>Qty PO</th>
                                     <th>Qty Terkirim</th>
@@ -430,7 +441,7 @@ $formatStatus = function ($row) {
                                             </div>
                                         </td>
                                         <td><?= $row['nama_pabrik'] ?: '-' ?></td>
-                                        <td><?= $row['nomor_purchase_request'] ?: '-' ?></td>
+                                        <td><?= $row['nomor_nota_dinas_refs'] ?: '-' ?></td>
                                         <td><?= number_format($row['total_item'] ?? 0, 0, ',', '.') ?></td>
                                         <td><?= number_format($row['total_qty_po'] ?? 0, 0, ',', '.') ?></td>
                                         <td><?= number_format($row['total_qty_terkirim'] ?? 0, 0, ',', '.') ?></td>
@@ -442,11 +453,25 @@ $formatStatus = function ($row) {
                                                 <a class="po-action-btn po-action-btn--view" href="<?= site_url('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $row['nomor_po_pabrik']) ?>" title="Lihat detail">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
+                                                <a class="po-action-btn" href="#" data-delete-po="<?= htmlspecialchars($row['nomor_po_pabrik'], ENT_QUOTES) ?>" title="Hapus PO" style="background:rgba(220, 38, 38, 0.12);color:#dc2626;">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </a>
                                             </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4">TOTAL</td>
+                                    <td><?= number_format(array_sum(array_map('floatval', array_column($poRows, 'total_item'))), 0, ',', '.') ?></td>
+                                    <td><?= number_format(array_sum(array_map('floatval', array_column($poRows, 'total_qty_po'))), 0, ',', '.') ?></td>
+                                    <td><?= number_format(array_sum(array_map('floatval', array_column($poRows, 'total_qty_terkirim'))), 0, ',', '.') ?></td>
+                                    <td><?= number_format(array_sum(array_map('floatval', array_column($poRows, 'total_outstanding'))), 0, ',', '.') ?></td>
+                                    <td><?= number_format(array_sum(array_map('floatval', array_column($poRows, 'total_nominal_po'))), 0, ',', '.') ?></td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     <?php else: ?>
                         <div class="po-empty">Belum ada data PO yang bisa ditampilkan.</div>
@@ -458,13 +483,13 @@ $formatStatus = function ($row) {
 </div>
 
 <div class="modal fade" id="modalCreatePoFromPr" data-backdrop="static">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-xxl">
         <div class="modal-content" style="border-radius:24px;overflow:hidden;">
-            <form action="<?= base_url('Logistik_Pesanan_Pabrik/create_po_from_pr') ?>" method="post" id="form-create-po">
+            <form action="<?= base_url('Logistik_Pesanan_Pabrik/create_po_from_pr') ?>" method="post" id="form-create-po" enctype="multipart/form-data">
                 <div class="modal-header text-white" style="border-bottom:0;background:linear-gradient(135deg, #0f172a, #1d4ed8);">
                     <div>
-                        <h4 class="modal-title mb-1">Buat PO dari PR Approved</h4>
-                        <small>Pilih PR yang NODIN-nya sudah approved penuh, lalu tentukan item mana yang akan diteruskan menjadi PO.</small>
+                        <h4 class="modal-title mb-1">Buat PO dari NODIN Approved</h4>
+                        <small>Pilih nomor NODIN dan pabrik, lalu sistem akan menarik detail item serta nilai PO langsung dari NODIN.</small>
                     </div>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
@@ -507,6 +532,16 @@ $formatStatus = function ($row) {
                                 <input type="date" name="tanggal_po_pabrik" id="po_tanggal_po_pabrik" class="form-control" value="<?= date('Y-m-d') ?>" required>
                             </div>
                         </div>
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Upload File PO</label>
+                                <div class="custom-file">
+                                    <input type="file" name="file_po" id="po_file_po" class="custom-file-input" accept=".pdf,.jpg,.jpeg,.png">
+                                    <label class="custom-file-label" for="po_file_po">Choose file</label>
+                                </div>
+                                <small class="text-muted">Opsional. Format yang didukung: PDF, JPG, JPEG, PNG.</small>
+                            </div>
+                        </div>
                     </div>
 
                     <hr>
@@ -515,7 +550,8 @@ $formatStatus = function ($row) {
                         <table class="table table-bordered" id="table_create_po_items">
                             <thead>
                                 <tr>
-                                    <th>Pilih</th>
+                                    <th>No</th>
+                                    <th>Referensi PR</th>
                                     <th>Nama Item</th>
                                     <th>Satuan</th>
                                     <th>Qty Request</th>
@@ -524,14 +560,28 @@ $formatStatus = function ($row) {
                                     <th>Outstanding PR</th>
                                     <th>Qty PO</th>
                                     <th>Harga Item</th>
+                                    <th>Nominal</th>
                                     <th>Keterangan Planning</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="10" class="text-center text-muted">Pilih NODIN approved dan pabrik untuk memuat detail item.</td>
+                                    <td colspan="12" class="text-center text-muted">Pilih NODIN approved dan pabrik untuk memuat detail item.</td>
                                 </tr>
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4">TOTAL</td>
+                                    <td id="po-total-qty-request">0</td>
+                                    <td id="po-total-volume-planning">0</td>
+                                    <td id="po-total-qty-sudah-po">0</td>
+                                    <td id="po-total-outstanding">0</td>
+                                    <td id="po-total-qty-po">0</td>
+                                    <td id="po-total-harga-item">0</td>
+                                    <td id="po-total-nominal">0</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -564,6 +614,7 @@ $formatStatus = function ($row) {
         }
 
         $('#po_id_nota_dinas_po, #po_id_pabrik').select2({
+            theme: 'bootstrap4',
             width: '100%',
             dropdownParent: $('#modalCreatePoFromPr')
         });
@@ -611,35 +662,84 @@ $formatStatus = function ($row) {
             tbody.empty();
 
             if (!rows.length) {
-                tbody.append('<tr><td colspan="10" class="text-center text-muted">Tidak ada item outstanding yang bisa diteruskan ke PO.</td></tr>');
+                tbody.append('<tr><td colspan="12" class="text-center text-muted">Tidak ada item outstanding yang bisa diteruskan ke PO.</td></tr>');
+                refreshPoFooter();
                 return;
             }
 
             rows.forEach(function(item, index) {
+                const qtyRequest = parseFloat(item.qty_request || 0);
                 const volumePlanning = parseFloat(item.volume_planning_final || 0);
                 const qtySudahPo = parseFloat(item.qty_po_teralokasi || 0);
                 const qtyOutstanding = parseFloat(item.qty_outstanding_nodin || 0);
+                const hargaItem = parseFloat(item.harga_satuan || 0);
+                const nominalItem = qtyOutstanding * hargaItem;
                 tbody.append(`
                     <tr>
                         <td>
-                            <input type="checkbox" name="selected_item[]" value="${index}" checked>
+                            ${index + 1}
                             <input type="hidden" name="id_nota_dinas_po_detail[${index}]" value="${item.id_nota_dinas_po_detail}">
                             <input type="hidden" name="id_purchase_request_detail[${index}]" value="${item.id_purchase_request_detail}">
                             <input type="hidden" name="id_kode_item[${index}]" value="${item.id_kode_item}">
                             <input type="hidden" name="volume_planning_snapshot[${index}]" value="${volumePlanning}">
+                            <input type="hidden" name="qty_item[${index}]" value="${qtyOutstanding}">
+                            <input type="hidden" name="harga_item[${index}]" value="${hargaItem}">
                         </td>
-                        <td>${item.nomor_purchase_request || '-'}<br><strong>${item.nama_item || '-'}</strong></td>
+                        <td>${item.nomor_purchase_request || '-'}</td>
+                        <td><strong>${item.nama_item || '-'}</strong></td>
                         <td>${item.satuan_item || '-'}</td>
-                        <td>${item.qty_request || 0}</td>
-                        <td>${volumePlanning}</td>
-                        <td>${qtySudahPo}</td>
-                        <td><strong>${qtyOutstanding}</strong></td>
-                        <td><input type="number" class="form-control" name="qty_item[${index}]" value="${qtyOutstanding}" min="0" max="${qtyOutstanding}" step="1"></td>
-                        <td><input type="number" class="form-control" name="harga_item[${index}]" value="${item.harga_satuan || 0}" min="0" step="1"></td>
+                        <td class="text-right js-po-qty-request">${formatPoNumber(qtyRequest)}</td>
+                        <td class="text-right js-po-volume-planning">${formatPoNumber(volumePlanning)}</td>
+                        <td class="text-right js-po-qty-sudah-po">${formatPoNumber(qtySudahPo)}</td>
+                        <td class="text-right js-po-outstanding">${formatPoNumber(qtyOutstanding)}</td>
+                        <td class="text-right js-po-qty">${formatPoNumber(qtyOutstanding)}</td>
+                        <td class="text-right js-po-harga">${formatPoNumber(hargaItem)}</td>
+                        <td class="text-right js-po-nominal">${formatPoNumber(nominalItem)}</td>
                         <td>${item.keterangan_planning || item.keterangan || '-'}</td>
                     </tr>
                 `);
             });
+
+            refreshPoFooter();
+        }
+
+        function parsePoNumber(value) {
+            const normalized = String(value || '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
+            return parseFloat(normalized) || 0;
+        }
+
+        function formatPoNumber(value) {
+            return new Intl.NumberFormat('id-ID', {
+                maximumFractionDigits: 0
+            }).format(parsePoNumber(value));
+        }
+
+        function refreshPoFooter() {
+            let totalQtyRequest = 0;
+            let totalVolumePlanning = 0;
+            let totalQtySudahPo = 0;
+            let totalOutstanding = 0;
+            let totalQtyPo = 0;
+            let totalHarga = 0;
+            let totalNominal = 0;
+
+            $('#table_create_po_items tbody tr').each(function() {
+                totalQtyRequest += parsePoNumber($(this).find('.js-po-qty-request').text());
+                totalVolumePlanning += parsePoNumber($(this).find('.js-po-volume-planning').text());
+                totalQtySudahPo += parsePoNumber($(this).find('.js-po-qty-sudah-po').text());
+                totalOutstanding += parsePoNumber($(this).find('.js-po-outstanding').text());
+                totalQtyPo += parsePoNumber($(this).find('.js-po-qty').text());
+                totalHarga += parsePoNumber($(this).find('.js-po-harga').text());
+                totalNominal += parsePoNumber($(this).find('.js-po-nominal').text());
+            });
+
+            $('#po-total-qty-request').text(formatPoNumber(totalQtyRequest));
+            $('#po-total-volume-planning').text(formatPoNumber(totalVolumePlanning));
+            $('#po-total-qty-sudah-po').text(formatPoNumber(totalQtySudahPo));
+            $('#po-total-outstanding').text(formatPoNumber(totalOutstanding));
+            $('#po-total-qty-po').text(formatPoNumber(totalQtyPo));
+            $('#po-total-harga-item').text(formatPoNumber(totalHarga));
+            $('#po-total-nominal').text(formatPoNumber(totalNominal));
         }
 
         function loadPoNodinItems() {
@@ -680,33 +780,40 @@ $formatStatus = function ($row) {
         $('#po_id_pabrik').on('change', loadPoNodinItems);
 
         $('#form-create-po').on('submit', function(e) {
-            const checkedItems = $('#table_create_po_items tbody input[type="checkbox"]:checked').length;
-            if (!checkedItems) {
+            const totalRows = $('#table_create_po_items tbody input[name^="id_nota_dinas_po_detail["]').length;
+            if (!totalRows) {
                 e.preventDefault();
-                Swal.fire('Item belum dipilih', 'Pilih minimal satu item untuk dibuatkan PO.', 'warning');
+                Swal.fire('Item belum tersedia', 'Belum ada detail NODIN outstanding yang bisa dibuatkan PO untuk pabrik ini.', 'warning');
+                return;
+            }
+        });
+
+        $('#po_file_po').on('change', function() {
+            const file = this.files && this.files[0] ? this.files[0].name : 'Choose file';
+            $(this).siblings('.custom-file-label').text(file);
+        });
+
+        $(document).on('click', '[data-delete-po]', function(e) {
+            e.preventDefault();
+            const nomorPo = $(this).data('delete-po') || '';
+            if (!nomorPo) {
                 return;
             }
 
-            let hasInvalidQty = false;
-            $('#table_create_po_items tbody tr').each(function() {
-                const checkbox = $(this).find('input[type="checkbox"]');
-                if (!checkbox.is(':checked')) {
-                    return;
-                }
-
-                const qtyInput = $(this).find('input[name^="qty_item["]');
-                const qtyValue = parseFloat(qtyInput.val() || 0);
-                const maxOutstanding = parseFloat(qtyInput.attr('max') || 0);
-
-                if (qtyValue <= 0 || qtyValue > maxOutstanding) {
-                    hasInvalidQty = true;
+            Swal.fire({
+                title: 'Hapus PO?',
+                text: 'PO, detail item, dan histori pengiriman yang belum diterima akan ikut dihapus.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "<?= base_url('Logistik_Pesanan_Pabrik/delete_po/') ?>" + encodeURIComponent(nomorPo);
                 }
             });
-
-            if (hasInvalidQty) {
-                e.preventDefault();
-                Swal.fire('Qty PO tidak valid', 'Qty PO tiap item harus lebih dari 0 dan tidak boleh melebihi outstanding detail NODIN.', 'warning');
-            }
         });
     });
 </script>

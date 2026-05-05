@@ -810,7 +810,7 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
 </div>
 
 <div class="modal fade pr-modal" id="modal_tambah_pr" data-backdrop="static">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-xxl">
         <div class="modal-content">
             <form action="<?= base_url('Logistik_Purchase_Request/add_purchase_request') ?>" method="post" id="tambah_purchase_reqeust" enctype="multipart/form-data">
                 <div class="modal-header">
@@ -948,6 +948,28 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
     $(document).ready(function () {
         let counter = 1;
 
+        function parsePrNumber(value) {
+            const normalized = String(value || '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
+            return parseFloat(normalized) || 0;
+        }
+
+        function formatPrNumber(value) {
+            return new Intl.NumberFormat('id-ID', {
+                maximumFractionDigits: 0
+            }).format(parsePrNumber(value));
+        }
+
+        function normalizePrLiveNumbers(scope) {
+            $(scope || document).find('.js-live-number').each(function () {
+                const $input = $(this);
+                if ($input.val() === '') {
+                    return;
+                }
+
+                $input.val(formatPrNumber($input.val()));
+            });
+        }
+
         function formatMaterialOption(option) {
             if (!option.id) {
                 return option.text;
@@ -1001,13 +1023,17 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
         }
 
         $('#nama_bowher, #lokasi_project').select2({
+            theme: 'bootstrap4',
             placeholder: 'Pilih Salah Satu',
-            width: '100%'
+            width: '100%',
+            dropdownParent: $('#modal_tambah_pr')
         });
 
         $('#nama_material').select2({
+            theme: 'bootstrap4',
             placeholder: 'Pilih Salah Satu',
             width: '100%',
+            dropdownParent: $('#modal_tambah_pr'),
             templateResult: formatMaterialOption,
             templateSelection: function(option) {
                 return option.text || 'Pilih Salah Satu';
@@ -1037,19 +1063,19 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
 
             $('[name^="boq_"]').each(function () {
                 const rawValue = ($(this).val() || '').toString();
-                const total = parseFloat(rawValue.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
+                const total = parsePrNumber(rawValue);
                 totalBoq += total;
             });
 
             $('[name^="stok_area_"]').each(function () {
                 const rawValue = ($(this).val() || '').toString();
-                const total = parseFloat(rawValue.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
+                const total = parsePrNumber(rawValue);
                 totalStokArea += total;
             });
 
             $('[name^="stok_request_"]').each(function () {
                 const rawValue = ($(this).val() || '').toString();
-                const total = parseFloat(rawValue.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
+                const total = parsePrNumber(rawValue);
                 totalSemua += total;
             });
 
@@ -1141,9 +1167,9 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                     </td>
                     <td>${selectedKepemilikan || '-'}</td>
                     <td>${selectedSatuan || '-'}</td>
-                    <td><input type="number" class="form-control" name="boq_[${counter}]" autocomplete="off" placeholder="0" min="0"></td>
-                    <td><input type="number" class="form-control" name="stok_area_[${counter}]" autocomplete="off" value="${selectedStokArea}" readonly></td>
-                    <td><input type="number" class="form-control" name="stok_request_[${counter}]" autocomplete="off" placeholder="5.000" required></td>
+                    <td><input type="text" inputmode="numeric" class="form-control js-live-number" name="boq_[${counter}]" autocomplete="off" placeholder="0"></td>
+                    <td><input type="text" inputmode="numeric" class="form-control js-live-number" name="stok_area_[${counter}]" autocomplete="off" value="${formatPrNumber(selectedStokArea)}" readonly></td>
+                    <td><input type="text" inputmode="numeric" class="form-control js-live-number" name="stok_request_[${counter}]" autocomplete="off" placeholder="5.000" required></td>
                     <td><input type="text" class="form-control" name="keterangan_[${counter}]" autocomplete="off" placeholder="Keterangan"></td>
                     <td><button class="btn btn-danger hapus-item" type="button"><i class="fa fa-trash"></i></button></td>
                 </tr>
@@ -1151,6 +1177,7 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
 
             counter++;
             $('#nama_material').val("").trigger('change');
+            normalizePrLiveNumbers('#table_item_purchase_request tbody tr:last');
             updateTotalKeseluruhan();
         });
 
@@ -1182,10 +1209,17 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
         });
 
         $(document).on('input', '[name^="stok_request_["]', function () {
+            $(this).val(formatPrNumber($(this).val()));
             updateTotalKeseluruhan();
         });
 
         $(document).on('input', '[name^="boq_["]', function () {
+            $(this).val(formatPrNumber($(this).val()));
+            updateTotalKeseluruhan();
+        });
+
+        $(document).on('input', '[name^="stok_area_["]', function () {
+            $(this).val(formatPrNumber($(this).val()));
             updateTotalKeseluruhan();
         });
 
@@ -1218,7 +1252,12 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                     html: errorMessage.join('<br>')
                 });
                 event.preventDefault();
+                return;
             }
+
+            $('#tambah_purchase_reqeust .js-live-number').each(function () {
+                $(this).val(parsePrNumber($(this).val() || 0));
+            });
         });
 
         $(".btn-delete-purchase-request").click(function () {
@@ -1241,5 +1280,6 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
         });
 
         updateTotalKeseluruhan();
+        normalizePrLiveNumbers('#modal_tambah_pr');
     });
 </script>

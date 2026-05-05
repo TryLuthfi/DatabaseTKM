@@ -296,7 +296,7 @@ class MLogistik_Purchase_Request extends CI_Model
                 SUM(COALESCE(d.qty_po_nodin, 0)) AS total_qty_nodin,
                 SUM(COALESCE(d.qty_po_nodin, 0) * COALESCE(d.harga_satuan, 0)) AS total_nominal_nodin,
                 GROUP_CONCAT(DISTINCT pr.nomor_purchase_request ORDER BY pr.nomor_purchase_request SEPARATOR ', ') AS nomor_purchase_request_refs,
-                GROUP_CONCAT(DISTINCT COALESCE(pr.nama_project, pr.id_project) ORDER BY COALESCE(pr.nama_project, pr.id_project) SEPARATOR ', ') AS nama_project_refs
+                GROUP_CONCAT(DISTINCT COALESCE(pr.id_project, pr.nama_project) ORDER BY COALESCE(pr.id_project, pr.nama_project) SEPARATOR ', ') AS nama_project_refs
             FROM tb_logistik_nota_dinas_po h
             LEFT JOIN tb_logistik_nota_dinas_po_detail d
                 ON d.id_nota_dinas_po = h.id_nota_dinas_po
@@ -308,7 +308,55 @@ class MLogistik_Purchase_Request extends CI_Model
             ORDER BY h.tanggal_nota_dinas DESC, h.id_nota_dinas_po DESC
         ")->result_array();
 
-        return array_map([$this, 'decorate_nodin_row'], $rows);
+        $supportsNodinDetailRelation = $this->has_column('tb_logistik_pesanan_pabrik_detail', 'id_nota_dinas_po_detail');
+        $poAllocationMap = [];
+        if ($supportsNodinDetailRelation && $this->relation_exists('tb_logistik_pesanan_pabrik_detail')) {
+            $allocationRows = $this->db->query("
+                SELECT
+                    d.id_nota_dinas_po,
+                    COUNT(DISTINCT pd.id_pesanan_pabrik) AS total_po,
+                    SUM(COALESCE(pd.qty_item, 0)) AS total_qty_po,
+                    SUM(COALESCE(nd.qty_po_nodin, 0)) AS total_qty_nodin_linked
+                FROM tb_logistik_nota_dinas_po_detail d
+                LEFT JOIN tb_logistik_pesanan_pabrik_detail pd
+                    ON pd.id_nota_dinas_po_detail = d.id_nota_dinas_po_detail
+                LEFT JOIN tb_logistik_nota_dinas_po_detail nd
+                    ON nd.id_nota_dinas_po_detail = d.id_nota_dinas_po_detail
+                GROUP BY d.id_nota_dinas_po
+            ")->result_array();
+
+            foreach ($allocationRows as $allocationRow) {
+                $poAllocationMap[(string) ($allocationRow['id_nota_dinas_po'] ?? '')] = $allocationRow;
+            }
+        }
+
+        return array_map(function ($row) use ($poAllocationMap) {
+            $row = $this->decorate_nodin_row($row);
+            if (empty($row)) {
+                return $row;
+            }
+
+            $allocation = $poAllocationMap[(string) ($row['id_nota_dinas_po'] ?? '')] ?? [];
+            $totalPo = (int) ($allocation['total_po'] ?? 0);
+            $totalQtyPo = (float) ($allocation['total_qty_po'] ?? 0);
+            $totalQtyNodin = (float) ($row['total_qty_nodin'] ?? 0);
+
+            $row['total_po_created'] = $totalPo;
+            $row['total_qty_po_created'] = $totalQtyPo;
+
+            if ($totalPo <= 0 || $totalQtyPo <= 0) {
+                $row['po_status_label'] = 'Belum PO';
+                $row['po_status_tone'] = 'waiting';
+            } elseif ($totalQtyNodin > 0 && $totalQtyPo < $totalQtyNodin) {
+                $row['po_status_label'] = 'Partial PO';
+                $row['po_status_tone'] = 'blue';
+            } else {
+                $row['po_status_label'] = 'Sudah PO';
+                $row['po_status_tone'] = 'approved';
+            }
+
+            return $row;
+        }, $rows);
     }
 
     public function saveNodin($header, $details, $existingNodinId = null)

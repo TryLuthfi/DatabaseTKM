@@ -116,7 +116,9 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 ki.nama_item,
                 ki.satuan_item,
                 {$allocationSelect}
-                pr.nomor_purchase_request
+                pr.nomor_purchase_request,
+                pr.nama_project,
+                pr.id_project
             FROM tb_logistik_purchase_request_detail d
             LEFT JOIN tb_logistik_purchase_request pr
                 ON pr.id_purchase_request = d.id_purchase_request
@@ -154,7 +156,7 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
             SELECT
                 h.*,
                 GROUP_CONCAT(DISTINCT pr.nomor_purchase_request ORDER BY pr.nomor_purchase_request SEPARATOR ', ') AS nomor_purchase_request_refs,
-                GROUP_CONCAT(DISTINCT COALESCE(pr.nama_project, pr.id_project) ORDER BY COALESCE(pr.nama_project, pr.id_project) SEPARATOR ', ') AS nama_project_refs,
+                GROUP_CONCAT(DISTINCT COALESCE(pr.id_project, pr.nama_project) ORDER BY COALESCE(pr.id_project, pr.nama_project) SEPARATOR ', ') AS nama_project_refs,
                 COUNT(DISTINCT d.id_nota_dinas_po_detail) AS total_item
             FROM tb_logistik_nota_dinas_po h
             INNER JOIN tb_logistik_nota_dinas_po_detail d
@@ -308,6 +310,14 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
 
     public function createPoFromApprovedPr($header, $details)
     {
+        $nextDetailId = $this->getNextPoDetailId();
+        foreach ($details as $detailIndex => &$detailRow) {
+            if (!array_key_exists('id_pesanan_pabrik_detail', $detailRow) || (int) $detailRow['id_pesanan_pabrik_detail'] <= 0) {
+                $detailRow['id_pesanan_pabrik_detail'] = $nextDetailId + $detailIndex;
+            }
+        }
+        unset($detailRow);
+
         $this->db->trans_start();
 
         $this->db->insert('tb_logistik_pesanan_pabrik', $header);
@@ -320,80 +330,161 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
         return $this->db->trans_status();
     }
 
+    public function ensurePoDetailIdsByNomor($nomorPo)
+    {
+        $poHeader = $this->db
+            ->select('id_pesanan_pabrik')
+            ->from('tb_logistik_pesanan_pabrik')
+            ->where('nomor_po_pabrik', $nomorPo)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($poHeader['id_pesanan_pabrik'])) {
+            return;
+        }
+
+        $invalidRows = $this->db
+            ->select('id_pesanan_pabrik, id_purchase_request_detail, id_nota_dinas_po_detail, id_kode_item, harga_item, qty_item, volume_planning_snapshot')
+            ->from('tb_logistik_pesanan_pabrik_detail')
+            ->where('id_pesanan_pabrik', $poHeader['id_pesanan_pabrik'])
+            ->group_start()
+                ->where('id_pesanan_pabrik_detail', 0)
+                ->or_where('id_pesanan_pabrik_detail IS NULL', null, false)
+            ->group_end()
+            ->get()
+            ->result_array();
+
+        if (empty($invalidRows)) {
+            return;
+        }
+
+        $nextDetailId = $this->getNextPoDetailId();
+        foreach ($invalidRows as $rowIndex => $invalidRow) {
+            $newId = $nextDetailId + $rowIndex;
+            $this->db->where('id_pesanan_pabrik', $invalidRow['id_pesanan_pabrik']);
+            $this->db->group_start()
+                ->where('id_pesanan_pabrik_detail', 0)
+                ->or_where('id_pesanan_pabrik_detail IS NULL', null, false)
+                ->group_end();
+            $this->db->where('id_kode_item', $invalidRow['id_kode_item']);
+            $this->db->where('harga_item', $invalidRow['harga_item']);
+            $this->db->where('qty_item', $invalidRow['qty_item']);
+
+            if ($this->fieldExists('tb_logistik_pesanan_pabrik_detail', 'id_purchase_request_detail')) {
+                if ($invalidRow['id_purchase_request_detail'] === null || $invalidRow['id_purchase_request_detail'] === '') {
+                    $this->db->where('id_purchase_request_detail IS NULL', null, false);
+                } else {
+                    $this->db->where('id_purchase_request_detail', $invalidRow['id_purchase_request_detail']);
+                }
+            }
+
+            if ($this->fieldExists('tb_logistik_pesanan_pabrik_detail', 'id_nota_dinas_po_detail')) {
+                if ($invalidRow['id_nota_dinas_po_detail'] === null || $invalidRow['id_nota_dinas_po_detail'] === '') {
+                    $this->db->where('id_nota_dinas_po_detail IS NULL', null, false);
+                } else {
+                    $this->db->where('id_nota_dinas_po_detail', $invalidRow['id_nota_dinas_po_detail']);
+                }
+            }
+
+            if ($this->fieldExists('tb_logistik_pesanan_pabrik_detail', 'volume_planning_snapshot')) {
+                if ($invalidRow['volume_planning_snapshot'] === null || $invalidRow['volume_planning_snapshot'] === '') {
+                    $this->db->where('volume_planning_snapshot IS NULL', null, false);
+                } else {
+                    $this->db->where('volume_planning_snapshot', $invalidRow['volume_planning_snapshot']);
+                }
+            }
+
+            $this->db->limit(1);
+            $this->db->update('tb_logistik_pesanan_pabrik_detail', [
+                'id_pesanan_pabrik_detail' => $newId,
+            ]);
+        }
+    }
+
     public function getPoSummaryRows()
     {
-        if ($this->relationExists('v_logistik_po_monitor')) {
-            return $this->db->query("
-                SELECT
-                    id_pesanan_pabrik,
-                    id_purchase_request,
-                    nomor_purchase_request,
-                    id_pabrik,
-                    nomor_po_pabrik,
-                    tanggal_po_pabrik,
-                    purchase_order_document,
-                    status_po,
-                    id_user,
-                    nama_pabrik,
-                    nama_user,
-                    COUNT(DISTINCT id_pesanan_pabrik_detail) AS total_item,
-                    COALESCE(SUM(qty_po), 0) AS total_qty_po,
-                    COALESCE(SUM(qty_terkirim), 0) AS total_qty_terkirim,
-                    COALESCE(SUM(outstanding_pengiriman), 0) AS total_outstanding,
-                    COALESCE(SUM(total_nominal_detail), 0) AS total_nominal_po
-                FROM v_logistik_po_monitor
-                GROUP BY
-                    id_pesanan_pabrik,
-                    id_purchase_request,
-                    nomor_purchase_request,
-                    id_pabrik,
-                    nomor_po_pabrik,
-                    tanggal_po_pabrik,
-                    purchase_order_document,
-                    status_po,
-                    id_user,
-                    nama_pabrik,
-                    nama_user
-                ORDER BY tanggal_po_pabrik DESC, nomor_po_pabrik DESC
-            ")->result_array();
+        $supportsNodinReference = $this->fieldExists('tb_logistik_pesanan_pabrik_detail', 'id_nota_dinas_po_detail')
+            && $this->relationExists('tb_logistik_nota_dinas_po_detail')
+            && $this->relationExists('tb_logistik_nota_dinas_po');
+        $supportsQtyClosedManual = $this->fieldExists('tb_logistik_pesanan_pabrik_detail', 'qty_closed_manual');
+        $qtyClosedExpression = $supportsQtyClosedManual ? 'd.qty_closed_manual' : '0';
+
+        $referenceJoinSql = '';
+        $referenceSelectSql = "NULL AS nomor_nota_dinas_refs, NULL AS nomor_purchase_request_refs,";
+        $referenceGroupSql = '';
+
+        if ($supportsNodinReference) {
+            $referenceJoinSql = "
+                LEFT JOIN (
+                    SELECT
+                        pd.id_pesanan_pabrik,
+                        GROUP_CONCAT(DISTINCT h.nomor_nota_dinas ORDER BY h.nomor_nota_dinas SEPARATOR ', ') AS nomor_nota_dinas_refs,
+                        GROUP_CONCAT(DISTINCT pr.nomor_purchase_request ORDER BY pr.nomor_purchase_request SEPARATOR ', ') AS nomor_purchase_request_refs
+                    FROM tb_logistik_pesanan_pabrik_detail pd
+                    LEFT JOIN tb_logistik_nota_dinas_po_detail nd
+                        ON nd.id_nota_dinas_po_detail = pd.id_nota_dinas_po_detail
+                    LEFT JOIN tb_logistik_nota_dinas_po h
+                        ON h.id_nota_dinas_po = nd.id_nota_dinas_po
+                    LEFT JOIN tb_logistik_purchase_request_detail prd
+                        ON prd.id_purchase_request_detail = pd.id_purchase_request_detail
+                    LEFT JOIN tb_logistik_purchase_request pr
+                        ON pr.id_purchase_request = prd.id_purchase_request
+                    GROUP BY pd.id_pesanan_pabrik
+                ) refs ON refs.id_pesanan_pabrik = p.id_pesanan_pabrik
+            ";
+            $referenceSelectSql = "
+                refs.nomor_nota_dinas_refs,
+                refs.nomor_purchase_request_refs,
+            ";
+            $referenceGroupSql = ",
+                    refs.nomor_nota_dinas_refs,
+                    refs.nomor_purchase_request_refs";
         }
 
         return $this->db->query("
             SELECT
                 p.id_pesanan_pabrik,
-                NULL AS id_purchase_request,
-                NULL AS nomor_purchase_request,
+                p.id_purchase_request,
+                p.nomor_purchase_request,
+                {$referenceSelectSql}
                 p.id_pabrik,
                 p.nomor_po_pabrik,
                 p.tanggal_po_pabrik,
                 p.purchase_order_document,
-                'APPROVED' AS status_po,
+                COALESCE(NULLIF(p.status_po, ''), 'APPROVED') AS status_po,
                 p.id_user,
                 mp.nama_pabrik,
                 mu.nama_user,
                 COUNT(DISTINCT d.id_pesanan_pabrik_detail) AS total_item,
                 COALESCE(SUM(d.qty_item), 0) AS total_qty_po,
                 COALESCE(SUM(gd.qty_item), 0) AS total_qty_terkirim,
-                (COALESCE(SUM(d.qty_item), 0) - COALESCE(SUM(gd.qty_item), 0)) AS total_outstanding,
+                COALESCE(SUM(COALESCE(gd.qty_diterima, 0)), 0) AS total_qty_diterima,
+                (COALESCE(SUM(d.qty_item), 0) - COALESCE(SUM(gd.qty_item), 0) - COALESCE(SUM({$qtyClosedExpression}), 0)) AS total_outstanding,
                 COALESCE(SUM(COALESCE(d.harga_item, 0) * COALESCE(d.qty_item, 0)), 0) AS total_nominal_po
             FROM tb_logistik_pesanan_pabrik p
             LEFT JOIN tb_master_logistik_pabrik mp
                 ON mp.id_pabrik = p.id_pabrik
             LEFT JOIN tb_master_user mu
                 ON mu.id_user = p.id_user
+            {$referenceJoinSql}
             LEFT JOIN tb_logistik_pesanan_pabrik_detail d
                 ON d.id_pesanan_pabrik = p.id_pesanan_pabrik
             LEFT JOIN tb_logistik_pengiriman_pabrik_detail gd
                 ON gd.id_pesanan_pabrik_detail = d.id_pesanan_pabrik_detail
             GROUP BY
                 p.id_pesanan_pabrik,
+                p.id_purchase_request,
+                p.nomor_purchase_request,
                 p.id_pabrik,
                 p.nomor_po_pabrik,
                 p.tanggal_po_pabrik,
                 p.purchase_order_document,
+                p.status_po,
                 p.id_user,
                 mp.nama_pabrik,
                 mu.nama_user
+                {$referenceGroupSql}
             ORDER BY p.tanggal_po_pabrik DESC, p.nomor_po_pabrik DESC
         ")->result_array();
     }
@@ -441,26 +532,138 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
         return null;
     }
 
+    public function deletePoByNomor($nomorPo)
+    {
+        $poHeader = $this->db
+            ->select('id_pesanan_pabrik, nomor_po_pabrik')
+            ->from('tb_logistik_pesanan_pabrik')
+            ->where('nomor_po_pabrik', $nomorPo)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($poHeader['id_pesanan_pabrik'])) {
+            return [
+                'success' => false,
+                'message' => 'PO tidak ditemukan.',
+            ];
+        }
+
+        $poDetailIds = $this->db
+            ->select('id_pesanan_pabrik_detail')
+            ->from('tb_logistik_pesanan_pabrik_detail')
+            ->where('id_pesanan_pabrik', $poHeader['id_pesanan_pabrik'])
+            ->get()
+            ->result_array();
+
+        $detailIds = array_values(array_filter(array_map(static function ($row) {
+            return (int) ($row['id_pesanan_pabrik_detail'] ?? 0);
+        }, $poDetailIds)));
+
+        if (!empty($detailIds) && $this->relationExists('tb_logistik_pengiriman_pabrik_detail')) {
+            $receivedShipment = $this->db
+                ->select('MAX(COALESCE(qty_diterima, 0)) AS max_qty_diterima', false)
+                ->from('tb_logistik_pengiriman_pabrik_detail')
+                ->where_in('id_pesanan_pabrik_detail', $detailIds)
+                ->get()
+                ->row_array();
+
+            if ((float) ($receivedShipment['max_qty_diterima'] ?? 0) > 0) {
+                return [
+                    'success' => false,
+                    'message' => 'PO tidak bisa dihapus karena sudah ada material yang diterima gudang.',
+                ];
+            }
+        }
+
+        $shipmentHeaderIds = [];
+        if (!empty($detailIds) && $this->relationExists('tb_logistik_pengiriman_pabrik_detail')) {
+            $shipmentRows = $this->db
+                ->select('DISTINCT id_pengiriman_pabrik', false)
+                ->from('tb_logistik_pengiriman_pabrik_detail')
+                ->where_in('id_pesanan_pabrik_detail', $detailIds)
+                ->get()
+                ->result_array();
+
+            $shipmentHeaderIds = array_values(array_filter(array_map(static function ($row) {
+                return (int) ($row['id_pengiriman_pabrik'] ?? 0);
+            }, $shipmentRows)));
+        }
+
+        $this->db->trans_start();
+
+        if (!empty($detailIds) && $this->relationExists('tb_logistik_pengiriman_pabrik_detail')) {
+            $this->db->where_in('id_pesanan_pabrik_detail', $detailIds);
+            $this->db->delete('tb_logistik_pengiriman_pabrik_detail');
+        }
+
+        if (!empty($shipmentHeaderIds) && $this->relationExists('tb_logistik_pengiriman_pabrik')) {
+            $this->db->where_in('id_pengiriman_pabrik', $shipmentHeaderIds);
+            $this->db->delete('tb_logistik_pengiriman_pabrik');
+        }
+
+        $this->db->where('id_pesanan_pabrik', $poHeader['id_pesanan_pabrik']);
+        $this->db->delete('tb_logistik_pesanan_pabrik_detail');
+
+        $this->db->where('id_pesanan_pabrik', $poHeader['id_pesanan_pabrik']);
+        $this->db->delete('tb_logistik_pesanan_pabrik');
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false) {
+            return [
+                'success' => false,
+                'message' => 'Gagal menghapus PO.',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => 'PO berhasil dihapus.',
+        ];
+    }
+
     public function getPoItemsByNomor($nomorPo)
     {
+        $supportsNodinDetail = $this->fieldExists('tb_logistik_pesanan_pabrik_detail', 'id_nota_dinas_po_detail')
+            && $this->relationExists('tb_logistik_nota_dinas_po_detail')
+            && $this->relationExists('tb_logistik_nota_dinas_po');
+        $nodinJoinSql = $supportsNodinDetail
+            ? "LEFT JOIN tb_logistik_nota_dinas_po_detail nd
+                    ON nd.id_nota_dinas_po_detail = pd.id_nota_dinas_po_detail
+                LEFT JOIN tb_logistik_nota_dinas_po h
+                    ON h.id_nota_dinas_po = nd.id_nota_dinas_po"
+            : "";
+        $nodinSelectSql = $supportsNodinDetail ? "h.nomor_nota_dinas" : "NULL AS nomor_nota_dinas";
+        $nodinGroupSql = $supportsNodinDetail ? ", h.nomor_nota_dinas" : "";
+
         if ($this->relationExists('v_logistik_po_monitor')) {
             return $this->db->query("
                 SELECT
-                    id_pesanan_pabrik_detail,
-                    id_purchase_request_detail,
-                    id_kode_item,
-                    nama_item,
-                    satuan_item,
-                    harga_item,
-                    qty_po,
-                    volume_planning_snapshot,
-                    qty_terkirim,
-                    qty_diterima,
-                    outstanding_pengiriman,
-                    outstanding_penerimaan,
-                    total_nominal_detail
-                FROM v_logistik_po_monitor
-                WHERE nomor_po_pabrik = ?
+                    m.id_pesanan_pabrik_detail,
+                    m.id_purchase_request_detail,
+                    m.id_kode_item,
+                    m.nama_item,
+                    m.satuan_item,
+                    m.harga_item,
+                    m.qty_po,
+                    m.volume_planning_snapshot,
+                    m.qty_terkirim,
+                    m.qty_diterima,
+                    m.outstanding_pengiriman,
+                    m.outstanding_penerimaan,
+                    m.total_nominal_detail,
+                    pr.nomor_purchase_request,
+                    {$nodinSelectSql}
+                FROM v_logistik_po_monitor m
+                LEFT JOIN tb_logistik_pesanan_pabrik_detail pd
+                    ON pd.id_pesanan_pabrik_detail = m.id_pesanan_pabrik_detail
+                {$nodinJoinSql}
+                LEFT JOIN tb_logistik_purchase_request_detail prd
+                    ON prd.id_purchase_request_detail = m.id_purchase_request_detail
+                LEFT JOIN tb_logistik_purchase_request pr
+                    ON pr.id_purchase_request = prd.id_purchase_request
+                WHERE m.nomor_po_pabrik = ?
                 ORDER BY nama_item ASC
             ", [$nomorPo])->result_array();
         }
@@ -479,12 +682,22 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 COALESCE(SUM(gd.qty_item), 0) AS qty_diterima,
                 (d.qty_item - COALESCE(SUM(gd.qty_item), 0)) AS outstanding_pengiriman,
                 (d.qty_item - COALESCE(SUM(gd.qty_item), 0)) AS outstanding_penerimaan,
-                (COALESCE(d.harga_item, 0) * COALESCE(d.qty_item, 0)) AS total_nominal_detail
+                (COALESCE(d.harga_item, 0) * COALESCE(d.qty_item, 0)) AS total_nominal_detail,
+                pr.nomor_purchase_request,
+                {$nodinSelectSql}
             FROM tb_logistik_pesanan_pabrik p
             LEFT JOIN tb_logistik_pesanan_pabrik_detail d
                 ON d.id_pesanan_pabrik = p.id_pesanan_pabrik
             LEFT JOIN tb_master_logistik_kode_item ki
                 ON ki.id_kode_item = d.id_kode_item
+            " . ($supportsNodinDetail ? "LEFT JOIN tb_logistik_nota_dinas_po_detail nd
+                ON nd.id_nota_dinas_po_detail = d.id_nota_dinas_po_detail
+            LEFT JOIN tb_logistik_nota_dinas_po h
+                ON h.id_nota_dinas_po = nd.id_nota_dinas_po" : "") . "
+            LEFT JOIN tb_logistik_purchase_request_detail prd
+                ON prd.id_purchase_request_detail = d.id_purchase_request_detail
+            LEFT JOIN tb_logistik_purchase_request pr
+                ON pr.id_purchase_request = prd.id_purchase_request
             LEFT JOIN tb_logistik_pengiriman_pabrik_detail gd
                 ON gd.id_pesanan_pabrik_detail = d.id_pesanan_pabrik_detail
             WHERE p.nomor_po_pabrik = ?
@@ -494,7 +707,9 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 ki.nama_item,
                 ki.satuan_item,
                 d.harga_item,
-                d.qty_item
+                d.qty_item,
+                pr.nomor_purchase_request
+                {$nodinGroupSql}
             ORDER BY ki.nama_item ASC
         ", [$nomorPo])->result_array();
     }
@@ -503,9 +718,15 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
     {
         if ($this->relationExists('v_logistik_po_delivery')) {
             return $this->db->query("
-                SELECT *
-                FROM v_logistik_po_delivery
-                WHERE nomor_po_pabrik = ?
+                SELECT
+                    d.*,
+                    ki.nama_item
+                FROM v_logistik_po_delivery d
+                LEFT JOIN tb_logistik_pesanan_pabrik_detail pd
+                    ON pd.id_pesanan_pabrik_detail = d.id_pesanan_pabrik_detail
+                LEFT JOIN tb_master_logistik_kode_item ki
+                    ON ki.id_kode_item = pd.id_kode_item
+                WHERE d.nomor_po_pabrik = ?
                 ORDER BY tanggal_pengiriman_pabrik DESC, id_pengiriman_pabrik_detail DESC
             ", [$nomorPo])->result_array();
         }
@@ -602,6 +823,23 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
         return (int) ($fallback['id_bowheer'] ?? 0);
     }
 
+    public function getDefaultHoGudang()
+    {
+        $row = $this->db
+            ->select('id_lokasi_gudang, kota_lokasi_gudang, regional_lokasi_gudang')
+            ->from('tb_master_logistik_lokasi_gudang')
+            ->group_start()
+                ->where('UPPER(kota_lokasi_gudang)', 'HO')
+                ->or_where('UPPER(regional_lokasi_gudang)', 'HO')
+            ->group_end()
+            ->order_by('id_lokasi_gudang', 'ASC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return $row ?: null;
+    }
+
     private function relationExists($name)
     {
         $row = $this->db->query("SHOW FULL TABLES LIKE ?", [$name])->row_array();
@@ -628,5 +866,16 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
     private function fieldExists($table, $field)
     {
         return in_array($field, $this->db->list_fields($table), true);
+    }
+
+    private function getNextPoDetailId()
+    {
+        $row = $this->db
+            ->select('MAX(id_pesanan_pabrik_detail) AS max_id', false)
+            ->from('tb_logistik_pesanan_pabrik_detail')
+            ->get()
+            ->row_array();
+
+        return ((int) ($row['max_id'] ?? 0)) + 1;
     }
 }

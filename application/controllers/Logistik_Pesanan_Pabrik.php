@@ -65,7 +65,6 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         $idPabrik = (int) $this->input->post('id_pabrik');
         $nomorPo = trim((string) $this->input->post('nomor_po_pabrik'));
         $tanggalPo = trim((string) $this->input->post('tanggal_po_pabrik'));
-        $selectedItems = (array) $this->input->post('selected_item');
         $nodinDetailIds = (array) $this->input->post('id_nota_dinas_po_detail');
         $detailIds = (array) $this->input->post('id_purchase_request_detail');
         $kodeItems = (array) $this->input->post('id_kode_item');
@@ -75,8 +74,8 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         $nomorNodin = trim((string) $this->input->post('nomor_nota_dinas'));
         $nomorPurchaseRequestRefs = trim((string) $this->input->post('nomor_purchase_request_refs'));
 
-        if ($idNodin === '' || $idPabrik <= 0 || $nomorPo === '' || $tanggalPo === '' || empty($selectedItems)) {
-            $this->session->set_flashdata('error', 'Data PO belum lengkap. Pastikan NODIN, pabrik, nomor PO, tanggal PO, dan item sudah dipilih.');
+        if ($idNodin === '' || $idPabrik <= 0 || $nomorPo === '' || $tanggalPo === '' || empty($nodinDetailIds)) {
+            $this->session->set_flashdata('error', 'Data PO belum lengkap. Pastikan NODIN, pabrik, nomor PO, tanggal PO, dan detail item tersedia.');
             redirect('Logistik_Pesanan_Pabrik');
             return;
         }
@@ -90,12 +89,18 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
 
         $poId = $this->generatePoId();
 
+        $uploadedPoDocument = $this->uploadPoDocument($poId, $nomorPo);
+        if ($uploadedPoDocument === false) {
+            redirect('Logistik_Pesanan_Pabrik');
+            return;
+        }
+
         $header = [
             'id_pesanan_pabrik' => $poId,
             'id_pabrik' => $idPabrik,
             'nomor_po_pabrik' => $nomorPo,
             'tanggal_po_pabrik' => $tanggalPo,
-            'purchase_order_document' => null,
+            'purchase_order_document' => $uploadedPoDocument,
             'id_user' => $this->session->userdata('id_user'),
         ];
 
@@ -124,12 +129,12 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
 
         $details = [];
         $selectedDetailIds = [];
-        foreach ($selectedItems as $index) {
-            if (!isset($nodinDetailIds[$index], $detailIds[$index], $kodeItems[$index], $qtyItems[$index])) {
+        foreach ($nodinDetailIds as $index => $nodinDetailIdValue) {
+            if (!isset($detailIds[$index], $kodeItems[$index])) {
                 continue;
             }
 
-            $nodinDetailId = trim((string) $nodinDetailIds[$index]);
+            $nodinDetailId = trim((string) $nodinDetailIdValue);
             $detailId = trim((string) $detailIds[$index]);
             if ($nodinDetailId === '' || !isset($outstandingItemMap[$nodinDetailId])) {
                 $this->session->set_flashdata('error', 'Ada detail NODIN yang sudah tidak outstanding atau sudah teralokasi penuh ke PO lain. Silakan muat ulang data NODIN.');
@@ -143,15 +148,15 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
                 return;
             }
 
-            $qty = (float) $qtyItems[$index];
+            $qty = (float) ($outstandingItemMap[$nodinDetailId]['qty_outstanding_nodin'] ?? 0);
             if ($qty <= 0) {
                 continue;
             }
 
             $maxOutstanding = (float) ($outstandingItemMap[$nodinDetailId]['qty_outstanding_nodin'] ?? 0);
-            if ($maxOutstanding <= 0 || $qty > $maxOutstanding) {
+            if ($maxOutstanding <= 0) {
                 $itemName = (string) ($outstandingItemMap[$nodinDetailId]['nama_item'] ?? 'Item');
-                $this->session->set_flashdata('error', $itemName . ' hanya memiliki outstanding NODIN ' . number_format($maxOutstanding, 0, ',', '.') . '. Nilai PO tidak boleh melebihi outstanding detail NODIN.');
+                $this->session->set_flashdata('error', $itemName . ' sudah tidak memiliki outstanding detail NODIN untuk dibuatkan PO.');
                 redirect('Logistik_Pesanan_Pabrik');
                 return;
             }
@@ -159,7 +164,7 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
             $detailRow = [
                 'id_pesanan_pabrik' => $poId,
                 'id_kode_item' => (int) $kodeItems[$index],
-                'harga_item' => (float) ($hargaItems[$index] ?? 0),
+                'harga_item' => (float) ($outstandingItemMap[$nodinDetailId]['harga_satuan'] ?? ($hargaItems[$index] ?? 0)),
                 'qty_item' => $qty,
             ];
 
@@ -187,6 +192,62 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         $isSuccess = $this->MLogistik_Pesanan_Pabrik->createPoFromApprovedPr($header, $details);
         $this->session->set_flashdata($isSuccess ? 'success' : 'error', $isSuccess ? 'PO berhasil dibuat dari detail NODIN approved.' : 'Gagal membuat PO dari detail NODIN approved.');
         redirect('Logistik_Pesanan_Pabrik');
+    }
+
+    public function delete_po($nomorPo = null)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $nomorPo = trim((string) ($nomorPo ?? $this->input->post('nomor_po_pabrik')));
+        if ($nomorPo === '') {
+            $this->session->set_flashdata('error', 'Nomor PO tidak ditemukan.');
+            redirect('Logistik_Pesanan_Pabrik');
+            return;
+        }
+
+        $result = $this->MLogistik_Pesanan_Pabrik->deletePoByNomor($nomorPo);
+        $this->session->set_flashdata($result['success'] ? 'success' : 'error', $result['message']);
+        redirect('Logistik_Pesanan_Pabrik');
+    }
+
+    private function uploadPoDocument($poId, $nomorPo)
+    {
+        if (!isset($_FILES['file_po']) || (int) $_FILES['file_po']['error'] === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+
+        if ((int) $_FILES['file_po']['error'] !== UPLOAD_ERR_OK) {
+            $this->session->set_flashdata('error', 'Upload file PO gagal. Silakan pilih file yang valid lalu coba lagi.');
+            return false;
+        }
+
+        $uploadPath = './uploads/';
+        if (!is_dir($uploadPath)) {
+            mkdir($uploadPath, 0777, true);
+        }
+
+        $this->load->library('upload');
+        $extension = strtolower((string) pathinfo($_FILES['file_po']['name'], PATHINFO_EXTENSION));
+        $safeNomorPo = preg_replace('/[^A-Za-z0-9_-]/', '_', $nomorPo);
+        $fileName = 'PURCHASE_ORDER_' . $safeNomorPo . '_' . $poId . '_' . date('Ymd_His') . ($extension !== '' ? '.' . $extension : '');
+
+        $config = [
+            'upload_path' => $uploadPath,
+            'allowed_types' => 'pdf|jpg|jpeg|png',
+            'max_size' => 5120,
+            'file_name' => $fileName,
+        ];
+
+        $this->upload->initialize($config);
+        if (!$this->upload->do_upload('file_po')) {
+            $this->session->set_flashdata('error', $this->upload->display_errors('', ''));
+            return false;
+        }
+
+        return $this->upload->data('file_name');
     }
 
     private function generatePoId()
