@@ -1040,9 +1040,6 @@ class Dashboard_Logistik_Stok extends CI_Controller
                 'CREATED_AT' => $tanggaCreated
             ];
 
-            if ($this->db->field_exists('nomor_spk', 'tb_logistik_stok')) {
-                $data_insert[count($data_insert) - 1]['nomor_spk'] = ((string) $id_sumber_material === '9' && $nomor_spk !== '') ? $nomor_spk : null;
-            }
         }
 
         if (empty($dataInsert)) {
