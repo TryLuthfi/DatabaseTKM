@@ -2053,6 +2053,10 @@ $itemCount = count($getUniqueItemLogistik);
                 return isReferenceDropdownMode() ? $('#revamp_nomor_surat_jalan_select') : $('#revamp_nomor_surat_jalan_text');
             }
 
+            function clearAutoLoadedRows() {
+                $('#revamp_table_item_stok tbody .revamp-pabrik-row, #revamp_table_item_stok tbody .revamp-ho-row, #revamp_table_item_stok tbody .revamp-mitra-return-row').remove();
+            }
+
             function markNomorSuratJalanInvalid(isInvalid) {
                 getNomorSuratJalanField().toggleClass('is-invalid', !!isInvalid);
             }
@@ -2917,7 +2921,7 @@ $itemCount = count($getUniqueItemLogistik);
             const isPabrikMode = String($('#revamp_id_sumber_material').val() || '') === '7';
             const isHoMode = String($('#revamp_id_sumber_material').val() || '') === '1';
             const isMitraReturn = String($('#revamp_id_sumber_material').val() || '') === '12';
-            const isSpecialMode = isPabrikMode || isHoMode;
+            const isSpecialMode = isPabrikMode || isHoMode || isMitraReturn;
                 const currentRule = getCurrentSourceRule();
                 const ruleMode = String(currentRule && currentRule.mode_surat_jalan ? currentRule.mode_surat_jalan : '').toUpperCase();
                 const referenceMode = String(currentRule && currentRule.reference_mode ? currentRule.reference_mode : '').toUpperCase();
@@ -2990,13 +2994,13 @@ $itemCount = count($getUniqueItemLogistik);
                 $('#revamp_ho_in_nomor_po').addClass('stock-hidden');
                 $('#revamp_no_pr_logistik, #revamp_nomor_spk').val('');
                 $('#revamp_no_po_logistik').val('');
-                if (!$('#revamp_table_item_stok tbody .revamp-pabrik-row').length && !$('#revamp_table_item_stok tbody .revamp-ho-row').length && !$('#revamp_table_item_stok tbody .revamp-mitra-return-row').length) {
+                if ($('#revamp_table_item_stok tbody .revamp-pabrik-row').length || $('#revamp_table_item_stok tbody .revamp-ho-row').length || $('#revamp_table_item_stok tbody .revamp-mitra-return-row').length) {
                     $('#revamp_table_item_stok tbody').empty();
                 }
                 return;
             }
 
-            if ($('#revamp_table_item_stok tbody .revamp-pabrik-row').length || $('#revamp_table_item_stok tbody .revamp-mitra-return-row').length) {
+            if ($('#revamp_table_item_stok tbody .revamp-pabrik-row').length || $('#revamp_table_item_stok tbody .revamp-ho-row').length || $('#revamp_table_item_stok tbody .revamp-mitra-return-row').length) {
                 $('#revamp_table_item_stok tbody').empty();
             }
             $('#revamp_nomor_ba_selisih').val('');
