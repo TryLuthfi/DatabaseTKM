@@ -174,7 +174,14 @@ class Dashboard_Logistik_Stok extends CI_Controller
         $id_lokasi_gudang = $this->input->post('id_lokasi_gudang');
         $id_bowheer = $this->input->post('id_bowheer');
         $id_sumber_material = $this->input->post('id_sumber_material');
+        $sourceRule = $this->MDashboard_Logistik_Stok->getSumberMaterialRuleById($id_sumber_material);
         $nomor_spk = trim((string) $this->input->post('nomor_spk'));
+        $nomor_polisi = trim((string) $this->input->post('nomor_polisi'));
+        $nama_mitra = trim((string) $this->input->post('nama_mitra'));
+        $pic_mitra = trim((string) $this->input->post('pic_mitra'));
+        $tanggal_estimasi_sampai = trim((string) $this->input->post('tanggal_estimasi_sampai'));
+        $nama_ekspedisi = trim((string) $this->input->post('nama_ekspedisi'));
+        $pic_ekspedisi = trim((string) $this->input->post('pic_ekspedisi'));
         $tanggal_upload_stok = $this->input->post('tanggal_upload_stok');
         $tanggal_pembuatan_stok = $this->input->post('tanggal_pembuatan_stok');
         $timestamp = date('_h_i_s');
@@ -215,11 +222,79 @@ class Dashboard_Logistik_Stok extends CI_Controller
         $idKodeItems = (array) $this->input->post('id_kode_item');
         $sumberMaterial = $this->MDashboard_Logistik_Stok->getSumberMaterialById($id_sumber_material);
         $isOutMaterial = strtoupper((string) ($sumberMaterial['status_sumber_material'] ?? '')) === 'OUT';
+        $nomorSuratJalanInput = trim((string) $this->input->post('nomor_surat_jalan'));
+        $modeSuratJalan = strtoupper((string) ($sourceRule['mode_surat_jalan'] ?? ''));
+        $referenceMode = strtoupper((string) ($sourceRule['reference_mode'] ?? ''));
+        $isMitraReturnMode = (string) $id_sumber_material === '12';
 
         if ((string) $id_sumber_material === '9' && $nomor_spk === '') {
             $this->session->set_flashdata('error', 'Nomor SPK wajib diisi untuk Out (ke Project).');
             redirect('Dashboard_Logistik_Stok/revamp');
             return;
+        }
+
+        if (in_array($modeSuratJalan, ['REFERENCE_DROPDOWN', 'REFERENCE_MANUAL', 'AUTO_WITH_REFERENCE'], true) && $nomorSuratJalanInput === '') {
+            $this->session->set_flashdata('error', 'Nomor surat jalan / referensi surat jalan wajib diisi untuk sumber material ini.');
+            redirect('Dashboard_Logistik_Stok/revamp');
+            return;
+        }
+
+        if ((string) $id_sumber_material === '10') {
+            if ($tanggal_estimasi_sampai === '' || $nama_ekspedisi === '' || $pic_ekspedisi === '') {
+                $this->session->set_flashdata('error', 'Tanggal estimasi sampai, nama ekspedisi, dan PIC ekspedisi wajib diisi untuk pengiriman dari HO.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+        }
+
+        if (!empty($sourceRule)) {
+            if (!empty($sourceRule['require_nomor_spk']) && $nomor_spk === '') {
+                $this->session->set_flashdata('error', 'Nomor SPK wajib diisi untuk sumber material ini.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+            if (!empty($sourceRule['require_tanggal_estimasi']) && $tanggal_estimasi_sampai === '') {
+                $this->session->set_flashdata('error', 'Tanggal estimasi sampai wajib diisi untuk sumber material ini.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+            if (!empty($sourceRule['require_nama_ekspedisi']) && $nama_ekspedisi === '') {
+                $this->session->set_flashdata('error', 'Nama ekspedisi wajib diisi untuk sumber material ini.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+            if (!empty($sourceRule['require_pic_ekspedisi']) && $pic_ekspedisi === '') {
+                $this->session->set_flashdata('error', 'PIC ekspedisi wajib diisi untuk sumber material ini.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+            if (!empty($sourceRule['require_nomor_polisi']) && $nomor_polisi === '') {
+                $this->session->set_flashdata('error', 'Nomor polisi wajib diisi untuk sumber material ini.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+            if (!empty($sourceRule['require_nama_mitra']) && $nama_mitra === '') {
+                $this->session->set_flashdata('error', 'Nama mitra wajib diisi untuk sumber material ini.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+            if (!empty($sourceRule['require_pic_mitra']) && $pic_mitra === '') {
+                $this->session->set_flashdata('error', 'PIC mitra wajib diisi untuk sumber material ini.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+        }
+
+        $suratJalanGenerated = [];
+        $nomorSuratJalanFinal = $nomorSuratJalanInput;
+        if (in_array($modeSuratJalan, ['AUTO', 'AUTO_WITH_REFERENCE'], true)) {
+            $suratJalanGenerated = $this->MDashboard_Logistik_Stok->generateSuratJalanNumber((int) $id_lokasi_gudang, (string) $tanggal_upload_stok);
+            if (empty($suratJalanGenerated['nomor_surat_jalan'])) {
+                $this->session->set_flashdata('error', 'Generator nomor surat jalan belum siap. Pastikan tabel counter surat jalan sudah dibuat.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+            $nomorSuratJalanFinal = (string) $suratJalanGenerated['nomor_surat_jalan'];
         }
 
         if ($isOutMaterial && (string) $id_sumber_material !== '13') {
@@ -239,16 +314,60 @@ class Dashboard_Logistik_Stok extends CI_Controller
             }
         }
 
+        $peminjamanMap = [];
+        if ($isMitraReturnMode) {
+            $idStockPeminjamanItems = (array) $this->input->post('id_stock_peminjaman');
+            $peminjamanSjRows = $this->MDashboard_Logistik_Stok->getOpenPeminjamanMitraBySjGudang($nomorSuratJalanInput, (int) $id_lokasi_gudang);
+            foreach ($peminjamanSjRows as $row) {
+                $peminjamanMap[(int) ($row['id_stock_peminjaman'] ?? 0)] = $row;
+            }
+
+            if (empty($peminjamanMap)) {
+                $this->session->set_flashdata('error', 'SJ peminjaman mitra tidak ditemukan atau seluruh qty sudah dikembalikan.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+
+            foreach ($jumlah_stok as $key => $value) {
+                $qtyRequest = (float) ($jumlah_stok[$key] ?? 0);
+                $idStockPeminjaman = (int) ($idStockPeminjamanItems[$key] ?? 0);
+                if ($idStockPeminjaman <= 0 || !isset($peminjamanMap[$idStockPeminjaman])) {
+                    $this->session->set_flashdata('error', 'Referensi item SJ peminjaman belum valid. Pilih ulang SJ peminjaman mitra.');
+                    redirect('Dashboard_Logistik_Stok/revamp');
+                    return;
+                }
+
+                $qtyOutstanding = (float) ($peminjamanMap[$idStockPeminjaman]['qty_outstanding_pengembalian'] ?? 0);
+                if ($qtyRequest <= 0 || $qtyRequest > $qtyOutstanding) {
+                    $this->session->set_flashdata('error', 'Qty pengembalian ke mitra tidak boleh melebihi outstanding qty peminjaman.');
+                    redirect('Dashboard_Logistik_Stok/revamp');
+                    return;
+                }
+            }
+        }
+
+        $tanggalFormatted = "{$tanggal_upload_stok} " . date('H:i:s');
+        $tanggaCreated = "{$tanggal_pembuatan_stok} " . date('H:i:s');
+        $hasRincianTable = $this->MDashboard_Logistik_Stok->fieldExists('tb_logistik_stok_rincian', 'id_logistik_stok_rincian');
+
+        $this->db->trans_start();
+
         foreach ($jumlah_stok as $key => $value) {
-            $tanggalFormatted = "{$tanggal_upload_stok} " . date('H:i:s');
-            $tanggaCreated = "{$tanggal_pembuatan_stok} " . date('H:i:s');
             $keteranganStok = trim((string) $this->input->post('keterangan_stok'));
             if ((string) $id_sumber_material === '9' && $nomor_spk !== '') {
                 $keteranganStok = trim('Nomor SPK: ' . $nomor_spk . ($keteranganStok !== '' ? ' | ' . $keteranganStok : ''));
             }
+            if ((string) $id_sumber_material === '10') {
+                $keteranganTambahanHo = trim(
+                    'Estimasi sampai: ' . $tanggal_estimasi_sampai .
+                    ' | Ekspedisi: ' . $nama_ekspedisi .
+                    ' | PIC Ekspedisi: ' . $pic_ekspedisi
+                );
+                $keteranganStok = trim($keteranganTambahanHo . ($keteranganStok !== '' ? ' | ' . $keteranganStok : ''));
+            }
 
-            $data_insert[] = [
-                'no_surat_jalan' => $this->input->post('nomor_surat_jalan'),
+            $rowInsert = [
+                'no_surat_jalan' => $nomorSuratJalanFinal,
                 'id_lokasi_gudang' => $id_lokasi_gudang,
                 'id_bowheer' => $id_bowheer,
                 'id_sumber_material' => $id_sumber_material,
@@ -268,9 +387,68 @@ class Dashboard_Logistik_Stok extends CI_Controller
                 'id_user' => $this->session->userdata('id_user'),
                 'CREATED_AT' => $tanggaCreated
             ];
+
+            if (!empty($suratJalanGenerated['nomor_surat_jalan_year']) && $this->MDashboard_Logistik_Stok->fieldExists('tb_logistik_stok', 'nomor_surat_jalan_year')) {
+                $rowInsert['nomor_surat_jalan_year'] = $suratJalanGenerated['nomor_surat_jalan_year'];
+            }
+            if (!empty($suratJalanGenerated['nomor_surat_jalan_seq']) && $this->MDashboard_Logistik_Stok->fieldExists('tb_logistik_stok', 'nomor_surat_jalan_seq')) {
+                $rowInsert['nomor_surat_jalan_seq'] = $suratJalanGenerated['nomor_surat_jalan_seq'];
+            }
+            if ($nomor_spk !== '' && $this->MDashboard_Logistik_Stok->fieldExists('tb_logistik_stok', 'nomor_spk')) {
+                $rowInsert['nomor_spk'] = $nomor_spk;
+            }
+
+            if ($this->db->field_exists('tanggal_estimasi_sampai', 'tb_logistik_stok')) {
+                $rowInsert['tanggal_estimasi_sampai'] = $tanggal_estimasi_sampai !== '' ? $tanggal_estimasi_sampai : null;
+            }
+            if ($this->db->field_exists('nama_ekspedisi', 'tb_logistik_stok')) {
+                $rowInsert['nama_ekspedisi'] = $nama_ekspedisi !== '' ? $nama_ekspedisi : null;
+            }
+            if ($this->db->field_exists('pic_ekspedisi', 'tb_logistik_stok')) {
+                $rowInsert['pic_ekspedisi'] = $pic_ekspedisi !== '' ? $pic_ekspedisi : null;
+            }
+
+            $this->db->insert('tb_logistik_stok', $rowInsert);
+            $insertId = (int) $this->db->insert_id();
+
+            if ($hasRincianTable && $insertId > 0) {
+                $rincianInsert = [
+                    'id_logistik_stok' => $insertId,
+                    'id_sumber_material' => (int) $id_sumber_material,
+                    'nomor_surat_jalan_asal' => in_array($referenceMode, ['MANUAL', 'DROPDOWN'], true) ? $nomorSuratJalanInput : null,
+                    'nomor_spk' => $nomor_spk !== '' ? $nomor_spk : null,
+                    'tanggal_estimasi_sampai' => $tanggal_estimasi_sampai !== '' ? $tanggal_estimasi_sampai : null,
+                    'nama_ekspedisi' => $nama_ekspedisi !== '' ? $nama_ekspedisi : null,
+                    'pic_ekspedisi' => $pic_ekspedisi !== '' ? $pic_ekspedisi : null,
+                    'created_at' => $tanggaCreated,
+                    'updated_at' => $tanggaCreated,
+                ];
+
+                if (!empty($sourceRule['require_nama_mitra']) && $this->input->post('nama_mitra')) {
+                    $rincianInsert['nama_mitra'] = $nama_mitra;
+                }
+                if (!empty($sourceRule['require_pic_mitra']) && $this->input->post('pic_mitra')) {
+                    $rincianInsert['pic_mitra'] = $pic_mitra;
+                }
+                if (!empty($sourceRule['require_nomor_polisi']) && $this->input->post('nomor_polisi')) {
+                    $rincianInsert['nomor_polisi'] = $nomor_polisi;
+                }
+                if ($isMitraReturnMode) {
+                    $idStockPeminjamanItems = (array) $this->input->post('id_stock_peminjaman');
+                    $idStockPeminjaman = (int) ($idStockPeminjamanItems[$key] ?? 0);
+                    if ($idStockPeminjaman > 0) {
+                        $rincianInsert['id_logistik_stok_asal'] = $idStockPeminjaman;
+                        $rincianInsert['id_sumber_material_asal'] = 4;
+                        $rincianInsert['nomor_surat_jalan_asal'] = $nomorSuratJalanInput;
+                    }
+                }
+
+                $this->db->insert('tb_logistik_stok_rincian', $rincianInsert);
+            }
         }
 
-        $is_success = $this->db->insert_batch('tb_logistik_stok', $data_insert);
+        $this->db->trans_complete();
+        $is_success = $this->db->trans_status();
 
         if ($is_success) {
             $this->session->set_flashdata('success', 'Data stok berhasil disimpan.');
@@ -278,7 +456,6 @@ class Dashboard_Logistik_Stok extends CI_Controller
             $this->session->set_flashdata('error', 'Gagal menyimpan data stok. Silakan coba lagi.');
         }
 
-        $this->session->set_flashdata('success', 'Dokumen berhasil diupload!');
         redirect('Dashboard_Logistik_Stok/revamp');
     }
 
@@ -367,6 +544,129 @@ class Dashboard_Logistik_Stok extends CI_Controller
                 'items' => array_values($items),
                 'po_refs' => implode(', ', array_values(array_unique($poRefs))),
                 'message' => empty($items) ? 'Tidak ada surat jalan yang cocok.' : '',
+            ]));
+    }
+
+    public function getPengirimanHoOptions()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $idLokasiGudang = (int) $this->input->get('id_lokasi_gudang');
+        if ($idLokasiGudang <= 0) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'items' => [],
+                    'message' => 'Pilih area gudang terlebih dahulu.',
+                ]));
+            return;
+        }
+
+        $rows = $this->MDashboard_Logistik_Stok->getOpenPengirimanHoOptionsByGudang($idLokasiGudang);
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'items' => array_values($rows),
+                'message' => empty($rows) ? 'Tidak ada surat jalan internal HO yang masih proses pengiriman ke area ini.' : '',
+            ]));
+    }
+
+    public function getPengirimanPabrikOptions()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $idLokasiGudang = (int) $this->input->get('id_lokasi_gudang');
+        if ($idLokasiGudang <= 0) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'items' => [],
+                    'message' => 'Pilih area gudang terlebih dahulu.',
+                ]));
+            return;
+        }
+
+        $rows = $this->MDashboard_Logistik_Stok->getOpenPengirimanPabrikOptionsByGudang($idLokasiGudang);
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'items' => array_values($rows),
+                'message' => empty($rows) ? 'Tidak ada surat jalan pabrik yang masih outstanding ke gudang ini.' : '',
+            ]));
+    }
+
+    public function getPeminjamanMitraOptions()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $idLokasiGudang = (int) $this->input->get('id_lokasi_gudang');
+        if ($idLokasiGudang <= 0) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'items' => [],
+                    'message' => 'Pilih area gudang terlebih dahulu.',
+                ]));
+            return;
+        }
+
+        $rows = $this->MDashboard_Logistik_Stok->getOpenPeminjamanMitraOptionsByGudang($idLokasiGudang);
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'items' => array_values($rows),
+                'message' => empty($rows) ? 'Tidak ada SJ peminjaman mitra yang masih outstanding di gudang ini.' : '',
+            ]));
+    }
+
+    public function getPeminjamanMitraBySuratJalan()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $noSuratJalan = trim((string) $this->input->get('nomor_surat_jalan'));
+        $idLokasiGudang = (int) $this->input->get('id_lokasi_gudang');
+        if ($noSuratJalan === '' || $idLokasiGudang <= 0) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'items' => [],
+                    'po_refs' => '',
+                    'message' => 'Lengkapi SJ peminjaman mitra dan area gudang terlebih dahulu.',
+                ]));
+            return;
+        }
+
+        $rows = $this->MDashboard_Logistik_Stok->getOpenPeminjamanMitraBySjGudang($noSuratJalan, $idLokasiGudang);
+        $items = [];
+        foreach ($rows as $row) {
+            $outstanding = (float) ($row['qty_outstanding_pengembalian'] ?? 0);
+            if ($outstanding <= 0) {
+                continue;
+            }
+            $items[] = $row;
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'items' => array_values($items),
+                'po_refs' => '',
+                'message' => empty($items) ? 'Tidak ada SJ peminjaman mitra yang cocok.' : '',
             ]));
     }
 
@@ -473,6 +773,7 @@ class Dashboard_Logistik_Stok extends CI_Controller
         }
         $data['getMasterProject'] = $this->MDashboard_Logistik_Stok->getMasterProject();
         $data['getMasterSumberMaterial'] = $this->MDashboard_Logistik_Stok->getMasterSumberMaterial();
+        $data['sourceMaterialRuleMap'] = $this->MDashboard_Logistik_Stok->getSumberMaterialRuleMap();
         $data['getMasterKodeItem'] = $this->MDashboard_Logistik_Stok->getMasterKodeItem();
         $data['getUniqueKotaGudang'] = $this->MDashboard_Logistik_Stok->getUniqueKotaGudang();
         $data['getUniqueProjectLogistik'] = $this->MDashboard_Logistik_Stok->getUniqueProjectLogistik();
