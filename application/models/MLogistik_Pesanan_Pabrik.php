@@ -8,7 +8,7 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
         return $this->db->query("
             SELECT id_pabrik, nama_pabrik, lokasi_pabrik, jenis_pabrik, pic_pabrik, tlp_pabrik, status_pabrik
             FROM tb_master_logistik_pabrik
-            WHERE status_pabrik = 'ACTIVE'
+            WHERE COALESCE(NULLIF(UPPER(TRIM(status_pabrik)), ''), 'ACTIVE') IN ('ACTIVE', 'AKTIF')
             ORDER BY nama_pabrik ASC
         ")->result_array();
     }

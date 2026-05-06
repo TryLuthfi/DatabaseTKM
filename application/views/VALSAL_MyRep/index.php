@@ -12,7 +12,9 @@ $summaryWaitingHp = 0;
 $summaryDoneHp = 0;
 $summaryRejectedHp = 0;
 $createCityOptions = [];
+$valsalOnProcessRows = [];
 $nyBatchApprovalNyDrmRows = [];
+$allValsalDoneRows = [];
 $postValsalStatuses = [
     'DRM',
     'RFS',
@@ -36,11 +38,21 @@ foreach ($clusterRows as $row) {
     $homepassBak = (float) ($row['homepass_bak'] ?? 0);
     $homepassValsal = (float) ($row['homepass_valsal'] ?? 0);
     $summaryHomepass = $homepassValsal > 0 ? $homepassValsal : $homepassBak;
-    $isNyBatchApprovalNyDrm = $hasValsal && !in_array($currentStatus, $postValsalStatuses, true);
+    $isBakApproved = in_array(strtoupper(trim((string) ($row['status_bak'] ?? ''))), ['DONE', 'APPROVED'], true);
+    $isValsalApproved = $hasValsal && in_array($valsalStatus, ['DONE', 'APPROVED'], true);
+    $isValsalOnProcess = $isBakApproved && (!$hasValsal || !in_array($valsalStatus, ['DONE', 'APPROVED', 'REJECTED'], true));
+    $isNyBatchApprovalNyDrm = $isValsalApproved && !in_array($currentStatus, $postValsalStatuses, true);
+
+    if ($isValsalOnProcess) {
+        $valsalOnProcessRows[] = $row;
+    }
 
     if ($isNyBatchApprovalNyDrm) {
         $nyBatchApprovalNyDrmRows[] = $row;
+    }
 
+    if ($isValsalApproved) {
+        $allValsalDoneRows[] = $row;
     }
 
     if (!$hasValsal && $currentStatus === 'BAK') {
@@ -465,20 +477,54 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         <div class="card-body">
                             <ul class="nav nav-tabs valsal-monitor-tabs" id="valsal-monitor-tab" role="tablist">
                                 <li class="nav-item">
-                                    <a class="nav-link active" id="valsal-ny-batch-tab" data-toggle="tab" href="#valsal-ny-batch-pane" role="tab" aria-controls="valsal-ny-batch-pane" aria-selected="true">
+                                    <a class="nav-link active" id="valsal-on-process-tab" data-toggle="tab" href="#valsal-on-process-pane" role="tab" aria-controls="valsal-on-process-pane" aria-selected="true">
+                                        On Proses
+                                        <span class="valsal-monitor-tabs__count"><?= number_format(count($valsalOnProcessRows), 0, ',', '.') ?></span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="valsal-ny-batch-tab" data-toggle="tab" href="#valsal-ny-batch-pane" role="tab" aria-controls="valsal-ny-batch-pane" aria-selected="false">
                                         Status NY Batch Approval &amp; NY DRM
                                         <span class="valsal-monitor-tabs__count"><?= number_format(count($nyBatchApprovalNyDrmRows), 0, ',', '.') ?></span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" id="valsal-all-tab" data-toggle="tab" href="#valsal-all-pane" role="tab" aria-controls="valsal-all-pane" aria-selected="false">
-                                        Status All VALSAL
-                                        <span class="valsal-monitor-tabs__count"><?= number_format(count($clusterRows), 0, ',', '.') ?></span>
+                                        All VALSAL Done
+                                        <span class="valsal-monitor-tabs__count"><?= number_format(count($allValsalDoneRows), 0, ',', '.') ?></span>
                                     </a>
                                 </li>
                             </ul>
                             <div class="tab-content valsal-monitor-tabs__content" id="valsal-monitor-tab-content">
-                                <div class="tab-pane fade show active" id="valsal-ny-batch-pane" role="tabpanel" aria-labelledby="valsal-ny-batch-tab">
+                                <div class="tab-pane fade show active" id="valsal-on-process-pane" role="tabpanel" aria-labelledby="valsal-on-process-tab">
+                                    <div class="table-responsive">
+                                        <table id="table_valsal_on_process" class="table table-bordered table-hover valsal-monitor-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>Cluster</th>
+                                                    <th>Regional</th>
+                                                    <th>Kota</th>
+                                                    <th>Periode Target</th>
+                                                    <th>HP BAK</th>
+                                                    <th>HP VALSAL</th>
+                                                    <th>Tanggal BAK</th>
+                                                    <th>Aging BAK</th>
+                                                    <th>Tanggal VALSAL</th>
+                                                    <th>Status VALSAL</th>
+                                                    <th>Dokumen SND KASAR</th>
+                                                    <th>Review Dokumen</th>
+                                                    <th>Status Flow</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php $renderValsalTableRows($valsalOnProcessRows, $docReady, $canApprove, $this->MVALSAL_MyRep); ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="valsal-ny-batch-pane" role="tabpanel" aria-labelledby="valsal-ny-batch-tab">
                                     <div class="table-responsive">
                                         <table id="table_valsal_ny_batch_drm" class="table table-bordered table-hover valsal-monitor-table">
                                             <thead>
@@ -529,7 +575,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php $renderValsalTableRows($clusterRows, $docReady, $canApprove, $this->MVALSAL_MyRep); ?>
+                                                <?php $renderValsalTableRows($allValsalDoneRows, $docReady, $canApprove, $this->MVALSAL_MyRep); ?>
                                             </tbody>
                                         </table>
                                     </div>
@@ -1598,7 +1644,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             handleValsalFlashAlerts();
 
             if ($.fn.DataTable) {
-                ['#table_valsal_ny_batch_drm', '#table_valsal_all'].forEach(function (selector) {
+                ['#table_valsal_on_process', '#table_valsal_ny_batch_drm', '#table_valsal_all'].forEach(function (selector) {
                     valsalTables.push($(selector).DataTable({
                         responsive: true,
                         autoWidth: false,

@@ -39,7 +39,13 @@ foreach ($clusterRows as $row) {
     $batchStatus = strtoupper(trim((string) ($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT')));
     $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
 
-    if ($hasBatch && !in_array($currentStatus, $postBatchStatuses, true)) {
+    if (
+        !in_array($currentStatus, $postBatchStatuses, true)
+        && (
+            !$hasBatch
+            || !in_array($batchStatus, ['COMPLETED', 'REJECTED'], true)
+        )
+    ) {
         $nyDrmRows[] = $row;
     }
 

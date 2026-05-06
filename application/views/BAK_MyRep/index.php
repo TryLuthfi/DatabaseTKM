@@ -11,7 +11,9 @@ $summaryTotalHp = 0;
 $summaryBaOpenHp = 0;
 $summaryDoneHp = 0;
 $summaryRejectedHp = 0;
+$bakOnProcessRows = [];
 $nyValsalRows = [];
+$allBakDoneRows = [];
 $postBakStatuses = [
     'VALSAL',
     'WAITING HO',
@@ -29,9 +31,18 @@ foreach ($clusterRows as $row) {
     $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
     $bakStatus = strtoupper(trim((string) ($row['status_bak'] ?? 'DRAFT')));
     $homepassBak = (float) ($row['homepass_bak'] ?? 0);
+    $isBakApproved = in_array($bakStatus, ['DONE', 'APPROVED'], true);
 
-    if (!in_array($currentStatus, $postBakStatuses, true)) {
+    if (!$isBakApproved && $bakStatus !== 'REJECTED') {
+        $bakOnProcessRows[] = $row;
+    }
+
+    if ($isBakApproved && $currentStatus === 'BAK') {
         $nyValsalRows[] = $row;
+    }
+
+    if ($isBakApproved) {
+        $allBakDoneRows[] = $row;
     }
 
     $summaryTotalHp += $homepassBak;
@@ -381,20 +392,52 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $bak
                         <div class="card-body">
                             <ul class="nav nav-tabs bak-monitor-tabs" id="bak-monitor-tab" role="tablist">
                                 <li class="nav-item">
-                                    <a class="nav-link active" id="bak-ny-valsal-tab" data-toggle="tab" href="#bak-ny-valsal-pane" role="tab" aria-controls="bak-ny-valsal-pane" aria-selected="true">
+                                    <a class="nav-link active" id="bak-on-process-tab" data-toggle="tab" href="#bak-on-process-pane" role="tab" aria-controls="bak-on-process-pane" aria-selected="true">
+                                        On Proses
+                                        <span class="bak-monitor-tabs__count"><?= number_format(count($bakOnProcessRows), 0, ',', '.') ?></span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="bak-ny-valsal-tab" data-toggle="tab" href="#bak-ny-valsal-pane" role="tab" aria-controls="bak-ny-valsal-pane" aria-selected="false">
                                         Status NY VALSAL
                                         <span class="bak-monitor-tabs__count"><?= number_format(count($nyValsalRows), 0, ',', '.') ?></span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" id="bak-all-tab" data-toggle="tab" href="#bak-all-pane" role="tab" aria-controls="bak-all-pane" aria-selected="false">
-                                        Status All BAK
-                                        <span class="bak-monitor-tabs__count"><?= number_format(count($clusterRows), 0, ',', '.') ?></span>
+                                        All BAK Done
+                                        <span class="bak-monitor-tabs__count"><?= number_format(count($allBakDoneRows), 0, ',', '.') ?></span>
                                     </a>
                                 </li>
                             </ul>
                             <div class="tab-content bak-monitor-tabs__content" id="bak-monitor-tab-content">
-                                <div class="tab-pane fade show active" id="bak-ny-valsal-pane" role="tabpanel" aria-labelledby="bak-ny-valsal-tab">
+                                <div class="tab-pane fade show active" id="bak-on-process-pane" role="tabpanel" aria-labelledby="bak-on-process-tab">
+                                    <div class="table-responsive">
+                                        <table id="table_bak_on_process" class="table table-bordered table-hover bak-monitor-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>Cluster</th>
+                                                    <th>Regional</th>
+                                                    <th>Kota</th>
+                                                    <th>Periode Target</th>
+                                                    <th>HP BAK</th>
+                                                    <th>Tanggal BA OPEN</th>
+                                                    <th>Tanggal BAK</th>
+                                                    <th>Status BAK</th>
+                                                    <th>Dokumen BA OPEN</th>
+                                                    <th>Review Dokumen</th>
+                                                    <th>Status Flow</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php $renderBakTableRows($bakOnProcessRows, $docReady, $canApprove, $this->MBAK_MyRep); ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="bak-ny-valsal-pane" role="tabpanel" aria-labelledby="bak-ny-valsal-tab">
                                     <div class="table-responsive">
                                         <table id="table_bak_ny_valsal" class="table table-bordered table-hover bak-monitor-table">
                                             <thead>
@@ -441,7 +484,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $bak
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php $renderBakTableRows($clusterRows, $docReady, $canApprove, $this->MBAK_MyRep); ?>
+                                                <?php $renderBakTableRows($allBakDoneRows, $docReady, $canApprove, $this->MBAK_MyRep); ?>
                                             </tbody>
                                         </table>
                                     </div>
@@ -1429,7 +1472,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $bak
             handleBakFlashAlerts();
 
             if ($.fn.DataTable) {
-                ['#table_bak_ny_valsal', '#table_bak_all'].forEach(function (selector) {
+                ['#table_bak_on_process', '#table_bak_ny_valsal', '#table_bak_all'].forEach(function (selector) {
                     bakTables.push($(selector).DataTable({
                         responsive: true,
                         autoWidth: false,

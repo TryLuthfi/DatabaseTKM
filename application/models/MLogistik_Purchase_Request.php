@@ -115,6 +115,7 @@ class MLogistik_Purchase_Request extends CI_Model
             LEFT JOIN tb_master_bowheer tmb
                 ON tmlki.id_bowheer_pemilik_item = tmb.id_bowheer
             WHERE tmlki.project_item = ?
+              AND tmlki.id_bowheer_pemilik_item = 23
             ORDER BY tmlki.kategori_item ASC, tmlki.nama_item ASC
         ";
 

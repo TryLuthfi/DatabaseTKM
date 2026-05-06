@@ -482,8 +482,9 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
         padding: 0.95rem 1rem;
     }
 
-    .pr-modal .modal-dialog {
-        max-width: 1200px;
+    .pr-modal .modal-dialog.modal-xxl {
+        width: 78vw;
+        max-width: 78vw;
     }
 
     .pr-modal .modal-content {
@@ -510,6 +511,14 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
     .pr-modal .modal-body {
         padding: 1.2rem;
         background: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.95));
+    }
+
+    @media (max-width: 767.98px) {
+        .pr-modal .modal-dialog.modal-xxl {
+            width: calc(100vw - 1rem);
+            max-width: calc(100vw - 1rem);
+            margin: 0.5rem auto;
+        }
     }
 
     .pr-modal__section {
@@ -1131,7 +1140,7 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                         );
                     });
 
-                    $('#nama_material').trigger('change');
+                    $('#nama_material').val('').trigger('change.select2');
                 },
                 error: function (xhr, status, error) {
                     console.error(error);
