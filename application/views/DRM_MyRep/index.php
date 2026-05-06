@@ -261,6 +261,10 @@ if (!function_exists('drmBadgeClass')) {
                                                 <td>
                                                     <?php if ($hasDrm): ?>
                                                         <a href="<?= base_url('DRM_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="btn btn-sm btn-outline-primary">Detail</a>
+                                                        <form method="post" action="<?= base_url('DRM_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta DRM dan seluruh flow MyRep terkait?');">
+                                                            <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
+                                                        </form>
                                                     <?php else: ?>
                                                         <button
                                                             type="button"

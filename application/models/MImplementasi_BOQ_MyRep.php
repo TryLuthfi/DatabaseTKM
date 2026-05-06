@@ -251,6 +251,51 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         return $this->db->trans_status() ? $progressItemId : 0;
     }
 
+    public function deleteProgressEntry($clusterId, $progressItemId)
+    {
+        if (!$this->tablesReady()) {
+            return false;
+        }
+
+        $clusterId = (int) $clusterId;
+        $progressItemId = (int) $progressItemId;
+        if ($clusterId <= 0 || $progressItemId <= 0) {
+            return false;
+        }
+
+        $progressRow = $this->db
+            ->from('tb_myrep_boq_progress_item')
+            ->where('id_progress_item', $progressItemId)
+            ->where('id_myrep_cluster', $clusterId)
+            ->get()
+            ->row_array();
+
+        if (empty($progressRow)) {
+            return false;
+        }
+
+        $photoRows = $this->db
+            ->from('tb_myrep_boq_progress_photo')
+            ->where('id_progress_item', $progressItemId)
+            ->get()
+            ->result_array();
+
+        $this->db->trans_start();
+        $this->db->where('id_progress_item', $progressItemId)->delete('tb_myrep_boq_progress_photo');
+        $this->db->where('id_progress_item', $progressItemId)->where('id_myrep_cluster', $clusterId)->delete('tb_myrep_boq_progress_item');
+        $this->db->trans_complete();
+
+        if (!$this->db->trans_status()) {
+            return false;
+        }
+
+        foreach ($photoRows as $photoRow) {
+            $this->deletePhysicalFile((string) ($photoRow['file_path'] ?? ''));
+        }
+
+        return true;
+    }
+
     public function getDashboardSummary($rows)
     {
         $summary = [
@@ -460,5 +505,18 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             'last_progress_date' => null,
             'implementation_status' => 'NOT STARTED',
         ];
+    }
+
+    private function deletePhysicalFile($filePath)
+    {
+        $filePath = trim((string) $filePath);
+        if ($filePath === '') {
+            return;
+        }
+
+        $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filePath);
+        if (is_file($fullPath)) {
+            @unlink($fullPath);
+        }
     }
 }

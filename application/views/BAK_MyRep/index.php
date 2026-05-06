@@ -11,6 +11,7 @@ $summaryTotalHp = 0;
 $summaryBaOpenHp = 0;
 $summaryDoneHp = 0;
 $summaryRejectedHp = 0;
+$nyValsalRows = [];
 $postBakStatuses = [
     'VALSAL',
     'WAITING HO',
@@ -28,6 +29,10 @@ foreach ($clusterRows as $row) {
     $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
     $bakStatus = strtoupper(trim((string) ($row['status_bak'] ?? 'DRAFT')));
     $homepassBak = (float) ($row['homepass_bak'] ?? 0);
+
+    if (!in_array($currentStatus, $postBakStatuses, true)) {
+        $nyValsalRows[] = $row;
+    }
 
     $summaryTotalHp += $homepassBak;
 
@@ -86,6 +91,132 @@ if (!function_exists('bakDocLabel')) {
         return !empty($row['bak_doc_file_name']) ? 'UPLOADED' : 'BELUM UPLOAD';
     }
 }
+
+$renderBakTableRows = static function (array $rows, $docReady, $canApprove, $bakModel) {
+    foreach ($rows as $index => $row) {
+        $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
+        $bakDocStatusRaw = strtoupper(trim((string) ($row['bak_doc_status'] ?? '')));
+        $showUploadButton = $docReady && in_array($bakDocStatusRaw, ['', 'REJECTED'], true);
+        ?>
+        <tr>
+            <td><?= $index + 1 ?></td>
+            <td>
+                <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                <?php if (!empty($row['cluster_code'])): ?>
+                    <div class="text-muted small"><?= htmlspecialchars((string) $row['cluster_code']) ?></div>
+                <?php endif; ?>
+            </td>
+            <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
+            <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
+            <td><?= $targetLabel ?></td>
+            <td class="text-right"><?= number_format((float) ($row['homepass_bak'] ?? 0), 0, ',', '.') ?></td>
+            <td><?= !empty($row['ba_open_date']) ? htmlspecialchars((string) $row['ba_open_date']) : '-' ?></td>
+            <td><?= !empty($row['bak_date']) ? htmlspecialchars((string) $row['bak_date']) : '-' ?></td>
+            <td><span class="badge badge-<?= bakBadgeClass($row['status_bak'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_bak'] ?? 'DRAFT')) ?></span></td>
+            <td>
+                <span class="badge badge-<?= bakBadgeClass(bakDocLabel($row)) ?>"><?= htmlspecialchars(bakDocLabel($row)) ?></span>
+                <?php if (!empty($row['bak_doc_file_name'])): ?>
+                    <div class="small text-muted mt-1"><?= htmlspecialchars((string) $row['bak_doc_file_name']) ?></div>
+                <?php endif; ?>
+            </td>
+            <td>
+                <?php if (!empty($row['bak_doc_reviewed_at'])): ?>
+                    <div class="small text-muted">Reviewed</div>
+                    <div><?= htmlspecialchars((string) $row['bak_doc_reviewed_at']) ?></div>
+                <?php elseif (!empty($row['bak_doc_file_id'])): ?>
+                    <span class="text-warning small font-weight-bold">Waiting Review</span>
+                <?php else: ?>
+                    <span class="text-muted small">Belum ada review</span>
+                <?php endif; ?>
+            </td>
+            <td><span class="badge badge-<?= bakBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
+            <td>
+                <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary js-edit-bak"
+                    data-toggle="modal"
+                    data-target="#modal-bak-edit"
+                    data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
+                    data-id_target="<?= (int) ($row['id_target'] ?? 0) ?>"
+                    data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                    data-cluster_code="<?= htmlspecialchars((string) ($row['cluster_code'] ?? ''), ENT_QUOTES) ?>"
+                    data-homepass_bak="<?= (int) ($row['homepass_bak'] ?? 0) ?>"
+                    data-ba_open_date="<?= htmlspecialchars((string) ($row['ba_open_date'] ?? ''), ENT_QUOTES) ?>"
+                    data-bak_date="<?= htmlspecialchars((string) ($row['bak_date'] ?? ''), ENT_QUOTES) ?>"
+                    data-status_bak="<?= htmlspecialchars((string) ($row['status_bak'] ?? 'DRAFT'), ENT_QUOTES) ?>"
+                    data-remark_bak="<?= htmlspecialchars((string) ($row['remark_bak'] ?? ''), ENT_QUOTES) ?>">
+                    Edit
+                </button>
+                <?php if ($docReady): ?>
+                    <?php if ($showUploadButton): ?>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-info js-upload-doc mt-1"
+                            data-toggle="modal"
+                            data-target="#modal-bak-upload-doc"
+                            data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
+                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                            data-id_doc_file="<?= (int) ($row['bak_doc_file_id'] ?? 0) ?>"
+                            data-doc_status="<?= htmlspecialchars((string) bakDocLabel($row), ENT_QUOTES) ?>"
+                            data-doc_remark="<?= htmlspecialchars((string) ($row['bak_doc_remark'] ?? ''), ENT_QUOTES) ?>">
+                            <?= $bakDocStatusRaw === 'REJECTED' ? 'Re-Upload Doc' : 'Upload Doc' ?>
+                        </button>
+                    <?php endif; ?>
+                    <?php if (!empty($row['bak_doc_file_id']) && !empty($row['bak_doc_file_path'])): ?>
+                        <a href="<?= base_url('BAK_MyRep/previewDocument/' . (int) $row['bak_doc_file_id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary mt-1">
+                            Preview
+                        </a>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-dark js-history-doc mt-1"
+                            data-toggle="modal"
+                            data-target="#modal-bak-history-doc"
+                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                            data-doc_name="BA OPEN"
+                            data-history='<?= htmlspecialchars(json_encode($bakModel->getBakFileLogs((int) $row['bak_doc_file_id'])), ENT_QUOTES) ?>'>
+                            History
+                        </button>
+                    <?php endif; ?>
+                    <?php if ($canApprove && !empty($row['bak_doc_file_id']) && in_array(strtoupper((string) ($row['bak_doc_status'] ?? '')), ['UPLOADED', 'REJECTED'], true)): ?>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-success js-approve-doc mt-1"
+                            data-toggle="modal"
+                            data-target="#modal-bak-approve-doc"
+                            data-id_doc_file="<?= (int) $row['bak_doc_file_id'] ?>"
+                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
+                            Approve
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
+                            data-toggle="modal"
+                            data-target="#modal-bak-reject-doc"
+                            data-id_doc_file="<?= (int) $row['bak_doc_file_id'] ?>"
+                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
+                            Reject
+                        </button>
+                    <?php elseif ($canApprove && !empty($row['bak_doc_file_id']) && strtoupper((string) ($row['bak_doc_status'] ?? '')) === 'APPROVED'): ?>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
+                            data-toggle="modal"
+                            data-target="#modal-bak-reject-doc"
+                            data-id_doc_file="<?= (int) $row['bak_doc_file_id'] ?>"
+                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
+                            Reject
+                        </button>
+                    <?php endif; ?>
+                <?php endif; ?>
+                <form method="post" action="<?= base_url('BAK_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta seluruh flow MyRep dari BAK sampai tahap terakhir?');">
+                    <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
+                    <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
+                </form>
+            </td>
+        </tr>
+        <?php
+    }
+};
 ?>
 
 <div class="content-wrapper">
@@ -248,147 +379,73 @@ if (!function_exists('bakDocLabel')) {
                             </div>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table id="table_bak_myrep" class="table table-bordered table-hover bak-monitor-table">
-                                    <thead>
-                                        <tr>
-                                            <th>No</th>
-                                            <th>Cluster</th>
-                                            <th>Regional</th>
-                                            <th>Kota</th>
-                                            <th>Periode Target</th>
-                                            <th>HP BAK</th>
-                                            <th>Tanggal BA OPEN</th>
-                                            <th>Tanggal BAK</th>
-                                            <th>Status BAK</th>
-                                            <th>Dokumen BA OPEN</th>
-                                            <th>Review Dokumen</th>
-                                            <th>Status Flow</th>
-                                            <th>Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($clusterRows as $index => $row): ?>
-                                            <?php
-                                            $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
-                                            $bakDocStatusRaw = strtoupper(trim((string) ($row['bak_doc_status'] ?? '')));
-                                            $showUploadButton = $docReady && in_array($bakDocStatusRaw, ['', 'REJECTED'], true);
-                                            ?>
-                                            <tr>
-                                                <td><?= $index + 1 ?></td>
-                                                <td>
-                                                    <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
-                                                    <?php if (!empty($row['cluster_code'])): ?>
-                                                        <div class="text-muted small"><?= htmlspecialchars((string) $row['cluster_code']) ?></div>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
-                                                <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-                                                <td><?= $targetLabel ?></td>
-                                                <td class="text-right"><?= number_format((float) ($row['homepass_bak'] ?? 0), 0, ',', '.') ?></td>
-                                                <td><?= !empty($row['ba_open_date']) ? htmlspecialchars((string) $row['ba_open_date']) : '-' ?></td>
-                                                <td><?= !empty($row['bak_date']) ? htmlspecialchars((string) $row['bak_date']) : '-' ?></td>
-                                                <td><span class="badge badge-<?= bakBadgeClass($row['status_bak'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_bak'] ?? 'DRAFT')) ?></span></td>
-                                                <td>
-                                                    <span class="badge badge-<?= bakBadgeClass(bakDocLabel($row)) ?>"><?= htmlspecialchars(bakDocLabel($row)) ?></span>
-                                                    <?php if (!empty($row['bak_doc_file_name'])): ?>
-                                                        <div class="small text-muted mt-1"><?= htmlspecialchars((string) $row['bak_doc_file_name']) ?></div>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <?php if (!empty($row['bak_doc_reviewed_at'])): ?>
-                                                        <div class="small text-muted">Reviewed</div>
-                                                        <div><?= htmlspecialchars((string) $row['bak_doc_reviewed_at']) ?></div>
-                                                    <?php elseif (!empty($row['bak_doc_file_id'])): ?>
-                                                        <span class="text-warning small font-weight-bold">Waiting Review</span>
-                                                    <?php else: ?>
-                                                        <span class="text-muted small">Belum ada review</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td><span class="badge badge-<?= bakBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
-                                                <td>
-                                                    <button
-                                                        type="button"
-                                                        class="btn btn-sm btn-outline-primary js-edit-bak"
-                                                        data-toggle="modal"
-                                                        data-target="#modal-bak-edit"
-                                                        data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
-                                                        data-id_target="<?= (int) ($row['id_target'] ?? 0) ?>"
-                                                        data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-cluster_code="<?= htmlspecialchars((string) ($row['cluster_code'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-homepass_bak="<?= (int) ($row['homepass_bak'] ?? 0) ?>"
-                                                        data-ba_open_date="<?= htmlspecialchars((string) ($row['ba_open_date'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-bak_date="<?= htmlspecialchars((string) ($row['bak_date'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-status_bak="<?= htmlspecialchars((string) ($row['status_bak'] ?? 'DRAFT'), ENT_QUOTES) ?>"
-                                                        data-remark_bak="<?= htmlspecialchars((string) ($row['remark_bak'] ?? ''), ENT_QUOTES) ?>">
-                                                        Edit
-                                                    </button>
-                                                    <?php if ($docReady): ?>
-                                                        <?php if ($showUploadButton): ?>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-info js-upload-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-bak-upload-doc"
-                                                                data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                                data-id_doc_file="<?= (int) ($row['bak_doc_file_id'] ?? 0) ?>"
-                                                                data-doc_status="<?= htmlspecialchars((string) bakDocLabel($row), ENT_QUOTES) ?>"
-                                                                data-doc_remark="<?= htmlspecialchars((string) ($row['bak_doc_remark'] ?? ''), ENT_QUOTES) ?>">
-                                                                <?= $bakDocStatusRaw === 'REJECTED' ? 'Re-Upload Doc' : 'Upload Doc' ?>
-                                                            </button>
-                                                        <?php endif; ?>
-                                                        <?php if (!empty($row['bak_doc_file_id']) && !empty($row['bak_doc_file_path'])): ?>
-                                                            <a href="<?= base_url('BAK_MyRep/previewDocument/' . (int) $row['bak_doc_file_id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary mt-1">
-                                                                Preview
-                                                            </a>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-dark js-history-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-bak-history-doc"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                                data-doc_name="BA OPEN"
-                                                                data-history='<?= htmlspecialchars(json_encode($this->MBAK_MyRep->getBakFileLogs((int) $row['bak_doc_file_id'])), ENT_QUOTES) ?>'>
-                                                                History
-                                                            </button>
-                                                        <?php endif; ?>
-                                                        <?php if ($canApprove && !empty($row['bak_doc_file_id']) && in_array(strtoupper((string) ($row['bak_doc_status'] ?? '')), ['UPLOADED', 'REJECTED'], true)): ?>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-success js-approve-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-bak-approve-doc"
-                                                                data-id_doc_file="<?= (int) $row['bak_doc_file_id'] ?>"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
-                                                                Approve
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-bak-reject-doc"
-                                                                data-id_doc_file="<?= (int) $row['bak_doc_file_id'] ?>"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
-                                                                Reject
-                                                            </button>
-                                                        <?php elseif ($canApprove && !empty($row['bak_doc_file_id']) && strtoupper((string) ($row['bak_doc_status'] ?? '')) === 'APPROVED'): ?>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-bak-reject-doc"
-                                                                data-id_doc_file="<?= (int) $row['bak_doc_file_id'] ?>"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
-                                                                Reject
-                                                            </button>
-                                                        <?php endif; ?>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
+                            <ul class="nav nav-tabs bak-monitor-tabs" id="bak-monitor-tab" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="bak-ny-valsal-tab" data-toggle="tab" href="#bak-ny-valsal-pane" role="tab" aria-controls="bak-ny-valsal-pane" aria-selected="true">
+                                        Status NY VALSAL
+                                        <span class="bak-monitor-tabs__count"><?= number_format(count($nyValsalRows), 0, ',', '.') ?></span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="bak-all-tab" data-toggle="tab" href="#bak-all-pane" role="tab" aria-controls="bak-all-pane" aria-selected="false">
+                                        Status All BAK
+                                        <span class="bak-monitor-tabs__count"><?= number_format(count($clusterRows), 0, ',', '.') ?></span>
+                                    </a>
+                                </li>
+                            </ul>
+                            <div class="tab-content bak-monitor-tabs__content" id="bak-monitor-tab-content">
+                                <div class="tab-pane fade show active" id="bak-ny-valsal-pane" role="tabpanel" aria-labelledby="bak-ny-valsal-tab">
+                                    <div class="table-responsive">
+                                        <table id="table_bak_ny_valsal" class="table table-bordered table-hover bak-monitor-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>Cluster</th>
+                                                    <th>Regional</th>
+                                                    <th>Kota</th>
+                                                    <th>Periode Target</th>
+                                                    <th>HP BAK</th>
+                                                    <th>Tanggal BA OPEN</th>
+                                                    <th>Tanggal BAK</th>
+                                                    <th>Status BAK</th>
+                                                    <th>Dokumen BA OPEN</th>
+                                                    <th>Review Dokumen</th>
+                                                    <th>Status Flow</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php $renderBakTableRows($nyValsalRows, $docReady, $canApprove, $this->MBAK_MyRep); ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="bak-all-pane" role="tabpanel" aria-labelledby="bak-all-tab">
+                                    <div class="table-responsive">
+                                        <table id="table_bak_all" class="table table-bordered table-hover bak-monitor-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>Cluster</th>
+                                                    <th>Regional</th>
+                                                    <th>Kota</th>
+                                                    <th>Periode Target</th>
+                                                    <th>HP BAK</th>
+                                                    <th>Tanggal BA OPEN</th>
+                                                    <th>Tanggal BAK</th>
+                                                    <th>Status BAK</th>
+                                                    <th>Dokumen BA OPEN</th>
+                                                    <th>Review Dokumen</th>
+                                                    <th>Status Flow</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php $renderBakTableRows($clusterRows, $docReady, $canApprove, $this->MBAK_MyRep); ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -953,6 +1010,43 @@ if (!function_exists('bakDocLabel')) {
         box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
     }
 
+    .bak-modal-shell .select2-container {
+        width: 100% !important;
+    }
+
+    .bak-modal-shell .select2-container .select2-selection--single {
+        min-height: 44px;
+        border-radius: 12px;
+        border: 1px solid #cfe0ee;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        padding: 0 .9rem;
+        box-shadow: none;
+    }
+
+    .bak-modal-shell .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #1f2937;
+        line-height: 1.4;
+        padding-left: 0;
+        padding-right: 1.8rem;
+    }
+
+    .bak-modal-shell .select2-container--default .select2-selection--single .select2-selection__placeholder {
+        color: #7b8794;
+    }
+
+    .bak-modal-shell .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 42px;
+        right: 10px;
+    }
+
+    .bak-modal-shell .select2-container--default.select2-container--focus .select2-selection--single,
+    .bak-modal-shell .select2-container--default.select2-container--open .select2-selection--single {
+        border-color: #55a7d5;
+        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
     .bak-modal-shell .form-control[readonly],
     .bak-modal-shell .form-control:disabled,
     .doc-modal .form-control[readonly],
@@ -1166,6 +1260,49 @@ if (!function_exists('bakDocLabel')) {
         border-radius: 999px;
     }
 
+    .bak-monitor-tabs {
+        border-bottom: 0;
+        gap: .75rem;
+        margin-bottom: 1rem;
+    }
+
+    .bak-monitor-tabs .nav-link {
+        border: 1px solid #d9e6f2;
+        border-radius: 999px;
+        color: #45627b;
+        font-weight: 700;
+        padding: .65rem 1rem;
+        background: #f7fbff;
+    }
+
+    .bak-monitor-tabs .nav-link.active {
+        color: #fff;
+        background: linear-gradient(135deg, #1e88cf, #2ca58d);
+        border-color: transparent;
+        box-shadow: 0 12px 28px rgba(30, 136, 207, 0.24);
+    }
+
+    .bak-monitor-tabs__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        margin-left: .45rem;
+        padding: .15rem .5rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.18);
+        font-size: .8rem;
+    }
+
+    .bak-monitor-tabs .nav-link:not(.active) .bak-monitor-tabs__count {
+        background: #e2edf7;
+        color: #2d6287;
+    }
+
+    .bak-monitor-tabs__content {
+        padding-top: .25rem;
+    }
+
     .select2-container--open {
         z-index: 1065;
     }
@@ -1287,13 +1424,26 @@ if (!function_exists('bakDocLabel')) {
         }
 
         $(function () {
+            var bakTables = [];
+
             handleBakFlashAlerts();
 
             if ($.fn.DataTable) {
-                $('#table_bak_myrep').DataTable({
-                    responsive: true,
-                    autoWidth: false,
-                    order: [[0, 'asc']]
+                ['#table_bak_ny_valsal', '#table_bak_all'].forEach(function (selector) {
+                    bakTables.push($(selector).DataTable({
+                        responsive: true,
+                        autoWidth: false,
+                        order: [[0, 'asc']],
+                        language: {
+                            emptyTable: 'Belum ada data untuk tab ini.'
+                        }
+                    }));
+                });
+
+                $('a[data-toggle="tab"][href^="#bak-"]').on('shown.bs.tab', function () {
+                    bakTables.forEach(function (table) {
+                        table.columns.adjust().responsive.recalc();
+                    });
                 });
             }
 

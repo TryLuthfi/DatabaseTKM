@@ -447,6 +447,10 @@ $clusterProgressPercent = checklist_doc_percent(
                 </div>
                 <div class="col-sm-4 text-right">
                     <a href="<?= base_url('Checklist_Dokument_MyRep') ?>" class="btn btn-default">Kembali</a>
+                    <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?');">
+                        <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_cluster'] ?? 0) ?>">
+                        <button type="submit" class="btn btn-danger">Hapus Cluster</button>
+                    </form>
                 </div>
             </div>
         </div>

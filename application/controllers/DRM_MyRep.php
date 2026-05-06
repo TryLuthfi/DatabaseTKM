@@ -7,6 +7,7 @@ class DRM_MyRep extends CI_Controller
     {
         parent::__construct();
         $this->load->model('MDRM_MyRep');
+        $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
     }
 
@@ -545,6 +546,25 @@ class DRM_MyRep extends CI_Controller
         $result = $this->MDRM_MyRep->rejectDrmBoq($clusterId, (int) $this->session->userdata('id_user'), $remark);
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-reject.' : 'Gagal reject BOQ DRM.');
         redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function deleteCluster()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if ($clusterId <= 0) {
+            $this->session->set_flashdata('error', 'Cluster MyRep tidak valid.');
+            redirect('DRM_MyRep');
+            return;
+        }
+
+        $deleted = $this->MMyRep_Cleanup->deleteWholeCluster($clusterId);
+        $this->session->set_flashdata($deleted ? 'success' : 'error', $deleted ? 'Cluster MyRep beserta flow DRM dan seluruh tahap sebelumnya berhasil dihapus bersih.' : 'Gagal menghapus cluster MyRep.');
+        redirect('DRM_MyRep');
     }
 
     private function buildCurrentStatus($drmDate, $statusDrm)

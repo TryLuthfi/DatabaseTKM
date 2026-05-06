@@ -154,6 +154,37 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
     }
 
+    public function deleteProgress()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MImplementasi_BOQ_MyRep->tablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel implementasi BOQ belum tersedia.');
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $progressItemId = (int) $this->input->post('progress_item_id');
+
+        if ($clusterId <= 0 || $progressItemId <= 0) {
+            $this->session->set_flashdata('error', 'Data progress implementasi tidak valid.');
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        $deleted = $this->MImplementasi_BOQ_MyRep->deleteProgressEntry($clusterId, $progressItemId);
+        $this->session->set_flashdata(
+            $deleted ? 'success' : 'error',
+            $deleted ? 'History progress implementasi berhasil dihapus.' : 'Gagal menghapus history progress implementasi.'
+        );
+
+        redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+    }
+
     private function uploadProgressPhotos($clusterId, $baselineItemId, $itemKey)
     {
         $clusterId = (int) $clusterId;

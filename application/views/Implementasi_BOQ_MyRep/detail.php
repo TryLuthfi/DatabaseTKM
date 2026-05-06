@@ -1454,6 +1454,11 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
     </div>
 </div>
 
+<form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/deleteProgress') ?>" id="form-delete-progress" class="d-none">
+    <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+    <input type="hidden" name="progress_item_id" id="delete_progress_item_id" value="">
+</form>
+
 <div class="impl-lightbox" id="impl-lightbox" aria-hidden="true">
     <div class="impl-lightbox__dialog">
         <div class="impl-lightbox__head">
@@ -1483,6 +1488,8 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
         var progressList = document.querySelector('.js-progress-item-list');
         var progressEmptyState = document.querySelector('.js-progress-empty-state');
         var progressCardTemplate = document.getElementById('progress-item-card-template');
+        var deleteProgressForm = document.getElementById('form-delete-progress');
+        var deleteProgressInput = document.getElementById('delete_progress_item_id');
 
         function bindDropzones() {
             var dropzones = document.querySelectorAll('.js-dropzone');
@@ -1833,7 +1840,7 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
             }
 
             var html = '<div class="table-responsive"><table class="table table-bordered impl-history-modal-table">';
-            html += '<thead><tr><th style="width:60px;">No</th><th style="width:120px;">Tanggal</th><th style="width:90px;">Qty</th><th style="width:140px;">Status</th><th style="width:140px;">User</th><th>Remark</th><th style="min-width:240px;">Foto</th></tr></thead><tbody>';
+            html += '<thead><tr><th style="width:60px;">No</th><th style="width:120px;">Tanggal</th><th style="width:90px;">Qty</th><th style="width:140px;">Status</th><th style="width:140px;">User</th><th>Remark</th><th style="min-width:240px;">Foto</th><th style="width:110px;">Aksi</th></tr></thead><tbody>';
             history.forEach(function (entry, index) {
                 html += '<tr>';
                 html += '<td class="text-center">' + (index + 1) + '</td>';
@@ -1857,11 +1864,38 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                     html += '<span class="text-muted">-</span>';
                 }
 
+                html += '</td>';
+                html += '<td class="text-center">';
+                html += '<button type="button" class="btn btn-sm btn-danger js-delete-history-entry" data-progress-item-id="' + (entry.id_progress_item || 0) + '" data-progress-date="' + escapeAttr(entry.progress_date || '-') + '" data-item-name="' + escapeAttr(historyButton.getAttribute('data-item-name') || 'Item') + '">Hapus</button>';
                 html += '</td></tr>';
             });
             html += '</tbody></table></div>';
 
             document.getElementById('history_item_rows').innerHTML = html;
+        });
+
+        document.addEventListener('click', function (event) {
+            var deleteButton = event.target.closest('.js-delete-history-entry');
+            if (!deleteButton || !deleteProgressForm || !deleteProgressInput) {
+                return;
+            }
+
+            var progressItemId = parseInt(deleteButton.getAttribute('data-progress-item-id') || '0', 10);
+            if (progressItemId <= 0) {
+                alert('Data history progress tidak valid.');
+                return;
+            }
+
+            var itemName = deleteButton.getAttribute('data-item-name') || 'item ini';
+            var progressDate = deleteButton.getAttribute('data-progress-date') || '-';
+            var confirmMessage = 'Hapus history progress "' + itemName + '" tanggal ' + progressDate + ' beserta semua foto evidencenya?';
+
+            if (!window.confirm(confirmMessage)) {
+                return;
+            }
+
+            deleteProgressInput.value = String(progressItemId);
+            deleteProgressForm.submit();
         });
 
         if (progressList) {

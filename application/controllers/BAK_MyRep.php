@@ -7,6 +7,7 @@ class BAK_MyRep extends CI_Controller
     {
         parent::__construct();
         $this->load->model('MBAK_MyRep');
+        $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
     }
 
@@ -432,6 +433,25 @@ class BAK_MyRep extends CI_Controller
         header('X-Content-Type-Options: nosniff');
         readfile($fullPath);
         exit;
+    }
+
+    public function deleteCluster()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if ($clusterId <= 0) {
+            $this->session->set_flashdata('error', 'Cluster MyRep tidak valid.');
+            redirect('BAK_MyRep');
+            return;
+        }
+
+        $deleted = $this->MMyRep_Cleanup->deleteWholeCluster($clusterId);
+        $this->session->set_flashdata($deleted ? 'success' : 'error', $deleted ? 'Cluster MyRep beserta seluruh flow sebelumnya berhasil dihapus bersih.' : 'Gagal menghapus cluster MyRep.');
+        redirect('BAK_MyRep');
     }
 
     private function buildCurrentStatus($baOpenDate, $bakDate, $statusBak)

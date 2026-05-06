@@ -883,11 +883,7 @@ foreach ($documentItemList as $item) {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (empty($clusterList)): ?>
-                                <tr>
-                                    <td colspan="13" class="text-center">Belum ada cluster FULL RFS.</td>
-                                </tr>
-                            <?php else: ?>
+                            <?php if (!empty($clusterList)): ?>
                                 <?php $no = 1; ?>
                                 <?php foreach ($clusterList as $cluster): ?>
                                     <?php
@@ -1184,6 +1180,10 @@ foreach ($documentItemList as $item) {
                                             <div class="action-stack">
                                                 <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . (int) $cluster['id_cluster']) ?>"
                                                     class="btn btn-primary btn-sm">Detail</a>
+                                                <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?');">
+                                                    <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_cluster'] ?>">
+                                                    <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                                                </form>
                                             </div>
                                         </td>
                                     </tr>
@@ -1270,11 +1270,7 @@ foreach ($documentItemList as $item) {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (empty($documentItemList)): ?>
-                                <tr>
-                                    <td colspan="17" class="text-center">Belum ada item dokumen.</td>
-                                </tr>
-                            <?php else: ?>
+                            <?php if (!empty($documentItemList)): ?>
                                 <?php $itemNo = 1; ?>
                                 <?php foreach ($documentItemList as $item): ?>
                                     <tr>
@@ -1311,6 +1307,10 @@ foreach ($documentItemList as $item) {
                                         <td>
                                             <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . (int) $item['id_cluster']) ?>"
                                                 class="btn btn-primary btn-sm">Detail</a>
+                                            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?');">
+                                                <input type="hidden" name="cluster_id" value="<?= (int) $item['id_cluster'] ?>">
+                                                <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                                            </form>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -1321,7 +1321,6 @@ foreach ($documentItemList as $item) {
             </div>
         </div>
     </section>
-</div>
 </div>
 
 <script>
@@ -1373,7 +1372,10 @@ foreach ($documentItemList as $item) {
             "lengthMenu": [
                 [10, 25, 50, 100],
                 [10, 25, 50, 100]
-            ]
+            ],
+            "language": {
+                "emptyTable": "Belum ada cluster FULL RFS."
+            }
         });
 
         var itemTable = $('#table-checklist-item').DataTable({
@@ -1389,7 +1391,10 @@ foreach ($documentItemList as $item) {
             "lengthMenu": [
                 [10, 25, 50, 100],
                 [10, 25, 50, 100]
-            ]
+            ],
+            "language": {
+                "emptyTable": "Belum ada item dokumen."
+            }
         });
 
         $.fn.dataTable.ext.search.push(function(settings, data) {

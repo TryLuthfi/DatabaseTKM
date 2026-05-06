@@ -12,6 +12,7 @@ $summaryWaitingHp = 0;
 $summaryDoneHp = 0;
 $summaryRejectedHp = 0;
 $createCityOptions = [];
+$nyBatchApprovalNyDrmRows = [];
 $postValsalStatuses = [
     'DRM',
     'RFS',
@@ -35,6 +36,12 @@ foreach ($clusterRows as $row) {
     $homepassBak = (float) ($row['homepass_bak'] ?? 0);
     $homepassValsal = (float) ($row['homepass_valsal'] ?? 0);
     $summaryHomepass = $homepassValsal > 0 ? $homepassValsal : $homepassBak;
+    $isNyBatchApprovalNyDrm = $hasValsal && !in_array($currentStatus, $postValsalStatuses, true);
+
+    if ($isNyBatchApprovalNyDrm) {
+        $nyBatchApprovalNyDrmRows[] = $row;
+
+    }
 
     if (!$hasValsal && $currentStatus === 'BAK') {
         $summaryNyValsal++;
@@ -102,6 +109,198 @@ if (!function_exists('valsalDocLabel')) {
         return !empty($row['valsal_doc_file_name']) ? 'UPLOADED' : 'BELUM UPLOAD';
     }
 }
+
+if (!function_exists('valsalAgingBadgeClass')) {
+    function valsalAgingBadgeClass($agingDays)
+    {
+        if ($agingDays === null) {
+            return 'secondary';
+        }
+
+        if ((int) $agingDays <= 3) {
+            return 'success';
+        }
+
+        if ((int) $agingDays <= 7) {
+            return 'warning';
+        }
+
+        return 'danger';
+    }
+}
+
+$renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $valsalModel) {
+    foreach ($rows as $index => $row) {
+        $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
+        $valsalDocStatusRaw = strtoupper(trim((string) ($row['valsal_doc_status'] ?? '')));
+        $hasValsal = (int) ($row['id_valsal'] ?? 0) > 0;
+        $statusValsalLabel = $hasValsal
+            ? (string) ($row['status_valsal'] ?? 'DRAFT')
+            : 'WAITING INPUT';
+        $showUploadButton = $docReady && $hasValsal && in_array($valsalDocStatusRaw, ['', 'REJECTED'], true);
+        $agingDays = null;
+        $bakDateRaw = trim((string) ($row['bak_date'] ?? ''));
+
+        if ($bakDateRaw !== '') {
+            try {
+                $bakDate = new DateTimeImmutable($bakDateRaw);
+                $todayDate = new DateTimeImmutable(date('Y-m-d'));
+                $agingDays = (int) $bakDate->diff($todayDate)->format('%r%a');
+                if ($agingDays < 0) {
+                    $agingDays = 0;
+                }
+            } catch (Exception $e) {
+                $agingDays = null;
+            }
+        }
+        ?>
+        <tr>
+            <td><?= $index + 1 ?></td>
+            <td>
+                <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                <?php if (!empty($row['cluster_code'])): ?>
+                    <div class="text-muted small"><?= htmlspecialchars((string) $row['cluster_code']) ?></div>
+                <?php endif; ?>
+            </td>
+            <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
+            <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
+            <td><?= $targetLabel ?></td>
+            <td class="text-right"><?= number_format((float) ($row['homepass_bak'] ?? 0), 0, ',', '.') ?></td>
+            <td class="text-right"><?= number_format((float) ($row['homepass_valsal'] ?? 0), 0, ',', '.') ?></td>
+            <td><?= !empty($row['bak_date']) ? htmlspecialchars((string) $row['bak_date']) : '-' ?></td>
+            <td>
+                <?php if ($agingDays === null): ?>
+                    <span class="badge badge-secondary">Aging -</span>
+                <?php else: ?>
+                    <span class="badge badge-<?= valsalAgingBadgeClass($agingDays) ?>">Aging <?= (int) $agingDays ?> hari</span>
+                <?php endif; ?>
+            </td>
+            <td><?= !empty($row['valsal_date']) ? htmlspecialchars((string) $row['valsal_date']) : '-' ?></td>
+            <td><span class="badge badge-<?= valsalBadgeClass($statusValsalLabel) ?>"><?= htmlspecialchars($statusValsalLabel) ?></span></td>
+            <td>
+                <?php if ($hasValsal): ?>
+                    <span class="badge badge-<?= valsalBadgeClass(valsalDocLabel($row)) ?>"><?= htmlspecialchars(valsalDocLabel($row)) ?></span>
+                <?php else: ?>
+                    <span class="badge badge-secondary">BELUM ADA DOC</span>
+                <?php endif; ?>
+                <?php if ($hasValsal && !empty($row['valsal_doc_file_name'])): ?>
+                    <div class="small text-muted mt-1"><?= htmlspecialchars((string) $row['valsal_doc_file_name']) ?></div>
+                <?php endif; ?>
+            </td>
+            <td>
+                <?php if (!$hasValsal): ?>
+                    <span class="text-muted small">Belum ada pengajuan</span>
+                <?php elseif (!empty($row['valsal_doc_reviewed_at'])): ?>
+                    <div class="small text-muted">Reviewed</div>
+                    <div><?= htmlspecialchars((string) $row['valsal_doc_reviewed_at']) ?></div>
+                <?php elseif (!empty($row['valsal_doc_file_id'])): ?>
+                    <span class="text-warning small font-weight-bold">Waiting Review</span>
+                <?php else: ?>
+                    <span class="text-muted small">Belum ada review</span>
+                <?php endif; ?>
+            </td>
+            <td><span class="badge badge-<?= valsalBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
+            <td>
+                <?php if ($hasValsal): ?>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary js-edit-valsal"
+                        data-toggle="modal"
+                        data-target="#modal-valsal-edit"
+                        data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
+                        data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                        data-regional_name="<?= htmlspecialchars((string) ($row['regional_name'] ?? ''), ENT_QUOTES) ?>"
+                        data-province_name="<?= htmlspecialchars((string) ($row['province_name'] ?? ''), ENT_QUOTES) ?>"
+                        data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>"
+                        data-homepass_bak="<?= (int) ($row['homepass_bak'] ?? 0) ?>"
+                        data-homepass_valsal="<?= (int) ($row['homepass_valsal'] ?? 0) ?>"
+                        data-bak_date="<?= htmlspecialchars((string) ($row['bak_date'] ?? ''), ENT_QUOTES) ?>"
+                        data-valsal_date="<?= htmlspecialchars((string) ($row['valsal_date'] ?? ''), ENT_QUOTES) ?>"
+                        data-status_valsal="<?= htmlspecialchars((string) ($row['status_valsal'] ?? 'DRAFT'), ENT_QUOTES) ?>"
+                        data-remark_valsal="<?= htmlspecialchars((string) ($row['remark_valsal'] ?? ''), ENT_QUOTES) ?>">
+                        Edit
+                    </button>
+                <?php else: ?>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary js-start-valsal"
+                        data-toggle="modal"
+                        data-target="#modal-valsal-create"
+                        data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
+                        data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>">
+                        Input VALSAL
+                    </button>
+                <?php endif; ?>
+                <?php if ($docReady): ?>
+                    <?php if ($showUploadButton): ?>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-info js-upload-doc mt-1"
+                            data-toggle="modal"
+                            data-target="#modal-valsal-upload-doc"
+                            data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
+                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                            data-id_doc_file="<?= (int) ($row['valsal_doc_file_id'] ?? 0) ?>"
+                            data-doc_status="<?= htmlspecialchars((string) valsalDocLabel($row), ENT_QUOTES) ?>"
+                            data-doc_remark="<?= htmlspecialchars((string) ($row['valsal_doc_remark'] ?? ''), ENT_QUOTES) ?>">
+                            <?= $valsalDocStatusRaw === 'REJECTED' ? 'Re-Upload Doc' : 'Upload Doc' ?>
+                        </button>
+                    <?php endif; ?>
+                    <?php if (!empty($row['valsal_doc_file_id']) && !empty($row['valsal_doc_file_path'])): ?>
+                        <a href="<?= base_url('VALSAL_MyRep/previewDocument/' . (int) $row['valsal_doc_file_id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary mt-1">
+                            Preview
+                        </a>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-dark js-history-doc mt-1"
+                            data-toggle="modal"
+                            data-target="#modal-valsal-history-doc"
+                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                            data-doc_name="SND KASAR"
+                            data-history='<?= htmlspecialchars(json_encode($valsalModel->getValsalFileLogs((int) $row['valsal_doc_file_id'])), ENT_QUOTES) ?>'>
+                            History
+                        </button>
+                    <?php endif; ?>
+                    <?php if ($canApprove && !empty($row['valsal_doc_file_id']) && in_array(strtoupper((string) ($row['valsal_doc_status'] ?? '')), ['UPLOADED', 'REJECTED'], true)): ?>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-success js-approve-doc mt-1"
+                            data-toggle="modal"
+                            data-target="#modal-valsal-approve-doc"
+                            data-id_doc_file="<?= (int) $row['valsal_doc_file_id'] ?>"
+                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
+                            Approve
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
+                            data-toggle="modal"
+                            data-target="#modal-valsal-reject-doc"
+                            data-id_doc_file="<?= (int) $row['valsal_doc_file_id'] ?>"
+                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
+                            Reject
+                        </button>
+                    <?php elseif ($canApprove && !empty($row['valsal_doc_file_id']) && strtoupper((string) ($row['valsal_doc_status'] ?? '')) === 'APPROVED'): ?>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
+                            data-toggle="modal"
+                            data-target="#modal-valsal-reject-doc"
+                            data-id_doc_file="<?= (int) $row['valsal_doc_file_id'] ?>"
+                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
+                            Reject
+                        </button>
+                    <?php endif; ?>
+                <?php endif; ?>
+                <form method="post" action="<?= base_url('VALSAL_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta flow VALSAL dan seluruh tahap MyRep sebelumnya/sesudahnya?');">
+                    <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
+                    <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
+                </form>
+            </td>
+        </tr>
+        <?php
+    }
+};
 ?>
 
 <div class="content-wrapper">
@@ -264,173 +463,77 @@ if (!function_exists('valsalDocLabel')) {
                             </div>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table id="table_valsal_myrep" class="table table-bordered table-hover valsal-monitor-table">
-                                    <thead>
-                                        <tr>
-                                            <th>No</th>
-                                            <th>Cluster</th>
-                                            <th>Regional</th>
-                                            <th>Kota</th>
-                                            <th>Periode Target</th>
-                                            <th>HP BAK</th>
-                                            <th>HP VALSAL</th>
-                                            <th>Tanggal BAK</th>
-                                            <th>Tanggal VALSAL</th>
-                                            <th>Status VALSAL</th>
-                                            <th>Dokumen SND KASAR</th>
-                                            <th>Review Dokumen</th>
-                                            <th>Status Flow</th>
-                                            <th>Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($clusterRows as $index => $row): ?>
-                                            <?php
-                                            $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
-                                            $valsalDocStatusRaw = strtoupper(trim((string) ($row['valsal_doc_status'] ?? '')));
-                                            $hasValsal = (int) ($row['id_valsal'] ?? 0) > 0;
-                                            $statusValsalLabel = $hasValsal
-                                                ? (string) ($row['status_valsal'] ?? 'DRAFT')
-                                                : 'WAITING INPUT';
-                                            $showUploadButton = $docReady && $hasValsal && in_array($valsalDocStatusRaw, ['', 'REJECTED'], true);
-                                            ?>
-                                            <tr>
-                                                <td><?= $index + 1 ?></td>
-                                                <td>
-                                                    <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
-                                                    <?php if (!empty($row['cluster_code'])): ?>
-                                                        <div class="text-muted small"><?= htmlspecialchars((string) $row['cluster_code']) ?></div>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
-                                                <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-                                                <td><?= $targetLabel ?></td>
-                                                <td class="text-right"><?= number_format((float) ($row['homepass_bak'] ?? 0), 0, ',', '.') ?></td>
-                                                <td class="text-right"><?= number_format((float) ($row['homepass_valsal'] ?? 0), 0, ',', '.') ?></td>
-                                                <td><?= !empty($row['bak_date']) ? htmlspecialchars((string) $row['bak_date']) : '-' ?></td>
-                                                <td><?= !empty($row['valsal_date']) ? htmlspecialchars((string) $row['valsal_date']) : '-' ?></td>
-                                                <td><span class="badge badge-<?= valsalBadgeClass($statusValsalLabel) ?>"><?= htmlspecialchars($statusValsalLabel) ?></span></td>
-                                                <td>
-                                                    <?php if ($hasValsal): ?>
-                                                        <span class="badge badge-<?= valsalBadgeClass(valsalDocLabel($row)) ?>"><?= htmlspecialchars(valsalDocLabel($row)) ?></span>
-                                                    <?php else: ?>
-                                                        <span class="badge badge-secondary">BELUM ADA DOC</span>
-                                                    <?php endif; ?>
-                                                    <?php if ($hasValsal && !empty($row['valsal_doc_file_name'])): ?>
-                                                        <div class="small text-muted mt-1"><?= htmlspecialchars((string) $row['valsal_doc_file_name']) ?></div>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td>
-                                                    <?php if (!$hasValsal): ?>
-                                                        <span class="text-muted small">Belum ada pengajuan</span>
-                                                    <?php elseif (!empty($row['valsal_doc_reviewed_at'])): ?>
-                                                        <div class="small text-muted">Reviewed</div>
-                                                        <div><?= htmlspecialchars((string) $row['valsal_doc_reviewed_at']) ?></div>
-                                                    <?php elseif (!empty($row['valsal_doc_file_id'])): ?>
-                                                        <span class="text-warning small font-weight-bold">Waiting Review</span>
-                                                    <?php else: ?>
-                                                        <span class="text-muted small">Belum ada review</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td><span class="badge badge-<?= valsalBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
-                                                <td>
-                                                    <?php if ($hasValsal): ?>
-                                                        <button
-                                                            type="button"
-                                                            class="btn btn-sm btn-outline-primary js-edit-valsal"
-                                                            data-toggle="modal"
-                                                            data-target="#modal-valsal-edit"
-                                                            data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
-                                                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                            data-regional_name="<?= htmlspecialchars((string) ($row['regional_name'] ?? ''), ENT_QUOTES) ?>"
-                                                            data-province_name="<?= htmlspecialchars((string) ($row['province_name'] ?? ''), ENT_QUOTES) ?>"
-                                                            data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>"
-                                                            data-homepass_bak="<?= (int) ($row['homepass_bak'] ?? 0) ?>"
-                                                            data-homepass_valsal="<?= (int) ($row['homepass_valsal'] ?? 0) ?>"
-                                                            data-bak_date="<?= htmlspecialchars((string) ($row['bak_date'] ?? ''), ENT_QUOTES) ?>"
-                                                            data-valsal_date="<?= htmlspecialchars((string) ($row['valsal_date'] ?? ''), ENT_QUOTES) ?>"
-                                                            data-status_valsal="<?= htmlspecialchars((string) ($row['status_valsal'] ?? 'DRAFT'), ENT_QUOTES) ?>"
-                                                            data-remark_valsal="<?= htmlspecialchars((string) ($row['remark_valsal'] ?? ''), ENT_QUOTES) ?>">
-                                                            Edit
-                                                        </button>
-                                                    <?php else: ?>
-                                                        <button
-                                                            type="button"
-                                                            class="btn btn-sm btn-outline-primary js-start-valsal"
-                                                            data-toggle="modal"
-                                                            data-target="#modal-valsal-create"
-                                                            data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
-                                                            data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>">
-                                                            Input VALSAL
-                                                        </button>
-                                                    <?php endif; ?>
-                                                    <?php if ($docReady): ?>
-                                                        <?php if ($showUploadButton): ?>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-info js-upload-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-valsal-upload-doc"
-                                                                data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                                data-id_doc_file="<?= (int) ($row['valsal_doc_file_id'] ?? 0) ?>"
-                                                                data-doc_status="<?= htmlspecialchars((string) valsalDocLabel($row), ENT_QUOTES) ?>"
-                                                                data-doc_remark="<?= htmlspecialchars((string) ($row['valsal_doc_remark'] ?? ''), ENT_QUOTES) ?>">
-                                                                <?= $valsalDocStatusRaw === 'REJECTED' ? 'Re-Upload Doc' : 'Upload Doc' ?>
-                                                            </button>
-                                                        <?php endif; ?>
-                                                        <?php if (!empty($row['valsal_doc_file_id']) && !empty($row['valsal_doc_file_path'])): ?>
-                                                            <a href="<?= base_url('VALSAL_MyRep/previewDocument/' . (int) $row['valsal_doc_file_id']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary mt-1">
-                                                                Preview
-                                                            </a>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-dark js-history-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-valsal-history-doc"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                                data-doc_name="SND KASAR"
-                                                                data-history='<?= htmlspecialchars(json_encode($this->MVALSAL_MyRep->getValsalFileLogs((int) $row['valsal_doc_file_id'])), ENT_QUOTES) ?>'>
-                                                                History
-                                                            </button>
-                                                        <?php endif; ?>
-                                                        <?php if ($canApprove && !empty($row['valsal_doc_file_id']) && in_array(strtoupper((string) ($row['valsal_doc_status'] ?? '')), ['UPLOADED', 'REJECTED'], true)): ?>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-success js-approve-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-valsal-approve-doc"
-                                                                data-id_doc_file="<?= (int) $row['valsal_doc_file_id'] ?>"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
-                                                                Approve
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-valsal-reject-doc"
-                                                                data-id_doc_file="<?= (int) $row['valsal_doc_file_id'] ?>"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
-                                                                Reject
-                                                            </button>
-                                                        <?php elseif ($canApprove && !empty($row['valsal_doc_file_id']) && strtoupper((string) ($row['valsal_doc_status'] ?? '')) === 'APPROVED'): ?>
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-danger js-reject-doc mt-1"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-valsal-reject-doc"
-                                                                data-id_doc_file="<?= (int) $row['valsal_doc_file_id'] ?>"
-                                                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>">
-                                                                Reject
-                                                            </button>
-                                                        <?php endif; ?>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
+                            <ul class="nav nav-tabs valsal-monitor-tabs" id="valsal-monitor-tab" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="valsal-ny-batch-tab" data-toggle="tab" href="#valsal-ny-batch-pane" role="tab" aria-controls="valsal-ny-batch-pane" aria-selected="true">
+                                        Status NY Batch Approval &amp; NY DRM
+                                        <span class="valsal-monitor-tabs__count"><?= number_format(count($nyBatchApprovalNyDrmRows), 0, ',', '.') ?></span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="valsal-all-tab" data-toggle="tab" href="#valsal-all-pane" role="tab" aria-controls="valsal-all-pane" aria-selected="false">
+                                        Status All VALSAL
+                                        <span class="valsal-monitor-tabs__count"><?= number_format(count($clusterRows), 0, ',', '.') ?></span>
+                                    </a>
+                                </li>
+                            </ul>
+                            <div class="tab-content valsal-monitor-tabs__content" id="valsal-monitor-tab-content">
+                                <div class="tab-pane fade show active" id="valsal-ny-batch-pane" role="tabpanel" aria-labelledby="valsal-ny-batch-tab">
+                                    <div class="table-responsive">
+                                        <table id="table_valsal_ny_batch_drm" class="table table-bordered table-hover valsal-monitor-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>Cluster</th>
+                                                    <th>Regional</th>
+                                                    <th>Kota</th>
+                                                    <th>Periode Target</th>
+                                                    <th>HP BAK</th>
+                                                    <th>HP VALSAL</th>
+                                                    <th>Tanggal BAK</th>
+                                                    <th>Aging BAK</th>
+                                                    <th>Tanggal VALSAL</th>
+                                                    <th>Status VALSAL</th>
+                                                    <th>Dokumen SND KASAR</th>
+                                                    <th>Review Dokumen</th>
+                                                    <th>Status Flow</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php $renderValsalTableRows($nyBatchApprovalNyDrmRows, $docReady, $canApprove, $this->MVALSAL_MyRep); ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="valsal-all-pane" role="tabpanel" aria-labelledby="valsal-all-tab">
+                                    <div class="table-responsive">
+                                        <table id="table_valsal_all" class="table table-bordered table-hover valsal-monitor-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>Cluster</th>
+                                                    <th>Regional</th>
+                                                    <th>Kota</th>
+                                                    <th>Periode Target</th>
+                                                    <th>HP BAK</th>
+                                                    <th>HP VALSAL</th>
+                                                    <th>Tanggal BAK</th>
+                                                    <th>Aging BAK</th>
+                                                    <th>Tanggal VALSAL</th>
+                                                    <th>Status VALSAL</th>
+                                                    <th>Dokumen SND KASAR</th>
+                                                    <th>Review Dokumen</th>
+                                                    <th>Status Flow</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php $renderValsalTableRows($clusterRows, $docReady, $canApprove, $this->MVALSAL_MyRep); ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1207,6 +1310,86 @@ if (!function_exists('valsalDocLabel')) {
         box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
     }
 
+    .valsal-modal-shell .select2-container {
+        width: 100% !important;
+    }
+
+    .valsal-modal-shell .select2-container .select2-selection--single {
+        min-height: 44px;
+        border-radius: 12px;
+        border: 1px solid #cfe0ee;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        padding: 0 .9rem;
+        box-shadow: none;
+    }
+
+    .valsal-modal-shell .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #1f2937;
+        line-height: 1.4;
+        padding-left: 0;
+        padding-right: 1.8rem;
+    }
+
+    .valsal-modal-shell .select2-container--default .select2-selection--single .select2-selection__placeholder {
+        color: #7b8794;
+    }
+
+    .valsal-modal-shell .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 42px;
+        right: 10px;
+    }
+
+    .valsal-modal-shell .select2-container--default.select2-container--focus .select2-selection--single,
+    .valsal-modal-shell .select2-container--default.select2-container--open .select2-selection--single {
+        border-color: #55a7d5;
+        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
+    .valsal-monitor-tabs {
+        border-bottom: 0;
+        gap: .75rem;
+        margin-bottom: 1rem;
+    }
+
+    .valsal-monitor-tabs .nav-link {
+        border: 1px solid #d9e6f2;
+        border-radius: 999px;
+        color: #45627b;
+        font-weight: 700;
+        padding: .65rem 1rem;
+        background: #f7fbff;
+    }
+
+    .valsal-monitor-tabs .nav-link.active {
+        color: #fff;
+        background: linear-gradient(135deg, #1e88cf, #2ca58d);
+        border-color: transparent;
+        box-shadow: 0 12px 28px rgba(30, 136, 207, 0.24);
+    }
+
+    .valsal-monitor-tabs__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        margin-left: .45rem;
+        padding: .15rem .5rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.18);
+        font-size: .8rem;
+    }
+
+    .valsal-monitor-tabs .nav-link:not(.active) .valsal-monitor-tabs__count {
+        background: #e2edf7;
+        color: #2d6287;
+    }
+
+    .valsal-monitor-tabs__content {
+        padding-top: .25rem;
+    }
+
     .valsal-modal-shell .form-control[readonly],
     .valsal-modal-shell .form-control:disabled,
     .doc-modal .form-control[readonly],
@@ -1246,6 +1429,7 @@ if (!function_exists('valsalDocLabel')) {
         .valsal-filter-actions .btn {
             width: 100%;
         }
+
     }
 </style>
 
@@ -1409,13 +1593,26 @@ if (!function_exists('valsalDocLabel')) {
         }
 
         $(function () {
+            var valsalTables = [];
+
             handleValsalFlashAlerts();
 
             if ($.fn.DataTable) {
-                $('#table_valsal_myrep').DataTable({
-                    responsive: true,
-                    autoWidth: false,
-                    order: [[0, 'asc']]
+                ['#table_valsal_ny_batch_drm', '#table_valsal_all'].forEach(function (selector) {
+                    valsalTables.push($(selector).DataTable({
+                        responsive: true,
+                        autoWidth: false,
+                        order: [[0, 'asc']],
+                        language: {
+                            emptyTable: 'Belum ada data untuk tab ini.'
+                        }
+                    }));
+                });
+
+                $('a[data-toggle="tab"][href^="#valsal-"]').on('shown.bs.tab', function () {
+                    valsalTables.forEach(function (table) {
+                        table.columns.adjust().responsive.recalc();
+                    });
                 });
             }
 

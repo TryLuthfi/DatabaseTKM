@@ -7,6 +7,7 @@ class VALSAL_MyRep extends CI_Controller
     {
         parent::__construct();
         $this->load->model('MVALSAL_MyRep');
+        $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
     }
 
@@ -260,6 +261,25 @@ class VALSAL_MyRep extends CI_Controller
             $isNoDocumentRequired ? 'Dokumen SND KASAR ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen SND KASAR berhasil diupload.',
             'VALSAL_MyRep'
         );
+    }
+
+    public function deleteCluster()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if ($clusterId <= 0) {
+            $this->session->set_flashdata('error', 'Cluster MyRep tidak valid.');
+            redirect('VALSAL_MyRep');
+            return;
+        }
+
+        $deleted = $this->MMyRep_Cleanup->deleteWholeCluster($clusterId);
+        $this->session->set_flashdata($deleted ? 'success' : 'error', $deleted ? 'Cluster MyRep beserta flow VALSAL dan seluruh tahap sebelumnya berhasil dihapus bersih.' : 'Gagal menghapus cluster MyRep.');
+        redirect('VALSAL_MyRep');
     }
 
     public function approveDocument()
