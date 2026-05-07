@@ -1426,8 +1426,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                             <div class="impl-comply-upload-card__title">Upload Foto Comply</div>
                                             <div class="impl-comply-upload-card__note">Pilih item, isi nama / nomor, lalu upload foto comply untuk approval HO.</div>
                                         </div>
-                                        <a href="<?= base_url('Implementasi_BOQ_MyRep/printComplyPdf/' . (int) ($cluster['id_myrep_cluster'] ?? 0)) ?>" target="_blank" class="btn btn-outline-dark btn-sm">
-                                            <i class="fas fa-file-pdf mr-1"></i>Print PDF Foto Comply
+                                        <a href="<?= base_url('Implementasi_BOQ_MyRep/previewComplyPdf/' . (int) ($cluster['id_myrep_cluster'] ?? 0)) ?>" target="_blank" class="btn btn-outline-dark btn-sm">
+                                            <i class="fas fa-file-pdf mr-1"></i>Preview PDF Foto Comply
                                         </a>
                                     </div>
                                     <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/uploadComplyPhoto') ?>" enctype="multipart/form-data">

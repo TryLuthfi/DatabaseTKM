@@ -180,6 +180,36 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $pdf->Output($fileName, 'I');
     }
 
+    public function previewComplyPdf($clusterId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        $cluster = $this->MImplementasi_BOQ_MyRep->getClusterById($clusterId);
+        if (empty($cluster)) {
+            $this->session->set_flashdata('error', 'Data implementasi cluster tidak ditemukan.');
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        $data['title'] = 'Preview PDF Foto Comply';
+        $data['cluster'] = $cluster;
+        $data['pdfUrl'] = base_url('Implementasi_BOQ_MyRep/printComplyPdf/' . $clusterId);
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Implementasi_BOQ_MyRep/preview_comply_pdf', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
+    }
+
     public function saveProgress()
     {
         if (empty($this->session->userdata('id_user'))) {
