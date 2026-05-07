@@ -100,9 +100,9 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             return;
         }
 
-        $tcpdfPath = 'D:\\XAMPP\\phpMyAdmin\\vendor\\tecnickcom\\tcpdf\\tcpdf.php';
         if (!class_exists('TCPDF')) {
-            if (!is_file($tcpdfPath)) {
+            $tcpdfPath = $this->resolveTcpdfPath();
+            if ($tcpdfPath === '') {
                 $this->session->set_flashdata('error', 'Library PDF TCPDF tidak ditemukan di server.');
                 redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane');
                 return;
@@ -762,5 +762,23 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
 
         return 'file:///' . str_replace('\\', '/', $fullPath);
+    }
+
+    private function resolveTcpdfPath()
+    {
+        $candidatePaths = [
+            'D:/XAMPP/phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
+            dirname(FCPATH) . '/phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
+            FCPATH . '../phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
+        ];
+
+        foreach ($candidatePaths as $candidatePath) {
+            $resolvedPath = realpath(str_replace(['\\', '/'], DIRECTORY_SEPARATOR, (string) $candidatePath));
+            if ($resolvedPath !== false && is_file($resolvedPath)) {
+                return $resolvedPath;
+            }
+        }
+
+        return '';
     }
 }
