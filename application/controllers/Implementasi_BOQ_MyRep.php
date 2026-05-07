@@ -122,58 +122,13 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $pdf->SetAutoPageBreak(true, 8);
         $pdf->SetFont('helvetica', '', 9);
 
-        $headerHtml = $this->buildComplyPdfHeaderHtml($cluster);
-        $tileWidth = '48%';
-
         foreach ($complyGroups as $sectionTitle => $photos) {
-            $pdf->AddPage();
-            $html = $headerHtml;
-            $html .= '<table cellpadding="4" cellspacing="0" border="1" width="100%" style="font-size:9px;">';
-            $html .= '<tr>';
-            $html .= '<td width="22%" align="center" style="font-weight:bold; font-size:16px;">' . htmlspecialchars((string) $sectionTitle, ENT_QUOTES) . '</td>';
-            $html .= '<td width="78%" style="font-size:9px;">';
-            $html .= '<strong>Foto Comply Approved</strong><br>';
-            $html .= 'Cluster: ' . htmlspecialchars((string) ($cluster['cluster_name'] ?? '-'), ENT_QUOTES);
-            $html .= '</td>';
-            $html .= '</tr>';
-            $html .= '</table><br>';
-
-            $html .= '<table cellpadding="4" cellspacing="0" border="0" width="100%">';
-            foreach (array_values($photos) as $index => $photo) {
-                if ($index % 2 === 0) {
-                    $html .= '<tr>';
-                }
-
-                $imagePath = $this->toPdfImagePath((string) ($photo['file_path'] ?? ''));
-                $description = trim((string) ($photo['comply_label'] ?? '')) !== '' ? (string) $photo['comply_label'] : (string) ($photo['file_name'] ?? 'Foto Comply');
-                $caption = trim((string) ($photo['caption'] ?? ''));
-                $metaLine = $caption !== '' ? $caption : ('Description: ' . $description);
-
-                $html .= '<td width="' . $tileWidth . '" valign="top">';
-                $html .= '<table cellpadding="3" cellspacing="0" border="1" width="100%">';
-                $html .= '<tr><td align="center" style="height:118mm;">';
-                if ($imagePath !== '') {
-                    $html .= '<img src="' . htmlspecialchars($imagePath, ENT_QUOTES) . '" style="width:84mm; height:108mm; object-fit:contain;">';
-                } else {
-                    $html .= '<div style="color:#6b7280; font-size:10px;">File foto tidak ditemukan</div>';
-                }
-                $html .= '</td></tr>';
-                $html .= '<tr><td align="center" style="font-size:9px;"><strong>Description: ' . htmlspecialchars($description, ENT_QUOTES) . '</strong></td></tr>';
-                $html .= '<tr><td align="center" style="font-size:8px;">' . htmlspecialchars($metaLine, ENT_QUOTES) . '</td></tr>';
-                $html .= '</table>';
-                $html .= '</td>';
-
-                if ($index % 2 === 1) {
-                    $html .= '</tr><tr><td colspan="2" height="4"></td></tr>';
-                }
+            $photoChunks = array_chunk(array_values($photos), 6);
+            foreach ($photoChunks as $photoChunk) {
+                $pdf->AddPage();
+                $this->renderComplyPdfHeader($pdf, $cluster, (string) $sectionTitle);
+                $this->renderComplyPdfPhotos($pdf, $photoChunk);
             }
-
-            if (count($photos) % 2 === 1) {
-                $html .= '<td width="' . $tileWidth . '"></td></tr>';
-            }
-            $html .= '</table>';
-
-            $pdf->writeHTML($html, true, false, true, false, '');
         }
 
         $fileName = 'Foto_Comply_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($cluster['cluster_name'] ?? ('Cluster_' . $clusterId))) . '.pdf';
@@ -182,32 +137,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
 
     public function previewComplyPdf($clusterId = 0)
     {
-        if (empty($this->session->userdata('id_user'))) {
-            redirect('Auth');
-            return;
-        }
-
-        $clusterId = (int) $clusterId;
-        if ($clusterId <= 0) {
-            redirect('Implementasi_BOQ_MyRep');
-            return;
-        }
-
-        $cluster = $this->MImplementasi_BOQ_MyRep->getClusterById($clusterId);
-        if (empty($cluster)) {
-            $this->session->set_flashdata('error', 'Data implementasi cluster tidak ditemukan.');
-            redirect('Implementasi_BOQ_MyRep');
-            return;
-        }
-
-        $data['title'] = 'Preview PDF Foto Comply';
-        $data['cluster'] = $cluster;
-        $data['pdfUrl'] = base_url('Implementasi_BOQ_MyRep/printComplyPdf/' . $clusterId);
-
-        $this->load->view('Templates/01_Header', $data);
-        $this->load->view('Implementasi_BOQ_MyRep/preview_comply_pdf', $data);
-        $this->load->view('Templates/03_Footer');
-        $this->load->view('Templates/99_JS');
+        redirect('Implementasi_BOQ_MyRep/printComplyPdf/' . (int) $clusterId);
     }
 
     public function saveProgress()
@@ -744,42 +674,125 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             || $this->session->userdata('nama_level') === 'Super Admin';
     }
 
-    private function buildComplyPdfHeaderHtml($cluster)
+    private function renderComplyPdfHeader($pdf, $cluster, $sectionTitle)
     {
-        $tkmLogo = $this->toPdfImagePath('assets/dist/img/logotkmsolid.png');
-        $myrepLogo = $this->toPdfImagePath('assets/dist/img/logoweb.png');
+        $tkmLogo = $this->resolvePdfLogoFile([
+            'assets/dist/img/logotkmsolid.png',
+            'assets/dist/img/logo_size.jpg',
+            'assets/dist/img/logo_size_invert.jpg',
+        ]);
+        $myrepLogo = $this->resolvePdfLogoFile([
+            'assets/dist/img/logoweb.png',
+            'assets/dist/img/logo_size.jpg',
+            'assets/dist/img/logo_size_invert.jpg',
+        ]);
         $region = trim((string) ($cluster['regional_name'] ?? '-'));
         $oltName = trim((string) ($cluster['nama_olt'] ?? '-'));
         $clusterName = trim((string) ($cluster['cluster_name'] ?? '-'));
         $clusterCode = trim((string) ($cluster['cluster_code'] ?? '-'));
+        $left = 8;
+        $top = 8;
+        $width = 194;
+        $headerHeight = 24;
 
-        $html = '<table cellpadding="4" cellspacing="0" border="1" width="100%" style="font-size:9px;">';
-        $html .= '<tr>';
-        $html .= '<td width="35%" align="center">';
+        $pdf->SetLineWidth(0.25);
+        $pdf->Rect($left, $top, $width, $headerHeight);
+        $pdf->Rect($left, $top, 72, $headerHeight);
+        $pdf->Rect($left + 72, $top, 20, $headerHeight);
+        $pdf->Rect($left + 92, $top, 102, $headerHeight);
+
         if ($tkmLogo !== '') {
-            $html .= '<img src="' . htmlspecialchars($tkmLogo, ENT_QUOTES) . '" style="height:16mm;">';
+            $pdf->Image($tkmLogo, $left + 2, $top + 2, 26, 8, '', '', '', false, 150, '', false, false, 0, false, false, false);
         }
         if ($myrepLogo !== '') {
-            $html .= '&nbsp;&nbsp;<img src="' . htmlspecialchars($myrepLogo, ENT_QUOTES) . '" style="height:14mm;">';
+            $pdf->Image($myrepLogo, $left + 31, $top + 2, 26, 8, '', '', '', false, 150, '', false, false, 0, false, false, false);
         }
-        $html .= '<div style="font-size:15px; font-weight:bold; margin-top:4px;">EMR FTTH PROJECT</div>';
-        $html .= '</td>';
-        $html .= '<td width="13%" align="center" style="font-size:14px; font-weight:bold;">FOTO COMPLY</td>';
-        $html .= '<td width="52%">';
-        $html .= '<table cellpadding="2" cellspacing="0" border="1" width="100%" style="font-size:9px;">';
-        $html .= '<tr><td width="35%"><strong>Region</strong></td><td width="65%">' . htmlspecialchars($region, ENT_QUOTES) . '</td></tr>';
-        $html .= '<tr><td width="35%"><strong>OLT Name</strong></td><td width="65%">' . htmlspecialchars($oltName !== '' ? $oltName : '-', ENT_QUOTES) . '</td></tr>';
-        $html .= '<tr><td width="35%"><strong>Cluster Name</strong></td><td width="65%">' . htmlspecialchars($clusterName, ENT_QUOTES) . '</td></tr>';
-        $html .= '<tr><td width="35%"><strong>Cluster ID</strong></td><td width="65%">' . htmlspecialchars($clusterCode !== '' ? $clusterCode : (string) ($cluster['id_myrep_cluster'] ?? '-'), ENT_QUOTES) . '</td></tr>';
-        $html .= '</table>';
-        $html .= '</td>';
-        $html .= '</tr>';
-        $html .= '</table><br>';
 
-        return $html;
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->SetXY($left, $top + 14);
+        $pdf->Cell(72, 5, 'EMR FTTH PROJECT', 0, 0, 'C');
+
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->SetXY($left + 72, $top + 8);
+        $pdf->MultiCell(20, 4, "FOTO\nCOMPLY", 0, 'C', false, 1);
+
+        $labels = ['Region', 'OLT Name', 'Cluster Name', 'Cluster ID'];
+        $values = [$region, $oltName !== '' ? $oltName : '-', $clusterName, $clusterCode !== '' ? $clusterCode : (string) ($cluster['id_myrep_cluster'] ?? '-')];
+        for ($i = 0; $i < 4; $i++) {
+            $y = $top + ($i * 6);
+            $pdf->Rect($left + 92, $y, 30, 6);
+            $pdf->Rect($left + 122, $y, 72, 6);
+            $pdf->SetFont('helvetica', 'B', 8);
+            $pdf->SetXY($left + 93, $y + 1.2);
+            $pdf->Cell(28, 3, $labels[$i], 0, 0, 'L');
+            $pdf->SetFont('helvetica', '', 8);
+            $pdf->SetXY($left + 123, $y + 1.2);
+            $pdf->Cell(70, 3, $values[$i], 0, 0, 'L');
+        }
+
+        $pdf->Rect($left, $top + $headerHeight, 24, 8);
+        $pdf->Rect($left + 24, $top + $headerHeight, 170, 8);
+        $pdf->SetFont('helvetica', 'B', 14);
+        $pdf->SetXY($left, $top + $headerHeight + 1);
+        $pdf->Cell(24, 5, $sectionTitle, 0, 0, 'C');
+        $pdf->SetFont('helvetica', 'B', 8);
+        $pdf->SetXY($left + 26, $top + $headerHeight + 1);
+        $pdf->Cell(60, 3, 'Foto Comply Approved', 0, 0, 'L');
+        $pdf->SetFont('helvetica', '', 7);
+        $pdf->SetXY($left + 26, $top + $headerHeight + 4.5);
+        $pdf->Cell(120, 3, 'Cluster: ' . $clusterName, 0, 0, 'L');
     }
 
-    private function toPdfImagePath($relativePath)
+    private function renderComplyPdfPhotos($pdf, $photos)
+    {
+        $startY = 42;
+        $leftX = 8;
+        $rightX = 106;
+        $tileWidth = 90;
+        $tileHeight = 72;
+        $imageHeight = 60;
+        $rowGap = 6;
+
+        foreach (array_values($photos) as $index => $photo) {
+            $column = $index % 2;
+            $row = (int) floor($index / 2);
+            $x = $column === 0 ? $leftX : $rightX;
+            $y = $startY + ($row * ($tileHeight + $rowGap));
+
+            $description = trim((string) ($photo['comply_label'] ?? '')) !== '' ? (string) $photo['comply_label'] : (string) ($photo['file_name'] ?? 'Foto Comply');
+            $caption = trim((string) ($photo['caption'] ?? ''));
+            $metaLine = $caption !== '' ? $caption : ('Comply - ' . $description);
+            $imagePath = $this->resolvePdfImageFile((string) ($photo['file_path'] ?? ''));
+
+            $pdf->Rect($x, $y, $tileWidth, $tileHeight);
+            $pdf->Rect($x, $y, $tileWidth, $imageHeight);
+            $pdf->Rect($x, $y + $imageHeight, $tileWidth, 6);
+            $pdf->Rect($x, $y + $imageHeight + 6, $tileWidth, 6);
+
+            if ($imagePath !== '') {
+                try {
+                    $pdf->Image($imagePath, $x + 1.5, $y + 1.5, $tileWidth - 3, $imageHeight - 3, '', '', '', false, 150, '', false, false, 1, false, false, false);
+                } catch (\Throwable $e) {
+                    $pdf->SetFont('helvetica', '', 8);
+                    $pdf->SetXY($x + 4, $y + 26);
+                    $pdf->Cell($tileWidth - 8, 5, 'Gagal memuat gambar', 0, 0, 'C');
+                }
+            } else {
+                $pdf->SetFont('helvetica', '', 8);
+                $pdf->SetXY($x + 4, $y + 26);
+                $pdf->Cell($tileWidth - 8, 5, 'File foto tidak ditemukan', 0, 0, 'C');
+            }
+
+            $pdf->SetFont('helvetica', 'B', 8);
+            $pdf->SetXY($x + 1, $y + $imageHeight + 1.2);
+            $pdf->Cell($tileWidth - 2, 4, 'Description: ' . $description, 0, 0, 'C');
+            $pdf->SetFont('helvetica', '', 7);
+            $pdf->SetXY($x + 1, $y + $imageHeight + 7.2);
+            $pdf->Cell($tileWidth - 2, 4, $metaLine, 0, 0, 'C');
+        }
+    }
+
+    private function resolvePdfImageFile($relativePath)
     {
         $relativePath = trim((string) $relativePath);
         if ($relativePath === '') {
@@ -791,7 +804,65 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             return '';
         }
 
-        return 'file:///' . str_replace('\\', '/', $fullPath);
+        if ((int) @filesize($fullPath) <= 0) {
+            return '';
+        }
+
+        $extension = strtolower((string) pathinfo($fullPath, PATHINFO_EXTENSION));
+        if (!in_array($extension, ['jpg', 'jpeg', 'png'], true)) {
+            return '';
+        }
+
+        if ($extension === 'png' && $this->isPngWithAlphaChannel($fullPath)) {
+            return '';
+        }
+
+        if (@getimagesize($fullPath) === false) {
+            return '';
+        }
+
+        return $fullPath;
+    }
+
+    private function resolvePdfLogoFile($relativePaths)
+    {
+        foreach ((array) $relativePaths as $relativePath) {
+            $resolvedPath = $this->resolvePdfImageFile((string) $relativePath);
+            if ($resolvedPath !== '') {
+                return $resolvedPath;
+            }
+        }
+
+        return '';
+    }
+
+    private function isPngWithAlphaChannel($fullPath)
+    {
+        $handle = @fopen($fullPath, 'rb');
+        if ($handle === false) {
+            return false;
+        }
+
+        $header = fread($handle, 29);
+        fclose($handle);
+
+        if ($header === false || strlen($header) < 29) {
+            return false;
+        }
+
+        $signature = substr($header, 0, 8);
+        if ($signature !== "\x89PNG\x0D\x0A\x1A\x0A") {
+            return false;
+        }
+
+        $chunkType = substr($header, 12, 4);
+        if ($chunkType !== 'IHDR') {
+            return false;
+        }
+
+        $colorType = ord($header[25]);
+
+        return in_array($colorType, [4, 6], true);
     }
 
     private function resolveTcpdfPath()
