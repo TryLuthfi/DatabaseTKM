@@ -770,12 +770,41 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             'D:/XAMPP/phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
             dirname(FCPATH) . '/phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
             FCPATH . '../phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
+            'D:/XAMPP/phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
+            'D:/XAMPP/htdocs/DatabaseTKM/application/third_party/tcpdf/tcpdf.php',
         ];
 
         foreach ($candidatePaths as $candidatePath) {
-            $resolvedPath = realpath(str_replace(['\\', '/'], DIRECTORY_SEPARATOR, (string) $candidatePath));
+            $normalizedPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, (string) $candidatePath);
+            if (is_file($normalizedPath)) {
+                return $normalizedPath;
+            }
+
+            $resolvedPath = realpath($normalizedPath);
             if ($resolvedPath !== false && is_file($resolvedPath)) {
                 return $resolvedPath;
+            }
+        }
+
+        $scanDirectories = [
+            'D:/XAMPP/phpMyAdmin/vendor/tecnickcom/tcpdf',
+            dirname(FCPATH) . '/phpMyAdmin/vendor/tecnickcom/tcpdf',
+            FCPATH . '../phpMyAdmin/vendor/tecnickcom/tcpdf',
+        ];
+
+        foreach ($scanDirectories as $scanDirectory) {
+            $normalizedDirectory = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, (string) $scanDirectory);
+            if (!is_dir($normalizedDirectory)) {
+                $resolvedDirectory = realpath($normalizedDirectory);
+                if ($resolvedDirectory === false || !is_dir($resolvedDirectory)) {
+                    continue;
+                }
+                $normalizedDirectory = $resolvedDirectory;
+            }
+
+            $tcpdfFile = rtrim($normalizedDirectory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'tcpdf.php';
+            if (is_file($tcpdfFile)) {
+                return $tcpdfFile;
             }
         }
 
