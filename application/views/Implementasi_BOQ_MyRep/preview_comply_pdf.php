@@ -1,31 +1,294 @@
-<div class="content-wrapper">
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="d-flex justify-content-between align-items-center flex-wrap">
-                <div>
-                    <h1 class="m-0">Preview PDF Foto Comply</h1>
-                    <div class="text-muted small"><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div>
-                </div>
-                <div>
-                    <a href="<?= htmlspecialchars((string) ($pdfUrl ?? '#')) ?>" target="_blank" class="btn btn-outline-dark btn-sm">
-                        <i class="fas fa-external-link-alt mr-1"></i>Buka PDF Langsung
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
+<style>
+    .comply-preview-wrap {
+        background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+        min-height: calc(100vh - 57px);
+        padding: 1.5rem 0 2rem;
+    }
 
-    <section class="content">
-        <div class="container-fluid">
-            <div class="card shadow-sm">
-                <div class="card-body p-2">
-                    <iframe
-                        src="<?= htmlspecialchars((string) ($pdfUrl ?? '#')) ?>"
-                        title="Preview PDF Foto Comply"
-                        style="width: 100%; height: 88vh; border: 0; border-radius: 8px; background: #f8fafc;">
-                    </iframe>
+    .comply-preview-shell {
+        width: min(1120px, calc(100% - 24px));
+        margin: 0 auto;
+    }
+
+    .comply-preview-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .comply-preview-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.1;
+    }
+
+    .comply-preview-subtitle {
+        font-size: .82rem;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-top: .25rem;
+    }
+
+    .comply-print-page {
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
+        padding: 16px;
+        margin-bottom: 18px;
+    }
+
+    .comply-print-header,
+    .comply-print-section-head {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .comply-print-header td,
+    .comply-print-section-head td,
+    .comply-print-tile {
+        border: 1px solid #111827;
+    }
+
+    .comply-print-header__logos {
+        width: 36%;
+        text-align: center;
+        vertical-align: middle;
+        padding: 8px;
+    }
+
+    .comply-print-header__logos img {
+        max-height: 44px;
+        max-width: 150px;
+        object-fit: contain;
+        vertical-align: middle;
+    }
+
+    .comply-print-header__project {
+        margin-top: 6px;
+        font-size: 1.7rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .comply-print-header__center {
+        width: 14%;
+        font-size: 1.35rem;
+        font-weight: 800;
+        text-align: center;
+        vertical-align: middle;
+        padding: 8px;
+    }
+
+    .comply-print-header__meta {
+        width: 50%;
+        padding: 0;
+    }
+
+    .comply-print-header__meta table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .comply-print-header__meta td {
+        border: 1px solid #111827;
+        padding: 4px 6px;
+        font-size: .9rem;
+    }
+
+    .comply-print-section-head {
+        margin-top: 10px;
+    }
+
+    .comply-print-section-head td {
+        padding: 6px 8px;
+    }
+
+    .comply-print-section-head__title {
+        width: 18%;
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: 800;
+    }
+
+    .comply-print-section-head__info {
+        font-size: .92rem;
+    }
+
+    .comply-print-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px 18px;
+        margin-top: 16px;
+    }
+
+    .comply-print-tile {
+        padding: 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .comply-print-tile__image {
+        height: 500px;
+        border-bottom: 1px solid #111827;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+        background: #fff;
+    }
+
+    .comply-print-tile__image img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .comply-print-tile__desc,
+    .comply-print-tile__caption {
+        text-align: center;
+        padding: 6px 8px;
+        font-size: .92rem;
+    }
+
+    .comply-print-tile__desc {
+        font-weight: 800;
+        border-bottom: 1px solid #111827;
+    }
+
+    .comply-print-empty {
+        color: #64748b;
+        font-size: .95rem;
+        text-align: center;
+        padding: 1.5rem;
+        border: 1px dashed #cbd5e1;
+    }
+
+    @media print {
+        .main-header,
+        .main-sidebar,
+        .content-header,
+        .main-footer,
+        .comply-preview-toolbar {
+            display: none !important;
+        }
+
+        .content-wrapper,
+        .comply-preview-wrap {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            min-height: auto !important;
+        }
+
+        .comply-preview-shell {
+            width: 100% !important;
+            margin: 0 !important;
+        }
+
+        .comply-print-page {
+            box-shadow: none;
+            border: 0;
+            margin: 0 0 10px;
+            padding: 8px;
+            page-break-after: always;
+        }
+
+        .comply-print-page:last-child {
+            page-break-after: auto;
+        }
+    }
+</style>
+
+<?php
+$logoTkm = base_url('assets/dist/img/logotkmsolid.png');
+$logoMyrep = base_url('assets/dist/img/logoweb.png');
+$clusterRegion = (string) ($cluster['regional_name'] ?? '-');
+$clusterOlt = (string) ($cluster['nama_olt'] ?? '-');
+$clusterName = (string) ($cluster['cluster_name'] ?? '-');
+$clusterCode = (string) (!empty($cluster['cluster_code']) ? $cluster['cluster_code'] : ($cluster['id_myrep_cluster'] ?? '-'));
+?>
+
+<div class="content-wrapper">
+    <div class="comply-preview-wrap">
+        <div class="comply-preview-shell">
+            <div class="comply-preview-toolbar">
+                <div>
+                    <div class="comply-preview-title">Preview Foto Comply</div>
+                    <div class="comply-preview-subtitle"><?= htmlspecialchars($clusterName) ?></div>
+                </div>
+                <div class="d-flex align-items-center" style="gap:.5rem;">
+                    <?php if (!empty($tcpdfAvailable)): ?>
+                        <a href="<?= htmlspecialchars((string) ($pdfUrl ?? '#')) ?>" target="_blank" class="btn btn-outline-dark btn-sm">
+                            <i class="fas fa-file-pdf mr-1"></i>Buka PDF
+                        </a>
+                    <?php endif; ?>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="window.print();">
+                        <i class="fas fa-print mr-1"></i>Print / Save PDF
+                    </button>
                 </div>
             </div>
+
+            <?php foreach (($complyGroups ?? []) as $sectionTitle => $photos): ?>
+                <?php $photoChunks = array_chunk(array_values($photos), 6); ?>
+                <?php foreach ($photoChunks as $photoChunk): ?>
+                    <div class="comply-print-page">
+                        <table class="comply-print-header">
+                            <tr>
+                                <td class="comply-print-header__logos">
+                                    <img src="<?= htmlspecialchars($logoTkm) ?>" alt="TKM Logo">
+                                    <img src="<?= htmlspecialchars($logoMyrep) ?>" alt="MyRep Logo">
+                                    <div class="comply-print-header__project">EMR FTTH PROJECT</div>
+                                </td>
+                                <td class="comply-print-header__center">FOTO COMPLY</td>
+                                <td class="comply-print-header__meta">
+                                    <table>
+                                        <tr><td><strong>Region</strong></td><td><?= htmlspecialchars($clusterRegion) ?></td></tr>
+                                        <tr><td><strong>OLT Name</strong></td><td><?= htmlspecialchars($clusterOlt !== '' ? $clusterOlt : '-') ?></td></tr>
+                                        <tr><td><strong>Cluster Name</strong></td><td><?= htmlspecialchars($clusterName) ?></td></tr>
+                                        <tr><td><strong>Cluster ID</strong></td><td><?= htmlspecialchars($clusterCode) ?></td></tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table class="comply-print-section-head">
+                            <tr>
+                                <td class="comply-print-section-head__title"><?= htmlspecialchars((string) $sectionTitle) ?></td>
+                                <td class="comply-print-section-head__info">
+                                    <strong>Foto Comply Approved</strong><br>
+                                    Cluster: <?= htmlspecialchars($clusterName) ?>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <div class="comply-print-grid">
+                            <?php foreach ($photoChunk as $photo): ?>
+                                <?php
+                                $photoUrl = base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/');
+                                $description = trim((string) ($photo['comply_label'] ?? '')) !== '' ? (string) $photo['comply_label'] : (string) ($photo['file_name'] ?? 'Foto Comply');
+                                $caption = trim((string) ($photo['caption'] ?? ''));
+                                $metaLine = $caption !== '' ? $caption : ('Comply - ' . $description);
+                                ?>
+                                <div class="comply-print-tile">
+                                    <div class="comply-print-tile__image">
+                                        <img src="<?= htmlspecialchars($photoUrl) ?>" alt="<?= htmlspecialchars($description) ?>">
+                                    </div>
+                                    <div class="comply-print-tile__desc">Description: <?= htmlspecialchars($description) ?></div>
+                                    <div class="comply-print-tile__caption"><?= htmlspecialchars($metaLine) ?></div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endforeach; ?>
+
+            <?php if (empty($complyGroups)): ?>
+                <div class="comply-print-empty">Belum ada foto comply APPROVED yang bisa dipreview.</div>
+            <?php endif; ?>
         </div>
-    </section>
+    </div>
 </div>

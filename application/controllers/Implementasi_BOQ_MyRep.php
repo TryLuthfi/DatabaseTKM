@@ -103,8 +103,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         if (!class_exists('TCPDF')) {
             $tcpdfPath = $this->resolveTcpdfPath();
             if ($tcpdfPath === '') {
-                $this->session->set_flashdata('error', 'Library PDF TCPDF tidak ditemukan di server.');
-                redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane');
+                redirect('Implementasi_BOQ_MyRep/previewComplyPdf/' . $clusterId);
                 return;
             }
 
@@ -137,7 +136,41 @@ class Implementasi_BOQ_MyRep extends CI_Controller
 
     public function previewComplyPdf($clusterId = 0)
     {
-        redirect('Implementasi_BOQ_MyRep/printComplyPdf/' . (int) $clusterId);
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        $cluster = $this->MImplementasi_BOQ_MyRep->getClusterById($clusterId);
+        if (empty($cluster)) {
+            $this->session->set_flashdata('error', 'Data implementasi cluster tidak ditemukan.');
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        $complyGroups = $this->MImplementasi_BOQ_MyRep->getApprovedComplyPrintGroups($clusterId);
+        if (empty($complyGroups)) {
+            $this->session->set_flashdata('error', 'Belum ada foto comply APPROVED yang bisa dipreview.');
+            redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane');
+            return;
+        }
+
+        $data['title'] = 'Preview Foto Comply';
+        $data['cluster'] = $cluster;
+        $data['complyGroups'] = $complyGroups;
+        $data['pdfUrl'] = base_url('Implementasi_BOQ_MyRep/printComplyPdf/' . $clusterId);
+        $data['tcpdfAvailable'] = class_exists('TCPDF') || $this->resolveTcpdfPath() !== '';
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Implementasi_BOQ_MyRep/preview_comply_pdf', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
     }
 
     public function saveProgress()
