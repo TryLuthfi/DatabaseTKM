@@ -119,7 +119,9 @@ $historyRows = [];
 $historyRunningAchieve = array_fill_keys($historyTypeOrder, 0);
 $historyFinalAchieve = array_fill_keys($historyTypeOrder, 0);
 $galleryRows = [];
-$galleryGroups = [];
+$implementationGalleryGroups = [];
+$complyGalleryGroups = [];
+$complySelectableItems = [];
 
 if (!empty($historyTypeOrder)) {
     $initialRow = [
@@ -145,6 +147,10 @@ foreach ($historyDateRows as $progressDate => $entry) {
 }
 
 foreach ($compareRows as $row) {
+    if (!empty($row['comply_enabled'])) {
+        $complySelectableItems[] = $row;
+    }
+
     $baselineItemId = (int) ($row['id_boq_baseline_item'] ?? 0);
     $itemHistoryRows = $historyMap[$baselineItemId] ?? [];
     foreach ($itemHistoryRows as $entry) {
@@ -158,6 +164,11 @@ foreach ($compareRows as $row) {
                 'file_name' => (string) ($photo['file_name'] ?? 'Foto Progress'),
                 'file_path' => (string) ($photo['file_path'] ?? ''),
                 'caption' => (string) ($photo['caption'] ?? ''),
+                'photo_category' => (string) ($photo['photo_category'] ?? 'HARIAN'),
+                'comply_label' => (string) ($photo['comply_label'] ?? ''),
+                'id_progress_photo' => (int) ($photo['id_progress_photo'] ?? 0),
+                'status_photo' => (string) ($photo['status_photo'] ?? ''),
+                'review_remark' => (string) ($photo['review_remark'] ?? ''),
             ];
         }
     }
@@ -169,16 +180,22 @@ foreach ($galleryRows as $galleryRow) {
         $galleryType = 'LAINNYA';
     }
 
-    $galleryKey = $galleryType . '||' . (string) ($galleryRow['item_name'] ?? '-');
-    if (!isset($galleryGroups[$galleryType])) {
-        $galleryGroups[$galleryType] = [];
+    $galleryCategory = strtoupper(trim((string) ($galleryRow['photo_category'] ?? 'HARIAN')));
+    $galleryBucket = $galleryCategory === 'COMPLY' ? 'comply' : 'implementation';
+    $galleryKey = $galleryType . '||' . $galleryCategory . '||' . (string) ($galleryRow['item_name'] ?? '-') . '||' . (string) ($galleryRow['comply_label'] ?? '');
+    $targetGroups = $galleryBucket === 'comply' ? $complyGalleryGroups : $implementationGalleryGroups;
+
+    if (!isset($targetGroups[$galleryType])) {
+        $targetGroups[$galleryType] = [];
     }
 
-    if (!isset($galleryGroups[$galleryType][$galleryKey])) {
-        $galleryGroups[$galleryType][$galleryKey] = [
+    if (!isset($targetGroups[$galleryType][$galleryKey])) {
+        $targetGroups[$galleryType][$galleryKey] = [
             'item_name' => (string) ($galleryRow['item_name'] ?? '-'),
             'item_type' => $galleryType,
+            'photo_category' => $galleryCategory,
             'photo_type' => (string) ($galleryRow['photo_type'] ?? ''),
+            'comply_label' => (string) ($galleryRow['comply_label'] ?? ''),
             'dates' => [],
             'remarks' => [],
             'photos' => [],
@@ -186,19 +203,30 @@ foreach ($galleryRows as $galleryRow) {
     }
 
     if (!empty($galleryRow['progress_date']) && $galleryRow['progress_date'] !== '-') {
-        $galleryGroups[$galleryType][$galleryKey]['dates'][] = (string) $galleryRow['progress_date'];
+        $targetGroups[$galleryType][$galleryKey]['dates'][] = (string) $galleryRow['progress_date'];
     }
 
     $remarkText = trim((string) (($galleryRow['caption'] ?? '') !== '' ? $galleryRow['caption'] : ($galleryRow['remark_progress'] ?? '')));
     if ($remarkText !== '') {
-        $galleryGroups[$galleryType][$galleryKey]['remarks'][] = $remarkText;
+        $targetGroups[$galleryType][$galleryKey]['remarks'][] = $remarkText;
     }
 
-    $galleryGroups[$galleryType][$galleryKey]['photos'][] = [
+    $targetGroups[$galleryType][$galleryKey]['photos'][] = [
+        'id_progress_photo' => (int) ($galleryRow['id_progress_photo'] ?? 0),
         'file_name' => (string) ($galleryRow['file_name'] ?? 'Foto Progress'),
         'file_path' => (string) ($galleryRow['file_path'] ?? ''),
         'caption' => (string) ($galleryRow['caption'] ?? ''),
+        'photo_category' => $galleryCategory,
+        'comply_label' => (string) ($galleryRow['comply_label'] ?? ''),
+        'status_photo' => (string) ($galleryRow['status_photo'] ?? ''),
+        'review_remark' => (string) ($galleryRow['review_remark'] ?? ''),
     ];
+
+    if ($galleryBucket === 'comply') {
+        $complyGalleryGroups = $targetGroups;
+    } else {
+        $implementationGalleryGroups = $targetGroups;
+    }
 }
 
 $qtyTargetTotal = (float) ($cluster['target_qty_total'] ?? 0);
@@ -222,6 +250,23 @@ $overallPercent = (int) round(($qtyPercent + $photoPercent + $itemPercent) / 3);
 $agingWorkingDays = !empty($cluster['drm_date']) ? implCountWorkingDays((string) $cluster['drm_date']) : 0;
 $agingTargetDate = !empty($cluster['drm_date']) ? implAddWorkingDays((string) $cluster['drm_date'], 23) : null;
 $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
+
+if (!function_exists('implPhotoReviewBadgeClass')) {
+    function implPhotoReviewBadgeClass($status)
+    {
+        switch (strtoupper(trim((string) $status))) {
+            case 'APPROVED':
+                return 'success';
+            case 'REJECTED':
+                return 'danger';
+            case 'UPLOADED':
+            case 'ON REVIEW':
+                return 'warning';
+            default:
+                return 'secondary';
+        }
+    }
+}
 ?>
 
 <style>
@@ -701,6 +746,19 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
         background: #fff;
     }
 
+    .impl-gallery-photo-card--shell {
+        border: 1px solid #dbe7f3;
+        border-radius: 14px;
+        background: #fff;
+        overflow: hidden;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, .05);
+    }
+
+    .impl-gallery-photo-card__meta {
+        padding: .7rem .8rem .8rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
     .impl-gallery-photo-card img {
         width: 100%;
         height: 180px;
@@ -732,6 +790,34 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
     .impl-gallery-table__date {
         min-width: 110px;
         font-size: .92rem;
+    }
+
+    .impl-comply-upload-card {
+        border: 1px solid #dbe7f3;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #fffdf5, #ffffff);
+        box-shadow: 0 14px 32px rgba(15, 23, 42, .05);
+    }
+
+    .impl-comply-upload-card__title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .impl-comply-upload-card__note {
+        font-size: .83rem;
+        color: #64748b;
+    }
+
+    .impl-comply-hint {
+        min-height: 44px;
+        border-radius: 12px;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        padding: .75rem .9rem;
+        color: #475569;
+        font-size: .84rem;
     }
 
     @media (max-width: 767.98px) {
@@ -1105,7 +1191,10 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                             <a class="nav-link" id="impl-breakdown-tab" data-toggle="tab" href="#impl-breakdown-pane" role="tab">Breakdown</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="impl-gallery-tab" data-toggle="tab" href="#impl-gallery-pane" role="tab">Galeri Foto</a>
+                            <a class="nav-link" id="impl-gallery-tab" data-toggle="tab" href="#impl-gallery-pane" role="tab">Foto Implementasi</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="impl-comply-tab" data-toggle="tab" href="#impl-comply-pane" role="tab">FOTO COMPLY</a>
                         </li>
                     </ul>
                     <div class="tab-content border border-top-0 rounded-bottom p-3">
@@ -1219,7 +1308,15 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                                                 <td><?= implHistoryNumber((float) ($row['qty_boq'] ?? 0)) ?></td>
                                                 <td><?= implHistoryNumber((float) ($row['progress_qty'] ?? 0)) ?></td>
                                                 <td><?= implHistoryNumber((float) ($row['remaining_qty'] ?? 0)) ?></td>
-                                                <td><?= implHistoryNumber((int) ($row['target_foto_required'] ?? 0)) ?></td>
+                                                <td>
+                                                    <?= implHistoryNumber((int) (($row['target_foto_required'] ?? 0) + ($row['target_comply_photo_required'] ?? 0))) ?>
+                                                    <div class="small text-muted">
+                                                        Harian <?= implHistoryNumber((int) ($row['target_foto_required'] ?? 0)) ?>
+                                                        <?php if ((int) ($row['target_comply_photo_required'] ?? 0) > 0): ?>
+                                                            | Comply <?= implHistoryNumber((int) ($row['target_comply_photo_required'] ?? 0)) ?>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </td>
                                                 <td><?= implHistoryNumber((int) ($row['uploaded_photos'] ?? 0)) ?></td>
                                                 <td><span class="badge badge-<?= $badgeClass ?>"><?= htmlspecialchars($status) ?></span></td>
                                                 <td><?= !empty($row['last_progress_date']) ? htmlspecialchars((string) $row['last_progress_date']) : '-' ?></td>
@@ -1233,7 +1330,13 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                                                         data-item-name="<?= htmlspecialchars((string) ($row['item_name'] ?? ''), ENT_QUOTES) ?>"
                                                         data-item-type="<?= htmlspecialchars((string) ($row['item_type'] ?? ''), ENT_QUOTES) ?>"
                                                         data-qty-target="<?= htmlspecialchars((string) implHistoryNumber((float) ($row['qty_boq'] ?? 0)), ENT_QUOTES) ?>"
-                                                        data-photo-target="<?= (int) ($row['target_foto_required'] ?? 0) ?>">
+                                                        data-photo-target="<?= (int) ($row['target_foto_required'] ?? 0) ?>"
+                                                        data-comply-enabled="<?= !empty($row['comply_enabled']) ? '1' : '0' ?>"
+                                                        data-comply-mode="<?= htmlspecialchars((string) ($row['comply_entry_limit_mode'] ?? 'NONE'), ENT_QUOTES) ?>"
+                                                        data-comply-photo-per-label="<?= (int) ($row['comply_photo_per_label'] ?? 0) ?>"
+                                                        data-comply-label-prefix="<?= htmlspecialchars((string) ($row['comply_label_prefix'] ?? ($row['item_name'] ?? 'Item')), ENT_QUOTES) ?>"
+                                                        data-comply-label-placeholder="<?= htmlspecialchars((string) ($row['comply_label_placeholder'] ?? 'Nama / nomor item comply'), ENT_QUOTES) ?>"
+                                                        data-comply-requirement-text="<?= htmlspecialchars((string) ($row['comply_requirement_text'] ?? ''), ENT_QUOTES) ?>">
                                                         Input Progress
                                                     </button>
                                                     <button
@@ -1257,8 +1360,8 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                         </div>
 
                         <div class="tab-pane fade" id="impl-gallery-pane" role="tabpanel">
-                            <?php if (!empty($galleryGroups)): ?>
-                                <?php foreach ($galleryGroups as $galleryType => $galleryItems): ?>
+                            <?php if (!empty($implementationGalleryGroups)): ?>
+                                <?php foreach ($implementationGalleryGroups as $galleryType => $galleryItems): ?>
                                     <div class="impl-gallery-section">
                                         <div class="impl-gallery-section__title">Kategori <?= htmlspecialchars((string) $galleryType) ?></div>
                                         <div class="table-responsive">
@@ -1284,6 +1387,9 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                                                             <td class="impl-gallery-table__no"><?= $galleryIndex++ ?></td>
                                                             <td class="impl-gallery-table__item">
                                                                 <?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-')) ?>
+                                                                <div class="small text-muted">
+                                                                    <?= htmlspecialchars((string) (($galleryItem['photo_category'] ?? 'HARIAN') === 'COMPLY' ? 'Foto Comply' : 'Foto Implementasi Harian')) ?>
+                                                                </div>
                                                             </td>
                                                             <td class="impl-gallery-table__photo">
                                                                 <div class="impl-gallery-photo-grid" data-lightbox-group="gallery-<?= md5((string) (($galleryType ?? '') . '|' . ($galleryItem['item_name'] ?? '') . '|' . $galleryIndex)) ?>">
@@ -1309,6 +1415,169 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <div class="text-center text-muted py-4">Belum ada foto implementasi yang diupload.</div>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="tab-pane fade" id="impl-comply-pane" role="tabpanel">
+                            <div class="card border-0 mb-3 impl-comply-upload-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                                        <div>
+                                            <div class="impl-comply-upload-card__title">Upload Foto Comply</div>
+                                            <div class="impl-comply-upload-card__note">Pilih item, isi nama / nomor, lalu upload foto comply untuk approval HO.</div>
+                                        </div>
+                                        <a href="<?= base_url('Implementasi_BOQ_MyRep/printComplyPdf/' . (int) ($cluster['id_myrep_cluster'] ?? 0)) ?>" target="_blank" class="btn btn-outline-dark btn-sm">
+                                            <i class="fas fa-file-pdf mr-1"></i>Print PDF Foto Comply
+                                        </a>
+                                    </div>
+                                    <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/uploadComplyPhoto') ?>" enctype="multipart/form-data">
+                                        <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label>Item Comply</label>
+                                                    <select name="baseline_item_id" class="form-control js-comply-upload-item" required>
+                                                        <option value="">Pilih item comply</option>
+                                                        <?php foreach ($complySelectableItems as $row): ?>
+                                                            <option
+                                                                value="<?= (int) ($row['id_boq_baseline_item'] ?? 0) ?>"
+                                                                data-comply-photo-per-label="<?= (int) ($row['comply_photo_per_label'] ?? 1) ?>"
+                                                                data-comply-label-prefix="<?= htmlspecialchars((string) ($row['comply_label_prefix'] ?? ($row['item_name'] ?? 'Item')), ENT_QUOTES) ?>"
+                                                                data-comply-label-placeholder="<?= htmlspecialchars((string) ($row['comply_label_placeholder'] ?? 'Nama / nomor item comply'), ENT_QUOTES) ?>"
+                                                                data-comply-requirement-text="<?= htmlspecialchars((string) ($row['comply_requirement_text'] ?? ''), ENT_QUOTES) ?>">
+                                                                <?= htmlspecialchars((string) ($row['item_name'] ?? '-')) ?><?= !empty($row['item_type']) ? ' - ' . htmlspecialchars((string) ($row['item_type'] ?? '-')) : '' ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label>Nama / Nomor</label>
+                                                    <input type="text" name="comply_label" class="form-control js-comply-upload-label" placeholder="Pilih item terlebih dahulu" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label>Aturan Foto</label>
+                                                    <div class="impl-comply-hint js-comply-upload-hint">Pilih item dulu untuk melihat requirement comply.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group mb-3">
+                                            <label>Foto Comply</label>
+                                            <div class="impl-dropzone js-dropzone">
+                                                <input type="file" name="comply_photos_single[]" class="js-dropzone-input" multiple accept=".jpg,.jpeg,.png,.webp" required>
+                                                <div class="impl-dropzone-content">
+                                                    <div class="mb-2"><i class="fas fa-camera-retro fa-2x text-primary"></i></div>
+                                                    <div class="font-weight-bold">Upload foto comply</div>
+                                                    <div class="text-muted small">Pilih beberapa foto sesuai aturan item comply</div>
+                                                    <div class="impl-dropzone-file js-dropzone-label">Belum ada foto comply dipilih</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <button type="submit" class="btn btn-primary btn-sm">Upload Foto Comply</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <?php if (!empty($complyGalleryGroups)): ?>
+                                <?php foreach ($complyGalleryGroups as $galleryType => $galleryItems): ?>
+                                    <div class="impl-gallery-section">
+                                        <div class="impl-gallery-section__title">Kategori <?= htmlspecialchars((string) $galleryType) ?></div>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered impl-gallery-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width:60px;">No</th>
+                                                        <th style="width:140px;">Item</th>
+                                                        <th style="width:180px;">Nama / Nomor</th>
+                                                        <th>Dokumentasi</th>
+                                                        <th style="width:220px;">Remarks</th>
+                                                        <th style="width:130px;">Tgl Upload</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php $galleryIndex = 1; ?>
+                                                    <?php foreach ($galleryItems as $galleryItem): ?>
+                                                        <?php
+                                                        $dates = array_values(array_unique($galleryItem['dates']));
+                                                        sort($dates);
+                                                        $remarks = array_values(array_unique($galleryItem['remarks']));
+                                                        ?>
+                                                        <tr>
+                                                            <td class="impl-gallery-table__no"><?= $galleryIndex++ ?></td>
+                                                            <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['item_name'] ?? '-')) ?></td>
+                                                            <td class="impl-gallery-table__item"><?= htmlspecialchars((string) ($galleryItem['comply_label'] ?? '-')) ?></td>
+                                                            <td class="impl-gallery-table__photo">
+                                                                <div class="impl-gallery-photo-grid" data-lightbox-group="comply-gallery-<?= md5((string) (($galleryType ?? '') . '|' . ($galleryItem['item_name'] ?? '') . '|' . ($galleryItem['comply_label'] ?? '') . '|' . $galleryIndex)) ?>">
+                                                                    <?php foreach (($galleryItem['photos'] ?? []) as $photo): ?>
+                                                                        <?php
+                                                                        $photoStatus = strtoupper(trim((string) ($photo['status_photo'] ?? 'UPLOADED')));
+                                                                        $photoBadgeClass = $photoStatus === 'APPROVED' ? 'success' : ($photoStatus === 'REJECTED' ? 'danger' : 'warning');
+                                                                        $photoCaption = (string) (($photo['caption'] ?? '') !== '' ? $photo['caption'] : ($photo['file_name'] ?? 'Foto Comply'));
+                                                                        $photoLabelForAction = (string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-') . ' - ' . $photoCaption);
+                                                                        ?>
+                                                                        <div class="impl-gallery-photo-card--shell">
+                                                                            <a href="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" class="impl-gallery-photo-card js-open-lightbox" data-image="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
+                                                                                <img src="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Comply')) ?>">
+                                                                            </a>
+                                                                            <div class="impl-gallery-photo-card__meta">
+                                                                                <div class="small font-weight-bold text-dark mb-2"><?= htmlspecialchars($photoCaption) ?></div>
+                                                                                <div class="mb-2">
+                                                                                    <span class="badge badge-<?= $photoBadgeClass ?>"><?= htmlspecialchars($photoStatus) ?></span>
+                                                                                </div>
+                                                                                <?php if (!empty($photo['review_remark'])): ?>
+                                                                                    <div class="small text-muted mb-2">Review: <?= htmlspecialchars((string) $photo['review_remark']) ?></div>
+                                                                                <?php endif; ?>
+                                                                                <?php if (!empty($canApprove)): ?>
+                                                                                    <div>
+                                                                                        <?php if ($photoStatus === 'UPLOADED' || $photoStatus === 'REJECTED'): ?>
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                class="btn btn-sm btn-outline-success mr-1 js-open-comply-approve"
+                                                                                                data-toggle="modal"
+                                                                                                data-target="#modal-comply-approve"
+                                                                                                data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>"
+                                                                                                data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">
+                                                                                                Approve
+                                                                                            </button>
+                                                                                        <?php endif; ?>
+                                                                                        <?php if ($photoStatus === 'UPLOADED' || $photoStatus === 'APPROVED'): ?>
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                class="btn btn-sm btn-outline-danger js-open-comply-reject"
+                                                                                                data-toggle="modal"
+                                                                                                data-target="#modal-comply-reject"
+                                                                                                data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>"
+                                                                                                data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">
+                                                                                                Reject
+                                                                                            </button>
+                                                                                        <?php endif; ?>
+                                                                                    </div>
+                                                                                <?php endif; ?>
+                                                                            </div>
+                                                                        </div>
+                                                                    <?php endforeach; ?>
+                                                                </div>
+                                                            </td>
+                                                            <td class="impl-gallery-table__remark">
+                                                                <?= !empty($remarks) ? htmlspecialchars(implode(' | ', $remarks)) : '-' ?>
+                                                            </td>
+                                                            <td class="impl-gallery-table__date">
+                                                                <?= !empty($dates) ? nl2br(htmlspecialchars(implode("\n", $dates))) : '-' ?>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="text-center text-muted py-4">Belum ada foto comply yang diupload.</div>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -1370,6 +1639,12 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                                                     data-item-type="<?= htmlspecialchars((string) ($row['item_type'] ?? '-'), ENT_QUOTES) ?>"
                                                     data-qty-target="<?= htmlspecialchars((string) implHistoryNumber((float) ($row['qty_boq'] ?? 0)), ENT_QUOTES) ?>"
                                                     data-photo-target="<?= (int) ($row['target_foto_required'] ?? 0) ?>"
+                                                    data-comply-enabled="<?= !empty($row['comply_enabled']) ? '1' : '0' ?>"
+                                                    data-comply-mode="<?= htmlspecialchars((string) ($row['comply_entry_limit_mode'] ?? 'NONE'), ENT_QUOTES) ?>"
+                                                    data-comply-photo-per-label="<?= (int) ($row['comply_photo_per_label'] ?? 0) ?>"
+                                                    data-comply-label-prefix="<?= htmlspecialchars((string) ($row['comply_label_prefix'] ?? ($row['item_name'] ?? 'Item')), ENT_QUOTES) ?>"
+                                                    data-comply-label-placeholder="<?= htmlspecialchars((string) ($row['comply_label_placeholder'] ?? 'Nama / nomor item comply'), ENT_QUOTES) ?>"
+                                                    data-comply-requirement-text="<?= htmlspecialchars((string) ($row['comply_requirement_text'] ?? ''), ENT_QUOTES) ?>"
                                                 >
                                                     <?= htmlspecialchars((string) ($row['item_name'] ?? '-')) ?><?= !empty($row['item_type']) ? ' - ' . htmlspecialchars((string) ($row['item_type'] ?? '-')) : '' ?>
                                                 </option>
@@ -1413,7 +1688,7 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <label>Target Foto</label>
+                                            <label>Target Foto Harian</label>
                                             <input type="text" class="form-control js-progress-target-photo" value="" readonly>
                                         </div>
                                     </div>
@@ -1422,11 +1697,52 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                                     <input type="file" class="js-dropzone-input js-progress-photo-input" multiple accept=".jpg,.jpeg,.png,.webp">
                                     <div class="impl-dropzone-content">
                                         <div class="mb-2"><i class="fas fa-images fa-2x text-success"></i></div>
-                                        <div class="font-weight-bold js-progress-photo-title">Upload foto item</div>
+                                        <div class="font-weight-bold js-progress-photo-title">Upload foto implementasi harian</div>
                                         <div class="text-muted small">Atau klik area ini untuk memilih beberapa foto</div>
                                         <div class="impl-dropzone-file js-dropzone-label">Belum ada foto dipilih</div>
                                     </div>
                                 </div>
+                                <div class="impl-comply-box mt-3 js-comply-box d-none">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <div class="font-weight-bold text-dark">Foto Comply</div>
+                                            <div class="small text-muted js-comply-requirement-text">Aturan comply akan muncul di sini.</div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary js-add-comply-entry d-none">
+                                            <i class="fas fa-plus-circle mr-1"></i>Tambah Entry Comply
+                                        </button>
+                                    </div>
+                                    <div class="js-comply-entry-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <template id="comply-entry-template">
+                        <div class="border rounded p-3 mb-3 js-comply-entry-card" data-entry-index="">
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <div class="form-group">
+                                        <label class="js-comply-label-title">Nomor / Nama Tiang</label>
+                                        <input type="text" class="form-control js-comply-label-input" value="">
+                                    </div>
+                                </div>
+                                <div class="col-md-7">
+                                    <div class="form-group mb-0">
+                                        <label class="js-comply-photo-label">Foto Comply</label>
+                                        <div class="impl-dropzone js-dropzone">
+                                            <input type="file" class="js-dropzone-input js-comply-photo-input" multiple accept=".jpg,.jpeg,.png,.webp">
+                                            <div class="impl-dropzone-content">
+                                                <div class="mb-2"><i class="fas fa-camera-retro fa-2x text-primary"></i></div>
+                                                <div class="font-weight-bold">Upload foto comply</div>
+                                                <div class="text-muted small">Pilih satu atau beberapa foto sesuai requirement item</div>
+                                                <div class="impl-dropzone-file js-dropzone-label">Belum ada foto comply dipilih</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <button type="button" class="btn btn-link text-danger p-0 js-remove-comply-entry">Hapus Entry</button>
                             </div>
                         </div>
                     </template>
@@ -1453,6 +1769,58 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
         </div>
     </div>
 </div>
+
+<?php if (!empty($canApprove)): ?>
+    <div class="modal fade" id="modal-comply-approve" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/approveComplyPhoto') ?>">
+                    <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                    <input type="hidden" name="photo_id" id="comply_approve_photo_id">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">Approve Foto Comply</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3"><strong>Foto:</strong> <span id="comply_approve_photo_label">-</span></div>
+                        <div class="form-group mb-0">
+                            <label>Remark Approve</label>
+                            <textarea name="review_remark" class="form-control" rows="3" placeholder="Remark approve jika diperlukan"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success btn-sm">Approve Foto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-comply-reject" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/rejectComplyPhoto') ?>">
+                    <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                    <input type="hidden" name="photo_id" id="comply_reject_photo_id">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">Reject Foto Comply</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3"><strong>Foto:</strong> <span id="comply_reject_photo_label">-</span></div>
+                        <div class="form-group mb-0">
+                            <label>Alasan Reject</label>
+                            <textarea name="review_remark" class="form-control" rows="3" required placeholder="Wajib diisi"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-danger btn-sm">Reject Foto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
 <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/deleteProgress') ?>" id="form-delete-progress" class="d-none">
     <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
@@ -1482,14 +1850,19 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
 
 <script>
     (function () {
+        var canApproveComplyPhoto = <?= !empty($canApprove) ? 'true' : 'false' ?>;
         var progressModal = document.getElementById('modal-progress');
         var progressSelector = document.querySelector('.js-progress-item-selector');
         var progressAddButton = document.querySelector('.js-add-progress-item');
         var progressList = document.querySelector('.js-progress-item-list');
         var progressEmptyState = document.querySelector('.js-progress-empty-state');
         var progressCardTemplate = document.getElementById('progress-item-card-template');
+        var complyEntryTemplate = document.getElementById('comply-entry-template');
         var deleteProgressForm = document.getElementById('form-delete-progress');
         var deleteProgressInput = document.getElementById('delete_progress_item_id');
+        var complyUploadItem = document.querySelector('.js-comply-upload-item');
+        var complyUploadLabel = document.querySelector('.js-comply-upload-label');
+        var complyUploadHint = document.querySelector('.js-comply-upload-hint');
 
         function bindDropzones() {
             var dropzones = document.querySelectorAll('.js-dropzone');
@@ -1537,12 +1910,124 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
             });
         }
 
+        function syncStandaloneComplyForm() {
+            if (!complyUploadItem || !complyUploadLabel || !complyUploadHint) {
+                return;
+            }
+
+            var selectedOption = complyUploadItem.options[complyUploadItem.selectedIndex];
+            if (!selectedOption || !selectedOption.value) {
+                complyUploadLabel.placeholder = 'Pilih item terlebih dahulu';
+                complyUploadHint.textContent = 'Pilih item dulu untuk melihat requirement comply.';
+                return;
+            }
+
+            complyUploadLabel.placeholder = selectedOption.getAttribute('data-comply-label-placeholder') || 'Nama / nomor item comply';
+            complyUploadHint.textContent = selectedOption.getAttribute('data-comply-requirement-text') || 'Upload foto comply sesuai aturan item.';
+        }
+
         function toggleProgressEmptyState() {
             if (!progressEmptyState || !progressList) {
                 return;
             }
 
             progressEmptyState.style.display = progressList.querySelectorAll('.js-progress-item-card').length > 0 ? 'none' : '';
+        }
+
+        function padComplyNumber(value) {
+            return String(value).padStart(3, '0');
+        }
+
+        function createComplyEntry(card, entryIndex, presetLabel) {
+            if (!complyEntryTemplate || !card) {
+                return null;
+            }
+
+            var baselineItemId = card.getAttribute('data-baseline-item-id') || '';
+            var complyPrefix = card.getAttribute('data-comply-label-prefix') || 'Item';
+            var complyPlaceholder = card.getAttribute('data-comply-label-placeholder') || 'Nama / nomor item comply';
+            var complyLabelTitle = complyPrefix.indexOf('Tiang') !== -1 || complyPrefix.indexOf('Pole') !== -1
+                ? 'Nomor / Nama Tiang'
+                : 'Nomor / Nama Item';
+            var entryCard = complyEntryTemplate.content.firstElementChild.cloneNode(true);
+            var labelInput = entryCard.querySelector('.js-comply-label-input');
+            var photoInput = entryCard.querySelector('.js-comply-photo-input');
+
+            entryCard.setAttribute('data-entry-index', String(entryIndex));
+            entryCard.querySelector('.js-comply-label-title').textContent = complyLabelTitle;
+            labelInput.name = 'comply_labels[' + baselineItemId + '][' + entryIndex + ']';
+            labelInput.placeholder = complyPlaceholder;
+            labelInput.value = presetLabel || (complyPrefix + ' ' + padComplyNumber(entryIndex + 1));
+            photoInput.name = 'comply_photos[' + baselineItemId + '][' + entryIndex + '][]';
+
+            return entryCard;
+        }
+
+        function syncComplyEntryIndexes(card) {
+            if (!card) {
+                return;
+            }
+
+            var baselineItemId = card.getAttribute('data-baseline-item-id') || '';
+            var complyPrefix = card.getAttribute('data-comply-label-prefix') || 'Item';
+            var entryCards = card.querySelectorAll('.js-comply-entry-card');
+            Array.prototype.forEach.call(entryCards, function (entryCard, index) {
+                entryCard.setAttribute('data-entry-index', String(index));
+                var labelInput = entryCard.querySelector('.js-comply-label-input');
+                var photoInput = entryCard.querySelector('.js-comply-photo-input');
+                if (labelInput) {
+                    labelInput.name = 'comply_labels[' + baselineItemId + '][' + index + ']';
+                    if (!labelInput.value) {
+                        labelInput.value = complyPrefix + ' ' + padComplyNumber(index + 1);
+                    }
+                }
+                if (photoInput) {
+                    photoInput.name = 'comply_photos[' + baselineItemId + '][' + index + '][]';
+                }
+            });
+        }
+
+        function syncComplyEntriesForQty(card) {
+            if (!card || card.getAttribute('data-comply-enabled') !== '1') {
+                return;
+            }
+
+            var mode = (card.getAttribute('data-comply-mode') || 'NONE').toUpperCase();
+            if (mode !== 'MATCH_QTY') {
+                return;
+            }
+
+            var qtyInput = card.querySelector('.js-progress-qty-input');
+            var entryList = card.querySelector('.js-comply-entry-list');
+            if (!qtyInput || !entryList) {
+                return;
+            }
+
+            var requiredEntries = Math.max(0, Math.ceil(parseFloat(qtyInput.value || '0')));
+            var currentEntries = entryList.querySelectorAll('.js-comply-entry-card').length;
+
+            while (currentEntries < requiredEntries) {
+                var newEntry = createComplyEntry(card, currentEntries);
+                if (newEntry) {
+                    entryList.appendChild(newEntry);
+                    currentEntries++;
+                } else {
+                    break;
+                }
+            }
+
+            while (currentEntries > requiredEntries) {
+                var lastEntry = entryList.querySelector('.js-comply-entry-card:last-child');
+                if (lastEntry) {
+                    lastEntry.remove();
+                    currentEntries--;
+                } else {
+                    break;
+                }
+            }
+
+            syncComplyEntryIndexes(card);
+            bindDropzones();
         }
 
         function addProgressItemCard(option) {
@@ -1561,14 +2046,25 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
             var itemType = option.getAttribute('data-item-type') || '-';
             var qtyTarget = option.getAttribute('data-qty-target') || '0';
             var photoTarget = option.getAttribute('data-photo-target') || '0';
+            var complyEnabled = option.getAttribute('data-comply-enabled') === '1';
+            var complyMode = option.getAttribute('data-comply-mode') || 'NONE';
+            var complyPhotoPerLabel = option.getAttribute('data-comply-photo-per-label') || '0';
+            var complyLabelPrefix = option.getAttribute('data-comply-label-prefix') || itemName;
+            var complyLabelPlaceholder = option.getAttribute('data-comply-label-placeholder') || 'Nama / nomor item comply';
+            var complyRequirementText = option.getAttribute('data-comply-requirement-text') || '';
 
             card.setAttribute('data-baseline-item-id', baselineItemId);
+            card.setAttribute('data-comply-enabled', complyEnabled ? '1' : '0');
+            card.setAttribute('data-comply-mode', complyMode);
+            card.setAttribute('data-comply-photo-per-label', complyPhotoPerLabel);
+            card.setAttribute('data-comply-label-prefix', complyLabelPrefix);
+            card.setAttribute('data-comply-label-placeholder', complyLabelPlaceholder);
             card.querySelector('.js-progress-item-title').textContent = itemName;
             card.querySelector('.js-progress-item-meta').textContent = itemType !== '-' ? itemType : 'Jenis item belum tersedia';
             card.querySelector('.js-progress-qty-label').textContent = 'Qty ' + itemName;
             card.querySelector('.js-progress-target-qty').value = qtyTarget;
             card.querySelector('.js-progress-target-photo').value = photoTarget + ' foto';
-            card.querySelector('.js-progress-photo-title').textContent = 'Upload foto ' + itemName;
+            card.querySelector('.js-progress-photo-title').textContent = 'Upload foto implementasi harian ' + itemName;
 
             var hiddenInput = card.querySelector('.js-progress-item-id-input');
             hiddenInput.name = 'progress_items[' + baselineItemId + '][id_boq_baseline_item]';
@@ -1580,7 +2076,26 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
             var photoInput = card.querySelector('.js-progress-photo-input');
             photoInput.name = 'progress_photos[' + baselineItemId + '][]';
 
+            var complyBox = card.querySelector('.js-comply-box');
+            var complyEntryList = card.querySelector('.js-comply-entry-list');
+            var complyText = card.querySelector('.js-comply-requirement-text');
+            var complyAddButton = card.querySelector('.js-add-comply-entry');
+            if (complyEnabled && complyBox && complyEntryList && complyText) {
+                complyBox.classList.remove('d-none');
+                complyText.textContent = complyRequirementText;
+                if (String(complyMode).toUpperCase() === 'FLEXIBLE' && complyAddButton) {
+                    complyAddButton.classList.remove('d-none');
+                    var initialEntry = createComplyEntry(card, 0);
+                    if (initialEntry) {
+                        complyEntryList.appendChild(initialEntry);
+                    }
+                } else if (complyAddButton) {
+                    complyAddButton.classList.add('d-none');
+                }
+            }
+
             progressList.appendChild(card);
+            syncComplyEntriesForQty(card);
             bindDropzones();
             toggleProgressEmptyState();
         }
@@ -1820,6 +2335,20 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
 
             var historyButton = event.target.closest('.js-open-history-modal');
             if (!historyButton) {
+                var approvePhotoButton = event.target.closest('.js-open-comply-approve');
+                if (approvePhotoButton) {
+                    document.getElementById('comply_approve_photo_id').value = approvePhotoButton.getAttribute('data-photo-id') || '0';
+                    document.getElementById('comply_approve_photo_label').textContent = approvePhotoButton.getAttribute('data-photo-label') || '-';
+                    return;
+                }
+
+                var rejectPhotoButton = event.target.closest('.js-open-comply-reject');
+                if (rejectPhotoButton) {
+                    document.getElementById('comply_reject_photo_id').value = rejectPhotoButton.getAttribute('data-photo-id') || '0';
+                    document.getElementById('comply_reject_photo_label').textContent = rejectPhotoButton.getAttribute('data-photo-label') || '-';
+                    return;
+                }
+
                 return;
             }
 
@@ -1854,10 +2383,34 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                 if (entry.photos && entry.photos.length) {
                     html += '<div class="impl-history-modal-photo-grid" data-lightbox-group="history-' + index + '-' + escapeAttr(historyButton.getAttribute('data-item-name') || 'item') + '">';
                     entry.photos.forEach(function (photo) {
-                        html += '<a href="<?= base_url() ?>' + (photo.file_path || '') + '" class="impl-history-modal-photo js-open-lightbox" data-image="<?= base_url() ?>' + (photo.file_path || '') + '" data-title="' + escapeAttr(historyButton.getAttribute('data-item-name') || 'Preview Foto') + '" data-caption="' + escapeAttr(photo.caption || photo.file_name || 'Foto Progress') + '">';
+                        var photoCaption = photo.caption || photo.file_name || 'Foto Progress';
+                        var photoCategory = (photo.photo_category || 'HARIAN').toUpperCase() === 'COMPLY' ? 'Foto Comply' : 'Foto Harian';
+                        var photoStatus = (photo.status_photo || ((photo.photo_category || 'HARIAN').toUpperCase() === 'COMPLY' ? 'UPLOADED' : 'APPROVED'));
+                        if (photo.comply_label) {
+                            photoCaption = photoCategory + ' - ' + photo.comply_label;
+                        } else {
+                            photoCaption = photoCategory + ' - ' + photoCaption;
+                        }
+                        html += '<div class="impl-history-modal-photo">';
+                        html += '<a href="<?= base_url() ?>' + (photo.file_path || '') + '" class="js-open-lightbox d-block" data-image="<?= base_url() ?>' + (photo.file_path || '') + '" data-title="' + escapeAttr(historyButton.getAttribute('data-item-name') || 'Preview Foto') + '" data-caption="' + escapeAttr(photoCaption) + '">';
                         html += '<img src="<?= base_url() ?>' + (photo.file_path || '') + '" alt="' + (photo.file_name || 'Foto Progress') + '">';
-                        html += '<div>' + (photo.caption || photo.file_name || 'Foto Progress') + '</div>';
+                        html += '<div>' + photoCaption + '</div>';
                         html += '</a>';
+                        html += '<div class="small mt-1"><span class="badge badge-' + (photoStatus === 'APPROVED' ? 'success' : (photoStatus === 'REJECTED' ? 'danger' : 'warning')) + '">' + photoStatus + '</span></div>';
+                        if (photo.review_remark) {
+                            html += '<div class="small text-muted mt-1">Review: ' + photo.review_remark + '</div>';
+                        }
+                        if (canApproveComplyPhoto && (photo.photo_category || '').toUpperCase() === 'COMPLY') {
+                            html += '<div class="mt-2">';
+                            if (photoStatus === 'UPLOADED' || photoStatus === 'REJECTED') {
+                                html += '<button type="button" class="btn btn-sm btn-outline-success mr-1 js-open-comply-approve" data-toggle="modal" data-target="#modal-comply-approve" data-photo-id="' + (photo.id_progress_photo || 0) + '" data-photo-label="' + escapeAttr(photoCaption) + '">Approve</button>';
+                            }
+                            if (photoStatus === 'UPLOADED' || photoStatus === 'APPROVED') {
+                                html += '<button type="button" class="btn btn-sm btn-outline-danger js-open-comply-reject" data-toggle="modal" data-target="#modal-comply-reject" data-photo-id="' + (photo.id_progress_photo || 0) + '" data-photo-label="' + escapeAttr(photoCaption) + '">Reject</button>';
+                            }
+                            html += '</div>';
+                        }
+                        html += '</div>';
                     });
                     html += '</div>';
                 } else {
@@ -1901,14 +2454,53 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
         if (progressList) {
             progressList.addEventListener('click', function (event) {
                 var removeButton = event.target.closest('.js-remove-progress-item');
-                if (!removeButton) {
+                if (removeButton) {
+                    var card = removeButton.closest('.js-progress-item-card');
+                    if (card) {
+                        card.remove();
+                        toggleProgressEmptyState();
+                    }
                     return;
                 }
 
-                var card = removeButton.closest('.js-progress-item-card');
-                if (card) {
-                    card.remove();
-                    toggleProgressEmptyState();
+                var addComplyButton = event.target.closest('.js-add-comply-entry');
+                if (addComplyButton) {
+                    var complyCard = addComplyButton.closest('.js-progress-item-card');
+                    var complyList = complyCard ? complyCard.querySelector('.js-comply-entry-list') : null;
+                    if (complyCard && complyList) {
+                        var entryIndex = complyList.querySelectorAll('.js-comply-entry-card').length;
+                        var newEntry = createComplyEntry(complyCard, entryIndex);
+                        if (newEntry) {
+                            complyList.appendChild(newEntry);
+                            syncComplyEntryIndexes(complyCard);
+                            bindDropzones();
+                        }
+                    }
+                    return;
+                }
+
+                var removeComplyButton = event.target.closest('.js-remove-comply-entry');
+                if (removeComplyButton) {
+                    var complyEntryCard = removeComplyButton.closest('.js-comply-entry-card');
+                    var complyParentCard = removeComplyButton.closest('.js-progress-item-card');
+                    if (complyEntryCard) {
+                        complyEntryCard.remove();
+                    }
+                    if (complyParentCard) {
+                        syncComplyEntryIndexes(complyParentCard);
+                    }
+                }
+            });
+
+            progressList.addEventListener('input', function (event) {
+                var qtyInput = event.target.closest('.js-progress-qty-input');
+                if (!qtyInput) {
+                    return;
+                }
+
+                var parentCard = qtyInput.closest('.js-progress-item-card');
+                if (parentCard) {
+                    syncComplyEntriesForQty(parentCard);
                 }
             });
         }
@@ -1931,17 +2523,76 @@ $agingPercent = min(100, round(($agingWorkingDays / 23) * 100));
                 var photoInput = card.querySelector('.js-progress-photo-input');
                 var qtyValue = parseFloat(qtyInput && qtyInput.value ? qtyInput.value : '0');
                 var hasPhotos = photoInput && photoInput.files && photoInput.files.length > 0;
+                var complyEnabled = card.getAttribute('data-comply-enabled') === '1';
+                var complyMode = (card.getAttribute('data-comply-mode') || 'NONE').toUpperCase();
+                var complyPhotoPerLabel = parseInt(card.getAttribute('data-comply-photo-per-label') || '0', 10);
+                var complyEntries = card.querySelectorAll('.js-comply-entry-card');
+                var complyValidEntries = 0;
 
                 if (qtyValue <= 0 || !hasPhotos) {
                     isValid = false;
+                    return;
+                }
+
+                if (complyEnabled) {
+                    Array.prototype.forEach.call(complyEntries, function (entryCard) {
+                        var labelInput = entryCard.querySelector('.js-comply-label-input');
+                        var complyPhotoInput = entryCard.querySelector('.js-comply-photo-input');
+                        var hasComplyFiles = complyPhotoInput && complyPhotoInput.files && complyPhotoInput.files.length > 0;
+                        var labelValue = labelInput ? String(labelInput.value || '').trim() : '';
+
+                        if (!labelValue && !hasComplyFiles) {
+                            return;
+                        }
+
+                        if (!labelValue || !hasComplyFiles || complyPhotoInput.files.length < Math.max(complyPhotoPerLabel, 1)) {
+                            isValid = false;
+                            return;
+                        }
+
+                        complyValidEntries++;
+                    });
+
+                    if (complyMode === 'MATCH_QTY' && complyValidEntries !== Math.ceil(qtyValue)) {
+                        isValid = false;
+                    }
+
+                    if (complyMode === 'FLEXIBLE' && complyValidEntries <= 0) {
+                        isValid = false;
+                    }
                 }
             });
 
             if (!isValid) {
                 event.preventDefault();
-                alert('Setiap item wajib memiliki qty progress dan minimal 1 foto evidence.');
+                alert('Setiap item wajib memiliki qty progress, foto implementasi harian, dan foto comply sesuai aturan item.');
             }
         });
+
+        if (complyUploadItem) {
+            complyUploadItem.addEventListener('change', syncStandaloneComplyForm);
+            syncStandaloneComplyForm();
+        }
+
+        if (window.jQuery) {
+            window.jQuery('a[data-toggle="tab"]').on('shown.bs.tab', function (event) {
+                var target = event.target.getAttribute('href') || '';
+                if (target.charAt(0) === '#') {
+                    if (window.history && typeof window.history.replaceState === 'function') {
+                        window.history.replaceState(null, '', target);
+                    } else {
+                        window.location.hash = target;
+                    }
+                }
+            });
+
+            if (window.location.hash) {
+                var tabTrigger = document.querySelector('a[data-toggle="tab"][href="' + window.location.hash + '"]');
+                if (tabTrigger) {
+                    window.jQuery(tabTrigger).tab('show');
+                }
+            }
+        }
 
         if (window.jQuery && progressModal) {
             window.jQuery(progressModal).on('hidden.bs.modal', function () {

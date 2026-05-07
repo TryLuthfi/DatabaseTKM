@@ -143,23 +143,34 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             $aggregate = $progressMap[(int) $row['id_boq_baseline_item']] ?? [
                 'progress_qty' => 0,
                 'uploaded_photos' => 0,
+                'uploaded_harian_photos' => 0,
+                'uploaded_comply_photos' => 0,
+                'comply_label_count' => 0,
+                'approved_comply_photos' => 0,
+                'approved_comply_label_count' => 0,
                 'entry_count' => 0,
                 'last_progress_date' => null,
             ];
+            $complyRule = $this->resolveComplyRuleMeta($row);
 
             $qtyBoq = (float) ($row['qty_boq'] ?? 0);
             $progressQty = (float) ($aggregate['progress_qty'] ?? 0);
-            $targetPhoto = (int) ($row['target_foto_required'] ?? 0);
+            $targetPhoto = (int) ($row['target_foto_required'] ?? 0) + (int) $this->calculateTargetComplyPhotos($qtyBoq, $complyRule);
             $uploadedPhotos = (int) ($aggregate['uploaded_photos'] ?? 0);
 
             $row['progress_qty'] = $progressQty;
             $row['remaining_qty'] = max($qtyBoq - $progressQty, 0);
             $row['uploaded_photos'] = $uploadedPhotos;
+            $row['uploaded_harian_photos'] = (int) ($aggregate['uploaded_harian_photos'] ?? 0);
+            $row['uploaded_comply_photos'] = (int) ($aggregate['uploaded_comply_photos'] ?? 0);
+            $row['comply_label_count'] = (int) ($aggregate['comply_label_count'] ?? 0);
+            $row['target_comply_photo_required'] = (int) $this->calculateTargetComplyPhotos($qtyBoq, $complyRule);
             $row['remaining_photos'] = max($targetPhoto - $uploadedPhotos, 0);
             $row['entry_count'] = (int) ($aggregate['entry_count'] ?? 0);
             $row['last_progress_date'] = $aggregate['last_progress_date'] ?? null;
             $row['completion_percent'] = $qtyBoq > 0 ? min(100, round(($progressQty / $qtyBoq) * 100, 2)) : 0;
-            $row['implementation_status'] = $this->resolveItemStatus($qtyBoq, $progressQty, $targetPhoto, $uploadedPhotos);
+            $row = array_merge($row, $complyRule);
+            $row['implementation_status'] = $this->resolveItemStatus($qtyBoq, $progressQty, $row, $aggregate);
         }
         unset($row);
 
@@ -196,6 +207,67 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         return $historyMap;
+    }
+
+    public function getApprovedComplyPrintGroups($clusterId)
+    {
+        if (!$this->tablesReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('
+                photo.id_progress_photo,
+                photo.file_name,
+                photo.file_path,
+                photo.caption,
+                photo.comply_label,
+                photo.status_photo,
+                progress.progress_date,
+                baseline_item.id_boq_baseline_item,
+                boq_item.item_name,
+                boq_item.item_type,
+                boq_item.excel_item_name,
+                boq_item.sort_no
+            ')
+            ->from('tb_myrep_boq_progress_photo photo')
+            ->join('tb_myrep_boq_progress_item progress', 'progress.id_progress_item = photo.id_progress_item', 'inner')
+            ->join('tb_myrep_boq_baseline_item baseline_item', 'baseline_item.id_boq_baseline_item = progress.id_boq_baseline_item', 'inner')
+            ->join('md_myrep_boq_item boq_item', 'boq_item.id_boq_item = baseline_item.id_boq_item', 'left')
+            ->where('progress.id_myrep_cluster', (int) $clusterId)
+            ->where("UPPER(COALESCE(photo.photo_category, 'HARIAN')) = 'COMPLY'", null, false)
+            ->where("UPPER(COALESCE(photo.status_photo, 'UPLOADED')) = 'APPROVED'", null, false)
+            ->order_by('boq_item.sort_no', 'ASC')
+            ->order_by('boq_item.item_name', 'ASC')
+            ->order_by('photo.comply_label', 'ASC')
+            ->order_by('photo.id_progress_photo', 'ASC')
+            ->get()
+            ->result_array();
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        $groups = [];
+        foreach ($rows as $row) {
+            $sectionTitle = $this->resolveComplyPrintSectionTitle($row);
+            if (!isset($groups[$sectionTitle])) {
+                $groups[$sectionTitle] = [];
+            }
+
+            $groups[$sectionTitle][] = [
+                'id_progress_photo' => (int) ($row['id_progress_photo'] ?? 0),
+                'item_name' => (string) ($row['item_name'] ?? '-'),
+                'item_type' => (string) ($row['item_type'] ?? '-'),
+                'comply_label' => (string) ($row['comply_label'] ?? ''),
+                'caption' => (string) ($row['caption'] ?? ''),
+                'file_name' => (string) ($row['file_name'] ?? 'Foto Comply'),
+                'file_path' => (string) ($row['file_path'] ?? ''),
+                'progress_date' => (string) ($row['progress_date'] ?? ''),
+            ];
+        }
+
+        return $groups;
     }
 
     public function createProgressEntry($clusterId, $baselineItemId, $payload, $photoRows = [])
@@ -242,6 +314,13 @@ class MImplementasi_BOQ_MyRep extends CI_Model
                 'file_name' => (string) $photo['file_name'],
                 'file_path' => (string) $photo['file_path'],
                 'caption' => $photo['caption'] !== '' ? (string) $photo['caption'] : null,
+                'photo_category' => !empty($photo['photo_category']) ? (string) $photo['photo_category'] : 'HARIAN',
+                'comply_label' => !empty($photo['comply_label']) ? (string) $photo['comply_label'] : null,
+                'status_photo' => !empty($photo['status_photo']) ? (string) $photo['status_photo'] : 'APPROVED',
+                'review_remark' => !empty($photo['review_remark']) ? (string) $photo['review_remark'] : null,
+                'reviewed_by' => !empty($photo['reviewed_by']) ? (int) $photo['reviewed_by'] : null,
+                'reviewed_at' => !empty($photo['reviewed_at']) ? (string) $photo['reviewed_at'] : null,
+                'approved_at' => !empty($photo['approved_at']) ? (string) $photo['approved_at'] : null,
                 'uploaded_by' => (int) $payload['created_by'],
             ]);
         }
@@ -296,6 +375,47 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         return true;
     }
 
+    public function getProgressPhotoById($photoId)
+    {
+        $photoId = (int) $photoId;
+        if ($photoId <= 0 || !$this->tablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->select('photo.*, progress.id_myrep_cluster, progress.id_boq_baseline_item, boq_item.item_name, boq_item.item_type')
+            ->from('tb_myrep_boq_progress_photo photo')
+            ->join('tb_myrep_boq_progress_item progress', 'progress.id_progress_item = photo.id_progress_item', 'inner')
+            ->join('tb_myrep_boq_baseline_item baseline_item', 'baseline_item.id_boq_baseline_item = progress.id_boq_baseline_item', 'left')
+            ->join('md_myrep_boq_item boq_item', 'boq_item.id_boq_item = baseline_item.id_boq_item', 'left')
+            ->where('photo.id_progress_photo', $photoId)
+            ->get()
+            ->row_array() ?: [];
+    }
+
+    public function updateProgressPhotoReviewStatus($photoId, $statusPhoto, $reviewedBy, $reviewRemark = '')
+    {
+        $photo = $this->getProgressPhotoById($photoId);
+        if (empty($photo)) {
+            return false;
+        }
+
+        $statusPhoto = strtoupper(trim((string) $statusPhoto));
+        if (!in_array($statusPhoto, ['APPROVED', 'REJECTED'], true)) {
+            return false;
+        }
+
+        return $this->db
+            ->where('id_progress_photo', (int) $photoId)
+            ->update('tb_myrep_boq_progress_photo', [
+                'status_photo' => $statusPhoto,
+                'review_remark' => trim((string) $reviewRemark) !== '' ? trim((string) $reviewRemark) : null,
+                'reviewed_by' => (int) $reviewedBy,
+                'reviewed_at' => date('Y-m-d H:i:s'),
+                'approved_at' => $statusPhoto === 'APPROVED' ? date('Y-m-d H:i:s') : null,
+            ]);
+    }
+
     public function getDashboardSummary($rows)
     {
         $summary = [
@@ -328,9 +448,10 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         $baselineRows = $this->db
-            ->select('b.id_myrep_cluster, bi.id_boq_baseline_item, bi.qty_boq, bi.target_foto_required')
+            ->select('b.id_myrep_cluster, bi.id_boq_baseline_item, bi.qty_boq, bi.target_foto_required, m.item_name, m.excel_item_name, m.item_type')
             ->from('tb_myrep_boq_baseline b')
             ->join('tb_myrep_boq_baseline_item bi', 'bi.id_boq_baseline = b.id_boq_baseline', 'inner')
+            ->join('md_myrep_boq_item m', 'm.id_boq_item = bi.id_boq_item', 'left')
             ->where('b.status_baseline', 'ACTIVE')
             ->where_in('b.id_myrep_cluster', $clusterIds)
             ->get()
@@ -349,15 +470,20 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             $aggregate = $progressMap[(int) $row['id_boq_baseline_item']] ?? [
                 'progress_qty' => 0,
                 'uploaded_photos' => 0,
+                'uploaded_harian_photos' => 0,
+                'uploaded_comply_photos' => 0,
+                'comply_label_count' => 0,
                 'entry_count' => 0,
                 'last_progress_date' => null,
             ];
+            $complyRule = $this->resolveComplyRuleMeta($row);
+            $targetComplyPhotos = (int) $this->calculateTargetComplyPhotos((float) ($row['qty_boq'] ?? 0), $complyRule);
 
             $meta = &$result[$clusterId];
             $meta['total_item']++;
             $meta['target_qty_total'] += (float) ($row['qty_boq'] ?? 0);
             $meta['actual_qty_total'] += (float) ($aggregate['progress_qty'] ?? 0);
-            $meta['target_photo_total'] += (int) ($row['target_foto_required'] ?? 0);
+            $meta['target_photo_total'] += (int) ($row['target_foto_required'] ?? 0) + $targetComplyPhotos;
             $meta['uploaded_photo_total'] += (int) ($aggregate['uploaded_photos'] ?? 0);
             $meta['progress_entry_total'] += (int) ($aggregate['entry_count'] ?? 0);
 
@@ -370,8 +496,10 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             $itemStatus = $this->resolveItemStatus(
                 (float) ($row['qty_boq'] ?? 0),
                 (float) ($aggregate['progress_qty'] ?? 0),
-                (int) ($row['target_foto_required'] ?? 0),
-                (int) ($aggregate['uploaded_photos'] ?? 0)
+                array_merge($row, $complyRule, [
+                    'target_comply_photo_required' => $targetComplyPhotos,
+                ]),
+                $aggregate
             );
 
             if ($itemStatus === 'DONE') {
@@ -417,13 +545,26 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             $map[(int) $row['id_boq_baseline_item']] = [
                 'progress_qty' => (float) ($row['progress_qty'] ?? 0),
                 'uploaded_photos' => 0,
+                'uploaded_harian_photos' => 0,
+                'uploaded_comply_photos' => 0,
+                'comply_label_count' => 0,
+                'approved_comply_photos' => 0,
+                'approved_comply_label_count' => 0,
                 'entry_count' => (int) ($row['entry_count'] ?? 0),
                 'last_progress_date' => $row['last_progress_date'] ?? null,
             ];
         }
 
         $photoRows = $this->db
-            ->select('p.id_boq_baseline_item, COUNT(photo.id_progress_photo) AS uploaded_photos', false)
+            ->select("
+                p.id_boq_baseline_item,
+                COUNT(photo.id_progress_photo) AS uploaded_photos,
+                SUM(CASE WHEN UPPER(COALESCE(photo.photo_category, 'HARIAN')) = 'HARIAN' THEN 1 ELSE 0 END) AS uploaded_harian_photos,
+                SUM(CASE WHEN UPPER(COALESCE(photo.photo_category, 'HARIAN')) = 'COMPLY' THEN 1 ELSE 0 END) AS uploaded_comply_photos,
+                COUNT(DISTINCT CASE WHEN UPPER(COALESCE(photo.photo_category, 'HARIAN')) = 'COMPLY' AND TRIM(COALESCE(photo.comply_label, '')) <> '' THEN photo.comply_label ELSE NULL END) AS comply_label_count,
+                SUM(CASE WHEN UPPER(COALESCE(photo.photo_category, 'HARIAN')) = 'COMPLY' AND UPPER(COALESCE(photo.status_photo, 'UPLOADED')) = 'APPROVED' THEN 1 ELSE 0 END) AS approved_comply_photos,
+                COUNT(DISTINCT CASE WHEN UPPER(COALESCE(photo.photo_category, 'HARIAN')) = 'COMPLY' AND UPPER(COALESCE(photo.status_photo, 'UPLOADED')) = 'APPROVED' AND TRIM(COALESCE(photo.comply_label, '')) <> '' THEN photo.comply_label ELSE NULL END) AS approved_comply_label_count
+            ", false)
             ->from('tb_myrep_boq_progress_item p')
             ->join('tb_myrep_boq_progress_photo photo', 'photo.id_progress_item = p.id_progress_item', 'inner')
             ->where_in('p.id_boq_baseline_item', $baselineItemIds)
@@ -437,11 +578,21 @@ class MImplementasi_BOQ_MyRep extends CI_Model
                 $map[$baselineItemId] = [
                     'progress_qty' => 0,
                     'uploaded_photos' => 0,
+                    'uploaded_harian_photos' => 0,
+                    'uploaded_comply_photos' => 0,
+                    'comply_label_count' => 0,
+                    'approved_comply_photos' => 0,
+                    'approved_comply_label_count' => 0,
                     'entry_count' => 0,
                     'last_progress_date' => null,
                 ];
             }
             $map[$baselineItemId]['uploaded_photos'] = (int) ($row['uploaded_photos'] ?? 0);
+            $map[$baselineItemId]['uploaded_harian_photos'] = (int) ($row['uploaded_harian_photos'] ?? 0);
+            $map[$baselineItemId]['uploaded_comply_photos'] = (int) ($row['uploaded_comply_photos'] ?? 0);
+            $map[$baselineItemId]['comply_label_count'] = (int) ($row['comply_label_count'] ?? 0);
+            $map[$baselineItemId]['approved_comply_photos'] = (int) ($row['approved_comply_photos'] ?? 0);
+            $map[$baselineItemId]['approved_comply_label_count'] = (int) ($row['approved_comply_label_count'] ?? 0);
         }
 
         return $map;
@@ -469,25 +620,152 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         return $map;
     }
 
-    private function resolveItemStatus($qtyBoq, $progressQty, $targetPhoto, $uploadedPhotos)
+    private function resolveItemStatus($qtyBoq, $progressQty, $itemRow, $aggregate)
     {
         $qtyBoq = (float) $qtyBoq;
         $progressQty = (float) $progressQty;
-        $targetPhoto = (int) $targetPhoto;
-        $uploadedPhotos = (int) $uploadedPhotos;
+        $targetDailyPhoto = (int) ($itemRow['target_foto_required'] ?? 0);
+        $uploadedDailyPhotos = (int) ($aggregate['uploaded_harian_photos'] ?? 0);
+        $approvedComplyPhotos = (int) ($aggregate['approved_comply_photos'] ?? 0);
+        $approvedComplyLabelCount = (int) ($aggregate['approved_comply_label_count'] ?? 0);
+        $complyRule = [
+            'comply_enabled' => !empty($itemRow['comply_enabled']),
+            'comply_photo_per_label' => (int) ($itemRow['comply_photo_per_label'] ?? 0),
+            'comply_entry_limit_mode' => (string) ($itemRow['comply_entry_limit_mode'] ?? 'NONE'),
+        ];
 
         $qtyDone = $qtyBoq > 0 && $progressQty >= $qtyBoq;
-        $photoDone = $targetPhoto <= 0 || $uploadedPhotos >= $targetPhoto;
+        $dailyPhotoDone = $targetDailyPhoto <= 0 || $uploadedDailyPhotos >= $targetDailyPhoto;
+        $complyDone = $this->isComplySatisfied($progressQty, $complyRule, $approvedComplyPhotos, $approvedComplyLabelCount);
 
-        if ($qtyDone && $photoDone) {
+        if ($qtyDone && $dailyPhotoDone && $complyDone) {
             return 'DONE';
         }
 
-        if ($progressQty > 0 || $uploadedPhotos > 0) {
+        if ($progressQty > 0 || $uploadedDailyPhotos > 0 || (int) ($aggregate['uploaded_comply_photos'] ?? 0) > 0) {
             return 'ON PROGRESS';
         }
 
         return 'NOT STARTED';
+    }
+
+    private function resolveComplyRuleMeta($row)
+    {
+        $itemName = strtoupper(trim((string) ($row['item_name'] ?? '')));
+        $excelItemName = strtoupper(trim((string) ($row['excel_item_name'] ?? '')));
+        $combined = trim($itemName . ' ' . $excelItemName);
+
+        $meta = [
+            'comply_enabled' => 0,
+            'comply_photo_per_label' => 0,
+            'comply_entry_limit_mode' => 'NONE',
+            'comply_label_prefix' => (string) ($row['item_name'] ?? 'Item'),
+            'comply_label_placeholder' => 'Nama / nomor item comply',
+            'comply_requirement_text' => 'Foto comply tidak diwajibkan untuk item ini.',
+        ];
+
+        if (strpos($combined, 'TIANG EKSISTING') !== false || strpos($combined, 'POLE EKSISTING') !== false) {
+            return [
+                'comply_enabled' => 1,
+                'comply_photo_per_label' => 1,
+                'comply_entry_limit_mode' => 'FLEXIBLE',
+                'comply_label_prefix' => 'Pole Eksisting',
+                'comply_label_placeholder' => 'Contoh: Pole Eksisting 001',
+                'comply_requirement_text' => 'Setiap nomor / nama pole eksisting wajib punya 1 foto comply. Jumlah entry tidak dibatasi.',
+            ];
+        }
+
+        if (strpos($combined, 'TIANG') !== false) {
+            return [
+                'comply_enabled' => 1,
+                'comply_photo_per_label' => 1,
+                'comply_entry_limit_mode' => 'MATCH_QTY',
+                'comply_label_prefix' => 'New Tiang',
+                'comply_label_placeholder' => 'Contoh: New Tiang 001',
+                'comply_requirement_text' => 'Jumlah entry comply mengikuti qty implementasi. Setiap tiang wajib punya 1 foto comply.',
+            ];
+        }
+
+        if (strpos($combined, 'FDT') !== false) {
+            return [
+                'comply_enabled' => 1,
+                'comply_photo_per_label' => 2,
+                'comply_entry_limit_mode' => 'MATCH_QTY',
+                'comply_label_prefix' => 'FDT',
+                'comply_label_placeholder' => 'Contoh: FDT 001',
+                'comply_requirement_text' => 'Jumlah entry comply mengikuti qty implementasi. Setiap FDT wajib 2 foto: terbuka dan tertutup.',
+            ];
+        }
+
+        if (strpos($combined, 'FAT') !== false) {
+            return [
+                'comply_enabled' => 1,
+                'comply_photo_per_label' => 2,
+                'comply_entry_limit_mode' => 'MATCH_QTY',
+                'comply_label_prefix' => 'FAT',
+                'comply_label_placeholder' => 'Contoh: FAT 001',
+                'comply_requirement_text' => 'Jumlah entry comply mengikuti qty implementasi. Setiap FAT wajib 2 foto: terbuka dan tertutup.',
+            ];
+        }
+
+        if (strpos($combined, 'SPLITTER') !== false) {
+            return [
+                'comply_enabled' => 1,
+                'comply_photo_per_label' => 2,
+                'comply_entry_limit_mode' => 'MATCH_QTY',
+                'comply_label_prefix' => 'Splitter',
+                'comply_label_placeholder' => 'Contoh: Splitter 001',
+                'comply_requirement_text' => 'Jumlah entry comply mengikuti qty implementasi. Setiap splitter wajib 2 foto comply.',
+            ];
+        }
+
+        return $meta;
+    }
+
+    private function calculateTargetComplyPhotos($qtyTarget, $complyRule)
+    {
+        if (empty($complyRule['comply_enabled'])) {
+            return 0;
+        }
+
+        if (($complyRule['comply_entry_limit_mode'] ?? 'NONE') !== 'MATCH_QTY') {
+            return 0;
+        }
+
+        $qtyTarget = (float) $qtyTarget;
+        return (int) ceil(max($qtyTarget, 0)) * (int) ($complyRule['comply_photo_per_label'] ?? 0);
+    }
+
+    private function isComplySatisfied($progressQty, $complyRule, $uploadedComplyPhotos, $complyLabelCount)
+    {
+        if (empty($complyRule['comply_enabled'])) {
+            return true;
+        }
+
+        $photoPerLabel = (int) ($complyRule['comply_photo_per_label'] ?? 0);
+        $mode = strtoupper((string) ($complyRule['comply_entry_limit_mode'] ?? 'NONE'));
+        $progressQty = (float) $progressQty;
+        $uploadedComplyPhotos = (int) $uploadedComplyPhotos;
+        $complyLabelCount = (int) $complyLabelCount;
+
+        if ($progressQty <= 0) {
+            return true;
+        }
+
+        if ($mode === 'MATCH_QTY') {
+            $requiredLabels = (int) ceil($progressQty);
+            $requiredPhotos = $requiredLabels * $photoPerLabel;
+            return $complyLabelCount >= $requiredLabels && $uploadedComplyPhotos >= $requiredPhotos;
+        }
+
+        if ($mode === 'FLEXIBLE') {
+            if ($complyLabelCount <= 0) {
+                return false;
+            }
+            return $uploadedComplyPhotos >= ($complyLabelCount * max($photoPerLabel, 1));
+        }
+
+        return true;
     }
 
     private function buildEmptyClusterMeta()
@@ -518,5 +796,30 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         if (is_file($fullPath)) {
             @unlink($fullPath);
         }
+    }
+
+    private function resolveComplyPrintSectionTitle($row)
+    {
+        $itemName = strtoupper(trim((string) ($row['item_name'] ?? '')));
+        $excelItemName = strtoupper(trim((string) ($row['excel_item_name'] ?? '')));
+        $combined = trim($itemName . ' ' . $excelItemName);
+
+        if (strpos($combined, 'TIANG') !== false || strpos($combined, 'POLE') !== false) {
+            return 'POLE';
+        }
+
+        if (strpos($combined, 'FDT') !== false) {
+            return 'FDT';
+        }
+
+        if (strpos($combined, 'FAT') !== false) {
+            return 'FAT';
+        }
+
+        if (strpos($combined, 'SPLITTER') !== false) {
+            return 'SPLITTER';
+        }
+
+        return $itemName !== '' ? $itemName : 'COMPLY';
     }
 }
