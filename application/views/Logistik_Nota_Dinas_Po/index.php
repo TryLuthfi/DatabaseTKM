@@ -11,9 +11,37 @@ $activeNodinProjectLabel = $activeNodinProjectLabel ?? '';
 $masterPabrikOptions = $masterPabrikOptions ?? [];
 $approvedPurchaseRequests = $approvedPurchaseRequests ?? [];
 
-$totalQty = array_sum(array_map('floatval', array_column($activeNodinDetailRows, 'qty_po_nodin')));
-$totalNominal = array_sum(array_map(static function ($row) {
-    return ((float) ($row['qty_po_nodin'] ?? 0)) * ((float) ($row['harga_satuan'] ?? 0));
+$parseNodinNumber = static function ($value) {
+    if ($value === null || $value === '') {
+        return 0.0;
+    }
+
+    if (is_int($value) || is_float($value)) {
+        return (float) $value;
+    }
+
+    $value = trim((string) $value);
+    if ($value === '') {
+        return 0.0;
+    }
+
+    if (strpos($value, ',') !== false) {
+        $value = str_replace('.', '', $value);
+        $value = str_replace(',', '.', $value);
+    } elseif (preg_match('/^\d{1,3}(\.\d{3})+$/', $value)) {
+        $value = str_replace('.', '', $value);
+    }
+
+    $value = preg_replace('/[^0-9.\-]/', '', $value);
+
+    return is_numeric($value) ? (float) $value : 0.0;
+};
+
+$totalQty = array_sum(array_map(static function ($row) use ($parseNodinNumber) {
+    return $parseNodinNumber($row['qty_po_nodin'] ?? 0);
+}, $activeNodinDetailRows));
+$totalNominal = array_sum(array_map(static function ($row) use ($parseNodinNumber) {
+    return $parseNodinNumber($row['qty_po_nodin'] ?? 0) * $parseNodinNumber($row['harga_satuan'] ?? 0);
 }, $activeNodinDetailRows));
 
 $existingDisplayRowsByItem = [];
@@ -34,13 +62,13 @@ foreach ($activeNodinDetailRows as $row) {
         $existingDisplayRowsByItem[$itemKey][$signature] = [
             'id_pabrik' => (string) ($row['id_pabrik'] ?? ''),
             'vendor_pabrik' => (string) ($row['vendor_pabrik'] ?? ''),
-            'harga_satuan' => (float) ($row['harga_satuan'] ?? 0),
+            'harga_satuan' => $parseNodinNumber($row['harga_satuan'] ?? 0),
             'keterangan' => (string) ($row['keterangan'] ?? ''),
             'qty_po_nodin' => 0,
         ];
     }
 
-    $existingDisplayRowsByItem[$itemKey][$signature]['qty_po_nodin'] += (float) ($row['qty_po_nodin'] ?? 0);
+    $existingDisplayRowsByItem[$itemKey][$signature]['qty_po_nodin'] += $parseNodinNumber($row['qty_po_nodin'] ?? 0);
 }
 
 $existingDisplayRowsByItem = array_map(static function ($rowsBySignature) {
@@ -332,9 +360,9 @@ foreach ($masterPabrikOptions as $pabrikOption) {
                                                 <td><span class="js-nodin-satuan-label"><?= htmlspecialchars((string) ($item['satuan_item'] ?? '-'), ENT_QUOTES) ?></span></td>
                                                 <td class="text-number js-nodin-kebutuhan"><?= number_format($item['volume_planning_final'] ?? 0, 0, ',', '.') ?></td>
                                                 <td class="text-number js-nodin-outstanding"><?= number_format($item['qty_outstanding_pr'] ?? 0, 0, ',', '.') ?></td>
-                                                <td><input type="text" inputmode="numeric" class="form-control text-right js-live-number js-nodin-qty" name="qty_po_nodin[<?= $rowIndex ?>]" value="<?= htmlspecialchars(number_format((float) ($existingDetail['qty_po_nodin'] ?? (int) ($item['qty_outstanding_pr'] ?? 0)), 0, ',', '.'), ENT_QUOTES) ?>" required <?= $activeNodinReadOnly ? 'readonly' : '' ?>></td>
-                                                <td><input type="text" inputmode="numeric" class="form-control text-right js-live-number js-nodin-harga" name="harga_satuan[<?= $rowIndex ?>]" value="<?= htmlspecialchars(number_format((float) ($existingDetail['harga_satuan'] ?? 0), 0, ',', '.'), ENT_QUOTES) ?>" <?= $activeNodinReadOnly ? 'readonly' : '' ?>></td>
-                                                <td class="text-number js-nodin-line-total"><?= number_format(((float) ($existingDetail['qty_po_nodin'] ?? (int) ($item['qty_outstanding_pr'] ?? 0))) * ((float) ($existingDetail['harga_satuan'] ?? 0)), 0, ',', '.') ?></td>
+                                                <td><input type="text" inputmode="numeric" class="form-control text-right js-live-number js-nodin-qty" name="qty_po_nodin[<?= $rowIndex ?>]" value="<?= htmlspecialchars(number_format($parseNodinNumber($existingDetail['qty_po_nodin'] ?? ($item['qty_outstanding_pr'] ?? 0)), 0, ',', '.'), ENT_QUOTES) ?>" required <?= $activeNodinReadOnly ? 'readonly' : '' ?>></td>
+                                                <td><input type="text" inputmode="numeric" class="form-control text-right js-live-number js-nodin-harga" name="harga_satuan[<?= $rowIndex ?>]" value="<?= htmlspecialchars(number_format($parseNodinNumber($existingDetail['harga_satuan'] ?? 0), 0, ',', '.'), ENT_QUOTES) ?>" <?= $activeNodinReadOnly ? 'readonly' : '' ?>></td>
+                                                <td class="text-number js-nodin-line-total"><?= number_format($parseNodinNumber($existingDetail['qty_po_nodin'] ?? ($item['qty_outstanding_pr'] ?? 0)) * $parseNodinNumber($existingDetail['harga_satuan'] ?? 0), 0, ',', '.') ?></td>
                                                 <td>
                                                     <select class="form-control js-select-pabrik" name="id_pabrik[<?= $rowIndex ?>]" <?= $activeNodinReadOnly ? 'disabled' : '' ?>>
                                                         <option value="">Pilih Pabrik</option>
@@ -813,40 +841,12 @@ foreach ($masterPabrikOptions as $pabrikOption) {
             e.preventDefault();
 
             const idNodin = $(this).data('id') || '';
-            const nomorNodin = $(this).data('nomor') || 'NODIN';
             if (!idNodin) {
                 return;
             }
 
-            Swal.fire({
-                title: 'Print ' + nomorNodin,
-                input: 'select',
-                inputOptions: {
-                    'a4-landscape': 'A4 Landscape',
-                    'a4-portrait': 'A4 Portrait',
-                    'a3-landscape': 'A3 Landscape',
-                    'a3-portrait': 'A3 Portrait',
-                    'legal-landscape': 'Legal Landscape',
-                    'legal-portrait': 'Legal Portrait'
-                },
-                inputValue: 'a4-landscape',
-                inputPlaceholder: 'Pilih layout print',
-                showCancelButton: true,
-                confirmButtonColor: '#2563eb',
-                cancelButtonColor: '#64748b',
-                confirmButtonText: 'Buka Print',
-                cancelButtonText: 'Batal',
-                inputValidator: (value) => {
-                    if (!value) {
-                        return 'Layout print wajib dipilih.';
-                    }
-                }
-            }).then((result) => {
-                if (result.isConfirmed && result.value) {
-                    const url = "<?= base_url('Logistik_Nota_Dinas_Po/print_nodin/') ?>" + encodeURIComponent(idNodin) + '?layout=' + encodeURIComponent(result.value);
-                    window.open(url, '_blank');
-                }
-            });
+            const url = "<?= base_url('Logistik_Nota_Dinas_Po/print_nodin/') ?>" + encodeURIComponent(idNodin);
+            window.open(url, '_blank');
         });
 
         $('#form-nodin').submit(function(event) {

@@ -464,7 +464,7 @@ $formatStatus = function ($row) {
                                         <td><span class="po-chip po-chip--<?= $status['tone'] ?>"><?= $status['label'] ?></span></td>
                                         <td>
                                             <div class="po-actions">
-                                                <a class="po-action-btn po-action-btn--view" href="<?= site_url('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $row['nomor_po_pabrik']) ?>" title="Lihat detail">
+                                                <a class="po-action-btn po-action-btn--view" href="<?= site_url('Logistik_Pesanan_Pabrik_Detail/detailPesanan?nomor_po_pabrik=' . rawurlencode((string) $row['nomor_po_pabrik'])) ?>" title="Lihat detail">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 <a class="po-action-btn" href="#" data-delete-po="<?= htmlspecialchars($row['nomor_po_pabrik'], ENT_QUOTES) ?>" title="Hapus PO" style="background:rgba(220, 38, 38, 0.12);color:#dc2626;">
@@ -900,7 +900,7 @@ $formatStatus = function ($row) {
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = "<?= base_url('Logistik_Pesanan_Pabrik/delete_po/') ?>" + encodeURIComponent(nomorPo);
+                    window.location.href = "<?= base_url('Logistik_Pesanan_Pabrik/delete_po?nomor_po_pabrik=') ?>" + encodeURIComponent(nomorPo);
                 }
             });
         });

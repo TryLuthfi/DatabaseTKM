@@ -66,13 +66,37 @@ $nodinApprovalStages = $nodinApprovalStages ?? [];
 $nodinCurrentApprovalKey = $nodinCurrentApprovalKey ?? '';
 $nodinCurrentApprovalLabel = $nodinCurrentApprovalLabel ?? '';
 $canApproveCurrentNodinStage = !empty($canApproveCurrentNodinStage);
-$nodinTotalKebutuhan = array_sum(array_map('floatval', array_column($nodinDetailRows, 'kebutuhan_project')));
-$nodinTotalOutstanding = array_sum(array_map('floatval', array_column($nodinDetailRows, 'outstanding_pr')));
-$nodinTotalQty = array_sum(array_map('floatval', array_column($nodinDetailRows, 'qty_po_nodin')));
-$nodinTotalHargaSatuan = array_sum(array_map('floatval', array_column($nodinDetailRows, 'harga_satuan')));
+$normalizeNodinGroupValue = static function ($value) {
+    return strtolower(trim((string) $value));
+};
+$nodinGroupedDetailRows = [];
+foreach ($nodinDetailRows as $nodinDetailRow) {
+    $nodinGroupKey = implode('|', [
+        $normalizeNodinGroupValue($nodinDetailRow['nomor_purchase_request'] ?? ''),
+        $normalizeNodinGroupValue($nodinDetailRow['id_kode_item'] ?? ($nodinDetailRow['nama_item'] ?? '')),
+        $normalizeNodinGroupValue($nodinDetailRow['nama_item'] ?? ''),
+        $normalizeNodinGroupValue($nodinDetailRow['satuan_item'] ?? ''),
+        $normalizeNodinGroupValue($nodinDetailRow['vendor_pabrik'] ?? ''),
+        preg_replace('/[^0-9.\-]/', '', (string) ($nodinDetailRow['harga_satuan'] ?? '0')),
+        $normalizeNodinGroupValue($nodinDetailRow['keterangan'] ?? ''),
+    ]);
+
+    if (!isset($nodinGroupedDetailRows[$nodinGroupKey])) {
+        $nodinGroupedDetailRows[$nodinGroupKey] = $nodinDetailRow;
+    } else {
+        $nodinGroupedDetailRows[$nodinGroupKey]['kebutuhan_project'] = (float) ($nodinGroupedDetailRows[$nodinGroupKey]['kebutuhan_project'] ?? 0) + (float) ($nodinDetailRow['kebutuhan_project'] ?? 0);
+        $nodinGroupedDetailRows[$nodinGroupKey]['outstanding_pr'] = (float) ($nodinGroupedDetailRows[$nodinGroupKey]['outstanding_pr'] ?? 0) + (float) ($nodinDetailRow['outstanding_pr'] ?? 0);
+        $nodinGroupedDetailRows[$nodinGroupKey]['qty_po_nodin'] = (float) ($nodinGroupedDetailRows[$nodinGroupKey]['qty_po_nodin'] ?? 0) + (float) ($nodinDetailRow['qty_po_nodin'] ?? 0);
+    }
+}
+$nodinGroupedDetailRows = array_values($nodinGroupedDetailRows);
+$nodinTotalKebutuhan = array_sum(array_map('floatval', array_column($nodinGroupedDetailRows, 'kebutuhan_project')));
+$nodinTotalOutstanding = array_sum(array_map('floatval', array_column($nodinGroupedDetailRows, 'outstanding_pr')));
+$nodinTotalQty = array_sum(array_map('floatval', array_column($nodinGroupedDetailRows, 'qty_po_nodin')));
+$nodinTotalHargaSatuan = array_sum(array_map('floatval', array_column($nodinGroupedDetailRows, 'harga_satuan')));
 $nodinTotalNominal = array_sum(array_map(static function ($row) {
     return ((float) ($row['qty_po_nodin'] ?? 0)) * ((float) ($row['harga_satuan'] ?? 0));
-}, $nodinDetailRows));
+}, $nodinGroupedDetailRows));
 $masterPabrikByName = [];
 foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
     $masterPabrikByName[strtolower(trim((string) ($pabrikOption['nama_pabrik'] ?? '')))] = (string) ($pabrikOption['id_pabrik'] ?? '');
@@ -826,7 +850,7 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($nodinDetailRows as $nodinIndex => $nodinDetail): ?>
+                                        <?php foreach ($nodinGroupedDetailRows as $nodinIndex => $nodinDetail): ?>
                                             <tr>
                                                 <td><?= $nodinIndex + 1 ?></td>
                                                 <td><?= $nodinDetail['nomor_purchase_request'] ?? '-' ?></td>

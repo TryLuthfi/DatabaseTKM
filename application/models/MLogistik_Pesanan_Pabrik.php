@@ -260,7 +260,7 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
         return $result;
     }
 
-    public function getApprovedNodinItems($idNodin, $idPabrik = 0, $bowheerLabel = '')
+    public function getApprovedNodinItems($idNodin, $idPabrik = 0, $bowheerLabel = '', $groupRows = true)
     {
         if (!$this->relationExists('tb_logistik_nota_dinas_po_detail')) {
             return [];
@@ -351,9 +351,53 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
         }
         unset($row);
 
-        return array_values(array_filter($rows, static function ($row) {
+        $rows = array_values(array_filter($rows, static function ($row) {
             return !empty($row['is_selectable']);
         }));
+
+        if (!$groupRows) {
+            return $rows;
+        }
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $groupKey = implode('|', [
+                (string) ($row['nomor_purchase_request'] ?? ''),
+                (string) ($row['id_kode_item'] ?? ''),
+                (string) ($row['id_pabrik'] ?? ''),
+                (string) ($row['harga_satuan'] ?? ''),
+                trim((string) ($row['keterangan'] ?? '')),
+                trim((string) ($row['bowheer_label'] ?? '')),
+            ]);
+
+            if (!isset($grouped[$groupKey])) {
+                $grouped[$groupKey] = $row;
+                $grouped[$groupKey]['source_nodin_detail_ids'] = [];
+                $grouped[$groupKey]['source_purchase_request_detail_ids'] = [];
+            } else {
+                $grouped[$groupKey]['qty_request'] = (float) ($grouped[$groupKey]['qty_request'] ?? 0) + (float) ($row['qty_request'] ?? 0);
+                $grouped[$groupKey]['qty_planning'] = (float) ($grouped[$groupKey]['qty_planning'] ?? 0) + (float) ($row['qty_planning'] ?? 0);
+                $grouped[$groupKey]['kebutuhan_project'] = (float) ($grouped[$groupKey]['kebutuhan_project'] ?? 0) + (float) ($row['kebutuhan_project'] ?? 0);
+                $grouped[$groupKey]['outstanding_pr'] = (float) ($grouped[$groupKey]['outstanding_pr'] ?? 0) + (float) ($row['outstanding_pr'] ?? 0);
+                $grouped[$groupKey]['qty_po_nodin'] = (float) ($grouped[$groupKey]['qty_po_nodin'] ?? 0) + (float) ($row['qty_po_nodin'] ?? 0);
+                $grouped[$groupKey]['qty_po_teralokasi'] = (float) ($grouped[$groupKey]['qty_po_teralokasi'] ?? 0) + (float) ($row['qty_po_teralokasi'] ?? 0);
+                $grouped[$groupKey]['qty_outstanding_nodin'] = (float) ($grouped[$groupKey]['qty_outstanding_nodin'] ?? 0) + (float) ($row['qty_outstanding_nodin'] ?? 0);
+                $grouped[$groupKey]['volume_planning_final'] = (float) ($grouped[$groupKey]['volume_planning_final'] ?? 0) + (float) ($row['volume_planning_final'] ?? 0);
+            }
+
+            $grouped[$groupKey]['source_nodin_detail_ids'][] = (string) ($row['id_nota_dinas_po_detail'] ?? '');
+            $grouped[$groupKey]['source_purchase_request_detail_ids'][] = (string) ($row['id_purchase_request_detail'] ?? '');
+        }
+
+        foreach ($grouped as &$groupRow) {
+            $groupRow['source_nodin_detail_ids'] = array_values(array_filter(array_unique($groupRow['source_nodin_detail_ids'])));
+            $groupRow['source_purchase_request_detail_ids'] = array_values(array_filter(array_unique($groupRow['source_purchase_request_detail_ids'])));
+            $groupRow['id_nota_dinas_po_detail'] = implode(',', $groupRow['source_nodin_detail_ids']);
+            $groupRow['id_purchase_request_detail'] = implode(',', $groupRow['source_purchase_request_detail_ids']);
+        }
+        unset($groupRow);
+
+        return array_values($grouped);
     }
 
     public function createPoFromApprovedPr($header, $details)
@@ -524,7 +568,7 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 (COALESCE(SUM(d.qty_item), 0) - COALESCE(SUM(gd.qty_item), 0) - COALESCE(SUM({$qtyClosedExpression}), 0)) AS total_outstanding,
                 COALESCE(SUM(COALESCE(d.harga_item, 0) * COALESCE(d.qty_item, 0)), 0) AS total_nominal_po,
                 (COALESCE(SUM(COALESCE(d.harga_item, 0) * COALESCE(d.qty_item, 0)), 0) * 11 / 12) AS total_dpp_po,
-                (COALESCE(SUM(COALESCE(d.harga_item, 0) * COALESCE(d.qty_item, 0)), 0) * 0.12) AS total_ppn_po
+                ((COALESCE(SUM(COALESCE(d.harga_item, 0) * COALESCE(d.qty_item, 0)), 0) * 11 / 12) * 0.12) AS total_ppn_po
             FROM tb_logistik_pesanan_pabrik p
             LEFT JOIN tb_master_logistik_pabrik mp
                 ON mp.id_pabrik = p.id_pabrik

@@ -215,6 +215,32 @@ $coverage = count($rows) > 0 ? ($doneCount / count($rows)) * 100 : 0;
         padding: 1rem 1.2rem 1.2rem;
     }
 
+    .so-area-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    .so-area-search {
+        flex: 1 1 320px;
+        max-width: 420px;
+    }
+
+    .so-area-search .form-control {
+        border-radius: 14px;
+        min-height: 44px;
+        border-color: rgba(148, 163, 184, 0.32);
+        box-shadow: none;
+    }
+
+    .so-area-search-hint {
+        color: var(--so-area-muted);
+        font-size: 0.84rem;
+    }
+
     .so-area-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -388,11 +414,20 @@ $coverage = count($rows) > 0 ? ($doneCount / count($rows)) * 100 : 0;
                         </div>
                         <div class="so-area-list__body">
                             <?php if (!empty($rows)) { ?>
+                                <div class="so-area-toolbar">
+                                    <div class="so-area-search">
+                                        <input type="search" class="form-control" id="so-area-search-kota" placeholder="Cari kota area...">
+                                    </div>
+                                    <div class="so-area-search-hint" id="so-area-search-result">
+                                        Menampilkan <?= number_format(count($rows), 0, ',', '.') ?> area
+                                    </div>
+                                </div>
                                 <div class="so-area-grid">
                                     <?php foreach ($rows as $row) { ?>
                                         <?php
                                         $statusArea = strtoupper(trim((string) ($row['sok_status'] ?? 'NOT YET')));
                                         $chipClass = 'so-area-chip--pending';
+                                        $isLocked = in_array($statusArea, ['DONE', 'ADJUSTED', 'CLOSED'], true);
                                         if (in_array($statusArea, ['DONE', 'ADJUSTED', 'CLOSED'], true)) {
                                             $chipClass = 'so-area-chip--done';
                                         } elseif (in_array($statusArea, ['NEED BA', 'REVIEW', 'APPROVED', 'BA DRAFT', 'WAITING APPROVAL'], true)) {
@@ -402,7 +437,11 @@ $coverage = count($rows) > 0 ? ($doneCount / count($rows)) * 100 : 0;
                                         $editUrl = base_url('StockOpname/revamp/periode/' . $id_sop . '/lokasi/' . $row['id_lokasi_gudang'] . '?mode=de95b43bceeb4b998aed4aed5cef1ae7');
                                         $inputUrl = base_url('StockOpname/revamp/periode/' . $id_sop . '/lokasi/' . $row['id_lokasi_gudang'] . '?mode=a43c1b0aa53a0c908810c06ab1ff3967');
                                         ?>
-                                        <article class="so-area-card">
+                                        <article
+                                            class="so-area-card js-so-area-card"
+                                            data-kota="<?= htmlspecialchars(strtolower((string) ($row['kota_lokasi_gudang'] ?? '')), ENT_QUOTES, 'UTF-8') ?>"
+                                            data-regional="<?= htmlspecialchars(strtolower((string) ($row['regional_lokasi_gudang'] ?? '')), ENT_QUOTES, 'UTF-8') ?>"
+                                            data-provinsi="<?= htmlspecialchars(strtolower((string) ($row['provinsi_lokasi_gudang'] ?? '')), ENT_QUOTES, 'UTF-8') ?>">
                                             <div class="so-area-card__top">
                                                 <div>
                                                     <h3 class="so-area-card__title"><?= $row['kota_lokasi_gudang'] ?></h3>
@@ -416,7 +455,11 @@ $coverage = count($rows) > 0 ? ($doneCount / count($rows)) * 100 : 0;
 
                                             <div class="so-area-card__meta">
                                                 <?php if (!empty($row['id_so_kota'])) { ?>
-                                                    Data SO area ini sudah tersimpan. Anda bisa membuka detail atau mengedit hasil opname yang ada.
+                                                    <?php if ($isLocked) { ?>
+                                                        Data SO area ini sudah final dengan status <?= $statusArea ?>. Detail masih bisa dibuka, tetapi edit sudah dikunci.
+                                                    <?php } else { ?>
+                                                        Data SO area ini sudah tersimpan. Anda bisa membuka detail atau mengedit hasil opname yang ada.
+                                                    <?php } ?>
                                                 <?php } else { ?>
                                                     Area ini belum submit SO untuk periode <?= $periodeLabel ?>.
                                                 <?php } ?>
@@ -427,9 +470,11 @@ $coverage = count($rows) > 0 ? ($doneCount / count($rows)) * 100 : 0;
                                                     <a href="<?= $detailUrl ?>" class="btn btn-success btn-sm">
                                                         <i class="fas fa-share mr-1"></i> Detail
                                                     </a>
-                                                    <a href="<?= $editUrl ?>" class="btn btn-warning btn-sm">
-                                                        <i class="fas fa-edit mr-1"></i> Edit
-                                                    </a>
+                                                    <?php if (!$isLocked) { ?>
+                                                        <a href="<?= $editUrl ?>" class="btn btn-warning btn-sm">
+                                                            <i class="fas fa-edit mr-1"></i> Edit
+                                                        </a>
+                                                    <?php } ?>
                                                     <?php if ($this->session->userdata('nama_level') == 'Super Admin') { ?>
                                                         <a href="<?= base_url('StockOpname/hapusKota/' . $row['id_so_kota']) ?>" class="btn btn-danger btn-sm">
                                                             <i class="fas fa-trash mr-1"></i> Delete
@@ -504,6 +549,41 @@ $coverage = count($rows) > 0 ? ($doneCount / count($rows)) * 100 : 0;
             showNotice('Gagal!', errorMessage, 'warning');
         } else if (statusFlag === 'sukses_hapus') {
             showNotice('Success!', 'Data area berhasil dihapus.', 'success');
+        }
+
+        var searchInput = document.getElementById('so-area-search-kota');
+        var resultText = document.getElementById('so-area-search-result');
+        var cards = Array.prototype.slice.call(document.querySelectorAll('.js-so-area-card'));
+
+        function updateAreaVisibility() {
+            if (!searchInput || cards.length === 0) {
+                return;
+            }
+
+            var keyword = (searchInput.value || '').toLowerCase().trim();
+            var visibleCount = 0;
+
+            cards.forEach(function(card) {
+                var haystack = [
+                    card.getAttribute('data-kota') || '',
+                    card.getAttribute('data-regional') || '',
+                    card.getAttribute('data-provinsi') || ''
+                ].join(' ');
+                var isVisible = keyword === '' || haystack.indexOf(keyword) !== -1;
+                card.style.display = isVisible ? '' : 'none';
+                if (isVisible) {
+                    visibleCount++;
+                }
+            });
+
+            if (resultText) {
+                resultText.textContent = 'Menampilkan ' + visibleCount + ' area';
+            }
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', updateAreaVisibility);
+            updateAreaVisibility();
         }
     })();
 </script>

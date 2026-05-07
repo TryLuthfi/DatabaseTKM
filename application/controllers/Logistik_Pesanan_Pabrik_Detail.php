@@ -17,6 +17,10 @@ class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
             return;
         }
 
+        $nomor_po_pabrik = $nomor_po_pabrik !== null && $nomor_po_pabrik !== ''
+            ? $nomor_po_pabrik
+            : trim((string) $this->input->get('nomor_po_pabrik'));
+
         if ($nomor_po_pabrik === null || $nomor_po_pabrik === '') {
             $this->session->set_flashdata('error', 'Nomor PO tidak ditemukan.');
             redirect('Logistik_Pesanan_Pabrik');
@@ -56,6 +60,10 @@ class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
             redirect('Auth');
             return;
         }
+
+        $nomor_po_pabrik = $nomor_po_pabrik !== null && $nomor_po_pabrik !== ''
+            ? $nomor_po_pabrik
+            : trim((string) $this->input->get('nomor_po_pabrik'));
 
         if ($nomor_po_pabrik === null || $nomor_po_pabrik === '') {
             $this->session->set_flashdata('error', 'Nomor PO tidak ditemukan.');
@@ -117,13 +125,13 @@ class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
 
         if ($noSuratJalan === '' || $idLokasiGudang <= 0 || $tanggalPengiriman === '' || empty($selectedItems)) {
             $this->session->set_flashdata('error', 'Data pengiriman belum lengkap. Pastikan nomor surat jalan, gudang tujuan, tanggal kirim, dan item sudah dipilih.');
-            redirect('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $nomorPo);
+            redirect($this->buildPoDetailUrl($nomorPo));
             return;
         }
 
         $uploadedFiles = $this->uploadDeliveryDocuments($nomorPo, $noSuratJalan);
         if ($uploadedFiles === false) {
-            redirect('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $nomorPo);
+            redirect($this->buildPoDetailUrl($nomorPo));
             return;
         }
 
@@ -174,13 +182,13 @@ class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
                     'po_item_map_keys' => array_keys($poItemMap),
                 ]);
                 $this->session->set_flashdata('error', 'Ada item PO yang tidak valid untuk pengiriman. Silakan muat ulang detail PO.');
-                redirect('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $nomorPo);
+                redirect($this->buildPoDetailUrl($nomorPo));
                 return;
             }
 
             if (isset($selectedDetailIds[$detailId])) {
                 $this->session->set_flashdata('error', 'Terdapat item PO yang dipilih dobel pada form pengiriman.');
-                redirect('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $nomorPo);
+                redirect($this->buildPoDetailUrl($nomorPo));
                 return;
             }
 
@@ -195,7 +203,7 @@ class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
                 ]);
                 $itemName = (string) ($poItemMap[$detailId]['nama_item'] ?? 'Item');
                 $this->session->set_flashdata('error', $itemName . ' hanya memiliki outstanding pengiriman ' . number_format($maxOutstanding, 0, ',', '.') . '. Qty kirim tidak boleh melebihi outstanding.');
-                redirect('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $nomorPo);
+                redirect($this->buildPoDetailUrl($nomorPo));
                 return;
             }
 
@@ -226,7 +234,7 @@ class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
                         'po_item_map_keys' => array_keys($poItemMap),
                     ]);
                     $this->session->set_flashdata('error', 'Ada item PO yang tidak valid untuk pengiriman. Silakan muat ulang detail PO.');
-                    redirect('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $nomorPo);
+                    redirect($this->buildPoDetailUrl($nomorPo));
                     return;
                 }
 
@@ -254,7 +262,7 @@ class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
                     ]);
                     $itemName = (string) ($poItemMap[$detailId]['nama_item'] ?? 'Item');
                     $this->session->set_flashdata('error', $itemName . ' hanya memiliki outstanding pengiriman ' . number_format($maxOutstanding, 0, ',', '.') . '. Qty kirim tidak boleh melebihi outstanding.');
-                    redirect('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $nomorPo);
+                    redirect($this->buildPoDetailUrl($nomorPo));
                     return;
                 }
 
@@ -274,7 +282,7 @@ class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
 
         if (empty($deliveryDetails)) {
             $this->session->set_flashdata('error', 'Tidak ada item pengiriman valid yang bisa disimpan.');
-            redirect('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $nomorPo);
+            redirect($this->buildPoDetailUrl($nomorPo));
             return;
         }
 
@@ -363,7 +371,7 @@ class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
             $this->session->set_flashdata('success', 'Pengiriman pabrik berhasil disimpan dan stok otomatis masuk ke gudang HO.');
         }
 
-        redirect('Logistik_Pesanan_Pabrik_Detail/detailPesanan/' . $nomorPo);
+        redirect($this->buildPoDetailUrl($nomorPo));
     }
 
     private function uploadDeliveryDocuments($nomorPo, $noSuratJalan)
@@ -430,5 +438,10 @@ class Logistik_Pesanan_Pabrik_Detail extends CI_Controller
             ->row_array();
 
         return ((int) ($row['max_id'] ?? 0)) + 1 + (int) $offset;
+    }
+
+    private function buildPoDetailUrl($nomorPo)
+    {
+        return 'Logistik_Pesanan_Pabrik_Detail/detailPesanan?nomor_po_pabrik=' . rawurlencode((string) $nomorPo);
     }
 }

@@ -222,12 +222,18 @@ class MLogistik_Purchase_Request extends CI_Model
             return null;
         }
 
-        $row = $this->db
-            ->from('tb_logistik_nota_dinas_po')
-            ->where('id_nota_dinas_po', $idNodin)
-            ->limit(1)
-            ->get()
-            ->row_array();
+        $hasUserRelation = $this->relation_exists('tb_master_user');
+        $userSelect = $hasUserRelation ? ', u.nama_user AS nama_user' : '';
+
+        $row = $this->db->query("
+            SELECT
+                h.*
+                {$userSelect}
+            FROM tb_logistik_nota_dinas_po h
+            " . ($hasUserRelation ? "LEFT JOIN tb_master_user u ON u.id_user = h.dibuat_oleh" : '') . "
+            WHERE h.id_nota_dinas_po = ?
+            LIMIT 1
+        ", [$idNodin])->row_array();
 
         return $this->decorate_nodin_row($row);
     }
@@ -251,9 +257,12 @@ class MLogistik_Purchase_Request extends CI_Model
         return $this->db->query("
             SELECT
                 d.*,
+                prd.id_purchase_request,
                 ki.nama_item,
                 ki.satuan_item,
                 pr.nomor_purchase_request,
+                pr.id_project,
+                pr.nama_project,
                 {$vendorSelect}
             FROM tb_logistik_nota_dinas_po_detail d
             LEFT JOIN tb_master_logistik_kode_item ki
@@ -341,6 +350,15 @@ class MLogistik_Purchase_Request extends CI_Model
             if (empty($row)) {
                 return $row;
             }
+
+            $detailRows = $this->getNodinDetailRows((string) ($row['id_nota_dinas_po'] ?? ''));
+            $row['total_item'] = count($detailRows);
+            $row['total_qty_nodin'] = array_sum(array_map(function ($detailRow) {
+                return $this->normalizeNumberValue($detailRow['qty_po_nodin'] ?? 0);
+            }, $detailRows));
+            $row['total_nominal_nodin'] = array_sum(array_map(function ($detailRow) {
+                return $this->normalizeNumberValue($detailRow['qty_po_nodin'] ?? 0) * $this->normalizeNumberValue($detailRow['harga_satuan'] ?? 0);
+            }, $detailRows));
 
             $allocation = $poAllocationMap[(string) ($row['id_nota_dinas_po'] ?? '')] ?? [];
             $totalPo = (int) ($allocation['total_po'] ?? 0);
@@ -602,5 +620,32 @@ class MLogistik_Purchase_Request extends CI_Model
     {
         $row = $this->db->query("SHOW FULL TABLES LIKE ?", [$name])->row_array();
         return !empty($row);
+    }
+
+    private function normalizeNumberValue($value)
+    {
+        if ($value === null || $value === '') {
+            return 0.0;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        $value = trim((string) $value);
+        if ($value === '') {
+            return 0.0;
+        }
+
+        if (strpos($value, ',') !== false) {
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+        } elseif (preg_match('/^\d{1,3}(\.\d{3})+$/', $value)) {
+            $value = str_replace('.', '', $value);
+        }
+
+        $value = preg_replace('/[^0-9.\-]/', '', $value);
+
+        return is_numeric($value) ? (float) $value : 0.0;
     }
 }

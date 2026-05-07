@@ -645,6 +645,11 @@ $shipmentStats = [
                     <div class="col-md-3"><strong>Referensi PO</strong><br><span id="transit-detail-po">-</span></div>
                 </div>
                 <div class="row mb-3">
+                    <div class="col-md-4"><strong>Ekspedisi Pengiriman</strong><br><span id="transit-detail-ekspedisi">-</span></div>
+                    <div class="col-md-4"><strong>PIC Pengiriman</strong><br><span id="transit-detail-pic">-</span></div>
+                    <div class="col-md-4"><strong>No Polisi</strong><br><span id="transit-detail-polisi">-</span></div>
+                </div>
+                <div class="row mb-3">
                     <div class="col-md-6"><strong>Dokumen Surat Jalan</strong><br><span id="transit-detail-doc-sj">-</span></div>
                     <div class="col-md-6"><strong>Evidence</strong><br><span id="transit-detail-doc-evidence">-</span></div>
                 </div>
@@ -721,7 +726,7 @@ $shipmentStats = [
                     if (!header || items.length === 0) {
                         $('#transit-detail-subtitle').text(response.message || 'Detail pengiriman tidak ditemukan.');
                         $('#transit-detail-body').html('<tr><td colspan="10" class="text-center text-muted">' + (response.message || 'Detail pengiriman tidak ditemukan.') + '</td></tr>');
-                        $('#transit-detail-sj, #transit-detail-date, #transit-detail-route, #transit-detail-po, #transit-detail-doc-sj, #transit-detail-doc-evidence').text('-');
+                        $('#transit-detail-sj, #transit-detail-date, #transit-detail-route, #transit-detail-po, #transit-detail-ekspedisi, #transit-detail-pic, #transit-detail-polisi, #transit-detail-doc-sj, #transit-detail-doc-evidence').text('-');
                         $('#transit-detail-total-kirim, #transit-detail-total-diterima, #transit-detail-total-outstanding').text('0');
                         return;
                     }
@@ -759,6 +764,9 @@ $shipmentStats = [
                     $('#transit-detail-date').text(header.tanggal_pengiriman || '-');
                     $('#transit-detail-route').text((header.asal_gudang || '-') + ' -> ' + (header.tujuan_gudang || '-'));
                     $('#transit-detail-po').text(header.no_po_logistik || '-');
+                    $('#transit-detail-ekspedisi').text(header.nama_ekspedisi || '-');
+                    $('#transit-detail-pic').text(header.pic_ekspedisi || '-');
+                    $('#transit-detail-polisi').text(header.nomor_polisi || '-');
                     $('#transit-detail-doc-sj').html(buildTransitDocLink(header.surat_jalan, 'Lihat Surat Jalan'));
                     $('#transit-detail-doc-evidence').html(buildTransitDocLink(header.evidence, 'Lihat Evidence'));
                     $('#transit-detail-total-kirim').text(formatTransitNumber(totalKirim));

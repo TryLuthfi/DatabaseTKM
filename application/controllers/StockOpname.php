@@ -74,6 +74,13 @@ class StockOpname extends CI_Controller
             $redirectTarget = $this->input->post('redirect_target');
             $userId = (int) $this->session->userdata('id_user');
             $successRedirect = $this->getStockOpnameSuccessRedirect($id_sop, $redirectTarget);
+            $soKota = $this->MStockOpname->getSoKotaByPeriodeLokasi($id_sop, $id_lokasi_gudang);
+
+            if ($this->isStockOpnameLocked($soKota)) {
+                $this->setStockOpnameFlash('error', 'Status area sudah DONE atau ADJUSTED, sehingga data tidak bisa diedit lagi.');
+                redirect($successRedirect);
+                return;
+            }
 
             if (!$this->validateStockOpnameRemarks($id_kode_item, $total_jumlah_stok, $stok_so, $stok_soi_edit, $keterangan)) {
                 $this->setStockOpnameFlash('error', 'Remarks wajib diisi untuk setiap item yang memiliki selisih stok.');
@@ -299,9 +306,16 @@ class StockOpname extends CI_Controller
         $idLokasiGudang = (int) $this->input->post('id_lokasi_gudang');
         $redirectTarget = $this->input->post('redirect_target');
         $ba = $this->db->get_where('tb_so_ba', ['id_so_ba' => $idSoBa])->row_array();
+        $soKota = $this->MStockOpname->getSoKotaByPeriodeLokasi($idSop, $idLokasiGudang);
 
         if (empty($ba)) {
             $this->setStockOpnameFlash('error', 'BA tidak ditemukan.');
+            redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
+            return;
+        }
+
+        if ($this->isStockOpnameLocked($soKota)) {
+            $this->setStockOpnameFlash('error', 'Status area sudah DONE atau ADJUSTED, sehingga upload BA signed tidak bisa dilakukan lagi.');
             redirect($redirectTarget ? $redirectTarget : 'StockOpname/revamp/periode/' . $idSop . '/lokasi/' . $idLokasiGudang . '?mode=1bda80f2be4d3658e0baa43fbe7ae8c1');
             return;
         }
@@ -340,7 +354,6 @@ class StockOpname extends CI_Controller
             'ba_status' => 'UPLOADED',
             'ba_uploaded_at' => date('Y-m-d H:i:s'),
         ]);
-        $soKota = $this->MStockOpname->getSoKotaByPeriodeLokasi($idSop, $idLokasiGudang);
         if ($soKota) {
             $this->MStockOpname->updateSoKotaById((int) $soKota['id_so_kota'], [
                 'sok_status' => 'WAITING APPROVAL',
@@ -691,6 +704,12 @@ class StockOpname extends CI_Controller
             $jam_menit = date('H:i:s');
             $tanggal_format = "{$tanggal_sekarang} {$jam_menit}";
             $data['snapshot_tanggal'] = "{$tahun}-{$bulan_angka}-01";
+            $soKota = $this->MStockOpname->getSoKotaByPeriodeLokasi($id_sop, $id_lokasi_gudang);
+            if ($mode === 'de95b43bceeb4b998aed4aed5cef1ae7' && $this->isStockOpnameLocked($soKota)) {
+                $this->setStockOpnameFlash('error', 'Status area sudah DONE atau ADJUSTED, sehingga halaman edit dikunci.');
+                $mode = '1bda80f2be4d3658e0baa43fbe7ae8c1';
+            }
+            $data['mode'] = $mode;
             $data['getSOItem'] = $this->MStockOpname->getSOItem($id_lokasi_gudang, $tanggal_format);
             $data['getDetailSoItem'] = $this->MStockOpname->getDetailSoItem($id_sop, $id_lokasi_gudang);
             $data = array_merge($data, $this->buildBAContext($id_sop, $id_lokasi_gudang));
@@ -769,5 +788,11 @@ class StockOpname extends CI_Controller
     private function setStockOpnameFlash($type, $message)
     {
         $this->session->set_flashdata('stockopname_' . $type, $message);
+    }
+
+    private function isStockOpnameLocked($soKota)
+    {
+        $status = strtoupper(trim((string) ($soKota['sok_status'] ?? '')));
+        return in_array($status, ['DONE', 'ADJUSTED', 'CLOSED'], true);
     }
 }

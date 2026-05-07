@@ -27,6 +27,23 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
 
         $data['title'] = 'Nota Dinas PO';
         $data['nodinRows'] = $this->MLogistik_Purchase_Request->getNodinSummaryRows();
+        foreach ($data['nodinRows'] as &$nodinRow) {
+            $detailRows = $this->MLogistik_Purchase_Request->getNodinDetailRows((string) ($nodinRow['id_nota_dinas_po'] ?? ''));
+            $recalculatedQty = 0.0;
+            $recalculatedNominal = 0.0;
+
+            foreach ($detailRows as $detailRow) {
+                $qty = $this->normalizeNumberValue($detailRow['qty_po_nodin'] ?? 0);
+                $harga = $this->normalizeNumberValue($detailRow['harga_satuan'] ?? 0);
+                $recalculatedQty += $qty;
+                $recalculatedNominal += $qty * $harga;
+            }
+
+            $nodinRow['total_item'] = count($detailRows);
+            $nodinRow['total_qty_nodin'] = $recalculatedQty;
+            $nodinRow['total_nominal_nodin'] = $recalculatedNominal;
+        }
+        unset($nodinRow);
         $nodinSummaryMap = [];
         foreach ($data['nodinRows'] as $summaryRow) {
             $nodinSummaryMap[(string) ($summaryRow['id_nota_dinas_po'] ?? '')] = $summaryRow;
@@ -58,6 +75,10 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
                 $data['activeNodinDetailRows'] = $this->MLogistik_Purchase_Request->getNodinDetailRows($editId);
                 $data['activeNodinPurchaseRequestIds'] = $purchaseRequestIds;
                 $data['activeNodinCandidateItems'] = $this->buildCandidateItems($purchaseRequestIds);
+                $data['activeNodinCandidateItems'] = $this->mergeExistingNodinDetailsIntoCandidateItems(
+                    $data['activeNodinCandidateItems'],
+                    $data['activeNodinDetailRows']
+                );
                 $data['activeNodinProjectLabel'] = (string) ($activeNodin['nama_project_refs'] ?? '');
                 if ($data['activeNodinProjectLabel'] === '' && isset($nodinSummaryMap[$editId])) {
                     $data['activeNodinProjectLabel'] = (string) ($nodinSummaryMap[$editId]['nama_project_refs'] ?? '');
@@ -142,25 +163,10 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
             'title' => 'Print Nota Dinas PO',
             'nodin' => $nodin,
             'nodinDetails' => $this->MLogistik_Purchase_Request->getNodinDetailRows($idNodin),
-            'pageLayout' => $this->resolvePrintLayout((string) $this->input->get('layout')),
+            'pageLayout' => ['size' => 'A4', 'orientation' => 'portrait'],
         ];
 
         $this->load->view('format_nodin_print', $data);
-    }
-
-    private function resolvePrintLayout($layout)
-    {
-        $normalized = strtolower(trim((string) $layout));
-        $allowed = [
-            'a4-landscape' => ['size' => 'A4', 'orientation' => 'landscape'],
-            'a4-portrait' => ['size' => 'A4', 'orientation' => 'portrait'],
-            'a3-landscape' => ['size' => 'A3', 'orientation' => 'landscape'],
-            'a3-portrait' => ['size' => 'A3', 'orientation' => 'portrait'],
-            'legal-landscape' => ['size' => 'legal', 'orientation' => 'landscape'],
-            'legal-portrait' => ['size' => 'legal', 'orientation' => 'portrait'],
-        ];
-
-        return $allowed[$normalized] ?? $allowed['a4-landscape'];
     }
 
     public function save_nodin()
@@ -523,6 +529,55 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
         return array_values($grouped);
     }
 
+    private function mergeExistingNodinDetailsIntoCandidateItems(array $candidateItems, array $existingDetailRows)
+    {
+        if (empty($existingDetailRows)) {
+            return $candidateItems;
+        }
+
+        $candidateMap = [];
+        foreach ($candidateItems as $index => $item) {
+            $itemKey = (string) ($item['group_key'] ?? ($item['id_kode_item'] ?? strtolower(trim((string) ($item['nama_item'] ?? '')))));
+            $candidateMap[$itemKey] = $index;
+        }
+
+        foreach ($existingDetailRows as $detailRow) {
+            $itemKey = (string) ($detailRow['id_kode_item'] ?? '');
+            if ($itemKey === '') {
+                $itemKey = strtolower(trim((string) ($detailRow['nama_item'] ?? '')));
+            }
+
+            if (isset($candidateMap[$itemKey])) {
+                continue;
+            }
+
+            $projectLabel = (string) ($detailRow['id_project'] ?? $detailRow['nama_project'] ?? '');
+            $candidateItems[] = [
+                'group_key' => $itemKey,
+                'id_kode_item' => (int) ($detailRow['id_kode_item'] ?? 0),
+                'nama_item' => (string) ($detailRow['nama_item'] ?? '-'),
+                'satuan_item' => (string) ($detailRow['satuan_item'] ?? '-'),
+                'volume_planning_final' => (float) ($detailRow['kebutuhan_project'] ?? 0),
+                'qty_outstanding_pr' => (float) ($detailRow['outstanding_pr'] ?? 0),
+                'nomor_purchase_request_refs' => [(string) ($detailRow['nomor_purchase_request'] ?? '')],
+                'nama_project_refs' => $projectLabel !== '' ? [$projectLabel] : [],
+                'source_details' => [[
+                    'id_purchase_request_detail' => (string) ($detailRow['id_purchase_request_detail'] ?? ''),
+                    'nomor_purchase_request' => (string) ($detailRow['nomor_purchase_request'] ?? ''),
+                    'nama_project' => $projectLabel,
+                    'volume_planning_final' => (float) ($detailRow['kebutuhan_project'] ?? 0),
+                    'qty_outstanding_pr' => (float) ($detailRow['outstanding_pr'] ?? 0),
+                    'id_kode_item' => (int) ($detailRow['id_kode_item'] ?? 0),
+                ]],
+                'nomor_purchase_request_refs_label' => (string) ($detailRow['nomor_purchase_request'] ?? '-'),
+                'nama_project_refs_label' => $projectLabel !== '' ? $projectLabel : '-',
+                'source_detail_ids_csv' => (string) ($detailRow['id_purchase_request_detail'] ?? ''),
+            ];
+        }
+
+        return $candidateItems;
+    }
+
     private function allocateGroupedQtyToDetails($totalQty, $sourceCandidates)
     {
         $totalQty = (float) $totalQty;
@@ -585,5 +640,32 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
         }
 
         return $this->get_validation_key() === strtolower(trim((string) $stageKey));
+    }
+
+    private function normalizeNumberValue($value)
+    {
+        if ($value === null || $value === '') {
+            return 0.0;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        $value = trim((string) $value);
+        if ($value === '') {
+            return 0.0;
+        }
+
+        if (strpos($value, ',') !== false) {
+            $value = str_replace('.', '', $value);
+            $value = str_replace(',', '.', $value);
+        } elseif (preg_match('/^\d{1,3}(\.\d{3})+$/', $value)) {
+            $value = str_replace('.', '', $value);
+        }
+
+        $value = preg_replace('/[^0-9.\-]/', '', $value);
+
+        return is_numeric($value) ? (float) $value : 0.0;
     }
 }

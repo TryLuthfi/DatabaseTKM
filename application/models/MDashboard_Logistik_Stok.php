@@ -322,15 +322,9 @@ ORDER BY
             return [];
         }
 
-        $tanggal = trim((string) $tanggalDokumen) !== '' ? trim((string) $tanggalDokumen) : date('Y-m-d');
-        $timestamp = strtotime($tanggal);
-        if ($timestamp === false) {
-            $timestamp = time();
-        }
-
-        $tahun = (int) date('Y', $timestamp);
-        $bulan = (int) date('n', $timestamp);
-        $bulanRomawi = $this->convertMonthToRoman($bulan);
+        $period = $this->resolveSuratJalanPeriod($tanggalDokumen);
+        $tahun = $period['tahun'];
+        $bulanRomawi = $period['bulan_romawi'];
 
         $this->db->query("
             INSERT INTO tb_logistik_surat_jalan_counter (id_lokasi_gudang, tahun_counter, last_sequence)
@@ -355,13 +349,33 @@ ORDER BY
             return [];
         }
 
-        $nomorSuratJalan = sprintf('TEC.%03d/TKM-%02d/SJ/%s/%04d', $sequence, $idLokasiGudang, $bulanRomawi, $tahun);
+        return $this->buildSuratJalanPayload($idLokasiGudang, $tahun, $bulanRomawi, $sequence);
+    }
 
-        return [
-            'nomor_surat_jalan' => $nomorSuratJalan,
-            'nomor_surat_jalan_year' => $tahun,
-            'nomor_surat_jalan_seq' => $sequence,
-        ];
+    public function previewSuratJalanNumber($idLokasiGudang, $tanggalDokumen = ''): array
+    {
+        $idLokasiGudang = (int) $idLokasiGudang;
+        if ($idLokasiGudang <= 0 || !$this->relationExists('tb_logistik_surat_jalan_counter')) {
+            return [];
+        }
+
+        $period = $this->resolveSuratJalanPeriod($tanggalDokumen);
+        $tahun = $period['tahun'];
+        $bulanRomawi = $period['bulan_romawi'];
+
+        $counterRow = $this->db
+            ->get_where('tb_logistik_surat_jalan_counter', [
+                'id_lokasi_gudang' => $idLokasiGudang,
+                'tahun_counter' => $tahun,
+            ])
+            ->row_array();
+
+        $nextSequence = ((int) ($counterRow['last_sequence'] ?? 0)) + 1;
+        if ($nextSequence <= 0) {
+            $nextSequence = 1;
+        }
+
+        return $this->buildSuratJalanPayload($idLokasiGudang, $tahun, $bulanRomawi, $nextSequence);
     }
 
     public function getCurrentStockByGudangItem($idLokasiGudang, $idKodeItem): float
@@ -403,6 +417,29 @@ ORDER BY
         ];
 
         return $map[(int) $month] ?? 'I';
+    }
+
+    private function resolveSuratJalanPeriod($tanggalDokumen): array
+    {
+        $tanggal = trim((string) $tanggalDokumen) !== '' ? trim((string) $tanggalDokumen) : date('Y-m-d');
+        $timestamp = strtotime($tanggal);
+        if ($timestamp === false) {
+            $timestamp = time();
+        }
+
+        return [
+            'tahun' => (int) date('Y', $timestamp),
+            'bulan_romawi' => $this->convertMonthToRoman((int) date('n', $timestamp)),
+        ];
+    }
+
+    private function buildSuratJalanPayload($idLokasiGudang, $tahun, $bulanRomawi, $sequence): array
+    {
+        return [
+            'nomor_surat_jalan' => sprintf('TEC.%03d/TKM-%02d/SJ/%s/%04d', (int) $sequence, (int) $idLokasiGudang, (string) $bulanRomawi, (int) $tahun),
+            'nomor_surat_jalan_year' => (int) $tahun,
+            'nomor_surat_jalan_seq' => (int) $sequence,
+        ];
     }
 
     private function relationExists($name)
@@ -1365,6 +1402,28 @@ public function getReportStokMaterial($dateStart = null)
 
     public function getHoShipmentDetailBySuratJalan($noSuratJalan): array
     {
+        $namaEkspedisiSelect = $this->fieldExists('tb_logistik_stok', 'nama_ekspedisi')
+            ? 's.nama_ekspedisi'
+            : 'NULL';
+        $picEkspedisiSelect = $this->fieldExists('tb_logistik_stok', 'pic_ekspedisi')
+            ? 's.pic_ekspedisi'
+            : 'NULL';
+        $nomorPolisiJoin = '';
+        $nomorPolisiSelect = 'NULL AS nomor_polisi';
+
+        if ($this->relationExists('tb_logistik_stok_rincian')) {
+            $nomorPolisiFields = $this->db->list_fields('tb_logistik_stok_rincian');
+            $nomorPolisiJoin = "
+            LEFT JOIN tb_logistik_stok_rincian rin
+                ON rin.id_logistik_stok = s.id_logistik_stok";
+
+            if (in_array('nomor_polisi', $nomorPolisiFields, true)) {
+                $nomorPolisiSelect = 'rin.nomor_polisi';
+            } elseif (in_array('no_polisi', $nomorPolisiFields, true)) {
+                $nomorPolisiSelect = 'rin.no_polisi';
+            }
+        }
+
         return $this->db->query("
             SELECT
                 s.no_surat_jalan,
@@ -1375,6 +1434,9 @@ public function getReportStokMaterial($dateStart = null)
                 s.no_pr_logistik,
                 s.surat_jalan,
                 s.evidence,
+                {$namaEkspedisiSelect} AS nama_ekspedisi,
+                {$picEkspedisiSelect} AS pic_ekspedisi,
+                {$nomorPolisiSelect} AS nomor_polisi,
                 ki.kategori_item,
                 ki.nama_item,
                 ki.satuan_item,
@@ -1397,6 +1459,7 @@ public function getReportStokMaterial($dateStart = null)
                 ON asal.id_lokasi_gudang = s.id_lokasi_gudang
             LEFT JOIN tb_master_logistik_lokasi_gudang tujuan
                 ON tujuan.id_lokasi_gudang = s.id_lokasi_gudang_pengiriman
+            {$nomorPolisiJoin}
             LEFT JOIN (
                 SELECT
                     no_surat_jalan,

@@ -135,7 +135,7 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
         $supportsPrDetail = $this->db->field_exists('id_purchase_request_detail', 'tb_logistik_pesanan_pabrik_detail');
         $supportsNodinDetail = $this->db->field_exists('id_nota_dinas_po_detail', 'tb_logistik_pesanan_pabrik_detail');
         $supportsVolumeSnapshot = $this->db->field_exists('volume_planning_snapshot', 'tb_logistik_pesanan_pabrik_detail');
-        $outstandingItems = $this->MLogistik_Pesanan_Pabrik->getApprovedNodinItems($idNodin, $idPabrik, $bowheerLabel);
+        $outstandingItems = $this->MLogistik_Pesanan_Pabrik->getApprovedNodinItems($idNodin, $idPabrik, $bowheerLabel, false);
         $outstandingItemMap = [];
         foreach ($outstandingItems as $item) {
             $outstandingItemMap[(string) ($item['id_nota_dinas_po_detail'] ?? '')] = $item;
@@ -148,53 +148,56 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
                 continue;
             }
 
-            $nodinDetailId = trim((string) $nodinDetailIdValue);
-            $detailId = trim((string) $detailIds[$index]);
-            if ($nodinDetailId === '' || !isset($outstandingItemMap[$nodinDetailId])) {
-                $this->session->set_flashdata('error', 'Ada detail NODIN yang sudah tidak outstanding atau sudah teralokasi penuh ke PO lain. Silakan muat ulang data NODIN.');
-                redirect('Logistik_Pesanan_Pabrik');
-                return;
-            }
+            $nodinDetailIdParts = array_values(array_filter(array_map('trim', explode(',', (string) $nodinDetailIdValue))));
+            $detailIdParts = array_values(array_filter(array_map('trim', explode(',', (string) $detailIds[$index]))));
 
-            if (isset($selectedDetailIds[$nodinDetailId])) {
-                $this->session->set_flashdata('error', 'Terdapat detail NODIN yang dipilih dobel dalam satu PO. Periksa kembali item yang dipilih.');
-                redirect('Logistik_Pesanan_Pabrik');
-                return;
-            }
+            foreach ($nodinDetailIdParts as $partIndex => $nodinDetailId) {
+                if ($nodinDetailId === '' || !isset($outstandingItemMap[$nodinDetailId])) {
+                    $this->session->set_flashdata('error', 'Ada detail NODIN yang sudah tidak outstanding atau sudah teralokasi penuh ke PO lain. Silakan muat ulang data NODIN.');
+                    redirect('Logistik_Pesanan_Pabrik');
+                    return;
+                }
 
-            $qty = (float) ($outstandingItemMap[$nodinDetailId]['qty_outstanding_nodin'] ?? 0);
-            if ($qty <= 0) {
-                continue;
-            }
+                if (isset($selectedDetailIds[$nodinDetailId])) {
+                    $this->session->set_flashdata('error', 'Terdapat detail NODIN yang dipilih dobel dalam satu PO. Periksa kembali item yang dipilih.');
+                    redirect('Logistik_Pesanan_Pabrik');
+                    return;
+                }
 
-            $maxOutstanding = (float) ($outstandingItemMap[$nodinDetailId]['qty_outstanding_nodin'] ?? 0);
-            if ($maxOutstanding <= 0) {
-                $itemName = (string) ($outstandingItemMap[$nodinDetailId]['nama_item'] ?? 'Item');
-                $this->session->set_flashdata('error', $itemName . ' sudah tidak memiliki outstanding detail NODIN untuk dibuatkan PO.');
-                redirect('Logistik_Pesanan_Pabrik');
-                return;
-            }
+                $qty = (float) ($outstandingItemMap[$nodinDetailId]['qty_outstanding_nodin'] ?? 0);
+                if ($qty <= 0) {
+                    continue;
+                }
 
-            $detailRow = [
-                'id_pesanan_pabrik' => $poId,
-                'id_kode_item' => (int) $kodeItems[$index],
-                'harga_item' => (float) ($outstandingItemMap[$nodinDetailId]['harga_satuan'] ?? ($hargaItems[$index] ?? 0)),
-                'qty_item' => $qty,
-            ];
+                $maxOutstanding = (float) ($outstandingItemMap[$nodinDetailId]['qty_outstanding_nodin'] ?? 0);
+                if ($maxOutstanding <= 0) {
+                    $itemName = (string) ($outstandingItemMap[$nodinDetailId]['nama_item'] ?? 'Item');
+                    $this->session->set_flashdata('error', $itemName . ' sudah tidak memiliki outstanding detail NODIN untuk dibuatkan PO.');
+                    redirect('Logistik_Pesanan_Pabrik');
+                    return;
+                }
 
-            if ($supportsPrDetail) {
-                $detailRow['id_purchase_request_detail'] = $detailId;
-            }
-            if ($supportsNodinDetail) {
-                $detailRow['id_nota_dinas_po_detail'] = $nodinDetailId;
-            }
+                $detailRow = [
+                    'id_pesanan_pabrik' => $poId,
+                    'id_kode_item' => (int) $kodeItems[$index],
+                    'harga_item' => (float) ($outstandingItemMap[$nodinDetailId]['harga_satuan'] ?? ($hargaItems[$index] ?? 0)),
+                    'qty_item' => $qty,
+                ];
 
-            if ($supportsVolumeSnapshot) {
-                $detailRow['volume_planning_snapshot'] = (float) ($volumeSnapshots[$index] ?? $outstandingItemMap[$nodinDetailId]['volume_planning_final'] ?? $qty);
-            }
+                if ($supportsPrDetail) {
+                    $detailRow['id_purchase_request_detail'] = (string) ($detailIdParts[$partIndex] ?? $outstandingItemMap[$nodinDetailId]['id_purchase_request_detail'] ?? '');
+                }
+                if ($supportsNodinDetail) {
+                    $detailRow['id_nota_dinas_po_detail'] = $nodinDetailId;
+                }
 
-            $details[] = $detailRow;
-            $selectedDetailIds[$nodinDetailId] = true;
+                if ($supportsVolumeSnapshot) {
+                    $detailRow['volume_planning_snapshot'] = (float) ($outstandingItemMap[$nodinDetailId]['volume_planning_final'] ?? $volumeSnapshots[$index] ?? $qty);
+                }
+
+                $details[] = $detailRow;
+                $selectedDetailIds[$nodinDetailId] = true;
+            }
         }
 
         if (empty($details)) {
@@ -215,7 +218,9 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
             return;
         }
 
-        $nomorPo = trim((string) ($nomorPo ?? $this->input->post('nomor_po_pabrik')));
+        $nomorPo = $nomorPo !== null && $nomorPo !== ''
+            ? $nomorPo
+            : trim((string) ($this->input->get('nomor_po_pabrik') ?? $this->input->post('nomor_po_pabrik')));
         if ($nomorPo === '') {
             $this->session->set_flashdata('error', 'Nomor PO tidak ditemukan.');
             redirect('Logistik_Pesanan_Pabrik');

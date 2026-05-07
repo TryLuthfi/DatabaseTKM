@@ -12,13 +12,59 @@ $formatDate = static function ($value) {
     return date('d F Y', $timestamp);
 };
 
-$printCode = 'BJN 16-01';
 $companyName = 'PT. TECHNOLOGY KARYA MANDIRI';
 $lokasiTitle = strtoupper((string) ($purchaseRequest['kota_lokasi_gudang'] ?? ''));
 $documentTitle = 'PURCHASE REQUEST';
 if ($lokasiTitle !== '') {
     $documentTitle .= ' - LOKASI ' . $lokasiTitle;
 }
+
+$signerNames = [
+    'Planning' => 'Yaya Sunarya',
+    'Finance' => 'Almaida',
+];
+
+$formatVolume = static function ($value) {
+    return ($value === null || $value === '') ? '-' : number_format((float) $value, 0, ',', '.');
+};
+
+$buildElectronicQr = static function ($seed, $label) {
+    $hash = md5($seed . '|' . $label);
+    $size = 21;
+    $cell = 4;
+    $svg = '';
+
+    for ($row = 0; $row < $size; $row++) {
+        for ($col = 0; $col < $size; $col++) {
+            $index = ($row * $size + $col) % strlen($hash);
+            $value = hexdec($hash[$index]);
+            $isFinder =
+                ($row < 7 && $col < 7) ||
+                ($row < 7 && $col >= $size - 7) ||
+                ($row >= $size - 7 && $col < 7);
+
+            if ($isFinder) {
+                $localRow = $row % 7;
+                $localCol = $col % 7;
+                $isDark = $localRow === 0 || $localRow === 6 || $localCol === 0 || $localCol === 6
+                    || (($localRow >= 2 && $localRow <= 4) && ($localCol >= 2 && $localCol <= 4));
+            } else {
+                $isDark = (($value + $row + $col) % 2) === 0;
+            }
+
+            if ($isDark) {
+                $svg .= '<rect x="' . (($col + 1) * $cell) . '" y="' . (($row + 1) * $cell) . '" width="' . $cell . '" height="' . $cell . '" fill="#111827"></rect>';
+            }
+        }
+    }
+
+    $dimension = ($size + 2) * $cell;
+
+    return '<svg viewBox="0 0 ' . $dimension . ' ' . $dimension . '" xmlns="http://www.w3.org/2000/svg" aria-label="QR code elektronik">'
+        . '<rect x="0" y="0" width="' . $dimension . '" height="' . $dimension . '" fill="#ffffff"/>'
+        . $svg
+        . '</svg>';
+};
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -26,7 +72,7 @@ if ($lokasiTitle !== '') {
     <meta charset="utf-8">
     <title><?= htmlspecialchars((string) ($purchaseRequest['nomor_purchase_request'] ?? 'Purchase Request'), ENT_QUOTES) ?></title>
     <style>
-        @page { margin: 12mm; size: A4 portrait; }
+        @page { margin: 10mm; size: A4 landscape; }
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
@@ -64,23 +110,11 @@ if ($lokasiTitle !== '') {
         }
 
         .intro-row {
-            display: table;
-            width: 100%;
             margin-bottom: 10px;
         }
 
-        .intro-badge,
-        .intro-code {
-            display: table-cell;
-            vertical-align: middle;
-        }
-
-        .intro-badge {
-            width: 78%;
-        }
-
         .intro-badge__box {
-            width: 320px;
+            width: 360px;
             max-width: 100%;
             background: #8fb5df;
             border-radius: 14px 0 14px 0;
@@ -100,20 +134,6 @@ if ($lokasiTitle !== '') {
             display: block;
             font-size: 10px;
             margin-top: 2px;
-        }
-
-        .intro-code {
-            text-align: right;
-        }
-
-        .intro-code__box {
-            display: inline-block;
-            min-width: 84px;
-            border: 2px solid #111827;
-            padding: 7px 12px;
-            font-size: 16px;
-            font-weight: 800;
-            text-align: center;
         }
 
         .meta-table,
@@ -182,41 +202,64 @@ if ($lokasiTitle !== '') {
         }
 
         .signature-table {
-            margin-top: 22px;
+            margin-top: 14px;
             table-layout: fixed;
-            font-size: 10px;
+            font-size: 9px;
         }
 
         .signature-table td {
             width: 25%;
             vertical-align: top;
             text-align: center;
-            padding: 0 8px;
+            padding: 0 4px;
         }
 
         .signature-role {
             font-weight: 700;
-            margin-bottom: 52px;
+            margin-bottom: 6px;
+        }
+
+        .signature-barcode {
+            width: 72px;
+            margin: 0 auto 4px;
+            border: 1px solid #94a3b8;
+            padding: 2px;
+            background: #ffffff;
+        }
+
+        .signature-barcode svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .signature-caption {
+            display: block;
+            margin-bottom: 16px;
+            font-size: 7px;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: #475569;
         }
 
         .signature-name {
             display: inline-block;
-            min-width: 110px;
+            min-width: 92px;
             border-top: 1px solid #111827;
-            padding-top: 4px;
+            padding-top: 3px;
             font-weight: 700;
-            font-size: 10px;
+            font-size: 9px;
         }
 
         .signature-stage {
             display: block;
-            margin-top: 4px;
-            font-size: 9px;
+            margin-top: 3px;
+            font-size: 8px;
             text-transform: uppercase;
         }
 
         .page-footer {
-            margin-top: 18px;
+            margin-top: 12px;
             text-align: center;
             font-size: 9px;
             color: #475569;
@@ -236,14 +279,9 @@ if ($lokasiTitle !== '') {
 
         <div class="print-body">
             <div class="intro-row">
-                <div class="intro-badge">
-                    <div class="intro-badge__box">
-                        <span class="intro-badge__title">Kebutuhan Material</span>
-                        <span class="intro-badge__subtitle"><?= htmlspecialchars($companyName, ENT_QUOTES) ?></span>
-                    </div>
-                </div>
-                <div class="intro-code">
-                    <div class="intro-code__box"><?= htmlspecialchars($printCode, ENT_QUOTES) ?></div>
+                <div class="intro-badge__box">
+                    <span class="intro-badge__title">Kebutuhan Material</span>
+                    <span class="intro-badge__subtitle"><?= htmlspecialchars($companyName, ENT_QUOTES) ?></span>
                 </div>
             </div>
 
@@ -304,10 +342,10 @@ if ($lokasiTitle !== '') {
                             <td><?= htmlspecialchars((string) ($row['id_kode_item'] ?? '-'), ENT_QUOTES) ?></td>
                             <td><?= htmlspecialchars((string) ($row['nama_item'] ?? '-'), ENT_QUOTES) ?></td>
                             <td class="text-center"><?= htmlspecialchars((string) ($row['satuan_item'] ?? '-'), ENT_QUOTES) ?></td>
-                            <td class="text-right"><?= number_format((float) ($row['boq'] ?? 0), 0, ',', '.') ?></td>
-                            <td class="text-right"><?= number_format((float) ($row['stok_area'] ?? 0), 0, ',', '.') ?></td>
-                            <td class="text-right"><?= number_format((float) ($row['qty_request'] ?? 0), 0, ',', '.') ?></td>
-                            <td class="text-right"><?= number_format((float) ($row['qty_planning'] ?? 0), 0, ',', '.') ?></td>
+                            <td class="text-right"><?= htmlspecialchars($formatVolume($row['boq'] ?? null), ENT_QUOTES) ?></td>
+                            <td class="text-right"><?= htmlspecialchars($formatVolume($row['stok_area'] ?? null), ENT_QUOTES) ?></td>
+                            <td class="text-right"><?= htmlspecialchars($formatVolume($row['qty_request'] ?? null), ENT_QUOTES) ?></td>
+                            <td class="text-right"><?= htmlspecialchars($formatVolume($row['qty_planning'] ?? null), ENT_QUOTES) ?></td>
                             <td><?= htmlspecialchars((string) ($row['keterangan'] ?? '-'), ENT_QUOTES) ?></td>
                         </tr>
                     <?php endforeach; ?>
@@ -326,10 +364,21 @@ if ($lokasiTitle !== '') {
                 <tr>
                     <?php if (!empty($approvalStages)): ?>
                         <?php foreach ($approvalStages as $stage): ?>
+                            <?php
+                            $stageLabel = (string) ($stage['label'] ?? '-');
+                            $stageColumn = (string) ($stage['column'] ?? '');
+                            $isApproved = $stageColumn !== '' && !empty($purchaseRequest[$stageColumn]);
+                            $signerName = $signerNames[$stageLabel] ?? $stageLabel;
+                            $barcodeSeed = (string) ($purchaseRequest['nomor_purchase_request'] ?? 'PR') . '|' . $stageLabel . '|' . $signerName;
+                            ?>
                             <td>
-                                <div class="signature-role"><?= htmlspecialchars((string) ($stage['label'] ?? '-'), ENT_QUOTES) ?></div>
-                                <span class="signature-name"><?= !empty($purchaseRequest[$stage['column'] ?? '']) ? 'Approved' : 'Pending' ?></span>
-                                <span class="signature-stage"><?= htmlspecialchars((string) ($stage['label'] ?? '-'), ENT_QUOTES) ?></span>
+                                <div class="signature-role"><?= htmlspecialchars($stageLabel, ENT_QUOTES) ?></div>
+                                <div class="signature-barcode">
+                                    <?= $isApproved ? $buildElectronicQr($barcodeSeed, $stageLabel) : '' ?>
+                                </div>
+                                <span class="signature-caption">Tanda Tangan Elektronik</span>
+                                <span class="signature-name"><?= htmlspecialchars($isApproved ? $signerName : 'Pending', ENT_QUOTES) ?></span>
+                                <span class="signature-stage"><?= htmlspecialchars($stageLabel, ENT_QUOTES) ?></span>
                             </td>
                         <?php endforeach; ?>
                     <?php else: ?>

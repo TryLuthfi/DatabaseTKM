@@ -23,6 +23,8 @@ $baData = $existingBA ?? [];
 $baItems = $existingBAItems ?? [];
 $discrepancyItems = $discrepancyItems ?? [];
 $approvalLogs = $approvalLogs ?? [];
+$statusText = strtoupper(trim((string) ($soKotaData['sok_status'] ?? 'NOT YET')));
+$isLocked = in_array($statusText, ['DONE', 'ADJUSTED', 'CLOSED'], true);
 
 $totalStokAplikasi = 0;
 $totalStokFisik = 0;
@@ -602,7 +604,9 @@ if ($isInput) {
 
                     <div class="so-item-alert">
                         <strong>Catatan workflow:</strong>
-                        <?php if ($isView) { ?>
+                        <?php if ($isLocked) { ?>
+                            Status area sudah <?= $statusText ?>, jadi input ulang, edit, dan upload BA signed sudah dikunci. Halaman ini sekarang hanya bisa dipakai untuk review detail.
+                        <?php } elseif ($isView) { ?>
                             Halaman ini menampilkan hasil SO yang sudah tersimpan. Jika masih ada selisih, data tersebut seharusnya ditindaklanjuti dengan BA kronologi sebelum adjustment dijalankan.
                         <?php } else { ?>
                             Saat Anda menyimpan data, sistem akan menolak item selisih yang belum memiliki remarks. Ini sengaja dibuat supaya BA kronologi nanti sudah punya dasar penjelasan per item.
@@ -611,7 +615,6 @@ if ($isInput) {
 
                     <?php if (!empty($soKotaData)) { ?>
                         <?php
-                        $statusText = strtoupper(trim((string) ($soKotaData['sok_status'] ?? 'NOT YET')));
                         $statusClass = 'so-item-status-badge--warning';
                         if (in_array($statusText, ['DONE', 'ADJUSTED', 'CLOSED'], true)) {
                             $statusClass = 'so-item-status-badge--done';
@@ -657,7 +660,7 @@ if ($isInput) {
                                         </div>
 
                                         <div class="so-item-ba__actions">
-                                            <?php if (!empty($discrepancyItems)) { ?>
+                                            <?php if (!empty($discrepancyItems) && !$isLocked) { ?>
                                                 <a href="<?= base_url('StockOpname/generateBA/' . $id_sop . '/' . $locationId) ?>" class="btn btn-primary btn-sm">
                                                     <i class="fas fa-file-alt mr-1"></i> Generate / Refresh BA
                                                 </a>
@@ -702,22 +705,26 @@ if ($isInput) {
                                         <strong>Tindak lanjut dokumen</strong>
 
                                         <?php if (!empty($baData)) { ?>
-                                            <form action="<?= base_url('StockOpname/uploadSignedBA') ?>" method="post" enctype="multipart/form-data" class="mt-3">
-                                                <input type="hidden" name="id_so_ba" value="<?= (int) $baData['id_so_ba'] ?>">
-                                                <input type="hidden" name="id_sop" value="<?= (int) $id_sop ?>">
-                                                <input type="hidden" name="id_lokasi_gudang" value="<?= (int) $locationId ?>">
-                                                <input type="hidden" name="redirect_target" value="<?= htmlspecialchars($redirectTarget, ENT_QUOTES, 'UTF-8') ?>">
-                                                <div class="form-group">
-                                                    <label class="font-weight-bold">Upload BA Signed</label>
-                                                    <input type="file" name="ba_file_signed" class="form-control-file" accept=".pdf,.jpg,.jpeg,.png">
-                                                    <small class="form-text text-muted">Gunakan PDF atau foto hasil scan tanda tangan basah.</small>
-                                                </div>
-                                                <button type="submit" class="btn btn-warning btn-sm">
-                                                    <i class="fas fa-upload mr-1"></i> Upload Signed BA
-                                                </button>
-                                            </form>
+                                            <?php if (!$isLocked) { ?>
+                                                <form action="<?= base_url('StockOpname/uploadSignedBA') ?>" method="post" enctype="multipart/form-data" class="mt-3">
+                                                    <input type="hidden" name="id_so_ba" value="<?= (int) $baData['id_so_ba'] ?>">
+                                                    <input type="hidden" name="id_sop" value="<?= (int) $id_sop ?>">
+                                                    <input type="hidden" name="id_lokasi_gudang" value="<?= (int) $locationId ?>">
+                                                    <input type="hidden" name="redirect_target" value="<?= htmlspecialchars($redirectTarget, ENT_QUOTES, 'UTF-8') ?>">
+                                                    <div class="form-group">
+                                                        <label class="font-weight-bold">Upload BA Signed</label>
+                                                        <input type="file" name="ba_file_signed" class="form-control-file" accept=".pdf,.jpg,.jpeg,.png">
+                                                        <small class="form-text text-muted">Gunakan PDF atau foto hasil scan tanda tangan basah.</small>
+                                                    </div>
+                                                    <button type="submit" class="btn btn-warning btn-sm">
+                                                        <i class="fas fa-upload mr-1"></i> Upload Signed BA
+                                                    </button>
+                                                </form>
+                                            <?php } else { ?>
+                                                <div class="mt-3 text-muted">Upload BA signed dinonaktifkan karena status area sudah final.</div>
+                                            <?php } ?>
 
-                                            <?php if (!empty($baData['ba_file_signed']) && strtoupper((string) ($soKotaData['sok_status'] ?? '')) !== 'ADJUSTED') { ?>
+                                            <?php if (!empty($baData['ba_file_signed']) && !$isLocked && $statusText !== 'ADJUSTED') { ?>
                                                 <form action="<?= base_url('StockOpname/approveBA') ?>" method="post" class="mt-4">
                                                     <input type="hidden" name="id_so_ba" value="<?= (int) $baData['id_so_ba'] ?>">
                                                     <input type="hidden" name="id_sop" value="<?= (int) $id_sop ?>">
@@ -770,7 +777,7 @@ if ($isInput) {
                         </div>
                         <div class="so-item-table__body">
                             <?php if (!empty($rows)) { ?>
-                                <?php if ($isInput || $isEdit) { ?>
+                                <?php if (($isInput || $isEdit) && !$isLocked) { ?>
                                     <form action="<?= base_url('StockOpname/inputSO') ?>" method="post" id="form-stockopname-revamp">
                                         <input type="hidden" name="id_sop" value="<?= $id_sop ?>">
                                         <input type="hidden" name="id_lokasi_gudang" value="<?= $locationId ?>">
@@ -818,7 +825,7 @@ if ($isInput) {
                                                     <td><?= $row['project_item'] ?? '-' ?></td>
                                                     <td>
                                                         <?= $row['id_kode_item'] ?>
-                                                        <?php if ($isInput || $isEdit) { ?>
+                                                        <?php if (($isInput || $isEdit) && !$isLocked) { ?>
                                                             <input type="hidden" name="id_kode_item[<?= $index ?>]" value="<?= $row['id_kode_item'] ?>">
                                                         <?php } ?>
                                                     </td>
@@ -827,14 +834,14 @@ if ($isInput) {
                                                     <td><?= $row['satuan_item'] ?? '-' ?></td>
                                                     <td>
                                                         <?= number_format($stokAplikasi, 0, ',', '.') ?>
-                                                        <?php if ($isInput) { ?>
+                                                        <?php if ($isInput && !$isLocked) { ?>
                                                             <input type="hidden" name="total_jumlah_stok[<?= $index ?>]" value="<?= $stokAplikasi ?>">
-                                                        <?php } elseif ($isEdit) { ?>
+                                                        <?php } elseif ($isEdit && !$isLocked) { ?>
                                                             <input type="hidden" name="soi_stok_asli[<?= $index ?>]" value="<?= $stokAplikasi ?>">
                                                         <?php } ?>
                                                     </td>
                                                     <td>
-                                                        <?php if ($isView) { ?>
+                                                        <?php if ($isView || $isLocked) { ?>
                                                             <?= number_format($stokFisik, 0, ',', '.') ?>
                                                         <?php } else { ?>
                                                             <input
@@ -850,7 +857,7 @@ if ($isInput) {
                                                         <?= $stokFisik === null ? '-' : number_format($selisih, 0, ',', '.') ?>
                                                     </td>
                                                     <td>
-                                                        <?php if ($isView) { ?>
+                                                        <?php if ($isView || $isLocked) { ?>
                                                             <?= $remarksValue !== '' ? $remarksValue : '-' ?>
                                                         <?php } else { ?>
                                                             <input
@@ -876,7 +883,7 @@ if ($isInput) {
                                     </table>
                                 </div>
 
-                                <?php if ($isInput || $isEdit) { ?>
+                                <?php if (($isInput || $isEdit) && !$isLocked) { ?>
                                     <div class="d-flex justify-content-end mt-3">
                                         <button type="submit" class="btn btn-primary font-weight-bold" id="btn-submit-stockopname-revamp">
                                             <i class="fas fa-save mr-1"></i>

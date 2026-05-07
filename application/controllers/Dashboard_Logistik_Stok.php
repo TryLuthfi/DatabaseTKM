@@ -153,6 +153,30 @@ class Dashboard_Logistik_Stok extends CI_Controller
             ->set_output(json_encode($items));
     }
 
+    public function getPreviewSuratJalanNumber()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $idLokasiGudang = (int) $this->input->get('id_lokasi_gudang');
+        $tanggalDokumen = trim((string) $this->input->get('tanggal_upload_stok'));
+        $preview = [];
+
+        if ($idLokasiGudang > 0) {
+            $preview = $this->MDashboard_Logistik_Stok->previewSuratJalanNumber($idLokasiGudang, $tanggalDokumen);
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'nomor_surat_jalan' => (string) ($preview['nomor_surat_jalan'] ?? ''),
+                'nomor_surat_jalan_seq' => (int) ($preview['nomor_surat_jalan_seq'] ?? 0),
+                'nomor_surat_jalan_year' => (int) ($preview['nomor_surat_jalan_year'] ?? 0),
+            ]));
+    }
+
     public function tambahReportStokLogistik()
     {
         $id_sumber_material = $this->input->post('id_sumber_material');
@@ -297,7 +321,8 @@ class Dashboard_Logistik_Stok extends CI_Controller
             $nomorSuratJalanFinal = (string) $suratJalanGenerated['nomor_surat_jalan'];
         }
 
-        if ($isOutMaterial && (string) $id_sumber_material !== '13') {
+        if ($isOutMaterial) {
+            $qtyPerItem = [];
             foreach ($jumlah_stok as $key => $value) {
                 $qtyRequest = (float) ($jumlah_stok[$key] ?? 0);
                 $idKodeItem = (int) ($idKodeItems[$key] ?? 0);
@@ -305,9 +330,16 @@ class Dashboard_Logistik_Stok extends CI_Controller
                     continue;
                 }
 
-                $availableStock = $this->MDashboard_Logistik_Stok->getCurrentStockByGudangItem($id_lokasi_gudang, $idKodeItem);
-                if ($qtyRequest > $availableStock) {
-                    $this->session->set_flashdata('error', 'Qty out material tidak boleh melebihi stok tersedia di gudang. Kecuali sumber material Out (ke Customer).');
+                if (!isset($qtyPerItem[$idKodeItem])) {
+                    $qtyPerItem[$idKodeItem] = 0;
+                }
+                $qtyPerItem[$idKodeItem] += $qtyRequest;
+            }
+
+            foreach ($qtyPerItem as $idKodeItem => $totalQtyRequest) {
+                $availableStock = $this->MDashboard_Logistik_Stok->getCurrentStockByGudangItem($id_lokasi_gudang, (int) $idKodeItem);
+                if ($totalQtyRequest > $availableStock) {
+                    $this->session->set_flashdata('error', 'Qty out material tidak boleh melebihi stok tersedia di gudang karena hasil perhitungan akan membuat stok minus.');
                     redirect('Dashboard_Logistik_Stok/revamp');
                     return;
                 }

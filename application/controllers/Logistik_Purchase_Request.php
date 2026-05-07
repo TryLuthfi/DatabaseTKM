@@ -621,9 +621,17 @@ class Logistik_Purchase_Request extends CI_Controller
         $nodinDetailRows = !empty($nodin['id_nota_dinas_po'])
             ? $this->MLogistik_Purchase_Request->getNodinDetailRows($nodin['id_nota_dinas_po'])
             : [];
+        $nodinDetailRows = array_values(array_filter($nodinDetailRows, static function ($row) use ($idPurchaseRequest, $purchaseRequestMeta) {
+            if ((string) ($row['id_purchase_request'] ?? '') !== '') {
+                return (string) ($row['id_purchase_request'] ?? '') === (string) $idPurchaseRequest;
+            }
+
+            return (string) ($row['nomor_purchase_request'] ?? '') === (string) ($purchaseRequestMeta['nomor_purchase_request'] ?? '');
+        }));
         $candidateItems = !empty($purchaseRequestMeta['is_fully_approved'])
             ? $this->MLogistik_Pesanan_Pabrik->getApprovedPurchaseRequestItems($idPurchaseRequest)
             : [];
+        $candidateItems = $this->mergeExistingNodinDetailRowsIntoCandidates($candidateItems, $nodinDetailRows);
 
         $nodinApprovalStages = $nodin['workflow_stages'] ?? $this->MLogistik_Purchase_Request->get_nodin_workflow();
         $nodinCurrentApprovalKey = '';
@@ -647,5 +655,47 @@ class Logistik_Purchase_Request extends CI_Controller
             'nodinCurrentApprovalLabel' => $nodinCurrentApprovalLabel,
             'canApproveCurrentNodinStage' => !empty($nodinCurrentApprovalKey) && $this->can_approve_nodin_stage($nodinCurrentApprovalKey),
         ];
+    }
+
+    private function mergeExistingNodinDetailRowsIntoCandidates(array $candidateItems, array $nodinDetailRows)
+    {
+        if (empty($nodinDetailRows)) {
+            return $candidateItems;
+        }
+
+        $candidateMap = [];
+        foreach ($candidateItems as $index => $item) {
+            $itemKey = (string) ($item['id_purchase_request_detail'] ?? '');
+            if ($itemKey === '') {
+                $itemKey = (string) ($item['id_kode_item'] ?? strtolower(trim((string) ($item['nama_item'] ?? ''))));
+            }
+            $candidateMap[$itemKey] = $index;
+        }
+
+        foreach ($nodinDetailRows as $detailRow) {
+            $detailKey = (string) ($detailRow['id_purchase_request_detail'] ?? '');
+            if ($detailKey === '') {
+                $detailKey = (string) ($detailRow['id_kode_item'] ?? strtolower(trim((string) ($detailRow['nama_item'] ?? ''))));
+            }
+
+            if (isset($candidateMap[$detailKey])) {
+                continue;
+            }
+
+            $candidateItems[] = [
+                'id_purchase_request_detail' => (string) ($detailRow['id_purchase_request_detail'] ?? ''),
+                'id_purchase_request' => (string) ($detailRow['id_purchase_request'] ?? ''),
+                'id_kode_item' => (int) ($detailRow['id_kode_item'] ?? 0),
+                'nama_item' => (string) ($detailRow['nama_item'] ?? '-'),
+                'satuan_item' => (string) ($detailRow['satuan_item'] ?? '-'),
+                'volume_planning_final' => (float) ($detailRow['kebutuhan_project'] ?? 0),
+                'qty_outstanding_pr' => (float) ($detailRow['outstanding_pr'] ?? 0),
+                'nomor_purchase_request' => (string) ($detailRow['nomor_purchase_request'] ?? ''),
+                'nama_project' => (string) ($detailRow['nama_project'] ?? ''),
+                'id_project' => (string) ($detailRow['id_project'] ?? ''),
+            ];
+        }
+
+        return $candidateItems;
     }
 }
