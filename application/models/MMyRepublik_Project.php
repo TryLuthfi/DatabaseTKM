@@ -288,7 +288,13 @@ class MMyRepublik_Project extends CI_Model
             $actualAtpSelect = '(SELECT MAX(dp.actual_atp_date) FROM tb_rfs_myrep_doc_package dp WHERE dp.cluster_id = c.id_cluster)';
         }
 
+        $supportsAtpStatus = $this->db->field_exists('status_atp', 'tb_rfs_myrep_cluster');
+        $doneClause = $supportsAtpStatus
+            ? "WHEN {$actualAtpSelect} IS NOT NULL AND {$actualAtpSelect} < CURDATE() AND UPPER(COALESCE(c.status_atp, '')) = 'DONE' THEN 'DONE'"
+            : '';
+
         $statusExpr = "CASE
+                {$doneClause}
                 WHEN {$actualAtpSelect} IS NOT NULL THEN 'ATP'
                 WHEN UPPER(COALESCE(c.status_rfs, '')) IN ('PARTIAL', 'FULL RFS') THEN 'RFS'
                 ELSE 'DRM'

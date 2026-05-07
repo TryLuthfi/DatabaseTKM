@@ -168,7 +168,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                             <p>
                                 Logistik
                                 <i class="right fas fa-angle-left"></i>
-                                <span class="badge badge-info right">5</span>
+                                <span class="badge badge-info right">4</span>
                             </p>
                         </a>
 
@@ -193,7 +193,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                     <i class="far fa-folder nav-icon"></i>
                                     <p>Master Logistik
                                         <i class="right fas fa-angle-left"></i>
-                                        <span class="badge badge-info right">2</span>
+                                        <span class="badge badge-info right">4</span>
                                     </p>
                                 </a>
                                 <ul class="nav nav-treeview">
@@ -228,47 +228,89 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                 </ul>
                             </li>
 
-                            <!-- Purchase Request -->
-                            <li class="nav-item">
-                                <a href="<?= base_url('Logistik_Purchase_Request') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Purchase_Request')
-                                      echo 'active'; ?> ">
-                                    <i class="far fa-file nav-icon"></i>
-                                    <p>Purchase Request</p>
+                            <!-- PR / PO -->
+                            <li class="nav-item has-treeview <?php if (
+                                $id_menu == 'Logistik_Purchase_Request' ||
+                                $id_menu == 'Logistik_Nota_Dinas_Po' ||
+                                $id_menu == 'Logistik_Pesanan_Pabrik' ||
+                                $id_menu == 'Logistik_Pesanan_Pabrik_Detail'
+                            ) {
+                                echo 'menu-open';
+                            } ?>">
+                                <a href="#" class="nav-link <?php if (
+                                    $id_menu == 'Logistik_Purchase_Request' ||
+                                    $id_menu == 'Logistik_Nota_Dinas_Po' ||
+                                    $id_menu == 'Logistik_Pesanan_Pabrik' ||
+                                    $id_menu == 'Logistik_Pesanan_Pabrik_Detail'
+                                ) {
+                                    echo 'active';
+                                } ?>">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>PR / PO
+                                        <i class="right fas fa-angle-left"></i>
+                                        <span class="badge badge-info right">3</span>
+                                    </p>
                                 </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Logistik_Purchase_Request') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Purchase_Request')
+                                              echo 'active'; ?>">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Purchase Request</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Logistik_Nota_Dinas_Po') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Nota_Dinas_Po')
+                                              echo 'active'; ?>">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Nota Dinas</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Logistik_Pesanan_Pabrik') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Pesanan_Pabrik' || $id_menu == 'Logistik_Pesanan_Pabrik_Detail')
+                                              echo 'active'; ?>">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Purchase Order</p>
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
 
-                            <li class="nav-item">
-                                <a href="<?= base_url('Logistik_Nota_Dinas_Po') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Nota_Dinas_Po')
-                                      echo 'active'; ?> ">
-                                    <i class="far fa-file-alt nav-icon"></i>
-                                    <p>Nota Dinas PO</p>
+                            <!-- Stok Material -->
+                            <li class="nav-item has-treeview <?php if (
+                                $id_menu == 'Dashboard_Logistik_Stok' ||
+                                $id_menu == 'Logistik_Stok_Detail'
+                            ) {
+                                echo 'menu-open';
+                            } ?>">
+                                <a href="#" class="nav-link <?php if (
+                                    $id_menu == 'Dashboard_Logistik_Stok' ||
+                                    $id_menu == 'Logistik_Stok_Detail'
+                                ) {
+                                    echo 'active';
+                                } ?>">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>Stok Material
+                                        <i class="right fas fa-angle-left"></i>
+                                        <span class="badge badge-info right">2</span>
+                                    </p>
                                 </a>
-                            </li>
-
-                            <!-- Purchase Order -->
-                            <li class="nav-item">
-                                <a href="<?= base_url('Logistik_Pesanan_Pabrik') ?>" class="nav-link <?php if ($id_menu == 'Logistik_Pesanan_Pabrik' || $id_menu == 'Logistik_Pesanan_Pabrik_Detail')
-                                      echo 'active'; ?>">
-                                    <i class="far fa-file nav-icon"></i>
-                                    <p>Purchase Order</p>
-                                </a>
-                            </li>
-
-                            <!-- Stock Material -->
-                            <li class="nav-item">
-                                <a href="<?= base_url('Dashboard_Logistik_Stok/revamp') ?>" class="nav-link <?php if (($id_menu == 'Dashboard_Logistik_Stok' && $this->uri->segment(2) != 'transit_history') || $id_menu == 'Logistik_Stok_Detail')
-                                      echo 'active'; ?>">
-                                    <i class="far fa-star nav-icon"></i>
-                                    <p>Stock Material</p>
-                                </a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a href="<?= base_url('Dashboard_Logistik_Stok/transit_history') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok' && $this->uri->segment(2) == 'transit_history')
-                                      echo 'active'; ?>">
-                                    <i class="fas fa-route nav-icon"></i>
-                                    <p>Stok Transit & History</p>
-                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Dashboard_Logistik_Stok/revamp') ?>" class="nav-link <?php if (($id_menu == 'Dashboard_Logistik_Stok' && $this->uri->segment(2) != 'transit_history') || $id_menu == 'Logistik_Stok_Detail')
+                                              echo 'active'; ?>">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Stok On Hand</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Dashboard_Logistik_Stok/transit_history') ?>" class="nav-link <?php if ($id_menu == 'Dashboard_Logistik_Stok' && $this->uri->segment(2) == 'transit_history')
+                                              echo 'active'; ?>">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Stok Pengiriman</p>
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
 
                             <!-- Stock Opname -->
@@ -276,7 +318,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                 <a href="<?= base_url('StockOpname/revamp') ?>" class="nav-link <?php if ($id_menu == 'StockOpname')
                                       echo 'active'; ?>">
                                     <i class="far fa-star nav-icon"></i>
-                                    <p>Stock Opname</p>
+                                    <p>Stok Opname</p>
                                 </a>
                             </li>
                         </ul>
@@ -449,6 +491,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                         $id_menu == 'MyRepublik_Project' ||
                         $id_menu == 'DRM_MyRep' ||
                         $id_menu == 'Monitoring_RFS_MyRep' ||
+                        $id_menu == 'ATP_MyRep' ||
                         $id_menu == 'Checklist_Dokument_MyRep' ||
                         $id_menu == 'BAK_MyRep' ||
                         $id_menu == 'VALSAL_MyRep' ||
@@ -466,6 +509,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                             $id_menu == 'MyRepublik_Project' ||
                             $id_menu == 'DRM_MyRep' ||
                             $id_menu == 'Monitoring_RFS_MyRep' ||
+                            $id_menu == 'ATP_MyRep' ||
                             $id_menu == 'Checklist_Dokument_MyRep' ||
                             $id_menu == 'BAK_MyRep' ||
                             $id_menu == 'VALSAL_MyRep' ||
@@ -539,6 +583,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                 $id_menu == 'Implementasi_BOQ_MyRep' ||
                                 $id_menu == 'PO_MyRep' ||
                                 $id_menu == 'Monitoring_RFS_MyRep' ||
+                                $id_menu == 'ATP_MyRep' ||
                                 $id_menu == 'Checklist_Dokument_MyRep' ||
                                 $id_menu == 'BAK_MyRep' ||
                                 $id_menu == 'VALSAL_MyRep' ||
@@ -555,6 +600,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                     $id_menu == 'Implementasi_BOQ_MyRep' ||
                                     $id_menu == 'PO_MyRep' ||
                                     $id_menu == 'Monitoring_RFS_MyRep' ||
+                                    $id_menu == 'ATP_MyRep' ||
                                     $id_menu == 'Checklist_Dokument_MyRep' ||
                                     $id_menu == 'BAK_MyRep' ||
                                     $id_menu == 'VALSAL_MyRep' ||
@@ -565,7 +611,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                     <p>
                                         My Republik
                                         <i class="fas fa-angle-left right"></i>
-                                        <span class="badge badge-info right">10</span>
+                                        <span class="badge badge-info right">11</span>
                                     </p>
                                 </a>
                                 <ul class="nav nav-treeview">
@@ -623,6 +669,13 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                             class="nav-link <?= ($id_menu == 'Monitoring_RFS_MyRep') ? 'active' : '' ?>">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Monitoring RFS MYREP</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('ATP_MyRep') ?>"
+                                            class="nav-link <?= ($id_menu == 'ATP_MyRep') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>ATP</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">

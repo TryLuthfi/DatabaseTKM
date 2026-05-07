@@ -25,6 +25,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $this->MMonitoring_RFS_MyRep->syncMyrepCompatibilityBridge((int) date('Y'), (int) date('n'), $selectedCity);
 
         $data['title'] = 'Checklist Dokument';
+        $data['atpSchemaReady'] = $this->MChecklist_Dokument_MyRep->supportsAtpColumns();
         $data['selectedCity'] = $selectedCity;
         $data['selectedRegional'] = $selectedRegional;
         $data['cityOptions'] = $this->MChecklist_Dokument_MyRep->getCityOptions();

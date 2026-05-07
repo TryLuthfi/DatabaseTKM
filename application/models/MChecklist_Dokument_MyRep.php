@@ -3,6 +3,11 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MChecklist_Dokument_MyRep extends CI_Model
 {
+    public function supportsAtpColumns()
+    {
+        return $this->db->field_exists('status_atp', 'tb_rfs_myrep_cluster');
+    }
+
     private function getProjectOpnameAstriStatuses()
     {
         return [
@@ -80,12 +85,26 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function getCityOptions()
     {
-        $rows = $this->db
+        $query = $this->db
             ->distinct()
             ->select('mt.city_name')
             ->from('tb_rfs_myrep_cluster c')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
-            ->where('c.status_rfs', 'FULL RFS')
+            ->where('c.status_rfs', 'FULL RFS');
+
+        if ($this->supportsAtpColumns()) {
+            $query
+                ->join('(
+                    SELECT cluster_id, MAX(actual_atp_date) AS actual_atp_date
+                    FROM tb_rfs_myrep_doc_package
+                    GROUP BY cluster_id
+                ) atp_summary', 'atp_summary.cluster_id = c.id_cluster', 'left')
+                ->where("UPPER(COALESCE(c.status_atp, '')) = 'DONE'", null, false)
+                ->where('atp_summary.actual_atp_date IS NOT NULL', null, false)
+                ->where('atp_summary.actual_atp_date < CURDATE()', null, false);
+        }
+
+        $rows = $query
             ->order_by('mt.city_name', 'ASC')
             ->get()
             ->result_array();
@@ -103,12 +122,26 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function getRegionalOptions()
     {
-        $rows = $this->db
+        $query = $this->db
             ->distinct()
             ->select('mt.regional_name')
             ->from('tb_rfs_myrep_cluster c')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
-            ->where('c.status_rfs', 'FULL RFS')
+            ->where('c.status_rfs', 'FULL RFS');
+
+        if ($this->supportsAtpColumns()) {
+            $query
+                ->join('(
+                    SELECT cluster_id, MAX(actual_atp_date) AS actual_atp_date
+                    FROM tb_rfs_myrep_doc_package
+                    GROUP BY cluster_id
+                ) atp_summary', 'atp_summary.cluster_id = c.id_cluster', 'left')
+                ->where("UPPER(COALESCE(c.status_atp, '')) = 'DONE'", null, false)
+                ->where('atp_summary.actual_atp_date IS NOT NULL', null, false)
+                ->where('atp_summary.actual_atp_date < CURDATE()', null, false);
+        }
+
+        $rows = $query
             ->order_by('mt.regional_name', 'ASC')
             ->get()
             ->result_array();
@@ -150,6 +183,18 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 GROUP BY cluster_id
             ) latest_claim', 'latest_claim.cluster_id = c.id_cluster', 'left')
             ->where('c.status_rfs', 'FULL RFS');
+
+        if ($this->supportsAtpColumns()) {
+            $query
+                ->join('(
+                    SELECT cluster_id, MAX(actual_atp_date) AS actual_atp_date
+                    FROM tb_rfs_myrep_doc_package
+                    GROUP BY cluster_id
+                ) atp_summary', 'atp_summary.cluster_id = c.id_cluster', 'left')
+                ->where("UPPER(COALESCE(c.status_atp, '')) = 'DONE'", null, false)
+                ->where('atp_summary.actual_atp_date IS NOT NULL', null, false)
+                ->where('atp_summary.actual_atp_date < CURDATE()', null, false);
+        }
 
         if ($city !== '') {
             $query->where('UPPER(mt.city_name)', strtoupper($city));
@@ -208,6 +253,18 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->join('tb_rfs_myrep_doc_package p', 'p.cluster_id = c.id_cluster AND p.id_doc_group = g.id_doc_group', 'left')
             ->join('tb_rfs_myrep_doc_file f', 'f.id_doc_package = p.id_doc_package AND f.id_doc_item = i.id_doc_item', 'left')
             ->where('c.status_rfs', 'FULL RFS');
+
+        if ($this->supportsAtpColumns()) {
+            $query
+                ->join('(
+                    SELECT cluster_id, MAX(actual_atp_date) AS actual_atp_date
+                    FROM tb_rfs_myrep_doc_package
+                    GROUP BY cluster_id
+                ) atp_summary', 'atp_summary.cluster_id = c.id_cluster', 'left')
+                ->where("UPPER(COALESCE(c.status_atp, '')) = 'DONE'", null, false)
+                ->where('atp_summary.actual_atp_date IS NOT NULL', null, false)
+                ->where('atp_summary.actual_atp_date < CURDATE()', null, false);
+        }
 
         if ($city !== '') {
             $query->where('UPPER(mt.city_name)', strtoupper($city));

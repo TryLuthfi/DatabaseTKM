@@ -691,6 +691,11 @@ foreach ($documentItemList as $item) {
                     <a href="<?= base_url('Checklist_Dokument_MyRep/mainfeeder') ?>" class="btn btn-outline-dark">Monitoring Mainfeeder</a>
                 </div>
             </div>
+            <?php if (empty($atpSchemaReady)): ?>
+                <div class="alert alert-warning">
+                    Mode checklist ATP DONE akan aktif setelah query di file <code>db/patch_myrep_atp_20260508.sql</code> dijalankan.
+                </div>
+            <?php endif; ?>
             <?php if ($this->session->flashdata('error')): ?>
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     <?= $this->session->flashdata('error') ?>
@@ -705,21 +710,10 @@ foreach ($documentItemList as $item) {
                     <div class="small-box bg-info">
                         <div class="inner">
                             <h3><?= $totalCluster ?></h3>
-                            <p>FULL RFS</p>
+                            <p>ATP DONE</p>
                         </div>
                         <div class="icon">
                             <i class="fas fa-network-wired"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="small-box bg-warning">
-                        <div class="inner">
-                            <h3><?= $clusterDoneRfsBelumAtp ?></h3>
-                            <p>NY ATP</p>
-                        </div>
-                        <div class="icon">
-                            <i class="fas fa-hourglass-half"></i>
                         </div>
                     </div>
                 </div>
@@ -742,6 +736,17 @@ foreach ($documentItemList as $item) {
                         </div>
                         <div class="icon">
                             <i class="fas fa-share-square"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h3><?= max(0, $totalCluster - $clusterNyAstri) ?></h3>
+                            <p>ASTRI DONE</p>
+                        </div>
+                        <div class="icon">
+                            <i class="fas fa-check-circle"></i>
                         </div>
                     </div>
                 </div>
@@ -827,7 +832,7 @@ foreach ($documentItemList as $item) {
 
             <div class="card table-card" id="cluster-monitor-card">
                 <div class="card-header">
-                    <h3 class="card-title">List Cluster FULL RFS</h3>
+                    <h3 class="card-title">List Cluster ATP DONE</h3>
                     <div class="card-tools">
                         <button type="button" class="btn btn-tool" data-card-widget="collapse">
                             <i class="fas fa-minus"></i>
@@ -1374,7 +1379,7 @@ foreach ($documentItemList as $item) {
                 [10, 25, 50, 100]
             ],
             "language": {
-                "emptyTable": "Belum ada cluster FULL RFS."
+                "emptyTable": "Belum ada cluster ATP DONE."
             }
         });
 
