@@ -386,6 +386,12 @@ if (!function_exists('drmBadgeClass')) {
                                     </div>
                                 </div>
                                 <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Nama OLT</label>
+                                        <input type="text" name="nama_olt" class="form-control" placeholder="Isi nama OLT">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
                                     <div class="form-group mb-0">
                                         <label>Remark</label>
                                         <input type="text" name="remark_drm" class="form-control">

@@ -104,7 +104,7 @@ class MDRM_MyRep extends CI_Model
         }
 
         $this->db
-            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ba.hp_donasi, ba.released_at, d.id_drm, d.drm_date, d.homepass_drm, d.status_drm, d.remark_drm, t.year_num, t.month_num')
+            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ba.hp_donasi, ba.released_at, d.id_drm, d.drm_date, d.homepass_drm, d.nama_olt, d.status_drm, d.remark_drm, t.year_num, t.month_num')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
@@ -183,6 +183,7 @@ class MDRM_MyRep extends CI_Model
                 d.id_drm,
                 d.drm_date,
                 d.homepass_drm,
+                d.nama_olt,
                 d.status_drm,
                 d.remark_drm,
                 d.created_by AS drm_created_by,

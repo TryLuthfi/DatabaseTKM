@@ -472,6 +472,7 @@ if (!function_exists('drmDocumentLabel')) {
                             <div class="col-md-4"><div class="form-group"><label>Tanggal DRM</label><input type="date" name="drm_date" class="form-control" value="<?= htmlspecialchars((string) ($cluster['drm_date'] ?? '')) ?>"></div></div>
                             <div class="col-md-4"><div class="form-group"><label>HP DRM</label><input type="number" name="homepass_drm" class="form-control" min="1" value="<?= htmlspecialchars((string) ($cluster['homepass_drm'] ?? '')) ?>" required></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Status DRM</label><input type="text" name="status_drm" class="form-control" value="<?= htmlspecialchars((string) ($cluster['display_status_drm'] ?? 'WAITING DOC')) ?>" readonly></div></div>
+                            <div class="col-md-12"><div class="form-group"><label>Nama OLT</label><input type="text" name="nama_olt" class="form-control" value="<?= htmlspecialchars((string) ($cluster['nama_olt'] ?? '')) ?>" placeholder="Isi nama OLT"></div></div>
                             <div class="col-md-12"><div class="form-group mb-0"><label>Remark DRM</label><textarea name="remark_drm" rows="3" class="form-control"><?= htmlspecialchars((string) ($cluster['remark_drm'] ?? '')) ?></textarea></div></div>
                         </div>
                     </div>

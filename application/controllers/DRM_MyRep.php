@@ -97,6 +97,7 @@ class DRM_MyRep extends CI_Controller
         $clusterId = (int) $this->input->post('cluster_id');
         $drmDate = $this->normalizeDate($this->input->post('drm_date'));
         $homepassDrm = (int) $this->normalizeNumber($this->input->post('homepass_drm'));
+        $namaOlt = trim((string) $this->input->post('nama_olt'));
         $statusDrm = strtoupper(trim((string) $this->input->post('status_drm')));
         $remark = trim((string) $this->input->post('remark_drm'));
 
@@ -128,6 +129,7 @@ class DRM_MyRep extends CI_Controller
         $result = $this->MDRM_MyRep->createDrm($clusterId, [
             'drm_date' => $drmDate,
             'homepass_drm' => $homepassDrm,
+            'nama_olt' => $namaOlt !== '' ? $namaOlt : null,
             'status_drm' => $statusDrm,
             'remark_drm' => $remark !== '' ? $remark : null,
             'created_by' => $userId,
@@ -158,6 +160,7 @@ class DRM_MyRep extends CI_Controller
         $drmId = (int) $this->input->post('id_drm');
         $drmDate = $this->normalizeDate($this->input->post('drm_date'));
         $homepassDrm = (int) $this->normalizeNumber($this->input->post('homepass_drm'));
+        $namaOlt = trim((string) $this->input->post('nama_olt'));
         $statusDrm = strtoupper(trim((string) $this->input->post('status_drm')));
         $remark = trim((string) $this->input->post('remark_drm'));
 
@@ -176,6 +179,7 @@ class DRM_MyRep extends CI_Controller
         $result = $this->MDRM_MyRep->updateDrm($clusterId, $drmId, [
             'drm_date' => $drmDate,
             'homepass_drm' => $homepassDrm,
+            'nama_olt' => $namaOlt !== '' ? $namaOlt : null,
             'status_drm' => $statusDrm,
             'remark_drm' => $remark !== '' ? $remark : null,
             'updated_by' => $userId,
