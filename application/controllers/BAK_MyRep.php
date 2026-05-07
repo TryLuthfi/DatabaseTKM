@@ -26,12 +26,22 @@ class BAK_MyRep extends CI_Controller
         $data['selectedStatus'] = $selectedStatus;
         $data['isReady'] = $this->MBAK_MyRep->bakTablesReady();
         $data['docReady'] = $this->MBAK_MyRep->bakDocumentTablesReady();
+        if ($data['docReady']) {
+            $this->MBAK_MyRep->ensureBakDocumentSetup();
+        }
         $data['canApprove'] = $this->isApprover();
         $data['cityOptions'] = $this->MBAK_MyRep->getCityOptions();
         $data['targetOptions'] = $this->MBAK_MyRep->getTargetOptions();
         $data['createTargetOptions'] = $this->MBAK_MyRep->getCreateTargetOptions();
         $data['clusterRows'] = $data['isReady']
             ? $this->MBAK_MyRep->getBakRows($selectedCity, $selectedStatus)
+            : [];
+        $clusterIds = array_values(array_filter(array_map(static function ($row) {
+            return (int) ($row['id_myrep_cluster'] ?? 0);
+        }, $data['clusterRows'])));
+        $data['bakDocumentDefinitions'] = $data['docReady'] ? $this->MBAK_MyRep->getBakDocumentDefinitions() : [];
+        $data['bakDocumentMap'] = ($data['docReady'] && !empty($clusterIds))
+            ? $this->MBAK_MyRep->getBakDocumentItemsByClusterIds($clusterIds)
             : [];
 
         $this->load->view('Templates/01_Header', $data);
@@ -63,6 +73,10 @@ class BAK_MyRep extends CI_Controller
         $homepassBak = (int) $this->normalizeNumber($this->input->post('homepass_bak'));
         $remarkBak = trim((string) $this->input->post('remark_bak'));
         $docReady = $this->MBAK_MyRep->bakDocumentTablesReady();
+        if ($docReady) {
+            $this->MBAK_MyRep->ensureBakDocumentSetup();
+        }
+        $documentDefinitions = $docReady ? $this->MBAK_MyRep->getBakDocumentDefinitions() : [];
 
         if ($targetId <= 0 || $clusterName === '' || $homepassBak <= 0) {
             $this->session->set_flashdata('error', 'Target, nama cluster, dan homepass BAK wajib diisi.');
@@ -70,8 +84,25 @@ class BAK_MyRep extends CI_Controller
             return;
         }
 
-        if ($docReady && empty($_FILES['create_file']['name']) && (int) $this->input->post('create_is_document_not_required') !== 1) {
-            $this->session->set_flashdata('error', 'Dokumen BA OPEN wajib diupload saat input cluster BAK baru.');
+        if ($docReady && empty($documentDefinitions)) {
+            $this->session->set_flashdata('error', 'Konfigurasi dokumen BAK belum ditemukan.');
+            redirect('BAK_MyRep');
+            return;
+        }
+
+        if ($docReady) {
+            foreach ($documentDefinitions as $documentDefinition) {
+                $fieldName = 'create_file_' . (int) $documentDefinition['id_doc_item'];
+                if (empty($_FILES[$fieldName]['name'])) {
+                    $this->session->set_flashdata('error', 'Dokumen ' . ($documentDefinition['doc_name'] ?? 'BAK') . ' wajib diupload saat input cluster BAK baru.');
+                    redirect('BAK_MyRep');
+                    return;
+                }
+            }
+        }
+
+        if ($docReady && count($documentDefinitions) < 3) {
+            $this->session->set_flashdata('error', 'Konfigurasi 3 dokumen BAK belum lengkap.');
             redirect('BAK_MyRep');
             return;
         }
@@ -130,38 +161,43 @@ class BAK_MyRep extends CI_Controller
         }
 
         if ($docReady) {
-            $context = $this->MBAK_MyRep->getBakDocumentContext($clusterId);
-            if (empty($context['id_doc_item'])) {
-                $this->MBAK_MyRep->deleteClusterAndBak($clusterId);
-                $this->session->set_flashdata('error', 'Konfigurasi dokumen BA OPEN belum ditemukan.');
-                redirect('BAK_MyRep');
-                return;
+            foreach ($documentDefinitions as $documentDefinition) {
+                $docItemId = (int) $documentDefinition['id_doc_item'];
+                $context = $this->MBAK_MyRep->getBakDocumentContext($clusterId, $docItemId);
+                if (empty($context['id_doc_item'])) {
+                    $this->MMyRep_Cleanup->deleteWholeCluster($clusterId);
+                    $this->session->set_flashdata('error', 'Konfigurasi dokumen ' . ($documentDefinition['doc_name'] ?? 'BAK') . ' belum ditemukan.');
+                    redirect('BAK_MyRep');
+                    return;
+                }
+
+                $uploadResult = $this->storeBakUploadFile($clusterId, $context, 'create_file_' . $docItemId);
+                if (!$uploadResult['status']) {
+                    $this->MMyRep_Cleanup->deleteWholeCluster($clusterId);
+                    $this->session->set_flashdata('error', $uploadResult['message']);
+                    redirect('BAK_MyRep');
+                    return;
+                }
+
+                $fileId = $this->MBAK_MyRep->saveBakFileUpload($clusterId, $docItemId, [
+                    'file_name' => $uploadResult['file_name'],
+                    'file_path' => $uploadResult['file_path'],
+                    'is_document_not_required' => 0,
+                    'status_file' => 'UPLOADED',
+                    'remark' => trim((string) $this->input->post('create_doc_remark_' . $docItemId)),
+                    'uploaded_by' => $userId,
+                ]);
+
+                if ($fileId <= 0) {
+                    $this->deleteStoredFile($uploadResult['file_path']);
+                    $this->MMyRep_Cleanup->deleteWholeCluster($clusterId);
+                    $this->session->set_flashdata('error', 'Dokumen ' . ($documentDefinition['doc_name'] ?? 'BAK') . ' gagal disimpan.');
+                    redirect('BAK_MyRep');
+                    return;
+                }
             }
 
-            $uploadResult = $this->storeBakUploadFile($clusterId, $context, 'create_file');
-            if (!$uploadResult['status']) {
-                $this->MBAK_MyRep->deleteClusterAndBak($clusterId);
-                $this->session->set_flashdata('error', $uploadResult['message']);
-                redirect('BAK_MyRep');
-                return;
-            }
-
-            $fileId = $this->MBAK_MyRep->saveBakFileUpload($clusterId, [
-                'file_name' => $uploadResult['file_name'],
-                'file_path' => $uploadResult['file_path'],
-                'is_document_not_required' => (int) $this->input->post('create_is_document_not_required') === 1 ? 1 : 0,
-                'status_file' => 'UPLOADED',
-                'remark' => trim((string) $this->input->post('create_doc_remark')),
-                'uploaded_by' => $userId,
-            ]);
-
-            if ($fileId <= 0) {
-                $this->deleteStoredFile($uploadResult['file_path']);
-                $this->MBAK_MyRep->deleteClusterAndBak($clusterId);
-                $this->session->set_flashdata('error', 'Dokumen BA OPEN gagal disimpan.');
-                redirect('BAK_MyRep');
-                return;
-            }
+            $this->MBAK_MyRep->syncBakStatusByCluster($clusterId, $userId);
         }
 
         $this->session->set_flashdata('success', 'Cluster BAK baru berhasil ditambahkan.');
@@ -253,6 +289,10 @@ class BAK_MyRep extends CI_Controller
             return;
         }
 
+        if ($this->MBAK_MyRep->bakDocumentTablesReady()) {
+            $this->MBAK_MyRep->syncBakStatusByCluster($clusterId, $userId);
+        }
+
         $this->session->set_flashdata('success', 'Data BAK berhasil diperbarui.');
         redirect('BAK_MyRep');
     }
@@ -273,16 +313,19 @@ class BAK_MyRep extends CI_Controller
             return;
         }
 
+        $this->MBAK_MyRep->ensureBakDocumentSetup();
+
         $clusterId = (int) $this->input->post('cluster_id');
-        $context = $this->MBAK_MyRep->getBakDocumentContext($clusterId);
+        $docItemId = (int) $this->input->post('doc_item_id');
+        $context = $this->MBAK_MyRep->getBakDocumentContext($clusterId, $docItemId);
         if ($clusterId <= 0 || empty($context['id_doc_item'])) {
-            $this->handleUploadError('Konfigurasi dokumen BA OPEN belum ditemukan.', 'BAK_MyRep');
+            $this->handleUploadError('Konfigurasi dokumen BAK belum ditemukan.', 'BAK_MyRep');
             return;
         }
 
         $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
         if (!$isNoDocumentRequired && empty($_FILES['file']['name'])) {
-            $this->handleUploadError('File BA OPEN wajib dipilih.', 'BAK_MyRep');
+            $this->handleUploadError('File ' . ($context['doc_name'] ?? 'dokumen') . ' wajib dipilih.', 'BAK_MyRep');
             return;
         }
 
@@ -292,7 +335,7 @@ class BAK_MyRep extends CI_Controller
             return;
         }
 
-        $fileId = $this->MBAK_MyRep->saveBakFileUpload($clusterId, [
+        $fileId = $this->MBAK_MyRep->saveBakFileUpload($clusterId, $docItemId, [
             'file_name' => $uploadResult['file_name'],
             'file_path' => $uploadResult['file_path'],
             'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
@@ -302,14 +345,14 @@ class BAK_MyRep extends CI_Controller
         ]);
 
         if ($fileId <= 0) {
-            $this->handleUploadError('Dokumen BA OPEN gagal disimpan.', 'BAK_MyRep');
+            $this->handleUploadError('Dokumen ' . ($context['doc_name'] ?? 'BAK') . ' gagal disimpan.', 'BAK_MyRep');
             return;
         }
 
-        $this->MBAK_MyRep->updateBakStatusByCluster($clusterId, 'ON REVIEW', 'BA OPEN', (int) $this->session->userdata('id_user'));
+        $this->MBAK_MyRep->syncBakStatusByCluster($clusterId, (int) $this->session->userdata('id_user'));
 
         $this->handleUploadSuccess(
-            $isNoDocumentRequired ? 'Dokumen BA OPEN ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen BA OPEN berhasil diupload.',
+            $isNoDocumentRequired ? 'Dokumen ' . ($context['doc_name'] ?? 'BAK') . ' ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen ' . ($context['doc_name'] ?? 'BAK') . ' berhasil diupload.',
             'BAK_MyRep'
         );
     }
@@ -317,11 +360,19 @@ class BAK_MyRep extends CI_Controller
     public function approveDocument()
     {
         if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.');
+                return;
+            }
             redirect('Auth');
             return;
         }
 
         if (!$this->isApprover()) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Anda tidak memiliki akses approve dokumen BAK.');
+                return;
+            }
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses approve dokumen BAK.');
             redirect('BAK_MyRep');
             return;
@@ -329,6 +380,10 @@ class BAK_MyRep extends CI_Controller
 
         $fileId = (int) $this->input->post('id_doc_file');
         if ($fileId <= 0) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Dokumen BAK tidak ditemukan.');
+                return;
+            }
             $this->session->set_flashdata('error', 'Dokumen BAK tidak ditemukan.');
             redirect('BAK_MyRep');
             return;
@@ -336,6 +391,10 @@ class BAK_MyRep extends CI_Controller
 
         $file = $this->MBAK_MyRep->getBakFileById($fileId);
         if (empty($file['id_myrep_cluster'])) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Data cluster dokumen BAK tidak ditemukan.');
+                return;
+            }
             $this->session->set_flashdata('error', 'Data cluster dokumen BAK tidak ditemukan.');
             redirect('BAK_MyRep');
             return;
@@ -348,21 +407,48 @@ class BAK_MyRep extends CI_Controller
         ]);
 
         if ($result) {
-            $this->MBAK_MyRep->updateBakStatusByCluster((int) $file['id_myrep_cluster'], 'DONE', 'BAK', (int) $this->session->userdata('id_user'));
+            $this->MBAK_MyRep->syncBakStatusByCluster((int) $file['id_myrep_cluster'], (int) $this->session->userdata('id_user'));
         }
 
-        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen BA OPEN berhasil di-approve.' : 'Gagal approve dokumen BA OPEN.');
+        $docName = (string) ($file['doc_name'] ?? 'BAK');
+        if ($this->isAjaxRequest()) {
+            if ($result) {
+                $response = $this->buildClusterDocumentResponse((int) $file['id_myrep_cluster']);
+                $response['message'] = 'Dokumen ' . $docName . ' berhasil di-approve.';
+                $this->output
+                    ->set_content_type('application/json')
+                    ->set_output(json_encode([
+                        'status' => true,
+                        'message' => $response['message'],
+                        'data' => $response,
+                    ]));
+                return;
+            }
+
+            $this->jsonResponse(false, 'Gagal approve dokumen ' . $docName . '.');
+            return;
+        }
+
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen ' . $docName . ' berhasil di-approve.' : 'Gagal approve dokumen ' . $docName . '.');
         redirect('BAK_MyRep');
     }
 
     public function rejectDocument()
     {
         if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.');
+                return;
+            }
             redirect('Auth');
             return;
         }
 
         if (!$this->isApprover()) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Anda tidak memiliki akses reject dokumen BAK.');
+                return;
+            }
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses reject dokumen BAK.');
             redirect('BAK_MyRep');
             return;
@@ -370,6 +456,10 @@ class BAK_MyRep extends CI_Controller
 
         $fileId = (int) $this->input->post('id_doc_file');
         if ($fileId <= 0) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Dokumen BAK tidak ditemukan.');
+                return;
+            }
             $this->session->set_flashdata('error', 'Dokumen BAK tidak ditemukan.');
             redirect('BAK_MyRep');
             return;
@@ -377,6 +467,10 @@ class BAK_MyRep extends CI_Controller
 
         $file = $this->MBAK_MyRep->getBakFileById($fileId);
         if (empty($file['id_myrep_cluster'])) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Data cluster dokumen BAK tidak ditemukan.');
+                return;
+            }
             $this->session->set_flashdata('error', 'Data cluster dokumen BAK tidak ditemukan.');
             redirect('BAK_MyRep');
             return;
@@ -389,11 +483,119 @@ class BAK_MyRep extends CI_Controller
         ]);
 
         if ($result) {
-            $this->MBAK_MyRep->updateBakStatusByCluster((int) $file['id_myrep_cluster'], 'REJECTED', 'REJECTED', (int) $this->session->userdata('id_user'));
+            $this->MBAK_MyRep->syncBakStatusByCluster((int) $file['id_myrep_cluster'], (int) $this->session->userdata('id_user'));
         }
 
-        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen BA OPEN berhasil di-reject.' : 'Gagal reject dokumen BA OPEN.');
+        $docName = (string) ($file['doc_name'] ?? 'BAK');
+        if ($this->isAjaxRequest()) {
+            if ($result) {
+                $response = $this->buildClusterDocumentResponse((int) $file['id_myrep_cluster']);
+                $response['message'] = 'Dokumen ' . $docName . ' berhasil di-reject.';
+                $this->output
+                    ->set_content_type('application/json')
+                    ->set_output(json_encode([
+                        'status' => true,
+                        'message' => $response['message'],
+                        'data' => $response,
+                    ]));
+                return;
+            }
+
+            $this->jsonResponse(false, 'Gagal reject dokumen ' . $docName . '.');
+            return;
+        }
+
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen ' . $docName . ' berhasil di-reject.' : 'Gagal reject dokumen ' . $docName . '.');
         redirect('BAK_MyRep');
+    }
+
+    public function downloadReport()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MBAK_MyRep->bakTablesReady()) {
+            show_404();
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->get('city')));
+        $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
+        $rows = $this->MBAK_MyRep->getBakRows($selectedCity, $selectedStatus);
+
+        $documentDefinitions = [];
+        $documentMap = [];
+        if ($this->MBAK_MyRep->bakDocumentTablesReady()) {
+            $this->MBAK_MyRep->ensureBakDocumentSetup();
+            $documentDefinitions = $this->MBAK_MyRep->getBakDocumentDefinitions();
+            $clusterIds = array_values(array_filter(array_map(static function ($row) {
+                return (int) ($row['id_myrep_cluster'] ?? 0);
+            }, $rows)));
+            if (!empty($clusterIds)) {
+                $documentMap = $this->MBAK_MyRep->getBakDocumentItemsByClusterIds($clusterIds);
+            }
+        }
+
+        $filename = 'report_bak_myrep_' . date('Ymd_His') . '.csv';
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $output = fopen('php://output', 'w');
+        fputcsv($output, array_merge([
+            'Cluster',
+            'Kode Cluster',
+            'Regional',
+            'Provinsi',
+            'Kota',
+            'Periode Target',
+            'HP Estimasi',
+            'Tanggal BA OPEN',
+            'Tanggal BAK',
+            'Status BAK',
+            'Status Flow',
+            'Remark BAK',
+        ], $this->buildReportDocumentHeaders($documentDefinitions)));
+
+        foreach ($rows as $row) {
+            $clusterDocs = $documentMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? [];
+            $docIndexed = [];
+            foreach ($clusterDocs as $docRow) {
+                $docIndexed[(int) ($docRow['id_doc_item'] ?? 0)] = $docRow;
+            }
+
+            $periodLabel = !empty($row['year_num']) && !empty($row['month_num'])
+                ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num'])
+                : '-';
+
+            $csvRow = [
+                (string) ($row['cluster_name'] ?? ''),
+                (string) ($row['cluster_code'] ?? ''),
+                (string) ($row['regional_name'] ?? ''),
+                (string) ($row['province_name'] ?? ''),
+                (string) ($row['city_name'] ?? ''),
+                $periodLabel,
+                (string) (int) ($row['homepass_bak'] ?? 0),
+                (string) ($row['ba_open_date'] ?? ''),
+                (string) ($row['bak_date'] ?? ''),
+                (string) ($row['status_bak'] ?? ''),
+                (string) ($row['status_current'] ?? ''),
+                (string) ($row['remark_bak'] ?? ''),
+            ];
+
+            foreach ($documentDefinitions as $documentDefinition) {
+                $docRow = $docIndexed[(int) $documentDefinition['id_doc_item']] ?? [];
+                $csvRow[] = (string) ($this->resolveDocumentStatusLabel($docRow));
+                $csvRow[] = (string) ($docRow['file_name'] ?? '');
+                $csvRow[] = (string) ($docRow['remark'] ?? '');
+            }
+
+            fputcsv($output, $csvRow);
+        }
+
+        fclose($output);
+        exit;
     }
 
     public function previewDocument($fileId = 0)
@@ -495,7 +697,9 @@ class BAK_MyRep extends CI_Controller
 
     private function storeBakUploadFile($clusterId, $context, $fieldName)
     {
-        $isNoDocumentRequired = (int) $this->input->post($fieldName === 'create_file' ? 'create_is_document_not_required' : 'is_document_not_required') === 1;
+        $isNoDocumentRequired = $fieldName === 'file'
+            ? (int) $this->input->post('is_document_not_required') === 1
+            : false;
         if ($isNoDocumentRequired) {
             return [
                 'status' => true,
@@ -508,7 +712,7 @@ class BAK_MyRep extends CI_Controller
         if (empty($_FILES[$fieldName]['name'])) {
             return [
                 'status' => false,
-                'message' => 'File BA OPEN wajib dipilih.',
+                'message' => 'File ' . ((string) ($context['doc_name'] ?? 'dokumen')) . ' wajib dipilih.',
                 'file_name' => '',
                 'file_path' => '',
             ];
@@ -520,8 +724,8 @@ class BAK_MyRep extends CI_Controller
         }
 
         $extension = pathinfo($_FILES[$fieldName]['name'], PATHINFO_EXTENSION);
-        $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($context['doc_name'] ?? 'BA_OPEN'));
-        $fileName = 'BAK_' . (int) $clusterId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+        $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($context['doc_name'] ?? 'BAK_DOC'));
+        $fileName = 'BAK_' . (int) $clusterId . '_' . (int) ($context['id_doc_item'] ?? 0) . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
 
         $config = [
             'upload_path' => $uploadDir,
@@ -629,5 +833,51 @@ class BAK_MyRep extends CI_Controller
 
         $this->session->set_flashdata('error', $message);
         redirect($redirectPath);
+    }
+
+    private function buildReportDocumentHeaders($documentDefinitions)
+    {
+        $headers = [];
+        foreach ($documentDefinitions as $documentDefinition) {
+            $docName = (string) ($documentDefinition['doc_name'] ?? 'Dokumen');
+            $headers[] = $docName . ' Status';
+            $headers[] = $docName . ' File';
+            $headers[] = $docName . ' Remark';
+        }
+
+        return $headers;
+    }
+
+    private function resolveDocumentStatusLabel($docRow)
+    {
+        if ((int) ($docRow['is_document_not_required'] ?? 0) === 1) {
+            return 'Tidak Dibutuhkan';
+        }
+
+        $status = strtoupper(trim((string) ($docRow['status_file'] ?? '')));
+        if ($status === 'UPLOADED') {
+            return 'ON REVIEW';
+        }
+
+        if ($status !== '') {
+            return $status;
+        }
+
+        return !empty($docRow['file_name']) ? 'UPLOADED' : 'BELUM UPLOAD';
+    }
+
+    private function buildClusterDocumentResponse($clusterId)
+    {
+        $clusterId = (int) $clusterId;
+        $cluster = $this->MBAK_MyRep->getClusterById($clusterId);
+        $documentRows = $this->MBAK_MyRep->getBakDocumentItemsByClusterIds([$clusterId]);
+
+        return [
+            'cluster_id' => $clusterId,
+            'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'status_bak' => (string) ($cluster['status_bak'] ?? ''),
+            'status_current' => (string) ($cluster['status_current'] ?? ''),
+            'documents' => array_values($documentRows[$clusterId] ?? []),
+        ];
     }
 }

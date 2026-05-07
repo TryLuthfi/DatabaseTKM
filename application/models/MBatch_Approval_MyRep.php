@@ -3,6 +3,24 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MBatch_Approval_MyRep extends CI_Model
 {
+    private $autoLinkedPostDonasiDocuments = [
+        'SURAT IJIN RT / RW' => [
+            'flow_type' => 'BAK',
+            'doc_name' => 'Surat Ijin',
+            'group_label' => 'BA OPEN',
+        ],
+        'FORM CLUSTER SURVEY' => [
+            'flow_type' => 'BAK',
+            'doc_name' => 'Form Survey',
+            'group_label' => 'BA OPEN',
+        ],
+        'LAYOUT SND KASAR' => [
+            'flow_type' => 'VALSAL',
+            'doc_name' => 'SND Kasar',
+            'group_label' => 'VALIDASI SALES',
+        ],
+    ];
+
     public function batchTablesReady()
     {
         $requiredTables = [
@@ -450,6 +468,17 @@ class MBatch_Approval_MyRep extends CI_Model
             ->row_array();
     }
 
+    public function getAutoLinkedSupportDocumentMap($clusterId)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0 || !$this->batchDocumentTablesReady()) {
+            return [];
+        }
+
+        $map = $this->getAutoLinkedSupportDocumentMapByClusterIds([$clusterId]);
+        return $map[$clusterId] ?? [];
+    }
+
     public function saveBatchFileUpload($clusterId, $data)
     {
         $clusterId = (int) $clusterId;
@@ -751,13 +780,22 @@ class MBatch_Approval_MyRep extends CI_Model
             return [];
         }
 
+        $linkedMap = $this->getAutoLinkedSupportDocumentMapByClusterIds($clusterIds);
+
         $rows = $this->db
-            ->select("p.id_myrep_cluster, SUM(CASE WHEN f.id_doc_file IS NOT NULL THEN 1 ELSE 0 END) AS uploaded_doc, SUM(CASE WHEN UPPER(COALESCE(f.status_file, '')) = 'APPROVED' THEN 1 ELSE 0 END) AS approved_doc", false)
-            ->from('tb_myrep_flow_doc_package p')
-            ->join('tb_myrep_flow_doc_file f', 'f.id_doc_package = p.id_doc_package', 'left')
-            ->where('p.flow_type', 'POST_DONASI')
-            ->where_in('p.id_myrep_cluster', $clusterIds)
-            ->group_by('p.id_myrep_cluster')
+            ->select('
+                c.id_myrep_cluster,
+                i.doc_name,
+                f.id_doc_file,
+                f.status_file
+            ')
+            ->from('tb_myrep_cluster c')
+            ->join("md_myrep_flow_doc_group g", "g.flow_type = 'POST_DONASI' AND g.is_active = 1", 'inner', false)
+            ->join('md_myrep_flow_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1', 'inner')
+            ->join('tb_myrep_flow_doc_package p', 'p.id_myrep_cluster = c.id_myrep_cluster AND p.flow_type = \'POST_DONASI\' AND p.id_doc_group = g.id_doc_group', 'left', false)
+            ->join('tb_myrep_flow_doc_file f', 'f.id_doc_package = p.id_doc_package AND f.id_doc_item = i.id_doc_item', 'left')
+            ->where_in('c.id_myrep_cluster', $clusterIds)
+            ->order_by('i.sort_no', 'ASC')
             ->get()
             ->result_array();
 
@@ -772,14 +810,114 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         foreach ($rows as $row) {
-            $map[(int) $row['id_myrep_cluster']] = [
-                'total' => $total,
-                'uploaded' => (int) ($row['uploaded_doc'] ?? 0),
-                'approved' => (int) ($row['approved_doc'] ?? 0),
-            ];
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            $docName = strtoupper(trim((string) ($row['doc_name'] ?? '')));
+            $hasActualFile = (int) ($row['id_doc_file'] ?? 0) > 0;
+            $actualStatus = strtoupper(trim((string) ($row['status_file'] ?? '')));
+            $hasLinkedFile = !empty($linkedMap[$clusterId][$docName]['linked_source_file_id']);
+
+            if ($hasActualFile || $hasLinkedFile) {
+                $map[$clusterId]['uploaded']++;
+            }
+
+            if ($hasActualFile) {
+                if ($actualStatus === 'APPROVED') {
+                    $map[$clusterId]['approved']++;
+                }
+                continue;
+            }
+
+            if ($hasLinkedFile) {
+                $map[$clusterId]['approved']++;
+            }
         }
 
         return $map;
+    }
+
+    private function getAutoLinkedSupportDocumentMapByClusterIds($clusterIds)
+    {
+        $clusterIds = array_values(array_filter(array_map('intval', (array) $clusterIds)));
+        if (empty($clusterIds) || !$this->batchDocumentTablesReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('
+                doc_package.id_myrep_cluster,
+                doc_package.flow_type,
+                doc_group.group_label,
+                doc_item.doc_name,
+                doc_file.id_doc_file,
+                doc_file.file_name,
+                doc_file.file_path,
+                doc_file.status_file,
+                doc_file.reviewed_at,
+                doc_file.approved_at
+            ')
+            ->from('tb_myrep_flow_doc_package doc_package')
+            ->join('md_myrep_flow_doc_group doc_group', 'doc_group.id_doc_group = doc_package.id_doc_group', 'inner')
+            ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'inner')
+            ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'inner')
+            ->where_in('doc_package.id_myrep_cluster', $clusterIds)
+            ->where_in('doc_package.flow_type', ['BAK', 'VALSAL'])
+            ->where('doc_group.is_active', 1)
+            ->get()
+            ->result_array();
+
+        $sourceLookup = [];
+        foreach ($rows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            $key = strtoupper(trim((string) ($row['flow_type'] ?? ''))) . '|' .
+                strtoupper(trim((string) ($row['group_label'] ?? ''))) . '|' .
+                strtoupper(trim((string) ($row['doc_name'] ?? '')));
+
+            if (!isset($sourceLookup[$clusterId])) {
+                $sourceLookup[$clusterId] = [];
+            }
+
+            if (!isset($sourceLookup[$clusterId][$key])) {
+                $sourceLookup[$clusterId][$key] = $row;
+            }
+        }
+
+        $result = [];
+        foreach ($clusterIds as $clusterId) {
+            $result[$clusterId] = [];
+
+            foreach ($this->autoLinkedPostDonasiDocuments as $postDocName => $mapping) {
+                $lookupKey = strtoupper($mapping['flow_type']) . '|' .
+                    strtoupper($mapping['group_label']) . '|' .
+                    strtoupper($mapping['doc_name']);
+
+                if (empty($sourceLookup[$clusterId][$lookupKey]['id_doc_file'])) {
+                    continue;
+                }
+
+                $sourceRow = $sourceLookup[$clusterId][$lookupKey];
+                $sourceFlowType = strtoupper(trim((string) ($sourceRow['flow_type'] ?? '')));
+                $previewPath = '';
+
+                if ($sourceFlowType === 'BAK') {
+                    $previewPath = 'BAK_MyRep/previewDocument/' . (int) $sourceRow['id_doc_file'];
+                } elseif ($sourceFlowType === 'VALSAL') {
+                    $previewPath = 'VALSAL_MyRep/previewDocument/' . (int) $sourceRow['id_doc_file'];
+                }
+
+                $result[$clusterId][$postDocName] = [
+                    'linked_source_flow_type' => $sourceFlowType,
+                    'linked_source_group_label' => (string) ($sourceRow['group_label'] ?? ''),
+                    'linked_source_doc_name' => (string) ($sourceRow['doc_name'] ?? ''),
+                    'linked_source_file_id' => (int) $sourceRow['id_doc_file'],
+                    'linked_source_file_name' => (string) ($sourceRow['file_name'] ?? ''),
+                    'linked_source_file_path' => (string) ($sourceRow['file_path'] ?? ''),
+                    'linked_source_status' => (string) ($sourceRow['status_file'] ?? ''),
+                    'linked_source_preview_path' => $previewPath,
+                ];
+            }
+        }
+
+        return $result;
     }
 
     private function resolveDisplayStagingStatus($stagingStatus, $postDocTotal, $postDocUploaded)

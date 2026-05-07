@@ -3,6 +3,19 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MBAK_MyRep extends CI_Model
 {
+    private $defaultBakDocumentItems = [
+        ['doc_name' => 'Surat Ijin', 'sort_no' => 1],
+        ['doc_name' => 'Form Survey', 'sort_no' => 2],
+        ['doc_name' => 'BA Open', 'sort_no' => 3],
+    ];
+
+    private function getDefaultBakDocumentNames()
+    {
+        return array_map(static function ($item) {
+            return (string) $item['doc_name'];
+        }, $this->defaultBakDocumentItems);
+    }
+
     public function bakTablesReady()
     {
         $requiredTables = [
@@ -134,45 +147,12 @@ class MBAK_MyRep extends CI_Model
                 b.homepass_bak,
                 b.status_bak,
                 b.remark_bak,
-                doc_group.id_doc_group AS bak_doc_group_id,
-                doc_item.id_doc_item AS bak_doc_item_id,
-                doc_package.id_doc_package AS bak_doc_package_id,
-                doc_package.status_package AS bak_doc_package_status,
-                doc_file.id_doc_file AS bak_doc_file_id,
-                doc_file.file_name AS bak_doc_file_name,
-                doc_file.file_path AS bak_doc_file_path,
-                doc_file.status_file AS bak_doc_status,
-                doc_file.is_document_not_required AS bak_doc_not_required,
-                doc_file.remark AS bak_doc_remark,
-                doc_file.approved_at AS bak_doc_approved_at,
-                doc_file.reviewed_at AS bak_doc_reviewed_at,
                 t.year_num,
                 t.month_num
             ')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left');
-
-        if ($this->bakDocumentTablesReady()) {
-            $this->db
-                ->join("md_myrep_flow_doc_group doc_group", "doc_group.flow_type = 'BAK' AND doc_group.group_label = 'BA OPEN' AND doc_group.is_active = 1", 'left', false)
-                ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'left')
-                ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = c.id_myrep_cluster AND doc_package.flow_type = \'BAK\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
-                ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left');
-        } else {
-            $this->db->select("
-                NULL AS bak_doc_group_id,
-                NULL AS bak_doc_item_id,
-                NULL AS bak_doc_package_id,
-                NULL AS bak_doc_package_status,
-                NULL AS bak_doc_file_id,
-                NULL AS bak_doc_file_name,
-                NULL AS bak_doc_file_path,
-                NULL AS bak_doc_status,
-                NULL AS bak_doc_not_required,
-                NULL AS bak_doc_remark
-            ", false);
-        }
 
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
@@ -188,11 +168,145 @@ class MBAK_MyRep extends CI_Model
         }
 
         return $this->db
-            ->group_by('c.id_myrep_cluster')
             ->order_by('c.created_at', 'DESC')
             ->order_by('c.cluster_name', 'ASC')
             ->get()
             ->result_array();
+    }
+
+    public function ensureBakDocumentSetup()
+    {
+        if (!$this->bakDocumentTablesReady()) {
+            return false;
+        }
+
+        $group = $this->db
+            ->get_where('md_myrep_flow_doc_group', [
+                'flow_type' => 'BAK',
+                'group_label' => 'BA OPEN',
+                'is_active' => 1,
+            ])
+            ->row_array();
+
+        if (empty($group['id_doc_group'])) {
+            return false;
+        }
+
+        $groupId = (int) $group['id_doc_group'];
+        $existingRows = $this->db
+            ->select('id_doc_item, doc_name')
+            ->from('md_myrep_flow_doc_item')
+            ->where('id_doc_group', $groupId)
+            ->where('is_active', 1)
+            ->get()
+            ->result_array();
+
+        $existingMap = [];
+        foreach ($existingRows as $row) {
+            $existingMap[strtoupper(trim((string) ($row['doc_name'] ?? '')))] = (int) $row['id_doc_item'];
+        }
+
+        foreach ($this->defaultBakDocumentItems as $item) {
+            $docName = (string) $item['doc_name'];
+            $lookupKey = strtoupper($docName);
+            if (isset($existingMap[$lookupKey])) {
+                $this->db
+                    ->where('id_doc_item', $existingMap[$lookupKey])
+                    ->update('md_myrep_flow_doc_item', [
+                        'doc_name' => $docName,
+                        'sort_no' => (int) $item['sort_no'],
+                    ]);
+                continue;
+            }
+
+            if ($lookupKey === 'BA OPEN' && isset($existingMap['BA OPEN'])) {
+                $this->db
+                    ->where('id_doc_item', $existingMap['BA OPEN'])
+                    ->update('md_myrep_flow_doc_item', [
+                        'doc_name' => $docName,
+                        'sort_no' => (int) $item['sort_no'],
+                    ]);
+                continue;
+            }
+
+            $this->db->insert('md_myrep_flow_doc_item', [
+                'id_doc_group' => $groupId,
+                'doc_name' => $docName,
+                'sort_no' => (int) $item['sort_no'],
+                'is_active' => 1,
+            ]);
+        }
+
+        return true;
+    }
+
+    public function getBakDocumentDefinitions()
+    {
+        if (!$this->bakDocumentTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->select('doc_group.id_doc_group, doc_item.id_doc_item, doc_item.doc_name, doc_item.sort_no')
+            ->from('md_myrep_flow_doc_group doc_group')
+            ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'inner')
+            ->where('doc_group.flow_type', 'BAK')
+            ->where('doc_group.group_label', 'BA OPEN')
+            ->where('doc_group.is_active', 1)
+            ->where_in('doc_item.doc_name', $this->getDefaultBakDocumentNames())
+            ->order_by('doc_item.sort_no', 'ASC')
+            ->order_by('doc_item.id_doc_item', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+    public function getBakDocumentItemsByClusterIds($clusterIds)
+    {
+        if (!$this->bakDocumentTablesReady() || empty($clusterIds)) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('
+                c.id_myrep_cluster,
+                c.cluster_name,
+                doc_group.id_doc_group,
+                doc_item.id_doc_item,
+                doc_item.doc_name,
+                doc_item.sort_no,
+                doc_package.id_doc_package,
+                doc_package.status_package,
+                doc_file.id_doc_file,
+                doc_file.file_name,
+                doc_file.file_path,
+                doc_file.status_file,
+                doc_file.is_document_not_required,
+                doc_file.remark,
+                doc_file.uploaded_at,
+                doc_file.reviewed_at,
+                doc_file.approved_at
+            ')
+            ->from('tb_myrep_cluster c')
+            ->join("md_myrep_flow_doc_group doc_group", "doc_group.flow_type = 'BAK' AND doc_group.group_label = 'BA OPEN' AND doc_group.is_active = 1", 'inner', false)
+            ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'inner')
+            ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = c.id_myrep_cluster AND doc_package.flow_type = \'BAK\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
+            ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left')
+            ->where_in('c.id_myrep_cluster', array_map('intval', $clusterIds))
+            ->where_in('doc_item.doc_name', $this->getDefaultBakDocumentNames())
+            ->order_by('doc_item.sort_no', 'ASC')
+            ->order_by('doc_item.id_doc_item', 'ASC')
+            ->get()
+            ->result_array();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $clusterId = (int) $row['id_myrep_cluster'];
+            $fileId = (int) ($row['id_doc_file'] ?? 0);
+            $row['history'] = $fileId > 0 ? $this->getBakFileLogs($fileId) : [];
+            $result[$clusterId][] = $row;
+        }
+
+        return $result;
     }
 
     public function getClusterById($clusterId)
@@ -300,10 +414,14 @@ class MBAK_MyRep extends CI_Model
         return $this->db->trans_status();
     }
 
-    public function getBakDocumentContext($clusterId)
+    public function getBakDocumentContext($clusterId, $docItemId = 0)
     {
         if (!$this->bakDocumentTablesReady()) {
             return [];
+        }
+
+        if ($docItemId > 0) {
+            $this->db->where('doc_item.id_doc_item', (int) $docItemId);
         }
 
         return $this->db
@@ -313,6 +431,7 @@ class MBAK_MyRep extends CI_Model
                 doc_group.id_doc_group,
                 doc_item.id_doc_item,
                 doc_item.doc_name,
+                doc_item.sort_no,
                 doc_package.id_doc_package,
                 doc_package.status_package,
                 doc_file.id_doc_file,
@@ -330,18 +449,22 @@ class MBAK_MyRep extends CI_Model
             ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = c.id_myrep_cluster AND doc_package.flow_type = \'BAK\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
             ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left')
             ->where('c.id_myrep_cluster', (int) $clusterId)
+            ->where_in('doc_item.doc_name', $this->getDefaultBakDocumentNames())
+            ->order_by('doc_item.sort_no', 'ASC')
+            ->order_by('doc_item.id_doc_item', 'ASC')
             ->get()
             ->row_array();
     }
 
-    public function saveBakFileUpload($clusterId, $data)
+    public function saveBakFileUpload($clusterId, $docItemId, $data)
     {
         $clusterId = (int) $clusterId;
-        if ($clusterId <= 0 || !$this->bakDocumentTablesReady()) {
+        $docItemId = (int) $docItemId;
+        if ($clusterId <= 0 || $docItemId <= 0 || !$this->bakDocumentTablesReady()) {
             return 0;
         }
 
-        $context = $this->getBakDocumentContext($clusterId);
+        $context = $this->getBakDocumentContext($clusterId, $docItemId);
         if (empty($context['id_doc_group']) || empty($context['id_doc_item'])) {
             return 0;
         }
@@ -520,6 +643,64 @@ class MBAK_MyRep extends CI_Model
         $this->db->trans_complete();
 
         return $this->db->trans_status();
+    }
+
+    public function syncBakStatusByCluster($clusterId, $userId)
+    {
+        $clusterId = (int) $clusterId;
+        $userId = (int) $userId;
+        if ($clusterId <= 0) {
+            return false;
+        }
+
+        $definitions = $this->getBakDocumentDefinitions();
+        if (empty($definitions)) {
+            return $this->updateBakStatusByCluster($clusterId, 'ON REVIEW', 'BA OPEN', $userId);
+        }
+
+        $contextRows = $this->db
+            ->select('doc_item.id_doc_item, doc_file.status_file')
+            ->from('md_myrep_flow_doc_group doc_group')
+            ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'inner')
+            ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = ' . $clusterId . ' AND doc_package.flow_type = \'BAK\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
+            ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left')
+            ->where('doc_group.flow_type', 'BAK')
+            ->where('doc_group.group_label', 'BA OPEN')
+            ->where('doc_group.is_active', 1)
+            ->where_in('doc_item.doc_name', $this->getDefaultBakDocumentNames())
+            ->order_by('doc_item.sort_no', 'ASC')
+            ->get()
+            ->result_array();
+
+        $approvedCount = 0;
+        $hasSubmitted = false;
+        $hasRejected = false;
+        foreach ($contextRows as $row) {
+            $status = strtoupper(trim((string) ($row['status_file'] ?? '')));
+            if ($status === 'REJECTED') {
+                $hasRejected = true;
+            }
+            if (in_array($status, ['UPLOADED', 'APPROVED'], true)) {
+                $hasSubmitted = true;
+            }
+            if ($status === 'APPROVED') {
+                $approvedCount++;
+            }
+        }
+
+        if ($hasRejected) {
+            return $this->updateBakStatusByCluster($clusterId, 'REJECTED', 'REJECTED', $userId);
+        }
+
+        if ($approvedCount >= count($definitions)) {
+            return $this->updateBakStatusByCluster($clusterId, 'DONE', 'BAK', $userId);
+        }
+
+        if ($hasSubmitted) {
+            return $this->updateBakStatusByCluster($clusterId, 'ON REVIEW', 'BA OPEN', $userId);
+        }
+
+        return $this->updateBakStatusByCluster($clusterId, 'DRAFT', 'BA OPEN', $userId);
     }
 
     private function ensureBakPackage($clusterId, $docGroupId, $userId)

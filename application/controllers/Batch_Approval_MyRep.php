@@ -84,6 +84,16 @@ class Batch_Approval_MyRep extends CI_Controller
         $data['postDonasiRows'] = $data['postDonasiDocReady']
             ? $this->MPost_Donasi_MyRep->getDocumentRows($clusterId)
             : [];
+        $linkedSupportDocumentMap = $data['docReady']
+            ? $this->MBatch_Approval_MyRep->getAutoLinkedSupportDocumentMap($clusterId)
+            : [];
+        foreach ($data['postDonasiRows'] as &$postDonasiRow) {
+            $normalizedDocName = strtoupper(trim((string) ($postDonasiRow['doc_name'] ?? '')));
+            if (isset($linkedSupportDocumentMap[$normalizedDocName])) {
+                $postDonasiRow = array_merge($postDonasiRow, $linkedSupportDocumentMap[$normalizedDocName]);
+            }
+        }
+        unset($postDonasiRow);
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');

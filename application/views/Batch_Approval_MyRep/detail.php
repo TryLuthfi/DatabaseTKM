@@ -7,6 +7,7 @@ if (!function_exists('batchDetailBadgeClass')) {
     {
         switch (strtoupper(trim((string) $status))) {
             case 'APPROVED':
+            case 'LINKED DOKUMENT':
             case 'RELEASED':
             case 'DONE BATCH APPROVAL':
                 return 'success';
@@ -41,6 +42,10 @@ if (!function_exists('batchDetailDocumentLabel')) {
     {
         if ((int) ($row['is_document_not_required'] ?? $row['batch_doc_not_required'] ?? 0) === 1) {
             return 'TIDAK BUTUH DOKUMENT';
+        }
+
+        if (empty($row['id_doc_file']) && !empty($row['linked_source_file_id'])) {
+            return 'LINKED DOKUMENT';
         }
 
         $status = strtoupper(trim((string) ($row['status_file'] ?? $row['batch_doc_status'] ?? '')));
@@ -691,7 +696,7 @@ if ($canApprove) {
                                         <?php
                                         $postStatus = batchDetailDocumentLabel($row);
                                         $postRawStatus = strtoupper(trim((string) ($row['status_file'] ?? '')));
-                                        $postCanUpload = $postStatus === 'BELUM UPLOAD' || $postRawStatus === 'REJECTED';
+                                        $postCanUpload = in_array($postStatus, ['BELUM UPLOAD', 'LINKED DOKUMENT'], true) || $postRawStatus === 'REJECTED';
                                         $postCanReview = $canApprove && !empty($row['id_doc_file']) && $postRawStatus === 'UPLOADED';
                                         ?>
                                         <tr>
@@ -713,6 +718,13 @@ if ($canApprove) {
                                                     </button>
                                                 <?php else: ?>
                                                     <span class="text-muted">Belum ada file</span>
+                                                <?php endif; ?>
+                                                <?php if (!empty($row['linked_source_preview_path'])): ?>
+                                                    <div class="small text-primary mt-2">
+                                                        Referensi otomatis: <?= htmlspecialchars((string) ($row['linked_source_doc_name'] ?? '-')) ?> (<?= htmlspecialchars((string) ($row['linked_source_flow_type'] ?? '-')) ?>)
+                                                    </div>
+                                                    <div class="small text-muted"><?= htmlspecialchars((string) ($row['linked_source_file_name'] ?? '-')) ?></div>
+                                                    <a href="<?= base_url((string) $row['linked_source_preview_path']) ?>" target="_blank" class="btn btn-sm btn-outline-info mt-1">Lihat Referensi</a>
                                                 <?php endif; ?>
                                             </td>
                                             <td style="min-width:220px;">

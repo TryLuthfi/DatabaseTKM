@@ -495,7 +495,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                     $id_menu == 'Fiberstar_Project' ||
                                     $id_menu == 'Fiberstar_Project_Detail' ||
                                     $id_menu == 'Fiberstar_Kompensasi'
-                                ) ? 'active' : '' ?>">
+                                ) ? 'active' : '' ?>" style="pointer-events: none">
                                     <i class="nav-icon fas fa-file-invoice-dollar"></i>
                                     <p>
                                         Fiberstar
