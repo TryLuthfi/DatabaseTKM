@@ -9,6 +9,7 @@ class BAK_MyRep extends CI_Controller
         $this->load->model('MBAK_MyRep');
         $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
+        $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
     }
 
     public function index()
@@ -198,6 +199,12 @@ class BAK_MyRep extends CI_Controller
             }
 
             $this->MBAK_MyRep->syncBakStatusByCluster($clusterId, $userId);
+            $this->sendBakNotification('document_masuk', [
+                'cluster_name' => $clusterName,
+                'regional_name' => (string) ($target['regional_name'] ?? ''),
+                'city_name' => (string) ($target['city_name'] ?? ''),
+                'id_myrep_cluster' => $clusterId,
+            ], 'Initial Documents');
         }
 
         $this->session->set_flashdata('success', 'Cluster BAK baru berhasil ditambahkan.');
@@ -322,6 +329,7 @@ class BAK_MyRep extends CI_Controller
             $this->handleUploadError('Konfigurasi dokumen BAK belum ditemukan.', 'BAK_MyRep');
             return;
         }
+        $notificationEvent = !empty($context['id_doc_file']) ? 'document_revised' : 'document_masuk';
 
         $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
         if (!$isNoDocumentRequired && empty($_FILES['file']['name'])) {
@@ -350,6 +358,8 @@ class BAK_MyRep extends CI_Controller
         }
 
         $this->MBAK_MyRep->syncBakStatusByCluster($clusterId, (int) $this->session->userdata('id_user'));
+        $cluster = $this->MBAK_MyRep->getClusterById($clusterId);
+        $this->sendBakNotification($notificationEvent, $cluster, (string) ($context['doc_name'] ?? 'BAK'));
 
         $this->handleUploadSuccess(
             $isNoDocumentRequired ? 'Dokumen ' . ($context['doc_name'] ?? 'BAK') . ' ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen ' . ($context['doc_name'] ?? 'BAK') . ' berhasil diupload.',
@@ -765,6 +775,24 @@ class BAK_MyRep extends CI_Controller
         if (is_file($fullPath)) {
             @unlink($fullPath);
         }
+    }
+
+    private function sendBakNotification($eventName, array $cluster, $documentLabel)
+    {
+        $clusterId = (int) ($cluster['id_myrep_cluster'] ?? 0);
+        if ($clusterId <= 0) {
+            return;
+        }
+
+        $this->myrepNotifier->notify('BAK_MyRep', $eventName, [
+            'module_label' => 'BAK',
+            'document_label' => (string) $documentLabel,
+            'regional_name' => (string) ($cluster['regional_name'] ?? ''),
+            'city_name' => (string) ($cluster['city_name'] ?? ''),
+            'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'sender_name' => (string) $this->session->userdata('nama_user'),
+            'detail_url' => base_url('BAK_MyRep'),
+        ]);
     }
 
     private function normalizeDate($date)

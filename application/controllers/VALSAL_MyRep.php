@@ -9,6 +9,7 @@ class VALSAL_MyRep extends CI_Controller
         $this->load->model('MVALSAL_MyRep');
         $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
+        $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
     }
 
     public function index()
@@ -173,6 +174,12 @@ class VALSAL_MyRep extends CI_Controller
             }
 
             $this->MVALSAL_MyRep->syncValsalStatusByCluster($clusterId, $userId);
+            $this->sendValsalNotification('document_masuk', [
+                'id_myrep_cluster' => $clusterId,
+                'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+                'regional_name' => (string) ($cluster['regional_name'] ?? ''),
+                'city_name' => (string) ($cluster['city_name'] ?? ''),
+            ], 'Initial Documents');
         }
 
         $this->session->set_flashdata('success', 'Data VALSAL berhasil ditambahkan.');
@@ -269,6 +276,7 @@ class VALSAL_MyRep extends CI_Controller
             $this->handleUploadError('Konfigurasi dokumen VALSAL belum ditemukan.', 'VALSAL_MyRep');
             return;
         }
+        $notificationEvent = !empty($context['id_doc_file']) ? 'document_revised' : 'document_masuk';
 
         $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
         if (!$isNoDocumentRequired && empty($_FILES['file']['name'])) {
@@ -297,6 +305,8 @@ class VALSAL_MyRep extends CI_Controller
         }
 
         $this->MVALSAL_MyRep->syncValsalStatusByCluster($clusterId, (int) $this->session->userdata('id_user'));
+        $cluster = $this->MVALSAL_MyRep->getValsalByClusterId($clusterId);
+        $this->sendValsalNotification($notificationEvent, $cluster, (string) ($context['doc_name'] ?? 'VALSAL'));
 
         $this->handleUploadSuccess(
             $isNoDocumentRequired ? 'Dokumen ' . ($context['doc_name'] ?? 'VALSAL') . ' ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen ' . ($context['doc_name'] ?? 'VALSAL') . ' berhasil diupload.',
@@ -756,6 +766,24 @@ class VALSAL_MyRep extends CI_Controller
                 'message' => $message,
                 'redirect_url' => $redirectUrl,
             ]));
+    }
+
+    private function sendValsalNotification($eventName, array $cluster, $documentLabel)
+    {
+        $clusterId = (int) ($cluster['id_myrep_cluster'] ?? 0);
+        if ($clusterId <= 0) {
+            return;
+        }
+
+        $this->myrepNotifier->notify('VALSAL_MyRep', $eventName, [
+            'module_label' => 'VALSAL',
+            'document_label' => (string) $documentLabel,
+            'regional_name' => (string) ($cluster['regional_name'] ?? ''),
+            'city_name' => (string) ($cluster['city_name'] ?? ''),
+            'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'sender_name' => (string) $this->session->userdata('nama_user'),
+            'detail_url' => base_url('VALSAL_MyRep'),
+        ]);
     }
 
     private function handleUploadSuccess($message, $redirectPath)

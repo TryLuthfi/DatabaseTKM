@@ -1268,7 +1268,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                             <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
                                 <div>
                                     <div class="font-weight-bold text-dark">Breakdown Implementasi per Item</div>
-                                    <div class="small text-muted">Input beberapa item sekaligus dalam satu tanggal progress untuk mempercepat pelaporan lapangan.</div>
+                                    <div class="small text-muted">Input beberapa item sekaligus dalam satu tanggal progress untuk mempercepat pelaporan lapangan. Foto comply diupload terpisah lewat tab FOTO COMPLY.</div>
                                 </div>
                                 <button type="button" class="btn btn-primary js-open-progress-modal" data-toggle="modal" data-target="#modal-progress">
                                     <i class="fas fa-layer-group mr-1"></i>Input Progress Sekaligus
@@ -1639,12 +1639,6 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                     data-item-type="<?= htmlspecialchars((string) ($row['item_type'] ?? '-'), ENT_QUOTES) ?>"
                                                     data-qty-target="<?= htmlspecialchars((string) implHistoryNumber((float) ($row['qty_boq'] ?? 0)), ENT_QUOTES) ?>"
                                                     data-photo-target="<?= (int) ($row['target_foto_required'] ?? 0) ?>"
-                                                    data-comply-enabled="<?= !empty($row['comply_enabled']) ? '1' : '0' ?>"
-                                                    data-comply-mode="<?= htmlspecialchars((string) ($row['comply_entry_limit_mode'] ?? 'NONE'), ENT_QUOTES) ?>"
-                                                    data-comply-photo-per-label="<?= (int) ($row['comply_photo_per_label'] ?? 0) ?>"
-                                                    data-comply-label-prefix="<?= htmlspecialchars((string) ($row['comply_label_prefix'] ?? ($row['item_name'] ?? 'Item')), ENT_QUOTES) ?>"
-                                                    data-comply-label-placeholder="<?= htmlspecialchars((string) ($row['comply_label_placeholder'] ?? 'Nama / nomor item comply'), ENT_QUOTES) ?>"
-                                                    data-comply-requirement-text="<?= htmlspecialchars((string) ($row['comply_requirement_text'] ?? ''), ENT_QUOTES) ?>"
                                                 >
                                                     <?= htmlspecialchars((string) ($row['item_name'] ?? '-')) ?><?= !empty($row['item_type']) ? ' - ' . htmlspecialchars((string) ($row['item_type'] ?? '-')) : '' ?>
                                                 </option>
@@ -1658,7 +1652,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                     </button>
                                 </div>
                             </div>
-                            <div class="alert alert-light border mt-3 mb-0 js-progress-empty-state">Belum ada item dipilih. Tambahkan item seperti Tiang, FAT, ODC, atau item lainnya lalu isi qty dan foto masing-masing.</div>
+                            <div class="alert alert-light border mt-3 mb-0 js-progress-empty-state">Belum ada item dipilih. Tambahkan item seperti Tiang, FAT, ODC, atau item lainnya lalu isi qty dan foto implementasi harian masing-masing.</div>
                         </div>
                     </div>
                     <div class="js-progress-item-list"></div>
@@ -1702,47 +1696,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                         <div class="impl-dropzone-file js-dropzone-label">Belum ada foto dipilih</div>
                                     </div>
                                 </div>
-                                <div class="impl-comply-box mt-3 js-comply-box d-none">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <div>
-                                            <div class="font-weight-bold text-dark">Foto Comply</div>
-                                            <div class="small text-muted js-comply-requirement-text">Aturan comply akan muncul di sini.</div>
-                                        </div>
-                                        <button type="button" class="btn btn-sm btn-outline-primary js-add-comply-entry d-none">
-                                            <i class="fas fa-plus-circle mr-1"></i>Tambah Entry Comply
-                                        </button>
-                                    </div>
-                                    <div class="js-comply-entry-list"></div>
+                                <div class="alert alert-info mt-3 mb-0">
+                                    Foto comply tidak diinput dari form progress ini. Jika item membutuhkan comply, upload terpisah melalui tab <strong>FOTO COMPLY</strong>.
                                 </div>
-                            </div>
-                        </div>
-                    </template>
-                    <template id="comply-entry-template">
-                        <div class="border rounded p-3 mb-3 js-comply-entry-card" data-entry-index="">
-                            <div class="row">
-                                <div class="col-md-5">
-                                    <div class="form-group">
-                                        <label class="js-comply-label-title">Nomor / Nama Tiang</label>
-                                        <input type="text" class="form-control js-comply-label-input" value="">
-                                    </div>
-                                </div>
-                                <div class="col-md-7">
-                                    <div class="form-group mb-0">
-                                        <label class="js-comply-photo-label">Foto Comply</label>
-                                        <div class="impl-dropzone js-dropzone">
-                                            <input type="file" class="js-dropzone-input js-comply-photo-input" multiple accept=".jpg,.jpeg,.png,.webp">
-                                            <div class="impl-dropzone-content">
-                                                <div class="mb-2"><i class="fas fa-camera-retro fa-2x text-primary"></i></div>
-                                                <div class="font-weight-bold">Upload foto comply</div>
-                                                <div class="text-muted small">Pilih satu atau beberapa foto sesuai requirement item</div>
-                                                <div class="impl-dropzone-file js-dropzone-label">Belum ada foto comply dipilih</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <button type="button" class="btn btn-link text-danger p-0 js-remove-comply-entry">Hapus Entry</button>
                             </div>
                         </div>
                     </template>
@@ -1857,7 +1813,6 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var progressList = document.querySelector('.js-progress-item-list');
         var progressEmptyState = document.querySelector('.js-progress-empty-state');
         var progressCardTemplate = document.getElementById('progress-item-card-template');
-        var complyEntryTemplate = document.getElementById('comply-entry-template');
         var deleteProgressForm = document.getElementById('form-delete-progress');
         var deleteProgressInput = document.getElementById('delete_progress_item_id');
         var complyUploadItem = document.querySelector('.js-comply-upload-item');
@@ -1934,102 +1889,6 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             progressEmptyState.style.display = progressList.querySelectorAll('.js-progress-item-card').length > 0 ? 'none' : '';
         }
 
-        function padComplyNumber(value) {
-            return String(value).padStart(3, '0');
-        }
-
-        function createComplyEntry(card, entryIndex, presetLabel) {
-            if (!complyEntryTemplate || !card) {
-                return null;
-            }
-
-            var baselineItemId = card.getAttribute('data-baseline-item-id') || '';
-            var complyPrefix = card.getAttribute('data-comply-label-prefix') || 'Item';
-            var complyPlaceholder = card.getAttribute('data-comply-label-placeholder') || 'Nama / nomor item comply';
-            var complyLabelTitle = complyPrefix.indexOf('Tiang') !== -1 || complyPrefix.indexOf('Pole') !== -1
-                ? 'Nomor / Nama Tiang'
-                : 'Nomor / Nama Item';
-            var entryCard = complyEntryTemplate.content.firstElementChild.cloneNode(true);
-            var labelInput = entryCard.querySelector('.js-comply-label-input');
-            var photoInput = entryCard.querySelector('.js-comply-photo-input');
-
-            entryCard.setAttribute('data-entry-index', String(entryIndex));
-            entryCard.querySelector('.js-comply-label-title').textContent = complyLabelTitle;
-            labelInput.name = 'comply_labels[' + baselineItemId + '][' + entryIndex + ']';
-            labelInput.placeholder = complyPlaceholder;
-            labelInput.value = presetLabel || (complyPrefix + ' ' + padComplyNumber(entryIndex + 1));
-            photoInput.name = 'comply_photos[' + baselineItemId + '][' + entryIndex + '][]';
-
-            return entryCard;
-        }
-
-        function syncComplyEntryIndexes(card) {
-            if (!card) {
-                return;
-            }
-
-            var baselineItemId = card.getAttribute('data-baseline-item-id') || '';
-            var complyPrefix = card.getAttribute('data-comply-label-prefix') || 'Item';
-            var entryCards = card.querySelectorAll('.js-comply-entry-card');
-            Array.prototype.forEach.call(entryCards, function (entryCard, index) {
-                entryCard.setAttribute('data-entry-index', String(index));
-                var labelInput = entryCard.querySelector('.js-comply-label-input');
-                var photoInput = entryCard.querySelector('.js-comply-photo-input');
-                if (labelInput) {
-                    labelInput.name = 'comply_labels[' + baselineItemId + '][' + index + ']';
-                    if (!labelInput.value) {
-                        labelInput.value = complyPrefix + ' ' + padComplyNumber(index + 1);
-                    }
-                }
-                if (photoInput) {
-                    photoInput.name = 'comply_photos[' + baselineItemId + '][' + index + '][]';
-                }
-            });
-        }
-
-        function syncComplyEntriesForQty(card) {
-            if (!card || card.getAttribute('data-comply-enabled') !== '1') {
-                return;
-            }
-
-            var mode = (card.getAttribute('data-comply-mode') || 'NONE').toUpperCase();
-            if (mode !== 'MATCH_QTY') {
-                return;
-            }
-
-            var qtyInput = card.querySelector('.js-progress-qty-input');
-            var entryList = card.querySelector('.js-comply-entry-list');
-            if (!qtyInput || !entryList) {
-                return;
-            }
-
-            var requiredEntries = Math.max(0, Math.ceil(parseFloat(qtyInput.value || '0')));
-            var currentEntries = entryList.querySelectorAll('.js-comply-entry-card').length;
-
-            while (currentEntries < requiredEntries) {
-                var newEntry = createComplyEntry(card, currentEntries);
-                if (newEntry) {
-                    entryList.appendChild(newEntry);
-                    currentEntries++;
-                } else {
-                    break;
-                }
-            }
-
-            while (currentEntries > requiredEntries) {
-                var lastEntry = entryList.querySelector('.js-comply-entry-card:last-child');
-                if (lastEntry) {
-                    lastEntry.remove();
-                    currentEntries--;
-                } else {
-                    break;
-                }
-            }
-
-            syncComplyEntryIndexes(card);
-            bindDropzones();
-        }
-
         function addProgressItemCard(option) {
             if (!progressCardTemplate || !progressList || !option || !option.value) {
                 return;
@@ -2046,19 +1905,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             var itemType = option.getAttribute('data-item-type') || '-';
             var qtyTarget = option.getAttribute('data-qty-target') || '0';
             var photoTarget = option.getAttribute('data-photo-target') || '0';
-            var complyEnabled = option.getAttribute('data-comply-enabled') === '1';
-            var complyMode = option.getAttribute('data-comply-mode') || 'NONE';
-            var complyPhotoPerLabel = option.getAttribute('data-comply-photo-per-label') || '0';
-            var complyLabelPrefix = option.getAttribute('data-comply-label-prefix') || itemName;
-            var complyLabelPlaceholder = option.getAttribute('data-comply-label-placeholder') || 'Nama / nomor item comply';
-            var complyRequirementText = option.getAttribute('data-comply-requirement-text') || '';
-
             card.setAttribute('data-baseline-item-id', baselineItemId);
-            card.setAttribute('data-comply-enabled', complyEnabled ? '1' : '0');
-            card.setAttribute('data-comply-mode', complyMode);
-            card.setAttribute('data-comply-photo-per-label', complyPhotoPerLabel);
-            card.setAttribute('data-comply-label-prefix', complyLabelPrefix);
-            card.setAttribute('data-comply-label-placeholder', complyLabelPlaceholder);
             card.querySelector('.js-progress-item-title').textContent = itemName;
             card.querySelector('.js-progress-item-meta').textContent = itemType !== '-' ? itemType : 'Jenis item belum tersedia';
             card.querySelector('.js-progress-qty-label').textContent = 'Qty ' + itemName;
@@ -2076,26 +1923,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             var photoInput = card.querySelector('.js-progress-photo-input');
             photoInput.name = 'progress_photos[' + baselineItemId + '][]';
 
-            var complyBox = card.querySelector('.js-comply-box');
-            var complyEntryList = card.querySelector('.js-comply-entry-list');
-            var complyText = card.querySelector('.js-comply-requirement-text');
-            var complyAddButton = card.querySelector('.js-add-comply-entry');
-            if (complyEnabled && complyBox && complyEntryList && complyText) {
-                complyBox.classList.remove('d-none');
-                complyText.textContent = complyRequirementText;
-                if (String(complyMode).toUpperCase() === 'FLEXIBLE' && complyAddButton) {
-                    complyAddButton.classList.remove('d-none');
-                    var initialEntry = createComplyEntry(card, 0);
-                    if (initialEntry) {
-                        complyEntryList.appendChild(initialEntry);
-                    }
-                } else if (complyAddButton) {
-                    complyAddButton.classList.add('d-none');
-                }
-            }
-
             progressList.appendChild(card);
-            syncComplyEntriesForQty(card);
             bindDropzones();
             toggleProgressEmptyState();
         }
@@ -2462,46 +2290,6 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                     }
                     return;
                 }
-
-                var addComplyButton = event.target.closest('.js-add-comply-entry');
-                if (addComplyButton) {
-                    var complyCard = addComplyButton.closest('.js-progress-item-card');
-                    var complyList = complyCard ? complyCard.querySelector('.js-comply-entry-list') : null;
-                    if (complyCard && complyList) {
-                        var entryIndex = complyList.querySelectorAll('.js-comply-entry-card').length;
-                        var newEntry = createComplyEntry(complyCard, entryIndex);
-                        if (newEntry) {
-                            complyList.appendChild(newEntry);
-                            syncComplyEntryIndexes(complyCard);
-                            bindDropzones();
-                        }
-                    }
-                    return;
-                }
-
-                var removeComplyButton = event.target.closest('.js-remove-comply-entry');
-                if (removeComplyButton) {
-                    var complyEntryCard = removeComplyButton.closest('.js-comply-entry-card');
-                    var complyParentCard = removeComplyButton.closest('.js-progress-item-card');
-                    if (complyEntryCard) {
-                        complyEntryCard.remove();
-                    }
-                    if (complyParentCard) {
-                        syncComplyEntryIndexes(complyParentCard);
-                    }
-                }
-            });
-
-            progressList.addEventListener('input', function (event) {
-                var qtyInput = event.target.closest('.js-progress-qty-input');
-                if (!qtyInput) {
-                    return;
-                }
-
-                var parentCard = qtyInput.closest('.js-progress-item-card');
-                if (parentCard) {
-                    syncComplyEntriesForQty(parentCard);
-                }
             });
         }
 
@@ -2523,49 +2311,15 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 var photoInput = card.querySelector('.js-progress-photo-input');
                 var qtyValue = parseFloat(qtyInput && qtyInput.value ? qtyInput.value : '0');
                 var hasPhotos = photoInput && photoInput.files && photoInput.files.length > 0;
-                var complyEnabled = card.getAttribute('data-comply-enabled') === '1';
-                var complyMode = (card.getAttribute('data-comply-mode') || 'NONE').toUpperCase();
-                var complyPhotoPerLabel = parseInt(card.getAttribute('data-comply-photo-per-label') || '0', 10);
-                var complyEntries = card.querySelectorAll('.js-comply-entry-card');
-                var complyValidEntries = 0;
 
                 if (qtyValue <= 0 || !hasPhotos) {
                     isValid = false;
-                    return;
-                }
-
-                if (complyEnabled) {
-                    Array.prototype.forEach.call(complyEntries, function (entryCard) {
-                        var labelInput = entryCard.querySelector('.js-comply-label-input');
-                        var complyPhotoInput = entryCard.querySelector('.js-comply-photo-input');
-                        var hasComplyFiles = complyPhotoInput && complyPhotoInput.files && complyPhotoInput.files.length > 0;
-                        var labelValue = labelInput ? String(labelInput.value || '').trim() : '';
-
-                        if (!labelValue && !hasComplyFiles) {
-                            return;
-                        }
-
-                        if (!labelValue || !hasComplyFiles || complyPhotoInput.files.length < Math.max(complyPhotoPerLabel, 1)) {
-                            isValid = false;
-                            return;
-                        }
-
-                        complyValidEntries++;
-                    });
-
-                    if (complyMode === 'MATCH_QTY' && complyValidEntries !== Math.ceil(qtyValue)) {
-                        isValid = false;
-                    }
-
-                    if (complyMode === 'FLEXIBLE' && complyValidEntries <= 0) {
-                        isValid = false;
-                    }
                 }
             });
 
             if (!isValid) {
                 event.preventDefault();
-                alert('Setiap item wajib memiliki qty progress, foto implementasi harian, dan foto comply sesuai aturan item.');
+                alert('Setiap item wajib memiliki qty progress dan foto implementasi harian.');
             }
         });
 

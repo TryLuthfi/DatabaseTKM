@@ -3307,6 +3307,7 @@ if (!empty($kpiDetailRowMap)) {
             $modal.find('select[name="status_rfs"]').val(statusRfs === 'PARTIAL' || statusRfs === 'FULL RFS' ? statusRfs : '');
             $modal.find('textarea[name="claim_note"]').val('');
             $modal.find('.claim-photo-filename').text('Belum ada file dipilih');
+            $modal.find('.claim-photo-dropzone').removeAttr('data-has-file');
 
             if ($photoInput.length) {
                 $photoInput.val('');
@@ -3314,11 +3315,17 @@ if (!empty($kpiDetailRowMap)) {
         });
 
         $(document).on('click', '.claim-photo-dropzone', function (e) {
-            if ($(e.target).is('.claim-photo-input')) {
+            if ($(e.target).closest('.claim-photo-input').length) {
                 return;
             }
 
-            $(this).find('.claim-photo-input').trigger('click');
+            e.preventDefault();
+            e.stopPropagation();
+
+            var input = $(this).find('.claim-photo-input').get(0);
+            if (input) {
+                input.click();
+            }
         });
 
         $(document).on('dragover', '.claim-photo-dropzone', function (e) {
@@ -3348,7 +3355,14 @@ if (!empty($kpiDetailRowMap)) {
         $(document).on('change', '.claim-photo-input', function () {
             var file = this.files && this.files[0] ? this.files[0] : null;
             var fileName = file ? file.name : 'Belum ada file dipilih';
-            $(this).closest('.claim-photo-dropzone').find('.claim-photo-filename').text(fileName);
+            var $dropzone = $(this).closest('.claim-photo-dropzone');
+
+            $dropzone.find('.claim-photo-filename').text(fileName);
+            if (file) {
+                $dropzone.attr('data-has-file', '1');
+            } else {
+                $dropzone.removeAttr('data-has-file');
+            }
         });
 
         $('.claim-rfs-qty-input').each(function () {
@@ -3363,19 +3377,11 @@ if (!empty($kpiDetailRowMap)) {
 
         $(document).on('submit', '.js-claim-rfs-form', function (e) {
             var $form = $(this);
-            var photoInput = $form.find('.claim-photo-input')[0];
-            var hasPhoto = photoInput && photoInput.files && photoInput.files.length > 0;
             var formElement = $form.get(0);
 
             if (formElement && !formElement.checkValidity()) {
                 e.preventDefault();
                 formElement.reportValidity();
-                return;
-            }
-
-            if (!hasPhoto) {
-                e.preventDefault();
-                alert('Foto claim RFS wajib dilampirkan.');
                 return;
             }
         });
@@ -3547,24 +3553,5 @@ if (!empty($kpiDetailRowMap)) {
                 $modal.find('.claim-photo-filename').text('Belum ada file dipilih');
             });
 
-        $(document)
-            .off('click.monitoringRfsFallback', '.claim-photo-dropzone')
-            .on('click.monitoringRfsFallback', '.claim-photo-dropzone', function (e) {
-                if ($(e.target).closest('.claim-photo-input').length) {
-                    return;
-                }
-
-                var input = $(this).find('.claim-photo-input').get(0);
-                if (input) {
-                    input.click();
-                }
-            });
-
-        $(document)
-            .off('change.monitoringRfsFallback', '.claim-photo-input')
-            .on('change.monitoringRfsFallback', '.claim-photo-input', function () {
-                var file = this.files && this.files[0] ? this.files[0] : null;
-                $(this).closest('.claim-photo-dropzone').find('.claim-photo-filename').text(file ? file.name : 'Belum ada file dipilih');
-            });
     })();
 </script>

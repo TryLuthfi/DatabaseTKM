@@ -232,6 +232,15 @@ class Checklist_Dokument_MyRep extends CI_Controller
             'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
         ]);
 
+        $this->notifyMainfeederDocumentSubmittedToHo($mainfeederId, [
+            'package_id' => $packageId,
+            'item_id' => $itemId,
+            'doc_name' => $docName,
+            'file_name' => $fileName,
+            'remark' => trim((string) $this->input->post('remark')),
+            'is_document_not_required' => $isNoDocumentRequired,
+        ]);
+
         $this->handleUploadSuccess('Dokumen mainfeeder berhasil diupload.', 'Checklist_Dokument_MyRep/detailMainfeeder/' . $mainfeederId);
     }
 
@@ -450,6 +459,14 @@ class Checklist_Dokument_MyRep extends CI_Controller
         ];
 
         $this->MChecklist_Dokument_MyRep->saveFileUpload($payload);
+        $this->notifyClusterDocumentSubmittedToHo($clusterId, [
+            'package_id' => $packageId,
+            'item_id' => $itemId,
+            'doc_name' => $docName,
+            'file_name' => $fileName,
+            'remark' => $payload['remark'],
+            'is_document_not_required' => $isNoDocumentRequired,
+        ]);
         $this->handleUploadSuccess(
             $isNoDocumentRequired ? 'Dokumen ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen berhasil diupload.',
             'Checklist_Dokument_MyRep/detail/' . $clusterId
@@ -483,6 +500,8 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         $successCount = 0;
+        $uploadedDocNames = [];
+        $uploadedFileNames = [];
 
         foreach ($itemIds as $index => $itemId) {
             $itemId = (int) $itemId;
@@ -524,10 +543,23 @@ class Checklist_Dokument_MyRep extends CI_Controller
             ];
 
             $this->MChecklist_Dokument_MyRep->saveFileUpload($payload);
+            $uploadedDocNames[] = $docName !== '' ? $docName : ('Dokumen #' . $itemId);
+            $uploadedFileNames[] = (string) $fileData['file_name'];
             $successCount++;
         }
 
         if ($successCount > 0) {
+            $this->notifyClusterDocumentSubmittedToHo($clusterId, [
+                'package_id' => $packageId,
+                'item_id' => 0,
+                'doc_name' => implode(', ', $uploadedDocNames),
+                'file_name' => $successCount . ' file (' . implode(', ', $uploadedFileNames) . ')',
+                'remark' => $successCount > 1
+                    ? ($successCount . ' dokumen dikirim dalam satu kali submit dan menunggu review HO.')
+                    : ('Dokumen ' . (isset($uploadedDocNames[0]) ? $uploadedDocNames[0] : '') . ' menunggu review HO.'),
+                'is_document_not_required' => false,
+                'notification_title' => $successCount > 1 ? 'FULL CLUSTER DOCUMENT' : 'NEW DOCUMENT',
+            ]);
             $this->handleUploadSuccess($successCount . ' dokumen berhasil diupload.', 'Checklist_Dokument_MyRep/detail/' . $clusterId);
             return;
         }
@@ -834,5 +866,337 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         return $date;
+    }
+
+    private function notifyClusterDocumentSubmittedToHo($clusterId, array $document)
+    {
+        $cluster = $this->MChecklist_Dokument_MyRep->getClusterDetail((int) $clusterId);
+        if (empty($cluster)) {
+            return;
+        }
+
+        $reviewer = $this->resolveNotificationReviewer(
+            'CLUSTER',
+            (int) ($document['item_id'] ?? 0),
+            (string) ($cluster['ho_pic_name'] ?? ''),
+            (string) ($cluster['ho_pic_telegram_user_id'] ?? '')
+        );
+
+        $message = $this->buildChecklistTelegramMessage('CLUSTER', [
+            'title' => (string) ($cluster['cluster_name'] ?? '-'),
+            'site' => (string) ($cluster['city_name'] ?? '-'),
+            'project' => 'Checklist Dokument MyRep',
+            'module_label' => 'Checklist Dokument',
+            'category' => $this->resolveClusterDocumentCategory((int) ($document['package_id'] ?? 0)),
+            'detail_url' => base_url('Checklist_Dokument_MyRep/detail/' . (int) $clusterId),
+            'pic_name' => (string) ($reviewer['name'] ?? ''),
+            'pic_telegram_user_id' => (string) ($reviewer['telegram_user_id'] ?? ''),
+            'notification_title' => (string) ($document['notification_title'] ?? 'NEW DOCUMENT'),
+        ], $document);
+
+        $this->sendChecklistTelegramNotification($message);
+    }
+
+    private function notifyMainfeederDocumentSubmittedToHo($mainfeederId, array $document)
+    {
+        $mainfeeder = $this->MChecklist_Dokument_MyRep->getMainfeederDetail((int) $mainfeederId);
+        if (empty($mainfeeder)) {
+            return;
+        }
+
+        $reviewer = $this->resolveNotificationReviewer(
+            'MAINFEEDER',
+            (int) ($document['item_id'] ?? 0),
+            (string) ($mainfeeder['ho_pic_name'] ?? ''),
+            (string) ($mainfeeder['ho_pic_telegram_user_id'] ?? '')
+        );
+
+        $message = $this->buildChecklistTelegramMessage('MAINFEEDER', [
+            'title' => (string) ($mainfeeder['mainfeeder_name'] ?? '-'),
+            'site' => (string) ($mainfeeder['city_name'] ?? '-'),
+            'project' => 'Checklist Dokument MyRep Mainfeeder',
+            'module_label' => 'Checklist Dokument Mainfeeder',
+            'category' => $this->resolveMainfeederDocumentCategory((int) ($document['package_id'] ?? 0)),
+            'detail_url' => base_url('Checklist_Dokument_MyRep/detailMainfeeder/' . (int) $mainfeederId),
+            'pic_name' => (string) ($reviewer['name'] ?? ''),
+            'pic_telegram_user_id' => (string) ($reviewer['telegram_user_id'] ?? ''),
+            'notification_title' => (string) ($document['notification_title'] ?? 'NEW DOCUMENT'),
+        ], $document);
+
+        $this->sendChecklistTelegramNotification($message);
+    }
+
+    private function buildChecklistTelegramMessage($type, array $entity, array $document)
+    {
+        $uploadedBy = trim((string) $this->session->userdata('nama_user'));
+        $uploadedRole = trim((string) $this->session->userdata('nama_jabatan'));
+        $docName = trim((string) ($document['doc_name'] ?? '-'));
+        $fileName = trim((string) ($document['file_name'] ?? ''));
+        $remark = trim((string) ($document['remark'] ?? ''));
+        $isNoDocumentRequired = !empty($document['is_document_not_required']);
+        $fileLabel = $isNoDocumentRequired ? '[Tanpa Dokumen - Not Required]' : ($fileName !== '' ? $fileName : '-');
+        $clusterLabel = strtoupper($type) === 'MAINFEEDER' ? 'Mainfeeder ' . trim((string) ($entity['title'] ?? '-')) : trim((string) ($entity['title'] ?? '-'));
+        $siteLabel = trim((string) ($entity['site'] ?? '-'));
+        $projectLabel = trim((string) ($entity['project'] ?? '-'));
+        $categoryLabel = trim((string) ($entity['category'] ?? '-'));
+        $detailUrl = trim((string) ($entity['detail_url'] ?? ''));
+        $picName = trim((string) ($entity['pic_name'] ?? ''));
+        $picMention = $this->buildTelegramPicMention($picName, (string) ($entity['pic_telegram_user_id'] ?? ''));
+        $notificationTitle = trim((string) ($entity['notification_title'] ?? 'NEW DOCUMENT'));
+        $moduleLabel = trim((string) ($entity['module_label'] ?? 'Checklist Dokument'));
+        $displayDocLabel = $this->shouldUseModuleOnlyLabel($notificationTitle) ? $moduleLabel : $docName;
+        $senderPhone = $this->resolveCurrentUserPhone();
+        $senderParts = [];
+
+        if ($uploadedBy !== '') {
+            $senderParts[] = $this->escapeTelegramText($uploadedBy);
+        } else {
+            $senderParts[] = 'System';
+        }
+
+        $metaParts = [];
+        if ($uploadedRole !== '') {
+            $metaParts[] = $this->escapeTelegramText($uploadedRole);
+        }
+        if ($senderPhone !== '') {
+            $metaParts[] = $this->escapeTelegramText($senderPhone);
+        }
+
+        $senderLabel = implode('', [
+            $senderParts[0],
+            !empty($metaParts) ? ' (' . implode(' | ', $metaParts) . ')' : '',
+        ]);
+
+        $lines = [
+            '📥 <b>' . $this->escapeTelegramText($notificationTitle) . '</b>',
+            '',
+            '📄 ' . $this->escapeTelegramText($displayDocLabel),
+            '🏗 ' . $this->escapeTelegramText($categoryLabel) . ' | ' . $this->escapeTelegramText($siteLabel) . ' | ' . $this->escapeTelegramText($clusterLabel),
+            '',
+            '👤 ' . $senderLabel . ' -> HO (' . $picMention . ')',
+            '🕒 ' . $this->escapeTelegramText($this->formatTelegramDate(date('Y-m-d H:i:s'))),
+        ];
+
+        if ($detailUrl !== '') {
+            $lines[] = '';
+            $lines[] = $this->escapeTelegramText($detailUrl);
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private function shouldUseModuleOnlyLabel($notificationTitle)
+    {
+        $notificationTitle = strtoupper(trim((string) $notificationTitle));
+        return in_array($notificationTitle, ['FULL CLUSTER DOCUMENT', 'CLAIM RFS'], true);
+    }
+
+    private function sendChecklistTelegramNotification($message)
+    {
+        $config = $this->getChecklistTelegramConfig();
+        if (empty($config['enabled']) || empty($config['bot_token']) || empty($config['chat_id'])) {
+            return;
+        }
+
+        $endpoint = 'https://api.telegram.org/bot' . $config['bot_token'] . '/sendMessage';
+        $payload = http_build_query([
+            'chat_id' => $config['chat_id'],
+            'text' => $message,
+            'parse_mode' => 'HTML',
+            'disable_web_page_preview' => 'true',
+        ]);
+
+        $isSent = false;
+
+        if (function_exists('curl_init')) {
+            $ch = curl_init($endpoint);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            $response = curl_exec($ch);
+            $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            $isSent = $response !== false && $httpCode >= 200 && $httpCode < 300;
+            if (!$isSent) {
+                log_message('error', 'Checklist MyRep Telegram notification failed via cURL. HTTP: ' . $httpCode . ' Error: ' . $curlError);
+            }
+        } else {
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'POST',
+                    'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+                    'content' => $payload,
+                    'timeout' => 10,
+                ],
+            ]);
+            $response = @file_get_contents($endpoint, false, $context);
+            $isSent = $response !== false;
+            if (!$isSent) {
+                log_message('error', 'Checklist MyRep Telegram notification failed via file_get_contents.');
+            }
+        }
+    }
+
+    private function getChecklistTelegramConfig()
+    {
+        static $config = null;
+        if ($config !== null) {
+            return $config;
+        }
+
+        $envPath = APPPATH . '../.env';
+        $env = is_file($envPath) ? parse_ini_file($envPath) : [];
+
+        $config = [
+            'enabled' => $this->normalizeBooleanEnv($env['TELEGRAM_CHECKLIST_MYREP_ENABLED'] ?? true),
+            'bot_token' => trim((string) ($env['TELEGRAM_BOT_TOKEN'] ?? '')),
+            'chat_id' => trim((string) ($env['TELEGRAM_CHAT_ID_CHECKLIST_MYREP'] ?? ($env['TELEGRAM_CHAT_ID'] ?? ''))),
+        ];
+
+        return $config;
+    }
+
+    private function normalizeBooleanEnv($value)
+    {
+        $value = strtolower(trim((string) $value));
+        return in_array($value, ['1', 'true', 'yes', 'on'], true);
+    }
+
+    private function resolveClusterDocumentCategory($packageId)
+    {
+        if ($packageId <= 0) {
+            return 'RFS';
+        }
+
+        $row = $this->db
+            ->select('g.sow_type, g.group_label')
+            ->from('tb_rfs_myrep_doc_package p')
+            ->join('md_rfs_myrep_doc_group g', 'g.id_doc_group = p.id_doc_group', 'inner')
+            ->where('p.id_doc_package', (int) $packageId)
+            ->get()
+            ->row_array();
+
+        return trim((string) ($row['sow_type'] ?? $row['group_label'] ?? 'RFS'));
+    }
+
+    private function resolveMainfeederDocumentCategory($packageId)
+    {
+        if ($packageId <= 0) {
+            return 'MAINFEEDER';
+        }
+
+        $row = $this->db
+            ->select('g.sow_type, g.group_label')
+            ->from('tb_rfs_myrep_mainfeeder_doc_package p')
+            ->join('md_rfs_myrep_mainfeeder_doc_group g', 'g.id_doc_group_mainfeeder = p.id_doc_group_mainfeeder', 'inner')
+            ->where('p.id_doc_package_mainfeeder', (int) $packageId)
+            ->get()
+            ->row_array();
+
+        return trim((string) ($row['sow_type'] ?? $row['group_label'] ?? 'MAINFEEDER'));
+    }
+
+    private function resolveNotificationReviewer($type, $itemId, $fallbackName, $fallbackTelegramUserId)
+    {
+        $reviewer = [
+            'name' => $fallbackName !== '' ? $fallbackName : 'PIC HO',
+            'telegram_user_id' => $fallbackTelegramUserId,
+        ];
+
+        if ($itemId <= 0) {
+            return $reviewer;
+        }
+
+        $table = strtoupper(trim((string) $type)) === 'MAINFEEDER'
+            ? 'md_rfs_myrep_mainfeeder_doc_item'
+            : 'md_rfs_myrep_doc_item';
+        $idField = strtoupper(trim((string) $type)) === 'MAINFEEDER'
+            ? 'id_doc_item_mainfeeder'
+            : 'id_doc_item';
+
+        $row = $this->db
+            ->select('verification_team')
+            ->from($table)
+            ->where($idField, (int) $itemId)
+            ->get()
+            ->row_array();
+
+        $verificationTeam = strtoupper(trim((string) ($row['verification_team'] ?? '')));
+        if ($verificationTeam !== 'SITAC') {
+            return $reviewer;
+        }
+
+        $sitacUser = $this->db
+            ->select('nama_user, telegram_user_id')
+            ->from('tb_master_user')
+            ->where('id_user', 22)
+            ->get()
+            ->row_array();
+
+        if (!empty($sitacUser['nama_user'])) {
+            $reviewer['name'] = (string) $sitacUser['nama_user'];
+        }
+        if (!empty($sitacUser['telegram_user_id'])) {
+            $reviewer['telegram_user_id'] = (string) $sitacUser['telegram_user_id'];
+        }
+
+        return $reviewer;
+    }
+
+    private function buildTelegramPicMention($picName, $telegramUserId)
+    {
+        $safeName = $this->escapeTelegramText($picName !== '' ? $picName : 'PIC HO');
+        $telegramUserId = trim((string) $telegramUserId);
+
+        if ($telegramUserId === '') {
+            return $safeName;
+        }
+
+        return '<a href="tg://user?id=' . rawurlencode($telegramUserId) . '">' . $safeName . '</a>';
+    }
+
+    private function resolveCurrentUserPhone()
+    {
+        $phone = trim((string) $this->session->userdata('phone'));
+        if ($phone !== '') {
+            return $phone;
+        }
+
+        return 'No HP belum diset';
+    }
+
+    private function formatTelegramDate($dateTime)
+    {
+        $timestamp = strtotime((string) $dateTime);
+        if ($timestamp === false) {
+            return (string) $dateTime;
+        }
+
+        $months = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
+
+        $monthIndex = (int) date('n', $timestamp);
+        return date('d', $timestamp) . ' ' . ($months[$monthIndex] ?? date('m', $timestamp)) . ' ' . date('Y H:i', $timestamp) . ' WIB';
+    }
+
+    private function escapeTelegramText($text)
+    {
+        return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
     }
 }

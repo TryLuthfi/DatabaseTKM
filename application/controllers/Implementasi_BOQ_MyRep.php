@@ -446,12 +446,6 @@ class Implementasi_BOQ_MyRep extends CI_Controller
     {
         $clusterId = (int) $clusterId;
         $baselineItemId = (int) $baselineItemId;
-        $itemName = trim((string) ($itemContext['item_name'] ?? 'Item'));
-        $complyEnabled = (int) ($itemContext['comply_enabled'] ?? 0) === 1;
-        $complyMode = strtoupper(trim((string) ($itemContext['comply_entry_limit_mode'] ?? 'NONE')));
-        $complyPhotoPerLabel = (int) ($itemContext['comply_photo_per_label'] ?? 0);
-        $allComplyLabels = (array) $this->input->post('comply_labels');
-        $complyLabels = isset($allComplyLabels[$itemKey]) && is_array($allComplyLabels[$itemKey]) ? $allComplyLabels[$itemKey] : [];
         $files = $_FILES['progress_photos'] ?? null;
         if (empty($files['name'][$itemKey]) || !is_array($files['name'][$itemKey])) {
             return [];
@@ -502,95 +496,6 @@ class Implementasi_BOQ_MyRep extends CI_Controller
                 'photo_category' => 'HARIAN',
                 'comply_label' => null,
             ];
-        }
-
-        if ($complyEnabled && $qtyProgress > 0) {
-            $requiredEntries = $complyMode === 'MATCH_QTY' ? (int) ceil($qtyProgress) : 0;
-            $complyFiles = $_FILES['comply_photos'] ?? null;
-            $validEntries = 0;
-
-            foreach ($complyLabels as $entryIndex => $rawLabel) {
-                $label = trim((string) $rawLabel);
-                $entryFileNames = $complyFiles['name'][$itemKey][$entryIndex] ?? [];
-                $entryHasFiles = is_array($entryFileNames) && count(array_filter($entryFileNames, static function ($value) {
-                    return trim((string) $value) !== '';
-                })) > 0;
-
-                if ($label === '' && !$entryHasFiles) {
-                    continue;
-                }
-
-                if ($label === '') {
-                    $this->session->set_flashdata('error', 'Label comply untuk item ' . $itemName . ' wajib diisi.');
-                    return false;
-                }
-
-                if (!$entryHasFiles) {
-                    $this->session->set_flashdata('error', 'Foto comply untuk ' . $label . ' pada item ' . $itemName . ' wajib diupload.');
-                    return false;
-                }
-
-                $entryTotalFiles = count($entryFileNames);
-                $entryUploadedCount = 0;
-                for ($i = 0; $i < $entryTotalFiles; $i++) {
-                    if (empty($entryFileNames[$i])) {
-                        continue;
-                    }
-
-                    $_FILES['single_progress_photo'] = [
-                        'name' => $complyFiles['name'][$itemKey][$entryIndex][$i],
-                        'type' => $complyFiles['type'][$itemKey][$entryIndex][$i],
-                        'tmp_name' => $complyFiles['tmp_name'][$itemKey][$entryIndex][$i],
-                        'error' => $complyFiles['error'][$itemKey][$entryIndex][$i],
-                        'size' => $complyFiles['size'][$itemKey][$entryIndex][$i],
-                    ];
-
-                    $extension = pathinfo((string) $complyFiles['name'][$itemKey][$entryIndex][$i], PATHINFO_EXTENSION);
-                    $safeLabel = preg_replace('/[^A-Za-z0-9_\-]/', '_', $label);
-                    $fileName = 'BOQ_COMPLY_' . $clusterId . '_' . $baselineItemId . '_' . $safeLabel . '_' . date('YmdHis') . '_' . ($i + 1) . '.' . $extension;
-                    $config = [
-                        'upload_path' => $uploadDir,
-                        'allowed_types' => 'jpg|jpeg|png|webp',
-                        'max_size' => 30720,
-                        'file_name' => $fileName,
-                        'overwrite' => true,
-                    ];
-
-                    $this->upload->initialize($config);
-                    if (!$this->upload->do_upload('single_progress_photo')) {
-                        $this->session->set_flashdata('error', strip_tags($this->upload->display_errors()));
-                        return false;
-                    }
-
-                    $fileData = $this->upload->data();
-                    $uploadedRows[] = [
-                        'file_name' => $fileData['file_name'],
-                        'file_path' => 'uploads/myrep_boq_progress/' . $fileData['file_name'],
-                        'caption' => 'Comply - ' . $label,
-                        'photo_category' => 'COMPLY',
-                        'comply_label' => $label,
-                        'status_photo' => 'UPLOADED',
-                    ];
-                    $entryUploadedCount++;
-                }
-
-                if ($entryUploadedCount < max($complyPhotoPerLabel, 1)) {
-                    $this->session->set_flashdata('error', 'Minimal ' . max($complyPhotoPerLabel, 1) . ' foto comply wajib diupload untuk ' . $label . ' pada item ' . $itemName . '.');
-                    return false;
-                }
-
-                $validEntries++;
-            }
-
-            if ($complyMode === 'MATCH_QTY' && $validEntries !== $requiredEntries) {
-                $this->session->set_flashdata('error', 'Jumlah entry comply untuk item ' . $itemName . ' harus mengikuti qty implementasi, yaitu ' . $requiredEntries . ' entry.');
-                return false;
-            }
-
-            if ($complyMode === 'FLEXIBLE' && $validEntries <= 0) {
-                $this->session->set_flashdata('error', 'Minimal 1 entry foto comply wajib diisi untuk item ' . $itemName . '.');
-                return false;
-            }
         }
 
         return $uploadedRows;

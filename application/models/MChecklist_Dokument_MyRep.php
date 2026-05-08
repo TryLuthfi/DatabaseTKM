@@ -292,12 +292,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 $row['sow_type'] ?? '',
                 $row['doc_name'] ?? ''
             );
-            $verificationTeam = strtoupper(trim((string) ($row['verification_team'] ?? '')));
-            if ($verificationTeam === 'SITAC') {
-                $row['verification_by'] = 'TIM SITAC';
-            } else {
-                $row['verification_by'] = !empty($row['ho_pic_name']) ? (string) $row['ho_pic_name'] : 'PIC HO BELUM DISET';
-            }
+            $row['verification_by'] = $this->resolveVerificationDisplayName(
+                (string) ($row['verification_team'] ?? ''),
+                (string) ($row['ho_pic_name'] ?? '')
+            );
         }
         unset($row);
 
@@ -324,6 +322,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 mt.sm,
                 mt.spv,
                 u_ho.nama_user AS ho_pic_name,
+                u_ho.telegram_user_id AS ho_pic_telegram_user_id,
                 latest_claim.rfs_date
             ", false)
             ->from('tb_rfs_myrep_cluster c')
@@ -429,9 +428,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
                             $group['sow_type'] ?? '',
                             $item['doc_name'] ?? ''
                         ) ? 1 : 0,
-                        'verification_by' => strtoupper(trim((string) ($item['verification_team'] ?? ''))) === 'SITAC'
-                            ? 'TIM SITAC'
-                            : (!empty($clusterDetail['ho_pic_name']) ? (string) $clusterDetail['ho_pic_name'] : 'PIC HO BELUM DISET'),
+                        'verification_by' => $this->resolveVerificationDisplayName(
+                            (string) ($item['verification_team'] ?? ''),
+                            (string) ($clusterDetail['ho_pic_name'] ?? '')
+                        ),
                         'history' => [],
                     ];
                 }
@@ -920,10 +920,14 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 mf.atp_date,
                 mt.city_name,
                 mt.regional_name,
-                mt.province_name
+                mt.province_name,
+                mt.id_user_pic_ho,
+                u_ho.nama_user AS ho_pic_name,
+                u_ho.telegram_user_id AS ho_pic_telegram_user_id
             ')
             ->from('tb_rfs_myrep_mainfeeder mf')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'inner')
+            ->join('tb_master_user u_ho', 'u_ho.id_user = mt.id_user_pic_ho', 'left')
             ->where('mf.id_mainfeeder', (int) $mainfeederId)
             ->get()
             ->row_array();
@@ -1664,6 +1668,43 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         return $items;
+    }
+
+    private function getSitacApproverId()
+    {
+        return 22;
+    }
+
+    private function getSitacApproverUser()
+    {
+        static $user = null;
+        if ($user !== null) {
+            return $user;
+        }
+
+        $user = $this->db
+            ->select('id_user, nama_user, telegram_user_id')
+            ->from('tb_master_user')
+            ->where('id_user', $this->getSitacApproverId())
+            ->get()
+            ->row_array();
+
+        return !empty($user) ? $user : [];
+    }
+
+    private function resolveVerificationDisplayName($verificationTeam, $hoPicName)
+    {
+        $verificationTeam = strtoupper(trim((string) $verificationTeam));
+        if ($verificationTeam === 'SITAC') {
+            $sitacUser = $this->getSitacApproverUser();
+            if (!empty($sitacUser['nama_user'])) {
+                return (string) $sitacUser['nama_user'];
+            }
+
+            return 'TIM SITAC';
+        }
+
+        return $hoPicName !== '' ? (string) $hoPicName : 'PIC HO BELUM DISET';
     }
 
     public function getDocumentItemFormatById($itemId)

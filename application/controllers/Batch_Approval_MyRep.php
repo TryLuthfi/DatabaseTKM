@@ -10,6 +10,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $this->load->model('MPost_Donasi_MyRep');
         $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
+        $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
     }
 
     public function index()
@@ -211,6 +212,9 @@ class Batch_Approval_MyRep extends CI_Controller
             $this->handleInitialBatchDocumentUpload($clusterId, $remark, $isNoDocumentRequired);
         }
 
+        $clusterDetail = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
+        $this->sendBatchNotification('cluster_masuk', $clusterDetail, 'Batch Approval');
+
         $this->session->set_flashdata('success', 'Data Batch Approval berhasil ditambahkan.');
         redirect('Batch_Approval_MyRep');
     }
@@ -332,6 +336,7 @@ class Batch_Approval_MyRep extends CI_Controller
             $this->handleUploadError('Konfigurasi dokumen RAR belum ditemukan.', $redirectPath);
             return;
         }
+        $notificationEvent = !empty($context['id_doc_file']) ? 'document_revised' : 'document_masuk';
 
         $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
         if (!$isNoDocumentRequired && empty($_FILES['file']['name'])) {
@@ -383,6 +388,9 @@ class Batch_Approval_MyRep extends CI_Controller
             $this->handleUploadError('Dokumen RAR gagal disimpan.', $redirectPath);
             return;
         }
+
+        $clusterDetail = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
+        $this->sendBatchNotification($notificationEvent, $clusterDetail, (string) ($context['doc_name'] ?? 'RAR'));
 
         $this->handleUploadSuccess(
             $isNoDocumentRequired ? 'Dokumen RAR ditandai tidak dibutuhkan dan dikirim ke review.' : 'Dokumen RAR berhasil diupload.',
@@ -936,13 +944,35 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         $fileData = $this->upload->data();
-        $this->MBatch_Approval_MyRep->saveBatchFileUpload($clusterId, [
+        $fileId = $this->MBatch_Approval_MyRep->saveBatchFileUpload($clusterId, [
             'file_name' => $fileData['file_name'],
             'file_path' => 'uploads/myrep_batch_approval/' . $fileData['file_name'],
             'is_document_not_required' => 0,
             'status_file' => 'UPLOADED',
             'remark' => $remark,
             'uploaded_by' => (int) $this->session->userdata('id_user'),
+        ]);
+        if ($fileId > 0) {
+            $clusterDetail = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
+            $this->sendBatchNotification('document_masuk', $clusterDetail, (string) ($context['doc_name'] ?? 'RAR'));
+        }
+    }
+
+    private function sendBatchNotification($eventName, array $cluster, $documentLabel)
+    {
+        $clusterId = (int) ($cluster['id_myrep_cluster'] ?? 0);
+        if ($clusterId <= 0) {
+            return;
+        }
+
+        $this->myrepNotifier->notify('Batch_Approval_MyRep', $eventName, [
+            'module_label' => 'Batch Approval',
+            'document_label' => (string) $documentLabel,
+            'regional_name' => (string) ($cluster['regional_name'] ?? ''),
+            'city_name' => (string) ($cluster['city_name'] ?? ''),
+            'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'sender_name' => (string) $this->session->userdata('nama_user'),
+            'detail_url' => base_url('Batch_Approval_MyRep/detail/' . $clusterId),
         ]);
     }
 }

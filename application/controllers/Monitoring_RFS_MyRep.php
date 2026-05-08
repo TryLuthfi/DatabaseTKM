@@ -12,6 +12,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
         parent::__construct();
         $this->load->model('MMonitoring_RFS_MyRep');
         $this->load->library('upload');
+        $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
     }
 
     public function index()
@@ -772,6 +773,9 @@ class Monitoring_RFS_MyRep extends CI_Controller
                     ? 'Approval RPM berhasil. Claim diteruskan ke HO.'
                     : 'Claim berhasil direject oleh RPM.'
             );
+            if ($status === 'APPROVED') {
+                $this->sendClaimRfsNotification($claim);
+            }
             redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
         }
@@ -853,6 +857,25 @@ class Monitoring_RFS_MyRep extends CI_Controller
             'status' => true,
             'file_path' => 'uploads/monitoring_rfs_myrep/' . $fileData['file_name']
         ];
+    }
+
+    private function sendClaimRfsNotification(array $claim)
+    {
+        $cluster = $this->MMonitoring_RFS_MyRep->getClusterById((int) ($claim['cluster_id'] ?? 0));
+        if (empty($cluster)) {
+            return;
+        }
+
+        $this->myrepNotifier->notify('Monitoring_RFS_MyRep', 'claim_rfs_approved', [
+            'module_label' => 'RFS',
+            'document_label' => 'RFS',
+            'regional_name' => (string) ($cluster['regional_name'] ?? ''),
+            'city_name' => (string) ($cluster['city_name'] ?? ''),
+            'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'homepass' => (int) ($claim['claim_qty'] ?? 0),
+            'sender_name' => (string) $this->session->userdata('nama_user'),
+            'detail_url' => base_url('Monitoring_RFS_MyRep'),
+        ]);
     }
 
     private function parseClusterExcelHeader($header)

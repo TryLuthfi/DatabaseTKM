@@ -9,6 +9,7 @@ class DRM_MyRep extends CI_Controller
         $this->load->model('MDRM_MyRep');
         $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
+        $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
     }
 
     public function index()
@@ -139,6 +140,11 @@ class DRM_MyRep extends CI_Controller
             'updated_by' => $userId,
         ]);
 
+        if ($result) {
+            $clusterDetail = $this->MDRM_MyRep->getDrmByClusterId($clusterId);
+            $this->sendDrmNotification('cluster_masuk', $clusterDetail, 'DRM');
+        }
+
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Data DRM berhasil ditambahkan.' : 'Gagal menyimpan data DRM.');
         redirect($result ? ('DRM_MyRep/detail/' . $clusterId) : 'DRM_MyRep');
     }
@@ -213,6 +219,7 @@ class DRM_MyRep extends CI_Controller
             redirect('DRM_MyRep');
             return;
         }
+        $notificationEvent = !empty($detail['id_doc_file']) ? 'document_revised' : 'document_masuk';
 
         $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
         if (!$isNoDocumentRequired && empty($_FILES['file']['name'])) {
@@ -261,6 +268,11 @@ class DRM_MyRep extends CI_Controller
             'remark' => trim((string) $this->input->post('remark')),
             'uploaded_by' => (int) $this->session->userdata('id_user'),
         ]);
+
+        if ($fileId > 0) {
+            $clusterDetail = $this->MDRM_MyRep->getDrmByClusterId($clusterId);
+            $this->sendDrmNotification($notificationEvent, $clusterDetail, (string) ($detail['doc_name'] ?? 'DRM'));
+        }
 
         $this->session->set_flashdata($fileId > 0 ? 'success' : 'error', $fileId > 0 ? 'Dokumen DRM berhasil diupload.' : 'Dokumen DRM gagal disimpan.');
         redirect('DRM_MyRep/detail/' . $clusterId);
@@ -653,5 +665,23 @@ class DRM_MyRep extends CI_Controller
     {
         return $this->session->userdata('lokasi_user') === 'HO'
             || $this->session->userdata('nama_level') === 'Super Admin';
+    }
+
+    private function sendDrmNotification($eventName, array $cluster, $documentLabel)
+    {
+        $clusterId = (int) ($cluster['id_myrep_cluster'] ?? 0);
+        if ($clusterId <= 0) {
+            return;
+        }
+
+        $this->myrepNotifier->notify('DRM_MyRep', $eventName, [
+            'module_label' => 'DRM',
+            'document_label' => (string) $documentLabel,
+            'regional_name' => (string) ($cluster['regional_name'] ?? ''),
+            'city_name' => (string) ($cluster['city_name'] ?? ''),
+            'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'sender_name' => (string) $this->session->userdata('nama_user'),
+            'detail_url' => base_url('DRM_MyRep/detail/' . $clusterId),
+        ]);
     }
 }
