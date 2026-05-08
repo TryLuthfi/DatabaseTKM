@@ -205,8 +205,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         $docRow = $docsById[(int) $documentDefinition['id_doc_item']] ?? [];
                         $docStatusRaw = strtoupper(trim((string) ($docRow['status_file'] ?? '')));
                         $docName = (string) ($documentDefinition['doc_name'] ?? 'Dokumen');
-                        $allowUploadButton = in_array($docStatusRaw, ['', 'REJECTED'], true)
-                            && !($docStatusRaw === 'REJECTED' && strtoupper($docName) === 'BA OPEN');
+                        $allowUploadButton = $docStatusRaw === '';
                         ?>
                         <?php if ($allowUploadButton): ?>
                             <button
@@ -220,7 +219,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                 data-doc_name="<?= htmlspecialchars($docName, ENT_QUOTES) ?>"
                                 data-doc_status="<?= htmlspecialchars((string) bakDocLabel($docRow), ENT_QUOTES) ?>"
                                 data-doc_remark="<?= htmlspecialchars((string) ($docRow['remark'] ?? ''), ENT_QUOTES) ?>">
-                                <?= $docStatusRaw === 'REJECTED' ? 'Re-Upload ' . htmlspecialchars($docName) : 'Upload ' . htmlspecialchars($docName) ?>
+                                <?= 'Upload ' . htmlspecialchars($docName) ?>
                             </button>
                         <?php endif; ?>
                     <?php endforeach; ?>
@@ -511,7 +510,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
     <div class="modal fade" id="modal-bak-create" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content budget-modal bak-modal-shell">
-                <form method="post" action="<?= base_url('BAK_MyRep/saveCluster') ?>" enctype="multipart/form-data">
+                <form method="post" action="<?= base_url('BAK_MyRep/saveCluster') ?>" enctype="multipart/form-data" id="bak-create-form">
                     <div class="modal-header budget-modal__header">
                         <div>
                             <span class="budget-modal__eyebrow">BAK MyRep</span>
@@ -559,7 +558,15 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                         <div class="doc-modal-panel">
                                             <div class="form-group mb-3">
                                                 <label class="font-weight-bold d-block"><?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></label>
-                                                <input type="file" name="create_file_<?= (int) $documentDefinition['id_doc_item'] ?>" class="form-control create-doc-input" data-doc-name="<?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-'), ENT_QUOTES) ?>" required>
+                                                <div class="upload-dropzone create-doc-dropzone" id="bak-create-dropzone-<?= (int) $documentDefinition['id_doc_item'] ?>">
+                                                    <input type="file" name="create_file_<?= (int) $documentDefinition['id_doc_item'] ?>" class="create-doc-input" id="bak-create-file-<?= (int) $documentDefinition['id_doc_item'] ?>" data-doc-name="<?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-'), ENT_QUOTES) ?>" required>
+                                                    <div class="upload-dropzone-content">
+                                                        <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                                        <div class="upload-dropzone-title">Drag & drop <?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? 'dokumen')) ?></div>
+                                                        <div class="upload-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
+                                                        <div class="upload-dropzone-file create-doc-file-name" id="bak-create-file-name-<?= (int) $documentDefinition['id_doc_item'] ?>">Belum ada file dipilih</div>
+                                                    </div>
+                                                </div>
                                                 <small class="text-muted d-block mt-2">Format: pdf, doc, docx, xls, xlsx, jpg, jpeg, png. Maksimal 30 MB.</small>
                                             </div>
                                             <div class="form-group mb-0">
@@ -575,7 +582,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                     </div>
                     <div class="modal-footer budget-modal__footer">
                         <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
-                        <button type="submit" class="btn budget-btn budget-btn--primary">Simpan BAK</button>
+                        <button type="submit" class="btn budget-btn budget-btn--primary" id="bak-create-submit" <?= $docReady ? 'disabled' : '' ?>>Simpan BAK</button>
                     </div>
                 </form>
             </div>
@@ -1020,6 +1027,16 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
         border-radius: 24px;
         overflow: hidden;
         box-shadow: 0 30px 50px rgba(8, 35, 55, 0.22);
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 3.5rem);
+    }
+
+    .budget-modal>form {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        flex: 1 1 auto;
     }
 
     .budget-modal__header {
@@ -1050,6 +1067,8 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
     .budget-modal .modal-body {
         padding: 1.5rem;
         background: linear-gradient(180deg, #fbfdff 0%, #f2f8fc 100%);
+        overflow-y: auto;
+        min-height: 0;
     }
 
     .budget-modal__footer {
@@ -1455,15 +1474,19 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
 
             return documents.map(function (doc) {
                 var docName = escapeHtml(doc.doc_name || '-');
+                var docNameRaw = String(doc.doc_name || '');
+                var docStatusRaw = String(doc.status_file || '').toUpperCase().trim();
                 var statusLabel = escapeHtml(doc.is_document_not_required == 1
                     ? 'Tidak Dibutuhkan'
-                    : ((doc.status_file || '').toString().toUpperCase() === 'UPLOADED'
+                    : (docStatusRaw === 'UPLOADED'
                         ? 'ON REVIEW'
                         : (doc.status_file || (doc.file_name ? 'UPLOADED' : 'BELUM UPLOAD'))));
                 var statusClass = getBakStatusBadgeClass(statusLabel);
                 var reviewLabel = escapeHtml(doc.reviewed_at || (doc.id_doc_file ? 'Waiting Review' : 'Belum ada review'));
                 var remarkValue = escapeHtml(doc.remark || '');
                 var fileSection = '<span class="text-muted small">Belum ada file</span>';
+                var actionParts = [];
+                var canReupload = docStatusRaw === 'REJECTED';
 
                 if (doc.id_doc_file && doc.file_path) {
                     fileSection =
@@ -1472,24 +1495,44 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         '<button type="button" class="btn btn-sm btn-outline-dark js-history-doc" data-toggle="modal" data-target="#modal-bak-history-doc" data-cluster_name="' + escapeHtml(doc.cluster_name || '') + '" data-doc_name="' + docName + '" data-history="' + escapeHtml(JSON.stringify(doc.history || [])) + '">History</button>';
                 }
 
-                var actionSection = '<span class="text-muted small">Tidak ada aksi</span>';
+                if (canReupload) {
+                    actionParts.push(
+                        '<button type="button" class="btn btn-sm btn-outline-info btn-block js-detail-reupload-doc" ' +
+                            'data-cluster_id="' + Number(doc.id_myrep_cluster || 0) + '" ' +
+                            'data-cluster_name="' + escapeHtml(doc.cluster_name || '') + '" ' +
+                            'data-doc_item_id="' + Number(doc.id_doc_item || 0) + '" ' +
+                            'data-doc_name="' + docName + '" ' +
+                            'data-doc_status="' + statusLabel + '" ' +
+                            'data-doc_remark="' + remarkValue + '">' +
+                            'Re-Upload' +
+                        '</button>'
+                    );
+                }
+
                 <?php if ($canApprove): ?>
                 if (doc.id_doc_file) {
-                    actionSection =
+                    actionParts.push(
                         '<form method="post" action="' + bakApproveUrl + '" class="mb-2 js-bak-inline-approve-form">' +
                             '<input type="hidden" name="id_doc_file" value="' + Number(doc.id_doc_file) + '">' +
                             '<input type="text" name="remark" class="form-control form-control-sm mb-2" placeholder="Remark approve (opsional)">' +
-                            (((doc.status_file || '').toString().toUpperCase() === 'UPLOADED' || (doc.status_file || '').toString().toUpperCase() === 'REJECTED')
+                            ((docStatusRaw === 'UPLOADED' || docStatusRaw === 'REJECTED')
                                 ? '<button type="submit" class="btn btn-sm btn-outline-success btn-block">Approve</button>'
                                 : '<button type="submit" class="btn btn-sm btn-outline-success btn-block" disabled>Approve</button>') +
-                        '</form>' +
+                        '</form>'
+                    );
+                    actionParts.push(
                         '<form method="post" action="' + bakRejectUrl + '" class="js-bak-inline-reject-form">' +
                             '<input type="hidden" name="id_doc_file" value="' + Number(doc.id_doc_file) + '">' +
                             '<input type="text" name="remark" class="form-control form-control-sm mb-2" placeholder="Alasan reject" required>' +
                             '<button type="submit" class="btn btn-sm btn-outline-danger btn-block">Reject</button>' +
-                        '</form>';
+                        '</form>'
+                    );
                 }
                 <?php endif; ?>
+
+                var actionSection = actionParts.length
+                    ? actionParts.join('')
+                    : '<span class="text-muted small">Tidak ada aksi</span>';
 
                 return '<tr>' +
                     '<td>' + docName + '</td>' +
@@ -1572,7 +1615,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
             dropzone.addEventListener('drop', function (e) {
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                     input.files = e.dataTransfer.files;
-                    label.textContent = e.dataTransfer.files[0].name;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             });
 
@@ -1581,6 +1624,30 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                     ? input.files[0].name
                     : 'Belum ada file dipilih';
             });
+        }
+
+        function updateBakCreateSubmitState() {
+            var form = document.getElementById('bak-create-form');
+            var submitButton = document.getElementById('bak-create-submit');
+
+            if (!form || !submitButton) {
+                return;
+            }
+
+            var inputs = form.querySelectorAll('.create-doc-input');
+            if (!inputs.length) {
+                submitButton.disabled = false;
+                return;
+            }
+
+            var allReady = true;
+            inputs.forEach(function (input) {
+                if (!input.files || !input.files.length) {
+                    allReady = false;
+                }
+            });
+
+            submitButton.disabled = !allReady;
         }
 
         function syncTargetMeta($container) {
@@ -1626,6 +1693,8 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 initBakCitySelect('#modal-bak-create', '.js-bak-city-select');
                 syncTargetMeta($(this));
                 $(this).find('.create-doc-input').val('');
+                $(this).find('.create-doc-file-name').text('Belum ada file dipilih');
+                updateBakCreateSubmitState();
 
                 window.setTimeout(function () {
                     $('#modal-bak-create').find('.js-bak-city-select').select2('open');
@@ -1644,6 +1713,10 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 if ($select.hasClass('select2-hidden-accessible')) {
                     $select.select2('close');
                 }
+            });
+
+            $(document).on('change', '.create-doc-input', function () {
+                updateBakCreateSubmitState();
             });
 
             $(document).on('click', '.js-edit-bak', function () {
@@ -1679,6 +1752,28 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 $('#bak-upload-progress-bar').removeClass('success').css('width', '0%');
                 $('#bak-upload-progress-percent').text('0%');
                 $('#bak-upload-document-submit').prop('disabled', false).text('Upload Dokumen');
+            });
+
+            $(document).on('click', '.js-detail-reupload-doc', function () {
+                var $button = $(this);
+                $('#modal-bak-doc-detail').modal('hide');
+                $('#upload_cluster_id').val($button.data('cluster_id'));
+                $('#upload_doc_item_id').val($button.data('doc_item_id'));
+                $('#upload_cluster_name').val($button.data('cluster_name'));
+                $('#upload_doc_cluster_caption').text($button.data('cluster_name'));
+                $('#upload_doc_name').val($button.data('doc_name'));
+                $('#upload_doc_status').val($button.data('doc_status'));
+                $('#upload_doc_remark').val($button.data('doc_remark'));
+                $('#upload_doc_not_required').prop('checked', false);
+                $('#bak-upload-file-input').val('').prop('disabled', false).prop('required', true);
+                $('#bak-upload-file-name').text('Belum ada file dipilih');
+                $('#bak-upload-progress-panel').hide();
+                $('#bak-upload-progress-bar').removeClass('success').css('width', '0%');
+                $('#bak-upload-progress-percent').text('0%');
+                $('#bak-upload-document-submit').prop('disabled', false).text('Upload Dokumen');
+                window.setTimeout(function () {
+                    $('#modal-bak-upload-doc').modal('show');
+                }, 180);
             });
 
             $(document).on('click', '.js-bak-doc-detail', function () {
@@ -1884,6 +1979,16 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
             });
 
             bindDropzone('#bak-upload-dropzone', '#bak-upload-file-input', '#bak-upload-file-name');
+            $('.create-doc-input').each(function () {
+                var inputId = this.id;
+                if (!inputId) {
+                    return;
+                }
+
+                var suffix = inputId.replace('bak-create-file-', '');
+                bindDropzone('#bak-create-dropzone-' + suffix, '#' + inputId, '#bak-create-file-name-' + suffix);
+            });
+            updateBakCreateSubmitState();
         });
     })();
 </script>

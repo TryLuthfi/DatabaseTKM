@@ -112,6 +112,15 @@ $statusOptions = [
 $currentStage = strtoupper(trim((string) ($cluster['staging_status'] ?? 'DRAFT')));
 $stageButtonTarget = '';
 $stageButtonLabel = '';
+$postDonasiUploadableRows = [];
+foreach ((array) $postDonasiRows as $postDocRow) {
+    $postDocStatus = batchDetailDocumentLabel($postDocRow);
+    $postDocRawStatus = strtoupper(trim((string) ($postDocRow['status_file'] ?? '')));
+    $postDocCanUpload = in_array($postDocStatus, ['BELUM UPLOAD', 'LINKED DOKUMENT'], true) || $postDocRawStatus === 'REJECTED';
+    if ($postDocCanUpload) {
+        $postDonasiUploadableRows[] = $postDocRow;
+    }
+}
 if ($canApprove) {
     if ($currentStage === 'WAITING HO') {
         $stageButtonTarget = '#modal-stage-to-myrep';
@@ -673,7 +682,14 @@ if ($canApprove) {
 
             <div class="card card-outline card-primary shadow-sm batch-post-card">
                 <div class="card-header">
-                    <h3 class="card-title">Post Donasi di Detail Batch Approval</h3>
+                    <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap:.75rem;">
+                        <h3 class="card-title mb-0">Post Donasi di Detail Batch Approval</h3>
+                        <?php if ($postDonasiDocReady && !empty($postDonasiUploadableRows)): ?>
+                            <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-post-bulk-upload">
+                                Bulk Upload 12 Dokumen
+                            </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <div class="card-body">
                     <?php if (!$postDonasiDocReady): ?>
@@ -1150,6 +1166,65 @@ if ($canApprove) {
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-info btn-sm">Simpan Dokumen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-post-bulk-upload" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content batch-modal">
+            <form method="post" action="<?= base_url('Post_Donasi_MyRep/uploadBulkDocuments') ?>" enctype="multipart/form-data">
+                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                <input type="hidden" name="redirect_to_batch_detail" value="1">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Bulk Upload Post Donasi</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        Upload beberapa dokumen post donasi sekaligus. Form ini memakai input file biasa, tanpa drag and drop.
+                    </div>
+                    <?php if (empty($postDonasiUploadableRows)): ?>
+                        <div class="text-muted">Tidak ada dokumen yang tersedia untuk bulk upload.</div>
+                    <?php else: ?>
+                        <?php foreach ($postDonasiUploadableRows as $bulkRow): ?>
+                            <div class="batch-form-section">
+                                <input type="hidden" name="bulk_doc_item_ids[]" value="<?= (int) ($bulkRow['id_doc_item'] ?? 0) ?>">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group mb-md-0">
+                                            <label>Dokumen</label>
+                                            <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($bulkRow['doc_name'] ?? '-')) ?>" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group mb-md-0">
+                                            <label>Status</label>
+                                            <input type="text" class="form-control" value="<?= htmlspecialchars(batchDetailDocumentLabel($bulkRow)) ?>" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <div class="form-group mb-0">
+                                            <label>File Upload</label>
+                                            <input type="file" name="bulk_file_<?= (int) ($bulkRow['id_doc_item'] ?? 0) ?>" class="form-control-file border rounded p-2 bg-white">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mt-3">
+                                        <div class="form-group mb-0">
+                                            <label>Remark</label>
+                                            <input type="text" name="bulk_remark_<?= (int) ($bulkRow['id_doc_item'] ?? 0) ?>" class="form-control" value="<?= htmlspecialchars((string) ($bulkRow['remark'] ?? '')) ?>" placeholder="Remark upload jika diperlukan">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-primary" <?= empty($postDonasiUploadableRows) ? 'disabled' : '' ?>>Simpan Bulk Upload</button>
                 </div>
             </form>
         </div>

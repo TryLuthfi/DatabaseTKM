@@ -39,13 +39,42 @@ class Myrep_notification_service
             return [];
         }
 
-        return $this->ci->db
+        $route = $this->ci->db
             ->from('tb_myrep_notification_route')
             ->where('module_name', (string) $moduleName)
             ->where('event_name', (string) $eventName)
             ->where('is_active', 1)
             ->get()
             ->row_array();
+
+        if (!empty($route)) {
+            return $route;
+        }
+
+        $normalizedModule = strtolower(trim((string) $moduleName));
+        $normalizedEvent = strtolower(trim((string) $eventName));
+
+        if ($normalizedEvent === 'cluster_masuk' && in_array($normalizedModule, ['bak_myrep', 'valsal_myrep', 'batch_approval_myrep'], true)) {
+            return $this->ci->db
+                ->from('tb_myrep_notification_route')
+                ->where('module_name', (string) $moduleName)
+                ->where('event_name', 'document_masuk')
+                ->where('is_active', 1)
+                ->get()
+                ->row_array();
+        }
+
+        if (in_array($normalizedEvent, ['full_upload', 'batch_revised'], true) && $normalizedModule === 'batch_approval_myrep') {
+            return $this->ci->db
+                ->from('tb_myrep_notification_route')
+                ->where('module_name', (string) $moduleName)
+                ->where('event_name', 'document_masuk')
+                ->where('is_active', 1)
+                ->get()
+                ->row_array();
+        }
+
+        return [];
     }
 
     private function resolveRecipient(array $route, array $payload)
@@ -92,9 +121,10 @@ class Myrep_notification_service
 
     private function buildMessage($moduleName, $eventName, array $payload, array $recipient)
     {
-        $title = $this->resolveTitle($eventName);
+        $title = $this->resolveModuleAwareTitle($moduleName, $eventName, $payload);
         $docLine = $this->resolveDocumentLine($moduleName, $eventName, $payload);
         $metaLine = $this->resolveMetaLine($payload);
+        $supplementalLines = $this->resolveSupplementalLines($moduleName, $eventName, $payload);
         $senderLine = $this->resolveSenderLine($payload, $recipient);
         $timeLine = $this->formatIndonesianDateTime($payload['timestamp'] ?? date('Y-m-d H:i:s'));
         $detailUrl = trim((string) ($payload['detail_url'] ?? ''));
@@ -108,6 +138,10 @@ class Myrep_notification_service
             '👤 ' . $senderLine,
             '🕒 ' . $this->escapeTelegramText($timeLine),
         ];
+
+        if (!empty($supplementalLines)) {
+            array_splice($lines, 4, 0, $supplementalLines);
+        }
 
         if ($detailUrl !== '') {
             $lines[] = '';
@@ -132,6 +166,32 @@ class Myrep_notification_service
         }
     }
 
+    private function resolveModuleAwareTitle($moduleName, $eventName, array $payload)
+    {
+        $normalizedEvent = strtolower(trim((string) $eventName));
+        $normalizedModule = strtolower(trim((string) $moduleName));
+        $documentLabel = trim((string) ($payload['document_label'] ?? ''));
+        $moduleLabel = trim((string) ($payload['module_label'] ?? $moduleName));
+
+        if ($normalizedEvent === 'full_upload' && $normalizedModule === 'batch_approval_myrep') {
+            return '✅ <b>FULL UPLOAD - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+        }
+
+        if ($normalizedEvent === 'batch_revised' && $normalizedModule === 'batch_approval_myrep') {
+            return '🔵 <b>REVISED - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+        }
+
+        if ($normalizedEvent === 'cluster_masuk' && in_array($normalizedModule, ['bak_myrep', 'valsal_myrep', 'batch_approval_myrep'], true)) {
+            return '✅ <b>NEW CLUSTER - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+        }
+
+        if ($normalizedEvent === 'document_revised' && in_array($normalizedModule, ['bak_myrep', 'valsal_myrep'], true) && $documentLabel !== '') {
+            return '🔵 <b>REVISED - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+        }
+
+        return $this->resolveTitle($eventName);
+    }
+
     private function resolveDocumentLine($moduleName, $eventName, array $payload)
     {
         $moduleLabel = trim((string) ($payload['module_label'] ?? $moduleName));
@@ -139,6 +199,14 @@ class Myrep_notification_service
 
         if (strtolower(trim((string) $eventName)) === 'claim_rfs_approved') {
             return $documentLabel !== '' ? $documentLabel : 'RFS';
+        }
+
+        if (strtolower(trim((string) $eventName)) === 'batch_revised') {
+            return $documentLabel !== '' ? ($moduleLabel . ' - ' . $documentLabel) : $moduleLabel;
+        }
+
+        if (strtolower(trim((string) $eventName)) === 'full_upload') {
+            return $moduleLabel;
         }
 
         if (strtolower(trim((string) $eventName)) === 'cluster_masuk') {
@@ -168,6 +236,25 @@ class Myrep_notification_service
         $recipientMention = $this->buildRecipientMention($recipient);
 
         return $this->escapeTelegramText($senderName) . ' -> HO (' . $recipientMention . ')';
+    }
+
+    private function resolveSupplementalLines($moduleName, $eventName, array $payload)
+    {
+        $normalizedModule = strtolower(trim((string) $moduleName));
+        $normalizedEvent = strtolower(trim((string) $eventName));
+
+        if ($normalizedModule === 'batch_approval_myrep' && $normalizedEvent === 'cluster_masuk') {
+            $donationTotal = (float) ($payload['donation_total'] ?? 0);
+            $nominalPerHomepass = (float) ($payload['nominal_per_homepass'] ?? 0);
+
+            return [
+                'ðŸ’° ' . $this->escapeTelegramText('Total Pengajuan Donasi: ' . $this->formatRupiah($donationTotal)),
+                'ðŸ§® ' . $this->escapeTelegramText('Nominal per Homepass: ' . $this->formatRupiah($nominalPerHomepass)),
+                '',
+            ];
+        }
+
+        return [];
     }
 
     private function buildRecipientMention(array $recipient)
@@ -270,6 +357,11 @@ class Myrep_notification_service
 
         $monthIndex = (int) date('n', $timestamp);
         return date('d', $timestamp) . ' ' . ($months[$monthIndex] ?? date('m', $timestamp)) . ' ' . date('Y H:i', $timestamp) . ' WIB';
+    }
+
+    private function formatRupiah($value)
+    {
+        return 'Rp ' . number_format((float) $value, 0, ',', '.');
     }
 
     private function escapeTelegramText($text)

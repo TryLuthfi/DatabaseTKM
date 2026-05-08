@@ -42,4 +42,93 @@ class MyRepublik_Project extends CI_Controller
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
     }
+
+    public function detail($clusterId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            redirect('MyRepublik_Project');
+            return;
+        }
+
+        $cluster = $this->MMyRepublik_Project->getClusterDetail($clusterId);
+        if (empty($cluster)) {
+            $this->session->set_flashdata('error', 'Detail cluster MyRep tidak ditemukan.');
+            redirect('MyRepublik_Project');
+            return;
+        }
+
+        $data = $this->buildDetailPayload($cluster, false);
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('MyRepublik_Project/detail', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
+    }
+
+    public function detailLegacy($rfsClusterId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $rfsClusterId = (int) $rfsClusterId;
+        if ($rfsClusterId <= 0) {
+            redirect('MyRepublik_Project');
+            return;
+        }
+
+        $cluster = $this->MMyRepublik_Project->getLegacyClusterDetail($rfsClusterId);
+        if (empty($cluster)) {
+            $this->session->set_flashdata('error', 'Detail cluster legacy RFS tidak ditemukan.');
+            redirect('MyRepublik_Project');
+            return;
+        }
+
+        $data = $this->buildDetailPayload($cluster, true);
+
+        $this->load->view('Templates/01_Header', $data);
+        $this->load->view('Templates/02_Menu');
+        $this->load->view('MyRepublik_Project/detail', $data);
+        $this->load->view('Templates/03_Footer');
+        $this->load->view('Templates/99_JS');
+    }
+
+    private function buildDetailPayload($cluster, $isLegacy)
+    {
+        $myrepClusterId = (int) ($cluster['id_myrep_cluster'] ?? 0);
+        $rfsClusterId = (int) ($cluster['rfs_cluster_id'] ?? $cluster['legacy_rfs_cluster_id'] ?? 0);
+
+        $data['title'] = 'Detail Project MyRep';
+        $data['cluster'] = $cluster;
+        $data['isLegacy'] = (bool) $isLegacy;
+        $data['stageTimeline'] = $this->MMyRepublik_Project->buildStageTimeline($cluster, $isLegacy);
+        $data['flowSummaries'] = $myrepClusterId > 0
+            ? $this->MMyRepublik_Project->getFlowDocumentSummaries($myrepClusterId)
+            : [];
+        $data['flowDocuments'] = $myrepClusterId > 0
+            ? $this->MMyRepublik_Project->getAllFlowDocuments($myrepClusterId)
+            : [];
+        $data['batchPics'] = $myrepClusterId > 0
+            ? $this->MMyRepublik_Project->getBatchPics($myrepClusterId)
+            : [];
+        $data['poHeaders'] = $myrepClusterId > 0
+            ? $this->MMyRepublik_Project->getPoHeadersWithTermins($myrepClusterId)
+            : [];
+        $data['claimRows'] = $rfsClusterId > 0
+            ? $this->MMyRepublik_Project->getRfsClaims($rfsClusterId)
+            : [];
+        $data['packageRows'] = $rfsClusterId > 0
+            ? $this->MMyRepublik_Project->getRfsPackages($rfsClusterId)
+            : [];
+
+        return $data;
+    }
 }

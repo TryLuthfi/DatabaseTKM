@@ -209,7 +209,7 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         if ($this->MBatch_Approval_MyRep->batchDocumentTablesReady()) {
-            $this->handleInitialBatchDocumentUpload($clusterId, $remark, $isNoDocumentRequired);
+            $this->handleInitialBatchDocumentUpload($clusterId, $remark, $isNoDocumentRequired, false);
         }
 
         $clusterDetail = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
@@ -893,7 +893,7 @@ class Batch_Approval_MyRep extends CI_Controller
         return 'Batch_Approval_MyRep';
     }
 
-    private function handleInitialBatchDocumentUpload($clusterId, $remark = '', $isNoDocumentRequired = false)
+    private function handleInitialBatchDocumentUpload($clusterId, $remark = '', $isNoDocumentRequired = false, $shouldNotify = true)
     {
         $clusterId = (int) $clusterId;
         if ($clusterId <= 0) {
@@ -952,7 +952,7 @@ class Batch_Approval_MyRep extends CI_Controller
             'remark' => $remark,
             'uploaded_by' => (int) $this->session->userdata('id_user'),
         ]);
-        if ($fileId > 0) {
+        if ($fileId > 0 && $shouldNotify) {
             $clusterDetail = $this->MBatch_Approval_MyRep->getBatchByClusterId($clusterId);
             $this->sendBatchNotification('document_masuk', $clusterDetail, (string) ($context['doc_name'] ?? 'RAR'));
         }
@@ -971,6 +971,9 @@ class Batch_Approval_MyRep extends CI_Controller
             'regional_name' => (string) ($cluster['regional_name'] ?? ''),
             'city_name' => (string) ($cluster['city_name'] ?? ''),
             'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'homepass' => (int) ($cluster['hp_donasi'] ?? 0),
+            'donation_total' => (float) ($cluster['nominal_pengajuan_area'] ?? 0),
+            'nominal_per_homepass' => (float) ($cluster['nominal_per_homepass'] ?? 0),
             'sender_name' => (string) $this->session->userdata('nama_user'),
             'detail_url' => base_url('Batch_Approval_MyRep/detail/' . $clusterId),
         ]);

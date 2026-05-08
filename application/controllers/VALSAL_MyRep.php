@@ -174,12 +174,13 @@ class VALSAL_MyRep extends CI_Controller
             }
 
             $this->MVALSAL_MyRep->syncValsalStatusByCluster($clusterId, $userId);
-            $this->sendValsalNotification('document_masuk', [
+            $this->sendValsalNotification('cluster_masuk', [
                 'id_myrep_cluster' => $clusterId,
                 'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
                 'regional_name' => (string) ($cluster['regional_name'] ?? ''),
                 'city_name' => (string) ($cluster['city_name'] ?? ''),
-            ], 'Initial Documents');
+                'homepass_valsal' => $homepassValsal,
+            ], 'VALSAL');
         }
 
         $this->session->set_flashdata('success', 'Data VALSAL berhasil ditambahkan.');
@@ -781,6 +782,7 @@ class VALSAL_MyRep extends CI_Controller
             'regional_name' => (string) ($cluster['regional_name'] ?? ''),
             'city_name' => (string) ($cluster['city_name'] ?? ''),
             'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'homepass' => (int) ($cluster['homepass_valsal'] ?? ($cluster['homepass'] ?? 0)),
             'sender_name' => (string) $this->session->userdata('nama_user'),
             'detail_url' => base_url('VALSAL_MyRep'),
         ]);

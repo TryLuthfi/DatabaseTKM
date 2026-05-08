@@ -260,7 +260,7 @@ class MBatch_Approval_MyRep extends CI_Model
             $row['display_staging_status'] = $this->resolveDisplayStagingStatus(
                 (string) ($row['staging_status'] ?? 'DRAFT'),
                 (int) $summary['total'],
-                (int) $summary['uploaded']
+                (int) $summary['approved']
             );
         }
         unset($row);
@@ -318,7 +318,7 @@ class MBatch_Approval_MyRep extends CI_Model
         $row['display_staging_status'] = $this->resolveDisplayStagingStatus(
             (string) ($row['staging_status'] ?? 'DRAFT'),
             (int) $summary['total'],
-            (int) $summary['uploaded']
+            (int) $summary['approved']
         );
 
         return $row;
@@ -920,14 +920,14 @@ class MBatch_Approval_MyRep extends CI_Model
         return $result;
     }
 
-    private function resolveDisplayStagingStatus($stagingStatus, $postDocTotal, $postDocUploaded)
+    private function resolveDisplayStagingStatus($stagingStatus, $postDocTotal, $postDocApproved)
     {
         $stagingStatus = strtoupper(trim((string) $stagingStatus));
         $postDocTotal = (int) $postDocTotal;
-        $postDocUploaded = (int) $postDocUploaded;
+        $postDocApproved = (int) $postDocApproved;
 
         if (in_array($stagingStatus, ['RELEASED', 'DONE BATCH APPROVAL'], true) && $postDocTotal > 0) {
-            return $postDocUploaded >= $postDocTotal ? 'COMPLETED' : 'WAITING DOC';
+            return $postDocApproved >= $postDocTotal ? 'COMPLETED' : 'WAITING DOC';
         }
 
         return $stagingStatus !== '' ? $stagingStatus : 'DRAFT';

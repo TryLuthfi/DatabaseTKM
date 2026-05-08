@@ -14,8 +14,10 @@ CREATE TABLE `tb_myrep_notification_route` (
 INSERT INTO `tb_myrep_notification_route` (`module_name`, `event_name`, `target_type`, `target_user_id`, `is_active`) VALUES
 ('BAK_MyRep', 'document_masuk', 'FIXED_USER', 22, 1),
 ('BAK_MyRep', 'document_revised', 'FIXED_USER', 22, 1),
+('BAK_MyRep', 'cluster_masuk', 'FIXED_USER', 22, 1),
 ('VALSAL_MyRep', 'document_masuk', 'FIXED_USER', 121, 1),
 ('VALSAL_MyRep', 'document_revised', 'FIXED_USER', 121, 1),
+('VALSAL_MyRep', 'cluster_masuk', 'FIXED_USER', 121, 1),
 ('Batch_Approval_MyRep', 'cluster_masuk', 'FIXED_USER', 22, 1),
 ('Batch_Approval_MyRep', 'document_masuk', 'FIXED_USER', 22, 1),
 ('Batch_Approval_MyRep', 'document_revised', 'FIXED_USER', 22, 1),

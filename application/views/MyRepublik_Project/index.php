@@ -5,6 +5,23 @@ if (!function_exists('myrepDashNumber')) {
         return number_format((float) $value, 0, ',', '.');
     }
 }
+
+if (!function_exists('myrepClusterDetailUrl')) {
+    function myrepClusterDetailUrl($row)
+    {
+        $myrepClusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+        if ($myrepClusterId > 0) {
+            return base_url('MyRepublik_Project/detail/' . $myrepClusterId);
+        }
+
+        $legacyClusterId = (int) ($row['legacy_rfs_cluster_id'] ?? $row['rfs_cluster_id'] ?? 0);
+        if ($legacyClusterId > 0) {
+            return base_url('MyRepublik_Project/detailLegacy/' . $legacyClusterId);
+        }
+
+        return '#';
+    }
+}
 ?>
 
 <style>
@@ -275,14 +292,24 @@ if (!function_exists('myrepDashNumber')) {
                                         <th>PO Count</th>
                                         <th>RPM / SPV</th>
                                         <th>DRM Date</th>
+                                        <th>Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($clusterRows as $index => $row): ?>
+                                        <?php $detailUrl = myrepClusterDetailUrl($row); ?>
                                         <tr>
                                             <td><?= $index + 1 ?></td>
                                             <td>
-                                                <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                                                <strong>
+                                                    <?php if ($detailUrl !== '#'): ?>
+                                                        <a href="<?= htmlspecialchars($detailUrl) ?>" class="text-primary">
+                                                            <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?>
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?>
+                                                    <?php endif; ?>
+                                                </strong>
                                                 <div class="small text-muted"><?= htmlspecialchars((string) ($row['team_name'] ?? '-')) ?></div>
                                             </td>
                                             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
@@ -292,10 +319,19 @@ if (!function_exists('myrepDashNumber')) {
                                             <td><?= (int) ($row['po_count'] ?? 0) ?></td>
                                             <td><?= htmlspecialchars((string) ($row['rpm'] ?? '-')) ?> / <?= htmlspecialchars((string) ($row['spv'] ?? '-')) ?></td>
                                             <td><?= !empty($row['drm_date']) ? htmlspecialchars((string) $row['drm_date']) : '-' ?></td>
+                                            <td>
+                                                <?php if ($detailUrl !== '#'): ?>
+                                                    <a href="<?= htmlspecialchars($detailUrl) ?>" class="btn btn-sm btn-primary">
+                                                        Detail
+                                                    </a>
+                                                <?php else: ?>
+                                                    <span class="text-muted">-</span>
+                                                <?php endif; ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                     <?php if (empty($clusterRows)): ?>
-                                        <tr><td colspan="9" class="text-center text-muted">Belum ada data cluster MyRep.</td></tr>
+                                        <tr><td colspan="10" class="text-center text-muted">Belum ada data cluster MyRep.</td></tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>

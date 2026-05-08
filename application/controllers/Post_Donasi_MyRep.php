@@ -8,6 +8,7 @@ class Post_Donasi_MyRep extends CI_Controller
         parent::__construct();
         $this->load->model('MPost_Donasi_MyRep');
         $this->load->library('upload');
+        $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
     }
 
     public function index()
@@ -103,6 +104,7 @@ class Post_Donasi_MyRep extends CI_Controller
 
         $fileName = '';
         $filePath = '';
+        $isReupload = !empty($detail['id_doc_file']);
         if (!$isNoDocumentRequired) {
             $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
             $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($detail['doc_name'] ?? 'POST_DONASI'));
@@ -136,7 +138,115 @@ class Post_Donasi_MyRep extends CI_Controller
             'uploaded_by' => (int) $this->session->userdata('id_user'),
         ]);
 
+        if ($fileId > 0) {
+            $this->sendPostDonasiNotificationAfterUpload($clusterId, $isReupload, (string) ($detail['doc_name'] ?? ''));
+        }
+
         $this->session->set_flashdata($fileId > 0 ? 'success' : 'error', $fileId > 0 ? 'Dokumen post donasi berhasil diupload.' : 'Dokumen post donasi gagal disimpan.');
+        redirect($redirectPath);
+    }
+
+    public function uploadBulkDocuments()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $redirectPath = $this->resolveRedirectPath($clusterId);
+        $docItemIds = (array) $this->input->post('bulk_doc_item_ids');
+
+        if ($clusterId <= 0 || empty($docItemIds)) {
+            $this->session->set_flashdata('error', 'Data bulk upload tidak lengkap.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $uploadDir = './uploads/myrep_post_donasi/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $uploadedCount = 0;
+        $hasReupload = false;
+        $reuploadDocNames = [];
+        $errors = [];
+        $userId = (int) $this->session->userdata('id_user');
+
+        foreach ($docItemIds as $docItemIdRaw) {
+            $docItemId = (int) $docItemIdRaw;
+            if ($docItemId <= 0) {
+                continue;
+            }
+
+            $fieldName = 'bulk_file_' . $docItemId;
+            if (empty($_FILES[$fieldName]['name'])) {
+                continue;
+            }
+
+            $detail = $this->MPost_Donasi_MyRep->getDocumentDetail($clusterId, $docItemId);
+            if (empty($detail)) {
+                $errors[] = 'Konfigurasi dokumen item #' . $docItemId . ' tidak ditemukan.';
+                continue;
+            }
+
+            $extension = pathinfo($_FILES[$fieldName]['name'], PATHINFO_EXTENSION);
+            $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($detail['doc_name'] ?? 'POST_DONASI'));
+            $fileName = 'POST_DONASI_' . $clusterId . '_' . $docItemId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+            $config = [
+                'upload_path' => $uploadDir,
+                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
+                'max_size' => 30720,
+                'file_name' => $fileName,
+                'overwrite' => true,
+            ];
+
+            $this->upload->initialize($config);
+            if (!$this->upload->do_upload($fieldName)) {
+                $errors[] = ($detail['doc_name'] ?? ('Item #' . $docItemId)) . ': ' . strip_tags($this->upload->display_errors());
+                continue;
+            }
+
+            $fileData = $this->upload->data();
+            $savedFileId = $this->MPost_Donasi_MyRep->saveFileUpload($clusterId, $docItemId, [
+                'file_name' => (string) $fileData['file_name'],
+                'file_path' => 'uploads/myrep_post_donasi/' . $fileData['file_name'],
+                'is_document_not_required' => 0,
+                'status_file' => 'UPLOADED',
+                'remark' => trim((string) $this->input->post('bulk_remark_' . $docItemId)),
+                'uploaded_by' => $userId,
+            ]);
+
+            if ($savedFileId > 0) {
+                $uploadedCount++;
+                if (!empty($detail['id_doc_file'])) {
+                    $hasReupload = true;
+                    $reuploadDocNames[] = (string) ($detail['doc_name'] ?? '');
+                }
+            } else {
+                $errors[] = ($detail['doc_name'] ?? ('Item #' . $docItemId)) . ': gagal disimpan.';
+            }
+        }
+
+        if ($uploadedCount <= 0) {
+            $this->session->set_flashdata('error', !empty($errors) ? implode(' | ', $errors) : 'Tidak ada dokumen yang diupload.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $reuploadDocNames = array_values(array_unique(array_filter($reuploadDocNames)));
+        $this->sendPostDonasiNotificationAfterUpload(
+            $clusterId,
+            $hasReupload,
+            count($reuploadDocNames) === 1 ? $reuploadDocNames[0] : ''
+        );
+
+        $message = $uploadedCount . ' dokumen post donasi berhasil diupload.';
+        if (!empty($errors)) {
+            $message .= ' Beberapa item gagal: ' . implode(' | ', $errors);
+        }
+        $this->session->set_flashdata('success', $message);
         redirect($redirectPath);
     }
 
@@ -246,5 +356,37 @@ class Post_Donasi_MyRep extends CI_Controller
         }
 
         return 'Post_Donasi_MyRep/detail/' . (int) $clusterId;
+    }
+
+    private function sendPostDonasiNotificationAfterUpload($clusterId, $hasReupload, $documentLabel = '')
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return;
+        }
+
+        $cluster = $this->MPost_Donasi_MyRep->getClusterById($clusterId);
+        if (empty($cluster)) {
+            return;
+        }
+
+        $summary = $this->MPost_Donasi_MyRep->getDocumentSummary($clusterId);
+        $eventName = $hasReupload
+            ? 'batch_revised'
+            : (($summary['total'] > 0 && $summary['uploaded'] >= $summary['total']) ? 'full_upload' : '');
+
+        if ($eventName === '') {
+            return;
+        }
+
+        $this->myrepNotifier->notify('Batch_Approval_MyRep', $eventName, [
+            'module_label' => 'Batch Approval',
+            'document_label' => (string) $documentLabel,
+            'regional_name' => (string) ($cluster['regional_name'] ?? ''),
+            'city_name' => (string) ($cluster['city_name'] ?? ''),
+            'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'sender_name' => (string) $this->session->userdata('nama_user'),
+            'detail_url' => base_url('Batch_Approval_MyRep/detail/' . $clusterId),
+        ]);
     }
 }

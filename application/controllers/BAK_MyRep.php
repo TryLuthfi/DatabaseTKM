@@ -199,12 +199,13 @@ class BAK_MyRep extends CI_Controller
             }
 
             $this->MBAK_MyRep->syncBakStatusByCluster($clusterId, $userId);
-            $this->sendBakNotification('document_masuk', [
+            $this->sendBakNotification('cluster_masuk', [
                 'cluster_name' => $clusterName,
                 'regional_name' => (string) ($target['regional_name'] ?? ''),
                 'city_name' => (string) ($target['city_name'] ?? ''),
                 'id_myrep_cluster' => $clusterId,
-            ], 'Initial Documents');
+                'homepass_bak' => $homepassBak,
+            ], 'BAK');
         }
 
         $this->session->set_flashdata('success', 'Cluster BAK baru berhasil ditambahkan.');
@@ -790,6 +791,7 @@ class BAK_MyRep extends CI_Controller
             'regional_name' => (string) ($cluster['regional_name'] ?? ''),
             'city_name' => (string) ($cluster['city_name'] ?? ''),
             'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'homepass' => (int) ($cluster['homepass_bak'] ?? ($cluster['homepass'] ?? 0)),
             'sender_name' => (string) $this->session->userdata('nama_user'),
             'detail_url' => base_url('BAK_MyRep'),
         ]);
