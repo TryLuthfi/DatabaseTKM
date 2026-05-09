@@ -696,62 +696,140 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         aria-hidden="true">
         <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content billing-workflow-modal">
-                <form id="formBatchPayment">
-                    <div class="modal-header billing-workflow-modal__header">
-                        <div>
-                            <span class="billing-workflow-modal__eyebrow">Payment Batch</span>
-                            <h5 class="modal-title mb-1" id="modalPaymentLabel">Tambah Pencairan Invoice</h5>
-                            <p class="mb-0 billing-workflow-modal__subtitle">Pilih beberapa invoice sekaligus lalu input pencairannya dalam satu batch yang lebih terstruktur.</p>
-                        </div>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span>&times;</span>
-                        </button>
+                <div class="modal-header billing-workflow-modal__header">
+                    <div>
+                        <span class="billing-workflow-modal__eyebrow">Payment Batch</span>
+                        <h5 class="modal-title mb-1" id="modalPaymentLabel">Tambah Pencairan Invoice</h5>
+                        <p class="mb-0 billing-workflow-modal__subtitle">Gunakan input manual atau import Excel untuk proses payment yang lebih cepat dan tetap mudah dicek.</p>
                     </div>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span>&times;</span>
+                    </button>
+                </div>
 
-                    <div class="modal-body billing-workflow-modal__body">
-                        <div class="form-group">
-                            <label>Pilih Nomor Invoice</label>
-                            <select id="select_invoice_payment" class="form-control" multiple="multiple"
-                                style="width: 100%;"></select>
+                <div class="modal-body billing-workflow-modal__body">
+                    <ul class="nav nav-tabs" id="paymentUploadTab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="tab-manual-payment-link" data-toggle="tab"
+                                href="#tab-manual-payment" role="tab">Upload Manual Batch</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-excel-payment-link" data-toggle="tab"
+                                href="#tab-excel-payment" role="tab">Import Excel</a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content pt-3">
+                        <div class="tab-pane fade show active" id="tab-manual-payment" role="tabpanel">
+                            <form id="formBatchPayment">
+                                <div class="form-group">
+                                    <label>Pilih Nomor Invoice</label>
+                                    <select id="select_invoice_payment" class="form-control" multiple="multiple"
+                                        style="width: 100%;"></select>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-striped" id="table_selected_invoice">
+                                        <thead>
+                                            <tr class="text-center">
+                                                <th style="width: 60px;">No</th>
+                                                <th>Nama Bowheer</th>
+                                                <th>No Invoice</th>
+                                                <th>No PO</th>
+                                                <th style="width: 180px;">Invoice Price</th>
+                                                <th style="width: 180px;">Payment Price</th>
+                                                <th style="width: 180px;">Date Payment</th>
+                                                <th style="width: 140px;">Status Payment</th>
+                                                <th style="width: 80px;">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr id="emptyRow">
+                                                <td colspan="9" class="text-center text-muted">Belum ada invoice dipilih</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="4" class="text-right">Total</th>
+                                                <th id="totalInvoicePrice" class="text-right">0</th>
+                                                <th id="totalPaymentPrice" class="text-right">0</th>
+                                                <th colspan="3"></th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button type="submit" class="btn btn-success">Simpan Pembayaran</button>
+                                </div>
+                            </form>
                         </div>
 
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped" id="table_selected_invoice">
-                                <thead>
-                                    <tr class="text-center">
-                                        <th style="width: 60px;">No</th>
-                                        <th>Nama Bowheer</th>
-                                        <th>No Invoice</th>
-                                        <th>No PO</th>
-                                        <th style="width: 180px;">Invoice Price</th>
-                                        <th style="width: 180px;">Payment Price</th>
-                                        <th style="width: 180px;">Date Payment</th>
-                                        <th style="width: 140px;">Status Payment</th>
-                                        <th style="width: 80px;">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr id="emptyRow">
-                                        <td colspan="8" class="text-center text-muted">Belum ada invoice dipilih</td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="4" class="text-right">Total</th>
-                                        <th id="totalInvoicePrice" class="text-right">0</th>
-                                        <th id="totalPaymentPrice" class="text-right">0</th>
-                                        <th colspan="3"></th>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                        <div class="tab-pane fade" id="tab-excel-payment" role="tabpanel">
+                            <form id="formPreviewPaymentImport" enctype="multipart/form-data">
+                                <div class="d-flex justify-content-end mb-3">
+                                    <a href="<?= base_url('BillingPayment/downloadPaymentImportTemplate') ?>"
+                                        class="btn btn-outline-success">
+                                        Download Format CSV
+                                    </a>
+                                </div>
+
+                                <div id="paymentDropzone" class="invoice-dropzone text-center">
+                                    <input type="file" id="paymentExcelFile" name="file_excel" accept=".xls,.xlsx,.csv"
+                                        hidden>
+                                    <h5 class="mb-2">Drop file Excel atau CSV di sini</h5>
+                                    <p class="text-muted mb-3">atau klik tombol berikut untuk memilih file `.xls`, `.xlsx`, atau `.csv`
+                                    </p>
+                                    <label for="paymentExcelFile" class="btn btn-outline-primary mb-0">
+                                        Pilih File Excel
+                                    </label>
+                                </div>
+
+                                <div class="alert alert-light border mt-3 mb-3">
+                                    <strong>Header yang didukung:</strong>
+                                    `no_invoice`, `tgl_payment_invoice`, `invoice_price_payment`, `status_invoice`.
+                                    <br>
+                                    <strong>Status yang didukung:</strong> `paid`, `partial`, `reject`.
+                                </div>
+                            </form>
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div id="paymentImportSummary" class="text-muted">Belum ada file dipreview</div>
+                                <button type="button" class="btn btn-success" id="btnSaveImportedPayment" disabled>
+                                    Import ke Database
+                                </button>
+                            </div>
+
+                            <input type="hidden" id="paymentImportRowsJson">
+
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped" id="table_payment_import_preview">
+                                    <thead>
+                                        <tr class="text-center">
+                                            <th>No Invoice</th>
+                                            <th>Tanggal Payment</th>
+                                            <th>Invoice Price</th>
+                                            <th>Payment Price</th>
+                                            <th>Selisih</th>
+                                            <th>Status Payment</th>
+                                            <th>Status</th>
+                                            <th>Keterangan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr id="emptyPaymentImportPreviewRow">
+                                            <td colspan="8" class="text-center text-muted">Preview import akan tampil di sini</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="modal-footer billing-workflow-modal__footer">
-                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
-                        <button type="submit" class="btn budget-btn budget-btn--success">Simpan Pembayaran</button>
-                    </div>
-                </form>
+                <div class="modal-footer billing-workflow-modal__footer">
+                    <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                </div>
             </div>
         </div>
     </div>
@@ -2156,6 +2234,55 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     });
 
     $(document).ready(function () {
+        function resetPaymentImportPreview() {
+            $('#paymentImportRowsJson').val('');
+            $('#paymentImportSummary').text('Belum ada file dipreview');
+            $('#btnSaveImportedPayment').prop('disabled', true);
+            $('#table_payment_import_preview tbody').html(`
+                <tr id="emptyPaymentImportPreviewRow">
+                    <td colspan="8" class="text-center text-muted">Preview import akan tampil di sini</td>
+                </tr>
+            `);
+        }
+
+        function renderPaymentImportPreview(rows, validRows) {
+            if (!rows || rows.length === 0) {
+                resetPaymentImportPreview();
+                return;
+            }
+
+            let html = '';
+            rows.forEach(row => {
+                const badgeClass = row.status === 'sesuai' ? 'badge-success' : 'badge-danger';
+                const invoicePrice = parseAmount(row.invoice_price_nett || 0);
+                const paymentPrice = parseAmount(row.invoice_price_payment || 0);
+                const selisih = invoicePrice - paymentPrice;
+                html += `
+                    <tr>
+                        <td>${row.no_invoice || '-'}</td>
+                        <td>${row.tgl_payment_invoice || '-'}</td>
+                        <td class="text-right">${row.invoice_price_nett ? formatTitik(invoicePrice, 2) : '-'}</td>
+                        <td class="text-right">${row.invoice_price_payment ? formatTitik(paymentPrice, 2) : '-'}</td>
+                        <td class="text-right">${row.invoice_price_nett ? formatTitik(selisih, 2) : '-'}</td>
+                        <td>${row.status_invoice || '-'}</td>
+                        <td class="text-center"><span class="badge ${badgeClass}">${row.status}</span></td>
+                        <td>${row.message || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            $('#table_payment_import_preview tbody').html(html);
+            $('#paymentImportRowsJson').val(JSON.stringify(validRows || []));
+            $('#paymentImportSummary').text(`${validRows.length} data valid dari ${rows.length} baris`);
+            $('#btnSaveImportedPayment').prop('disabled', !validRows.length);
+        }
+
+        $('#modal-payment').on('hidden.bs.modal', function () {
+            resetBatchPaymentTable();
+            resetPaymentImportPreview();
+            $('#paymentExcelFile').val('');
+            $('#tab-manual-payment-link').tab('show');
+        });
 
         $('#formBatchPayment').on('submit', function (e) {
             e.preventDefault();
@@ -2309,6 +2436,131 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             }
         });
 
+        $('#paymentDropzone').on('click', function () {
+            $('#paymentExcelFile').trigger('click');
+        });
+
+        $('#paymentDropzone').on('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).addClass('dragover');
+        });
+
+        $('#paymentDropzone').on('dragleave', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('dragover');
+        });
+
+        $('#paymentDropzone').on('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('dragover');
+
+            const files = e.originalEvent.dataTransfer.files;
+            if (files && files.length) {
+                $('#paymentExcelFile')[0].files = files;
+                $('#paymentExcelFile').trigger('change');
+            }
+        });
+
+        $('#paymentExcelFile').on('change', function () {
+            const file = this.files[0];
+            if (!file) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file_excel', file);
+
+            $.ajax({
+                url: '<?= base_url("BillingPayment/previewPaymentImport") ?>',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                beforeSend: function () {
+                    showLoader();
+                    resetPaymentImportPreview();
+                },
+                success: function (response) {
+                    if (response.status) {
+                        renderPaymentImportPreview(response.rows || [], response.valid_rows || []);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Preview',
+                            text: response.message || 'File import tidak valid'
+                        });
+                    }
+                },
+                error: function () {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Preview',
+                        text: 'Terjadi kesalahan saat membaca file import payment'
+                    });
+                },
+                complete: function () {
+                    hideLoader();
+                }
+            });
+        });
+
+        $('#btnSaveImportedPayment').on('click', function () {
+            const rowsJson = $('#paymentImportRowsJson').val();
+
+            if (!rowsJson) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Belum ada data',
+                    text: 'Preview file Excel terlebih dahulu.'
+                });
+                return;
+            }
+
+            $.ajax({
+                url: '<?= base_url("BillingPayment/saveImportedPayments") ?>',
+                type: 'POST',
+                data: { rows_json: rowsJson },
+                dataType: 'json',
+                beforeSend: function () {
+                    showLoader();
+                },
+                success: function (response) {
+                    if (response.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Import Berhasil',
+                            text: response.message
+                        }).then(() => {
+                            resetPaymentImportPreview();
+                            $('#paymentExcelFile').val('');
+                            $('#modal-payment').modal('hide');
+                            reloadBillingPage();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Import Gagal',
+                            text: response.message || 'Gagal menyimpan hasil import payment'
+                        });
+                    }
+                },
+                error: function () {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Import Gagal',
+                        text: 'Terjadi kesalahan saat menyimpan hasil import payment'
+                    });
+                },
+                complete: function () {
+                    hideLoader();
+                }
+            });
+        });
+
         function formatNumberInput(value) {
             if (!value) return '';
             value = value.toString().replace(/[^\d]/g, '');
@@ -2323,7 +2575,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             if ($('#table_selected_invoice tbody tr.data-row').length === 0) {
                 $('#table_selected_invoice tbody').html(`
             <tr id="emptyRow">
-                <td colspan="8" class="text-center text-muted">Belum ada invoice dipilih</td>
+                <td colspan="9" class="text-center text-muted">Belum ada invoice dipilih</td>
             </tr>
         `);
             }

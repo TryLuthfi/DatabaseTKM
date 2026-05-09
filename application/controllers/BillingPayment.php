@@ -215,6 +215,127 @@ class BillingPayment extends CI_Controller
         ];
     }
 
+    private function validatePaymentImportRows($rawRows)
+    {
+        $preparedRows = [];
+        $errors = [];
+        $invoiceNumbers = [];
+
+        foreach ($rawRows as $index => $rawRow) {
+            $rowNumber = $index + 1;
+            $noInvoice = trim((string) ($rawRow['no_invoice'] ?? ''));
+            $paymentDateTime = $this->normalizeDateTime($rawRow['tgl_payment_invoice'] ?? null);
+            $paymentDate = $paymentDateTime ? date('Y-m-d', strtotime($paymentDateTime)) : null;
+            $paymentPrice = $this->normalizeAmount($rawRow['invoice_price_payment'] ?? 0);
+            $statusInvoice = strtolower(trim((string) ($rawRow['status_invoice'] ?? '')));
+            $rowErrors = [];
+
+            if ($noInvoice === '') {
+                $rowErrors[] = 'No invoice wajib diisi';
+            }
+
+            if ($statusInvoice === '') {
+                $rowErrors[] = 'Status payment wajib diisi';
+            } elseif (!in_array($statusInvoice, ['paid', 'partial', 'reject'], true)) {
+                $rowErrors[] = 'Status payment harus paid, partial, atau reject';
+            }
+
+            if ($statusInvoice !== 'reject') {
+                if ($paymentDate === null) {
+                    $rowErrors[] = 'Tanggal payment tidak valid';
+                }
+
+                if ($paymentPrice <= 0) {
+                    $rowErrors[] = 'Payment price harus lebih besar dari 0';
+                }
+            }
+
+            if ($noInvoice !== '') {
+                $invoiceKey = strtolower($noInvoice);
+                if (isset($invoiceNumbers[$invoiceKey])) {
+                    $rowErrors[] = 'No invoice duplikat dalam batch';
+                } else {
+                    $invoiceNumbers[$invoiceKey] = true;
+                }
+            }
+
+            $preparedRows[] = [
+                'row_number' => $rowNumber,
+                'no_invoice' => $noInvoice,
+                'tgl_payment_invoice' => $paymentDate,
+                'invoice_price_payment' => $statusInvoice === 'reject' ? null : $paymentPrice,
+                'status_invoice' => $statusInvoice,
+                'errors' => $rowErrors
+            ];
+        }
+
+        $invoiceList = array_values(array_filter(array_column($preparedRows, 'no_invoice')));
+        $billingMap = [];
+
+        if (!empty($invoiceList)) {
+            $billingRows = $this->db
+                ->select('id_billing, no_invoice, invoice_price_nett, status_invoice')
+                ->where_in('no_invoice', $invoiceList)
+                ->get('tb_billingpayment')
+                ->result_array();
+
+            foreach ($billingRows as $billingRow) {
+                $billingMap[strtolower($billingRow['no_invoice'])] = $billingRow;
+            }
+        }
+
+        foreach ($preparedRows as &$preparedRow) {
+            $invoiceKey = strtolower((string) $preparedRow['no_invoice']);
+            $billingRow = $billingMap[$invoiceKey] ?? null;
+
+            if (!$billingRow) {
+                $preparedRow['errors'][] = 'No invoice tidak ditemukan di database';
+                continue;
+            }
+
+            if (($billingRow['status_invoice'] ?? '') !== 'open') {
+                $preparedRow['errors'][] = 'Invoice tidak bisa diproses karena status saat ini ' . $billingRow['status_invoice'];
+                continue;
+            }
+
+            $invoicePrice = (float) $billingRow['invoice_price_nett'];
+            $preparedRow['id_billing'] = (int) $billingRow['id_billing'];
+            $preparedRow['invoice_price_nett'] = $invoicePrice;
+
+            if ($preparedRow['status_invoice'] === 'partial' && (float) $preparedRow['invoice_price_payment'] >= $invoicePrice) {
+                $preparedRow['errors'][] = 'Status partial mengharuskan payment price lebih kecil dari invoice';
+            }
+
+            if ($preparedRow['status_invoice'] === 'paid' && (float) $preparedRow['invoice_price_payment'] > $invoicePrice) {
+                $preparedRow['invoice_price_payment'] = $invoicePrice;
+            }
+        }
+        unset($preparedRow);
+
+        foreach ($preparedRows as $preparedRow) {
+            if (!empty($preparedRow['errors'])) {
+                $errors[] = [
+                    'row' => $preparedRow['row_number'],
+                    'message' => implode(', ', array_unique($preparedRow['errors']))
+                ];
+            }
+        }
+
+        $validRows = [];
+        foreach ($preparedRows as $preparedRow) {
+            if (empty($preparedRow['errors'])) {
+                unset($preparedRow['row_number'], $preparedRow['errors']);
+                $validRows[] = $preparedRow;
+            }
+        }
+
+        return [
+            'rows' => $preparedRows,
+            'valid_rows' => $validRows,
+            'errors' => $errors
+        ];
+    }
+
     private function parseExcelHeader($header)
     {
         $header = strtolower(trim((string) $header));
@@ -234,6 +355,28 @@ class BillingPayment extends CI_Controller
             'regional_payment' => ['regional_payment', 'regional'],
             'area_payment' => ['area_payment', 'area', 'kota'],
             'deskripsi_payment' => ['deskripsi_payment', 'deskripsi', 'keterangan']
+        ];
+
+        foreach ($aliases as $field => $options) {
+            if (in_array($header, $options, true)) {
+                return $field;
+            }
+        }
+
+        return null;
+    }
+
+    private function parsePaymentExcelHeader($header)
+    {
+        $header = strtolower(trim((string) $header));
+        $header = preg_replace('/[^a-z0-9]+/', '_', $header);
+        $header = trim($header, '_');
+
+        $aliases = [
+            'no_invoice' => ['no_invoice', 'invoice', 'nomor_invoice'],
+            'tgl_payment_invoice' => ['tgl_payment_invoice', 'tanggal_payment', 'payment_date', 'tanggal_pembayaran'],
+            'invoice_price_payment' => ['invoice_price_payment', 'payment_price', 'nilai_payment', 'nominal_payment', 'payment_amount'],
+            'status_invoice' => ['status_invoice', 'status_payment', 'payment_status', 'status_pembayaran']
         ];
 
         foreach ($aliases as $field => $options) {
@@ -1161,6 +1304,211 @@ class BillingPayment extends CI_Controller
         ]);
     }
 
+    public function previewPaymentImport()
+    {
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        $config['upload_path'] = './uploads/';
+        $config['allowed_types'] = 'xls|xlsx|csv';
+        $config['max_size'] = 4096;
+        $config['encrypt_name'] = true;
+
+        if (!is_dir($config['upload_path'])) {
+            mkdir($config['upload_path'], 0777, true);
+        }
+
+        $this->upload->initialize($config);
+
+        if (!$this->upload->do_upload('file_excel')) {
+            echo json_encode([
+                'status' => false,
+                'message' => strip_tags($this->upload->display_errors())
+            ]);
+            return;
+        }
+
+        $fileData = $this->upload->data();
+        $filePath = $fileData['full_path'];
+
+        try {
+            $extension = strtolower(pathinfo($fileData['file_name'], PATHINFO_EXTENSION));
+
+            if ($extension === 'csv') {
+                $this->loadPHPExcel();
+                $sheetData = $this->readCsvSheetData($filePath);
+            } else {
+                $this->loadPHPExcel();
+                $objPHPExcel = PHPExcel_IOFactory::load($filePath);
+                $sheetData = $objPHPExcel->getActiveSheet()->toArray(null, true, true, true);
+            }
+        } catch (Exception $e) {
+            @unlink($filePath);
+            echo json_encode([
+                'status' => false,
+                'message' => 'File import tidak bisa dibaca'
+            ]);
+            return;
+        }
+
+        @unlink($filePath);
+
+        if (count($sheetData) < 2) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'File import tidak memiliki data'
+            ]);
+            return;
+        }
+
+        $headerRow = reset($sheetData);
+        $headerMap = [];
+        foreach ($headerRow as $column => $header) {
+            $mappedField = $this->parsePaymentExcelHeader($header);
+            if ($mappedField) {
+                $headerMap[$column] = $mappedField;
+            }
+        }
+
+        $requiredFields = ['no_invoice', 'tgl_payment_invoice', 'invoice_price_payment', 'status_invoice'];
+        foreach ($requiredFields as $requiredField) {
+            if (!in_array($requiredField, $headerMap, true)) {
+                echo json_encode([
+                    'status' => false,
+                    'message' => 'Header file wajib memuat ' . $requiredField
+                ]);
+                return;
+            }
+        }
+
+        $rows = [];
+        foreach ($sheetData as $rowIndex => $excelRow) {
+            if ($rowIndex === 1) {
+                continue;
+            }
+
+            $row = [];
+            foreach ($headerMap as $column => $field) {
+                $row[$field] = $excelRow[$column];
+            }
+
+            $isBlank = true;
+            foreach ($row as $value) {
+                if (trim((string) $value) !== '') {
+                    $isBlank = false;
+                    break;
+                }
+            }
+
+            if (!$isBlank) {
+                $rows[] = $row;
+            }
+        }
+
+        $validated = $this->validatePaymentImportRows($rows);
+        $previewRows = [];
+
+        foreach ($validated['rows'] as $row) {
+            $previewRows[] = [
+                'row_number' => $row['row_number'],
+                'no_invoice' => $row['no_invoice'],
+                'tgl_payment_invoice' => $row['tgl_payment_invoice'],
+                'invoice_price_payment' => $row['invoice_price_payment'],
+                'status_invoice' => $row['status_invoice'],
+                'invoice_price_nett' => $row['invoice_price_nett'] ?? null,
+                'status' => empty($row['errors']) ? 'sesuai' : 'tidak sesuai',
+                'message' => empty($row['errors']) ? 'Siap diimport' : implode(', ', array_unique($row['errors']))
+            ];
+        }
+
+        echo json_encode([
+            'status' => true,
+            'message' => count($validated['valid_rows']) . ' data valid dari ' . count($previewRows) . ' baris',
+            'rows' => $previewRows,
+            'valid_rows' => $validated['valid_rows'],
+            'error_rows' => $validated['errors']
+        ]);
+    }
+
+    public function saveImportedPayments()
+    {
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        $rowsJson = $this->input->post('rows_json');
+        $rows = json_decode($rowsJson, true);
+
+        if (empty($rows) || !is_array($rows)) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Tidak ada data payment yang siap disimpan'
+            ]);
+            return;
+        }
+
+        $validated = $this->validatePaymentImportRows($rows);
+
+        if (empty($validated['valid_rows'])) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Semua data import payment tidak valid',
+                'errors' => $validated['errors']
+            ]);
+            return;
+        }
+
+        $this->db->trans_start();
+
+        foreach ($validated['valid_rows'] as $row) {
+            $billing = $this->db
+                ->select('id_billing, invoice_price_nett, status_invoice')
+                ->get_where('tb_billingpayment', [
+                    'id_billing' => (int) $row['id_billing'],
+                    'status_invoice' => 'open'
+                ])
+                ->row_array();
+
+            if (!$billing) {
+                continue;
+            }
+
+            $payload = [
+                'last_update' => $this->getLastUpdateValue(),
+                'status_invoice' => $row['status_invoice']
+            ];
+
+            if ($row['status_invoice'] === 'reject') {
+                $payload['invoice_price_payment'] = null;
+                $payload['tgl_payment_invoice'] = null;
+            } else {
+                $invoicePrice = (float) $billing['invoice_price_nett'];
+                $paymentPrice = min((float) $row['invoice_price_payment'], $invoicePrice);
+
+                $payload['invoice_price_payment'] = $paymentPrice;
+                $payload['tgl_payment_invoice'] = $row['tgl_payment_invoice'];
+            }
+
+            $this->db->where('id_billing', (int) $row['id_billing']);
+            $this->db->where('status_invoice', 'open');
+            $this->db->update('tb_billingpayment', $payload);
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status()) {
+            echo json_encode([
+                'status' => true,
+                'message' => count($validated['valid_rows']) . ' payment berhasil diimport'
+            ]);
+            return;
+        }
+
+        echo json_encode([
+            'status' => false,
+            'message' => 'Gagal menyimpan hasil import payment'
+        ]);
+    }
+
     public function downloadInvoiceImportTemplate()
     {
         $filename = 'format_import_invoice_' . date('Ymd_His') . '.csv';
@@ -1192,6 +1540,40 @@ class BillingPayment extends CI_Controller
             'JABODETABEK',
             'JAKARTA',
             'Contoh deskripsi invoice'
+        ];
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, $headers);
+        fputcsv($output, $exampleRow);
+        fclose($output);
+        exit;
+    }
+
+    public function downloadPaymentImportTemplate()
+    {
+        $filename = 'format_import_payment_' . date('Ymd_His') . '.csv';
+        $headers = [
+            'no_invoice',
+            'tgl_payment_invoice',
+            'invoice_price_payment',
+            'status_invoice'
+        ];
+
+        $exampleRow = [
+            'INV-001',
+            date('Y-m-d'),
+            '29195703.95',
+            'paid'
         ];
 
         if (ob_get_length()) {
