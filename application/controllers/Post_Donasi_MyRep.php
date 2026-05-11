@@ -7,6 +7,7 @@ class Post_Donasi_MyRep extends CI_Controller
     {
         parent::__construct();
         $this->load->model('MPost_Donasi_MyRep');
+        $this->load->model('MBatch_Approval_MyRep');
         $this->load->library('upload');
         $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
     }
@@ -267,11 +268,25 @@ class Post_Donasi_MyRep extends CI_Controller
         }
 
         $fileId = (int) $this->input->post('id_doc_file');
-        $result = $this->MPost_Donasi_MyRep->updateFileStatus($fileId, [
-            'status_file' => 'APPROVED',
-            'remark' => trim((string) $this->input->post('remark')),
-            'approved_by' => (int) $this->session->userdata('id_user'),
-        ]);
+        $docItemId = (int) $this->input->post('id_doc_item');
+        $remark = trim((string) $this->input->post('remark'));
+        $approvedBy = (int) $this->session->userdata('id_user');
+        $result = false;
+
+        if ($fileId > 0) {
+            $result = $this->MPost_Donasi_MyRep->updateFileStatus($fileId, [
+                'status_file' => 'APPROVED',
+                'remark' => $remark,
+                'approved_by' => $approvedBy,
+            ]);
+        } elseif ($docItemId > 0) {
+            $result = $this->MPost_Donasi_MyRep->saveLinkedReviewDecision($clusterId, $docItemId, [
+                'status_file' => 'APPROVED',
+                'remark' => $remark,
+                'approved_by' => $approvedBy,
+                'file_name' => trim((string) $this->input->post('linked_file_name')),
+            ]) > 0;
+        }
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen berhasil di-approve.' : 'Gagal approve dokumen.');
         redirect($redirectPath);
@@ -294,14 +309,192 @@ class Post_Donasi_MyRep extends CI_Controller
         }
 
         $fileId = (int) $this->input->post('id_doc_file');
-        $result = $this->MPost_Donasi_MyRep->updateFileStatus($fileId, [
-            'status_file' => 'REJECTED',
-            'remark' => trim((string) $this->input->post('remark')),
-            'approved_by' => (int) $this->session->userdata('id_user'),
-        ]);
+        $docItemId = (int) $this->input->post('id_doc_item');
+        $remark = trim((string) $this->input->post('remark'));
+        $approvedBy = (int) $this->session->userdata('id_user');
+        $result = false;
+
+        if ($fileId > 0) {
+            $result = $this->MPost_Donasi_MyRep->updateFileStatus($fileId, [
+                'status_file' => 'REJECTED',
+                'remark' => $remark,
+                'approved_by' => $approvedBy,
+            ]);
+        } elseif ($docItemId > 0) {
+            $result = $this->MPost_Donasi_MyRep->saveLinkedReviewDecision($clusterId, $docItemId, [
+                'status_file' => 'REJECTED',
+                'remark' => $remark,
+                'approved_by' => $approvedBy,
+                'file_name' => trim((string) $this->input->post('linked_file_name')),
+            ]) > 0;
+        }
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Dokumen berhasil di-reject.' : 'Gagal reject dokumen.');
         redirect($redirectPath);
+    }
+
+    public function approveAllDocuments()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $redirectPath = $this->resolveRedirectPath($clusterId);
+
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses approve semua dokumen post donasi.');
+            redirect($redirectPath);
+            return;
+        }
+
+        if ($clusterId <= 0) {
+            $this->session->set_flashdata('error', 'Cluster post donasi tidak valid.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $documentRows = $this->MPost_Donasi_MyRep->getDocumentRows($clusterId);
+        if (empty($documentRows)) {
+            $this->session->set_flashdata('error', 'Dokumen post donasi untuk cluster ini belum tersedia.');
+            redirect($redirectPath);
+            return;
+        }
+
+        $linkedSupportDocumentMap = $this->MBatch_Approval_MyRep->batchDocumentTablesReady()
+            ? $this->MBatch_Approval_MyRep->getAutoLinkedSupportDocumentMap($clusterId)
+            : [];
+        foreach ($documentRows as &$documentRow) {
+            $normalizedDocName = strtoupper(trim((string) ($documentRow['doc_name'] ?? '')));
+            if (isset($linkedSupportDocumentMap[$normalizedDocName])) {
+                $documentRow = array_merge($documentRow, $linkedSupportDocumentMap[$normalizedDocName]);
+            }
+        }
+        unset($documentRow);
+
+        $approvedBy = (int) $this->session->userdata('id_user');
+        $updatedCount = 0;
+        foreach ($documentRows as $documentRow) {
+            $fileId = (int) ($documentRow['id_doc_file'] ?? 0);
+            $status = strtoupper(trim((string) ($documentRow['status_file'] ?? '')));
+            $result = false;
+
+            if ($fileId > 0 && in_array($status, ['UPLOADED', 'REJECTED'], true)) {
+                $result = $this->MPost_Donasi_MyRep->updateFileStatus($fileId, [
+                    'status_file' => 'APPROVED',
+                    'remark' => trim((string) ($documentRow['remark'] ?? '')),
+                    'approved_by' => $approvedBy,
+                ]);
+            } elseif ($fileId <= 0 && !empty($documentRow['linked_source_file_id'])) {
+                $result = $this->MPost_Donasi_MyRep->saveLinkedReviewDecision($clusterId, (int) ($documentRow['id_doc_item'] ?? 0), [
+                    'status_file' => 'APPROVED',
+                    'remark' => trim((string) ($documentRow['remark'] ?? '')),
+                    'approved_by' => $approvedBy,
+                    'file_name' => trim((string) ($documentRow['linked_source_file_name'] ?? '')),
+                ]) > 0;
+            }
+
+            if ($result) {
+                $updatedCount++;
+            }
+        }
+
+        $this->session->set_flashdata(
+            $updatedCount > 0 ? 'success' : 'error',
+            $updatedCount > 0
+                ? ($updatedCount . ' dokumen post donasi berhasil di-approve sekaligus.')
+                : 'Tidak ada dokumen post donasi yang bisa di-approve sekaligus.'
+        );
+        redirect($redirectPath);
+    }
+
+    public function downloadDocumentBundle($clusterId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0 || !$this->MPost_Donasi_MyRep->documentTablesReady()) {
+            show_404();
+            return;
+        }
+
+        $cluster = $this->MPost_Donasi_MyRep->getClusterById($clusterId);
+        if (empty($cluster)) {
+            show_404();
+            return;
+        }
+
+        $documentRows = $this->MPost_Donasi_MyRep->getDocumentRows($clusterId);
+        if (empty($documentRows)) {
+            $this->session->set_flashdata('error', 'Dokumen post donasi tidak ditemukan.');
+            redirect($this->resolveRedirectPath($clusterId));
+            return;
+        }
+
+        $zip = new ZipArchive();
+        $tempZip = tempnam(sys_get_temp_dir(), 'post_donasi_bundle_');
+        if ($tempZip === false) {
+            $this->session->set_flashdata('error', 'Gagal menyiapkan file download gabungan.');
+            redirect($this->resolveRedirectPath($clusterId));
+            return;
+        }
+
+        $zipFile = $tempZip . '.zip';
+        @rename($tempZip, $zipFile);
+
+        if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            if (is_file($zipFile)) {
+                @unlink($zipFile);
+            }
+            $this->session->set_flashdata('error', 'Gagal membuat file download gabungan.');
+            redirect($this->resolveRedirectPath($clusterId));
+            return;
+        }
+
+        $addedCount = 0;
+        foreach ($documentRows as $documentRow) {
+            $filePath = trim((string) ($documentRow['file_path'] ?? ''));
+            if ($filePath === '') {
+                continue;
+            }
+
+            $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filePath);
+            if (!is_file($fullPath)) {
+                continue;
+            }
+
+            $docName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($documentRow['doc_name'] ?? 'DOKUMEN'));
+            $originalName = basename($fullPath);
+            $zip->addFile($fullPath, $docName . '_' . $originalName);
+            $addedCount++;
+        }
+
+        $zip->close();
+
+        if ($addedCount <= 0) {
+            if (is_file($zipFile)) {
+                @unlink($zipFile);
+            }
+            $this->session->set_flashdata('error', 'Tidak ada file post donasi yang bisa didownload.');
+            redirect($this->resolveRedirectPath($clusterId));
+            return;
+        }
+
+        $safeClusterName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($cluster['cluster_name'] ?? 'CLUSTER'));
+        $downloadName = 'POST_DONASI_' . $safeClusterName . '_gabungan_' . date('Ymd_His') . '.zip';
+
+        header('Content-Type: application/zip');
+        header('Content-Length: ' . filesize($zipFile));
+        header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+        header('Pragma: public');
+        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+        readfile($zipFile);
+        @unlink($zipFile);
+        exit;
     }
 
     public function previewDocument($fileId = 0)

@@ -29,11 +29,16 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             return [];
         }
 
-        $rows = $this->db
+        $this->db
             ->distinct()
             ->select('c.city_name')
             ->from('tb_myrep_cluster c')
-            ->join('tb_myrep_boq_baseline b', 'b.id_myrep_cluster = c.id_myrep_cluster AND b.status_baseline = \'ACTIVE\'', 'inner', false)
+            ->join('tb_myrep_boq_baseline b', 'b.id_myrep_cluster = c.id_myrep_cluster AND b.status_baseline = \'ACTIVE\'', 'inner', false);
+        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+            $this->db->where('b.scope_type', 'CLUSTER');
+        }
+
+        $rows = $this->db
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
             ->order_by('c.city_name', 'ASC')
@@ -57,12 +62,14 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             return [];
         }
 
-        $rows = $this->db
+        $this->db
             ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, c.created_at, d.id_drm, d.drm_date, d.homepass_drm, d.status_drm, b.id_boq_baseline, b.approved_at AS boq_approved_at')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_boq_baseline b', 'b.id_myrep_cluster = c.id_myrep_cluster AND b.status_baseline = \'ACTIVE\'', 'inner', false)
-            ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ;
+            ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left');
+        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+            $this->db->where('b.scope_type', 'CLUSTER');
+        }
 
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
@@ -98,11 +105,16 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             return [];
         }
 
-        $row = $this->db
+        $this->db
             ->select('c.*, d.id_drm, d.drm_date, d.homepass_drm, d.status_drm, d.remark_drm, b.id_boq_baseline, b.approved_at AS boq_approved_at')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_boq_baseline b', 'b.id_myrep_cluster = c.id_myrep_cluster AND b.status_baseline = \'ACTIVE\'', 'inner', false)
-            ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left');
+        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+            $this->db->where('b.scope_type', 'CLUSTER');
+        }
+
+        $row = $this->db
             ->where('c.id_myrep_cluster', (int) $clusterId)
             ->get()
             ->row_array();
@@ -120,13 +132,18 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             return [];
         }
 
-        $rows = $this->db
+        $this->db
             ->select('bi.id_boq_baseline_item, bi.id_boq_baseline, bi.id_boq_item, bi.qty_boq, bi.jumlah_foto, bi.remarks_rule, bi.target_foto_required, bi.item_note, m.excel_item_name, m.item_name, m.item_type, m.photo_type, m.sort_no')
             ->from('tb_myrep_boq_baseline_item bi')
             ->join('tb_myrep_boq_baseline b', 'b.id_boq_baseline = bi.id_boq_baseline', 'inner')
             ->join('md_myrep_boq_item m', 'm.id_boq_item = bi.id_boq_item', 'inner')
             ->where('b.id_myrep_cluster', (int) $clusterId)
-            ->where('b.status_baseline', 'ACTIVE')
+            ->where('b.status_baseline', 'ACTIVE');
+        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+            $this->db->where('b.scope_type', 'CLUSTER');
+        }
+
+        $rows = $this->db
             ->order_by('m.sort_no', 'ASC')
             ->order_by('bi.id_boq_baseline_item', 'ASC')
             ->get()
@@ -278,15 +295,18 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             return 0;
         }
 
-        $baselineItem = $this->db
+        $this->db
             ->select('bi.id_boq_baseline_item, bi.id_boq_baseline, b.id_myrep_cluster')
             ->from('tb_myrep_boq_baseline_item bi')
             ->join('tb_myrep_boq_baseline b', 'b.id_boq_baseline = bi.id_boq_baseline', 'inner')
             ->where('bi.id_boq_baseline_item', $baselineItemId)
             ->where('b.id_myrep_cluster', $clusterId)
-            ->where('b.status_baseline', 'ACTIVE')
-            ->get()
-            ->row_array();
+            ->where('b.status_baseline', 'ACTIVE');
+        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+            $this->db->where('b.scope_type', 'CLUSTER');
+        }
+
+        $baselineItem = $this->db->get()->row_array();
 
         if (empty($baselineItem)) {
             return 0;
@@ -447,15 +467,18 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             return [];
         }
 
-        $baselineRows = $this->db
+        $this->db
             ->select('b.id_myrep_cluster, bi.id_boq_baseline_item, bi.qty_boq, bi.target_foto_required, m.item_name, m.excel_item_name, m.item_type')
             ->from('tb_myrep_boq_baseline b')
             ->join('tb_myrep_boq_baseline_item bi', 'bi.id_boq_baseline = b.id_boq_baseline', 'inner')
             ->join('md_myrep_boq_item m', 'm.id_boq_item = bi.id_boq_item', 'left')
             ->where('b.status_baseline', 'ACTIVE')
-            ->where_in('b.id_myrep_cluster', $clusterIds)
-            ->get()
-            ->result_array();
+            ->where_in('b.id_myrep_cluster', $clusterIds);
+        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+            $this->db->where('b.scope_type', 'CLUSTER');
+        }
+
+        $baselineRows = $this->db->get()->result_array();
 
         $baselineItemIds = array_column($baselineRows, 'id_boq_baseline_item');
         $progressMap = $this->getProgressAggregateMap($baselineItemIds);

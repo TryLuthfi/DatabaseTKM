@@ -13,6 +13,7 @@ if (!function_exists('drmDetailBadgeClass')) {
                 return 'danger';
             case 'UPLOADED':
             case 'ON REVIEW':
+            case 'WAITING HO':
                 return 'warning';
             default:
                 return 'secondary';
@@ -33,6 +34,13 @@ if (!function_exists('drmDocumentLabel')) {
         }
 
         return $status !== '' ? $status : 'BELUM UPLOAD';
+    }
+}
+
+if (!function_exists('drmScopeText')) {
+    function drmScopeText($scopeKey)
+    {
+        return strtoupper(trim((string) $scopeKey)) === 'SUBFEEDER' ? 'Subfeeder' : 'Cluster';
     }
 }
 ?>
@@ -58,10 +66,16 @@ if (!function_exists('drmDocumentLabel')) {
     <section class="content">
         <div class="container-fluid">
             <?php if (!empty($flashSuccess)): ?>
-                <div class="alert alert-success"><?= $flashSuccess ?></div>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <?= $flashSuccess ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
             <?php endif; ?>
             <?php if (!empty($flashError)): ?>
-                <div class="alert alert-danger"><?= $flashError ?></div>
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <?= $flashError ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
             <?php endif; ?>
 
             <style>
@@ -99,40 +113,25 @@ if (!function_exists('drmDocumentLabel')) {
                     margin-bottom: 1rem;
                 }
 
+                .drm-scope-tabs .nav-link {
+                    border-radius: 12px 12px 0 0;
+                    font-weight: 700;
+                }
+
+                .drm-scope-tabs .nav-link.active {
+                    background: #2563eb;
+                    color: #fff;
+                }
+
                 .drm-doc-card .card-header,
-                .drm-boq-card .table thead th {
+                .drm-boq-card .card-header {
                     background: #eff6ff;
                     color: #1e3a8a;
                 }
 
+                .drm-doc-card .table thead th,
                 .drm-boq-card .table thead th {
                     white-space: nowrap;
-                }
-
-                .drm-boq-status {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: .75rem;
-                    margin-bottom: 1rem;
-                }
-
-                .drm-boq-status__item {
-                    padding: .65rem .9rem;
-                    border-radius: 12px;
-                    background: #f8fafc;
-                    border: 1px solid #e2e8f0;
-                    min-width: 180px;
-                }
-
-                .drm-boq-status__label {
-                    font-size: .8rem;
-                    color: #64748b;
-                    margin-bottom: .2rem;
-                }
-
-                .drm-boq-status__value {
-                    font-weight: 700;
-                    color: #111827;
                 }
 
                 .drm-dropzone {
@@ -186,33 +185,6 @@ if (!function_exists('drmDocumentLabel')) {
                     font-size: .88rem;
                 }
 
-                .doc-history-list {
-                    list-style: none;
-                    margin: 0;
-                    padding: 0;
-                }
-
-                .doc-history-item {
-                    border-left: 3px solid #d8e3ee;
-                    padding-left: 1rem;
-                    margin-bottom: 1rem;
-                }
-
-                .doc-history-item:last-child {
-                    margin-bottom: 0;
-                }
-
-                .doc-history-title {
-                    font-weight: 700;
-                    color: #1f2937;
-                }
-
-                .doc-history-meta {
-                    color: #6b7280;
-                    font-size: .86rem;
-                    margin-bottom: .2rem;
-                }
-
                 .drm-modal .modal-content {
                     border: 0;
                     border-radius: 18px;
@@ -246,6 +218,33 @@ if (!function_exists('drmDocumentLabel')) {
                     font-weight: 700;
                     color: #1f2937;
                     margin-bottom: .85rem;
+                }
+
+                .doc-history-list {
+                    list-style: none;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .doc-history-item {
+                    border-left: 3px solid #d8e3ee;
+                    padding-left: 1rem;
+                    margin-bottom: 1rem;
+                }
+
+                .doc-history-item:last-child {
+                    margin-bottom: 0;
+                }
+
+                .doc-history-title {
+                    font-weight: 700;
+                    color: #1f2937;
+                }
+
+                .doc-history-meta {
+                    color: #6b7280;
+                    font-size: .86rem;
+                    margin-bottom: .2rem;
                 }
             </style>
 
@@ -298,151 +297,183 @@ if (!function_exists('drmDocumentLabel')) {
                 </div>
             </div>
 
-            <?php if ($boqReady): ?>
-                <?php
-                $boqReviewStatus = strtoupper(trim((string) ($boqHeader['review_status'] ?? 'DRAFT')));
-                $isBoqLocked = $boqReviewStatus === 'APPROVED';
-                $hasApdBoqFile = !empty($apdBoqFile['id_doc_file']);
-                ?>
-                <?php if (!empty($boqBaselineItems)): ?>
-                    <div class="card card-outline card-success shadow-sm drm-boq-card">
-                        <div class="card-header">
-                            <h3 class="card-title">Baseline BOQ Implementasi</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>No</th>
-                                            <th>Nama Item</th>
-                                            <th>Jenis</th>
-                                            <th>Qty BOQ</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($boqBaselineItems as $index => $item): ?>
-                                            <tr>
-                                                <td><?= $index + 1 ?></td>
-                                                <td><?= htmlspecialchars((string) ($item['item_name'] ?? '-')) ?></td>
-                                                <td><?= htmlspecialchars((string) ($item['item_type'] ?? '-')) ?></td>
-                                                <td><?= number_format((float) ($item['qty_boq'] ?? 0), 2, ',', '.') ?></td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            <?php endif; ?>
-
-            <?php if (!$docReady): ?>
-                <div class="alert alert-warning">Tabel dokumen DRM belum tersedia.</div>
-            <?php else: ?>
-                <div class="card card-outline card-primary shadow-sm drm-doc-card">
-                    <div class="card-header">
-                        <h3 class="card-title">Dokumen DRM</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Dokumen</th>
-                                        <th>Catatan</th>
-                                        <th>Status</th>
-                                        <th>File</th>
-                                        <th>Upload / Update</th>
-                                        <?php if ($canApprove): ?><th>Review</th><?php endif; ?>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($documentRows as $row): ?>
-                                        <?php
-                                        $docStatus = drmDocumentLabel($row);
-                                        $docRawStatus = strtoupper(trim((string) ($row['status_file'] ?? '')));
-                                        $docCanUpload = $docStatus === 'BELUM UPLOAD' || $docRawStatus === 'REJECTED';
-                                        $docCanReview = $canApprove && !empty($row['id_doc_file']) && $docRawStatus === 'UPLOADED';
-                                        ?>
-                                        <tr>
-                                            <td><strong><?= htmlspecialchars((string) ($row['doc_name'] ?? '-')) ?></strong></td>
-                                            <td><?= htmlspecialchars((string) ($row['doc_requirement_note'] ?? '-')) ?></td>
-                                            <td><span class="badge badge-<?= drmDetailBadgeClass($docStatus) ?>"><?= htmlspecialchars($docStatus) ?></span></td>
-                                            <td>
-                                                <?php if (!empty($row['file_name'])): ?>
-                                                    <div><?= htmlspecialchars((string) $row['file_name']) ?></div>
-                                                    <a href="<?= base_url('DRM_MyRep/previewDocument/' . (int) $row['id_doc_file']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary mt-1">Preview</a>
-                                                    <button
-                                                        type="button"
-                                                        class="btn btn-sm btn-outline-dark mt-1 js-doc-history"
-                                                        data-toggle="modal"
-                                                        data-target="#modal-doc-history"
-                                                        data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-history='<?= htmlspecialchars(json_encode(!empty($row['id_doc_file']) ? $this->MDRM_MyRep->getDrmFileLogs((int) $row['id_doc_file']) : []), ENT_QUOTES) ?>'>
-                                                        History
-                                                    </button>
-                                                <?php else: ?>
-                                                    <span class="text-muted">Belum ada file</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td style="min-width:280px;">
-                                                <?php if (($row['doc_name'] ?? '') === 'APD BOQ' && $boqReady): ?>
-                                                    <?php if (!$isBoqLocked): ?>
-                                                        <button type="button" class="btn btn-sm btn-primary js-open-apd-boq-modal" data-toggle="modal" data-target="#modal-apd-boq-package">Upload / Update</button>
-                                                    <?php else: ?>
-                                                        <span class="text-success small font-weight-bold">BOQ sudah approved</span>
-                                                    <?php endif; ?>
-                                                    <div class="small text-muted mt-2">
-                                                        Status BOQ:
-                                                        <span class="badge badge-<?= drmDetailBadgeClass($boqReviewStatus) ?>"><?= htmlspecialchars($boqReviewStatus !== '' ? $boqReviewStatus : 'DRAFT') ?></span>
-                                                    </div>
-                                                    <?php if ($canApprove && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
-                                                        <button type="button" class="btn btn-sm btn-outline-success mt-2" data-toggle="modal" data-target="#modal-boq-review">Review BOQ</button>
-                                                    <?php endif; ?>
-                                                    <?php if (!empty($boqHeader['ho_review_remark'])): ?>
-                                                        <div class="small text-info mt-1">Catatan HO: <?= htmlspecialchars((string) $boqHeader['ho_review_remark']) ?></div>
-                                                    <?php endif; ?>
-                                                <?php elseif ($docCanUpload): ?>
-                                                    <button
-                                                        type="button"
-                                                        class="btn btn-sm btn-primary js-open-drm-upload-modal"
-                                                        data-toggle="modal"
-                                                        data-target="#modal-drm-upload"
-                                                        data-doc-item-id="<?= (int) $row['id_doc_item'] ?>"
-                                                        data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-file-name="<?= htmlspecialchars((string) ($row['file_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-remark="<?= htmlspecialchars((string) ($row['remark'] ?? ''), ENT_QUOTES) ?>">
-                                                        Upload
-                                                    </button>
-                                                <?php else: ?>
-                                                    <span class="text-muted small">Upload tidak tersedia</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <?php if ($canApprove): ?>
-                                                <td style="min-width:240px;">
-                                                    <?php if ($docCanReview): ?>
-                                                        <span class="text-info small font-weight-bold">Review mengikuti approval BOQ</span>
-                                                    <?php elseif ($docRawStatus === 'APPROVED'): ?>
-                                                        <span class="text-success small font-weight-bold">Sudah approved</span>
-                                                    <?php elseif ($docRawStatus === 'REJECTED'): ?>
-                                                        <span class="text-danger small font-weight-bold">Sudah rejected</span>
-                                                    <?php else: ?>
-                                                        <span class="text-muted small">Belum ada file untuk direview</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                            <?php endif; ?>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                    <?php if (empty($documentRows)): ?>
-                                        <tr><td colspan="<?= $canApprove ? '6' : '5' ?>" class="text-center text-muted">Belum ada dokumen DRM.</td></tr>
+            <div class="card card-outline card-primary shadow-sm">
+                <div class="card-header p-0">
+                    <ul class="nav nav-tabs drm-scope-tabs px-3 pt-2 border-bottom-0" role="tablist">
+                        <?php $tabIndex = 0; ?>
+                        <?php foreach ($drmScopes as $scopeKey => $scope): ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?= $tabIndex === 0 ? 'active' : '' ?>" data-toggle="tab" href="#tab-drm-<?= strtolower($scopeKey) ?>" role="tab">
+                                    <?= htmlspecialchars((string) ($scope['label'] ?? drmScopeText($scopeKey))) ?>
+                                </a>
+                            </li>
+                            <?php $tabIndex++; ?>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content">
+                        <?php $tabIndex = 0; ?>
+                        <?php foreach ($drmScopes as $scopeKey => $scope): ?>
+                            <?php
+                            $scopeLabel = (string) ($scope['label'] ?? drmScopeText($scopeKey));
+                            $documentRows = (array) ($scope['documentRows'] ?? []);
+                            $boqHeader = (array) ($scope['boqHeader'] ?? []);
+                            $boqItems = (array) ($scope['boqItems'] ?? []);
+                            $boqBaselineItems = (array) ($scope['boqBaselineItems'] ?? []);
+                            $apdBoqFile = (array) ($scope['apdBoqFile'] ?? []);
+                            $scopeReady = !empty($scope['isReady']);
+                            $boqReviewStatus = strtoupper(trim((string) ($boqHeader['review_status'] ?? 'DRAFT')));
+                            $isBoqLocked = $boqReviewStatus === 'APPROVED';
+                            $hasApdBoqFile = !empty($apdBoqFile['id_doc_file']);
+                            ?>
+                            <div class="tab-pane fade <?= $tabIndex === 0 ? 'show active' : '' ?>" id="tab-drm-<?= strtolower($scopeKey) ?>" role="tabpanel">
+                                <?php if (!$scopeReady): ?>
+                                    <div class="alert alert-warning mb-0">
+                                        Struktur <?= htmlspecialchars($scopeLabel) ?> belum siap. Jalankan patch database DRM subfeeder dulu.
+                                    </div>
+                                <?php else: ?>
+                                    <?php if (!empty($boqBaselineItems)): ?>
+                                        <div class="card card-outline card-success shadow-sm drm-boq-card">
+                                            <div class="card-header">
+                                                <h3 class="card-title mb-0">Baseline BOQ Implementasi <?= htmlspecialchars(drmScopeText($scopeKey)) ?></h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered table-hover mb-0">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>No</th>
+                                                                <th>Nama Item</th>
+                                                                <th>Jenis</th>
+                                                                <th>Qty BOQ</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php foreach ($boqBaselineItems as $index => $item): ?>
+                                                                <tr>
+                                                                    <td><?= $index + 1 ?></td>
+                                                                    <td><?= htmlspecialchars((string) ($item['item_name'] ?? '-')) ?></td>
+                                                                    <td><?= htmlspecialchars((string) ($item['item_type'] ?? '-')) ?></td>
+                                                                    <td><?= number_format((float) ($item['qty_boq'] ?? 0), 2, ',', '.') ?></td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
                                     <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
+
+                                    <div class="card card-outline card-primary shadow-sm drm-doc-card">
+                                        <div class="card-header">
+                                            <h3 class="card-title mb-0">Dokumen <?= htmlspecialchars($scopeLabel) ?></h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Dokumen</th>
+                                                            <th>Catatan</th>
+                                                            <th>Status</th>
+                                                            <th>File</th>
+                                                            <th>Upload / Update</th>
+                                                            <?php if ($canApprove): ?><th>Review</th><?php endif; ?>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($documentRows as $row): ?>
+                                                            <?php
+                                                            $docStatus = drmDocumentLabel($row);
+                                                            $docRawStatus = strtoupper(trim((string) ($row['status_file'] ?? '')));
+                                                            $docCanUpload = $docStatus === 'BELUM UPLOAD' || $docRawStatus === 'REJECTED';
+                                                            ?>
+                                                            <tr>
+                                                                <td><strong><?= htmlspecialchars((string) ($row['doc_name'] ?? '-')) ?></strong></td>
+                                                                <td><?= !empty($row['doc_requirement_note']) ? htmlspecialchars((string) $row['doc_requirement_note']) : '-' ?></td>
+                                                                <td><span class="badge badge-<?= drmDetailBadgeClass($docStatus) ?>"><?= htmlspecialchars($docStatus) ?></span></td>
+                                                                <td>
+                                                                    <?php if (!empty($row['file_name'])): ?>
+                                                                        <div><?= htmlspecialchars((string) $row['file_name']) ?></div>
+                                                                        <a href="<?= base_url('DRM_MyRep/previewDocument/' . (int) $row['id_doc_file']) ?>" target="_blank" class="btn btn-sm btn-outline-secondary mt-1">Preview</a>
+                                                                        <button
+                                                                            type="button"
+                                                                            class="btn btn-sm btn-outline-dark mt-1 js-doc-history"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modal-doc-history"
+                                                                            data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>"
+                                                                            data-history='<?= htmlspecialchars(json_encode(!empty($row['id_doc_file']) ? $this->MDRM_MyRep->getDrmFileLogs((int) $row['id_doc_file']) : []), ENT_QUOTES) ?>'>
+                                                                            History
+                                                                        </button>
+                                                                    <?php else: ?>
+                                                                        <span class="text-muted">Belum ada file</span>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                                <td style="min-width:320px;">
+                                                                    <?php if (($row['doc_name'] ?? '') === 'APD BOQ' && $boqReady): ?>
+                                                                        <?php if (!$isBoqLocked): ?>
+                                                                            <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-apd-boq-package-<?= strtolower($scopeKey) ?>">Kelola APD BOQ & BOQ Manual</button>
+                                                                        <?php else: ?>
+                                                                            <span class="text-success small font-weight-bold">BOQ sudah approved</span>
+                                                                        <?php endif; ?>
+                                                                        <div class="small text-muted mt-2">
+                                                                            Status BOQ:
+                                                                            <span class="badge badge-<?= drmDetailBadgeClass($boqReviewStatus) ?>"><?= htmlspecialchars($boqReviewStatus !== '' ? $boqReviewStatus : 'DRAFT') ?></span>
+                                                                        </div>
+                                                                        <?php if ($canApprove && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
+                                                                            <button type="button" class="btn btn-sm btn-outline-success mt-2" data-toggle="modal" data-target="#modal-boq-review-<?= strtolower($scopeKey) ?>">Review BOQ</button>
+                                                                        <?php endif; ?>
+                                                                        <?php if (!empty($boqHeader['ho_review_remark'])): ?>
+                                                                            <div class="small text-info mt-1">Catatan HO: <?= htmlspecialchars((string) $boqHeader['ho_review_remark']) ?></div>
+                                                                        <?php endif; ?>
+                                                                    <?php elseif ($docCanUpload): ?>
+                                                                        <button
+                                                                            type="button"
+                                                                            class="btn btn-sm btn-primary js-open-drm-upload-modal"
+                                                                            data-toggle="modal"
+                                                                            data-target="#modal-drm-upload"
+                                                                            data-scope-type="<?= htmlspecialchars($scopeKey, ENT_QUOTES) ?>"
+                                                                            data-doc-item-id="<?= (int) $row['id_doc_item'] ?>"
+                                                                            data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>"
+                                                                            data-file-name="<?= htmlspecialchars((string) ($row['file_name'] ?? ''), ENT_QUOTES) ?>"
+                                                                            data-remark="<?= htmlspecialchars((string) ($row['remark'] ?? ''), ENT_QUOTES) ?>">
+                                                                            Upload
+                                                                        </button>
+                                                                    <?php else: ?>
+                                                                        <span class="text-muted small">Upload tidak tersedia</span>
+                                                                    <?php endif; ?>
+                                                                </td>
+                                                                <?php if ($canApprove): ?>
+                                                                    <td style="min-width:220px;">
+                                                                        <?php if (($row['doc_name'] ?? '') === 'APD BOQ'): ?>
+                                                                            <span class="text-info small font-weight-bold">Review mengikuti approval BOQ</span>
+                                                                        <?php elseif ($docRawStatus === 'APPROVED'): ?>
+                                                                            <span class="text-success small font-weight-bold">Sudah approved</span>
+                                                                        <?php elseif ($docRawStatus === 'REJECTED'): ?>
+                                                                            <span class="text-danger small font-weight-bold">Sudah rejected</span>
+                                                                        <?php else: ?>
+                                                                            <span class="text-muted small">Belum ada review langsung</span>
+                                                                        <?php endif; ?>
+                                                                    </td>
+                                                                <?php endif; ?>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                        <?php if (empty($documentRows)): ?>
+                                                            <tr><td colspan="<?= $canApprove ? '6' : '5' ?>" class="text-center text-muted">Belum ada dokumen <?= htmlspecialchars($scopeLabel) ?>.</td></tr>
+                                                        <?php endif; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <?php $tabIndex++; ?>
+                        <?php endforeach; ?>
                     </div>
                 </div>
-            <?php endif; ?>
+            </div>
         </div>
     </section>
 </div>
@@ -461,19 +492,62 @@ if (!function_exists('drmDocumentLabel')) {
                     <div class="drm-form-box">
                         <div class="drm-form-box__title">Informasi Cluster</div>
                         <div class="row">
-                            <div class="col-md-6"><div class="form-group"><label>Cluster</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?>" readonly></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>Kota</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?>" readonly></div></div>
-                            <div class="col-md-3"><div class="form-group"><label>Regional</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?>" readonly></div></div>
+                            <div class="col-md-8">
+                                <div class="form-group mb-md-0">
+                                    <label>Nama Cluster</label>
+                                    <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?>" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                    <label>Kota</label>
+                                    <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?>" readonly>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
                     <div class="drm-form-box">
-                        <div class="drm-form-box__title">Update DRM</div>
+                        <div class="drm-form-box__title">Header DRM</div>
                         <div class="row">
-                            <div class="col-md-4"><div class="form-group"><label>Tanggal DRM</label><input type="date" name="drm_date" class="form-control" value="<?= htmlspecialchars((string) ($cluster['drm_date'] ?? '')) ?>"></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>HP DRM</label><input type="number" name="homepass_drm" class="form-control" min="1" value="<?= htmlspecialchars((string) ($cluster['homepass_drm'] ?? '')) ?>" required></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Status DRM</label><input type="text" name="status_drm" class="form-control" value="<?= htmlspecialchars((string) ($cluster['display_status_drm'] ?? 'WAITING DOC')) ?>" readonly></div></div>
-                            <div class="col-md-12"><div class="form-group"><label>Nama OLT</label><input type="text" name="nama_olt" class="form-control" value="<?= htmlspecialchars((string) ($cluster['nama_olt'] ?? '')) ?>" placeholder="Isi nama OLT"></div></div>
-                            <div class="col-md-12"><div class="form-group mb-0"><label>Remark DRM</label><textarea name="remark_drm" rows="3" class="form-control"><?= htmlspecialchars((string) ($cluster['remark_drm'] ?? '')) ?></textarea></div></div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Tanggal DRM</label>
+                                    <input type="date" name="drm_date" class="form-control" value="<?= htmlspecialchars((string) ($cluster['drm_date'] ?? '')) ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>HP DRM</label>
+                                    <input type="number" min="0" step="1" name="homepass_drm" class="form-control" value="<?= htmlspecialchars((string) ($cluster['homepass_drm'] ?? '')) ?>" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Nama OLT</label>
+                                    <input type="text" name="nama_olt" class="form-control" value="<?= htmlspecialchars((string) ($cluster['nama_olt'] ?? '')) ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                    <label>Status DRM</label>
+                                    <select name="status_drm" class="form-control">
+                                        <?php
+                                        $statusOptions = ['WAITING DOC', 'WAITING APPROVE', 'COMPLETE', 'REJECTED'];
+                                        $currentStatusDrm = strtoupper(trim((string) ($cluster['status_drm'] ?? 'WAITING DOC')));
+                                        foreach ($statusOptions as $statusOption):
+                                        ?>
+                                            <option value="<?= htmlspecialchars($statusOption) ?>" <?= $currentStatusDrm === $statusOption ? 'selected' : '' ?>><?= htmlspecialchars($statusOption) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="form-group mb-0">
+                                    <label>Remark DRM</label>
+                                    <textarea name="remark_drm" rows="3" class="form-control"><?= htmlspecialchars((string) ($cluster['remark_drm'] ?? '')) ?></textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -488,14 +562,16 @@ if (!function_exists('drmDocumentLabel')) {
 <div class="modal fade" id="modal-drm-upload" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content drm-modal">
-            <form method="post" action="<?= base_url('DRM_MyRep/uploadDocument') ?>" enctype="multipart/form-data">
+            <form method="post" action="<?= base_url('DRM_MyRep/uploadDocument') ?>" enctype="multipart/form-data" id="form-drm-upload">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                <input type="hidden" name="scope_type" id="drm_upload_scope_type" value="CLUSTER">
                 <input type="hidden" name="id_doc_item" id="drm_upload_doc_item_id">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title">Upload Dokumen DRM</h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-2"><strong>Scope:</strong> <span id="drm_upload_scope_label">Cluster</span></div>
                     <div class="mb-3"><strong>Dokumen:</strong> <span id="drm_upload_doc_name">-</span></div>
                     <div class="mb-3"><strong>File Saat Ini:</strong> <span id="drm_upload_current_file">-</span></div>
                     <div class="drm-dropzone js-dropzone">
@@ -524,56 +600,6 @@ if (!function_exists('drmDocumentLabel')) {
     </div>
 </div>
 
-<div class="modal fade" id="modal-drm-approve" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content drm-modal">
-            <form method="post" action="<?= base_url('DRM_MyRep/approveDocument') ?>">
-                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
-                <input type="hidden" name="id_doc_file" id="drm_approve_file_id">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">Approve Dokumen DRM</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3"><strong>Dokumen:</strong> <span id="drm_approve_doc_name">-</span></div>
-                    <div class="form-group mb-0">
-                        <label>Remark</label>
-                        <textarea name="remark" class="form-control" rows="5" placeholder="Remark approve"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success btn-sm">Approve</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modal-drm-reject" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content drm-modal">
-            <form method="post" action="<?= base_url('DRM_MyRep/rejectDocument') ?>">
-                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
-                <input type="hidden" name="id_doc_file" id="drm_reject_file_id">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Reject Dokumen DRM</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3"><strong>Dokumen:</strong> <span id="drm_reject_doc_name">-</span></div>
-                    <div class="form-group mb-0">
-                        <label>Alasan Reject</label>
-                        <textarea name="remark" class="form-control" rows="5" placeholder="Alasan reject" required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-danger btn-sm">Reject</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <div class="modal fade" id="modal-doc-history" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content drm-modal">
@@ -591,19 +617,33 @@ if (!function_exists('drmDocumentLabel')) {
     </div>
 </div>
 
-<?php if ($boqReady): ?>
-    <div class="modal fade" id="modal-apd-boq-package" tabindex="-1" role="dialog" aria-hidden="true">
+<?php foreach ($drmScopes as $scopeKey => $scope): ?>
+    <?php
+    $scopeReady = !empty($scope['isReady']);
+    if (!$scopeReady || !$boqReady) {
+        continue;
+    }
+    $scopeLabel = (string) ($scope['label'] ?? drmScopeText($scopeKey));
+    $boqHeader = (array) ($scope['boqHeader'] ?? []);
+    $boqItems = (array) ($scope['boqItems'] ?? []);
+    $boqReviewStatus = strtoupper(trim((string) ($boqHeader['review_status'] ?? 'DRAFT')));
+    $isBoqLocked = $boqReviewStatus === 'APPROVED';
+    $apdBoqFile = (array) ($scope['apdBoqFile'] ?? []);
+    $hasApdBoqFile = !empty($apdBoqFile['id_doc_file']);
+    ?>
+    <div class="modal fade" id="modal-apd-boq-package-<?= strtolower($scopeKey) ?>" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content drm-modal">
-                <form method="post" action="<?= base_url('DRM_MyRep/saveApdBoqPackage') ?>" enctype="multipart/form-data" id="form-apd-boq-package">
+                <form method="post" action="<?= base_url('DRM_MyRep/saveApdBoqPackage') ?>" enctype="multipart/form-data" class="js-apd-boq-form" data-existing-file="<?= $hasApdBoqFile ? '1' : '0' ?>">
                     <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                    <input type="hidden" name="scope_type" value="<?= htmlspecialchars($scopeKey) ?>">
                     <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">APD BOQ dan Manual BOQ</h5>
+                        <h5 class="modal-title">APD BOQ dan Manual BOQ - <?= htmlspecialchars($scopeLabel) ?></h5>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     </div>
                     <div class="modal-body">
                         <div class="drm-form-box">
-                            <div class="drm-form-box__title">Informasi Cluster</div>
+                            <div class="drm-form-box__title">Informasi <?= htmlspecialchars($scopeLabel) ?></div>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group mb-md-0">
@@ -670,12 +710,12 @@ if (!function_exists('drmDocumentLabel')) {
                                 <?php endif; ?>
                             </div>
                             <div class="drm-dropzone js-dropzone">
-                                <input type="file" name="apd_boq_file" id="apd_boq_file_input" class="js-dropzone-input">
+                                <input type="file" name="apd_boq_file" class="js-dropzone-input">
                                 <div class="drm-dropzone-content">
                                     <div class="drm-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                                     <div class="drm-dropzone-title">Drag & drop file APD BOQ di sini</div>
                                     <div class="drm-dropzone-text">Atau klik area ini untuk memilih file</div>
-                                    <div class="drm-dropzone-file js-dropzone-label" id="apd_boq_file_label">Belum ada file baru dipilih</div>
+                                    <div class="drm-dropzone-file js-dropzone-label">Belum ada file baru dipilih</div>
                                 </div>
                             </div>
                             <div class="form-group mt-3 mb-0">
@@ -700,65 +740,61 @@ if (!function_exists('drmDocumentLabel')) {
         </div>
     </div>
 
-<?php endif; ?>
-
-<?php if ($boqReady && $canApprove && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
-    <div class="modal fade" id="modal-boq-review" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-xl" role="document">
-            <div class="modal-content drm-modal">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">Review BOQ DRM</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                </div>
-                <div class="modal-body">
-                    <div class="drm-form-box">
-                        <div class="drm-form-box__title">Informasi Review</div>
-                        <div class="small text-muted">Approve BOQ akan sekaligus meng-approve dokumen DRM yang sudah berstatus upload.</div>
+    <?php if ($canApprove && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
+        <div class="modal fade" id="modal-boq-review-<?= strtolower($scopeKey) ?>" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-xl" role="document">
+                <div class="modal-content drm-modal">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">Review BOQ DRM - <?= htmlspecialchars($scopeLabel) ?></h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <form method="post" action="<?= base_url('DRM_MyRep/approveBoq') ?>">
-                                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
-                                <div class="drm-form-box mb-0">
-                                    <div class="drm-form-box__title">Approve BOQ</div>
-                                    <div class="form-group">
-                                        <label>Remark Approve BOQ</label>
-                                        <textarea name="remark" rows="3" class="form-control" placeholder="Catatan approval jika diperlukan"></textarea>
-                                    </div>
-                                    <button type="submit" class="btn btn-success">Approve BOQ dan Dokumen</button>
-                                </div>
-                            </form>
+                    <div class="modal-body">
+                        <div class="drm-form-box">
+                            <div class="drm-form-box__title">Informasi Review</div>
+                            <div class="small text-muted">Approve BOQ akan sekaligus meng-approve dokumen <?= htmlspecialchars($scopeLabel) ?> yang sudah berstatus upload.</div>
                         </div>
-                        <div class="col-md-6">
-                            <form method="post" action="<?= base_url('DRM_MyRep/rejectBoq') ?>">
-                                <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
-                                <div class="drm-form-box mb-0">
-                                    <div class="drm-form-box__title">Reject BOQ</div>
-                                    <div class="form-group">
-                                        <label>Alasan Reject BOQ</label>
-                                        <textarea name="remark" rows="3" class="form-control" required placeholder="Wajib diisi jika BOQ manual tidak sesuai file APD BOQ"></textarea>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <form method="post" action="<?= base_url('DRM_MyRep/approveBoq') ?>">
+                                    <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                                    <input type="hidden" name="scope_type" value="<?= htmlspecialchars($scopeKey) ?>">
+                                    <div class="drm-form-box mb-0">
+                                        <div class="drm-form-box__title">Approve BOQ</div>
+                                        <div class="form-group">
+                                            <label>Remark Approve BOQ</label>
+                                            <textarea name="remark" rows="3" class="form-control" placeholder="Catatan approval jika diperlukan"></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-success">Approve BOQ dan Dokumen</button>
                                     </div>
-                                    <button type="submit" class="btn btn-danger">Reject BOQ</button>
-                                </div>
-                            </form>
+                                </form>
+                            </div>
+                            <div class="col-md-6">
+                                <form method="post" action="<?= base_url('DRM_MyRep/rejectBoq') ?>">
+                                    <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                                    <input type="hidden" name="scope_type" value="<?= htmlspecialchars($scopeKey) ?>">
+                                    <div class="drm-form-box mb-0">
+                                        <div class="drm-form-box__title">Reject BOQ</div>
+                                        <div class="form-group">
+                                            <label>Alasan Reject BOQ</label>
+                                            <textarea name="remark" rows="3" class="form-control" required placeholder="Wajib diisi jika BOQ manual tidak sesuai file APD BOQ"></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-danger">Reject BOQ</button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-<?php endif; ?>
+    <?php endif; ?>
+<?php endforeach; ?>
 
 <script>
     (function () {
-        var fileInput = document.getElementById('apd_boq_file_input');
-        var fileLabel = document.getElementById('apd_boq_file_label');
-        var modal = document.getElementById('modal-apd-boq-package');
-        var drmUploadModal = document.getElementById('modal-drm-upload');
-
         function bindDropzones() {
             var dropzones = document.querySelectorAll('.js-dropzone');
             Array.prototype.forEach.call(dropzones, function (dropzone) {
@@ -805,14 +841,21 @@ if (!function_exists('drmDocumentLabel')) {
             });
         }
 
-        function syncApdFileLabel() {
-            if (!fileLabel || !fileInput) {
-                return;
+        function renderHistory(history) {
+            if (!history.length) {
+                return '<li class="text-muted">Belum ada history.</li>';
             }
 
-            fileLabel.textContent = fileInput.files && fileInput.files.length
-                ? fileInput.files[0].name
-                : 'Belum ada file baru dipilih';
+            var html = '';
+            history.forEach(function (entry) {
+                html += '<li class="doc-history-item">' +
+                    '<div class="doc-history-title">' + (entry.action_type || '-') + '</div>' +
+                    '<div class="doc-history-meta">' + (entry.action_at || '-') + ' | ' + (entry.nama_user || 'System') + '</div>' +
+                    '<div><strong>File:</strong> ' + (entry.file_name || '-') + '</div>' +
+                    '<div><strong>Remark:</strong> ' + (entry.remark || '-') + '</div>' +
+                '</li>';
+            });
+            return html;
         }
 
         bindDropzones();
@@ -822,6 +865,8 @@ if (!function_exists('drmDocumentLabel')) {
             if (uploadButton) {
                 var currentLabel = document.querySelector('#modal-drm-upload .js-dropzone-label');
                 var currentInput = document.querySelector('#modal-drm-upload .js-dropzone-input');
+                document.getElementById('drm_upload_scope_type').value = uploadButton.getAttribute('data-scope-type') || 'CLUSTER';
+                document.getElementById('drm_upload_scope_label').textContent = (uploadButton.getAttribute('data-scope-type') || 'CLUSTER') === 'SUBFEEDER' ? 'Subfeeder' : 'Cluster';
                 document.getElementById('drm_upload_doc_item_id').value = uploadButton.getAttribute('data-doc-item-id') || '';
                 document.getElementById('drm_upload_doc_name').textContent = uploadButton.getAttribute('data-doc-name') || '-';
                 document.getElementById('drm_upload_current_file').textContent = uploadButton.getAttribute('data-file-name') || '-';
@@ -848,60 +893,14 @@ if (!function_exists('drmDocumentLabel')) {
                 }
 
                 document.getElementById('history_doc_label').textContent = historyButton.getAttribute('data-doc-name') || '-';
-
-                if (!history.length) {
-                    document.getElementById('history_doc_items').innerHTML = '<li class="text-muted">Belum ada history.</li>';
-                } else {
-                    var html = '';
-                    history.forEach(function (entry) {
-                        html += '<li class="doc-history-item">' +
-                            '<div class="doc-history-title">' + (entry.action_type || '-') + '</div>' +
-                            '<div class="doc-history-meta">' + (entry.action_at || '-') + ' | ' + (entry.nama_user || 'System') + '</div>' +
-                            '<div><strong>File:</strong> ' + (entry.file_name || '-') + '</div>' +
-                            '<div><strong>Remark:</strong> ' + (entry.remark || '-') + '</div>' +
-                        '</li>';
-                    });
-                    document.getElementById('history_doc_items').innerHTML = html;
-                }
-                return;
-            }
-
-            var reviewButton = event.target.closest('.js-open-drm-review-modal');
-            if (reviewButton) {
-                var fileId = reviewButton.getAttribute('data-file-id') || '';
-                var docName = reviewButton.getAttribute('data-doc-name') || '-';
-                document.getElementById('drm_approve_file_id').value = fileId;
-                document.getElementById('drm_reject_file_id').value = fileId;
-                document.getElementById('drm_approve_doc_name').textContent = docName;
-                document.getElementById('drm_reject_doc_name').textContent = docName;
-                return;
-            }
-
-            var button = event.target.closest('.js-open-apd-boq-modal');
-            if (button) {
-                return;
+                document.getElementById('history_doc_items').innerHTML = renderHistory(history);
             }
         });
 
-        if (window.jQuery && modal) {
-            window.jQuery(modal).on('shown.bs.modal', function () {
-                syncApdFileLabel();
-            });
-        }
-
-        if (window.jQuery && drmUploadModal) {
-            window.jQuery(drmUploadModal).on('shown.bs.modal', function () {
-                var currentLabel = drmUploadModal.querySelector('.js-dropzone-label');
-                if (currentLabel && currentLabel.textContent.trim() === '') {
-                    currentLabel.textContent = 'Belum ada file dipilih';
-                }
-            });
-        }
-
         document.addEventListener('submit', function (event) {
-            if (event.target.closest('#modal-drm-upload')) {
+            if (event.target.id === 'form-drm-upload') {
                 var uploadCheckbox = document.getElementById('drm_upload_not_required');
-                var uploadInput = document.querySelector('#modal-drm-upload .js-dropzone-input');
+                var uploadInput = event.target.querySelector('.js-dropzone-input');
                 var noDocument = uploadCheckbox && uploadCheckbox.checked;
                 var hasFile = uploadInput && uploadInput.files && uploadInput.files.length > 0;
 
@@ -912,16 +911,17 @@ if (!function_exists('drmDocumentLabel')) {
                 return;
             }
 
-            if (event.target.id !== 'form-apd-boq-package') {
+            if (!event.target.classList.contains('js-apd-boq-form')) {
                 return;
             }
 
-            var hasExistingFile = <?= !empty($apdBoqFile['id_doc_file']) ? 'true' : 'false' ?>;
-            var hasNewFile = fileInput && fileInput.files && fileInput.files.length > 0;
+            var hasExistingFile = event.target.getAttribute('data-existing-file') === '1';
+            var uploadInput = event.target.querySelector('input[name="apd_boq_file"]');
+            var hasNewFile = uploadInput && uploadInput.files && uploadInput.files.length > 0;
             var hasQty = false;
             var qtyInputs = event.target.querySelectorAll('.js-modal-boq-qty');
 
-            qtyInputs.forEach(function (input) {
+            Array.prototype.forEach.call(qtyInputs, function (input) {
                 if (parseFloat(input.value || '0') > 0) {
                     hasQty = true;
                 }

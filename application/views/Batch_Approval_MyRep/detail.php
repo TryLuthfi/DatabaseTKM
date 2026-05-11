@@ -113,12 +113,21 @@ $currentStage = strtoupper(trim((string) ($cluster['staging_status'] ?? 'DRAFT')
 $stageButtonTarget = '';
 $stageButtonLabel = '';
 $postDonasiUploadableRows = [];
+$postDonasiReviewableRows = [];
+$postDonasiDownloadableRows = [];
 foreach ((array) $postDonasiRows as $postDocRow) {
     $postDocStatus = batchDetailDocumentLabel($postDocRow);
     $postDocRawStatus = strtoupper(trim((string) ($postDocRow['status_file'] ?? '')));
     $postDocCanUpload = in_array($postDocStatus, ['BELUM UPLOAD', 'LINKED DOKUMENT'], true) || $postDocRawStatus === 'REJECTED';
     if ($postDocCanUpload) {
         $postDonasiUploadableRows[] = $postDocRow;
+    }
+    if ((!empty($postDocRow['id_doc_file']) && in_array($postDocRawStatus, ['UPLOADED', 'REJECTED'], true))
+        || ($postDocStatus === 'LINKED DOKUMENT' && !empty($postDocRow['linked_source_file_id']))) {
+        $postDonasiReviewableRows[] = $postDocRow;
+    }
+    if (!empty($postDocRow['file_path'])) {
+        $postDonasiDownloadableRows[] = $postDocRow;
     }
 }
 if ($canApprove) {
@@ -257,6 +266,146 @@ if ($canApprove) {
         color: #0f766e;
         font-weight: 600;
         font-size: .88rem;
+    }
+
+    .post-bulk-summary {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.1rem;
+        border: 1px solid #dbeafe;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #f8fbff, #eef6ff);
+        margin-bottom: 1rem;
+    }
+
+    .post-bulk-summary__title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: .2rem;
+    }
+
+    .post-bulk-summary__text {
+        margin: 0;
+        color: #64748b;
+        font-size: .92rem;
+    }
+
+    .post-bulk-summary__badge {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 52px;
+        min-height: 52px;
+        padding: .4rem .85rem;
+        border-radius: 16px;
+        background: #1d4ed8;
+        color: #fff;
+        font-size: 1.05rem;
+        font-weight: 800;
+        box-shadow: 0 12px 24px rgba(29, 78, 216, 0.22);
+    }
+
+    .post-bulk-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 1rem;
+    }
+
+    .post-bulk-card {
+        border: 1px solid #dbe4f0;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.07);
+        overflow: hidden;
+    }
+
+    .post-bulk-card__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: .9rem;
+        padding: 1rem 1.1rem .85rem;
+        background: linear-gradient(135deg, #fbfdff, #f4f8fc);
+        border-bottom: 1px solid #e5edf6;
+    }
+
+    .post-bulk-card__eyebrow {
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: .35rem;
+    }
+
+    .post-bulk-card__title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.35;
+    }
+
+    .post-bulk-card__body {
+        padding: 1rem 1.1rem 1.1rem;
+    }
+
+    .post-bulk-card__meta {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: .75rem;
+        margin-bottom: .95rem;
+    }
+
+    .post-bulk-meta-box {
+        border: 1px solid #e5edf6;
+        border-radius: 14px;
+        background: #f8fafc;
+        padding: .8rem .9rem;
+    }
+
+    .post-bulk-meta-box__label {
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: .3rem;
+    }
+
+    .post-bulk-meta-box__value {
+        color: #0f172a;
+        font-size: .92rem;
+        line-height: 1.45;
+        word-break: break-word;
+    }
+
+    .post-bulk-dropzone {
+        background: linear-gradient(135deg, #ffffff, #f8fbff);
+        border-color: #93c5fd;
+        min-height: 148px;
+    }
+
+    .post-bulk-dropzone .batch-dropzone-title {
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+    .post-bulk-dropzone .batch-dropzone-text {
+        color: #64748b;
+    }
+
+    .post-bulk-remark {
+        margin-top: .95rem;
+    }
+
+    .post-bulk-remark textarea {
+        min-height: 84px;
+        resize: vertical;
     }
 
     .doc-history-list {
@@ -543,7 +692,9 @@ if ($canApprove) {
 
                     <div class="row batch-info-grid">
                         <div class="col-md-4"><strong>Cluster</strong><div><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div></div>
-                        <div class="col-md-2"><strong>Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
+                        <div class="col-md-2"><strong>Kab / Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
+                        <div class="col-md-2"><strong>Kecamatan</strong><div><?= !empty($cluster['district_name']) ? htmlspecialchars((string) $cluster['district_name']) : '-' ?></div></div>
+                        <div class="col-md-2"><strong>Desa / Kelurahan</strong><div><?= !empty($cluster['village_name']) ? htmlspecialchars((string) $cluster['village_name']) : '-' ?></div></div>
                         <div class="col-md-2"><strong>Regional</strong><div><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div></div>
                         <div class="col-md-2"><strong>HP Donasi</strong><div><?= number_format((float) ($cluster['hp_donasi'] ?? 0), 0, ',', '.') ?></div></div>
                         <div class="col-md-2"><strong>Tanggal Pengajuan</strong><div><?= !empty($cluster['submission_date']) ? htmlspecialchars((string) $cluster['submission_date']) : '-' ?></div></div>
@@ -684,11 +835,27 @@ if ($canApprove) {
                 <div class="card-header">
                     <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap:.75rem;">
                         <h3 class="card-title mb-0">Post Donasi di Detail Batch Approval</h3>
-                        <?php if ($postDonasiDocReady && !empty($postDonasiUploadableRows)): ?>
-                            <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-post-bulk-upload">
-                                Bulk Upload 12 Dokumen
-                            </button>
-                        <?php endif; ?>
+                        <div class="d-flex align-items-center flex-wrap" style="gap:.5rem;">
+                            <?php if ($postDonasiDocReady && !empty($postDonasiDownloadableRows)): ?>
+                                <a href="<?= base_url('Post_Donasi_MyRep/downloadDocumentBundle/' . (int) $cluster['id_myrep_cluster']) ?>" class="btn btn-sm btn-outline-dark">
+                                    Download RAR
+                                </a>
+                            <?php endif; ?>
+                            <?php if ($postDonasiDocReady && $canApprove && !empty($postDonasiReviewableRows)): ?>
+                                <form method="post" action="<?= base_url('Post_Donasi_MyRep/approveAllDocuments') ?>" class="d-inline">
+                                    <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
+                                    <input type="hidden" name="redirect_to_batch_detail" value="1">
+                                    <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Approve semua dokumen post donasi yang masih bisa diproses?');">
+                                        Approve All
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+                            <?php if ($postDonasiDocReady && !empty($postDonasiUploadableRows)): ?>
+                                <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-post-bulk-upload">
+                                    Bulk Upload 12 Dokumen
+                                </button>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -713,7 +880,10 @@ if ($canApprove) {
                                         $postStatus = batchDetailDocumentLabel($row);
                                         $postRawStatus = strtoupper(trim((string) ($row['status_file'] ?? '')));
                                         $postCanUpload = in_array($postStatus, ['BELUM UPLOAD', 'LINKED DOKUMENT'], true) || $postRawStatus === 'REJECTED';
-                                        $postCanReview = $canApprove && !empty($row['id_doc_file']) && $postRawStatus === 'UPLOADED';
+                                        $postCanReview = $canApprove && (
+                                            (!empty($row['id_doc_file']) && $postRawStatus === 'UPLOADED')
+                                            || ($postStatus === 'LINKED DOKUMENT' && !empty($row['linked_source_file_id']))
+                                        );
                                         ?>
                                         <tr>
                                             <td><strong><?= htmlspecialchars((string) ($row['doc_name'] ?? '-')) ?></strong></td>
@@ -769,7 +939,9 @@ if ($canApprove) {
                                                             data-toggle="modal"
                                                             data-target="#modal-post-approve"
                                                             data-file-id="<?= (int) $row['id_doc_file'] ?>"
-                                                            data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>">
+                                                            data-doc-item-id="<?= (int) $row['id_doc_item'] ?>"
+                                                            data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-linked-file-name="<?= htmlspecialchars((string) ($row['linked_source_file_name'] ?? ''), ENT_QUOTES) ?>">
                                                             Approve
                                                         </button>
                                                         <button
@@ -778,7 +950,9 @@ if ($canApprove) {
                                                             data-toggle="modal"
                                                             data-target="#modal-post-reject"
                                                             data-file-id="<?= (int) $row['id_doc_file'] ?>"
-                                                            data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>">
+                                                            data-doc-item-id="<?= (int) $row['id_doc_item'] ?>"
+                                                            data-doc-name="<?= htmlspecialchars((string) ($row['doc_name'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-linked-file-name="<?= htmlspecialchars((string) ($row['linked_source_file_name'] ?? ''), ENT_QUOTES) ?>">
                                                             Reject
                                                         </button>
                                                     <?php elseif ($postRawStatus === 'APPROVED'): ?>
@@ -820,11 +994,13 @@ if ($canApprove) {
                     <div class="batch-form-section">
                         <div class="batch-form-section__title">Informasi Cluster</div>
                         <div class="row">
-                            <div class="col-md-12"><div class="form-group"><label>Cluster</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '')) ?>" readonly></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['regional_name'] ?? '')) ?>" readonly></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['province_name'] ?? '')) ?>" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Kota</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['city_name'] ?? '')) ?>" readonly></div></div>
-                            <div class="col-md-12"><div class="form-group mb-0"><label>Tanggal VALSAL</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['valsal_date'] ?? '')) ?>" readonly></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>Kab / Kota</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['city_name'] ?? '')) ?>" readonly></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>Kecamatan</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['district_name'] ?? '')) ?>" readonly></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>Desa / Kelurahan</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['village_name'] ?? '')) ?>" readonly></div></div>
+                            <div class="col-md-8"><div class="form-group mb-md-0"><label>Cluster</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '')) ?>" readonly></div></div>
+                            <div class="col-md-4"><div class="form-group mb-0"><label>Tanggal VALSAL</label><input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['valsal_date'] ?? '')) ?>" readonly></div></div>
                         </div>
                     </div>
 
@@ -1001,7 +1177,9 @@ if ($canApprove) {
                         <div class="row">
                             <div class="col-md-6"><strong>Cluster</strong><div><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div></div>
                             <div class="col-md-3"><strong>Regional</strong><div><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div></div>
-                            <div class="col-md-3"><strong>Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
+                            <div class="col-md-3"><strong>Kab / Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
+                            <div class="col-md-6 mt-2"><strong>Kecamatan</strong><div><?= !empty($cluster['district_name']) ? htmlspecialchars((string) $cluster['district_name']) : '-' ?></div></div>
+                            <div class="col-md-6 mt-2"><strong>Desa / Kelurahan</strong><div><?= !empty($cluster['village_name']) ? htmlspecialchars((string) $cluster['village_name']) : '-' ?></div></div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -1043,7 +1221,9 @@ if ($canApprove) {
                         <div class="row">
                             <div class="col-md-6"><strong>Cluster</strong><div><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div></div>
                             <div class="col-md-3"><strong>Regional</strong><div><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div></div>
-                            <div class="col-md-3"><strong>Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
+                            <div class="col-md-3"><strong>Kab / Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
+                            <div class="col-md-6 mt-2"><strong>Kecamatan</strong><div><?= !empty($cluster['district_name']) ? htmlspecialchars((string) $cluster['district_name']) : '-' ?></div></div>
+                            <div class="col-md-6 mt-2"><strong>Desa / Kelurahan</strong><div><?= !empty($cluster['village_name']) ? htmlspecialchars((string) $cluster['village_name']) : '-' ?></div></div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -1093,7 +1273,9 @@ if ($canApprove) {
                         <div class="row">
                             <div class="col-md-6"><strong>Cluster</strong><div><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div></div>
                             <div class="col-md-3"><strong>Regional</strong><div><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?></div></div>
-                            <div class="col-md-3"><strong>Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
+                            <div class="col-md-3"><strong>Kab / Kota</strong><div><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div></div>
+                            <div class="col-md-6 mt-2"><strong>Kecamatan</strong><div><?= !empty($cluster['district_name']) ? htmlspecialchars((string) $cluster['district_name']) : '-' ?></div></div>
+                            <div class="col-md-6 mt-2"><strong>Desa / Kelurahan</strong><div><?= !empty($cluster['village_name']) ? htmlspecialchars((string) $cluster['village_name']) : '-' ?></div></div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -1183,43 +1365,59 @@ if ($canApprove) {
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info">
-                        Upload beberapa dokumen post donasi sekaligus. Form ini memakai input file biasa, tanpa drag and drop.
+                    <div class="post-bulk-summary">
+                        <div>
+                            <div class="post-bulk-summary__title">Upload beberapa dokumen sekaligus</div>
+                            <p class="post-bulk-summary__text">Setiap kartu mewakili satu item dokumen. Cek status dan catatannya dulu, lalu pilih file yang ingin diupload dan isi remark jika diperlukan.</p>
+                        </div>
+                        <div class="post-bulk-summary__badge"><?= count($postDonasiUploadableRows) ?></div>
                     </div>
                     <?php if (empty($postDonasiUploadableRows)): ?>
                         <div class="text-muted">Tidak ada dokumen yang tersedia untuk bulk upload.</div>
                     <?php else: ?>
-                        <?php foreach ($postDonasiUploadableRows as $bulkRow): ?>
-                            <div class="batch-form-section">
-                                <input type="hidden" name="bulk_doc_item_ids[]" value="<?= (int) ($bulkRow['id_doc_item'] ?? 0) ?>">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group mb-md-0">
-                                            <label>Dokumen</label>
-                                            <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($bulkRow['doc_name'] ?? '-')) ?>" readonly>
+                        <div class="post-bulk-grid">
+                            <?php foreach ($postDonasiUploadableRows as $bulkIndex => $bulkRow): ?>
+                                <div class="post-bulk-card">
+                                    <input type="hidden" name="bulk_doc_item_ids[]" value="<?= (int) ($bulkRow['id_doc_item'] ?? 0) ?>">
+                                    <div class="post-bulk-card__header">
+                                        <div>
+                                            <div class="post-bulk-card__eyebrow">Dokumen <?= $bulkIndex + 1 ?></div>
+                                            <h6 class="post-bulk-card__title"><?= htmlspecialchars((string) ($bulkRow['doc_name'] ?? '-')) ?></h6>
                                         </div>
+                                        <span class="badge badge-<?= batchDetailBadgeClass(batchDetailDocumentLabel($bulkRow)) ?>"><?= htmlspecialchars(batchDetailDocumentLabel($bulkRow)) ?></span>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group mb-md-0">
-                                            <label>Status</label>
-                                            <input type="text" class="form-control" value="<?= htmlspecialchars(batchDetailDocumentLabel($bulkRow)) ?>" readonly>
+                                    <div class="post-bulk-card__body">
+                                        <div class="post-bulk-card__meta">
+                                            <div class="post-bulk-meta-box">
+                                                <div class="post-bulk-meta-box__label">Catatan Dokumen</div>
+                                                <div class="post-bulk-meta-box__value"><?= !empty($bulkRow['doc_requirement_note']) ? htmlspecialchars((string) $bulkRow['doc_requirement_note']) : 'Tidak ada catatan khusus.' ?></div>
+                                            </div>
+                                            <div class="post-bulk-meta-box">
+                                                <div class="post-bulk-meta-box__label">File Saat Ini</div>
+                                                <div class="post-bulk-meta-box__value">
+                                                    <?= !empty($bulkRow['file_name']) ? htmlspecialchars((string) $bulkRow['file_name']) : 'Belum ada file aktif.' ?>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-5">
-                                        <div class="form-group mb-0">
-                                            <label>File Upload</label>
-                                            <input type="file" name="bulk_file_<?= (int) ($bulkRow['id_doc_item'] ?? 0) ?>" class="form-control-file border rounded p-2 bg-white">
+
+                                        <div class="batch-dropzone js-dropzone post-bulk-dropzone">
+                                            <input type="file" name="bulk_file_<?= (int) ($bulkRow['id_doc_item'] ?? 0) ?>" class="js-dropzone-input">
+                                            <div class="batch-dropzone-content">
+                                                <div class="batch-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                                <div class="batch-dropzone-title">Pilih file untuk <?= htmlspecialchars((string) ($bulkRow['doc_name'] ?? 'dokumen')) ?></div>
+                                                <div class="batch-dropzone-text">Drag & drop file di sini atau klik area ini</div>
+                                                <div class="batch-dropzone-file js-dropzone-label">Belum ada file dipilih</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-12 mt-3">
-                                        <div class="form-group mb-0">
-                                            <label>Remark</label>
-                                            <input type="text" name="bulk_remark_<?= (int) ($bulkRow['id_doc_item'] ?? 0) ?>" class="form-control" value="<?= htmlspecialchars((string) ($bulkRow['remark'] ?? '')) ?>" placeholder="Remark upload jika diperlukan">
+
+                                        <div class="post-bulk-remark">
+                                            <label class="mb-2 font-weight-bold">Remark Upload</label>
+                                            <textarea name="bulk_remark_<?= (int) ($bulkRow['id_doc_item'] ?? 0) ?>" class="form-control" placeholder="Remark upload jika diperlukan"><?= htmlspecialchars((string) ($bulkRow['remark'] ?? '')) ?></textarea>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        <?php endforeach; ?>
+                            <?php endforeach; ?>
+                        </div>
                     <?php endif; ?>
                 </div>
                 <div class="modal-footer">
@@ -1289,6 +1487,8 @@ if ($canApprove) {
             <form method="post" action="<?= base_url('Post_Donasi_MyRep/approveDocument') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
                 <input type="hidden" name="id_doc_file" id="post_approve_file_id">
+                <input type="hidden" name="id_doc_item" id="post_approve_doc_item_id">
+                <input type="hidden" name="linked_file_name" id="post_approve_linked_file_name">
                 <input type="hidden" name="redirect_to_batch_detail" value="1">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title">Approve Dokumen Post Donasi</h5>
@@ -1315,6 +1515,8 @@ if ($canApprove) {
             <form method="post" action="<?= base_url('Post_Donasi_MyRep/rejectDocument') ?>">
                 <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
                 <input type="hidden" name="id_doc_file" id="post_reject_file_id">
+                <input type="hidden" name="id_doc_item" id="post_reject_doc_item_id">
+                <input type="hidden" name="linked_file_name" id="post_reject_linked_file_name">
                 <input type="hidden" name="redirect_to_batch_detail" value="1">
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title">Reject Dokumen Post Donasi</h5>
@@ -1607,6 +1809,8 @@ if ($canApprove) {
             $(document).on('click', '.js-open-post-review-modal', function () {
                 var $button = $(this);
                 $('#post_approve_file_id, #post_reject_file_id').val($button.data('file-id') || '');
+                $('#post_approve_doc_item_id, #post_reject_doc_item_id').val($button.data('doc-item-id') || '');
+                $('#post_approve_linked_file_name, #post_reject_linked_file_name').val($button.data('linked-file-name') || '');
                 $('#post_approve_doc_name, #post_reject_doc_name').text($button.data('doc-name') || '-');
             });
         });

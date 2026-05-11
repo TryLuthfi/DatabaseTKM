@@ -46,6 +46,14 @@ class MDRM_MyRep extends CI_Model
         return true;
     }
 
+    public function drmSubfeederReady()
+    {
+        return $this->drmDocumentTablesReady()
+            && $this->drmBoqTablesReady()
+            && $this->db->field_exists('scope_type', 'tb_myrep_drm_boq')
+            && $this->db->field_exists('scope_type', 'tb_myrep_boq_baseline');
+    }
+
     public function getCityOptions()
     {
         if (!$this->drmTablesReady()) {
@@ -227,29 +235,38 @@ class MDRM_MyRep extends CI_Model
             ->result_array();
     }
 
-    public function getDrmBoqHeader($clusterId)
+    public function getDrmBoqHeader($clusterId, $scopeType = 'CLUSTER')
     {
         if (!$this->drmBoqTablesReady()) {
             return [];
         }
 
-        return $this->db
-            ->from('tb_myrep_drm_boq')
-            ->where('id_myrep_cluster', (int) $clusterId)
-            ->get()
-            ->row_array();
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
+        $this->db->from('tb_myrep_drm_boq')
+            ->where('id_myrep_cluster', (int) $clusterId);
+        if ($this->db->field_exists('scope_type', 'tb_myrep_drm_boq')) {
+            $this->db->where('scope_type', $scopeType);
+        }
+
+        return $this->db->get()->row_array();
     }
 
-    public function getDrmBoqItems($clusterId)
+    public function getDrmBoqItems($clusterId, $scopeType = 'CLUSTER')
     {
         if (!$this->drmBoqTablesReady()) {
             return [];
+        }
+
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
+        $joinHeader = 'h.id_myrep_cluster = ' . (int) $clusterId;
+        if ($this->db->field_exists('scope_type', 'tb_myrep_drm_boq')) {
+            $joinHeader .= " AND h.scope_type = " . $this->db->escape($scopeType);
         }
 
         return $this->db
             ->select('m.id_boq_item, m.excel_item_name, m.item_name, m.item_type, m.default_photo_qty, m.photo_type, m.remarks_rule AS master_remarks_rule, m.sort_no, h.id_drm_boq, h.review_status, i.id_drm_boq_item, i.qty_boq, i.jumlah_foto, i.remarks_rule, i.target_foto_required, i.item_note')
             ->from('md_myrep_boq_item m')
-            ->join('tb_myrep_drm_boq h', 'h.id_myrep_cluster = ' . (int) $clusterId, 'left', false)
+            ->join('tb_myrep_drm_boq h', $joinHeader, 'left', false)
             ->join('tb_myrep_drm_boq_item i', 'i.id_drm_boq = h.id_drm_boq AND i.id_boq_item = m.id_boq_item', 'left')
             ->where('m.is_active', 1)
             ->order_by('m.sort_no', 'ASC')
@@ -258,51 +275,61 @@ class MDRM_MyRep extends CI_Model
             ->result_array();
     }
 
-    public function getBoqBaselineHeader($clusterId)
+    public function getBoqBaselineHeader($clusterId, $scopeType = 'CLUSTER')
     {
         if (!$this->drmBoqTablesReady()) {
             return [];
         }
 
-        return $this->db
-            ->from('tb_myrep_boq_baseline')
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
+        $this->db->from('tb_myrep_boq_baseline')
             ->where('id_myrep_cluster', (int) $clusterId)
-            ->where('status_baseline', 'ACTIVE')
-            ->get()
-            ->row_array();
+            ->where('status_baseline', 'ACTIVE');
+        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+            $this->db->where('scope_type', $scopeType);
+        }
+
+        return $this->db->get()->row_array();
     }
 
-    public function getBoqBaselineItems($clusterId)
+    public function getBoqBaselineItems($clusterId, $scopeType = 'CLUSTER')
     {
         if (!$this->drmBoqTablesReady()) {
             return [];
         }
 
-        return $this->db
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
+        $this->db
             ->select('b.id_boq_baseline, i.id_boq_baseline_item, i.qty_boq, i.jumlah_foto, i.remarks_rule, i.target_foto_required, i.item_note, m.excel_item_name, m.item_name, m.item_type, m.photo_type, m.sort_no')
             ->from('tb_myrep_boq_baseline b')
             ->join('tb_myrep_boq_baseline_item i', 'i.id_boq_baseline = b.id_boq_baseline', 'inner')
             ->join('md_myrep_boq_item m', 'm.id_boq_item = i.id_boq_item', 'inner')
             ->where('b.id_myrep_cluster', (int) $clusterId)
-            ->where('b.status_baseline', 'ACTIVE')
+            ->where('b.status_baseline', 'ACTIVE');
+        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+            $this->db->where('b.scope_type', $scopeType);
+        }
+
+        return $this->db
             ->order_by('m.sort_no', 'ASC')
             ->get()
             ->result_array();
     }
 
-    public function getApdBoqDocumentFile($clusterId)
+    public function getApdBoqDocumentFile($clusterId, $scopeType = 'CLUSTER')
     {
         if (!$this->drmDocumentTablesReady()) {
             return [];
         }
 
+        $flowType = $this->resolveDrmDocumentFlowType($scopeType);
         return $this->db
             ->select('doc_file.id_doc_file, doc_file.file_name, doc_file.file_path, doc_file.status_file, doc_file.reviewed_at, doc_file.approved_at')
             ->from('md_myrep_flow_doc_group doc_group')
             ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'inner')
-            ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = ' . (int) $clusterId . ' AND doc_package.flow_type = \'DRM\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
+            ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = ' . (int) $clusterId . ' AND doc_package.flow_type = ' . $this->db->escape($flowType) . ' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
             ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left')
-            ->where('doc_group.flow_type', 'DRM')
+            ->where('doc_group.flow_type', $flowType)
             ->where('doc_item.doc_name', 'APD BOQ')
             ->get()
             ->row_array();
@@ -342,70 +369,75 @@ class MDRM_MyRep extends CI_Model
         return $this->db->trans_status();
     }
 
-    public function getDrmDocumentRows($clusterId)
+    public function getDrmDocumentRows($clusterId, $scopeType = 'CLUSTER')
     {
         if (!$this->drmDocumentTablesReady()) {
             return [];
         }
 
+        $flowType = $this->resolveDrmDocumentFlowType($scopeType);
         return $this->db
             ->select('doc_group.group_label, doc_item.id_doc_item, doc_item.doc_name, doc_item.doc_requirement_note, doc_item.verification_team, doc_package.id_doc_package, doc_package.status_package, doc_file.id_doc_file, doc_file.file_name, doc_file.file_path, doc_file.status_file, doc_file.is_document_not_required, doc_file.remark, doc_file.uploaded_at, doc_file.reviewed_at, doc_file.approved_at')
             ->from('md_myrep_flow_doc_group doc_group')
             ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'inner')
-            ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = ' . (int) $clusterId . ' AND doc_package.flow_type = \'DRM\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
+            ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = ' . (int) $clusterId . ' AND doc_package.flow_type = ' . $this->db->escape($flowType) . ' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
             ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left')
-            ->where('doc_group.flow_type', 'DRM')
+            ->where('doc_group.flow_type', $flowType)
             ->where('doc_group.is_active', 1)
+            ->order_by('doc_group.sort_no', 'ASC')
             ->order_by('doc_item.sort_no', 'ASC')
             ->get()
             ->result_array();
     }
 
-    public function getDrmDocumentDetail($clusterId, $docItemId)
+    public function getDrmDocumentDetail($clusterId, $docItemId, $scopeType = 'CLUSTER')
     {
         if (!$this->drmDocumentTablesReady()) {
             return [];
         }
 
+        $flowType = $this->resolveDrmDocumentFlowType($scopeType);
         return $this->db
             ->select('doc_group.id_doc_group, doc_group.group_label, doc_item.id_doc_item, doc_item.doc_name, doc_package.id_doc_package, doc_file.id_doc_file, doc_file.file_path')
             ->from('md_myrep_flow_doc_group doc_group')
             ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'inner')
-            ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = ' . (int) $clusterId . ' AND doc_package.flow_type = \'DRM\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
+            ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = ' . (int) $clusterId . ' AND doc_package.flow_type = ' . $this->db->escape($flowType) . ' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
             ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left')
-            ->where('doc_group.flow_type', 'DRM')
+            ->where('doc_group.flow_type', $flowType)
             ->where('doc_group.is_active', 1)
             ->where('doc_item.id_doc_item', (int) $docItemId)
             ->get()
             ->row_array();
     }
 
-    public function getDrmDocumentDetailByName($clusterId, $docName)
+    public function getDrmDocumentDetailByName($clusterId, $docName, $scopeType = 'CLUSTER')
     {
         if (!$this->drmDocumentTablesReady()) {
             return [];
         }
 
+        $flowType = $this->resolveDrmDocumentFlowType($scopeType);
         return $this->db
             ->select('doc_group.id_doc_group, doc_group.group_label, doc_item.id_doc_item, doc_item.doc_name, doc_package.id_doc_package, doc_file.id_doc_file, doc_file.file_name, doc_file.file_path, doc_file.status_file')
             ->from('md_myrep_flow_doc_group doc_group')
             ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'inner')
-            ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = ' . (int) $clusterId . ' AND doc_package.flow_type = \'DRM\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
+            ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = ' . (int) $clusterId . ' AND doc_package.flow_type = ' . $this->db->escape($flowType) . ' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
             ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left')
-            ->where('doc_group.flow_type', 'DRM')
+            ->where('doc_group.flow_type', $flowType)
             ->where('doc_item.doc_name', (string) $docName)
             ->get()
             ->row_array();
     }
 
-    public function saveDrmFileUpload($clusterId, $docItemId, $data)
+    public function saveDrmFileUpload($clusterId, $docItemId, $data, $scopeType = 'CLUSTER')
     {
-        $context = $this->getDrmDocumentDetail($clusterId, $docItemId);
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
+        $context = $this->getDrmDocumentDetail($clusterId, $docItemId, $scopeType);
         if (empty($context['id_doc_group']) || empty($context['id_doc_item'])) {
             return 0;
         }
 
-        $packageId = $this->ensurePackage($clusterId, 'DRM', (int) $context['id_doc_group'], (int) $data['uploaded_by']);
+        $packageId = $this->ensurePackage($clusterId, $this->resolveDrmDocumentFlowType($scopeType), (int) $context['id_doc_group'], (int) $data['uploaded_by']);
         if ($packageId <= 0) {
             return 0;
         }
@@ -488,7 +520,7 @@ class MDRM_MyRep extends CI_Model
         return $result;
     }
 
-    public function saveDrmBoqDraft($clusterId, $drmId, $sourceDocFileId, $items, $userId, $submitToHo = false)
+    public function saveDrmBoqDraft($clusterId, $drmId, $sourceDocFileId, $items, $userId, $submitToHo = false, $scopeType = 'CLUSTER')
     {
         if (!$this->drmBoqTablesReady()) {
             return false;
@@ -497,11 +529,12 @@ class MDRM_MyRep extends CI_Model
         $clusterId = (int) $clusterId;
         $drmId = (int) $drmId;
         $userId = (int) $userId;
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
         if ($clusterId <= 0 || empty($items)) {
             return false;
         }
 
-        $existing = $this->getDrmBoqHeader($clusterId);
+        $existing = $this->getDrmBoqHeader($clusterId, $scopeType);
         if (!empty($existing) && strtoupper((string) ($existing['review_status'] ?? '')) === 'APPROVED') {
             return false;
         }
@@ -526,7 +559,7 @@ class MDRM_MyRep extends CI_Model
                 ]);
             $drmBoqId = (int) $existing['id_drm_boq'];
         } else {
-            $this->db->insert('tb_myrep_drm_boq', [
+            $payload = [
                 'id_myrep_cluster' => $clusterId,
                 'id_drm' => $drmId > 0 ? $drmId : null,
                 'source_doc_file_id' => $sourceDocFileId > 0 ? (int) $sourceDocFileId : null,
@@ -534,7 +567,11 @@ class MDRM_MyRep extends CI_Model
                 'submitted_at' => $submitToHo ? date('Y-m-d H:i:s') : null,
                 'created_by' => $userId,
                 'updated_by' => $userId,
-            ]);
+            ];
+            if ($this->db->field_exists('scope_type', 'tb_myrep_drm_boq')) {
+                $payload['scope_type'] = $scopeType;
+            }
+            $this->db->insert('tb_myrep_drm_boq', $payload);
             $drmBoqId = (int) $this->db->insert_id();
         }
 
@@ -572,14 +609,15 @@ class MDRM_MyRep extends CI_Model
         return $this->db->trans_status();
     }
 
-    public function approveDrmBoq($clusterId, $userId, $remark = '')
+    public function approveDrmBoq($clusterId, $userId, $remark = '', $scopeType = 'CLUSTER')
     {
         if (!$this->drmBoqTablesReady() || !$this->drmDocumentTablesReady()) {
             return false;
         }
 
-        $header = $this->getDrmBoqHeader($clusterId);
-        $items = $this->getDrmBoqItems($clusterId);
+        $scopeType = $this->normalizeDrmScopeType($scopeType);
+        $header = $this->getDrmBoqHeader($clusterId, $scopeType);
+        $items = $this->getDrmBoqItems($clusterId, $scopeType);
         if (empty($header['id_drm_boq']) || empty($items)) {
             return false;
         }
@@ -600,7 +638,7 @@ class MDRM_MyRep extends CI_Model
                 'updated_by' => $userId,
             ]);
 
-        $existingBaseline = $this->getBoqBaselineHeader($clusterId);
+        $existingBaseline = $this->getBoqBaselineHeader($clusterId, $scopeType);
         if (!empty($existingBaseline['id_boq_baseline'])) {
             $this->db
                 ->where('id_boq_baseline', (int) $existingBaseline['id_boq_baseline'])
@@ -609,13 +647,17 @@ class MDRM_MyRep extends CI_Model
                 ]);
         }
 
-        $this->db->insert('tb_myrep_boq_baseline', [
+        $baselinePayload = [
             'id_myrep_cluster' => (int) $clusterId,
             'id_drm_boq' => (int) $header['id_drm_boq'],
             'status_baseline' => 'ACTIVE',
             'approved_at' => $approvedAt,
             'approved_by' => $userId,
-        ]);
+        ];
+        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+            $baselinePayload['scope_type'] = $scopeType;
+        }
+        $this->db->insert('tb_myrep_boq_baseline', $baselinePayload);
         $baselineId = (int) $this->db->insert_id();
 
         foreach ($items as $item) {
@@ -630,12 +672,13 @@ class MDRM_MyRep extends CI_Model
             ]);
         }
 
+        $flowType = $this->resolveDrmDocumentFlowType($scopeType);
         $documentFiles = $this->db
             ->select('f.id_doc_file, f.id_doc_package, f.id_doc_item, f.file_name, f.status_file')
             ->from('tb_myrep_flow_doc_package p')
             ->join('tb_myrep_flow_doc_file f', 'f.id_doc_package = p.id_doc_package', 'inner')
             ->where('p.id_myrep_cluster', (int) $clusterId)
-            ->where('p.flow_type', 'DRM')
+            ->where('p.flow_type', $flowType)
             ->get()
             ->result_array();
 
@@ -676,13 +719,13 @@ class MDRM_MyRep extends CI_Model
         return $this->db->trans_status();
     }
 
-    public function rejectDrmBoq($clusterId, $userId, $remark)
+    public function rejectDrmBoq($clusterId, $userId, $remark, $scopeType = 'CLUSTER')
     {
         if (!$this->drmBoqTablesReady()) {
             return false;
         }
 
-        $header = $this->getDrmBoqHeader($clusterId);
+        $header = $this->getDrmBoqHeader($clusterId, $scopeType);
         if (empty($header['id_drm_boq'])) {
             return false;
         }
@@ -836,6 +879,16 @@ class MDRM_MyRep extends CI_Model
         if (is_file($fullPath)) {
             @unlink($fullPath);
         }
+    }
+
+    private function normalizeDrmScopeType($scopeType)
+    {
+        return strtoupper(trim((string) $scopeType)) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+    }
+
+    private function resolveDrmDocumentFlowType($scopeType)
+    {
+        return $this->normalizeDrmScopeType($scopeType) === 'SUBFEEDER' ? 'DRM_SUBFEEDER' : 'DRM';
     }
 
     private function resolveSafeCurrentStatus($existingStatus, $requestedStatus)

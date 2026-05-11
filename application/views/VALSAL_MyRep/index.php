@@ -170,11 +170,18 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
         $agingDays = null;
         $bakDateRaw = trim((string) ($row['bak_date'] ?? ''));
 
+        $valsalDateRaw = trim((string) ($row['valsal_date'] ?? ''));
+
         if ($bakDateRaw !== '') {
             try {
                 $bakDate = new DateTimeImmutable($bakDateRaw);
-                $todayDate = new DateTimeImmutable(date('Y-m-d'));
-                $agingDays = (int) $bakDate->diff($todayDate)->format('%r%a');
+                if ($valsalDateRaw !== '') {
+                    $valsalDate = new DateTimeImmutable($valsalDateRaw);
+                    $agingDays = (int) $bakDate->diff($valsalDate)->format('%r%a');
+                } else {
+                    $todayDate = new DateTimeImmutable(date('Y-m-d'));
+                    $agingDays = (int) $bakDate->diff($todayDate)->format('%r%a');
+                }
                 if ($agingDays < 0) {
                     $agingDays = 0;
                 }
@@ -661,24 +668,29 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                     </div>
                                 </div>
                                 <?php foreach ($valsalDocumentDefinitions as $documentDefinition): ?>
+                                    <?php $docItemId = (int) $documentDefinition['id_doc_item']; ?>
                                     <div class="col-md-12">
                                         <div class="doc-modal-panel">
                                             <div class="form-group mb-3">
                                                 <label class="font-weight-bold d-block"><?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></label>
-                                                <div class="upload-dropzone create-doc-dropzone" id="valsal-create-dropzone-<?= (int) $documentDefinition['id_doc_item'] ?>">
-                                                    <input type="file" name="create_file_<?= (int) $documentDefinition['id_doc_item'] ?>" class="create-doc-input" id="valsal-create-file-<?= (int) $documentDefinition['id_doc_item'] ?>" data-doc-name="<?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-'), ENT_QUOTES) ?>" required>
+                                                <div class="upload-dropzone create-doc-dropzone" id="valsal-create-dropzone-<?= $docItemId ?>">
+                                                    <input type="file" name="create_file_<?= $docItemId ?>" class="create-doc-input" id="valsal-create-file-<?= $docItemId ?>" data-doc-name="<?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-'), ENT_QUOTES) ?>" data-doc-item-id="<?= $docItemId ?>" required>
                                                     <div class="upload-dropzone-content">
                                                         <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                                                         <div class="upload-dropzone-title">Drag & drop <?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? 'dokumen')) ?></div>
                                                         <div class="upload-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
-                                                        <div class="upload-dropzone-file create-doc-file-name" id="valsal-create-file-name-<?= (int) $documentDefinition['id_doc_item'] ?>">Belum ada file dipilih</div>
+                                                        <div class="upload-dropzone-file create-doc-file-name" id="valsal-create-file-name-<?= $docItemId ?>">Belum ada file dipilih</div>
                                                     </div>
                                                 </div>
                                                 <small class="text-muted d-block mt-2">Format: pdf, doc, docx, xls, xlsx, jpg, jpeg, png. Maksimal 30 MB.</small>
                                             </div>
+                                            <div class="form-group form-check mb-3">
+                                                <input type="checkbox" class="form-check-input js-create-doc-not-required" id="valsal-create-not-required-<?= $docItemId ?>" name="create_is_document_not_required_<?= $docItemId ?>" value="1" data-doc-item-id="<?= $docItemId ?>">
+                                                <label class="form-check-label" for="valsal-create-not-required-<?= $docItemId ?>">Tidak butuh dokument</label>
+                                            </div>
                                             <div class="form-group mb-0">
                                                 <label class="font-weight-bold">Remark <?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></label>
-                                                <textarea name="create_doc_remark_<?= (int) $documentDefinition['id_doc_item'] ?>" rows="2" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
+                                                <textarea name="create_doc_remark_<?= $docItemId ?>" rows="2" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -779,6 +791,14 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         </div>
                     </div>
                     <div class="modal-footer budget-modal__footer">
+                        <a href="#" target="_blank" class="btn budget-btn budget-btn--ghost d-none" id="valsal-doc-download-bundle-btn">
+                            <i class="fas fa-file-archive mr-1"></i> Download Gabungan
+                        </a>
+                        <?php if ($canApprove): ?>
+                            <button type="button" class="btn budget-btn budget-btn--success d-none" id="valsal-doc-approve-all-btn">
+                                <i class="fas fa-check-double mr-1"></i> Approve All
+                            </button>
+                        <?php endif; ?>
                         <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
                     </div>
                 </div>
@@ -1532,8 +1552,11 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
 <script>
     (function () {
         var valsalApproveUrl = '<?= base_url('VALSAL_MyRep/approveDocument') ?>';
+        var valsalApproveAllUrl = '<?= base_url('VALSAL_MyRep/approveAllDocuments') ?>';
         var valsalRejectUrl = '<?= base_url('VALSAL_MyRep/rejectDocument') ?>';
         var valsalPreviewBaseUrl = '<?= base_url('VALSAL_MyRep/previewDocument/') ?>';
+        var valsalDownloadBaseUrl = '<?= base_url('VALSAL_MyRep/downloadDocument/') ?>';
+        var valsalDownloadBundleBaseUrl = '<?= base_url('VALSAL_MyRep/downloadDocumentBundle/') ?>';
         var currentValsalDetailClusterId = 0;
 
         function escapeHtml(value) {
@@ -1578,6 +1601,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                     fileSection =
                         '<div class="small text-muted mb-1">' + escapeHtml(doc.file_name || '-') + '</div>' +
                         '<a href="' + valsalPreviewBaseUrl + Number(doc.id_doc_file) + '" target="_blank" class="btn btn-sm btn-outline-secondary mr-1">Preview</a>' +
+                        '<a href="' + valsalDownloadBaseUrl + Number(doc.id_doc_file) + '" class="btn btn-sm btn-outline-primary mr-1">Download</a>' +
                         '<button type="button" class="btn btn-sm btn-outline-dark js-history-doc" data-toggle="modal" data-target="#modal-valsal-history-doc" data-cluster_name="' + escapeHtml(doc.cluster_name || '') + '" data-doc_name="' + docName + '" data-history="' + escapeHtml(JSON.stringify(doc.history || [])) + '">History</button>';
                 }
 
@@ -1728,12 +1752,55 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
 
             var allReady = true;
             inputs.forEach(function (input) {
-                if (!input.files || !input.files.length) {
+                var docItemId = input.getAttribute('data-doc-item-id') || '';
+                var checkbox = docItemId ? form.querySelector('.js-create-doc-not-required[data-doc-item-id="' + docItemId + '"]') : null;
+                var isNotRequired = checkbox ? checkbox.checked : false;
+                if (!isNotRequired && (!input.files || !input.files.length)) {
                     allReady = false;
                 }
             });
 
             submitButton.disabled = !allReady;
+        }
+
+        function syncValsalCreateNoDocumentState(docItemId) {
+            var checkbox = document.querySelector('.js-create-doc-not-required[data-doc-item-id="' + docItemId + '"]');
+            var input = document.getElementById('valsal-create-file-' + docItemId);
+            var label = document.getElementById('valsal-create-file-name-' + docItemId);
+
+            if (!checkbox || !input || !label) {
+                return;
+            }
+
+            if (checkbox.checked) {
+                input.value = '';
+                input.disabled = true;
+                input.required = false;
+                label.textContent = 'File tidak diperlukan untuk item ini';
+            } else {
+                input.disabled = false;
+                input.required = true;
+                label.textContent = (input.files && input.files.length > 0)
+                    ? input.files[0].name
+                    : 'Belum ada file dipilih';
+            }
+        }
+
+        function syncValsalDetailFooterButtons(clusterId, documents) {
+            var hasPhysicalFiles = clusterId > 0 && (documents || []).some(function (doc) {
+                return !!doc.file_path;
+            });
+            $('#valsal-doc-download-bundle-btn')
+                .attr('href', valsalDownloadBundleBaseUrl + clusterId)
+                .toggleClass('d-none', !hasPhysicalFiles);
+
+            var canApproveAll = clusterId > 0 && (documents || []).some(function (doc) {
+                var status = String(doc.status_file || '').toUpperCase().trim();
+                return !!doc.id_doc_file && (status === 'UPLOADED' || status === 'REJECTED');
+            });
+            $('#valsal-doc-approve-all-btn')
+                .data('cluster-id', clusterId)
+                .toggleClass('d-none', !canApproveAll);
         }
 
         function syncClusterMeta($container) {
@@ -1860,6 +1927,8 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                 syncClusterMeta($(this));
                 $(this).find('.create-doc-input').val('');
                 $(this).find('.create-doc-file-name').text('Belum ada file dipilih');
+                $(this).find('.js-create-doc-not-required').prop('checked', false);
+                $(this).find('.create-doc-input').prop('disabled', false).prop('required', true);
                 updateValsalCreateSubmitState();
             }).on('hidden.bs.modal', function () {
                 var $citySelect = $(this).find('.js-valsal-city-selector');
@@ -1874,6 +1943,11 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             });
 
             $(document).on('change', '.create-doc-input', function () {
+                updateValsalCreateSubmitState();
+            });
+
+            $(document).on('change', '.js-create-doc-not-required', function () {
+                syncValsalCreateNoDocumentState($(this).data('doc-item-id'));
                 updateValsalCreateSubmitState();
             });
 
@@ -1955,6 +2029,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                 currentValsalDetailClusterId = Number(documents.length ? (documents[0].id_myrep_cluster || 0) : 0);
                 $('#valsal-doc-detail-cluster-name').text($button.data('cluster_name') || '-');
                 $('#valsal-doc-detail-body').html(renderValsalDocDetailRows(documents));
+                syncValsalDetailFooterButtons(currentValsalDetailClusterId, documents);
             });
 
             $(document).on('click', '.js-history-doc', function () {
@@ -1996,6 +2071,47 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                 $('#history_doc_list').html(html);
             });
 
+            $(document).on('click', '#valsal-doc-approve-all-btn', function () {
+                var clusterId = Number($(this).data('cluster-id') || currentValsalDetailClusterId || 0);
+                var $button = $(this);
+
+                if (clusterId <= 0) {
+                    alert('Cluster dokumen VALSAL tidak valid.');
+                    return;
+                }
+
+                if (!window.confirm('Approve semua dokumen yang masih menunggu review untuk cluster ini?')) {
+                    return;
+                }
+
+                $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Approving...');
+
+                $.ajax({
+                    url: valsalApproveAllUrl,
+                    type: 'POST',
+                    data: { cluster_id: clusterId },
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function (response) {
+                        if (response && response.status && response.data) {
+                            currentValsalDetailClusterId = Number(response.data.cluster_id || clusterId);
+                            $('#valsal-doc-detail-cluster-name').text(response.data.cluster_name || '-');
+                            $('#valsal-doc-detail-body').html(renderValsalDocDetailRows(response.data.documents || []));
+                            syncValsalDetailFooterButtons(currentValsalDetailClusterId, response.data.documents || []);
+                            return;
+                        }
+
+                        alert(response && response.message ? response.message : 'Approve semua dokumen gagal.');
+                        $button.prop('disabled', false).html('<i class="fas fa-check-double mr-1"></i> Approve All');
+                    },
+                    error: function () {
+                        alert('Approve semua dokumen gagal. Silakan coba lagi.');
+                        $button.prop('disabled', false).html('<i class="fas fa-check-double mr-1"></i> Approve All');
+                    }
+                });
+            });
+
             $(document).on('change', '#upload_doc_not_required', function () {
                 var checked = $(this).is(':checked');
                 $('#valsal-upload-file-input').prop('disabled', checked).prop('required', !checked);
@@ -2014,6 +2130,12 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         return;
                     }
 
+                    var docItemId = $(this).data('doc-item-id');
+                    var isNotRequired = $('.js-create-doc-not-required[data-doc-item-id="' + docItemId + '"]').is(':checked');
+                    if (isNotRequired) {
+                        return;
+                    }
+
                     var fileInput = this;
                     var hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
                     if (!hasFile) {
@@ -2023,7 +2145,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
 
                 if (missingDocName) {
                     e.preventDefault();
-                    alert('File ' + missingDocName + ' wajib diupload saat input VALSAL.');
+                    alert('File ' + missingDocName + ' wajib diupload atau tandai tidak dibutuhkan saat input VALSAL.');
                 }
             });
 
@@ -2116,6 +2238,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                             currentValsalDetailClusterId = Number(response.data.cluster_id || currentValsalDetailClusterId || 0);
                             $('#valsal-doc-detail-cluster-name').text(response.data.cluster_name || '-');
                             $('#valsal-doc-detail-body').html(renderValsalDocDetailRows(response.data.documents || []));
+                            syncValsalDetailFooterButtons(currentValsalDetailClusterId, response.data.documents || []);
                             return;
                         }
 

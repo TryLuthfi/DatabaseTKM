@@ -33,6 +33,24 @@ class MBAK_MyRep extends CI_Model
         return true;
     }
 
+    public function wilayahTablesReady()
+    {
+        $requiredTables = [
+            'md_provinsi_indonesia',
+            'md_kokab_indonesia',
+            'md_kec_indonesia',
+            'md_dusun_indonesia',
+        ];
+
+        foreach ($requiredTables as $tableName) {
+            if (!$this->db->table_exists($tableName)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function bakDocumentTablesReady()
     {
         $requiredTables = [
@@ -75,14 +93,72 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
+        if (!$this->wilayahTablesReady()) {
+            $options = [];
+            foreach ($rows as $row) {
+                $cityKey = strtoupper(trim((string) ($row['city_name'] ?? '')));
+                if ($cityKey === '' || isset($options[$cityKey])) {
+                    continue;
+                }
+
+                $row['display_city_name'] = (string) ($row['city_name'] ?? '');
+                $row['match_city_name'] = (string) ($row['city_name'] ?? '');
+                $options[$cityKey] = $row;
+            }
+
+            return array_values($options);
+        }
+
+        $provinceRows = $this->db
+            ->select('id, name')
+            ->from('md_provinsi_indonesia')
+            ->get()
+            ->result_array();
+        $regencies = $this->db
+            ->select('id, province_id, name')
+            ->from('md_kokab_indonesia')
+            ->order_by('name', 'ASC')
+            ->get()
+            ->result_array();
+
         $options = [];
         foreach ($rows as $row) {
             $cityKey = strtoupper(trim((string) ($row['city_name'] ?? '')));
-            if ($cityKey === '' || isset($options[$cityKey])) {
+            if ($cityKey === '') {
                 continue;
             }
 
-            $options[$cityKey] = $row;
+            if (!isset($options[$cityKey . '|BASE'])) {
+                $baseRow = $row;
+                $baseRow['display_city_name'] = (string) ($row['city_name'] ?? '');
+                $baseRow['match_city_name'] = (string) ($row['city_name'] ?? '');
+                $options[$cityKey . '|BASE'] = $baseRow;
+            }
+
+            $provinceNormalized = $this->normalizeWilayahName((string) ($row['province_name'] ?? ''));
+            if ($provinceNormalized === '' || $cityKey !== $provinceNormalized) {
+                continue;
+            }
+
+            $matchedRegencies = $this->matchRegenciesByTargetRow($row, $regencies, $provinceRows);
+            foreach ($matchedRegencies as $regencyRow) {
+                $regencyName = trim((string) ($regencyRow['name'] ?? ''));
+                $regencyId = trim((string) ($regencyRow['id'] ?? ''));
+                if ($regencyName === '' || $regencyId === '') {
+                    continue;
+                }
+
+                $optionKey = $cityKey . '|REGENCY|' . $regencyId;
+                if (isset($options[$optionKey])) {
+                    continue;
+                }
+
+                $expandedRow = $row;
+                $expandedRow['display_city_name'] = $regencyName;
+                $expandedRow['match_city_name'] = $regencyName;
+                $expandedRow['regency_id'] = $regencyId;
+                $options[$optionKey] = $expandedRow;
+            }
         }
 
         return array_values($options);
@@ -121,6 +197,8 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
+        $clusterLocationSelect = $this->buildClusterLocationSelect();
+
         $this->db
             ->select('
                 c.id_myrep_cluster,
@@ -130,7 +208,7 @@ class MBAK_MyRep extends CI_Model
                 c.cluster_code,
                 c.regional_name,
                 c.province_name,
-                c.city_name,
+                c.city_name' . $clusterLocationSelect . ',
                 c.team_name,
                 c.chief,
                 c.rpm,
@@ -520,6 +598,238 @@ class MBAK_MyRep extends CI_Model
 
         $this->refreshPackageStatus($packageId);
         return $fileId;
+    }
+
+    public function getDistrictById($districtId)
+    {
+        if (!$this->wilayahTablesReady() || trim((string) $districtId) === '') {
+            return [];
+        }
+
+        return $this->db
+            ->get_where('md_kec_indonesia', ['id' => trim((string) $districtId)])
+            ->row_array();
+    }
+
+    public function getVillageById($villageId)
+    {
+        if (!$this->wilayahTablesReady() || trim((string) $villageId) === '') {
+            return [];
+        }
+
+        return $this->db
+            ->get_where('md_dusun_indonesia', ['id' => trim((string) $villageId)])
+            ->row_array();
+    }
+
+    public function searchDistrictOptionsByTarget($targetId, $keyword = '', $limit = 50, $cityNameOverride = '')
+    {
+        $target = $this->getTargetById((int) $targetId);
+        if (!$this->wilayahTablesReady() || empty($target)) {
+            return [];
+        }
+
+        $cityNameOverride = trim((string) $cityNameOverride);
+        if ($cityNameOverride !== '') {
+            $target['city_name'] = $cityNameOverride;
+        }
+
+        $provinceRows = $this->db
+            ->select('id, name')
+            ->from('md_provinsi_indonesia')
+            ->get()
+            ->result_array();
+
+        $regencies = $this->db
+            ->select('id, province_id, name')
+            ->from('md_kokab_indonesia')
+            ->order_by('name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $matchedRegencies = $this->matchRegenciesByTargetRow($target, $regencies, $provinceRows);
+        $regencyIds = array_values(array_filter(array_map(static function ($row) {
+            return (string) ($row['id'] ?? '');
+        }, $matchedRegencies)));
+
+        if (empty($regencyIds)) {
+            return [];
+        }
+
+        $this->db
+            ->select('d.id, d.regency_id, d.name, r.name AS regency_name')
+            ->from('md_kec_indonesia d')
+            ->join('md_kokab_indonesia r', 'r.id = d.regency_id', 'left')
+            ->where_in('d.regency_id', $regencyIds);
+
+        $keyword = trim((string) $keyword);
+        if ($keyword !== '') {
+            $this->db->like('d.name', $keyword);
+        }
+
+        return $this->db
+            ->order_by('d.name', 'ASC')
+            ->limit((int) $limit)
+            ->get()
+            ->result_array();
+    }
+
+    public function searchVillageOptionsByDistrict($districtId, $keyword = '', $limit = 50)
+    {
+        if (!$this->wilayahTablesReady() || trim((string) $districtId) === '') {
+            return [];
+        }
+
+        $this->db
+            ->select('id, district_id, name')
+            ->from('md_dusun_indonesia')
+            ->where('district_id', trim((string) $districtId));
+
+        $keyword = trim((string) $keyword);
+        if ($keyword !== '') {
+            $this->db->like('name', $keyword);
+        }
+
+        return $this->db
+            ->order_by('name', 'ASC')
+            ->limit((int) $limit)
+            ->get()
+            ->result_array();
+    }
+
+    private function matchRegenciesByTargetRow($target, $regencies, $provinceRows)
+    {
+        if (empty($target) || !$this->wilayahTablesReady()) {
+            return [];
+        }
+
+        $provinceName = trim((string) ($target['province_name'] ?? ''));
+        $cityName = trim((string) ($target['city_name'] ?? ''));
+        if ($provinceName === '' || $cityName === '') {
+            return [];
+        }
+
+        $provinceId = '';
+        $normalizedProvince = $this->normalizeWilayahName($provinceName);
+        foreach ($provinceRows as $provinceRow) {
+            if ($this->normalizeWilayahName((string) ($provinceRow['name'] ?? '')) === $normalizedProvince) {
+                $provinceId = (string) ($provinceRow['id'] ?? '');
+                break;
+            }
+        }
+
+        if ($provinceId === '') {
+            return $this->matchRegenciesByNormalizedCity($cityName, $regencies);
+        }
+
+        $targetNormalized = $this->normalizeWilayahName($cityName);
+        if ($targetNormalized === $normalizedProvince) {
+            return array_values(array_filter($regencies, static function ($regencyRow) use ($provinceId) {
+                return (string) ($regencyRow['province_id'] ?? '') === (string) $provinceId;
+            }));
+        }
+
+        $matched = [];
+        foreach ($regencies as $regencyRow) {
+            if ((string) ($regencyRow['province_id'] ?? '') !== $provinceId) {
+                continue;
+            }
+            $regencyNormalized = $this->normalizeWilayahName((string) ($regencyRow['name'] ?? ''));
+            if ($this->isWilayahMatch($targetNormalized, $regencyNormalized)) {
+                $matched[] = $regencyRow;
+            }
+        }
+
+        if (empty($matched)) {
+            return $this->matchRegenciesByNormalizedCity($cityName, $regencies);
+        }
+
+        return $matched;
+    }
+
+    private function matchRegenciesByNormalizedCity($cityName, $regencies)
+    {
+        $targetNormalized = $this->normalizeWilayahName($cityName);
+        if ($targetNormalized === '') {
+            return [];
+        }
+
+        $matched = [];
+        foreach ($regencies as $regencyRow) {
+            $regencyNormalized = $this->normalizeWilayahName((string) ($regencyRow['name'] ?? ''));
+            if ($this->isWilayahMatch($targetNormalized, $regencyNormalized)) {
+                $matched[] = $regencyRow;
+            }
+        }
+
+        return $matched;
+    }
+
+    private function normalizeWilayahName($value)
+    {
+        $value = strtoupper(trim((string) $value));
+        $value = preg_replace('/\b(KABUPATEN|KOTA|KAB\.?|ADM\.?|ADMINISTRASI)\b/u', ' ', $value);
+        $value = preg_replace('/[^A-Z0-9]+/u', ' ', $value);
+        $value = preg_replace('/\s+/u', ' ', trim($value));
+        return $value;
+    }
+
+    private function isWilayahMatch($targetNormalized, $candidateNormalized)
+    {
+        $targetNormalized = trim((string) $targetNormalized);
+        $candidateNormalized = trim((string) $candidateNormalized);
+
+        if ($targetNormalized === '' || $candidateNormalized === '') {
+            return false;
+        }
+
+        if ($targetNormalized === $candidateNormalized) {
+            return true;
+        }
+
+        $targetTokens = preg_split('/\s+/', $targetNormalized);
+        $candidateTokens = preg_split('/\s+/', $candidateNormalized);
+        if (empty($targetTokens) || empty($candidateTokens)) {
+            return false;
+        }
+
+        if (count($candidateTokens) >= count($targetTokens)) {
+            $candidateTail = array_slice($candidateTokens, -count($targetTokens));
+            if (implode(' ', $candidateTail) === implode(' ', $targetTokens)) {
+                return true;
+            }
+        }
+
+        if (count($targetTokens) >= count($candidateTokens)) {
+            $targetTail = array_slice($targetTokens, -count($candidateTokens));
+            if (implode(' ', $targetTail) === implode(' ', $candidateTokens)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function buildClusterLocationSelect()
+    {
+        $locationColumns = [
+            'regency_id',
+            'district_id',
+            'district_name',
+            'village_id',
+            'village_name',
+        ];
+
+        $selectParts = [];
+        foreach ($locationColumns as $columnName) {
+            if ($this->db->field_exists($columnName, 'tb_myrep_cluster')) {
+                $selectParts[] = 'c.' . $columnName;
+            } else {
+                $selectParts[] = 'NULL AS ' . $columnName;
+            }
+        }
+
+        return ', ' . implode(', ', $selectParts);
     }
 
     public function updateBakFileStatus($fileId, $data)

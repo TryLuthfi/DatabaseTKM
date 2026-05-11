@@ -248,8 +248,8 @@ class Myrep_notification_service
             $nominalPerHomepass = (float) ($payload['nominal_per_homepass'] ?? 0);
 
             return [
-                'ðŸ’° ' . $this->escapeTelegramText('Total Pengajuan Donasi: ' . $this->formatRupiah($donationTotal)),
-                'ðŸ§® ' . $this->escapeTelegramText('Nominal per Homepass: ' . $this->formatRupiah($nominalPerHomepass)),
+                '💲 ' . $this->escapeTelegramText('Total Pengajuan Donasi: ' . $this->formatRupiah($donationTotal)),
+                '🏠 ' . $this->escapeTelegramText('Nominal per Homepass: ' . $this->formatRupiah($nominalPerHomepass)),
                 '',
             ];
         }

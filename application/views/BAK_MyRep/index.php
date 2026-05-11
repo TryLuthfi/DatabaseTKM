@@ -183,6 +183,10 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                     data-id_target="<?= (int) ($row['id_target'] ?? 0) ?>"
                     data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
                     data-cluster_code="<?= htmlspecialchars((string) ($row['cluster_code'] ?? ''), ENT_QUOTES) ?>"
+                    data-district_id="<?= htmlspecialchars((string) ($row['district_id'] ?? ''), ENT_QUOTES) ?>"
+                    data-district_name="<?= htmlspecialchars((string) ($row['district_name'] ?? ''), ENT_QUOTES) ?>"
+                    data-village_id="<?= htmlspecialchars((string) ($row['village_id'] ?? ''), ENT_QUOTES) ?>"
+                    data-village_name="<?= htmlspecialchars((string) ($row['village_name'] ?? ''), ENT_QUOTES) ?>"
                     data-homepass_bak="<?= (int) ($row['homepass_bak'] ?? 0) ?>"
                     data-ba_open_date="<?= htmlspecialchars((string) ($row['ba_open_date'] ?? ''), ENT_QUOTES) ?>"
                     data-bak_date="<?= htmlspecialchars((string) ($row['bak_date'] ?? ''), ENT_QUOTES) ?>"
@@ -525,12 +529,13 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
-                                    <label>Kota</label>
-                                    <select name="id_target" class="form-control js-bak-target-selector js-bak-city-select" required>
-                                        <option value="">Pilih target kota</option>
+                                    <label>Kab / Kota</label>
+                                    <input type="hidden" name="id_target" class="js-bak-target-id" value="">
+                                    <select class="form-control js-bak-target-selector js-bak-city-select" required>
+                                        <option value="">Pilih target Kab / Kota</option>
                                         <?php foreach ($createTargetOptions as $targetOption): ?>
-                                            <option value="<?= (int) $targetOption['id_target'] ?>" data-regional_name="<?= htmlspecialchars((string) ($targetOption['regional_name'] ?? ''), ENT_QUOTES) ?>" data-province_name="<?= htmlspecialchars((string) ($targetOption['province_name'] ?? ''), ENT_QUOTES) ?>" data-city_name="<?= htmlspecialchars((string) ($targetOption['city_name'] ?? ''), ENT_QUOTES) ?>">
-                                                <?= htmlspecialchars((string) ($targetOption['city_name'] ?? '-')) ?>
+                                            <option value="<?= (int) ($targetOption['id_target'] ?? 0) ?>" data-target_id="<?= (int) ($targetOption['id_target'] ?? 0) ?>" data-regional_name="<?= htmlspecialchars((string) ($targetOption['regional_name'] ?? ''), ENT_QUOTES) ?>" data-province_name="<?= htmlspecialchars((string) ($targetOption['province_name'] ?? ''), ENT_QUOTES) ?>" data-city_name="<?= htmlspecialchars((string) ($targetOption['display_city_name'] ?? $targetOption['city_name'] ?? ''), ENT_QUOTES) ?>" data-match_city_name="<?= htmlspecialchars((string) ($targetOption['match_city_name'] ?? $targetOption['city_name'] ?? ''), ENT_QUOTES) ?>">
+                                                <?= htmlspecialchars((string) ($targetOption['display_city_name'] ?? $targetOption['city_name'] ?? '-')) ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -538,7 +543,23 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                             </div>
                             <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" class="form-control js-target-regional" readonly></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" class="form-control js-target-province" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Kota</label><input type="text" class="form-control js-target-city" readonly></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>Kab / Kota</label><input type="text" class="form-control js-target-city" readonly></div></div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Kecamatan</label>
+                                    <select name="district_id" class="form-control js-bak-district-select">
+                                        <option value="">Pilih Kecamatan</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Desa / Kelurahan</label>
+                                    <select name="village_id" class="form-control js-bak-village-select">
+                                        <option value="">Pilih Desa / Kelurahan</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div class="col-md-8"><div class="form-group"><label>Nama Cluster</label><input type="text" name="cluster_name" class="form-control" required></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Kode Cluster</label><input type="text" name="cluster_code" class="form-control"></div></div>
                             <div class="col-md-4"><div class="form-group"><label>HP Estimasi</label><input type="number" name="homepass_bak" min="1" class="form-control" required></div></div>
@@ -554,24 +575,29 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                     </div>
                                 </div>
                                 <?php foreach ($bakDocumentDefinitions as $documentDefinition): ?>
+                                    <?php $docItemId = (int) $documentDefinition['id_doc_item']; ?>
                                     <div class="col-md-12">
                                         <div class="doc-modal-panel">
                                             <div class="form-group mb-3">
                                                 <label class="font-weight-bold d-block"><?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></label>
-                                                <div class="upload-dropzone create-doc-dropzone" id="bak-create-dropzone-<?= (int) $documentDefinition['id_doc_item'] ?>">
-                                                    <input type="file" name="create_file_<?= (int) $documentDefinition['id_doc_item'] ?>" class="create-doc-input" id="bak-create-file-<?= (int) $documentDefinition['id_doc_item'] ?>" data-doc-name="<?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-'), ENT_QUOTES) ?>" required>
+                                                <div class="upload-dropzone create-doc-dropzone" id="bak-create-dropzone-<?= $docItemId ?>">
+                                                    <input type="file" name="create_file_<?= $docItemId ?>" class="create-doc-input" id="bak-create-file-<?= $docItemId ?>" data-doc-name="<?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-'), ENT_QUOTES) ?>" data-doc-item-id="<?= $docItemId ?>" required>
                                                     <div class="upload-dropzone-content">
                                                         <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                                                         <div class="upload-dropzone-title">Drag & drop <?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? 'dokumen')) ?></div>
                                                         <div class="upload-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
-                                                        <div class="upload-dropzone-file create-doc-file-name" id="bak-create-file-name-<?= (int) $documentDefinition['id_doc_item'] ?>">Belum ada file dipilih</div>
+                                                        <div class="upload-dropzone-file create-doc-file-name" id="bak-create-file-name-<?= $docItemId ?>">Belum ada file dipilih</div>
                                                     </div>
                                                 </div>
                                                 <small class="text-muted d-block mt-2">Format: pdf, doc, docx, xls, xlsx, jpg, jpeg, png. Maksimal 30 MB.</small>
                                             </div>
+                                            <div class="form-group form-check mb-3">
+                                                <input type="checkbox" class="form-check-input js-create-doc-not-required" id="bak-create-not-required-<?= $docItemId ?>" name="create_is_document_not_required_<?= $docItemId ?>" value="1" data-doc-item-id="<?= $docItemId ?>">
+                                                <label class="form-check-label" for="bak-create-not-required-<?= $docItemId ?>">Tidak butuh dokument</label>
+                                            </div>
                                             <div class="form-group mb-0">
                                                 <label class="font-weight-bold">Remark <?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></label>
-                                                <textarea name="create_doc_remark_<?= (int) $documentDefinition['id_doc_item'] ?>" rows="2" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
+                                                <textarea name="create_doc_remark_<?= $docItemId ?>" rows="2" class="form-control" placeholder="Catatan upload jika diperlukan"></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -609,12 +635,13 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">
-                                    <label>Kota</label>
-                                    <select name="id_target" id="edit_id_target" class="form-control js-bak-target-selector js-bak-edit-city-select" required>
-                                        <option value="">Pilih target kota</option>
-                                        <?php foreach ($targetOptions as $targetOption): ?>
-                                            <option value="<?= (int) $targetOption['id_target'] ?>" data-regional_name="<?= htmlspecialchars((string) ($targetOption['regional_name'] ?? ''), ENT_QUOTES) ?>" data-province_name="<?= htmlspecialchars((string) ($targetOption['province_name'] ?? ''), ENT_QUOTES) ?>" data-city_name="<?= htmlspecialchars((string) ($targetOption['city_name'] ?? ''), ENT_QUOTES) ?>">
-                                                <?= htmlspecialchars((string) ($targetOption['city_name'] ?? '-')) ?>
+                                    <label>Kab / Kota</label>
+                                    <input type="hidden" name="id_target" id="edit_id_target" class="js-bak-target-id" value="">
+                                    <select id="edit_regency_selector" class="form-control js-bak-target-selector js-bak-edit-city-select" required>
+                                        <option value="">Pilih target Kab / Kota</option>
+                                        <?php foreach ($createTargetOptions as $targetOption): ?>
+                                            <option value="<?= (int) ($targetOption['id_target'] ?? 0) ?>" data-target_id="<?= (int) ($targetOption['id_target'] ?? 0) ?>" data-regional_name="<?= htmlspecialchars((string) ($targetOption['regional_name'] ?? ''), ENT_QUOTES) ?>" data-province_name="<?= htmlspecialchars((string) ($targetOption['province_name'] ?? ''), ENT_QUOTES) ?>" data-city_name="<?= htmlspecialchars((string) ($targetOption['display_city_name'] ?? $targetOption['city_name'] ?? ''), ENT_QUOTES) ?>" data-match_city_name="<?= htmlspecialchars((string) ($targetOption['match_city_name'] ?? $targetOption['city_name'] ?? ''), ENT_QUOTES) ?>">
+                                                <?= htmlspecialchars((string) ($targetOption['display_city_name'] ?? $targetOption['city_name'] ?? '-')) ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -622,7 +649,23 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                             </div>
                             <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" class="form-control js-target-regional" readonly></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" class="form-control js-target-province" readonly></div></div>
-                            <div class="col-md-4"><div class="form-group"><label>Kota</label><input type="text" class="form-control js-target-city" readonly></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>Kab / Kota</label><input type="text" class="form-control js-target-city" readonly></div></div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Kecamatan</label>
+                                    <select name="district_id" id="edit_district_id" class="form-control js-bak-district-select">
+                                        <option value="">Pilih Kecamatan</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Desa / Kelurahan</label>
+                                    <select name="village_id" id="edit_village_id" class="form-control js-bak-village-select">
+                                        <option value="">Pilih Desa / Kelurahan</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div class="col-md-8"><div class="form-group"><label>Nama Cluster</label><input type="text" name="cluster_name" id="edit_cluster_name" class="form-control" required></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Kode Cluster</label><input type="text" name="cluster_code" id="edit_cluster_code" class="form-control"></div></div>
                             <div class="col-md-4"><div class="form-group"><label>HP Estimasi</label><input type="number" name="homepass_bak" id="edit_homepass_bak" min="1" class="form-control" required></div></div>
@@ -680,6 +723,14 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         </div>
                     </div>
                     <div class="modal-footer budget-modal__footer">
+                        <a href="#" target="_blank" class="btn budget-btn budget-btn--ghost d-none" id="bak-doc-download-bundle-btn">
+                            <i class="fas fa-file-archive mr-1"></i> Download RAR
+                        </a>
+                        <?php if ($canApprove): ?>
+                            <button type="button" class="btn budget-btn budget-btn--success d-none" id="bak-doc-approve-all-btn">
+                                <i class="fas fa-check-double mr-1"></i> Approve All
+                            </button>
+                        <?php endif; ?>
                         <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
                     </div>
                 </div>
@@ -1444,8 +1495,13 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
 <script>
     (function () {
         var bakApproveUrl = '<?= base_url('BAK_MyRep/approveDocument') ?>';
+        var bakApproveAllUrl = '<?= base_url('BAK_MyRep/approveAllDocuments') ?>';
         var bakRejectUrl = '<?= base_url('BAK_MyRep/rejectDocument') ?>';
         var bakPreviewBaseUrl = '<?= base_url('BAK_MyRep/previewDocument/') ?>';
+        var bakDownloadBaseUrl = '<?= base_url('BAK_MyRep/downloadDocument/') ?>';
+        var bakDownloadBundleBaseUrl = '<?= base_url('BAK_MyRep/downloadDocumentBundle/') ?>';
+        var bakDistrictOptionsUrl = '<?= base_url('BAK_MyRep/getDistrictOptions') ?>';
+        var bakVillageOptionsUrl = '<?= base_url('BAK_MyRep/getVillageOptions') ?>';
         var currentBakDetailClusterId = 0;
 
         function getBakStatusBadgeClass(statusLabel) {
@@ -1492,6 +1548,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                     fileSection =
                         '<div class="small text-muted mb-1">' + escapeHtml(doc.file_name || '-') + '</div>' +
                         '<a href="' + bakPreviewBaseUrl + Number(doc.id_doc_file) + '" target="_blank" class="btn btn-sm btn-outline-secondary mr-1">Preview</a>' +
+                        '<a href="' + bakDownloadBaseUrl + Number(doc.id_doc_file) + '" class="btn btn-sm btn-outline-primary mr-1">Download</a>' +
                         '<button type="button" class="btn btn-sm btn-outline-dark js-history-doc" data-toggle="modal" data-target="#modal-bak-history-doc" data-cluster_name="' + escapeHtml(doc.cluster_name || '') + '" data-doc_name="' + docName + '" data-history="' + escapeHtml(JSON.stringify(doc.history || [])) + '">History</button>';
                 }
 
@@ -1563,6 +1620,87 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 allowClear: true,
                 dropdownParent: $modal
             });
+        }
+
+        function initBakDistrictSelect($modal) {
+            var $select = $modal.find('.js-bak-district-select');
+            if (!$select.length || !$.fn.select2) {
+                return;
+            }
+
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.select2('destroy');
+            }
+
+            $select.select2({
+                width: '100%',
+                placeholder: 'Pilih Kecamatan',
+                allowClear: true,
+                dropdownParent: $modal,
+                ajax: {
+                    url: bakDistrictOptionsUrl,
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        var targetId = $modal.find('.js-bak-target-selector').val() || '';
+                        var cityName = '';
+                        var $selectedOption = $modal.find('.js-bak-target-selector option:selected');
+                        if ($selectedOption.length) {
+                            cityName = ($selectedOption.data('match_city_name') || $selectedOption.data('city_name') || '').toString();
+                        }
+                        return {
+                            q: params.term || '',
+                            target_id: targetId,
+                            city_name: cityName
+                        };
+                    },
+                    processResults: function (data) {
+                        return { results: data && data.results ? data.results : [] };
+                    }
+                }
+            });
+        }
+
+        function initBakVillageSelect($modal) {
+            var $select = $modal.find('.js-bak-village-select');
+            if (!$select.length || !$.fn.select2) {
+                return;
+            }
+
+            if ($select.hasClass('select2-hidden-accessible')) {
+                $select.select2('destroy');
+            }
+
+            $select.select2({
+                width: '100%',
+                placeholder: 'Pilih Desa / Kelurahan',
+                allowClear: true,
+                dropdownParent: $modal,
+                ajax: {
+                    url: bakVillageOptionsUrl,
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        var districtId = $modal.find('.js-bak-district-select').val() || '';
+                        return {
+                            q: params.term || '',
+                            district_id: districtId
+                        };
+                    },
+                    processResults: function (data) {
+                        return { results: data && data.results ? data.results : [] };
+                    }
+                }
+            });
+        }
+
+        function populateSelect2Option($select, value, text) {
+            if (!$select.length) {
+                return;
+            }
+
+            $select.find('option').remove();
+            $select.append(new Option(text || '', value || '', true, true)).trigger('change');
         }
 
         function handleBakFlashAlerts() {
@@ -1642,7 +1780,10 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
 
             var allReady = true;
             inputs.forEach(function (input) {
-                if (!input.files || !input.files.length) {
+                var docItemId = input.getAttribute('data-doc-item-id') || '';
+                var checkbox = docItemId ? form.querySelector('.js-create-doc-not-required[data-doc-item-id="' + docItemId + '"]') : null;
+                var isNotRequired = checkbox ? checkbox.checked : false;
+                if (!isNotRequired && (!input.files || !input.files.length)) {
                     allReady = false;
                 }
             });
@@ -1650,12 +1791,53 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
             submitButton.disabled = !allReady;
         }
 
+        function syncBakCreateNoDocumentState(docItemId) {
+            var checkbox = document.querySelector('.js-create-doc-not-required[data-doc-item-id="' + docItemId + '"]');
+            var input = document.getElementById('bak-create-file-' + docItemId);
+            var label = document.getElementById('bak-create-file-name-' + docItemId);
+
+            if (!checkbox || !input || !label) {
+                return;
+            }
+
+            if (checkbox.checked) {
+                input.value = '';
+                input.disabled = true;
+                input.required = false;
+                label.textContent = 'File tidak diperlukan untuk item ini';
+            } else {
+                input.disabled = false;
+                input.required = true;
+                label.textContent = (input.files && input.files.length > 0)
+                    ? input.files[0].name
+                    : 'Belum ada file dipilih';
+            }
+        }
+
         function syncTargetMeta($container) {
             var $select = $container.find('.js-bak-target-selector').first();
             var $selected = $select.find('option:selected');
+            $container.find('.js-bak-target-id').val($selected.data('target_id') || '');
             $container.find('.js-target-regional').val($selected.data('regional_name') || '');
             $container.find('.js-target-province').val($selected.data('province_name') || '');
             $container.find('.js-target-city').val($selected.data('city_name') || '');
+        }
+
+        function syncBakDetailFooterButtons(clusterId, documents) {
+            var hasPhysicalFiles = clusterId > 0 && (documents || []).some(function (doc) {
+                return !!doc.file_path;
+            });
+            $('#bak-doc-download-bundle-btn')
+                .attr('href', bakDownloadBundleBaseUrl + clusterId)
+                .toggleClass('d-none', !hasPhysicalFiles);
+
+            var canApproveAll = clusterId > 0 && (documents || []).some(function (doc) {
+                var status = String(doc.status_file || '').toUpperCase().trim();
+                return !!doc.id_doc_file && (status === 'UPLOADED' || status === 'REJECTED');
+            });
+            $('#bak-doc-approve-all-btn')
+                .data('cluster-id', clusterId)
+                .toggleClass('d-none', !canApproveAll);
         }
 
         $(function () {
@@ -1691,9 +1873,15 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
 
             $('#modal-bak-create').on('shown.bs.modal', function () {
                 initBakCitySelect('#modal-bak-create', '.js-bak-city-select');
+                initBakDistrictSelect($(this));
+                initBakVillageSelect($(this));
                 syncTargetMeta($(this));
                 $(this).find('.create-doc-input').val('');
                 $(this).find('.create-doc-file-name').text('Belum ada file dipilih');
+                $(this).find('.js-create-doc-not-required').prop('checked', false);
+                $(this).find('.create-doc-input').prop('disabled', false).prop('required', true);
+                $(this).find('.js-bak-district-select').val(null).trigger('change');
+                $(this).find('.js-bak-village-select').val(null).trigger('change');
                 updateBakCreateSubmitState();
 
                 window.setTimeout(function () {
@@ -1708,6 +1896,8 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
 
             $('#modal-bak-edit').on('shown.bs.modal', function () {
                 initBakCitySelect('#modal-bak-edit', '.js-bak-edit-city-select');
+                initBakDistrictSelect($(this));
+                initBakVillageSelect($(this));
             }).on('hidden.bs.modal', function () {
                 var $select = $(this).find('.js-bak-edit-city-select');
                 if ($select.hasClass('select2-hidden-accessible')) {
@@ -1719,12 +1909,29 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 updateBakCreateSubmitState();
             });
 
+            $(document).on('change', '.js-bak-target-selector', function () {
+                var $container = $(this).closest('.modal-body, .modal-content');
+                $container.find('.js-bak-district-select').val(null).trigger('change');
+                $container.find('.js-bak-village-select').val(null).trigger('change');
+            });
+
+            $(document).on('change', '.js-bak-district-select', function () {
+                var $container = $(this).closest('.modal-body, .modal-content');
+                $container.find('.js-bak-village-select').val(null).trigger('change');
+            });
+
+            $(document).on('change', '.js-create-doc-not-required', function () {
+                syncBakCreateNoDocumentState($(this).data('doc-item-id'));
+                updateBakCreateSubmitState();
+            });
+
             $(document).on('click', '.js-edit-bak', function () {
                 var $button = $(this);
                 var $modal = $('#modal-bak-edit');
 
                 $modal.find('#edit_id_myrep_cluster').val($button.data('id_myrep_cluster'));
-                $modal.find('#edit_id_target').val($button.data('id_target')).trigger('change.select2');
+                $modal.find('#edit_id_target').val($button.data('id_target'));
+                $modal.find('#edit_regency_selector').val($button.data('id_target')).trigger('change.select2');
                 $modal.find('#edit_cluster_name').val($button.data('cluster_name'));
                 $modal.find('#edit_cluster_code').val($button.data('cluster_code'));
                 $modal.find('#edit_homepass_bak').val($button.data('homepass_bak'));
@@ -1732,6 +1939,8 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 $modal.find('#edit_bak_date').val($button.data('bak_date'));
                 $modal.find('#edit_status_bak').val($button.data('status_bak'));
                 $modal.find('#edit_remark_bak').val($button.data('remark_bak'));
+                populateSelect2Option($modal.find('#edit_district_id'), $button.data('district_id') || '', $button.data('district_name') || '');
+                populateSelect2Option($modal.find('#edit_village_id'), $button.data('village_id') || '', $button.data('village_name') || '');
 
                 syncTargetMeta($modal);
             });
@@ -1790,6 +1999,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 currentBakDetailClusterId = Number(documents.length ? (documents[0].id_myrep_cluster || 0) : 0);
                 $('#bak-doc-detail-cluster-name').text($button.data('cluster_name') || '-');
                 $('#bak-doc-detail-body').html(renderBakDocDetailRows(documents));
+                syncBakDetailFooterButtons(currentBakDetailClusterId, documents);
             });
 
             $(document).on('click', '.js-approve-doc', function () {
@@ -1845,6 +2055,47 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 $('#history_doc_list').html(html);
             });
 
+            $(document).on('click', '#bak-doc-approve-all-btn', function () {
+                var clusterId = Number($(this).data('cluster-id') || currentBakDetailClusterId || 0);
+                var $button = $(this);
+
+                if (clusterId <= 0) {
+                    alert('Cluster dokumen BAK tidak valid.');
+                    return;
+                }
+
+                if (!window.confirm('Approve semua dokumen yang masih menunggu review untuk cluster ini?')) {
+                    return;
+                }
+
+                $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Approving...');
+
+                $.ajax({
+                    url: bakApproveAllUrl,
+                    type: 'POST',
+                    data: { cluster_id: clusterId },
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function (response) {
+                        if (response && response.status && response.data) {
+                            currentBakDetailClusterId = Number(response.data.cluster_id || clusterId);
+                            $('#bak-doc-detail-cluster-name').text(response.data.cluster_name || '-');
+                            $('#bak-doc-detail-body').html(renderBakDocDetailRows(response.data.documents || []));
+                            syncBakDetailFooterButtons(currentBakDetailClusterId, response.data.documents || []);
+                            return;
+                        }
+
+                        alert(response && response.message ? response.message : 'Approve semua dokumen gagal.');
+                        $button.prop('disabled', false).html('<i class="fas fa-check-double mr-1"></i> Approve All');
+                    },
+                    error: function () {
+                        alert('Approve semua dokumen gagal. Silakan coba lagi.');
+                        $button.prop('disabled', false).html('<i class="fas fa-check-double mr-1"></i> Approve All');
+                    }
+                });
+            });
+
             $(document).on('change', '#upload_doc_not_required', function () {
                 var checked = $(this).is(':checked');
                 $('#bak-upload-file-input').prop('disabled', checked).prop('required', !checked);
@@ -1863,6 +2114,12 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         return;
                     }
 
+                    var docItemId = $(this).data('doc-item-id');
+                    var isNotRequired = $('.js-create-doc-not-required[data-doc-item-id="' + docItemId + '"]').is(':checked');
+                    if (isNotRequired) {
+                        return;
+                    }
+
                     var fileInput = this;
                     var hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
                     if (!hasFile) {
@@ -1872,7 +2129,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
 
                 if (missingDocName) {
                     e.preventDefault();
-                    alert('File ' + missingDocName + ' wajib diupload saat input BAK.');
+                    alert('File ' + missingDocName + ' wajib diupload atau tandai tidak dibutuhkan saat input BAK.');
                 }
             });
 
@@ -1965,6 +2222,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                             currentBakDetailClusterId = Number(response.data.cluster_id || currentBakDetailClusterId || 0);
                             $('#bak-doc-detail-cluster-name').text(response.data.cluster_name || '-');
                             $('#bak-doc-detail-body').html(renderBakDocDetailRows(response.data.documents || []));
+                            syncBakDetailFooterButtons(currentBakDetailClusterId, response.data.documents || []);
                             return;
                         }
 

@@ -268,6 +268,75 @@ class MPost_Donasi_MyRep extends CI_Model
         return $result;
     }
 
+    public function saveLinkedReviewDecision($clusterId, $docItemId, $data)
+    {
+        if (!$this->documentTablesReady()) {
+            return 0;
+        }
+
+        $context = $this->getDocumentDetail($clusterId, $docItemId);
+        if (empty($context['id_doc_group'])) {
+            return 0;
+        }
+
+        $userId = (int) ($data['approved_by'] ?? 0);
+        $statusFile = strtoupper((string) ($data['status_file'] ?? ''));
+        if ($userId <= 0 || !in_array($statusFile, ['APPROVED', 'REJECTED'], true)) {
+            return 0;
+        }
+
+        $packageId = $this->ensurePackage($clusterId, (int) $context['id_doc_group'], $userId);
+        if ($packageId <= 0) {
+            return 0;
+        }
+
+        $existing = $this->db->get_where('tb_myrep_flow_doc_file', [
+            'id_doc_package' => $packageId,
+            'id_doc_item' => (int) $docItemId,
+        ])->row_array();
+
+        $payload = [
+            'file_name' => trim((string) ($data['file_name'] ?? '')) !== '' ? trim((string) $data['file_name']) : '[LINKED] ' . (string) ($context['doc_name'] ?? 'POST_DONASI'),
+            'file_path' => '',
+            'is_document_not_required' => 0,
+            'status_file' => $statusFile,
+            'remark' => (string) ($data['remark'] ?? ''),
+            'uploaded_by' => $userId,
+            'uploaded_at' => date('Y-m-d H:i:s'),
+            'approved_by' => $userId,
+            'reviewed_at' => date('Y-m-d H:i:s'),
+            'approved_at' => $statusFile === 'APPROVED' ? date('Y-m-d H:i:s') : null,
+        ];
+
+        if ($existing) {
+            $this->db->where('id_doc_file', (int) $existing['id_doc_file'])->update('tb_myrep_flow_doc_file', $payload);
+            $fileId = (int) $existing['id_doc_file'];
+        } else {
+            $payload['id_doc_package'] = $packageId;
+            $payload['id_doc_item'] = (int) $docItemId;
+            $this->db->insert('tb_myrep_flow_doc_file', $payload);
+            $fileId = (int) $this->db->insert_id();
+        }
+
+        if ($fileId <= 0) {
+            return 0;
+        }
+
+        $this->createFileLog([
+            'id_doc_file' => $fileId,
+            'id_doc_package' => $packageId,
+            'id_doc_item' => (int) $docItemId,
+            'action_type' => $statusFile === 'APPROVED' ? 'APPROVE' : 'REJECT',
+            'status_after' => $statusFile,
+            'file_name' => (string) $payload['file_name'],
+            'remark' => (string) ($data['remark'] ?? ''),
+            'action_by' => $userId,
+        ]);
+
+        $this->refreshPackageStatus($packageId);
+        return $fileId;
+    }
+
     public function getFileById($fileId)
     {
         if (!$this->documentTablesReady()) {
@@ -358,9 +427,6 @@ class MPost_Donasi_MyRep extends CI_Model
                 continue;
             }
 
-            if ($hasLinkedFile) {
-                $map[$clusterId]['approved']++;
-            }
         }
 
         return $map;

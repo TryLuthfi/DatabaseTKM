@@ -99,6 +99,8 @@ class MBatch_Approval_MyRep extends CI_Model
             return [];
         }
 
+        $clusterLocationSelect = $this->buildClusterLocationSelect('c');
+
         return $this->db
             ->select('
                 c.id_myrep_cluster,
@@ -114,6 +116,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 c.sm,
                 c.spv,
                 c.status_current,
+                ' . $clusterLocationSelect . ',
                 v.id_valsal,
                 v.valsal_date,
                 v.homepass_valsal,
@@ -140,6 +143,8 @@ class MBatch_Approval_MyRep extends CI_Model
             return [];
         }
 
+        $clusterLocationSelect = $this->buildClusterLocationSelect('c');
+
         $this->db
             ->select('
                 c.id_myrep_cluster,
@@ -155,6 +160,7 @@ class MBatch_Approval_MyRep extends CI_Model
                 c.sm,
                 c.spv,
                 c.status_current,
+                ' . $clusterLocationSelect . ',
                 c.created_at,
                 v.id_valsal,
                 v.valsal_date,
@@ -297,8 +303,10 @@ class MBatch_Approval_MyRep extends CI_Model
             return [];
         }
 
+        $clusterLocationSelect = $this->buildClusterLocationSelect('c');
+
         $row = $this->db
-            ->select('c.*, v.id_valsal, v.valsal_date, v.homepass_valsal, v.status_valsal, ba.*')
+            ->select('c.*,' . $clusterLocationSelect . ', v.id_valsal, v.valsal_date, v.homepass_valsal, v.status_valsal, ba.*', false)
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
@@ -322,6 +330,27 @@ class MBatch_Approval_MyRep extends CI_Model
         );
 
         return $row;
+    }
+
+    private function buildClusterLocationSelect($alias = 'c')
+    {
+        $clusterTable = 'tb_myrep_cluster';
+        $alias = trim((string) $alias) !== '' ? trim((string) $alias) : 'c';
+        $fields = [
+            'district_name',
+            'village_name',
+        ];
+
+        $selectParts = [];
+        foreach ($fields as $field) {
+            if ($this->db->field_exists($field, $clusterTable)) {
+                $selectParts[] = $alias . '.' . $field;
+            } else {
+                $selectParts[] = 'NULL AS ' . $field;
+            }
+        }
+
+        return implode(",\n                ", $selectParts);
     }
 
     public function getBatchPics($batchId)

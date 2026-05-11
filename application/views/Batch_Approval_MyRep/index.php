@@ -231,6 +231,8 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
                         data-regional_name="<?= htmlspecialchars((string) ($row['regional_name'] ?? ''), ENT_QUOTES) ?>"
                         data-province_name="<?= htmlspecialchars((string) ($row['province_name'] ?? ''), ENT_QUOTES) ?>"
                         data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>"
+                        data-district_name="<?= htmlspecialchars((string) ($row['district_name'] ?? ''), ENT_QUOTES) ?>"
+                        data-village_name="<?= htmlspecialchars((string) ($row['village_name'] ?? ''), ENT_QUOTES) ?>"
                         data-submission_date="<?= htmlspecialchars((string) ($row['submission_date'] ?? ''), ENT_QUOTES) ?>"
                         data-homepass_valsal="<?= (int) ($row['homepass_valsal'] ?? 0) ?>"
                         data-hp_donasi="<?= (int) ($row['hp_donasi'] ?? 0) ?>"
@@ -563,6 +565,8 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
                                                     data-regional-name="<?= htmlspecialchars((string) ($clusterOption['regional_name'] ?? ''), ENT_QUOTES) ?>"
                                                     data-province-name="<?= htmlspecialchars((string) ($clusterOption['province_name'] ?? ''), ENT_QUOTES) ?>"
                                                     data-city-name="<?= htmlspecialchars((string) ($clusterOption['city_name'] ?? ''), ENT_QUOTES) ?>"
+                                                    data-district-name="<?= htmlspecialchars((string) ($clusterOption['district_name'] ?? ''), ENT_QUOTES) ?>"
+                                                    data-village-name="<?= htmlspecialchars((string) ($clusterOption['village_name'] ?? ''), ENT_QUOTES) ?>"
                                                     data-homepass-valsal="<?= (int) ($clusterOption['homepass_valsal'] ?? 0) ?>"
                                                     data-valsal-date="<?= htmlspecialchars((string) ($clusterOption['valsal_date'] ?? ''), ENT_QUOTES) ?>">
                                                     <?= htmlspecialchars((string) ($clusterOption['cluster_name'] ?? '-')) ?>
@@ -579,7 +583,9 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
                             <div class="row">
                                 <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" class="form-control js-cluster-regional" readonly></div></div>
                                 <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" class="form-control js-cluster-province" readonly></div></div>
-                                <div class="col-md-4"><div class="form-group"><label>Kota</label><input type="text" class="form-control js-cluster-city" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Kab / Kota</label><input type="text" class="form-control js-cluster-city" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Kecamatan</label><input type="text" class="form-control js-cluster-district" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Desa / Kelurahan</label><input type="text" class="form-control js-cluster-village" readonly></div></div>
                                 <div class="col-md-8"><div class="form-group mb-md-0"><label>Nama Cluster</label><input type="text" class="form-control js-cluster-name" readonly></div></div>
                                 <div class="col-md-4"><div class="form-group mb-0"><label>Tanggal VALSAL</label><input type="text" class="form-control js-valsal-date" readonly></div></div>
                             </div>
@@ -710,11 +716,13 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
                         <div class="batch-form-section">
                             <div class="batch-form-section__title">Informasi Cluster</div>
                             <div class="row">
-                                <div class="col-md-12"><div class="form-group"><label>Cluster</label><input type="text" id="edit_cluster_name" class="form-control" readonly></div></div>
                                 <div class="col-md-4"><div class="form-group"><label>Regional</label><input type="text" id="edit_regional_name" class="form-control" readonly></div></div>
                                 <div class="col-md-4"><div class="form-group"><label>Provinsi</label><input type="text" id="edit_province_name" class="form-control" readonly></div></div>
-                                <div class="col-md-4"><div class="form-group"><label>Kota</label><input type="text" id="edit_city_name" class="form-control" readonly></div></div>
-                                <div class="col-md-12"><div class="form-group mb-0"><label>Tanggal VALSAL</label><input type="text" id="edit_valsal_date" class="form-control" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Kab / Kota</label><input type="text" id="edit_city_name" class="form-control" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Kecamatan</label><input type="text" id="edit_district_name" class="form-control" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group"><label>Desa / Kelurahan</label><input type="text" id="edit_village_name" class="form-control" readonly></div></div>
+                                <div class="col-md-8"><div class="form-group mb-md-0"><label>Cluster</label><input type="text" id="edit_cluster_name" class="form-control" readonly></div></div>
+                                <div class="col-md-4"><div class="form-group mb-0"><label>Tanggal VALSAL</label><input type="text" id="edit_valsal_date" class="form-control" readonly></div></div>
                             </div>
                         </div>
 
@@ -1770,6 +1778,8 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
             $container.find('.js-cluster-regional').val(optionData('regional-name'));
             $container.find('.js-cluster-province').val(optionData('province-name'));
             $container.find('.js-cluster-city').val(optionData('city-name'));
+            $container.find('.js-cluster-district').val(optionData('district-name'));
+            $container.find('.js-cluster-village').val(optionData('village-name'));
             $container.find('.js-cluster-name').val(optionData('cluster-name'));
             $container.find('.js-valsal-date').val(optionData('valsal-date'));
             if ($container.find('.js-homepass-valsal').length) {
@@ -2123,6 +2133,8 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
                 $modal.find('#edit_regional_name').val($button.data('regional_name'));
                 $modal.find('#edit_province_name').val($button.data('province_name'));
                 $modal.find('#edit_city_name').val($button.data('city_name'));
+                $modal.find('#edit_district_name').val($button.data('district_name'));
+                $modal.find('#edit_village_name').val($button.data('village_name'));
                 $modal.find('#edit_submission_date').val($button.data('submission_date'));
                 $modal.find('#edit_hp_donasi').val($button.data('hp_donasi'));
                 $modal.find('#edit_nominal_pengajuan_area').val($button.data('nominal_pengajuan_area'));

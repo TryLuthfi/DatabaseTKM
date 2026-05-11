@@ -65,15 +65,32 @@ class DRM_MyRep extends CI_Controller
         $data['cluster'] = $cluster;
         $data['docReady'] = $this->MDRM_MyRep->drmDocumentTablesReady();
         $data['boqReady'] = $this->MDRM_MyRep->drmBoqTablesReady();
+        $data['subfeederReady'] = $this->MDRM_MyRep->drmSubfeederReady();
         $data['canApprove'] = $this->isApprover();
-        $data['documentRows'] = $data['docReady']
-            ? $this->MDRM_MyRep->getDrmDocumentRows($clusterId)
-            : [];
-        $data['boqHeader'] = $data['boqReady'] ? $this->MDRM_MyRep->getDrmBoqHeader($clusterId) : [];
-        $data['boqItems'] = $data['boqReady'] ? $this->MDRM_MyRep->getDrmBoqItems($clusterId) : [];
-        $data['boqBaselineHeader'] = $data['boqReady'] ? $this->MDRM_MyRep->getBoqBaselineHeader($clusterId) : [];
-        $data['boqBaselineItems'] = $data['boqReady'] ? $this->MDRM_MyRep->getBoqBaselineItems($clusterId) : [];
-        $data['apdBoqFile'] = $data['docReady'] ? $this->MDRM_MyRep->getApdBoqDocumentFile($clusterId) : [];
+        $data['drmScopes'] = [
+            'CLUSTER' => [
+                'key' => 'CLUSTER',
+                'label' => 'Doc Cluster',
+                'documentRows' => $data['docReady'] ? $this->MDRM_MyRep->getDrmDocumentRows($clusterId, 'CLUSTER') : [],
+                'boqHeader' => $data['boqReady'] ? $this->MDRM_MyRep->getDrmBoqHeader($clusterId, 'CLUSTER') : [],
+                'boqItems' => $data['boqReady'] ? $this->MDRM_MyRep->getDrmBoqItems($clusterId, 'CLUSTER') : [],
+                'boqBaselineHeader' => $data['boqReady'] ? $this->MDRM_MyRep->getBoqBaselineHeader($clusterId, 'CLUSTER') : [],
+                'boqBaselineItems' => $data['boqReady'] ? $this->MDRM_MyRep->getBoqBaselineItems($clusterId, 'CLUSTER') : [],
+                'apdBoqFile' => $data['docReady'] ? $this->MDRM_MyRep->getApdBoqDocumentFile($clusterId, 'CLUSTER') : [],
+                'isReady' => true,
+            ],
+            'SUBFEEDER' => [
+                'key' => 'SUBFEEDER',
+                'label' => 'Doc Subfeeder',
+                'documentRows' => $data['subfeederReady'] ? $this->MDRM_MyRep->getDrmDocumentRows($clusterId, 'SUBFEEDER') : [],
+                'boqHeader' => $data['subfeederReady'] ? $this->MDRM_MyRep->getDrmBoqHeader($clusterId, 'SUBFEEDER') : [],
+                'boqItems' => $data['subfeederReady'] ? $this->MDRM_MyRep->getDrmBoqItems($clusterId, 'SUBFEEDER') : [],
+                'boqBaselineHeader' => $data['subfeederReady'] ? $this->MDRM_MyRep->getBoqBaselineHeader($clusterId, 'SUBFEEDER') : [],
+                'boqBaselineItems' => $data['subfeederReady'] ? $this->MDRM_MyRep->getBoqBaselineItems($clusterId, 'SUBFEEDER') : [],
+                'apdBoqFile' => $data['subfeederReady'] ? $this->MDRM_MyRep->getApdBoqDocumentFile($clusterId, 'SUBFEEDER') : [],
+                'isReady' => $data['subfeederReady'],
+            ],
+        ];
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -212,8 +229,9 @@ class DRM_MyRep extends CI_Controller
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
+        $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
         $docItemId = (int) $this->input->post('id_doc_item');
-        $detail = $this->MDRM_MyRep->getDrmDocumentDetail($clusterId, $docItemId);
+        $detail = $this->MDRM_MyRep->getDrmDocumentDetail($clusterId, $docItemId, $scopeType);
         if ($clusterId <= 0 || $docItemId <= 0 || empty($detail)) {
             $this->session->set_flashdata('error', 'Konfigurasi dokumen DRM tidak ditemukan.');
             redirect('DRM_MyRep');
@@ -238,7 +256,7 @@ class DRM_MyRep extends CI_Controller
         if (!$isNoDocumentRequired) {
             $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
             $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($detail['doc_name'] ?? 'DRM'));
-            $fileName = 'DRM_' . $clusterId . '_' . $docItemId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+            $fileName = 'DRM_' . $scopeType . '_' . $clusterId . '_' . $docItemId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
 
             $config = [
                 'upload_path' => $uploadDir,
@@ -267,7 +285,7 @@ class DRM_MyRep extends CI_Controller
             'status_file' => 'UPLOADED',
             'remark' => trim((string) $this->input->post('remark')),
             'uploaded_by' => (int) $this->session->userdata('id_user'),
-        ]);
+        ], $scopeType);
 
         if ($fileId > 0) {
             $clusterDetail = $this->MDRM_MyRep->getDrmByClusterId($clusterId);
@@ -293,6 +311,7 @@ class DRM_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $fileId = (int) $this->input->post('id_doc_file');
+        $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
         $result = $this->MDRM_MyRep->updateDrmFileStatus($fileId, [
             'status_file' => 'APPROVED',
             'remark' => trim((string) $this->input->post('remark')),
@@ -318,6 +337,7 @@ class DRM_MyRep extends CI_Controller
 
         $clusterId = (int) $this->input->post('cluster_id');
         $fileId = (int) $this->input->post('id_doc_file');
+        $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
         $result = $this->MDRM_MyRep->updateDrmFileStatus($fileId, [
             'status_file' => 'REJECTED',
             'remark' => trim((string) $this->input->post('remark')),
@@ -375,6 +395,7 @@ class DRM_MyRep extends CI_Controller
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
+        $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
         if (!$this->MDRM_MyRep->drmBoqTablesReady()) {
             $this->session->set_flashdata('error', 'Tabel BOQ DRM belum tersedia.');
             redirect('DRM_MyRep/detail/' . $clusterId);
@@ -396,14 +417,15 @@ class DRM_MyRep extends CI_Controller
             return;
         }
 
-        $apdBoqFile = $this->MDRM_MyRep->getApdBoqDocumentFile($clusterId);
+        $apdBoqFile = $this->MDRM_MyRep->getApdBoqDocumentFile($clusterId, $scopeType);
         $result = $this->MDRM_MyRep->saveDrmBoqDraft(
             $clusterId,
             (int) ($cluster['id_drm'] ?? 0),
             (int) ($apdBoqFile['id_doc_file'] ?? 0),
             $items,
             (int) $this->session->userdata('id_user'),
-            $submitToHo
+            $submitToHo,
+            $scopeType
         );
 
         $message = $submitToHo ? 'Draft BOQ DRM berhasil dikirim ke review HO.' : 'Draft BOQ DRM berhasil disimpan.';
@@ -419,6 +441,7 @@ class DRM_MyRep extends CI_Controller
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
+        $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
         if (!$this->MDRM_MyRep->drmDocumentTablesReady() || !$this->MDRM_MyRep->drmBoqTablesReady()) {
             $this->session->set_flashdata('error', 'Tabel dokumen atau BOQ DRM belum tersedia.');
             redirect('DRM_MyRep/detail/' . $clusterId);
@@ -432,7 +455,7 @@ class DRM_MyRep extends CI_Controller
             return;
         }
 
-        $docDetail = $this->MDRM_MyRep->getDrmDocumentDetailByName($clusterId, 'APD BOQ');
+        $docDetail = $this->MDRM_MyRep->getDrmDocumentDetailByName($clusterId, 'APD BOQ', $scopeType);
         if (empty($docDetail['id_doc_item'])) {
             $this->session->set_flashdata('error', 'Dokumen APD BOQ tidak ditemukan.');
             redirect('DRM_MyRep/detail/' . $clusterId);
@@ -465,7 +488,7 @@ class DRM_MyRep extends CI_Controller
 
             $extension = pathinfo($_FILES['apd_boq_file']['name'], PATHINFO_EXTENSION);
             $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($docDetail['doc_name'] ?? 'APD_BOQ'));
-            $fileName = 'DRM_' . $clusterId . '_' . (int) $docDetail['id_doc_item'] . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+            $fileName = 'DRM_' . $scopeType . '_' . $clusterId . '_' . (int) $docDetail['id_doc_item'] . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
 
             $config = [
                 'upload_path' => $uploadDir,
@@ -490,7 +513,7 @@ class DRM_MyRep extends CI_Controller
                 'status_file' => 'UPLOADED',
                 'remark' => trim((string) $this->input->post('apd_boq_remark')),
                 'uploaded_by' => $userId,
-            ]);
+            ], $scopeType);
 
             if ($sourceDocFileId <= 0) {
                 $this->session->set_flashdata('error', 'File APD BOQ gagal disimpan.');
@@ -506,7 +529,8 @@ class DRM_MyRep extends CI_Controller
             $sourceDocFileId,
             $items,
             $userId,
-            $submitToHo
+            $submitToHo,
+            $scopeType
         );
 
         $message = $submitToHo ? 'APD BOQ dan BOQ manual berhasil dikirim ke review HO.' : 'APD BOQ dan BOQ manual berhasil disimpan.';
@@ -522,6 +546,7 @@ class DRM_MyRep extends CI_Controller
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
+        $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
         if (!$this->isApprover()) {
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses approve BOQ DRM.');
             redirect('DRM_MyRep/detail/' . $clusterId);
@@ -531,7 +556,8 @@ class DRM_MyRep extends CI_Controller
         $result = $this->MDRM_MyRep->approveDrmBoq(
             $clusterId,
             (int) $this->session->userdata('id_user'),
-            trim((string) $this->input->post('remark'))
+            trim((string) $this->input->post('remark')),
+            $scopeType
         );
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-approve, dijadikan baseline implementasi, dan dokumen DRM yang sudah ter-upload ikut di-approve.' : 'Gagal approve BOQ DRM.');
@@ -546,6 +572,7 @@ class DRM_MyRep extends CI_Controller
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
+        $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
         if (!$this->isApprover()) {
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses reject BOQ DRM.');
             redirect('DRM_MyRep/detail/' . $clusterId);
@@ -559,7 +586,7 @@ class DRM_MyRep extends CI_Controller
             return;
         }
 
-        $result = $this->MDRM_MyRep->rejectDrmBoq($clusterId, (int) $this->session->userdata('id_user'), $remark);
+        $result = $this->MDRM_MyRep->rejectDrmBoq($clusterId, (int) $this->session->userdata('id_user'), $remark, $scopeType);
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-reject.' : 'Gagal reject BOQ DRM.');
         redirect('DRM_MyRep/detail/' . $clusterId);
     }
@@ -659,6 +686,11 @@ class DRM_MyRep extends CI_Controller
         }
 
         return $items;
+    }
+
+    private function normalizeScopeType($scopeType)
+    {
+        return strtoupper(trim((string) $scopeType)) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
     }
 
     private function isApprover()
