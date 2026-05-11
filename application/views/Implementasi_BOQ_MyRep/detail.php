@@ -74,6 +74,46 @@ if (!function_exists('implCountWorkingDays')) {
 $historyTypePlan = [];
 $historyDateRows = [];
 $historyTypeOrder = [];
+$boqTypeBreakdown = [];
+$dailyActivitiesByDate = [];
+$nonBoqLabelOrder = ['PERAPIHAN', 'DIGGING HOLE', 'COR'];
+
+foreach ((array) $dailyActivities as $dailyActivity) {
+    $dailyDateKey = (string) ($dailyActivity['activity_date'] ?? '');
+    if ($dailyDateKey === '') {
+        continue;
+    }
+
+    if (!isset($dailyActivitiesByDate[$dailyDateKey])) {
+        $dailyActivitiesByDate[$dailyDateKey] = [];
+    }
+    $dailyActivitiesByDate[$dailyDateKey][] = $dailyActivity;
+
+    $dailyCode = strtoupper(trim((string) ($dailyActivity['activity_code'] ?? '')));
+    $label = '';
+    if ($dailyCode === 'DIGGING_HOLE') {
+        $label = 'DIGGING HOLE';
+    } elseif ($dailyCode === 'COR_FONDATION') {
+        $label = 'COR';
+    } elseif (strpos($dailyCode, 'RAPIH_') === 0) {
+        $label = 'PERAPIHAN';
+    }
+
+    if ($label !== '') {
+        if (!isset($historyDateRows[$dailyDateKey])) {
+            $historyDateRows[$dailyDateKey] = [
+                'progress_date' => $dailyDateKey,
+                'remark' => [],
+                'achieve' => [],
+                'daily_non_boq_labels' => [],
+            ];
+        }
+        if (!isset($historyDateRows[$dailyDateKey]['daily_non_boq_labels'])) {
+            $historyDateRows[$dailyDateKey]['daily_non_boq_labels'] = [];
+        }
+        $historyDateRows[$dailyDateKey]['daily_non_boq_labels'][$label] = true;
+    }
+}
 
 foreach ($compareRows as $row) {
     $itemType = strtoupper(trim((string) ($row['item_type'] ?? 'LAINNYA')));
@@ -86,6 +126,19 @@ foreach ($compareRows as $row) {
         $historyTypeOrder[] = $itemType;
     }
     $historyTypePlan[$itemType] += (float) ($row['qty_boq'] ?? 0);
+
+    if (!isset($boqTypeBreakdown[$itemType])) {
+        $boqTypeBreakdown[$itemType] = [];
+    }
+    $boqTypeBreakdown[$itemType][] = [
+        'item_name' => (string) ($row['item_name'] ?? '-'),
+        'excel_item_name' => (string) ($row['excel_item_name'] ?? ''),
+        'qty_plan' => (float) ($row['qty_boq'] ?? 0),
+        'qty_achiev' => (float) ($row['progress_qty'] ?? 0),
+        'qty_remaining' => (float) ($row['remaining_qty'] ?? 0),
+        'photo_target' => (int) ($row['target_foto_required'] ?? 0),
+        'photo_uploaded' => (int) ($row['uploaded_harian_photos'] ?? 0),
+    ];
 
     $rowHistory = $historyMap[(int) ($row['id_boq_baseline_item'] ?? 0)] ?? [];
     foreach ($rowHistory as $entry) {
@@ -122,33 +175,50 @@ $galleryRows = [];
 $implementationGalleryGroups = [];
 $complyGalleryGroups = [];
 $complySelectableItems = [];
-
-if (!empty($historyTypeOrder)) {
-    $initialRow = [
-        'progress_date' => !empty($cluster['drm_date']) ? (string) $cluster['drm_date'] : (!empty($cluster['boq_approved_at']) ? substr((string) $cluster['boq_approved_at'], 0, 10) : '-'),
-        'remark' => 'BOQ Awal',
-        'achieve' => array_fill_keys($historyTypeOrder, 0),
-    ];
-    $historyRows[] = $initialRow;
-}
-
-foreach ($historyDateRows as $progressDate => $entry) {
-    foreach ($historyTypeOrder as $itemType) {
-        $dailyAchieve = (float) ($entry['achieve'][$itemType] ?? 0);
-        $historyRunningAchieve[$itemType] += $dailyAchieve;
-        $historyFinalAchieve[$itemType] = $historyRunningAchieve[$itemType];
-    }
-
-    $historyRows[] = [
-        'progress_date' => $progressDate,
-        'remark' => !empty($entry['remark']) ? implode(' | ', array_unique($entry['remark'])) : 'Progress Harian',
-        'achieve' => $entry['achieve'],
-    ];
-}
+$complyBuilderItems = [];
+$baselineByType = [];
+$baselineByName = [];
+$activityDetailOptions = [
+    'PULLING_CABLE' => [],
+    'DIGGING_HOLE' => [],
+    'TANAM_TIANG' => [],
+    'COR_FONDATION' => [],
+    'SLING_WIRE' => [],
+    'INSTALASI_FAT_FDT' => [],
+    'RAPIH_AKSESORIS' => ['AKSESORIS'],
+    'RAPIH_LABEL_TIANG' => ['LABEL TIANG'],
+    'RAPIH_LABEL_KABEL' => ['LABEL KABEL'],
+];
 
 foreach ($compareRows as $row) {
+    $itemTypeForOption = strtoupper(trim((string) ($row['item_type'] ?? '')));
+    $itemNameForOption = trim((string) ($row['item_name'] ?? ''));
+    if ($itemTypeForOption !== '' && $itemNameForOption !== '') {
+        if ($itemTypeForOption === 'CABLE') {
+            $activityDetailOptions['PULLING_CABLE'][$itemNameForOption] = true;
+        }
+        if ($itemTypeForOption === 'TIANG') {
+            $activityDetailOptions['TANAM_TIANG'][$itemNameForOption] = true;
+        }
+        if ($itemTypeForOption === 'SLING WIRE') {
+            $activityDetailOptions['SLING_WIRE'][$itemNameForOption] = true;
+        }
+        if (in_array($itemTypeForOption, ['FAT', 'FDT'], true)) {
+            $activityDetailOptions['INSTALASI_FAT_FDT'][$itemNameForOption] = true;
+        }
+    }
+
     if (!empty($row['comply_enabled'])) {
         $complySelectableItems[] = $row;
+    }
+
+    $rowItemType = strtoupper(trim((string) ($row['item_type'] ?? '')));
+    $rowItemName = strtoupper(trim((string) ($row['item_name'] ?? '')));
+    if ($rowItemType !== '' && empty($baselineByType[$rowItemType])) {
+        $baselineByType[$rowItemType] = (int) ($row['id_boq_baseline_item'] ?? 0);
+    }
+    if ($rowItemName !== '') {
+        $baselineByName[$rowItemName] = (int) ($row['id_boq_baseline_item'] ?? 0);
     }
 
     $baselineItemId = (int) ($row['id_boq_baseline_item'] ?? 0);
@@ -171,6 +241,117 @@ foreach ($compareRows as $row) {
                 'review_remark' => (string) ($photo['review_remark'] ?? ''),
             ];
         }
+    }
+}
+
+foreach ((array) ($masterBoqItems ?? []) as $masterItem) {
+    $masterItemName = trim((string) ($masterItem['item_name'] ?? ''));
+    $masterItemType = strtoupper(trim((string) ($masterItem['item_type'] ?? '')));
+    if ($masterItemName === '' || $masterItemType === '') {
+        continue;
+    }
+
+    if ($masterItemType === 'CABLE') {
+        $activityDetailOptions['PULLING_CABLE'][$masterItemName] = true;
+    } elseif ($masterItemType === 'TIANG') {
+        $activityDetailOptions['TANAM_TIANG'][$masterItemName] = true;
+        $activityDetailOptions['DIGGING_HOLE'][$masterItemName] = true;
+        $activityDetailOptions['COR_FONDATION'][$masterItemName] = true;
+    } elseif ($masterItemType === 'SLING WIRE') {
+        $activityDetailOptions['SLING_WIRE'][$masterItemName] = true;
+    } elseif (in_array($masterItemType, ['FAT', 'FDT'], true)) {
+        $activityDetailOptions['INSTALASI_FAT_FDT'][$masterItemName] = true;
+    }
+
+    $lookupName = strtoupper($masterItemName);
+    $baselineItemId = (int) ($baselineByName[$lookupName] ?? 0);
+    if ($baselineItemId <= 0) {
+        $baselineItemId = (int) ($baselineByType[$masterItemType] ?? 0);
+    }
+    if ($baselineItemId <= 0) {
+        continue;
+    }
+
+    $complySource = null;
+    foreach ($complySelectableItems as $complyItem) {
+        if ((int) ($complyItem['id_boq_baseline_item'] ?? 0) === $baselineItemId) {
+            $complySource = $complyItem;
+            break;
+        }
+    }
+    if (empty($complySource)) {
+        continue;
+    }
+
+    $catalogKey = strtoupper($masterItemType . '|' . $masterItemName);
+    if (isset($complyBuilderItems[$catalogKey])) {
+        continue;
+    }
+    $complyBuilderItems[$catalogKey] = [
+        'id_boq_baseline_item' => $baselineItemId,
+        'item_name' => $masterItemName,
+        'item_type' => $masterItemType,
+        'comply_photo_per_label' => (int) ($complySource['comply_photo_per_label'] ?? 1),
+        'comply_label_prefix' => (string) ($complySource['comply_label_prefix'] ?? $masterItemName),
+        'comply_label_placeholder' => (string) ($complySource['comply_label_placeholder'] ?? 'Nama / nomor item comply'),
+        'comply_requirement_text' => (string) ($complySource['comply_requirement_text'] ?? ''),
+    ];
+}
+$complyBuilderItems = array_values($complyBuilderItems);
+
+ksort($historyDateRows);
+$historyRows = [];
+$historyRunningAchieve = array_fill_keys($historyTypeOrder, 0);
+$historyFinalAchieve = array_fill_keys($historyTypeOrder, 0);
+if (!empty($historyTypeOrder)) {
+    $historyRows[] = [
+        'progress_date' => !empty($cluster['drm_date']) ? (string) $cluster['drm_date'] : (!empty($cluster['boq_approved_at']) ? substr((string) $cluster['boq_approved_at'], 0, 10) : '-'),
+        'remark' => 'BOQ Awal',
+        'achieve' => array_fill_keys($historyTypeOrder, 0),
+    ];
+}
+foreach ($historyDateRows as $progressDate => $entry) {
+    foreach ($historyTypeOrder as $itemType) {
+        $dailyAchieve = (float) ($entry['achieve'][$itemType] ?? 0);
+        $historyRunningAchieve[$itemType] += $dailyAchieve;
+        $historyFinalAchieve[$itemType] = $historyRunningAchieve[$itemType];
+    }
+
+    $remarkPool = array_values(array_filter(array_unique((array) ($entry['remark'] ?? [])), static function ($text) {
+        return trim((string) $text) !== '';
+    }));
+    $manualRemarkPool = array_values(array_filter($remarkPool, static function ($text) {
+        $upper = strtoupper(trim((string) $text));
+        return strpos($upper, '[AUTO]') !== 0
+            && strpos($upper, '[DAILY]') !== 0
+            && strpos($upper, 'UPLOAD FOTO COMPLY -') !== 0;
+    }));
+    $dailyNonBoqRemark = '';
+    if (!empty($entry['daily_non_boq_labels']) && is_array($entry['daily_non_boq_labels'])) {
+        $labels = array_keys($entry['daily_non_boq_labels']);
+        usort($labels, static function ($a, $b) use ($nonBoqLabelOrder) {
+            $indexA = array_search($a, $nonBoqLabelOrder, true);
+            $indexB = array_search($b, $nonBoqLabelOrder, true);
+            $indexA = $indexA === false ? 999 : $indexA;
+            $indexB = $indexB === false ? 999 : $indexB;
+            return $indexA <=> $indexB;
+        });
+        $dailyNonBoqRemark = implode(' / ', $labels);
+    }
+    $finalRemark = !empty($manualRemarkPool)
+        ? implode(' | ', $manualRemarkPool)
+        : ($dailyNonBoqRemark !== '' ? $dailyNonBoqRemark
+        : (!empty($remarkPool) ? implode(' | ', $remarkPool) : 'Progress Harian'));
+
+    $historyRows[] = [
+        'progress_date' => $progressDate,
+        'remark' => $finalRemark,
+        'achieve' => $entry['achieve'],
+    ];
+}
+foreach ($activityDetailOptions as $activityCode => $optionValues) {
+    if (array_values($optionValues) !== $optionValues) {
+        $activityDetailOptions[$activityCode] = array_keys($optionValues);
     }
 }
 
@@ -235,17 +416,20 @@ $photoTargetTotal = (int) ($cluster['target_photo_total'] ?? 0);
 $photoUploadedTotal = (int) ($cluster['uploaded_photo_total'] ?? 0);
 $itemTotal = (int) ($cluster['total_item'] ?? 0);
 $itemDone = 0;
+$itemOnProgress = 0;
 
 foreach ($compareRows as $row) {
     $rowStatus = strtoupper(trim((string) ($row['implementation_status'] ?? 'NOT STARTED')));
     if ($rowStatus === 'DONE') {
         $itemDone++;
+    } elseif ($rowStatus === 'ON PROGRESS') {
+        $itemOnProgress++;
     }
 }
 
 $qtyPercent = $qtyTargetTotal > 0 ? min(100, round(($qtyActualTotal / $qtyTargetTotal) * 100)) : 0;
 $photoPercent = $photoTargetTotal > 0 ? min(100, round(($photoUploadedTotal / $photoTargetTotal) * 100)) : 0;
-$itemPercent = $itemTotal > 0 ? min(100, round(($itemDone / $itemTotal) * 100)) : 0;
+$itemPercent = $itemTotal > 0 ? min(100, round((($itemDone + $itemOnProgress) / $itemTotal) * 100)) : 0;
 $overallPercent = (int) round(($qtyPercent + $photoPercent + $itemPercent) / 3);
 $agingWorkingDays = !empty($cluster['drm_date']) ? implCountWorkingDays((string) $cluster['drm_date']) : 0;
 $agingTargetDate = !empty($cluster['drm_date']) ? implAddWorkingDays((string) $cluster['drm_date'], 23) : null;
@@ -479,6 +663,91 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 1rem;
+    }
+
+    .impl-daily-modal .modal-dialog {
+        max-width: 78vw;
+    }
+
+    .impl-daily-modal .modal-content {
+        border: 0;
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 28px 60px rgba(15, 23, 42, .28);
+        background: linear-gradient(180deg, #f8fbff 0%, #f1f7ff 100%);
+    }
+
+    .impl-daily-modal .modal-header {
+        border-bottom: 0;
+        background: linear-gradient(135deg, #0f172a, #1e3a8a 58%, #0369a1);
+    }
+
+    .impl-daily-modal .modal-title {
+        font-weight: 800;
+        letter-spacing: .02em;
+    }
+
+    .impl-daily-modal__sub {
+        margin-top: .2rem;
+        font-size: .84rem;
+        opacity: .86;
+    }
+
+    .impl-daily-modal .modal-body {
+        padding: 1.25rem;
+    }
+
+    .impl-daily-shell {
+        border: 1px solid #dbe7f5;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 14px 32px rgba(15, 23, 42, .08);
+        padding: 1rem 1.05rem;
+        margin-bottom: 1rem;
+    }
+
+    .impl-daily-shell__title {
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: .8rem;
+    }
+
+    .impl-daily-modal .form-control,
+    .impl-daily-modal .form-control-file {
+        border-radius: 12px;
+        border-color: #d6e1ef;
+    }
+
+    .impl-daily-modal .table th {
+        white-space: nowrap;
+        background: #f8fbff;
+    }
+
+    .impl-daily-modal .modal-footer {
+        border-top: 0;
+        background: #eef4fb;
+        padding: .9rem 1.25rem 1.15rem;
+    }
+
+    .impl-daily-detail-modal .modal-dialog {
+        max-width: 78vw;
+    }
+
+    .impl-daily-detail-modal .modal-content {
+        border: 0;
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 28px 60px rgba(15, 23, 42, .28);
+        background: linear-gradient(180deg, #f8fbff 0%, #f1f7ff 100%);
+    }
+
+    .impl-daily-detail-modal .modal-header {
+        border-bottom: 0;
+        background: linear-gradient(135deg, #0f172a, #1e3a8a 58%, #0369a1);
+    }
+
+    .impl-daily-detail-modal .modal-body {
+        padding: 1.25rem;
     }
 
     .impl-progress-card {
@@ -1031,6 +1300,191 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 <div class="alert alert-danger"><?= $flashError ?></div>
             <?php endif; ?>
 
+            <?php if (!empty($activityReady)): ?>
+<div class="modal fade impl-daily-modal" id="modal-daily-activity" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="true" data-keyboard="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/saveDailyActivity') ?>" enctype="multipart/form-data" id="form-daily-activity-builder">
+                                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                                <div class="modal-header bg-primary text-white">
+                                    <div>
+                                        <h5 class="modal-title mb-0">Input Progress Harian Aktivitas</h5>
+                                        <div class="impl-daily-modal__sub">Tambahkan beberapa kategori aktivitas sekaligus dalam satu hari pelaporan.</div>
+                                    </div>
+                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="impl-daily-shell">
+                                        <div class="impl-daily-shell__title">Detail Cluster</div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-5">
+                                                <label class="small text-muted mb-1">Cluster</label>
+                                                <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?>" readonly>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="small text-muted mb-1">Regional</label>
+                                                <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?>" readonly>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="small text-muted mb-1">Kota</label>
+                                                <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?>" readonly>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="small text-muted mb-1">Status</label>
+                                                <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['implementation_status'] ?? '-')) ?>" readonly>
+                                            </div>
+                                        </div>
+
+                                        <div class="impl-daily-shell__title">Header Aktivitas</div>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group mb-0">
+                                                    <label>Tanggal</label>
+                                                    <input type="date" name="activity_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group mb-0">
+                                                    <label>Jenis</label>
+                                                    <select name="scope_type" class="form-control" required>
+                                                        <option value="CLUSTER">CLUSTER</option>
+                                                        <option value="SUBFEEDER">SUBFEEDER</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="impl-daily-shell">
+                                        <div class="impl-daily-shell__title">Tim Pelaksana</div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group mb-0">
+                                                    <label>Jumlah Team</label>
+                                                    <input type="number" name="team_count" min="0" step="1" class="form-control" value="0" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group mb-0">
+                                                    <label>Jumlah Orang</label>
+                                                    <input type="number" name="worker_count" min="0" step="1" class="form-control" value="0" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="impl-daily-shell">
+                                        <div class="impl-daily-shell__title">Builder Aktivitas</div>
+                                        <div class="row">
+                                            <div class="col-md-5">
+                                                <div class="form-group">
+                                                    <label>Kategori Aktivitas</label>
+                                                    <select class="form-control js-activity-code-selector">
+                                                        <option value="">Pilih Aktivitas</option>
+                                                        <?php foreach ((array) $activityDefinitions as $activityDef): ?>
+                                                            <option
+                                                                value="<?= htmlspecialchars((string) ($activityDef['activity_code'] ?? '')) ?>"
+                                                                data-default-unit="<?= htmlspecialchars((string) ($activityDef['default_unit'] ?? ''), ENT_QUOTES) ?>"
+                                                                data-activity-name="<?= htmlspecialchars((string) ($activityDef['activity_name'] ?? ''), ENT_QUOTES) ?>"
+                                                                data-boq-type="<?= htmlspecialchars((string) ($activityDef['boq_type'] ?? ''), ENT_QUOTES) ?>">
+                                                                <?= htmlspecialchars((string) ($activityDef['activity_name'] ?? '-')) ?> (<?= htmlspecialchars((string) ($activityDef['boq_type'] ?? '-')) ?>)
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Detail</label>
+                                                    <select class="form-control js-activity-detail-selector"></select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label>Unit</label>
+                                                    <input type="text" class="form-control js-activity-unit" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-1">
+                                                <div class="form-group">
+                                                    <label>Qty</label>
+                                                    <input type="number" step="0.01" min="0.01" class="form-control js-activity-qty">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-1 d-flex align-items-end">
+                                                <button type="button" class="btn btn-outline-primary btn-block js-add-daily-activity-row mb-3">Tambah</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="impl-daily-shell">
+                                        <div class="impl-daily-shell__title">Daftar Aktivitas Hari Ini</div>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-sm mb-2">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Kategori</th>
+                                                        <th>Detail</th>
+                                                        <th>BOQ Type</th>
+                                                        <th>Unit</th>
+                                                        <th>Qty</th>
+                                                        <th>Foto</th>
+                                                        <th>Remark</th>
+                                                        <th style="width:70px;">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="js-daily-activity-items">
+                                                    <tr class="js-empty-row"><td colspan="8" class="text-center text-muted">Belum ada item aktivitas.</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <template id="daily-activity-item-template">
+                                        <tr class="js-daily-activity-item">
+                                            <td>
+                                                <input type="hidden" data-name="activity_code" value="">
+                                                <span class="js-col-activity-name">-</span>
+                                            </td>
+                                            <td>
+                                                <input type="hidden" data-name="activity_detail" value="">
+                                                <span class="js-col-activity-detail">-</span>
+                                            </td>
+                                            <td><span class="js-col-boq-type">-</span></td>
+                                            <td><span class="js-col-unit">-</span></td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm js-col-qty-input" data-name="qty_activity" step="0.01" min="0.01" value="0.01" required>
+                                            </td>
+                                            <td>
+                                                <input type="file" class="form-control-file mb-2" data-photo-input multiple accept=".jpg,.jpeg,.png,.webp" required>
+                                                <div class="small text-muted js-photo-preview-empty">Belum ada foto dipilih</div>
+                                                <div class="d-flex flex-wrap js-photo-preview-list" style="gap:.35rem;"></div>
+                                            </td>
+                                            <td><input type="text" class="form-control form-control-sm" data-remark-input placeholder="Catatan aktivitas"></td>
+                                            <td><button type="button" class="btn btn-sm btn-outline-danger js-remove-daily-activity-row">Hapus</button></td>
+                                        </tr>
+                                    </template>
+                                    <div class="small text-muted mt-2">
+                                        Pilih kategori + isi qty lalu klik Tambah. Pilih kategori lain untuk menambah baris baru di tabel bawah.
+                                    </div>
+
+                                    <div class="impl-daily-shell">
+                                        <div class="impl-daily-shell__title">Remarks BOQ Tracker</div>
+                                        <div class="form-group mb-0">
+                                            <label>Remarks</label>
+                                            <textarea name="tracker_remark" class="form-control" rows="3" placeholder="Remarks ini akan tampil di kolom remark BOQ Tracker untuk auto progress dari daily activity"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Tutup</button>
+                                    <button type="submit" class="btn btn-primary btn-sm">Simpan Progress Harian</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <div class="card card-primary shadow-sm impl-card">
                 <div class="card-header">
                     <h3 class="card-title">Informasi Cluster Implementasi</h3>
@@ -1180,21 +1634,21 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
             <div class="card card-outline card-primary shadow-sm impl-table-card">
                 <div class="card-header">
-                    <h3 class="card-title">Perbandingan BOQ vs Implementasi</h3>
+                    <h3 class="card-title">BOQ Tracker & Daily Progress</h3>
                 </div>
                 <div class="card-body">
                     <ul class="nav nav-tabs impl-tabs" id="implCompareTabs" role="tablist">
                         <li class="nav-item">
-                            <a class="nav-link active" id="impl-history-tab" data-toggle="tab" href="#impl-history-pane" role="tab">History</a>
+                            <a class="nav-link active" id="impl-history-tab" data-toggle="tab" href="#impl-history-pane" role="tab">BOQ Tracker</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="impl-breakdown-tab" data-toggle="tab" href="#impl-breakdown-pane" role="tab">Breakdown</a>
+                            <a class="nav-link" id="impl-breakdown-tab" data-toggle="tab" href="#impl-breakdown-pane" role="tab">Daily Progress</a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item d-none">
                             <a class="nav-link" id="impl-gallery-tab" data-toggle="tab" href="#impl-gallery-pane" role="tab">Foto Implementasi</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" id="impl-comply-tab" data-toggle="tab" href="#impl-comply-pane" role="tab">FOTO COMPLY</a>
+                            <a class="nav-link" id="impl-comply-tab" data-toggle="tab" href="#impl-comply-pane" role="tab">Foto Comply</a>
                         </li>
                     </ul>
                     <div class="tab-content border border-top-0 rounded-bottom p-3">
@@ -1211,7 +1665,18 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                 <th rowspan="2">No</th>
                                                 <th rowspan="2">HP DRM</th>
                                                 <?php foreach ($historyTypeOrder as $itemType): ?>
-                                                    <th colspan="2"><?= htmlspecialchars($itemType) ?></th>
+                                                    <th colspan="2">
+                                                        <?= htmlspecialchars($itemType) ?>
+                                                        <?php if (!empty($boqTypeBreakdown[$itemType])): ?>
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-link btn-sm p-0 ml-1 js-open-boq-breakdown"
+                                                                data-item-type="<?= htmlspecialchars($itemType, ENT_QUOTES) ?>"
+                                                                data-breakdown="<?= htmlspecialchars(json_encode((array) ($boqTypeBreakdown[$itemType] ?? [])), ENT_QUOTES) ?>">
+                                                                Detail
+                                                            </button>
+                                                        <?php endif; ?>
+                                                    </th>
                                                 <?php endforeach; ?>
                                                 <th rowspan="2">Tanggal Progress</th>
                                                 <th rowspan="2">Keterangan</th>
@@ -1232,7 +1697,24 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                         <td><?= $index === 0 ? implHistoryNumber((float) ($historyTypePlan[$itemType] ?? 0)) : '-' ?></td>
                                                         <td><?= implHistoryNumber((float) ($historyRow['achieve'][$itemType] ?? 0)) ?></td>
                                                     <?php endforeach; ?>
-                                                    <td><?= htmlspecialchars((string) ($historyRow['progress_date'] ?? '-')) ?></td>
+                                                    <td>
+                                                        <?php
+                                                        $historyDateText = (string) ($historyRow['progress_date'] ?? '-');
+                                                        $historyDailyActivities = $dailyActivitiesByDate[$historyDateText] ?? [];
+                                                        ?>
+                                                        <?php if (!empty($historyDailyActivities) && $historyDateText !== '-'): ?>
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-link p-0 align-baseline js-open-daily-detail"
+                                                                data-daily-date="<?= htmlspecialchars($historyDateText, ENT_QUOTES) ?>"
+                                                                data-daily-global-remark="<?= htmlspecialchars((string) ($historyRow['remark'] ?? '-'), ENT_QUOTES) ?>"
+                                                                data-daily-activities="<?= htmlspecialchars(json_encode(array_values($historyDailyActivities)), ENT_QUOTES) ?>">
+                                                                <?= htmlspecialchars($historyDateText) ?>
+                                                            </button>
+                                                        <?php else: ?>
+                                                            <?= htmlspecialchars($historyDateText) ?>
+                                                        <?php endif; ?>
+                                                    </td>
                                                     <td><?= htmlspecialchars((string) ($historyRow['remark'] ?? '-')) ?></td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -1267,92 +1749,103 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         <div class="tab-pane fade" id="impl-breakdown-pane" role="tabpanel">
                             <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
                                 <div>
-                                    <div class="font-weight-bold text-dark">Breakdown Implementasi per Item</div>
-                                    <div class="small text-muted">Input beberapa item sekaligus dalam satu tanggal progress untuk mempercepat pelaporan lapangan. Foto comply diupload terpisah lewat tab FOTO COMPLY.</div>
+                                    <div class="font-weight-bold text-dark">Daily Progress Aktivitas</div>
+                                    <div class="small text-muted">Input progress harian berbasis aktivitas. Foto dibedakan per scope CLUSTER/SUBFEEDER.</div>
                                 </div>
-                                <button type="button" class="btn btn-primary js-open-progress-modal" data-toggle="modal" data-target="#modal-progress">
-                                    <i class="fas fa-layer-group mr-1"></i>Input Progress Sekaligus
+                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-daily-activity">
+                                    <i class="fas fa-plus-circle mr-1"></i>Input Daily Progress
                                 </button>
                             </div>
                             <div class="table-responsive">
+                                <?php
+                                $dailyGrouped = [];
+                                $historyRemarkByDate = [];
+                                foreach ((array) $historyRows as $historyRowEntry) {
+                                    $entryDate = (string) ($historyRowEntry['progress_date'] ?? '');
+                                    if ($entryDate === '' || $entryDate === '-') {
+                                        continue;
+                                    }
+                                    $entryRemark = trim((string) ($historyRowEntry['remark'] ?? ''));
+                                    if ($entryRemark !== '' && strtoupper($entryRemark) !== 'BOQ AWAL') {
+                                        $historyRemarkByDate[$entryDate] = $entryRemark;
+                                    }
+                                }
+
+                                foreach ((array) $dailyActivities as $activity) {
+                                    $groupDate = (string) ($activity['activity_date'] ?? '-');
+                                    if (!isset($dailyGrouped[$groupDate])) {
+                                        $dailyGrouped[$groupDate] = [
+                                            'date' => $groupDate,
+                                            'activities' => [],
+                                            'total_qty' => 0,
+                                            'photo_count' => 0,
+                                            'team_count' => 0,
+                                            'worker_count' => 0,
+                                            'pic' => [],
+                                            'scope' => [],
+                                            'global_remark' => '',
+                                        ];
+                                    }
+
+                                    $dailyGrouped[$groupDate]['activities'][] = $activity;
+                                    $dailyGrouped[$groupDate]['total_qty'] += (float) ($activity['qty_activity'] ?? 0);
+                                    $dailyGrouped[$groupDate]['photo_count'] += count((array) ($activity['photos'] ?? []));
+                                    $dailyGrouped[$groupDate]['team_count'] = max($dailyGrouped[$groupDate]['team_count'], (int) ($activity['team_count'] ?? 0));
+                                    $dailyGrouped[$groupDate]['worker_count'] = max($dailyGrouped[$groupDate]['worker_count'], (int) ($activity['worker_count'] ?? 0));
+
+                                    $picName = trim((string) ($activity['nama_user'] ?? ''));
+                                    if ($picName !== '') {
+                                        $dailyGrouped[$groupDate]['pic'][$picName] = true;
+                                    }
+
+                                    $scopeType = strtoupper(trim((string) ($activity['scope_type'] ?? '')));
+                                    if ($scopeType !== '') {
+                                        $dailyGrouped[$groupDate]['scope'][$scopeType] = true;
+                                    }
+                                }
+                                foreach ($dailyGrouped as $dateKey => $groupValue) {
+                                    $dailyGrouped[$dateKey]['global_remark'] = (string) ($historyRemarkByDate[$dateKey] ?? '-');
+                                }
+                                krsort($dailyGrouped);
+                                ?>
                                 <table class="table table-bordered table-hover">
                                     <thead>
                                         <tr>
-                                            <th>No</th>
-                                            <th>Nama Item</th>
-                                            <th>Jenis</th>
-                                            <th>Qty BOQ</th>
-                                            <th>Qty Actual</th>
-                                            <th>Sisa Qty</th>
-                                            <th>Target Foto</th>
-                                            <th>Foto Upload</th>
-                                            <th>Status</th>
-                                            <th>Last Progress</th>
+                                            <th>Tanggal</th>
+                                            <th>Total Aktivitas</th>
+                                            <th>Team/Orang</th>
+                                            <th>Total Qty</th>
+                                            <th>Total Foto</th>
+                                            <th>PIC</th>
+                                            <th>Scope</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($compareRows as $index => $row): ?>
-                                            <?php
-                                            $status = strtoupper(trim((string) ($row['implementation_status'] ?? 'NOT STARTED')));
-                                            $badgeClass = $status === 'DONE' ? 'success' : ($status === 'ON PROGRESS' ? 'warning' : 'secondary');
-                                            $historyRows = $historyMap[(int) ($row['id_boq_baseline_item'] ?? 0)] ?? [];
-                                            ?>
+                                        <?php $dailyRowNo = 1; ?>
+                                        <?php foreach ($dailyGrouped as $group): ?>
+                                            <?php $dailyJson = htmlspecialchars(json_encode((array) ($group['activities'] ?? [])), ENT_QUOTES); ?>
                                             <tr>
-                                                <td><?= $index + 1 ?></td>
-                                                <td>
-                                                    <strong><?= htmlspecialchars((string) ($row['item_name'] ?? '-')) ?></strong>
-                                                    <div class="small text-muted"><?= htmlspecialchars((string) ($row['excel_item_name'] ?? '-')) ?></div>
-                                                </td>
-                                                <td><?= htmlspecialchars((string) ($row['item_type'] ?? '-')) ?></td>
-                                                <td><?= implHistoryNumber((float) ($row['qty_boq'] ?? 0)) ?></td>
-                                                <td><?= implHistoryNumber((float) ($row['progress_qty'] ?? 0)) ?></td>
-                                                <td><?= implHistoryNumber((float) ($row['remaining_qty'] ?? 0)) ?></td>
-                                                <td>
-                                                    <?= implHistoryNumber((int) (($row['target_foto_required'] ?? 0) + ($row['target_comply_photo_required'] ?? 0))) ?>
-                                                    <div class="small text-muted">
-                                                        Harian <?= implHistoryNumber((int) ($row['target_foto_required'] ?? 0)) ?>
-                                                        <?php if ((int) ($row['target_comply_photo_required'] ?? 0) > 0): ?>
-                                                            | Comply <?= implHistoryNumber((int) ($row['target_comply_photo_required'] ?? 0)) ?>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                </td>
-                                                <td><?= implHistoryNumber((int) ($row['uploaded_photos'] ?? 0)) ?></td>
-                                                <td><span class="badge badge-<?= $badgeClass ?>"><?= htmlspecialchars($status) ?></span></td>
-                                                <td><?= !empty($row['last_progress_date']) ? htmlspecialchars((string) $row['last_progress_date']) : '-' ?></td>
-                                                <td style="min-width: 220px;">
-                                                    <button
-                                                        type="button"
-                                                        class="btn btn-sm btn-primary js-open-progress-modal"
-                                                        data-toggle="modal"
-                                                        data-target="#modal-progress"
-                                                        data-baseline-item-id="<?= (int) $row['id_boq_baseline_item'] ?>"
-                                                        data-item-name="<?= htmlspecialchars((string) ($row['item_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-item-type="<?= htmlspecialchars((string) ($row['item_type'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-qty-target="<?= htmlspecialchars((string) implHistoryNumber((float) ($row['qty_boq'] ?? 0)), ENT_QUOTES) ?>"
-                                                        data-photo-target="<?= (int) ($row['target_foto_required'] ?? 0) ?>"
-                                                        data-comply-enabled="<?= !empty($row['comply_enabled']) ? '1' : '0' ?>"
-                                                        data-comply-mode="<?= htmlspecialchars((string) ($row['comply_entry_limit_mode'] ?? 'NONE'), ENT_QUOTES) ?>"
-                                                        data-comply-photo-per-label="<?= (int) ($row['comply_photo_per_label'] ?? 0) ?>"
-                                                        data-comply-label-prefix="<?= htmlspecialchars((string) ($row['comply_label_prefix'] ?? ($row['item_name'] ?? 'Item')), ENT_QUOTES) ?>"
-                                                        data-comply-label-placeholder="<?= htmlspecialchars((string) ($row['comply_label_placeholder'] ?? 'Nama / nomor item comply'), ENT_QUOTES) ?>"
-                                                        data-comply-requirement-text="<?= htmlspecialchars((string) ($row['comply_requirement_text'] ?? ''), ENT_QUOTES) ?>">
-                                                        Input Progress
+                                                <td><?= htmlspecialchars((string) ($group['date'] ?? '-')) ?></td>
+                                                <td><?= count((array) ($group['activities'] ?? [])) ?> aktivitas</td>
+                                                <td><?= (int) ($group['team_count'] ?? 0) ?> Team / <?= (int) ($group['worker_count'] ?? 0) ?> Orang</td>
+                                                <td><?= number_format((float) ($group['total_qty'] ?? 0), 2, ',', '.') ?></td>
+                                                <td><?= (int) ($group['photo_count'] ?? 0) ?> foto</td>
+                                                <td><?= !empty($group['pic']) ? htmlspecialchars(implode(', ', array_keys($group['pic']))) : '-' ?></td>
+                                                <td><?= !empty($group['scope']) ? htmlspecialchars(implode(', ', array_keys($group['scope']))) : '-' ?></td>
+                                                <td class="text-center">
+                                                    <button class="btn btn-sm btn-outline-primary js-open-daily-detail mr-1" type="button" data-daily-date="<?= htmlspecialchars((string) ($group['date'] ?? '-'), ENT_QUOTES) ?>" data-daily-global-remark="<?= htmlspecialchars((string) ($group['global_remark'] ?? '-'), ENT_QUOTES) ?>" data-daily-activities="<?= $dailyJson ?>">
+                                                        Lihat Detail
                                                     </button>
-                                                    <button
-                                                        type="button"
-                                                        class="btn btn-sm btn-outline-dark js-open-history-modal"
-                                                        data-toggle="modal"
-                                                        data-target="#modal-history"
-                                                        data-item-name="<?= htmlspecialchars((string) ($row['item_name'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-history='<?= htmlspecialchars(json_encode($historyRows), ENT_QUOTES) ?>'>
-                                                        History
+                                                    <button class="btn btn-sm btn-outline-danger js-delete-daily-row" type="button" data-daily-date="<?= htmlspecialchars((string) ($group['date'] ?? '-'), ENT_QUOTES) ?>">
+                                                        Hapus
                                                     </button>
                                                 </td>
                                             </tr>
+                                            <?php $dailyRowNo++; ?>
                                         <?php endforeach; ?>
-                                        <?php if (empty($compareRows)): ?>
-                                            <tr><td colspan="11" class="text-center text-muted">Belum ada baseline BOQ aktif.</td></tr>
+                                        <?php if (empty($dailyGrouped)): ?>
+                                            <tr><td colspan="8" class="text-center text-muted">Belum ada progress harian aktivitas.</td></tr>
                                         <?php endif; ?>
                                     </tbody>
                                 </table>
@@ -1424,62 +1917,18 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
                                         <div>
                                             <div class="impl-comply-upload-card__title">Upload Foto Comply</div>
-                                            <div class="impl-comply-upload-card__note">Pilih item, isi nama / nomor, lalu upload foto comply untuk approval HO.</div>
+                                            <div class="impl-comply-upload-card__note">Input comply sekarang lewat modal agar fokus dan konsisten dengan daily progress.</div>
                                         </div>
-                                        <a href="<?= base_url('Implementasi_BOQ_MyRep/previewComplyPdf/' . (int) ($cluster['id_myrep_cluster'] ?? 0)) ?>" target="_blank" class="btn btn-outline-dark btn-sm">
-                                            <i class="fas fa-file-pdf mr-1"></i>Preview Foto Comply
-                                        </a>
+                                        <div class="d-flex" style="gap:.5rem;">
+                                            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modal-comply-builder">
+                                                <i class="fas fa-plus-circle mr-1"></i>Input Foto Comply
+                                            </button>
+                                            <a href="<?= base_url('Implementasi_BOQ_MyRep/previewComplyPdf/' . (int) ($cluster['id_myrep_cluster'] ?? 0)) ?>" target="_blank" class="btn btn-outline-dark btn-sm">
+                                                <i class="fas fa-file-pdf mr-1"></i>Preview Foto Comply
+                                            </a>
+                                        </div>
                                     </div>
-                                    <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/uploadComplyPhoto') ?>" enctype="multipart/form-data">
-                                        <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label>Item Comply</label>
-                                                    <select name="baseline_item_id" class="form-control js-comply-upload-item" required>
-                                                        <option value="">Pilih item comply</option>
-                                                        <?php foreach ($complySelectableItems as $row): ?>
-                                                            <option
-                                                                value="<?= (int) ($row['id_boq_baseline_item'] ?? 0) ?>"
-                                                                data-comply-photo-per-label="<?= (int) ($row['comply_photo_per_label'] ?? 1) ?>"
-                                                                data-comply-label-prefix="<?= htmlspecialchars((string) ($row['comply_label_prefix'] ?? ($row['item_name'] ?? 'Item')), ENT_QUOTES) ?>"
-                                                                data-comply-label-placeholder="<?= htmlspecialchars((string) ($row['comply_label_placeholder'] ?? 'Nama / nomor item comply'), ENT_QUOTES) ?>"
-                                                                data-comply-requirement-text="<?= htmlspecialchars((string) ($row['comply_requirement_text'] ?? ''), ENT_QUOTES) ?>">
-                                                                <?= htmlspecialchars((string) ($row['item_name'] ?? '-')) ?><?= !empty($row['item_type']) ? ' - ' . htmlspecialchars((string) ($row['item_type'] ?? '-')) : '' ?>
-                                                            </option>
-                                                        <?php endforeach; ?>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label>Nama / Nomor</label>
-                                                    <input type="text" name="comply_label" class="form-control js-comply-upload-label" placeholder="Pilih item terlebih dahulu" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label>Aturan Foto</label>
-                                                    <div class="impl-comply-hint js-comply-upload-hint">Pilih item dulu untuk melihat requirement comply.</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="form-group mb-3">
-                                            <label>Foto Comply</label>
-                                            <div class="impl-dropzone js-dropzone">
-                                                <input type="file" name="comply_photos_single[]" class="js-dropzone-input" multiple accept=".jpg,.jpeg,.png,.webp" required>
-                                                <div class="impl-dropzone-content">
-                                                    <div class="mb-2"><i class="fas fa-camera-retro fa-2x text-primary"></i></div>
-                                                    <div class="font-weight-bold">Upload foto comply</div>
-                                                    <div class="text-muted small">Pilih beberapa foto sesuai aturan item comply</div>
-                                                    <div class="impl-dropzone-file js-dropzone-label">Belum ada foto comply dipilih</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="text-right">
-                                            <button type="submit" class="btn btn-primary btn-sm">Upload Foto Comply</button>
-                                        </div>
-                                    </form>
+                                    <div class="small text-muted">Klik tombol <strong>Input Foto Comply</strong> untuk mulai upload multi-entry.</div>
                                 </div>
                             </div>
 
@@ -1711,7 +2160,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
     </div>
 </div>
 
-<div class="modal fade" id="modal-history" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modal-history" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="true" data-keyboard="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header bg-dark text-white">
@@ -1722,6 +2171,168 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 <div class="mb-3"><strong>Item:</strong> <span id="history_item_name">-</span></div>
                 <div id="history_item_rows" class="text-muted">Belum ada history.</div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade impl-daily-detail-modal" id="modal-daily-detail" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Detail Daily Progress - <span id="daily_detail_date">-</span></h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div id="daily_detail_rows" class="text-muted">Belum ada detail.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade impl-daily-detail-modal" id="modal-boq-breakdown" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="true" data-keyboard="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Breakdown BOQ - <span id="boq_breakdown_type">-</span></h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div id="boq_breakdown_rows" class="text-muted">Belum ada data breakdown.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade impl-daily-modal" id="modal-comply-builder" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/uploadComplyPhoto') ?>" enctype="multipart/form-data" id="form-comply-builder">
+                <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                <div class="modal-header bg-primary text-white">
+                    <div>
+                        <h5 class="modal-title mb-0">Input Foto Comply</h5>
+                        <div class="impl-daily-modal__sub">Builder upload comply multi entry dalam satu submit.</div>
+                    </div>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="impl-daily-shell">
+                        <div class="impl-daily-shell__title">Detail Cluster</div>
+                        <div class="row mb-3">
+                            <div class="col-md-5">
+                                <label class="small text-muted mb-1">Cluster</label>
+                                <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?>" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small text-muted mb-1">Regional</label>
+                                <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?>" readonly>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="small text-muted mb-1">Kota</label>
+                                <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?>" readonly>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="small text-muted mb-1">Status</label>
+                                <input type="text" class="form-control" value="<?= htmlspecialchars((string) ($cluster['implementation_status'] ?? '-')) ?>" readonly>
+                            </div>
+                        </div>
+
+                        <div class="impl-daily-shell__title">Builder Comply</div>
+                        <div class="row mb-2">
+                            <div class="col-md-2">
+                                <label class="small text-muted mb-1">Scope</label>
+                                <select class="form-control form-control-sm js-comply-scope">
+                                    <option value="CLUSTER">CLUSTER</option>
+                                    <option value="SUBFEEDER">SUBFEEDER</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="small text-muted mb-1">Item</label>
+                                <select class="form-control form-control-sm js-comply-category">
+                                    <option value="">Pilih Item</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small text-muted mb-1">Jenis</label>
+                                <select class="form-control form-control-sm js-comply-kind">
+                                    <option value="">Pilih Jenis</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small text-muted mb-1">Nama / Nomor</label>
+                                <input type="text" class="form-control form-control-sm js-comply-label-builder" placeholder="Contoh: FAT 01">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-block js-add-comply-row"><i class="fas fa-plus mr-1"></i>Tambah</button>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="small text-muted">Jika jenis wajib 2 foto, form remarks otomatis diberi 2 baris: FAT terbuka & FAT tertutup.</div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm mb-2">
+                                <thead>
+                                    <tr>
+                                        <th style="width:110px;">Scope</th>
+                                        <th style="width:140px;">Item</th>
+                                        <th style="width:240px;">Jenis</th>
+                                        <th style="width:180px;">Nama / Nomor</th>
+                                        <th style="width:200px;">Keterangan</th>
+                                        <th>Foto</th>
+                                        <th style="width:220px;">Remarks Per Foto</th>
+                                        <th style="width:70px;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="js-comply-rows"></tbody>
+                            </table>
+                        </div>
+                        <div class="small text-muted">Remarks per foto: 1 baris untuk 1 file, urut sesuai urutan file dipilih.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Upload Foto Comply</button>
+                </div>
+            </form>
+            <template id="comply-row-template">
+                <tr class="js-comply-row">
+                    <td>
+                        <input type="hidden" class="js-comply-item-id" required>
+                        <input type="hidden" class="js-comply-scope-hidden">
+                        <input type="text" class="form-control form-control-sm js-comply-scope-text" readonly>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm js-comply-category-text" readonly>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm js-comply-kind-text" readonly>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm js-comply-label" placeholder="Nama / nomor comply" required>
+                    </td>
+                    <td>
+                        <div class="small text-muted js-comply-short-note">-</div>
+                    </td>
+                    <td>
+                        <input type="file" class="form-control-file js-comply-photos mb-2" multiple accept=".jpg,.jpeg,.png,.webp" required>
+                        <div class="small text-muted js-comply-file-note">Belum ada foto dipilih</div>
+                        <div class="d-flex flex-wrap js-comply-photo-preview" style="gap:.35rem;"></div>
+                    </td>
+                    <td>
+                        <textarea class="form-control form-control-sm js-comply-remarks" rows="4" placeholder="1 baris remark untuk 1 foto" required></textarea>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger js-remove-comply-row">Hapus</button>
+                    </td>
+                </tr>
+            </template>
         </div>
     </div>
 </div>
@@ -1783,6 +2394,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
     <input type="hidden" name="progress_item_id" id="delete_progress_item_id" value="">
 </form>
 
+<form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/deleteDailyActivity') ?>" id="form-delete-daily-activity" class="d-none">
+    <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+    <input type="hidden" name="activity_date" id="delete_daily_activity_date" value="">
+</form>
+
 <div class="impl-lightbox" id="impl-lightbox" aria-hidden="true">
     <div class="impl-lightbox__dialog">
         <div class="impl-lightbox__head">
@@ -1815,9 +2431,26 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var progressCardTemplate = document.getElementById('progress-item-card-template');
         var deleteProgressForm = document.getElementById('form-delete-progress');
         var deleteProgressInput = document.getElementById('delete_progress_item_id');
-        var complyUploadItem = document.querySelector('.js-comply-upload-item');
-        var complyUploadLabel = document.querySelector('.js-comply-upload-label');
-        var complyUploadHint = document.querySelector('.js-comply-upload-hint');
+        var deleteDailyActivityForm = document.getElementById('form-delete-daily-activity');
+        var deleteDailyActivityInput = document.getElementById('delete_daily_activity_date');
+        var complyForm = document.getElementById('form-comply-builder');
+        var complyRowsBody = complyForm ? complyForm.querySelector('.js-comply-rows') : null;
+        var complyAddButton = complyForm ? complyForm.querySelector('.js-add-comply-row') : null;
+        var complyRowTemplate = document.getElementById('comply-row-template');
+        var complyScopeSelect = complyForm ? complyForm.querySelector('.js-comply-scope') : null;
+        var complyCategorySelect = complyForm ? complyForm.querySelector('.js-comply-category') : null;
+        var complyKindSelect = complyForm ? complyForm.querySelector('.js-comply-kind') : null;
+        var complyLabelBuilder = complyForm ? complyForm.querySelector('.js-comply-label-builder') : null;
+        var complyOptionSource = <?= json_encode(array_map(static function ($row) {
+            return [
+                'id' => (int) ($row['id_boq_baseline_item'] ?? 0),
+                'item_name' => (string) ($row['item_name'] ?? '-'),
+                'item_type' => strtoupper(trim((string) ($row['item_type'] ?? '-'))),
+                'photo_per_label' => (int) ($row['comply_photo_per_label'] ?? 1),
+                'placeholder' => (string) ($row['comply_label_placeholder'] ?? 'Nama / nomor item comply'),
+                'requirement' => (string) ($row['comply_requirement_text'] ?? ''),
+            ];
+        }, (array) $complyBuilderItems)) ?>;
 
         function bindDropzones() {
             var dropzones = document.querySelectorAll('.js-dropzone');
@@ -1865,20 +2498,140 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             });
         }
 
-        function syncStandaloneComplyForm() {
-            if (!complyUploadItem || !complyUploadLabel || !complyUploadHint) {
+        function buildShortRequirement(itemData) {
+            var requirement = String((itemData && itemData.requirement) || '').toUpperCase();
+            if ((itemData && itemData.photo_per_label) === 2 && (String(itemData.item_type || '').indexOf('FAT') !== -1 || String(itemData.item_type || '').indexOf('FDT') !== -1)) {
+                return 'Wajib 2 foto: FAT/FDT terbuka & tertutup';
+            }
+            if (requirement.indexOf('FULL LABEL') !== -1) {
+                return 'Wajib full label';
+            }
+            if ((itemData && itemData.photo_per_label) > 1) {
+                return 'Wajib ' + itemData.photo_per_label + ' foto per entry';
+            }
+            return 'Wajib mengikuti aturan item';
+        }
+
+        function populateComplyCategory() {
+            if (!complyCategorySelect) return;
+            var map = {};
+            complyOptionSource.forEach(function (item) {
+                var type = String(item.item_type || 'LAINNYA').toUpperCase();
+                map[type] = true;
+            });
+            var keys = Object.keys(map).sort();
+            complyCategorySelect.innerHTML = '<option value="">Pilih Item</option>';
+            keys.forEach(function (key) {
+                complyCategorySelect.innerHTML += '<option value="' + key + '">' + key + '</option>';
+            });
+        }
+
+        function populateComplyKind() {
+            if (!complyKindSelect || !complyCategorySelect) return;
+            var category = complyCategorySelect.value;
+            complyKindSelect.innerHTML = '<option value="">Pilih Jenis</option>';
+            complyOptionSource.forEach(function (item) {
+                if (category && String(item.item_type).toUpperCase() !== category.toUpperCase()) return;
+                complyKindSelect.innerHTML += '<option value="' + item.id + '">' + item.item_name + '</option>';
+            });
+        }
+
+        function findComplyItemById(id) {
+            var target = parseInt(id || 0, 10);
+            for (var i = 0; i < complyOptionSource.length; i++) {
+                if (parseInt(complyOptionSource[i].id, 10) === target) return complyOptionSource[i];
+            }
+            return null;
+        }
+
+        function previewComplyPhotos(row) {
+            if (!row) {
+                return;
+            }
+            var photoInput = row.querySelector('.js-comply-photos');
+            var note = row.querySelector('.js-comply-file-note');
+            var preview = row.querySelector('.js-comply-photo-preview');
+            if (!photoInput || !note || !preview) {
+                return;
+            }
+            preview.innerHTML = '';
+            var files = photoInput.files ? Array.prototype.slice.call(photoInput.files) : [];
+            if (!files.length) {
+                note.textContent = 'Belum ada foto dipilih';
+                return;
+            }
+            note.textContent = files.length + ' foto dipilih';
+            files.forEach(function (file) {
+                var card = document.createElement('div');
+                card.style.width = '72px';
+                var img = document.createElement('img');
+                img.style.width = '72px';
+                img.style.height = '52px';
+                img.style.objectFit = 'cover';
+                img.style.borderRadius = '6px';
+                img.style.border = '1px solid #dbe3ef';
+                card.appendChild(img);
+                preview.appendChild(card);
+                var reader = new FileReader();
+                reader.onload = function (event) {
+                    img.src = event.target && event.target.result ? event.target.result : '';
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function reindexComplyRows() {
+            if (!complyRowsBody) {
+                return;
+            }
+            var rows = complyRowsBody.querySelectorAll('.js-comply-row');
+            Array.prototype.forEach.call(rows, function (row, index) {
+                var itemInput = row.querySelector('.js-comply-item-id');
+                var scopeInput = row.querySelector('.js-comply-scope-hidden');
+                var labelInput = row.querySelector('.js-comply-label');
+                var photoInput = row.querySelector('.js-comply-photos');
+                var remarksInput = row.querySelector('.js-comply-remarks');
+                if (itemInput) itemInput.name = 'comply_entries[' + index + '][baseline_item_id]';
+                if (scopeInput) scopeInput.name = 'comply_entries[' + index + '][scope_type]';
+                if (labelInput) labelInput.name = 'comply_entries[' + index + '][comply_label]';
+                if (remarksInput) remarksInput.name = 'comply_entries[' + index + '][comply_photo_remarks]';
+                if (photoInput) photoInput.name = 'comply_entry_photos_' + index + '[]';
+            });
+        }
+
+        function addComplyRow() {
+            if (!complyRowsBody || !complyRowTemplate || !complyKindSelect) return;
+            var itemId = complyKindSelect.value || '';
+            var itemData = findComplyItemById(itemId);
+            if (!itemData) {
+                alert('Pilih jenis comply terlebih dahulu.');
+                return;
+            }
+            var labelText = (complyLabelBuilder && complyLabelBuilder.value ? complyLabelBuilder.value : '').trim();
+            if (!labelText) {
+                alert('Isi nama / nomor terlebih dahulu.');
                 return;
             }
 
-            var selectedOption = complyUploadItem.options[complyUploadItem.selectedIndex];
-            if (!selectedOption || !selectedOption.value) {
-                complyUploadLabel.placeholder = 'Pilih item terlebih dahulu';
-                complyUploadHint.textContent = 'Pilih item dulu untuk melihat requirement comply.';
-                return;
+            var fragment = complyRowTemplate.content.cloneNode(true);
+            var row = fragment.querySelector('.js-comply-row');
+            row.querySelector('.js-comply-item-id').value = String(itemData.id);
+            var scopeValue = complyScopeSelect ? complyScopeSelect.value : 'CLUSTER';
+            row.querySelector('.js-comply-scope-text').value = scopeValue;
+            row.querySelector('.js-comply-scope-hidden').value = scopeValue;
+            row.querySelector('.js-comply-category-text').value = (complyCategorySelect ? complyCategorySelect.value : itemData.item_type) || '-';
+            row.querySelector('.js-comply-kind-text').value = itemData.item_name || '-';
+            row.querySelector('.js-comply-label').value = labelText;
+            row.querySelector('.js-comply-label').placeholder = itemData.placeholder || 'Nama / nomor comply';
+            row.querySelector('.js-comply-short-note').textContent = buildShortRequirement(itemData);
+
+            if ((itemData.photo_per_label || 1) === 2) {
+                row.querySelector('.js-comply-remarks').value = 'FAT terbuka\nFAT tertutup';
             }
 
-            complyUploadLabel.placeholder = selectedOption.getAttribute('data-comply-label-placeholder') || 'Nama / nomor item comply';
-            complyUploadHint.textContent = selectedOption.getAttribute('data-comply-requirement-text') || 'Upload foto comply sesuai aturan item.';
+            complyRowsBody.appendChild(fragment);
+            reindexComplyRows();
+            if (complyLabelBuilder) complyLabelBuilder.value = '';
         }
 
         function toggleProgressEmptyState() {
@@ -2097,10 +2850,18 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                     closeLightbox();
                 }
             });
+
+            lightbox.addEventListener('mousedown', function (event) {
+                var dialog = event.target.closest('.impl-lightbox__dialog');
+                if (!dialog) {
+                    closeLightbox();
+                }
+            });
         }
 
         document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && lightbox && lightbox.classList.contains('is-open')) {
+            var isEscape = event.key === 'Escape' || event.key === 'Esc' || event.keyCode === 27;
+            if (isEscape && lightbox && lightbox.classList.contains('is-open')) {
                 closeLightbox();
                 return;
             }
@@ -2131,6 +2892,172 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         });
 
         document.addEventListener('click', function (event) {
+            var boqBreakdownButton = event.target.closest('.js-open-boq-breakdown');
+            if (boqBreakdownButton) {
+                event.preventDefault();
+                var boqType = boqBreakdownButton.getAttribute('data-item-type') || '-';
+                var breakdownRows = [];
+                try {
+                    breakdownRows = boqBreakdownButton.getAttribute('data-breakdown')
+                        ? JSON.parse(boqBreakdownButton.getAttribute('data-breakdown'))
+                        : [];
+                } catch (e) {
+                    breakdownRows = [];
+                }
+
+                var boqTypeNode = document.getElementById('boq_breakdown_type');
+                var boqRowsNode = document.getElementById('boq_breakdown_rows');
+                if (!boqTypeNode || !boqRowsNode) {
+                    return;
+                }
+                boqTypeNode.textContent = boqType;
+
+                if (!breakdownRows.length) {
+                    boqRowsNode.innerHTML = '<div class="text-muted">Belum ada data breakdown.</div>';
+                } else {
+                    var totalPlan = 0;
+                    var totalAchiev = 0;
+                    var totalRemain = 0;
+                    var totalPhotoTarget = 0;
+                    var totalPhotoUploaded = 0;
+
+                    var htmlBreakdown = '<div class="table-responsive"><table class="table table-bordered table-sm">';
+                    htmlBreakdown += '<thead><tr><th style="width:60px;">No</th><th>Jenis</th><th style="width:120px;">Plan</th><th style="width:120px;">Achiev</th><th style="width:120px;">Remaining</th><th style="width:150px;">Foto (Upload/Target)</th></tr></thead><tbody>';
+                    breakdownRows.forEach(function (row, index) {
+                        var plan = parseFloat(row.qty_plan || 0);
+                        var achiev = parseFloat(row.qty_achiev || 0);
+                        var remain = parseFloat(row.qty_remaining || 0);
+                        var photoTarget = parseInt(row.photo_target || 0, 10);
+                        var photoUploaded = parseInt(row.photo_uploaded || 0, 10);
+                        totalPlan += plan;
+                        totalAchiev += achiev;
+                        totalRemain += remain;
+                        totalPhotoTarget += photoTarget;
+                        totalPhotoUploaded += photoUploaded;
+
+                        var jenis = row.item_name || row.excel_item_name || '-';
+                        htmlBreakdown += '<tr>';
+                        htmlBreakdown += '<td class="text-center">' + (index + 1) + '</td>';
+                        htmlBreakdown += '<td>' + escapeAttr(jenis) + '</td>';
+                        htmlBreakdown += '<td class="text-right">' + plan.toFixed(2) + '</td>';
+                        htmlBreakdown += '<td class="text-right">' + achiev.toFixed(2) + '</td>';
+                        htmlBreakdown += '<td class="text-right">' + remain.toFixed(2) + '</td>';
+                        htmlBreakdown += '<td class="text-center">' + photoUploaded + ' / ' + photoTarget + '</td>';
+                        htmlBreakdown += '</tr>';
+                    });
+                    htmlBreakdown += '</tbody>';
+                    htmlBreakdown += '<tfoot><tr class="font-weight-bold"><td colspan="2" class="text-right">Total</td><td class="text-right">' + totalPlan.toFixed(2) + '</td><td class="text-right">' + totalAchiev.toFixed(2) + '</td><td class="text-right">' + totalRemain.toFixed(2) + '</td><td class="text-center">' + totalPhotoUploaded + ' / ' + totalPhotoTarget + '</td></tr></tfoot>';
+                    htmlBreakdown += '</table></div>';
+                    boqRowsNode.innerHTML = htmlBreakdown;
+                }
+
+                if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === 'function') {
+                    window.jQuery('#modal-boq-breakdown').modal('show');
+                }
+                return;
+            }
+
+            var dailyDetailButton = event.target.closest('.js-open-daily-detail');
+            if (dailyDetailButton) {
+                event.preventDefault();
+                var dailyDate = dailyDetailButton.getAttribute('data-daily-date') || '-';
+                var dailyGlobalRemark = dailyDetailButton.getAttribute('data-daily-global-remark') || '-';
+                var dailyActivities = [];
+                try {
+                    dailyActivities = dailyDetailButton.getAttribute('data-daily-activities')
+                        ? JSON.parse(dailyDetailButton.getAttribute('data-daily-activities'))
+                        : [];
+                } catch (e) {
+                    dailyActivities = [];
+                }
+
+                var detailDateNode = document.getElementById('daily_detail_date');
+                var detailRowsNode = document.getElementById('daily_detail_rows');
+                if (!detailDateNode || !detailRowsNode) {
+                    return;
+                }
+                detailDateNode.textContent = dailyDate;
+
+                if (!dailyActivities.length) {
+                    detailRowsNode.innerHTML = '<div class="text-muted">Belum ada detail aktivitas.</div>';
+                } else {
+                    var totalQty = 0;
+                    var totalPhotos = 0;
+                    var maxTeamCount = 0;
+                    var maxWorkerCount = 0;
+                    var scopeSet = {};
+                    dailyActivities.forEach(function (activity) {
+                        totalQty += parseFloat(activity.qty_activity || 0);
+                        var photoCount = (activity.photos || []).length;
+                        totalPhotos += photoCount;
+                        maxTeamCount = Math.max(maxTeamCount, parseInt(activity.team_count || 0, 10) || 0);
+                        maxWorkerCount = Math.max(maxWorkerCount, parseInt(activity.worker_count || 0, 10) || 0);
+                        if (activity.scope_type) {
+                            scopeSet[String(activity.scope_type).toUpperCase()] = true;
+                        }
+                    });
+                    var scopeList = Object.keys(scopeSet);
+
+                    var htmlDaily = '';
+                    htmlDaily += '<div class="card border-0 shadow-sm mb-3"><div class="card-body py-3">';
+                    htmlDaily += '<div class="row">';
+                    htmlDaily += '<div class="col-md-4"><div class="small text-muted">Cluster</div><div class="font-weight-bold"><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-'), ENT_QUOTES) ?></div></div>';
+                    htmlDaily += '<div class="col-md-3"><div class="small text-muted">Regional</div><div class="font-weight-bold"><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-'), ENT_QUOTES) ?></div></div>';
+                    htmlDaily += '<div class="col-md-2"><div class="small text-muted">Kota</div><div class="font-weight-bold"><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-'), ENT_QUOTES) ?></div></div>';
+                    htmlDaily += '<div class="col-md-3"><div class="small text-muted">Status</div><div class="font-weight-bold"><?= htmlspecialchars((string) ($cluster['implementation_status'] ?? '-'), ENT_QUOTES) ?></div></div>';
+                    htmlDaily += '</div><hr class="my-2">';
+                    htmlDaily += '<div class="row">';
+                    htmlDaily += '<div class="col-md-3"><div class="small text-muted">Tanggal</div><div class="font-weight-bold">' + escapeAttr(dailyDate) + '</div></div>';
+                    htmlDaily += '<div class="col-md-3"><div class="small text-muted">Total Aktivitas</div><div class="font-weight-bold">' + dailyActivities.length + '</div></div>';
+                    htmlDaily += '<div class="col-md-3"><div class="small text-muted">Total Qty</div><div class="font-weight-bold">' + totalQty.toFixed(2) + '</div></div>';
+                    htmlDaily += '<div class="col-md-3"><div class="small text-muted">Total Foto / Scope</div><div class="font-weight-bold">' + totalPhotos + ' foto / ' + escapeAttr(scopeList.join(', ') || '-') + '</div></div>';
+                    htmlDaily += '</div><hr class="my-2">';
+                    htmlDaily += '<div class="row">';
+                    htmlDaily += '<div class="col-md-3"><div class="small text-muted">Jumlah Team</div><div class="font-weight-bold">' + escapeAttr(String(maxTeamCount)) + '</div></div>';
+                    htmlDaily += '<div class="col-md-3"><div class="small text-muted">Jumlah Orang</div><div class="font-weight-bold">' + escapeAttr(String(maxWorkerCount)) + '</div></div>';
+                    htmlDaily += '<div class="col-md-6"><div class="small text-muted">Global Remarks</div><div class="font-weight-bold">' + escapeAttr(dailyGlobalRemark || '-') + '</div></div>';
+                    htmlDaily += '</div></div></div>';
+
+                    htmlDaily += '<div class="table-responsive"><table class="table table-bordered table-sm">';
+                    htmlDaily += '<thead><tr><th>Aktivitas</th><th>Detail</th><th>BOQ Type</th><th>Scope</th><th>Qty</th><th>Foto</th><th>PIC</th><th>Remark</th></tr></thead><tbody>';
+                    dailyActivities.forEach(function (activity) {
+                        htmlDaily += '<tr>';
+                        htmlDaily += '<td>' + escapeAttr(activity.activity_name || '-') + '</td>';
+                        htmlDaily += '<td>' + escapeAttr(activity.activity_detail || '-') + '</td>';
+                        htmlDaily += '<td>' + escapeAttr(activity.boq_type || '-') + '</td>';
+                        htmlDaily += '<td><span class="badge badge-secondary">' + escapeAttr(activity.scope_type || '-') + '</span></td>';
+                        htmlDaily += '<td>' + escapeAttr(activity.qty_activity || '0') + ' ' + escapeAttr(activity.unit_activity || '') + '</td>';
+                        htmlDaily += '<td>';
+                        var photos = activity.photos || [];
+                        if (!photos.length) {
+                            htmlDaily += '<span class="text-muted">-</span>';
+                        } else {
+                            htmlDaily += '<div class="d-flex flex-wrap" data-lightbox-group="daily-detail-' + escapeAttr(activity.id_daily_activity || 0) + '">';
+                            photos.forEach(function (photo) {
+                                var imagePath = (photo.file_path || '').replace(/^\/+/, '');
+                                var imageUrl = '<?= base_url() ?>' + imagePath;
+                                var photoCaption = photo.caption || photo.file_name || 'Foto';
+                                htmlDaily += '<a href="' + imageUrl + '" class="mr-2 mb-2 js-open-lightbox" data-image="' + imageUrl + '" data-title="' + escapeAttr(activity.activity_name || 'Daily Progress') + '" data-caption="' + escapeAttr(photoCaption) + '">';
+                                htmlDaily += '<img src="' + imageUrl + '" alt="' + escapeAttr(photo.file_name || 'Foto') + '" style="width:72px;height:54px;object-fit:cover;border-radius:8px;border:1px solid #dbe3ef;">';
+                                htmlDaily += '</a>';
+                            });
+                            htmlDaily += '</div>';
+                        }
+                        htmlDaily += '</td>';
+                        htmlDaily += '<td>' + escapeAttr(activity.nama_user || '-') + '</td>';
+                        htmlDaily += '<td>' + escapeAttr(activity.remark_activity || '-') + '</td>';
+                        htmlDaily += '</tr>';
+                    });
+                    htmlDaily += '</tbody></table></div>';
+                    detailRowsNode.innerHTML = htmlDaily;
+                }
+
+                if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === 'function') {
+                    window.jQuery('#modal-daily-detail').modal('show');
+                }
+                return;
+            }
+
             var lightboxTrigger = event.target.closest('.js-open-lightbox');
             if (lightboxTrigger) {
                 event.preventDefault();
@@ -2256,6 +3183,24 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         });
 
         document.addEventListener('click', function (event) {
+            var deleteDailyButton = event.target.closest('.js-delete-daily-row');
+            if (deleteDailyButton && deleteDailyActivityForm && deleteDailyActivityInput) {
+                var dailyDate = (deleteDailyButton.getAttribute('data-daily-date') || '').trim();
+                if (!dailyDate) {
+                    alert('Data daily progress tidak valid.');
+                    return;
+                }
+
+                var confirmDeleteDaily = 'Hapus 1 row daily progress tanggal ' + dailyDate + '? Semua aktivitas dan foto pada tanggal ini akan terhapus.';
+                if (!window.confirm(confirmDeleteDaily)) {
+                    return;
+                }
+
+                deleteDailyActivityInput.value = dailyDate;
+                deleteDailyActivityForm.submit();
+                return;
+            }
+
             var deleteButton = event.target.closest('.js-delete-history-entry');
             if (!deleteButton || !deleteProgressForm || !deleteProgressInput) {
                 return;
@@ -2323,9 +3268,75 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             }
         });
 
-        if (complyUploadItem) {
-            complyUploadItem.addEventListener('change', syncStandaloneComplyForm);
-            syncStandaloneComplyForm();
+        if (complyForm && complyRowsBody && complyRowTemplate) {
+            populateComplyCategory();
+            populateComplyKind();
+            if (complyCategorySelect) {
+                complyCategorySelect.addEventListener('change', populateComplyKind);
+            }
+            if (complyAddButton) {
+                complyAddButton.addEventListener('click', addComplyRow);
+            }
+            complyRowsBody.addEventListener('change', function (event) {
+                var row = event.target.closest('.js-comply-row');
+                if (!row) {
+                    return;
+                }
+                if (event.target.classList.contains('js-comply-photos')) {
+                    previewComplyPhotos(row);
+                }
+            });
+            complyRowsBody.addEventListener('click', function (event) {
+                var removeButton = event.target.closest('.js-remove-comply-row');
+                if (!removeButton) {
+                    return;
+                }
+                var row = removeButton.closest('.js-comply-row');
+                if (row) {
+                    row.remove();
+                    reindexComplyRows();
+                }
+                if (!complyRowsBody.querySelector('.js-comply-row')) {
+                    addComplyRow();
+                }
+            });
+            complyForm.addEventListener('submit', function (event) {
+                var rows = complyRowsBody.querySelectorAll('.js-comply-row');
+                if (!rows.length) {
+                    event.preventDefault();
+                    alert('Tambahkan minimal 1 entry comply.');
+                    return;
+                }
+                var valid = true;
+                Array.prototype.forEach.call(rows, function (row) {
+                    var itemSelect = row.querySelector('.js-comply-item-id');
+                    var labelInput = row.querySelector('.js-comply-label');
+                    var photoInput = row.querySelector('.js-comply-photos');
+                    var remarksInput = row.querySelector('.js-comply-remarks');
+                    if (!itemSelect || !itemSelect.value || !labelInput || !labelInput.value.trim()) {
+                        valid = false;
+                        return;
+                    }
+                    var files = photoInput && photoInput.files ? photoInput.files : [];
+                    if (!files.length) {
+                        valid = false;
+                        return;
+                    }
+                    var remarkLines = remarksInput && remarksInput.value
+                        ? remarksInput.value.split(/\r\n|\r|\n/).map(function (line) { return line.trim(); }).filter(function (line) { return line !== ''; })
+                        : [];
+                    if (remarkLines.length !== files.length) {
+                        valid = false;
+                        return;
+                    }
+                });
+                if (!valid) {
+                    event.preventDefault();
+                    alert('Setiap entry comply wajib: pilih item, isi nama/nomor, upload foto, dan jumlah remark harus sama dengan jumlah foto.');
+                    return;
+                }
+                reindexComplyRows();
+            });
         }
 
         if (window.jQuery) {
@@ -2361,5 +3372,215 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 bindDropzones();
             });
         }
+    })();
+</script>
+<script>
+    (function () {
+        var form = document.getElementById('form-daily-activity-builder');
+        if (!form) {
+            return;
+        }
+
+        var selector = form.querySelector('.js-activity-code-selector');
+        var detailSelector = form.querySelector('.js-activity-detail-selector');
+        var unitInput = form.querySelector('.js-activity-unit');
+        var qtyInput = form.querySelector('.js-activity-qty');
+        var addButton = form.querySelector('.js-add-daily-activity-row');
+        var tbody = form.querySelector('.js-daily-activity-items');
+        var template = document.getElementById('daily-activity-item-template');
+        var detailOptionsMap = <?= json_encode($activityDetailOptions) ?>;
+
+        function syncUnit() {
+            var selected = selector.options[selector.selectedIndex];
+            unitInput.value = selected ? (selected.getAttribute('data-default-unit') || '') : '';
+            syncDetailOptions();
+        }
+
+        function syncDetailOptions() {
+            var selected = selector.options[selector.selectedIndex];
+            var activityCode = selected ? (selected.value || '') : '';
+            var options = detailOptionsMap[activityCode] || [];
+            detailSelector.innerHTML = '';
+            var forceAutoDetailCodes = ['DIGGING_HOLE', 'COR_FONDATION'];
+
+            if (!activityCode) {
+                detailSelector.innerHTML = '<option value="">Pilih kategori dulu</option>';
+                return;
+            }
+
+            if (forceAutoDetailCodes.indexOf(activityCode) !== -1) {
+                detailSelector.innerHTML = '<option value="-">Otomatis (Aktivitas Harian)</option>';
+                detailSelector.value = '-';
+                return;
+            }
+
+            if (!options.length) {
+                detailSelector.innerHTML = '<option value="-">Otomatis</option>';
+                detailSelector.value = '-';
+                return;
+            }
+
+            if (options.length === 1) {
+                var autoValue = options[0];
+                detailSelector.innerHTML = '<option value="' + autoValue.replace(/"/g, '&quot;') + '">' + autoValue + ' (Auto)</option>';
+                detailSelector.value = autoValue;
+                return;
+            }
+
+            var html = '<option value="">Pilih detail</option>';
+            options.forEach(function (opt) {
+                html += '<option value="' + String(opt).replace(/"/g, '&quot;') + '">' + opt + '</option>';
+            });
+            detailSelector.innerHTML = html;
+        }
+
+        function removeEmptyRow() {
+            var emptyRow = tbody.querySelector('.js-empty-row');
+            if (emptyRow) {
+                emptyRow.remove();
+            }
+        }
+
+        function ensureEmptyRow() {
+            var rows = tbody.querySelectorAll('.js-daily-activity-item');
+            if (rows.length > 0 || tbody.querySelector('.js-empty-row')) {
+                return;
+            }
+            var row = document.createElement('tr');
+            row.className = 'js-empty-row';
+            row.innerHTML = '<td colspan="8" class="text-center text-muted">Belum ada item aktivitas.</td>';
+            tbody.appendChild(row);
+        }
+
+        function addRow() {
+            var selected = selector.options[selector.selectedIndex];
+            var activityCode = selected ? (selected.value || '') : '';
+            var activityName = selected ? (selected.getAttribute('data-activity-name') || '') : '';
+            var boqType = selected ? (selected.getAttribute('data-boq-type') || '') : '';
+            var unit = selected ? (selected.getAttribute('data-default-unit') || '') : '';
+            var activityDetail = detailSelector ? (detailSelector.value || '') : '';
+            var qty = parseFloat(qtyInput.value || '0');
+
+            if (activityCode === '' || qty <= 0) {
+                alert('Pilih kategori aktivitas dan isi qty terlebih dahulu.');
+                return;
+            }
+            if (activityDetail === '') {
+                alert('Pilih detail aktivitas terlebih dahulu.');
+                return;
+            }
+
+            removeEmptyRow();
+            var fragment = template.content.cloneNode(true);
+            var row = fragment.querySelector('.js-daily-activity-item');
+            row.querySelector('[data-name="activity_code"]').value = activityCode;
+            row.querySelector('[data-name="activity_detail"]').value = activityDetail;
+            row.querySelector('[data-name="qty_activity"]').value = qty.toString();
+            row.querySelector('.js-col-activity-name').textContent = activityName || activityCode;
+            row.querySelector('.js-col-activity-detail').textContent = activityDetail;
+            row.querySelector('.js-col-boq-type').textContent = boqType || '-';
+            row.querySelector('.js-col-unit').textContent = unit || '-';
+            tbody.appendChild(fragment);
+
+            qtyInput.value = '';
+        }
+
+        selector.addEventListener('change', syncUnit);
+        addButton.addEventListener('click', addRow);
+
+        tbody.addEventListener('click', function (event) {
+            var button = event.target.closest('.js-remove-daily-activity-row');
+            if (!button) {
+                return;
+            }
+            var row = button.closest('.js-daily-activity-item');
+            if (row) {
+                row.remove();
+            }
+            ensureEmptyRow();
+        });
+
+        tbody.addEventListener('change', function (event) {
+            var fileInput = event.target.closest('[data-photo-input]');
+            if (!fileInput) {
+                return;
+            }
+
+            var row = fileInput.closest('.js-daily-activity-item');
+            if (!row) {
+                return;
+            }
+
+            var previewList = row.querySelector('.js-photo-preview-list');
+            var emptyText = row.querySelector('.js-photo-preview-empty');
+            if (!previewList || !emptyText) {
+                return;
+            }
+
+            previewList.innerHTML = '';
+            var files = fileInput.files ? Array.prototype.slice.call(fileInput.files) : [];
+            if (!files.length) {
+                emptyText.classList.remove('d-none');
+                return;
+            }
+
+            emptyText.classList.add('d-none');
+            files.forEach(function (file) {
+                var item = document.createElement('div');
+                item.style.width = '76px';
+                item.style.textAlign = 'center';
+                item.style.fontSize = '.68rem';
+                item.style.color = '#64748b';
+                item.style.lineHeight = '1.2';
+
+                var img = document.createElement('img');
+                img.style.width = '76px';
+                img.style.height = '56px';
+                img.style.objectFit = 'cover';
+                img.style.borderRadius = '8px';
+                img.style.border = '1px solid #d9e2ef';
+                img.style.display = 'block';
+                img.style.marginBottom = '.2rem';
+
+                var label = document.createElement('div');
+                label.textContent = file.name.length > 18 ? (file.name.slice(0, 15) + '...') : file.name;
+                label.title = file.name;
+
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+
+                item.appendChild(img);
+                item.appendChild(label);
+                previewList.appendChild(item);
+            });
+        });
+
+        form.addEventListener('submit', function (event) {
+            var rows = tbody.querySelectorAll('.js-daily-activity-item');
+            if (!rows.length) {
+                event.preventDefault();
+                alert('Tambahkan minimal 1 item aktivitas ke tabel.');
+                return;
+            }
+
+            rows.forEach(function (row, index) {
+                var codeInput = row.querySelector('[data-name="activity_code"]');
+                var detailHidden = row.querySelector('[data-name="activity_detail"]');
+                var qtyHidden = row.querySelector('[data-name="qty_activity"]');
+                var remarkInput = row.querySelector('[data-remark-input]');
+                var fileInput = row.querySelector('[data-photo-input]');
+
+                codeInput.name = 'activity_items[' + index + '][activity_code]';
+                detailHidden.name = 'activity_items[' + index + '][activity_detail]';
+                qtyHidden.name = 'activity_items[' + index + '][qty_activity]';
+                remarkInput.name = 'activity_items[' + index + '][remark_activity]';
+                fileInput.name = 'activity_item_photos_' + index + '[]';
+            });
+        });
+
+        syncUnit();
     })();
 </script>

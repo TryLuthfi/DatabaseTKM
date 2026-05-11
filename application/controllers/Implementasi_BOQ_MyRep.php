@@ -65,12 +65,145 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $data['compareRows'] = $compareRows;
         $data['historyMap'] = $historyMap;
         $data['canApprove'] = $this->isApprover();
+        $data['activityReady'] = $this->MImplementasi_BOQ_MyRep->activityTablesReady();
+        $data['activityDefinitions'] = $this->MImplementasi_BOQ_MyRep->getDailyActivityDefinitions();
+        $data['dailyActivities'] = $data['activityReady'] ? $this->MImplementasi_BOQ_MyRep->getDailyActivities($clusterId) : [];
+        $data['masterBoqItems'] = $this->MImplementasi_BOQ_MyRep->getMasterBoqItems();
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
         $this->load->view('Implementasi_BOQ_MyRep/detail', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function saveDailyActivity()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        if ($clusterId <= 0) {
+            $this->session->set_flashdata('error', 'Cluster implementasi tidak valid.');
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        if (!$this->MImplementasi_BOQ_MyRep->activityTablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel activity harian implementasi belum tersedia.');
+            redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $activityDate = $this->normalizeDate($this->input->post('activity_date'));
+        $scopeType = strtoupper(trim((string) $this->input->post('scope_type'))) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+        $teamCount = max(0, (int) $this->normalizeNumber($this->input->post('team_count')));
+        $workerCount = max(0, (int) $this->normalizeNumber($this->input->post('worker_count')));
+        $trackerRemark = trim((string) $this->input->post('tracker_remark'));
+        if ($activityDate === null) {
+            $this->session->set_flashdata('error', 'Tanggal aktivitas wajib diisi.');
+            redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $definitions = $this->MImplementasi_BOQ_MyRep->getDailyActivityDefinitions();
+        $definitionMap = [];
+        foreach ($definitions as $definition) {
+            $definitionMap[(string) ($definition['activity_code'] ?? '')] = $definition;
+        }
+        $activityItems = (array) $this->input->post('activity_items');
+        if (empty($activityItems)) {
+            // Backward compatibility for single-item submit.
+            $activityCode = strtoupper(trim((string) $this->input->post('activity_code')));
+            $qtyActivity = $this->normalizeNumber($this->input->post('qty_activity'));
+            if ($activityCode !== '' && $qtyActivity > 0) {
+                $activityItems[] = [
+                    'activity_code' => $activityCode,
+                    'qty_activity' => $qtyActivity,
+                    'unit_activity' => (string) $this->input->post('unit_activity'),
+                    'remark_activity' => (string) $this->input->post('remark_activity'),
+                ];
+            }
+        }
+
+        if (empty($activityItems)) {
+            $this->session->set_flashdata('error', 'Minimal 1 kategori aktivitas wajib ditambahkan.');
+            redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $createdCount = 0;
+        $allocatedQtyTotal = 0;
+        $userId = (int) $this->session->userdata('id_user');
+
+        foreach ($activityItems as $index => $item) {
+            $activityCode = strtoupper(trim((string) ($item['activity_code'] ?? '')));
+            $qtyActivity = $this->normalizeNumber($item['qty_activity'] ?? 0);
+            if ($activityCode === '' || $qtyActivity <= 0) {
+                continue;
+            }
+
+            $selectedDefinition = $definitionMap[$activityCode] ?? [];
+            if (empty($selectedDefinition)) {
+                continue;
+            }
+            $activityDetail = trim((string) ($item['activity_detail'] ?? ''));
+
+            $photoRows = $this->uploadDailyActivityPhotos($clusterId, $activityCode, 'activity_item_photos_' . $index);
+            if ($photoRows === false) {
+                redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+                return;
+            }
+            if (empty($photoRows)) {
+                $this->session->set_flashdata('error', 'Setiap kategori aktivitas wajib memiliki minimal 1 foto.');
+                redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+                return;
+            }
+
+            $created = $this->MImplementasi_BOQ_MyRep->createDailyActivity($clusterId, [
+                'activity_date' => $activityDate,
+                'activity_code' => $activityCode,
+                'activity_name' => (string) ($selectedDefinition['activity_name'] ?? $activityCode),
+                'activity_detail' => $activityDetail,
+                'boq_type' => (string) ($selectedDefinition['boq_type'] ?? ''),
+                'scope_type' => $scopeType,
+                'qty_activity' => $qtyActivity,
+                'unit_activity' => (string) ($selectedDefinition['default_unit'] ?? ''),
+                'team_count' => $teamCount,
+                'worker_count' => $workerCount,
+                'remark_activity' => trim((string) ($item['remark_activity'] ?? '')),
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ], $photoRows);
+
+            if ($created > 0) {
+                $createdCount++;
+                $allocatedQtyTotal += (float) $this->MImplementasi_BOQ_MyRep->applyDailyActivityToBoqProgress(
+                    $clusterId,
+                    $activityDate,
+                    $activityCode,
+                    $activityDetail,
+                    $qtyActivity,
+                    $userId,
+                    $scopeType,
+                    $trackerRemark
+                );
+            }
+        }
+
+        if ($createdCount <= 0) {
+            $this->session->set_flashdata('error', 'Gagal menyimpan progress harian aktivitas.');
+            redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $autoBoqMessage = $allocatedQtyTotal > 0
+            ? (' Auto BOQ: ' . number_format((float) $allocatedQtyTotal, 2, ',', '.') . ' teralokasi.')
+            : '';
+        $this->session->set_flashdata('success', $createdCount . ' aktivitas harian berhasil disimpan.' . $autoBoqMessage);
+        redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
     }
 
     public function printComplyPdf($clusterId = 0)
@@ -122,7 +255,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $pdf->SetFont('helvetica', '', 9);
 
         foreach ($complyGroups as $sectionTitle => $photos) {
-            $photoChunks = array_chunk(array_values($photos), 6);
+            $photoChunks = array_chunk(array_values($photos), 8);
             foreach ($photoChunks as $photoChunk) {
                 $pdf->AddPage();
                 $this->renderComplyPdfHeader($pdf, $cluster, (string) $sectionTitle);
@@ -292,6 +425,37 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
     }
 
+    public function deleteDailyActivity()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $activityDate = $this->normalizeDate($this->input->post('activity_date'));
+
+        if ($clusterId <= 0 || $activityDate === null) {
+            $this->session->set_flashdata('error', 'Data daily progress tidak valid.');
+            redirect('Implementasi_BOQ_MyRep');
+            return;
+        }
+
+        if (!$this->MImplementasi_BOQ_MyRep->activityTablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel activity harian implementasi belum tersedia.');
+            redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $deleted = $this->MImplementasi_BOQ_MyRep->deleteDailyActivitiesByDate($clusterId, $activityDate);
+        $this->session->set_flashdata(
+            $deleted ? 'success' : 'error',
+            $deleted ? ('Daily progress tanggal ' . $activityDate . ' berhasil dihapus.') : 'Gagal menghapus daily progress.'
+        );
+
+        redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-breakdown-pane');
+    }
+
     public function approveComplyPhoto()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -382,62 +546,88 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
 
         $clusterId = (int) $this->input->post('cluster_id');
-        $baselineItemId = (int) $this->input->post('baseline_item_id');
-        $complyLabel = trim((string) $this->input->post('comply_label'));
         $progressDate = date('Y-m-d');
         $redirectUrl = 'Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane';
 
-        if ($clusterId <= 0 || $baselineItemId <= 0) {
-            $this->session->set_flashdata('error', 'Item comply tidak valid.');
+        if ($clusterId <= 0) {
+            $this->session->set_flashdata('error', 'Cluster comply tidak valid.');
             redirect('Implementasi_BOQ_MyRep');
             return;
         }
 
-        if ($complyLabel === '') {
-            $this->session->set_flashdata('error', 'Nama / nomor comply wajib diisi.');
-            redirect($redirectUrl);
-            return;
+        $compareRows = $this->MImplementasi_BOQ_MyRep->getBaselineCompareRows($clusterId);
+        $itemContextMap = [];
+        foreach ($compareRows as $compareRow) {
+            $itemContextMap[(int) ($compareRow['id_boq_baseline_item'] ?? 0)] = $compareRow;
         }
 
-        $compareRows = $this->MImplementasi_BOQ_MyRep->getBaselineCompareRows($clusterId);
-        $itemContext = [];
-        foreach ($compareRows as $compareRow) {
-            if ((int) ($compareRow['id_boq_baseline_item'] ?? 0) === $baselineItemId) {
-                $itemContext = $compareRow;
-                break;
+        $entries = (array) $this->input->post('comply_entries');
+        if (empty($entries)) {
+            // Backward compatibility: single form payload.
+            $entries[] = [
+                'baseline_item_id' => (int) $this->input->post('baseline_item_id'),
+                'comply_label' => trim((string) $this->input->post('comply_label')),
+                'comply_photo_remarks' => trim((string) $this->input->post('comply_photo_remarks')),
+                '__legacy_file_input' => 'comply_photos_single',
+            ];
+        }
+
+        $createdCount = 0;
+        foreach ($entries as $entryIndex => $entry) {
+            $baselineItemId = (int) ($entry['baseline_item_id'] ?? 0);
+            $complyLabel = trim((string) ($entry['comply_label'] ?? ''));
+            if ($baselineItemId <= 0 || $complyLabel === '') {
+                continue;
+            }
+
+            $itemContext = $itemContextMap[$baselineItemId] ?? [];
+            if (empty($itemContext) || (int) ($itemContext['comply_enabled'] ?? 0) !== 1) {
+                $this->session->set_flashdata('error', 'Item comply tidak valid / tidak mendukung comply.');
+                redirect($redirectUrl);
+                return;
+            }
+
+            $photoRemarksRaw = trim((string) ($entry['comply_photo_remarks'] ?? ''));
+            $photoRemarks = [];
+            if ($photoRemarksRaw !== '') {
+                $photoRemarks = preg_split('/\r\n|\r|\n/', $photoRemarksRaw);
+                $photoRemarks = array_values(array_map('trim', (array) $photoRemarks));
+                $photoRemarks = array_values(array_filter($photoRemarks, static function ($line) {
+                    return $line !== '';
+                }));
+            }
+
+            $inputName = !empty($entry['__legacy_file_input'])
+                ? (string) $entry['__legacy_file_input']
+                : ('comply_entry_photos_' . $entryIndex);
+            $photoRows = $this->uploadStandaloneComplyPhotos($clusterId, $baselineItemId, $itemContext, $complyLabel, $photoRemarks, $inputName);
+            if ($photoRows === false) {
+                redirect($redirectUrl);
+                return;
+            }
+
+            if (empty($photoRows)) {
+                continue;
+            }
+
+            $created = $this->MImplementasi_BOQ_MyRep->createProgressEntry($clusterId, $baselineItemId, [
+                'progress_date' => $progressDate,
+                'qty_progress' => 0,
+                'status_progress' => 'ON PROGRESS',
+                'remark_progress' => 'Upload Foto Comply - ' . $complyLabel,
+                'created_by' => (int) $this->session->userdata('id_user'),
+                'updated_by' => (int) $this->session->userdata('id_user'),
+            ], $photoRows);
+            if ($created > 0) {
+                $createdCount++;
             }
         }
 
-        if (empty($itemContext) || (int) ($itemContext['comply_enabled'] ?? 0) !== 1) {
-            $this->session->set_flashdata('error', 'Item yang dipilih tidak mendukung foto comply.');
-            redirect($redirectUrl);
-            return;
-        }
-
-        $photoRows = $this->uploadStandaloneComplyPhotos($clusterId, $baselineItemId, $itemContext, $complyLabel);
-        if ($photoRows === false) {
-            redirect($redirectUrl);
-            return;
-        }
-
-        if (empty($photoRows)) {
-            $this->session->set_flashdata('error', 'Minimal 1 foto comply wajib diupload.');
-            redirect($redirectUrl);
-            return;
-        }
-
-        $created = $this->MImplementasi_BOQ_MyRep->createProgressEntry($clusterId, $baselineItemId, [
-            'progress_date' => $progressDate,
-            'qty_progress' => 0,
-            'status_progress' => 'ON PROGRESS',
-            'remark_progress' => 'Upload Foto Comply - ' . $complyLabel,
-            'created_by' => (int) $this->session->userdata('id_user'),
-            'updated_by' => (int) $this->session->userdata('id_user'),
-        ], $photoRows);
-
         $this->session->set_flashdata(
-            $created > 0 ? 'success' : 'error',
-            $created > 0 ? 'Foto comply berhasil diupload dan menunggu approval HO.' : 'Gagal menyimpan foto comply.'
+            $createdCount > 0 ? 'success' : 'error',
+            $createdCount > 0
+                ? ('Foto comply berhasil diupload (' . $createdCount . ' entry) dan menunggu approval HO.')
+                : 'Gagal menyimpan foto comply.'
         );
         redirect($redirectUrl);
     }
@@ -501,13 +691,68 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         return $uploadedRows;
     }
 
-    private function uploadStandaloneComplyPhotos($clusterId, $baselineItemId, $itemContext, $label)
+    private function uploadDailyActivityPhotos($clusterId, $activityCode, $inputName = 'activity_photos')
+    {
+        $clusterId = (int) $clusterId;
+        $files = $_FILES[$inputName] ?? null;
+        if (empty($files['name']) || !is_array($files['name'])) {
+            return [];
+        }
+
+        $uploadDir = './uploads/myrep_boq_activity/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $uploadedRows = [];
+        $totalFiles = count($files['name']);
+        for ($i = 0; $i < $totalFiles; $i++) {
+            if (empty($files['name'][$i])) {
+                continue;
+            }
+
+            $_FILES['single_activity_photo'] = [
+                'name' => $files['name'][$i],
+                'type' => $files['type'][$i],
+                'tmp_name' => $files['tmp_name'][$i],
+                'error' => $files['error'][$i],
+                'size' => $files['size'][$i],
+            ];
+
+            $extension = pathinfo((string) $files['name'][$i], PATHINFO_EXTENSION);
+            $fileName = 'ACTIVITY_' . $clusterId . '_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', $activityCode) . '_' . date('YmdHis') . '_' . ($i + 1) . '.' . $extension;
+            $config = [
+                'upload_path' => $uploadDir,
+                'allowed_types' => 'jpg|jpeg|png|webp',
+                'max_size' => 30720,
+                'file_name' => $fileName,
+                'overwrite' => true,
+            ];
+
+            $this->upload->initialize($config);
+            if (!$this->upload->do_upload('single_activity_photo')) {
+                $this->session->set_flashdata('error', strip_tags($this->upload->display_errors()));
+                return false;
+            }
+
+            $fileData = $this->upload->data();
+            $uploadedRows[] = [
+                'file_name' => (string) $fileData['file_name'],
+                'file_path' => 'uploads/myrep_boq_activity/' . $fileData['file_name'],
+                'caption' => '',
+            ];
+        }
+
+        return $uploadedRows;
+    }
+
+    private function uploadStandaloneComplyPhotos($clusterId, $baselineItemId, $itemContext, $label, array $photoRemarks = [], $inputName = 'comply_photos_single')
     {
         $clusterId = (int) $clusterId;
         $baselineItemId = (int) $baselineItemId;
         $itemName = trim((string) ($itemContext['item_name'] ?? 'Item'));
         $requiredPhotoCount = max((int) ($itemContext['comply_photo_per_label'] ?? 0), 1);
-        $files = $_FILES['comply_photos_single'] ?? null;
+        $files = $_FILES[$inputName] ?? null;
 
         if (empty($files['name']) || !is_array($files['name'])) {
             return [];
@@ -519,6 +764,11 @@ class Implementasi_BOQ_MyRep extends CI_Controller
 
         if (count($validFileNames) < $requiredPhotoCount) {
             $this->session->set_flashdata('error', 'Minimal ' . $requiredPhotoCount . ' foto comply wajib diupload untuk item ' . $itemName . '.');
+            return false;
+        }
+
+        if (count($photoRemarks) !== count($validFileNames)) {
+            $this->session->set_flashdata('error', 'Setiap foto comply wajib punya remark masing-masing. Jumlah remark harus sama dengan jumlah foto yang diupload.');
             return false;
         }
 
@@ -564,7 +814,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             $uploadedRows[] = [
                 'file_name' => $fileData['file_name'],
                 'file_path' => 'uploads/myrep_boq_progress/' . $fileData['file_name'],
-                'caption' => 'Comply - ' . $label,
+                'caption' => (string) ($photoRemarks[$uploadIndex] ?? ('Comply - ' . $label)),
                 'photo_category' => 'COMPLY',
                 'comply_label' => $label,
                 'status_photo' => 'UPLOADED',
@@ -687,9 +937,9 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $leftX = 8;
         $rightX = 106;
         $tileWidth = 90;
-        $tileHeight = 72;
-        $imageHeight = 60;
-        $rowGap = 6;
+        $tileHeight = 56;
+        $imageHeight = 45;
+        $rowGap = 4;
 
         foreach (array_values($photos) as $index => $photo) {
             $column = $index % 2;
@@ -704,28 +954,28 @@ class Implementasi_BOQ_MyRep extends CI_Controller
 
             $pdf->Rect($x, $y, $tileWidth, $tileHeight);
             $pdf->Rect($x, $y, $tileWidth, $imageHeight);
-            $pdf->Rect($x, $y + $imageHeight, $tileWidth, 6);
-            $pdf->Rect($x, $y + $imageHeight + 6, $tileWidth, 6);
+            $pdf->Rect($x, $y + $imageHeight, $tileWidth, 5.5);
+            $pdf->Rect($x, $y + $imageHeight + 5.5, $tileWidth, 5.5);
 
             if ($imagePath !== '') {
                 try {
                     $pdf->Image($imagePath, $x + 1.5, $y + 1.5, $tileWidth - 3, $imageHeight - 3, '', '', '', false, 150, '', false, false, 1, false, false, false);
                 } catch (\Throwable $e) {
-                    $pdf->SetFont('helvetica', '', 8);
-                    $pdf->SetXY($x + 4, $y + 26);
+                    $pdf->SetFont('helvetica', '', 7.5);
+                    $pdf->SetXY($x + 4, $y + 20);
                     $pdf->Cell($tileWidth - 8, 5, 'Gagal memuat gambar', 0, 0, 'C');
                 }
             } else {
-                $pdf->SetFont('helvetica', '', 8);
-                $pdf->SetXY($x + 4, $y + 26);
+                $pdf->SetFont('helvetica', '', 7.5);
+                $pdf->SetXY($x + 4, $y + 20);
                 $pdf->Cell($tileWidth - 8, 5, 'File foto tidak ditemukan', 0, 0, 'C');
             }
 
-            $pdf->SetFont('helvetica', 'B', 8);
-            $pdf->SetXY($x + 1, $y + $imageHeight + 1.2);
+            $pdf->SetFont('helvetica', 'B', 7);
+            $pdf->SetXY($x + 1, $y + $imageHeight + 0.8);
             $pdf->Cell($tileWidth - 2, 4, 'Description: ' . $description, 0, 0, 'C');
-            $pdf->SetFont('helvetica', '', 7);
-            $pdf->SetXY($x + 1, $y + $imageHeight + 7.2);
+            $pdf->SetFont('helvetica', '', 6.6);
+            $pdf->SetXY($x + 1, $y + $imageHeight + 6.1);
             $pdf->Cell($tileWidth - 2, 4, $metaLine, 0, 0, 'C');
         }
     }

@@ -3,6 +3,380 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MImplementasi_BOQ_MyRep extends CI_Model
 {
+    public function activityTablesReady()
+    {
+        return $this->db->table_exists('tb_myrep_impl_daily_activity')
+            && $this->db->table_exists('tb_myrep_impl_daily_activity_photo');
+    }
+
+    public function getDailyActivityDefinitions()
+    {
+        return [
+            ['activity_code' => 'PULLING_CABLE', 'activity_name' => 'Pulling Cable', 'boq_type' => 'CABLE', 'default_unit' => 'METER'],
+            ['activity_code' => 'DIGGING_HOLE', 'activity_name' => 'Digging Hole', 'boq_type' => 'TIANG', 'default_unit' => 'HOLE'],
+            ['activity_code' => 'TANAM_TIANG', 'activity_name' => 'Tanam Tiang', 'boq_type' => 'TIANG', 'default_unit' => 'BATANG'],
+            ['activity_code' => 'COR_FONDATION', 'activity_name' => 'Cor Fondation', 'boq_type' => 'TIANG', 'default_unit' => 'BATANG'],
+            ['activity_code' => 'SLING_WIRE', 'activity_name' => 'Sling Wire', 'boq_type' => 'SLING WIRE', 'default_unit' => 'SPAN'],
+            ['activity_code' => 'INSTALASI_FAT_FDT', 'activity_name' => 'Instalasi FAT / FDT', 'boq_type' => 'FAT/FDT', 'default_unit' => 'UNIT'],
+            ['activity_code' => 'RAPIH_AKSESORIS', 'activity_name' => 'Perapihan Aksesoris', 'boq_type' => 'PERAPIHAN', 'default_unit' => 'TITIK'],
+            ['activity_code' => 'RAPIH_LABEL_TIANG', 'activity_name' => 'Perapihan Label Tiang', 'boq_type' => 'PERAPIHAN', 'default_unit' => 'LABEL'],
+            ['activity_code' => 'RAPIH_LABEL_KABEL', 'activity_name' => 'Perapihan Label Kabel', 'boq_type' => 'PERAPIHAN', 'default_unit' => 'LABEL'],
+        ];
+    }
+
+    public function getMasterBoqItems()
+    {
+        if (!$this->db->table_exists('md_myrep_boq_item')) {
+            return [];
+        }
+
+        $this->db
+            ->select('id_boq_item, item_name, excel_item_name, item_type, sort_no')
+            ->from('md_myrep_boq_item');
+
+        if ($this->db->field_exists('is_active', 'md_myrep_boq_item')) {
+            $this->db->where('is_active', 1);
+        }
+
+        return $this->db
+            ->order_by('sort_no', 'ASC')
+            ->order_by('item_name', 'ASC')
+            ->get()
+            ->result_array();
+    }
+
+    public function createDailyActivity($clusterId, array $payload, array $photos = [])
+    {
+        if (!$this->activityTablesReady()) {
+            return 0;
+        }
+
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return 0;
+        }
+
+        $this->db->trans_start();
+        $this->db->insert('tb_myrep_impl_daily_activity', [
+            'id_myrep_cluster' => $clusterId,
+            'activity_date' => (string) ($payload['activity_date'] ?? date('Y-m-d')),
+            'activity_code' => (string) ($payload['activity_code'] ?? ''),
+            'activity_name' => (string) ($payload['activity_name'] ?? ''),
+            'activity_detail' => !empty($payload['activity_detail']) ? (string) $payload['activity_detail'] : null,
+            'boq_type' => (string) ($payload['boq_type'] ?? ''),
+            'scope_type' => (string) ($payload['scope_type'] ?? 'CLUSTER'),
+            'qty_activity' => (float) ($payload['qty_activity'] ?? 0),
+            'unit_activity' => (string) ($payload['unit_activity'] ?? ''),
+            'team_count' => (int) ($payload['team_count'] ?? 0),
+            'worker_count' => (int) ($payload['worker_count'] ?? 0),
+            'remark_activity' => !empty($payload['remark_activity']) ? (string) $payload['remark_activity'] : null,
+            'created_by' => (int) ($payload['created_by'] ?? 0),
+            'updated_by' => (int) ($payload['updated_by'] ?? 0),
+        ]);
+        $activityId = (int) $this->db->insert_id();
+
+        foreach ($photos as $photo) {
+            $this->db->insert('tb_myrep_impl_daily_activity_photo', [
+                'id_daily_activity' => $activityId,
+                'file_name' => (string) ($photo['file_name'] ?? ''),
+                'file_path' => (string) ($photo['file_path'] ?? ''),
+                'caption' => !empty($photo['caption']) ? (string) $photo['caption'] : null,
+                'uploaded_by' => (int) ($payload['created_by'] ?? 0),
+            ]);
+        }
+
+        $this->db->trans_complete();
+        return $this->db->trans_status() ? $activityId : 0;
+    }
+
+    public function applyDailyActivityToBoqProgress($clusterId, $progressDate, $activityCode, $activityDetail, $qtyActivity, $userId, $scopeType = 'CLUSTER', $trackerRemark = '')
+    {
+        $clusterId = (int) $clusterId;
+        $userId = (int) $userId;
+        $qtyActivity = (float) $qtyActivity;
+        $activityCode = strtoupper(trim((string) $activityCode));
+        $activityDetail = strtoupper(trim((string) $activityDetail));
+        $scopeType = strtoupper(trim((string) $scopeType)) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+
+        if ($clusterId <= 0 || $userId <= 0 || $qtyActivity <= 0) {
+            return 0;
+        }
+
+        $rows = $this->getBaselineCompareRows($clusterId);
+        if (empty($rows)) {
+            return 0;
+        }
+
+        $targetRows = [];
+        $remark = trim((string) $trackerRemark);
+        $allowOverBoq = false;
+        if ($remark === '') {
+            $remark = '[AUTO] Aktivitas Harian (' . $activityCode . ') (' . $scopeType . ')';
+        }
+
+        if ($activityCode === 'TANAM_TIANG') {
+            $targetRows = array_values(array_filter($rows, function ($row) use ($activityDetail) {
+                $type = strtoupper(trim((string) ($row['item_type'] ?? '')));
+                if ($type !== 'TIANG') {
+                    return false;
+                }
+                if ($activityDetail === '' || $activityDetail === '-') {
+                    return true;
+                }
+                $itemName = strtoupper(trim((string) ($row['item_name'] ?? '')));
+                $excelName = strtoupper(trim((string) ($row['excel_item_name'] ?? '')));
+                return strpos($itemName . ' ' . $excelName, $activityDetail) !== false;
+            }));
+            // Jika detail tiang yang diinput tidak ada di baseline (contoh: BOQ hanya Tiang 7,
+            // implementasi input Tiang 9), fallback ke seluruh bucket TIANG agar tetap tercatat
+            // sebagai progress TIANG dan bisa over BOQ sesuai kebutuhan lapangan.
+            if (empty($targetRows)) {
+                $targetRows = array_values(array_filter($rows, static function ($row) {
+                    return strtoupper(trim((string) ($row['item_type'] ?? ''))) === 'TIANG';
+                }));
+            }
+            $allowOverBoq = true;
+            if (trim((string) $trackerRemark) === '') {
+                $remark = '[AUTO] Aktivitas Tanam Tiang (' . $scopeType . ')';
+            }
+        } elseif ($activityCode === 'PULLING_CABLE') {
+            $targetRows = array_values(array_filter($rows, function ($row) use ($activityDetail) {
+                $type = strtoupper(trim((string) ($row['item_type'] ?? '')));
+                if ($type !== 'CABLE') {
+                    return false;
+                }
+                if ($activityDetail === '' || $activityDetail === '-') {
+                    return true;
+                }
+                $itemName = strtoupper(trim((string) ($row['item_name'] ?? '')));
+                $excelName = strtoupper(trim((string) ($row['excel_item_name'] ?? '')));
+                return strpos($itemName . ' ' . $excelName, $activityDetail) !== false;
+            }));
+            if (trim((string) $trackerRemark) === '') {
+                $remark = '[AUTO] Aktivitas Pulling Cable (' . $scopeType . ')';
+            }
+        } elseif ($activityCode === 'INSTALASI_FAT_FDT') {
+            $targetRows = array_values(array_filter($rows, function ($row) use ($activityDetail) {
+                $type = strtoupper(trim((string) ($row['item_type'] ?? '')));
+                if (!in_array($type, ['FAT', 'FDT'], true)) {
+                    return false;
+                }
+                if ($activityDetail === '' || $activityDetail === '-') {
+                    return true;
+                }
+                $itemName = strtoupper(trim((string) ($row['item_name'] ?? '')));
+                $excelName = strtoupper(trim((string) ($row['excel_item_name'] ?? '')));
+                return strpos($itemName . ' ' . $excelName, $activityDetail) !== false;
+            }));
+            if (trim((string) $trackerRemark) === '') {
+                $remark = '[AUTO] Aktivitas Instalasi FAT/FDT (' . $scopeType . ')';
+            }
+        } elseif ($activityCode === 'SLING_WIRE') {
+            $targetRows = array_values(array_filter($rows, static function ($row) {
+                return strtoupper(trim((string) ($row['item_type'] ?? ''))) === 'SLING WIRE';
+            }));
+            if (trim((string) $trackerRemark) === '') {
+                $remark = '[AUTO] Aktivitas Sling Wire (' . $scopeType . ')';
+            }
+        }
+
+        if (empty($targetRows)) {
+            return 0;
+        }
+
+        $remainingToAllocate = $qtyActivity;
+        $allocatedTotal = 0;
+        $firstTargetBaselineItemId = (int) (($targetRows[0]['id_boq_baseline_item'] ?? 0));
+
+        foreach ($targetRows as $targetRow) {
+            if ($remainingToAllocate <= 0) {
+                break;
+            }
+
+            $baselineItemId = (int) ($targetRow['id_boq_baseline_item'] ?? 0);
+            $remainingQty = (float) ($targetRow['remaining_qty'] ?? 0);
+            if ($baselineItemId <= 0) {
+                continue;
+            }
+            if (!$allowOverBoq && $remainingQty <= 0) {
+                continue;
+            }
+
+            $qtyToInsert = $allowOverBoq
+                ? ($remainingQty > 0 ? min($remainingToAllocate, $remainingQty) : 0)
+                : min($remainingToAllocate, $remainingQty);
+            if ($qtyToInsert <= 0) {
+                continue;
+            }
+
+            $created = $this->createProgressEntry($clusterId, $baselineItemId, [
+                'progress_date' => (string) $progressDate,
+                'qty_progress' => $qtyToInsert,
+                'status_progress' => 'ON PROGRESS',
+                'remark_progress' => $remark,
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ], []);
+
+            if ($created > 0) {
+                $allocatedTotal += $qtyToInsert;
+                $remainingToAllocate -= $qtyToInsert;
+            }
+        }
+
+        // Khusus TANAM TIANG: jika qty implementasi masih tersisa walau plan BOQ sudah habis,
+        // tetap catat ke BOQ tracker sebagai over-BOQ.
+        if ($allowOverBoq && $remainingToAllocate > 0 && $firstTargetBaselineItemId > 0) {
+            $created = $this->createProgressEntry($clusterId, $firstTargetBaselineItemId, [
+                'progress_date' => (string) $progressDate,
+                'qty_progress' => $remainingToAllocate,
+                'status_progress' => 'ON PROGRESS',
+                'remark_progress' => $remark . ' [OVER BOQ]',
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ], []);
+            if ($created > 0) {
+                $allocatedTotal += $remainingToAllocate;
+                $remainingToAllocate = 0;
+            }
+        }
+
+        return $allocatedTotal;
+    }
+
+    public function getDailyActivities($clusterId)
+    {
+        if (!$this->activityTablesReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('a.*, u.nama_user')
+            ->from('tb_myrep_impl_daily_activity a')
+            ->join('tb_master_user u', 'u.id_user = a.created_by', 'left')
+            ->where('a.id_myrep_cluster', (int) $clusterId)
+            ->order_by('a.activity_date', 'DESC')
+            ->order_by('a.id_daily_activity', 'DESC')
+            ->get()
+            ->result_array();
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        $activityIds = array_column($rows, 'id_daily_activity');
+        $photoRows = $this->db
+            ->from('tb_myrep_impl_daily_activity_photo')
+            ->where_in('id_daily_activity', $activityIds)
+            ->order_by('id_activity_photo', 'ASC')
+            ->get()
+            ->result_array();
+
+        $photoMap = [];
+        foreach ($photoRows as $photoRow) {
+            $photoMap[(int) ($photoRow['id_daily_activity'] ?? 0)][] = $photoRow;
+        }
+
+        foreach ($rows as &$row) {
+            $row['photos'] = $photoMap[(int) ($row['id_daily_activity'] ?? 0)] ?? [];
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    public function deleteDailyActivity($clusterId, $dailyActivityId)
+    {
+        if (!$this->activityTablesReady()) {
+            return false;
+        }
+
+        $clusterId = (int) $clusterId;
+        $dailyActivityId = (int) $dailyActivityId;
+        if ($clusterId <= 0 || $dailyActivityId <= 0) {
+            return false;
+        }
+
+        $activityRow = $this->db
+            ->from('tb_myrep_impl_daily_activity')
+            ->where('id_daily_activity', $dailyActivityId)
+            ->where('id_myrep_cluster', $clusterId)
+            ->get()
+            ->row_array();
+
+        if (empty($activityRow)) {
+            return false;
+        }
+
+        $photoRows = $this->db
+            ->from('tb_myrep_impl_daily_activity_photo')
+            ->where('id_daily_activity', $dailyActivityId)
+            ->get()
+            ->result_array();
+
+        $this->db->trans_start();
+        $this->db->where('id_daily_activity', $dailyActivityId)->delete('tb_myrep_impl_daily_activity_photo');
+        $this->db->where('id_daily_activity', $dailyActivityId)->where('id_myrep_cluster', $clusterId)->delete('tb_myrep_impl_daily_activity');
+        $this->db->trans_complete();
+
+        if (!$this->db->trans_status()) {
+            return false;
+        }
+
+        foreach ($photoRows as $photoRow) {
+            $this->deletePhysicalFile((string) ($photoRow['file_path'] ?? ''));
+        }
+
+        return true;
+    }
+
+    public function deleteDailyActivitiesByDate($clusterId, $activityDate)
+    {
+        if (!$this->activityTablesReady()) {
+            return false;
+        }
+
+        $clusterId = (int) $clusterId;
+        $activityDate = trim((string) $activityDate);
+        if ($clusterId <= 0 || $activityDate === '') {
+            return false;
+        }
+
+        $activityRows = $this->db
+            ->select('id_daily_activity')
+            ->from('tb_myrep_impl_daily_activity')
+            ->where('id_myrep_cluster', $clusterId)
+            ->where('activity_date', $activityDate)
+            ->get()
+            ->result_array();
+
+        if (empty($activityRows)) {
+            return false;
+        }
+
+        $dailyIds = array_map('intval', array_column($activityRows, 'id_daily_activity'));
+        $photoRows = $this->db
+            ->from('tb_myrep_impl_daily_activity_photo')
+            ->where_in('id_daily_activity', $dailyIds)
+            ->get()
+            ->result_array();
+
+        $this->db->trans_start();
+        $this->db->where_in('id_daily_activity', $dailyIds)->delete('tb_myrep_impl_daily_activity_photo');
+        $this->db->where('id_myrep_cluster', $clusterId)->where('activity_date', $activityDate)->delete('tb_myrep_impl_daily_activity');
+        $this->db->trans_complete();
+
+        if (!$this->db->trans_status()) {
+            return false;
+        }
+
+        foreach ($photoRows as $photoRow) {
+            $this->deletePhysicalFile((string) ($photoRow['file_path'] ?? ''));
+        }
+
+        return true;
+    }
+
     public function tablesReady()
     {
         $requiredTables = [
@@ -30,8 +404,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         $this->db
-            ->distinct()
-            ->select('c.city_name')
+            ->select('c.id_myrep_cluster, c.city_name')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_boq_baseline b', 'b.id_myrep_cluster = c.id_myrep_cluster AND b.status_baseline = \'ACTIVE\'', 'inner', false);
         if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
@@ -45,15 +418,21 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             ->get()
             ->result_array();
 
-        $result = [];
+        $eligibilityMap = $this->getFullUploadEligibilityMap(array_column($rows, 'id_myrep_cluster'));
+        $resultMap = [];
         foreach ($rows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            if (empty($eligibilityMap[$clusterId])) {
+                continue;
+            }
+
             $city = strtoupper(trim((string) ($row['city_name'] ?? '')));
             if ($city !== '') {
-                $result[] = $city;
+                $resultMap[$city] = true;
             }
         }
 
-        return $result;
+        return array_keys($resultMap);
     }
 
     public function getRows($city = '', $status = '')
@@ -81,11 +460,16 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             ->get()
             ->result_array();
 
+        $eligibilityMap = $this->getFullUploadEligibilityMap(array_column($rows, 'id_myrep_cluster'));
         $metaMap = $this->getClusterProgressMetaMap(array_column($rows, 'id_myrep_cluster'));
         $filtered = [];
 
         foreach ($rows as $row) {
             $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            if (empty($eligibilityMap[$clusterId])) {
+                continue;
+            }
+
             $meta = $metaMap[$clusterId] ?? $this->buildEmptyClusterMeta();
             $row = array_merge($row, $meta);
 
@@ -123,7 +507,77 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             return [];
         }
 
+        $eligibilityMap = $this->getFullUploadEligibilityMap([(int) $clusterId]);
+        if (empty($eligibilityMap[(int) $clusterId])) {
+            return [];
+        }
+
         return array_merge($row, $this->getClusterProgressMetaMap([(int) $clusterId])[(int) $clusterId] ?? $this->buildEmptyClusterMeta());
+    }
+
+    private function getFullUploadEligibilityMap($clusterIds)
+    {
+        $clusterIds = array_values(array_filter(array_map('intval', (array) $clusterIds)));
+        if (empty($clusterIds)) {
+            return [];
+        }
+
+        $requiredFlowTypes = ['DRM', 'DRM_SUBFEEDER'];
+        $statusMap = [];
+
+        foreach ($requiredFlowTypes as $flowType) {
+            $requiredRows = $this->db
+                ->select('COUNT(i.id_doc_item) AS total_doc', false)
+                ->from('md_myrep_flow_doc_group g')
+                ->join('md_myrep_flow_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1', 'inner')
+                ->where('g.flow_type', $flowType)
+                ->where('g.is_active', 1)
+                ->get()
+                ->row_array();
+
+            $totalDoc = (int) ($requiredRows['total_doc'] ?? 0);
+            if ($totalDoc <= 0) {
+                foreach ($clusterIds as $clusterId) {
+                    if (!isset($statusMap[$clusterId])) {
+                        $statusMap[$clusterId] = [];
+                    }
+                    $statusMap[$clusterId][$flowType] = false;
+                }
+                continue;
+            }
+
+            $uploadedRows = $this->db
+                ->select('p.id_myrep_cluster, SUM(CASE WHEN f.id_doc_file IS NOT NULL THEN 1 ELSE 0 END) AS uploaded_doc', false)
+                ->from('tb_myrep_flow_doc_package p')
+                ->join('md_myrep_flow_doc_group g', 'g.id_doc_group = p.id_doc_group AND g.flow_type = ' . $this->db->escape($flowType) . ' AND g.is_active = 1', 'inner', false)
+                ->join('md_myrep_flow_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1', 'inner')
+                ->join('tb_myrep_flow_doc_file f', 'f.id_doc_package = p.id_doc_package AND f.id_doc_item = i.id_doc_item', 'left')
+                ->where('p.flow_type', $flowType)
+                ->where_in('p.id_myrep_cluster', $clusterIds)
+                ->group_by('p.id_myrep_cluster')
+                ->get()
+                ->result_array();
+
+            $uploadedMap = [];
+            foreach ($uploadedRows as $uploadedRow) {
+                $uploadedMap[(int) ($uploadedRow['id_myrep_cluster'] ?? 0)] = (int) ($uploadedRow['uploaded_doc'] ?? 0);
+            }
+
+            foreach ($clusterIds as $clusterId) {
+                if (!isset($statusMap[$clusterId])) {
+                    $statusMap[$clusterId] = [];
+                }
+
+                $statusMap[$clusterId][$flowType] = ((int) ($uploadedMap[$clusterId] ?? 0) >= $totalDoc);
+            }
+        }
+
+        $eligibilityMap = [];
+        foreach ($clusterIds as $clusterId) {
+            $eligibilityMap[$clusterId] = !empty($statusMap[$clusterId]['DRM']) && !empty($statusMap[$clusterId]['DRM_SUBFEEDER']);
+        }
+
+        return $eligibilityMap;
     }
 
     public function getBaselineCompareRows($clusterId)
@@ -710,6 +1164,17 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         if (strpos($combined, 'FDT') !== false) {
+            if (strpos($combined, 'OPM FDT') !== false) {
+                return [
+                    'comply_enabled' => 1,
+                    'comply_photo_per_label' => 9,
+                    'comply_entry_limit_mode' => 'MATCH_QTY',
+                    'comply_label_prefix' => 'OPM FDT',
+                    'comply_label_placeholder' => 'Contoh: OPM FDT 001',
+                    'comply_requirement_text' => 'Jumlah entry comply mengikuti qty implementasi. Setiap OPM FDT wajib 9 foto dengan remark masing-masing foto.',
+                ];
+            }
+
             return [
                 'comply_enabled' => 1,
                 'comply_photo_per_label' => 2,
@@ -721,6 +1186,17 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         if (strpos($combined, 'FAT') !== false) {
+            if (strpos($combined, 'OPM FAT') !== false) {
+                return [
+                    'comply_enabled' => 1,
+                    'comply_photo_per_label' => 8,
+                    'comply_entry_limit_mode' => 'MATCH_QTY',
+                    'comply_label_prefix' => 'OPM FAT',
+                    'comply_label_placeholder' => 'Contoh: OPM FAT 001',
+                    'comply_requirement_text' => 'Jumlah entry comply mengikuti qty implementasi. Setiap OPM FAT wajib 8 foto dengan remark masing-masing foto.',
+                ];
+            }
+
             return [
                 'comply_enabled' => 1,
                 'comply_photo_per_label' => 2,

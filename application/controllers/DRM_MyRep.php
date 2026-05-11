@@ -157,11 +157,6 @@ class DRM_MyRep extends CI_Controller
             'updated_by' => $userId,
         ]);
 
-        if ($result) {
-            $clusterDetail = $this->MDRM_MyRep->getDrmByClusterId($clusterId);
-            $this->sendDrmNotification('cluster_masuk', $clusterDetail, 'DRM');
-        }
-
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Data DRM berhasil ditambahkan.' : 'Gagal menyimpan data DRM.');
         redirect($result ? ('DRM_MyRep/detail/' . $clusterId) : 'DRM_MyRep');
     }
@@ -237,8 +232,6 @@ class DRM_MyRep extends CI_Controller
             redirect('DRM_MyRep');
             return;
         }
-        $notificationEvent = !empty($detail['id_doc_file']) ? 'document_revised' : 'document_masuk';
-
         $isNoDocumentRequired = (int) $this->input->post('is_document_not_required') === 1;
         if (!$isNoDocumentRequired && empty($_FILES['file']['name'])) {
             $this->session->set_flashdata('error', 'File dokumen wajib dipilih.');
@@ -260,7 +253,7 @@ class DRM_MyRep extends CI_Controller
 
             $config = [
                 'upload_path' => $uploadDir,
-                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
+                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png|rar|zip',
                 'max_size' => 30720,
                 'file_name' => $fileName,
                 'overwrite' => true,
@@ -289,11 +282,317 @@ class DRM_MyRep extends CI_Controller
 
         if ($fileId > 0) {
             $clusterDetail = $this->MDRM_MyRep->getDrmByClusterId($clusterId);
-            $this->sendDrmNotification($notificationEvent, $clusterDetail, (string) ($detail['doc_name'] ?? 'DRM'));
+            $notificationContext = $this->buildDrmFullUploadNotificationContext($clusterId, $scopeType);
+            if (!empty($notificationContext['should_notify'])) {
+                $this->sendDrmNotification(
+                    (string) $notificationContext['event_name'],
+                    $clusterDetail,
+                    (string) ($detail['doc_name'] ?? 'DRM'),
+                    (string) $notificationContext['module_label']
+                );
+            }
         }
 
         $this->session->set_flashdata($fileId > 0 ? 'success' : 'error', $fileId > 0 ? 'Dokumen DRM berhasil diupload.' : 'Dokumen DRM gagal disimpan.');
         redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function uploadBulkDocuments()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MDRM_MyRep->drmDocumentTablesReady()) {
+            $this->session->set_flashdata('error', 'Tabel dokumen DRM belum tersedia.');
+            redirect('DRM_MyRep');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
+        $docItemIds = (array) $this->input->post('bulk_doc_item_ids');
+        if ($clusterId <= 0 || empty($docItemIds)) {
+            $this->session->set_flashdata('error', 'Data bulk upload DRM tidak lengkap.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $uploadDir = './uploads/myrep_drm/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $uploadedCount = 0;
+        $errors = [];
+        $userId = (int) $this->session->userdata('id_user');
+
+        foreach ($docItemIds as $docItemIdRaw) {
+            $docItemId = (int) $docItemIdRaw;
+            if ($docItemId <= 0) {
+                continue;
+            }
+
+            $fieldName = 'bulk_file_' . $docItemId;
+            $isNoDocumentRequired = (int) $this->input->post('bulk_not_required_' . $docItemId) === 1;
+            $hasFile = !empty($_FILES[$fieldName]['name']);
+            if (!$isNoDocumentRequired && !$hasFile) {
+                continue;
+            }
+
+            $detail = $this->MDRM_MyRep->getDrmDocumentDetail($clusterId, $docItemId, $scopeType);
+            if (empty($detail)) {
+                $errors[] = 'Konfigurasi dokumen item #' . $docItemId . ' tidak ditemukan.';
+                continue;
+            }
+
+            $docName = strtoupper(trim((string) ($detail['doc_name'] ?? '')));
+            if ($docName === 'APD BOQ') {
+                continue;
+            }
+
+            $fileName = '';
+            $filePath = '';
+            if (!$isNoDocumentRequired) {
+                $extension = pathinfo($_FILES[$fieldName]['name'], PATHINFO_EXTENSION);
+                $safeDocName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($detail['doc_name'] ?? 'DRM'));
+                $fileName = 'DRM_' . $scopeType . '_' . $clusterId . '_' . $docItemId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
+                $config = [
+                    'upload_path' => $uploadDir,
+                    'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png|rar|zip',
+                    'max_size' => 30720,
+                    'file_name' => $fileName,
+                    'overwrite' => true,
+                ];
+
+                $this->upload->initialize($config);
+                if (!$this->upload->do_upload($fieldName)) {
+                    $errors[] = ($detail['doc_name'] ?? ('Item #' . $docItemId)) . ': ' . strip_tags($this->upload->display_errors());
+                    continue;
+                }
+
+                $fileData = $this->upload->data();
+                $fileName = (string) $fileData['file_name'];
+                $filePath = 'uploads/myrep_drm/' . $fileData['file_name'];
+            }
+
+            $savedFileId = $this->MDRM_MyRep->saveDrmFileUpload($clusterId, $docItemId, [
+                'file_name' => $fileName,
+                'file_path' => $filePath,
+                'is_document_not_required' => $isNoDocumentRequired ? 1 : 0,
+                'status_file' => 'UPLOADED',
+                'remark' => trim((string) $this->input->post('bulk_remark_' . $docItemId)),
+                'uploaded_by' => $userId,
+            ], $scopeType);
+
+            if ($savedFileId > 0) {
+                $uploadedCount++;
+            } else {
+                $errors[] = ($detail['doc_name'] ?? ('Item #' . $docItemId)) . ': gagal disimpan.';
+            }
+        }
+
+        if ($uploadedCount <= 0) {
+            $this->session->set_flashdata('error', !empty($errors) ? implode(' | ', $errors) : 'Tidak ada dokumen yang diupload.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $notificationContext = $this->buildDrmFullUploadNotificationContext($clusterId, $scopeType);
+        if (!empty($notificationContext['should_notify'])) {
+            $clusterDetail = $this->MDRM_MyRep->getDrmByClusterId($clusterId);
+            $this->sendDrmNotification(
+                (string) $notificationContext['event_name'],
+                $clusterDetail,
+                'Bulk Upload',
+                (string) $notificationContext['module_label']
+            );
+        }
+
+        $message = $uploadedCount . ' dokumen DRM berhasil diupload.';
+        if (!empty($errors)) {
+            $message .= ' Beberapa item gagal: ' . implode(' | ', $errors);
+        }
+        $this->session->set_flashdata('success', $message);
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function approveAllDocuments()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->isApprover()) {
+            $this->session->set_flashdata('error', 'Anda tidak memiliki akses approve semua dokumen DRM.');
+            redirect('DRM_MyRep');
+            return;
+        }
+
+        $clusterId = (int) $this->input->post('cluster_id');
+        $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
+        if ($clusterId <= 0) {
+            $this->session->set_flashdata('error', 'Cluster DRM tidak valid.');
+            redirect('DRM_MyRep');
+            return;
+        }
+
+        $documentRows = $this->MDRM_MyRep->getDrmDocumentRows($clusterId, $scopeType);
+        if (empty($documentRows)) {
+            $this->session->set_flashdata('error', 'Dokumen DRM untuk scope ini belum tersedia.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $approvedBy = (int) $this->session->userdata('id_user');
+        $updatedCount = 0;
+        foreach ($documentRows as $documentRow) {
+            $docName = strtoupper(trim((string) ($documentRow['doc_name'] ?? '')));
+            if ($docName === 'APD BOQ') {
+                continue;
+            }
+
+            $fileId = (int) ($documentRow['id_doc_file'] ?? 0);
+            $status = strtoupper(trim((string) ($documentRow['status_file'] ?? '')));
+            if ($fileId <= 0 || !in_array($status, ['UPLOADED', 'REJECTED'], true)) {
+                continue;
+            }
+
+            $result = $this->MDRM_MyRep->updateDrmFileStatus($fileId, [
+                'status_file' => 'APPROVED',
+                'remark' => trim((string) ($documentRow['remark'] ?? '')),
+                'approved_by' => $approvedBy,
+            ]);
+            if ($result) {
+                $updatedCount++;
+            }
+        }
+
+        $this->session->set_flashdata(
+            $updatedCount > 0 ? 'success' : 'error',
+            $updatedCount > 0
+                ? ($updatedCount . ' dokumen DRM berhasil di-approve sekaligus (kecuali APD BOQ/Manual BOQ).')
+                : 'Tidak ada dokumen DRM yang bisa di-approve sekaligus.'
+        );
+        redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function downloadDocumentBundle($clusterId = 0, $scopeType = 'CLUSTER')
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $clusterId;
+        $scopeType = $this->normalizeScopeType($scopeType);
+        if ($clusterId <= 0 || !$this->MDRM_MyRep->drmDocumentTablesReady()) {
+            show_404();
+            return;
+        }
+
+        $cluster = $this->MDRM_MyRep->getDrmByClusterId($clusterId);
+        if (empty($cluster)) {
+            show_404();
+            return;
+        }
+
+        $documentRows = $this->MDRM_MyRep->getDrmDocumentRows($clusterId, $scopeType);
+        if (empty($documentRows)) {
+            $this->session->set_flashdata('error', 'Dokumen DRM tidak ditemukan.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $scopeLabel = $scopeType === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+        $safeClusterName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($cluster['cluster_name'] ?? 'CLUSTER'));
+        $downloadName = 'DRM_' . $scopeLabel . '_' . $safeClusterName . '_RAR_' . date('Ymd_His') . '.zip';
+        $files = [];
+        foreach ($documentRows as $documentRow) {
+            $filePath = trim((string) ($documentRow['file_path'] ?? ''));
+            if ($filePath === '') {
+                continue;
+            }
+
+            $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filePath);
+            if (!is_file($fullPath)) {
+                continue;
+            }
+
+            $docName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($documentRow['doc_name'] ?? 'DOKUMEN'));
+            $entryName = $docName . '_' . basename($fullPath);
+            $files[] = [
+                'entry_name' => $entryName,
+                'full_path' => $fullPath,
+            ];
+        }
+
+        if (empty($files)) {
+            $this->session->set_flashdata('error', 'Tidak ada file DRM yang bisa didownload.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        if (class_exists('ZipArchive')) {
+            $zip = new ZipArchive();
+            $tempZip = tempnam(sys_get_temp_dir(), 'drm_bundle_');
+            if ($tempZip === false) {
+                $this->session->set_flashdata('error', 'Gagal menyiapkan file download gabungan.');
+                redirect('DRM_MyRep/detail/' . $clusterId);
+                return;
+            }
+
+            $zipFile = $tempZip . '.zip';
+            @rename($tempZip, $zipFile);
+            if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                if (is_file($zipFile)) {
+                    @unlink($zipFile);
+                }
+                $this->session->set_flashdata('error', 'Gagal membuat file download gabungan.');
+                redirect('DRM_MyRep/detail/' . $clusterId);
+                return;
+            }
+
+            foreach ($files as $file) {
+                $zip->addFile($file['full_path'], $file['entry_name']);
+            }
+            $zip->close();
+
+            header('Content-Type: application/zip');
+            header('Content-Length: ' . filesize($zipFile));
+            header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+            header('Pragma: public');
+            header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+            readfile($zipFile);
+            @unlink($zipFile);
+            exit;
+        }
+
+        $this->load->library('zip');
+        foreach ($files as $file) {
+            $content = @file_get_contents($file['full_path']);
+            if ($content === false) {
+                continue;
+            }
+            $this->zip->add_data($file['entry_name'], $content);
+        }
+
+        $archiveData = $this->zip->get_zip();
+        if ($archiveData === false || $archiveData === '') {
+            $this->session->set_flashdata('error', 'Gagal membuat file download gabungan.');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        header('Content-Type: application/zip');
+        header('Content-Length: ' . strlen($archiveData));
+        header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+        header('Pragma: public');
+        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+        echo $archiveData;
+        exit;
     }
 
     public function approveDocument()
@@ -492,7 +791,7 @@ class DRM_MyRep extends CI_Controller
 
             $config = [
                 'upload_path' => $uploadDir,
-                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
+                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png|rar|zip',
                 'max_size' => 30720,
                 'file_name' => $fileName,
                 'overwrite' => true,
@@ -560,7 +859,7 @@ class DRM_MyRep extends CI_Controller
             $scopeType
         );
 
-        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-approve, dijadikan baseline implementasi, dan dokumen DRM yang sudah ter-upload ikut di-approve.' : 'Gagal approve BOQ DRM.');
+        $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'BOQ DRM berhasil di-approve. Baseline implementasi akan terbentuk otomatis setelah BOQ CLUSTER dan SUBFEEDER sama-sama approved.' : 'Gagal approve BOQ DRM.');
         redirect('DRM_MyRep/detail/' . $clusterId);
     }
 
@@ -699,7 +998,7 @@ class DRM_MyRep extends CI_Controller
             || $this->session->userdata('nama_level') === 'Super Admin';
     }
 
-    private function sendDrmNotification($eventName, array $cluster, $documentLabel)
+    private function sendDrmNotification($eventName, array $cluster, $documentLabel, $moduleLabel = 'DRM')
     {
         $clusterId = (int) ($cluster['id_myrep_cluster'] ?? 0);
         if ($clusterId <= 0) {
@@ -707,7 +1006,7 @@ class DRM_MyRep extends CI_Controller
         }
 
         $this->myrepNotifier->notify('DRM_MyRep', $eventName, [
-            'module_label' => 'DRM',
+            'module_label' => (string) $moduleLabel,
             'document_label' => (string) $documentLabel,
             'regional_name' => (string) ($cluster['regional_name'] ?? ''),
             'city_name' => (string) ($cluster['city_name'] ?? ''),
@@ -715,5 +1014,38 @@ class DRM_MyRep extends CI_Controller
             'sender_name' => (string) $this->session->userdata('nama_user'),
             'detail_url' => base_url('DRM_MyRep/detail/' . $clusterId),
         ]);
+    }
+
+    private function buildDrmFullUploadNotificationContext($clusterId, $scopeType)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            return ['should_notify' => false];
+        }
+
+        $normalizedScopeType = $this->normalizeScopeType($scopeType);
+        $documentRows = $this->MDRM_MyRep->getDrmDocumentRows($clusterId, $normalizedScopeType);
+        if (empty($documentRows)) {
+            return ['should_notify' => false];
+        }
+
+        $total = 0;
+        $uploaded = 0;
+        foreach ($documentRows as $documentRow) {
+            $total++;
+            if ((int) ($documentRow['id_doc_file'] ?? 0) > 0) {
+                $uploaded++;
+            }
+        }
+
+        if ($total <= 0 || $uploaded < $total) {
+            return ['should_notify' => false];
+        }
+
+        return [
+            'should_notify' => true,
+            'event_name' => 'full_upload',
+            'module_label' => $normalizedScopeType === 'SUBFEEDER' ? 'DRM SUBFEEDER' : 'DRM CLUSTER',
+        ];
     }
 }

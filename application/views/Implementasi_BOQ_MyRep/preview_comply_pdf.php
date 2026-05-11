@@ -121,8 +121,8 @@
     .comply-print-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 18px 18px;
-        margin-top: 16px;
+        gap: 10px 10px;
+        margin-top: 12px;
     }
 
     .comply-print-tile {
@@ -132,12 +132,12 @@
     }
 
     .comply-print-tile__image {
-        height: 500px;
+        height: 220px;
         border-bottom: 1px solid #111827;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 8px;
+        padding: 6px;
         background: #fff;
     }
 
@@ -150,8 +150,8 @@
     .comply-print-tile__desc,
     .comply-print-tile__caption {
         text-align: center;
-        padding: 6px 8px;
-        font-size: .92rem;
+        padding: 4px 6px;
+        font-size: .8rem;
     }
 
     .comply-print-tile__desc {
@@ -233,7 +233,7 @@ $clusterCode = (string) (!empty($cluster['cluster_code']) ? $cluster['cluster_co
             </div>
 
             <?php foreach (($complyGroups ?? []) as $sectionTitle => $photos): ?>
-                <?php $photoChunks = array_chunk(array_values($photos), 6); ?>
+                <?php $photoChunks = array_chunk(array_values($photos), 8); ?>
                 <?php foreach ($photoChunks as $photoChunk): ?>
                     <div class="comply-print-page">
                         <table class="comply-print-header">

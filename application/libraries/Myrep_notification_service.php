@@ -74,6 +74,16 @@ class Myrep_notification_service
                 ->row_array();
         }
 
+        if ($normalizedEvent === 'full_upload' && $normalizedModule === 'drm_myrep') {
+            return $this->ci->db
+                ->from('tb_myrep_notification_route')
+                ->where('module_name', (string) $moduleName)
+                ->where('event_name', 'document_masuk')
+                ->where('is_active', 1)
+                ->get()
+                ->row_array();
+        }
+
         return [];
     }
 
@@ -173,7 +183,7 @@ class Myrep_notification_service
         $documentLabel = trim((string) ($payload['document_label'] ?? ''));
         $moduleLabel = trim((string) ($payload['module_label'] ?? $moduleName));
 
-        if ($normalizedEvent === 'full_upload' && $normalizedModule === 'batch_approval_myrep') {
+        if ($normalizedEvent === 'full_upload' && in_array($normalizedModule, ['batch_approval_myrep', 'drm_myrep'], true)) {
             return '✅ <b>FULL UPLOAD - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
         }
 

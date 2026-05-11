@@ -1844,6 +1844,7 @@ if (!empty($kpiDetailRowMap)) {
                     </div>
                 </div>
                 <div class="card-body table-responsive">
+                    <?php $clusterClaimModals = []; ?>
                     <table id="table_rfs_cluster_list" class="table table-bordered table-striped">
                         <thead class="text-center">
                             <tr>
@@ -1914,6 +1915,9 @@ if (!empty($kpiDetailRowMap)) {
                                         </td>
                                     </tr>
 
+                                    <?php
+                                    ob_start();
+                                    ?>
                                     <div class="modal fade claim-rfs-modal" id="claimModal<?= (int) $cluster['id_cluster'] ?>">
                                         <div class="modal-dialog modal-xl">
                                             <div class="modal-content">
@@ -1980,7 +1984,7 @@ if (!empty($kpiDetailRowMap)) {
                                                                 <input type="file" name="claim_photo" class="claim-photo-input" accept=".jpg,.jpeg,.png,.webp" hidden>
                                                                 <h6 class="mb-2">Drop foto claim di sini</h6>
                                                                 <p class="text-muted mb-2">atau klik area ini untuk pilih file gambar</p>
-                                                                <span class="btn btn-outline-primary btn-sm">Pilih Foto</span>
+                                                                <button type="button" class="btn btn-outline-primary btn-sm claim-photo-picker-btn">Pilih Foto</button>
                                                                 <div class="small text-muted mt-2 claim-photo-filename">Belum ada file dipilih</div>
                                                             </div>
                                                         </div>
@@ -1997,6 +2001,9 @@ if (!empty($kpiDetailRowMap)) {
                                             </div>
                                         </div>
                                     </div>
+                                    <?php
+                                    $clusterClaimModals[] = ob_get_clean();
+                                    ?>
                                 <?php } ?>
                             <?php } else { ?>
                                 <tr>
@@ -2015,6 +2022,7 @@ if (!empty($kpiDetailRowMap)) {
                             </tr>
                         </tfoot>
                     </table>
+                    <?php if (!empty($clusterClaimModals)) { echo implode("\n", $clusterClaimModals); } ?>
                 </div>
             </div>
 
@@ -2811,6 +2819,10 @@ if (!empty($kpiDetailRowMap)) {
             if (!$(selector).length || $.fn.DataTable.isDataTable(selector)) {
                 return;
             }
+            // DataTables tidak support colspan pada tbody; biarkan tabel tetap plain jika sedang menampilkan row placeholder.
+            if ($(selector).find('tbody td[colspan], tbody th[colspan]').length) {
+                return;
+            }
 
             var baseOptions = {
                 paging: true,
@@ -2831,7 +2843,11 @@ if (!empty($kpiDetailRowMap)) {
                 }
             };
 
-            $(selector).DataTable($.extend(true, {}, baseOptions, extraOptions || {}));
+            try {
+                $(selector).DataTable($.extend(true, {}, baseOptions, extraOptions || {}));
+            } catch (err) {
+                console.error('Gagal init DataTable pada selector:', selector, err);
+            }
         }
 
         function initKpiDetailModalDataTable() {
@@ -2843,42 +2859,49 @@ if (!empty($kpiDetailRowMap)) {
             if ($.fn.DataTable.isDataTable(selector)) {
                 $(selector).DataTable().destroy();
             }
+            if ($(selector).find('tbody td[colspan], tbody th[colspan]').length) {
+                return;
+            }
 
-            $(selector).DataTable({
-                paging: true,
-                pageLength: 5,
-                info: true,
-                searching: true,
-                lengthChange: true,
-                autoWidth: false,
-                responsive: false,
-                ordering: true,
-                order: [[1, 'asc'], [2, 'asc']],
-                scrollX: true,
-                language: {
-                    emptyTable: 'Belum ada detail.'
-                },
-                footerCallback: function () {
-                    var api = this.api();
-                    var totalTargetMyrep = sumColumn(api, 5);
-                    var totalRealisasiMyrep = sumColumn(api, 6);
-                    var totalTargetTkm = sumColumn(api, 8);
-                    var totalRealisasiTkm = sumColumn(api, 9);
+            try {
+                $(selector).DataTable({
+                    paging: true,
+                    pageLength: 5,
+                    info: true,
+                    searching: true,
+                    lengthChange: true,
+                    autoWidth: false,
+                    responsive: false,
+                    ordering: true,
+                    order: [[1, 'asc'], [2, 'asc']],
+                    scrollX: true,
+                    language: {
+                        emptyTable: 'Belum ada detail.'
+                    },
+                    footerCallback: function () {
+                        var api = this.api();
+                        var totalTargetMyrep = sumColumn(api, 5);
+                        var totalRealisasiMyrep = sumColumn(api, 6);
+                        var totalTargetTkm = sumColumn(api, 8);
+                        var totalRealisasiTkm = sumColumn(api, 9);
 
-                    setFooterValue(api, 5, totalTargetMyrep, 0);
-                    setFooterValue(api, 6, totalRealisasiMyrep, 0);
-                    setFooterValue(api, 7, safePercent(totalRealisasiMyrep, totalTargetMyrep), 2, '%');
-                    setFooterValue(api, 8, totalTargetTkm, 0);
-                    setFooterValue(api, 9, totalRealisasiTkm, 0);
-                    setFooterValue(api, 10, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
-                    setFooterValue(api, 11, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
-                },
-                initComplete: function () {
-                    $(this.api().table().container())
-                        .find('.dataTables_scrollHead, .dataTables_scrollBody')
-                        .css('width', '100%');
-                }
-            });
+                        setFooterValue(api, 5, totalTargetMyrep, 0);
+                        setFooterValue(api, 6, totalRealisasiMyrep, 0);
+                        setFooterValue(api, 7, safePercent(totalRealisasiMyrep, totalTargetMyrep), 2, '%');
+                        setFooterValue(api, 8, totalTargetTkm, 0);
+                        setFooterValue(api, 9, totalRealisasiTkm, 0);
+                        setFooterValue(api, 10, safePercent(totalRealisasiTkm, totalTargetTkm), 2, '%');
+                        setFooterValue(api, 11, safePercent(totalRealisasiTkm, totalRealisasiMyrep), 2, '%');
+                    },
+                    initComplete: function () {
+                        $(this.api().table().container())
+                            .find('.dataTables_scrollHead, .dataTables_scrollBody')
+                            .css('width', '100%');
+                    }
+                });
+            } catch (err) {
+                console.error('Gagal init DataTable KPI detail:', err);
+            }
         }
 
         function adjustAllDataTables() {
@@ -2925,6 +2948,10 @@ if (!empty($kpiDetailRowMap)) {
         }
 
         function addRowNumbers(selector, columnIndex) {
+            if (!$(selector).length || !$.fn.DataTable.isDataTable(selector)) {
+                return;
+            }
+
             var table = $(selector).DataTable();
 
             table.on('order.dt search.dt draw.dt', function () {
@@ -3328,6 +3355,15 @@ if (!empty($kpiDetailRowMap)) {
             }
         });
 
+        $(document).on('click', '.claim-photo-picker-btn', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var input = $(this).closest('.claim-photo-dropzone').find('.claim-photo-input').get(0);
+            if (input) {
+                input.click();
+            }
+        });
+
         $(document).on('dragover', '.claim-photo-dropzone', function (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -3393,11 +3429,23 @@ if (!empty($kpiDetailRowMap)) {
         });
 
         $(document).on('expanded.lte.cardwidget', '.card', function () {
-            scheduleAdjustAllDataTables();
+            var $card = $(this);
+            [80, 200, 400, 700].forEach(function (delay) {
+                window.setTimeout(function () {
+                    adjustTablesInContainer($card);
+                    scheduleAdjustAllDataTables();
+                }, delay);
+            });
         });
 
         $(document).on('click', '[data-card-widget="collapse"]', function () {
-            scheduleAdjustAllDataTables();
+            var $card = $(this).closest('.card');
+            [120, 260, 480, 760].forEach(function (delay) {
+                window.setTimeout(function () {
+                    adjustTablesInContainer($card);
+                    scheduleAdjustAllDataTables();
+                }, delay);
+            });
         });
 
         $(window).on('load resize', function () {

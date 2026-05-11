@@ -246,6 +246,90 @@ if (!function_exists('drmScopeText')) {
                     font-size: .86rem;
                     margin-bottom: .2rem;
                 }
+
+                .drm-bulk-summary {
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: space-between;
+                    gap: 1rem;
+                    padding: 1rem 1.1rem;
+                    border: 1px solid #dbeafe;
+                    border-radius: 18px;
+                    background: linear-gradient(135deg, #f8fbff, #eef6ff);
+                    margin-bottom: 1rem;
+                }
+
+                .drm-bulk-summary__title {
+                    font-size: 1rem;
+                    font-weight: 800;
+                    color: #0f172a;
+                    margin-bottom: .2rem;
+                }
+
+                .drm-bulk-summary__text {
+                    margin: 0;
+                    color: #64748b;
+                    font-size: .92rem;
+                }
+
+                .drm-bulk-summary__badge {
+                    flex-shrink: 0;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 52px;
+                    min-height: 52px;
+                    padding: .4rem .85rem;
+                    border-radius: 16px;
+                    background: #1d4ed8;
+                    color: #fff;
+                    font-size: 1.05rem;
+                    font-weight: 800;
+                    box-shadow: 0 12px 24px rgba(29, 78, 216, 0.22);
+                }
+
+                .drm-bulk-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+                    gap: 1rem;
+                }
+
+                .drm-bulk-card {
+                    border: 1px solid #dbe4f0;
+                    border-radius: 20px;
+                    background: #fff;
+                    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.07);
+                    overflow: hidden;
+                }
+
+                .drm-bulk-card__header {
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: space-between;
+                    gap: .9rem;
+                    padding: 1rem 1.1rem .85rem;
+                    background: linear-gradient(135deg, #fbfdff, #f4f8fc);
+                    border-bottom: 1px solid #e5edf6;
+                }
+
+                .drm-bulk-card__eyebrow {
+                    font-size: .72rem;
+                    font-weight: 800;
+                    letter-spacing: .08em;
+                    text-transform: uppercase;
+                    color: #64748b;
+                }
+
+                .drm-bulk-card__title {
+                    margin: .2rem 0 0;
+                    font-size: 1rem;
+                    font-weight: 700;
+                    color: #0f172a;
+                }
+
+                .drm-bulk-card__body {
+                    padding: 1rem 1.1rem 1.1rem;
+                }
             </style>
 
             <div class="card card-primary shadow-sm drm-header-card">
@@ -326,6 +410,27 @@ if (!function_exists('drmScopeText')) {
                             $boqReviewStatus = strtoupper(trim((string) ($boqHeader['review_status'] ?? 'DRAFT')));
                             $isBoqLocked = $boqReviewStatus === 'APPROVED';
                             $hasApdBoqFile = !empty($apdBoqFile['id_doc_file']);
+                            $bulkUploadableRows = [];
+                            $reviewableRows = [];
+                            $downloadableRows = [];
+                            foreach ($documentRows as $docRow) {
+                                $docNameUpper = strtoupper(trim((string) ($docRow['doc_name'] ?? '')));
+                                $docStatus = drmDocumentLabel($docRow);
+                                $docRawStatus = strtoupper(trim((string) ($docRow['status_file'] ?? '')));
+                                $isApdBoqDoc = $docNameUpper === 'APD BOQ';
+
+                                if (!$isApdBoqDoc && (in_array($docStatus, ['BELUM UPLOAD'], true) || $docRawStatus === 'REJECTED')) {
+                                    $bulkUploadableRows[] = $docRow;
+                                }
+
+                                if (!$isApdBoqDoc && !empty($docRow['id_doc_file']) && in_array($docRawStatus, ['UPLOADED', 'REJECTED'], true)) {
+                                    $reviewableRows[] = $docRow;
+                                }
+
+                                if (!empty($docRow['file_path'])) {
+                                    $downloadableRows[] = $docRow;
+                                }
+                            }
                             ?>
                             <div class="tab-pane fade <?= $tabIndex === 0 ? 'show active' : '' ?>" id="tab-drm-<?= strtolower($scopeKey) ?>" role="tabpanel">
                                 <?php if (!$scopeReady): ?>
@@ -370,6 +475,32 @@ if (!function_exists('drmScopeText')) {
                                             <h3 class="card-title mb-0">Dokumen <?= htmlspecialchars($scopeLabel) ?></h3>
                                         </div>
                                         <div class="card-body">
+                                            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3" style="gap:.5rem;">
+                                                <div class="small text-muted">
+                                                    Bulk upload & approve all tidak mencakup <strong>APD BOQ</strong> dan <strong>Manual BOQ</strong>.
+                                                </div>
+                                                <div class="d-flex flex-wrap" style="gap:.45rem;">
+                                                    <?php if (!empty($downloadableRows)): ?>
+                                                        <a href="<?= base_url('DRM_MyRep/downloadDocumentBundle/' . (int) $cluster['id_myrep_cluster'] . '/' . urlencode((string) $scopeKey)) ?>" class="btn btn-sm btn-outline-dark">
+                                                            Download RAR
+                                                        </a>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($bulkUploadableRows)): ?>
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#modal-drm-bulk-upload-<?= strtolower($scopeKey) ?>">
+                                                            Bulk Upload
+                                                        </button>
+                                                    <?php endif; ?>
+                                                    <?php if ($canApprove && !empty($reviewableRows)): ?>
+                                                        <form method="post" action="<?= base_url('DRM_MyRep/approveAllDocuments') ?>" class="d-inline">
+                                                            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                                                            <input type="hidden" name="scope_type" value="<?= htmlspecialchars((string) $scopeKey) ?>">
+                                                            <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Approve semua dokumen upload/reject untuk scope ini? APD BOQ dan Manual BOQ tidak ikut.');">
+                                                                Approve All
+                                                            </button>
+                                                        </form>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
                                             <div class="table-responsive">
                                                 <table class="table table-bordered table-hover">
                                                     <thead>
@@ -448,6 +579,23 @@ if (!function_exists('drmScopeText')) {
                                                                     <td style="min-width:220px;">
                                                                         <?php if (($row['doc_name'] ?? '') === 'APD BOQ'): ?>
                                                                             <span class="text-info small font-weight-bold">Review mengikuti approval BOQ</span>
+                                                                        <?php elseif (!empty($row['id_doc_file']) && $docRawStatus === 'UPLOADED'): ?>
+                                                                            <div class="d-flex flex-wrap" style="gap:.35rem;">
+                                                                                <form method="post" action="<?= base_url('DRM_MyRep/approveDocument') ?>" class="d-inline">
+                                                                                    <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                                                                                    <input type="hidden" name="id_doc_file" value="<?= (int) ($row['id_doc_file'] ?? 0) ?>">
+                                                                                    <input type="hidden" name="scope_type" value="<?= htmlspecialchars((string) $scopeKey) ?>">
+                                                                                    <input type="hidden" name="remark" value="<?= htmlspecialchars((string) ($row['remark'] ?? ''), ENT_QUOTES) ?>">
+                                                                                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                                                                </form>
+                                                                                <form method="post" action="<?= base_url('DRM_MyRep/rejectDocument') ?>" class="d-inline" onsubmit="return confirm('Reject dokumen ini?');">
+                                                                                    <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                                                                                    <input type="hidden" name="id_doc_file" value="<?= (int) ($row['id_doc_file'] ?? 0) ?>">
+                                                                                    <input type="hidden" name="scope_type" value="<?= htmlspecialchars((string) $scopeKey) ?>">
+                                                                                    <input type="hidden" name="remark" value="<?= htmlspecialchars((string) ($row['remark'] ?? ''), ENT_QUOTES) ?>">
+                                                                                    <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                                                                                </form>
+                                                                            </div>
                                                                         <?php elseif ($docRawStatus === 'APPROVED'): ?>
                                                                             <span class="text-success small font-weight-bold">Sudah approved</span>
                                                                         <?php elseif ($docRawStatus === 'REJECTED'): ?>
@@ -787,6 +935,98 @@ if (!function_exists('drmScopeText')) {
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+<?php endforeach; ?>
+
+<?php foreach ($drmScopes as $scopeKey => $scope): ?>
+    <?php
+    $scopeReady = !empty($scope['isReady']);
+    if (!$scopeReady) {
+        continue;
+    }
+
+    $scopeLabel = (string) ($scope['label'] ?? drmScopeText($scopeKey));
+    $bulkRows = [];
+    foreach ((array) ($scope['documentRows'] ?? []) as $docRow) {
+        $docNameUpper = strtoupper(trim((string) ($docRow['doc_name'] ?? '')));
+        $docStatus = drmDocumentLabel($docRow);
+        $docRawStatus = strtoupper(trim((string) ($docRow['status_file'] ?? '')));
+        if ($docNameUpper === 'APD BOQ') {
+            continue;
+        }
+        if (in_array($docStatus, ['BELUM UPLOAD'], true) || $docRawStatus === 'REJECTED') {
+            $bulkRows[] = $docRow;
+        }
+    }
+    ?>
+    <?php if (!empty($bulkRows)): ?>
+        <div class="modal fade" id="modal-drm-bulk-upload-<?= strtolower($scopeKey) ?>" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-xl" role="document">
+                <div class="modal-content drm-modal">
+                    <form method="post" action="<?= base_url('DRM_MyRep/uploadBulkDocuments') ?>" enctype="multipart/form-data">
+                        <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                        <input type="hidden" name="scope_type" value="<?= htmlspecialchars((string) $scopeKey) ?>">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">Bulk Upload Dokumen DRM - <?= htmlspecialchars($scopeLabel) ?></h5>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="drm-bulk-summary">
+                                <div>
+                                    <div class="drm-bulk-summary__title">Upload beberapa dokumen DRM sekaligus</div>
+                                    <p class="drm-bulk-summary__text">Pilih file per kartu dokumen, atau centang <strong>Tidak dibutuhkan</strong> jika item memang tidak wajib. APD BOQ dan Manual BOQ tidak termasuk di bulk upload.</p>
+                                </div>
+                                <div class="drm-bulk-summary__badge"><?= count($bulkRows) ?></div>
+                            </div>
+                            <div class="drm-bulk-grid">
+                                <?php foreach ($bulkRows as $index => $row): ?>
+                                    <div class="drm-bulk-card">
+                                        <input type="hidden" name="bulk_doc_item_ids[]" value="<?= (int) ($row['id_doc_item'] ?? 0) ?>">
+                                        <div class="drm-bulk-card__header">
+                                            <div>
+                                                <div class="drm-bulk-card__eyebrow">Dokumen <?= $index + 1 ?></div>
+                                                <h6 class="drm-bulk-card__title"><?= htmlspecialchars((string) ($row['doc_name'] ?? '-')) ?></h6>
+                                            </div>
+                                            <span class="badge badge-<?= drmDetailBadgeClass(drmDocumentLabel($row)) ?>"><?= htmlspecialchars(drmDocumentLabel($row)) ?></span>
+                                        </div>
+                                        <div class="drm-bulk-card__body">
+                                            <div class="small text-muted mb-2">
+                                                <?= !empty($row['doc_requirement_note']) ? htmlspecialchars((string) $row['doc_requirement_note']) : 'Tidak ada catatan khusus.' ?>
+                                            </div>
+                                            <div class="small mb-2">
+                                                <strong>File saat ini:</strong>
+                                                <?= !empty($row['file_name']) ? htmlspecialchars((string) $row['file_name']) : 'Belum ada file aktif.' ?>
+                                            </div>
+                                            <div class="drm-dropzone js-dropzone">
+                                                <input type="file" name="bulk_file_<?= (int) ($row['id_doc_item'] ?? 0) ?>" class="js-dropzone-input">
+                                                <div class="drm-dropzone-content">
+                                                    <div class="drm-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                                    <div class="drm-dropzone-title">Pilih file untuk <?= htmlspecialchars((string) ($row['doc_name'] ?? 'dokumen')) ?></div>
+                                                    <div class="drm-dropzone-text">Drag & drop file di sini atau klik area ini</div>
+                                                    <div class="drm-dropzone-file js-dropzone-label">Belum ada file dipilih</div>
+                                                </div>
+                                            </div>
+                                            <div class="form-group mt-3 mb-2">
+                                                <label class="mb-1 font-weight-bold">Remark Upload</label>
+                                                <textarea name="bulk_remark_<?= (int) ($row['id_doc_item'] ?? 0) ?>" class="form-control" rows="2" placeholder="Remark upload jika diperlukan"><?= htmlspecialchars((string) ($row['remark'] ?? '')) ?></textarea>
+                                            </div>
+                                            <div class="form-group form-check mb-0">
+                                                <input type="checkbox" class="form-check-input" id="bulk_not_required_<?= (int) ($row['id_doc_item'] ?? 0) ?>" name="bulk_not_required_<?= (int) ($row['id_doc_item'] ?? 0) ?>" value="1">
+                                                <label class="form-check-label" for="bulk_not_required_<?= (int) ($row['id_doc_item'] ?? 0) ?>">Tidak dibutuhkan</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Tutup</button>
+                            <button type="submit" class="btn btn-primary btn-sm">Simpan Bulk Upload</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

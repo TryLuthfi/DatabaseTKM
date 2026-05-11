@@ -638,39 +638,7 @@ class MDRM_MyRep extends CI_Model
                 'updated_by' => $userId,
             ]);
 
-        $existingBaseline = $this->getBoqBaselineHeader($clusterId, $scopeType);
-        if (!empty($existingBaseline['id_boq_baseline'])) {
-            $this->db
-                ->where('id_boq_baseline', (int) $existingBaseline['id_boq_baseline'])
-                ->update('tb_myrep_boq_baseline', [
-                    'status_baseline' => 'REPLACED',
-                ]);
-        }
-
-        $baselinePayload = [
-            'id_myrep_cluster' => (int) $clusterId,
-            'id_drm_boq' => (int) $header['id_drm_boq'],
-            'status_baseline' => 'ACTIVE',
-            'approved_at' => $approvedAt,
-            'approved_by' => $userId,
-        ];
-        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
-            $baselinePayload['scope_type'] = $scopeType;
-        }
-        $this->db->insert('tb_myrep_boq_baseline', $baselinePayload);
-        $baselineId = (int) $this->db->insert_id();
-
-        foreach ($items as $item) {
-            $this->db->insert('tb_myrep_boq_baseline_item', [
-                'id_boq_baseline' => $baselineId,
-                'id_boq_item' => (int) $item['id_boq_item'],
-                'qty_boq' => (float) ($item['qty_boq'] ?? 0),
-                'jumlah_foto' => (int) (!empty($item['jumlah_foto']) ? $item['jumlah_foto'] : ($item['default_photo_qty'] ?? 0)),
-                'remarks_rule' => (string) (!empty($item['remarks_rule']) ? $item['remarks_rule'] : ($item['master_remarks_rule'] ?? 'SESUAI ITEM')),
-                'target_foto_required' => (int) ($item['target_foto_required'] ?? 0),
-                'item_note' => !empty($item['item_note']) ? (string) $item['item_note'] : null,
-            ]);
-        }
+        $this->rebuildCombinedBaselineIfReady((int) $clusterId, $approvedAt, $userId);
 
         $flowType = $this->resolveDrmDocumentFlowType($scopeType);
         $documentFiles = $this->db
@@ -717,6 +685,104 @@ class MDRM_MyRep extends CI_Model
 
         $this->db->trans_complete();
         return $this->db->trans_status();
+    }
+
+    private function rebuildCombinedBaselineIfReady($clusterId, $approvedAt, $userId)
+    {
+        $clusterHeader = $this->getDrmBoqHeader($clusterId, 'CLUSTER');
+        $subfeederHeader = $this->getDrmBoqHeader($clusterId, 'SUBFEEDER');
+        if (empty($clusterHeader['id_drm_boq']) || empty($subfeederHeader['id_drm_boq'])) {
+            return;
+        }
+
+        $clusterStatus = strtoupper(trim((string) ($clusterHeader['review_status'] ?? '')));
+        $subfeederStatus = strtoupper(trim((string) ($subfeederHeader['review_status'] ?? '')));
+        if ($clusterStatus !== 'APPROVED' || $subfeederStatus !== 'APPROVED') {
+            return;
+        }
+
+        $clusterItems = $this->getDrmBoqItems($clusterId, 'CLUSTER');
+        $subfeederItems = $this->getDrmBoqItems($clusterId, 'SUBFEEDER');
+        $mergedItems = $this->mergeBoqItemsForBaseline($clusterItems, $subfeederItems);
+        if (empty($mergedItems)) {
+            return;
+        }
+
+        // Replace previous active baseline(s) before creating the new combined baseline.
+        $this->db
+            ->where('id_myrep_cluster', (int) $clusterId)
+            ->where('status_baseline', 'ACTIVE')
+            ->update('tb_myrep_boq_baseline', [
+                'status_baseline' => 'REPLACED',
+            ]);
+
+        $baselinePayload = [
+            'id_myrep_cluster' => (int) $clusterId,
+            'id_drm_boq' => (int) ($clusterHeader['id_drm_boq'] ?? 0),
+            'status_baseline' => 'ACTIVE',
+            'approved_at' => $approvedAt,
+            'approved_by' => (int) $userId,
+        ];
+        if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
+            // Implementasi currently reads CLUSTER scope; combined baseline is stored in this scope.
+            $baselinePayload['scope_type'] = 'CLUSTER';
+        }
+        $this->db->insert('tb_myrep_boq_baseline', $baselinePayload);
+        $baselineId = (int) $this->db->insert_id();
+
+        foreach ($mergedItems as $item) {
+            $this->db->insert('tb_myrep_boq_baseline_item', [
+                'id_boq_baseline' => $baselineId,
+                'id_boq_item' => (int) $item['id_boq_item'],
+                'qty_boq' => (float) ($item['qty_boq'] ?? 0),
+                'jumlah_foto' => (int) ($item['jumlah_foto'] ?? 0),
+                'remarks_rule' => (string) ($item['remarks_rule'] ?? 'SESUAI ITEM'),
+                'target_foto_required' => (int) ($item['target_foto_required'] ?? 0),
+                'item_note' => !empty($item['item_note']) ? (string) $item['item_note'] : null,
+            ]);
+        }
+    }
+
+    private function mergeBoqItemsForBaseline(array $clusterItems, array $subfeederItems)
+    {
+        $sources = [$clusterItems, $subfeederItems];
+        $map = [];
+
+        foreach ($sources as $items) {
+            foreach ($items as $item) {
+                $boqItemId = (int) ($item['id_boq_item'] ?? 0);
+                if ($boqItemId <= 0) {
+                    continue;
+                }
+
+                if (!isset($map[$boqItemId])) {
+                    $map[$boqItemId] = [
+                        'id_boq_item' => $boqItemId,
+                        'qty_boq' => 0,
+                        'jumlah_foto' => 0,
+                        'remarks_rule' => (string) (!empty($item['remarks_rule']) ? $item['remarks_rule'] : ($item['master_remarks_rule'] ?? 'SESUAI ITEM')),
+                        'target_foto_required' => 0,
+                        'item_note' => null,
+                    ];
+                }
+
+                $map[$boqItemId]['qty_boq'] += (float) ($item['qty_boq'] ?? 0);
+                $map[$boqItemId]['target_foto_required'] += (int) ($item['target_foto_required'] ?? 0);
+                $map[$boqItemId]['jumlah_foto'] = max(
+                    (int) $map[$boqItemId]['jumlah_foto'],
+                    (int) (!empty($item['jumlah_foto']) ? $item['jumlah_foto'] : ($item['default_photo_qty'] ?? 0))
+                );
+
+                $itemNote = trim((string) ($item['item_note'] ?? ''));
+                if ($itemNote !== '') {
+                    $map[$boqItemId]['item_note'] = $itemNote;
+                }
+            }
+        }
+
+        return array_values(array_filter($map, static function ($item) {
+            return (float) ($item['qty_boq'] ?? 0) > 0;
+        }));
     }
 
     public function rejectDrmBoq($clusterId, $userId, $remark, $scopeType = 'CLUSTER')
