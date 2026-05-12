@@ -101,6 +101,7 @@ $openDetailId = (int) ($openDetailId ?? 0);
                             <div class="col-md-3 form-group"><label>Status</label><select name="status_pks" class="form-control"><option value="active">active</option><option value="non aktif">non aktif</option></select></div>
                             <div class="col-md-3 form-group"><label>No Telp</label><input type="text" name="no_telp" class="form-control"></div>
                             <div class="col-md-3 form-group"><label>Email PIC</label><input type="email" name="email_pic" class="form-control"></div>
+                            <div class="col-md-3 form-group"><label>TTL</label><input type="text" name="ttl" class="form-control" placeholder="Tempat, Tanggal Lahir"></div>
                             <div class="col-md-3 form-group"><label>No KTP</label><input type="text" name="no_ktp" class="form-control"></div>
                             <div class="col-md-3 form-group"><label>Grade PIC</label><input type="text" name="grade_pic" class="form-control"></div>
                             <div class="col-md-3 form-group"><label>Area PIC</label><input type="text" name="area_pic" class="form-control"></div>
@@ -133,6 +134,7 @@ $openDetailId = (int) ($openDetailId ?? 0);
                     <div class="row">
                         <div class="col-md-3"><strong>Nomor PKS</strong><div class="js-d-nomor">-</div></div>
                         <div class="col-md-3"><strong>PIC</strong><div class="js-d-pic">-</div></div>
+                        <div class="col-md-2"><strong>TTL</strong><div class="js-d-ttl">-</div></div>
                         <div class="col-md-2"><strong>Jenis</strong><div class="js-d-jenis">-</div></div>
                         <div class="col-md-2"><strong>Status PKS</strong><div class="js-d-status-pks">-</div></div>
                         <div class="col-md-2"><strong>Workflow</strong><div class="js-d-workflow">-</div></div>
@@ -233,6 +235,7 @@ $openDetailId = (int) ($openDetailId ?? 0);
             $('.js-detail-title').text('Detail PKS - ' + (p.nomor_pks || '-'));
             $('.js-d-nomor').text(p.nomor_pks || '-');
             $('.js-d-pic').text(p.pic_pks || '-');
+            $('.js-d-ttl').text(p.ttl || '-');
             $('.js-d-jenis').text(p.jenis_pks || '-');
             $('.js-d-status-pks').text(p.status_pks || '-');
             $('.js-d-workflow').text(p.workflow_status || '-');

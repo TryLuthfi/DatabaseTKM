@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>PKS MPL Lampiran 1</title>
+  <title>PKS MDR Lampiran 1</title>
   <style>
     @page { size: A4; margin: 16mm 14mm 14mm 14mm; }
     body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #000; line-height: 1.15; margin: 0; padding: 0; }
@@ -45,7 +45,7 @@
     .sign-box div:first-child { border-left: 0; }
   </style>
 </head>
-<body onload="window.print()">
+<body onload="window.print()">>
 <?php
 $nomorPks = (string) ($pks['nomor_pks'] ?? '-');
 $pic = trim((string) ($pks['pic_pks'] ?? '-'));
@@ -105,7 +105,7 @@ $tahunTerbilang = ucwords(trim(preg_replace('/\s+/', ' ', $toWords($yyyy))));
     <div class="roman-body"><span class="bi"><?= htmlspecialchars($picUpper, ENT_QUOTES) ?></span> sebagai Pelaksana (MITRA PELAKSANA) dengan nomor Kartu Tanda Penduduk (KTP) atas nama <span class="bi"><?= htmlspecialchars($pic, ENT_QUOTES) ?></span> nomor <span class="bi"><?= htmlspecialchars($noKtp, ENT_QUOTES) ?></span> yang beralamat di <span class="bi"><?= htmlspecialchars($alamat, ENT_QUOTES) ?></span>, dalam hal ini mewakili diri sendiri secara sah sebagai Pelaksana (<span class="b">MITRA PELAKSANA</span>) yang selanjutnya dalam Perjanjian ini disebut <span class="b">MITRA</span>.</div>
   </div>
 
-  <p><span class="b">TKM</span> dan <span class="b">MITRA</span> secara bersama-sama disebut <span class="b">“Para Pihak”</span> dan secara sendiri-sendiri disebut juga <span class="b">“Pihak”</span></p>
+  <p><span class="b">TKM</span> dan <span class="b">MITRA</span> secara bersama-sama disebut <span class="b">Para Pihak</span> dan secara sendiri-sendiri disebut juga <span class="b">Pihak</span></p>
 
   <p>Dengan terlebih dahulu mempertimbangkan hal-hal sebagai berikut :</p>
   <div class="alpha"><div class="alpha-no">a.</div><div class="alpha-body">Bahwa <span class="b">TKM</span> berkehendak untuk mengadakan Pekerjaan Pemasangan Outside Plan Fiber Optic (OSP-FO);</div></div>
@@ -159,7 +159,7 @@ $tahunTerbilang = ucwords(trim(preg_replace('/\s+/', ' ', $toWords($yyyy))));
 <div class="page">
   <div class="section-center">PASAL 3</div>
   <div class="section-center">RUANG LINGKUP PEKERJAAN</div>
-  <div class="alpha"><div class="alpha-no">(1)</div><div class="alpha-body"><span class="b">TKM</span> menyerahkan Pekerjaan Pemasangan Outside Plan Fiber Optic (OSP-FO), selanjutnya disebut sebagai “Pekerjaan”, kepada <span class="b">MITRA</span>, sebagaimana <span class="b">MITRA</span> menerima penyerahan Pekerjaan tersebut dari <span class="b">TKM</span> dan sanggup untuk melaksanakan Pekerjaan dimaksud, sesuai dengan Ruang Lingkup Pekerjaan, Spesifikasi Teknis sebagaimana diuraikan dalam Lampiran Perjanjian ini dan Hasil Rapat Pembahasan Design (DRM) bila ada, serta menyerahkan kepada <span class="b">TKM</span> dengan Jangka Waktu Pelaksanaan yang ditetapkan dalam Surat Perintah Kerja serta siap untuk dipergunakan oleh <span class="b">TKM</span>.</div></div>
+  <div class="alpha"><div class="alpha-no">(1)</div><div class="alpha-body"><span class="b">TKM</span> menyerahkan Pekerjaan Pemasangan Outside Plan Fiber Optic (OSP-FO), selanjutnya disebut sebagai Pekerjaan, kepada <span class="b">MITRA</span>, sebagaimana <span class="b">MITRA</span> menerima penyerahan Pekerjaan tersebut dari <span class="b">TKM</span> dan sanggup untuk melaksanakan Pekerjaan dimaksud, sesuai dengan Ruang Lingkup Pekerjaan, Spesifikasi Teknis sebagaimana diuraikan dalam Lampiran Perjanjian ini dan Hasil Rapat Pembahasan Design (DRM) bila ada, serta menyerahkan kepada <span class="b">TKM</span> dengan Jangka Waktu Pelaksanaan yang ditetapkan dalam Surat Perintah Kerja serta siap untuk dipergunakan oleh <span class="b">TKM</span>.</div></div>
   <div class="alpha"><div class="alpha-no">(2)</div><div class="alpha-body">Pekerjaan-Pekerjaan lain yang tidak dapat dirinci satu persatu namun menurut sifatnya merupakan tanggung jawab <span class="b">MITRA</span> untuk melaksanakannya sehingga Pekerjaan dapat diselesaikan menurut kuantitas dan kualitas serta dalam Jangka Waktu Pelaksanaan yang telah ditetapkan dalam Perjanjian ini.</div></div>
 
   <div class="section-center">PASAL 4</div>
@@ -222,7 +222,7 @@ $tahunTerbilang = ucwords(trim(preg_replace('/\s+/', ' ', $toWords($yyyy))));
 
   <div class="section-center">PASAL 8</div>
   <div class="section-center">SURAT PERINTAH KERJA</div>
-  <div class="alpha"><div class="alpha-no">(1)</div><div class="alpha-body">Pelaksanaan Pekerjaan akan dilakukan dengan penerbitan Surat Perintah Kerja (selanjutnya disebut dengan “SPK”), yang ditandatangani oleh TKM dan MITRA.</div></div>
+  <div class="alpha"><div class="alpha-no">(1)</div><div class="alpha-body">Pelaksanaan Pekerjaan akan dilakukan dengan penerbitan Surat Perintah Kerja (selanjutnya disebut dengan SPK), yang ditandatangani oleh TKM dan MITRA.</div></div>
   <div class="alpha"><div class="alpha-no">(2)</div><div class="alpha-body">Periode penerbitan SPK dilakukan dalam kurun waktu sesuai masa laku Perjanjian ini.</div></div>
   <div class="alpha"><div class="alpha-no">(3)</div><div class="alpha-body">Dalam SPK akan dicantumkan antara lain data atau informasi sebagai berikut.</div></div>
   <div class="alpha"><div class="alpha-no">a.</div><div class="alpha-body">Lokasi Pekerjaan</div></div>
@@ -424,7 +424,7 @@ $tahunTerbilang = ucwords(trim(preg_replace('/\s+/', ' ', $toWords($yyyy))));
   <div class="section-center">KERAHASIAAN DAN PERLINDUNGAN DATA PRIBADI</div>
 
   <div class="alpha"><div class="alpha-no">(1)</div><div class="alpha-body"><span class="b">Kerahasiaan</span></div></div>
-  <div class="alpha"><div class="alpha-no">a.</div><div class="alpha-body">Para Pihak sepakat untuk menjaga kerahasiaan semua informasi, data, dokumen, pengetahuan dalam bentuk apapun yang timbul dan diperoleh dalam pelaksanaan perjanjian ini (“Informasi Rahasia”) dan tidak akan mengungkapkannya kepada pihak mana pun tanpa persetujuan tertulis terlebih dahulu dari pihak lainnya, kecuali pengungkapan tersebut dilakukan kepada (i) instansi pemerintah yang berwenang sesuai dengan ketentuan Hukum dan Peraturan Perundang-undangan yang berlaku, (ii) konsultan hukum, atau (iii) Lembaga keuangan yang tugasnya memerlukan informasi rahasia tersebut, dengan ketentuan bahwa konsultan hukum dan Lembaga keuangan tersebut telah menyetujui untuk tidak akan dipublikasikan kepada pihak luar dengan alasan apa pun dan telah membuat kesepakatan tertulis untuk tidak mengungkapkan informasi rahasia tersebut kepada pihak lain untuk maksud apa pun.</div></div>
+  <div class="alpha"><div class="alpha-no">a.</div><div class="alpha-body">Para Pihak sepakat untuk menjaga kerahasiaan semua informasi, data, dokumen, pengetahuan dalam bentuk apapun yang timbul dan diperoleh dalam pelaksanaan perjanjian ini (Informasi Rahasia) dan tidak akan mengungkapkannya kepada pihak mana pun tanpa persetujuan tertulis terlebih dahulu dari pihak lainnya, kecuali pengungkapan tersebut dilakukan kepada (i) instansi pemerintah yang berwenang sesuai dengan ketentuan Hukum dan Peraturan Perundang-undangan yang berlaku, (ii) konsultan hukum, atau (iii) Lembaga keuangan yang tugasnya memerlukan informasi rahasia tersebut, dengan ketentuan bahwa konsultan hukum dan Lembaga keuangan tersebut telah menyetujui untuk tidak akan dipublikasikan kepada pihak luar dengan alasan apa pun dan telah membuat kesepakatan tertulis untuk tidak mengungkapkan informasi rahasia tersebut kepada pihak lain untuk maksud apa pun.</div></div>
   <div class="alpha"><div class="alpha-no">b.</div><div class="alpha-body">Pembatasan tersebut pada ayat 1 Pasal ini tidak diterapkan atas informasi rahasia dalam hal sebagai berikut: (i) Informasi rahasia tersebut telah menjadi public domain yang tidak disebabkan oleh pelanggaran ayat (1) Pasal ini, (ii) Informasi rahasia tersebut berada pada pihak yang menerimanya secara sah sebelum pengungkapan informasi rahasia dilakukan, (iii) informasi rahasia tersebut diperoleh dengan itikad baik dari pihak yang berhak untuk mengungkapkannya.</div></div>
   <div class="alpha"><div class="alpha-no">c.</div><div class="alpha-body">Pembatasan dimaksud pada Perjanjian ini akan tetap berlaku sekalipun Perjanjian ini telah berakhir.</div></div>
 
@@ -498,10 +498,10 @@ $tahunTerbilang = ucwords(trim(preg_replace('/\s+/', ' ', $toWords($yyyy))));
     <tr><td></td><td></td><td>..................................&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...................................</td></tr>
   </table>
 
-  <p class="b" style="margin-top:6px;">Perwakilan MITRA :</p>
+  <p class="b" style="margin-top:6px;">Perwakilan MANDOR :</p>
   <table class="info-table">
     <tr><td class="info-label">Nama</td><td class="info-sep">:</td><td><span class="b"><?= htmlspecialchars($picUpper, ENT_QUOTES) ?></span></td></tr>
-    <tr><td class="info-label">Jabatan</td><td class="info-sep">:</td><td>Mitra Pelaksana</td></tr>
+    <tr><td class="info-label">Jabatan</td><td class="info-sep">:</td><td>Mandor</td></tr>
     <tr><td class="info-label">Alamat</td><td class="info-sep">:</td><td><?= htmlspecialchars($alamat, ENT_QUOTES) ?></td></tr>
     <tr><td class="info-label">No.Telp.</td><td class="info-sep">:</td><td><?= htmlspecialchars($noTelp, ENT_QUOTES) ?></td></tr>
     <tr><td class="info-label">Email</td><td class="info-sep">:</td><td><?= htmlspecialchars($emailPic, ENT_QUOTES) ?></td></tr>
@@ -551,7 +551,7 @@ $tahunTerbilang = ucwords(trim(preg_replace('/\s+/', ' ', $toWords($yyyy))));
   <table style="width:100%; margin-top:20px; border-collapse:collapse; text-align:center; page-break-inside:avoid; break-inside:avoid;">
     <tr>
       <td style="width:50%; font-weight:700; padding-bottom:6px;">TKM</td>
-      <td style="width:50%; font-weight:700; padding-bottom:6px;">MITRA</td>
+      <td style="width:50%; font-weight:700; padding-bottom:6px;">MANDOR</td>
     </tr>
     <tr>
       <td style="height:80px;"></td>
@@ -563,7 +563,7 @@ $tahunTerbilang = ucwords(trim(preg_replace('/\s+/', ' ', $toWords($yyyy))));
     </tr>
     <tr>
       <td style="font-weight:700;">DIREKTUR</td>
-      <td style="font-weight:700;">PELAKSANA</td>
+      <td style="font-weight:700;">MANDOR</td>
     </tr>
   </table>
 
@@ -578,3 +578,4 @@ $tahunTerbilang = ucwords(trim(preg_replace('/\s+/', ' ', $toWords($yyyy))));
 
 </body>
 </html>
+

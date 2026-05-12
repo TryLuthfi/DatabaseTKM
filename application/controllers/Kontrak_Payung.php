@@ -42,6 +42,7 @@ class Kontrak_Payung extends CI_Controller
         $jenisPks = strtoupper(trim((string) $this->input->post('jenis_pks')));
         $noTelp = trim((string) $this->input->post('no_telp'));
         $emailPic = trim((string) $this->input->post('email_pic'));
+        $ttl = trim((string) $this->input->post('ttl'));
         $noKtp = trim((string) $this->input->post('no_ktp'));
         $alamatKtp = trim((string) $this->input->post('alamat_ktp'));
         $gradePic = strtoupper(trim((string) $this->input->post('grade_pic')));
@@ -92,6 +93,9 @@ class Kontrak_Payung extends CI_Controller
             'status_pks' => $statusPks,
             'updated_at' => date('Y-m-d H:i:s'),
         ];
+        if ($this->db->field_exists('ttl', 'tb_logistik_pks')) {
+            $payload['ttl'] = $ttl;
+        }
 
         if ($idPks <= 0) {
             $payload['nomor_pks'] = $nomorPksData['nomor'];
@@ -157,16 +161,7 @@ class Kontrak_Payung extends CI_Controller
             'pks' => $pks,
             'docType' => $docType === 'doc2' ? 'doc2' : 'doc1',
         ];
-        $jenisPks = strtoupper((string) ($pks['jenis_pks'] ?? ''));
-        $docType = $data['docType'];
-        $viewName = 'format_pks_print';
-
-        // Mapping template print per jenis PKS + lampiran.
-        // Saat ini yang tersedia 1:1 baru MPL lampiran 1.
-        if ($jenisPks === 'MPL' && $docType === 'doc1') {
-            $viewName = 'format_pks_mpl_lampiran1';
-        }
-
+        $viewName = $this->resolvePrintViewName($pks, $data['docType']);
         $this->load->view($viewName, $data);
     }
 
@@ -342,5 +337,26 @@ class Kontrak_Payung extends CI_Controller
 
         $date->modify('+1 year');
         return $date->format('d-m-Y');
+    }
+
+    private function resolvePrintViewName(array $pks, $docType)
+    {
+        $jenisPks = strtoupper((string) ($pks['jenis_pks'] ?? ''));
+        $safeDocType = $docType === 'doc2' ? 'doc2' : 'doc1';
+        $viewName = 'format_pks_print';
+
+        // Mapping template print per jenis PKS + lampiran.
+        if ($jenisPks === 'MDR' && $safeDocType === 'doc1') {
+            return 'format_pks_mdr_lampiran1';
+        }
+        if ($jenisPks === 'MDR' && $safeDocType === 'doc2') {
+            return 'format_pks_mdr_lampiran2';
+        }
+
+        if ($jenisPks === 'MPL' && $safeDocType === 'doc1') {
+            return 'format_pks_mpl_lampiran1';
+        }
+
+        return $viewName;
     }
 }
