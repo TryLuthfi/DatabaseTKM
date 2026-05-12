@@ -559,7 +559,7 @@ $formatStatus = function ($row) {
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Sistem Pembayaran</label>
-                                    <select name="id_system_pembayaran" class="form-control">
+                                    <select name="id_system_pembayaran" class="form-control" required>
                                         <option value="">Pilih Sistem Pembayaran</option>
                                         <?php foreach ($masterSystemPembayaran as $systemPembayaran): ?>
                                             <option value="<?= $systemPembayaran['id_system_pembayaran'] ?>">
@@ -574,7 +574,7 @@ $formatStatus = function ($row) {
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Jenis Pembayaran</label>
-                                    <select name="id_jenis_pembayaran" class="form-control">
+                                    <select name="id_jenis_pembayaran" class="form-control" required>
                                         <option value="">Pilih Jenis Pembayaran</option>
                                         <?php foreach ($masterJenisPembayaran as $jenisPembayaran): ?>
                                             <option value="<?= $jenisPembayaran['id_jenis_pembayaran'] ?>">

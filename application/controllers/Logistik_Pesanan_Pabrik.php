@@ -88,6 +88,18 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
             return;
         }
 
+        if ($this->relationExists('tb_master_logistik_system_pembayaran') && $idSystemPembayaran <= 0) {
+            $this->session->set_flashdata('error', 'Sistem Pembayaran wajib dipilih.');
+            redirect('Logistik_Pesanan_Pabrik');
+            return;
+        }
+
+        if ($this->relationExists('tb_master_logistik_jenis_pembayaran') && $idJenisPembayaran <= 0) {
+            $this->session->set_flashdata('error', 'Jenis Pembayaran wajib dipilih.');
+            redirect('Logistik_Pesanan_Pabrik');
+            return;
+        }
+
         $nodin = $this->MLogistik_Purchase_Request->getNodinById($idNodin);
         if (empty($nodin) || empty($nodin['is_fully_approved'])) {
             $this->session->set_flashdata('error', 'NODIN belum approved penuh, sehingga belum bisa dibuatkan PO.');
@@ -272,6 +284,12 @@ class Logistik_Pesanan_Pabrik extends CI_Controller
     private function generatePoId()
     {
         return substr((string) time() . mt_rand(10, 99), 0, 11);
+    }
+
+    private function relationExists($name)
+    {
+        $row = $this->db->query("SHOW FULL TABLES LIKE ?", [$name])->row_array();
+        return !empty($row);
     }
 
 }

@@ -166,9 +166,16 @@ $totalNominal = array_sum(array_map(static function ($row) {
             background: #ffffff;
         }
 
+        :root {
+            --print-border: 1pt solid #111827;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         .print-page {
-            border: 1px solid #111827;
-            min-height: calc(100vh - 20mm);
+            border: var(--print-border);
         }
 
         .print-title {
@@ -176,7 +183,7 @@ $totalNominal = array_sum(array_map(static function ($row) {
             text-align: center;
             font-size: 24px;
             font-weight: 800;
-            border-bottom: 1px solid #111827;
+            border-bottom: var(--print-border);
             background: #f7f3e7;
         }
 
@@ -197,7 +204,7 @@ $totalNominal = array_sum(array_map(static function ($row) {
         }
 
         .meta-table td {
-            border: 1px solid #111827;
+            border: var(--print-border);
             padding: 6px 8px;
             vertical-align: top;
         }
@@ -223,7 +230,7 @@ $totalNominal = array_sum(array_map(static function ($row) {
 
         .detail-table th,
         .detail-table td {
-            border: 1px solid #111827;
+            border: var(--print-border);
             padding: 6px 6px;
             vertical-align: middle;
         }
@@ -255,7 +262,7 @@ $totalNominal = array_sum(array_map(static function ($row) {
         }
 
         .signature-table td {
-            border: 1px solid #111827;
+            border: var(--print-border);
             vertical-align: top;
             text-align: center;
             padding: 4px;
@@ -337,7 +344,7 @@ $totalNominal = array_sum(array_map(static function ($row) {
         }
 
         .signature-group-table tr + tr td {
-            border-top: 1px solid #111827;
+            border-top: var(--print-border);
         }
 
         .signature-group-title {
@@ -346,7 +353,7 @@ $totalNominal = array_sum(array_map(static function ($row) {
         }
 
         .signature-group-table .signature-group-item + .signature-group-item {
-            border-left: 1px solid #111827;
+            border-left: var(--print-border);
         }
 
         .signature-group-item .signature-shell {

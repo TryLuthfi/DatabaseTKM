@@ -85,6 +85,14 @@ $keteranganPo = trim((string) ($poHeader['keterangan_po'] ?? ''));
 $bowheerName = trim((string) ($poHeader['bowheer_refs'] ?? ''));
 $kondisiMaterial = 'Sesuai dengan spesifikasi dan standart ' . ($bowheerName !== '' ? $bowheerName : 'bowheer terkait');
 $terbilang = ucfirst(trim($numberToWords($grandTotal))) . ' rupiah';
+
+$hargaDisplay = '<strong>' . htmlspecialchars($sistemPembayaran !== '' ? $sistemPembayaran : '-', ENT_QUOTES) . '</strong>';
+
+$kondisiDisplay = htmlspecialchars($keteranganPo !== '' ? $keteranganPo : $kondisiMaterial, ENT_QUOTES);
+if ($bowheerName !== '') {
+    $escapedBowheer = htmlspecialchars($bowheerName, ENT_QUOTES);
+    $kondisiDisplay = str_replace($escapedBowheer, '<strong>' . $escapedBowheer . '</strong>', $kondisiDisplay);
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -97,7 +105,7 @@ $terbilang = ucfirst(trim($numberToWords($grandTotal))) . ' rupiah';
             font-family: Arial, Helvetica, sans-serif;
             color: #111827;
             margin: 0;
-            font-size: 10px;
+            font-size: 10.8px;
             background: #ffffff;
         }
         .po-print {
@@ -130,15 +138,15 @@ $terbilang = ucfirst(trim($numberToWords($grandTotal))) . ' rupiah';
         }
         .po-header__meta h1 {
             margin: 0;
-            font-size: 12px;
+            font-size: 13px;
             color: #f97316;
             font-weight: 800;
-            line-height: 1.2;
+            line-height: 1.25;
         }
         .po-header__meta p {
-            margin: 1px 0;
-            font-size: 8px;
-            line-height: 1.3;
+            margin: 2px 0;
+            font-size: 8.5px;
+            line-height: 1.35;
         }
         .po-doc-head {
             width: 100%;
@@ -155,8 +163,24 @@ $terbilang = ucfirst(trim($numberToWords($grandTotal))) . ' rupiah';
             margin-bottom: 5px;
         }
         .po-section p {
-            margin: 1px 0;
-            line-height: 1.25;
+            margin: 2px 0;
+            line-height: 1.35;
+        }
+        .po-section__after-phone {
+            margin-bottom: 5px !important;
+        }
+        .po-section__after-address {
+            margin-bottom: 5px !important;
+        }
+        .po-section__after-intro {
+            margin-bottom: 6px !important;
+        }
+        .po-inline-meta {
+            display: block;
+        }
+        .po-inline-meta__label {
+            display: inline-block;
+            width: 56px;
         }
         .po-items {
             width: 100%;
@@ -167,11 +191,13 @@ $terbilang = ucfirst(trim($numberToWords($grandTotal))) . ' rupiah';
         .po-items th,
         .po-items td {
             border: 1px solid #475569;
-            padding: 3px 4px;
+            padding: 4px 5px;
             vertical-align: top;
         }
         .po-items th {
             text-align: center;
+            text-align-last: center;
+            vertical-align: middle;
             background: #f8fafc;
             font-weight: 700;
             border-top: 2px solid #334155;
@@ -188,10 +214,11 @@ $terbilang = ucfirst(trim($numberToWords($grandTotal))) . ' rupiah';
         .po-terbilang {
             border: 1px solid #475569;
             border-top: 0;
-            padding: 5px 8px;
+            padding: 6px 8px;
             font-style: italic;
             font-weight: 700;
-            line-height: 1.2;
+            line-height: 1.3;
+            margin-bottom: 6px;
         }
         .po-terms {
             margin-top: 5px;
@@ -201,9 +228,12 @@ $terbilang = ucfirst(trim($numberToWords($grandTotal))) . ' rupiah';
             border-collapse: collapse;
         }
         .po-terms td {
-            padding: 1px 4px 1px 0;
+            padding: 2px 4px 2px 0;
             vertical-align: top;
-            line-height: 1.2;
+            line-height: 1.3;
+        }
+        .po-terms tr:last-child td {
+            padding-bottom: 6px;
         }
         .po-signature {
             width: 100%;
@@ -213,11 +243,11 @@ $terbilang = ucfirst(trim($numberToWords($grandTotal))) . ' rupiah';
         .po-signature td {
             width: 50%;
             vertical-align: top;
-            padding-top: 4px;
-            line-height: 1.2;
+            padding-top: 6px;
+            line-height: 1.35;
         }
         .po-sign-space {
-            height: 26px;
+            height: 34px;
         }
         .po-footer-bar {
             height: 14px;
@@ -266,11 +296,11 @@ $terbilang = ucfirst(trim($numberToWords($grandTotal))) . ' rupiah';
             <div class="po-section">
                 <p>Kepada Yth,</p>
                 <p><strong><?= htmlspecialchars($vendorName, ENT_QUOTES) ?></strong></p>
-                <p><?= nl2br(htmlspecialchars($vendorAddress !== '' ? $vendorAddress : '-', ENT_QUOTES)) ?></p>
-                <p>PIC&nbsp;&nbsp;&nbsp;&nbsp;: <?= htmlspecialchars($vendorPic !== '' ? $vendorPic : '-', ENT_QUOTES) ?></p>
-                <p>Telp&nbsp;&nbsp;&nbsp;: <?= htmlspecialchars($vendorPhone !== '' ? $vendorPhone : '-', ENT_QUOTES) ?></p>
+                <p class="po-section__after-address"><?= nl2br(htmlspecialchars($vendorAddress !== '' ? $vendorAddress : '-', ENT_QUOTES)) ?></p>
+                <p class="po-inline-meta"><span class="po-inline-meta__label">PIC</span>: <?= htmlspecialchars($vendorPic !== '' ? $vendorPic : '-', ENT_QUOTES) ?></p>
+                <p class="po-inline-meta po-section__after-phone"><span class="po-inline-meta__label">Telp</span>: <?= htmlspecialchars($vendorPhone !== '' ? $vendorPhone : '-', ENT_QUOTES) ?></p>
                 <p>Dengan Hormat,</p>
-                <p>Bersama ini kami sampaikan pemesanan barang dengan spesifikasi sebagai berikut :</p>
+                <p class="po-section__after-intro">Bersama ini kami sampaikan pemesanan barang dengan spesifikasi sebagai berikut :</p>
             </div>
 
             <table class="po-items">
@@ -299,19 +329,20 @@ $terbilang = ucfirst(trim($numberToWords($grandTotal))) . ' rupiah';
                     <?php endforeach; ?>
                     <tr>
                         <td colspan="4" rowspan="4"></td>
-                        <td colspan="2" class="po-items__summary-label">Sub Total</td>
+                        <td class="po-items__summary-label">Sub Total</td>
                         <td class="text-right"><?= number_format($subTotal, 0, ',', '.') ?></td>
+                        <td rowspan="4"></td>
                     </tr>
                     <tr>
-                        <td colspan="2" class="po-items__summary-label">DPP</td>
+                        <td class="po-items__summary-label">DPP</td>
                         <td class="text-right"><?= number_format($dpp, 0, ',', '.') ?></td>
                     </tr>
                     <tr>
-                        <td colspan="2" class="po-items__summary-label">PPN 12%</td>
+                        <td class="po-items__summary-label">PPN 12%</td>
                         <td class="text-right"><?= number_format($ppn, 0, ',', '.') ?></td>
                     </tr>
                     <tr>
-                        <td colspan="2" class="po-items__summary-label"><strong>Grand Total</strong></td>
+                        <td class="po-items__summary-label"><strong>Grand Total</strong></td>
                         <td class="text-right"><strong><?= number_format($grandTotal, 0, ',', '.') ?></strong></td>
                     </tr>
                 </tbody>
@@ -325,7 +356,7 @@ $terbilang = ucfirst(trim($numberToWords($grandTotal))) . ' rupiah';
                     <td>1</td>
                     <td>Harga</td>
                     <td>:</td>
-                    <td><?= htmlspecialchars($sistemPembayaran !== '' ? $sistemPembayaran : '-', ENT_QUOTES) ?></td>
+                    <td><?= $hargaDisplay ?></td>
                 </tr>
                 <tr>
                     <td>2</td>
@@ -337,7 +368,7 @@ $terbilang = ucfirst(trim($numberToWords($grandTotal))) . ' rupiah';
                         <td>3</td>
                         <td>Kondisi Material</td>
                         <td>:</td>
-                        <td><?= htmlspecialchars($keteranganPo !== '' ? $keteranganPo : $kondisiMaterial, ENT_QUOTES) ?></td>
+                        <td><?= $kondisiDisplay ?></td>
                     </tr>
                     <tr>
                         <td>4</td>

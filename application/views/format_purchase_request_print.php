@@ -20,7 +20,7 @@ if ($lokasiTitle !== '') {
 }
 
 $signerNames = [
-    'Planning' => 'Yaya Sunarya',
+    'Planning' => 'Suhari',
     'Finance' => 'Almaida',
 ];
 
