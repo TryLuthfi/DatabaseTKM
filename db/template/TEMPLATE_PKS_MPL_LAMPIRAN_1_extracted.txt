@@ -1,0 +1,233 @@
+﻿PERJANJIAN KONTRAK KERJA 
+PEKERJAAN PEMASANGAN OUTSIDE PLAN FIBER OPTIC (OSP-FO)  ANTARA 
+PT. TECHNOLOGY KARYA MANDIRI 
+DENGAN 
+MUHAMMAD HATTA IBRAHIM 
+Nomor : TEC.034/TKM.00/MPL/III/2026 
+Pada hari ini, Senin tanggal Enam Belas bulan Maret tahun Dua ribu dua puluh enam (16-03-2026) bertempat di Kantor Pusat PT. Technology Karya Mandiri, Rukan Puri Botanical Residence Blok H.9 No.22/23 RT 007 RW.001, Joglo - Jakarta Barat, antara pihak-pihak: 
+PT. TECHNOLOGY KARYA MANDIRI, suatu badan usaha berbentuk Perseroan Terbatas yang didirikan berdasarkan Akta Notaris Periasman Effendi, S.H., di Tangerang  Nomor 8, tanggal 18 Maret 2009, yang telah mengalami perubahan dengan Akta Notaris Melyani Noor Shandra, S.H., di 
+Jakarta dalam Berita Acara Nomor 18 tanggal 2 Juni 2010 di Jakarta, beralamat di Rukan Puri Botanical Residence Blok H.8 No.22 RT 007 RW.001, Joglo - Jakarta Barat, dalam hal ini diwakili secara sah oleh IDA ISNAENI jabatan Direktur yang selanjutnya dalam Perjanjian ini disebut sebagai TKM. 
+MUHAMMAD HATTA IBRAHIM sebagai Pelaksana (MITRA PELAKSANA) dengan nomor Kartu Tanda Penduduk (KTP) atas nama Muhammad Hatta Ibrahim nomor 1107301112780001 yang beralamat di Jl. Blang TGK.II LR. Cendana DSN III RT000/000 Kelurahan Lamlagang Kecamatan Banda Raya Provinsi Aceh, dalam hal ini mewakili diri sendiri secara sah sebagai Pelaksana (MITRA PELAKSANA) yang selanjutnya dalam Perjanjian ini disebut MITRA. 
+TKM dan MITRA secara bersama-sama disebut “Para Pihak” dan secara sendiri-sendiri disebut juga “Pihak”  
+Dengan terlebih dahulu mempertimbangkan hal-hal sebagai berikut : 
+Bahwa TKM berkehendak untuk mengadakan Pekerjaan Pemasangan Outside Plan Fiber Optic (OSP-FO); 
+Bahwa MITRA adalah (Pelaksana) kerja TKM dan sanggup untuk melaksanakan Pekerjaan dimaksud;  
+Bahwa Para Pihak telah melakukan pembahasan Harga Satuan Pekerjaan Pemasangan Outside Plan Fiber Optic (OSP-FO). 
+Berdasarkan pertimbangan tersebut di atas telah dicapai kata sepakat, dengan ini TKM dan MITRA menyatakan saling mengikatkan diri dalam Pekerjaan Pemasangan Outside Plan Fiber Optic (OSP-FO) dengan ketentuan dan syarat-syarat sebagai berikut:  
+PASAL 1 DEFINISI 
+Kecuali ditentukan lain dalam hubungan kalimat pada Pasal yang bersangkutan dalam Perjanjian ini, yang dimaksud dengan hal-hal sebagai berikut: 
+Perjanjian adalah Kesepakatan kerja sama Pemasangan Outside Plan Fiber Optic (OSP FO) dengan skema Kontrak Harga Satuan tanpa adanya total nilai perjanjian, yang pelaksanaan transaksinya dilakukan dengan penerbitan Surat Perintah Kerja.  
+Surat Perintah Kerja (SPK) adalah perintah tertulis yang diterbitkan dan ditandatangani oleh TKM dan MITRA, sebagai dasar pelaksanaan pekerjaan dan pembayarannya.  
+Pekerjaan adalah Pemasangan Outside Plan Fiber Optic (OSP-FO) yang dilaksanakan oleh MITRA atas dasar Tanggung Jawab Tunggal. 
+Supervisor adalah petugas yang ditunjuk sebagai pengawas pelaksanaan Pekerjaan di lapangan, dan bertanggung jawab kepada Site Manager dan Regional Project Manager. 
+Lokasi adalah tempat dimana Pekerjaan harus dilaksanakan, diselesaikan dan diserahkan kepada TKM dalam keadaan selesai seluruhnya. 
+Spesifikasi Teknis adalah persyaratan teknis yang dikeluarkan dan ditetapkan oleh TKM yang harus dipenuhi oleh MITRA  sesuai dengan Perjanjian ini. 
+Penyerahan Pekerjaan adalah waktu penyerahan pekerjaan berdasarkan Perjanjian dari MITRA kepada TKM yang dituangkan dalam BAST-I.  
+Jangka Waktu Penyelesaian Pekerjaan adalah jangka waktu penyelesaian pekerjaan terhitung sejak SPK ditandatangani sampai ditandatanganinya BAUT-I, dengan ketentuan seluruh pekerjaan sudah dilaksanakan dengan baik dan dapat diterima TKM. 
+Berita Acara Uji Terima (BAUT/BA-ATP) adalah Berita Acara yang menyatakan bahwa Pekerjaan yang bertalian secara fisik telah selesai 100% tanpa adanya major maupun minor pending item serta telah diuji terima dan dinyatakan baik sesuai Spesifikasi Teknis yang ditetapkan dalam Perjanjian ini. Berita Acara ini ditandatangani oleh TKM dan MITRA. 
+Berita Acara Opname adalah berita acara hasil perhitungan nilai akhir pelaksanaan Pekerjaan yang bertalian dan ditandatangani oleh TKM c.q. Supervisor, Site Manager dan Regional Project Manager dan MITRA.  
+Berita Acara Rekon Material adalah berita acara hasil perhitungan penggunaan material pelaksanaan Pekerjaan yang bertalian dan ditandatangani oleh TKM c.q. Supervisor, Site Manager dan Regional Logistik Manager dan MITRA. 
+Harga Satuan adalah harga satuan dari masing-masing item/unsur Pekerjaan dan merupakan dasar untuk menghitung/menetapkan besarnya Harga Borongan dalam setiap Surat Perintah Kerja dan dinyatakan dalam mata uang Rupiah. 
+PASAL 2 SPESIFIKASI TEKNIS 
+MITRA menjamin bahwa semua pekerjaan yang sudah disepakati dikerjakan sesuai spesifikasi teknis yang dituangkan dalam BAST yang telah disepakati dalam Perjanjian Kontrak Kerja ini. 
+Dari waktu ke waktu, Para Pihak dapat melakukan perubahan atas spesifikasi teknis termasuk BAST dari setiap pekerjaan dengan memperhatikan kondisi-kondisi yang mempengaruhi pelaksanaan pekerjaan yang akan dituangkan ke dalam suatu kesepakatan bersama atau Perjanjian tambahan yang akan ditandatangani oleh Para Pihak. 
+PASAL 3 RUANG LINGKUP PEKERJAAN 
+TKM menyerahkan Pekerjaan Pemasangan Outside Plan Fiber Optic (OSP-FO), selanjutnya disebut sebagai “Pekerjaan”, kepada MITRA, sebagaimana MITRA menerima penyerahan Pekerjaan tersebut dari TKM dan sanggup untuk melaksanakan Pekerjaan dimaksud, sesuai dengan Ruang Lingkup Pekerjaan, Spesifikasi Teknis sebagaimana diuraikan dalam Lampiran Perjanjian ini dan Hasil Rapat Pembahasan Design (DRM) bila ada, serta menyerahkan kepada TKM dengan Jangka Waktu Pelaksanaan yang ditetapkan dalam Surat Perintah Kerja serta siap untuk dipergunakan oleh TKM. 
+Pekerjaan-Pekerjaan lain yang tidak dapat dirinci satu persatu namun menurut sifatnya merupakan tanggung jawab MITRA untuk melaksanakannya sehingga Pekerjaan dapat diselesaikan menurut kuantitas dan kualitas serta dalam Jangka Waktu Pelaksanaan yang telah ditetapkan dalam 
+Perjanjian ini. 
+PASAL 4 SYARAT PELAKSANAAN 
+Dalam melaksanakan Pekerjaan menurut Perjanjian ini, MITRA harus mentaati hal-hal sebagai berikut:  
+Spesifikasi Teknis, gambar rencana dan detailnya termasuk perubahan-perubahannya yang disepakati oleh Para Pihak sepanjang sesuai dengan Perjanjian ini.  
+Menyediakan tenaga ahli yang memenuhi klasifikasi dan kualifikasi tenaga ahli sesuai jenis Pekerjaan, modal dan peralatan kerja dalam jumlah yang cukup dan memadai dan fasilitas lain yang diperlukan, sehingga Pekerjaan dapat diselesaikan tepat mutu, tepat kuantitas dan tepat waktu. 
+Segala petunjuk dan instruksi berdasarkan Perjanjian ini yang diberikan oleh TKM. 
+Memperhatikan tata lingkungan setempat dan pengelolaan lingkungan hidup sesuai dengan peraturan perundangan yang berlaku. 
+Peraturan-peraturan dan ketentuan-ketentuan lain yang terkait dengan pelaksanaan Perjanjian ini, baik yang dikeluarkan oleh TKM, Pemerintah Pusat maupun Daerah atau Instansi Pemerintah yang berwenang.  
+PASAL 5 TANGGUNG JAWAB  DAN KEWAJIBAN 
+Disamping tanggung jawab dan kewajiban yang telah diatur dalam pasal-pasal Perjanjian ini, halhal dibawah ini menjadi tanggung jawab dan kewajiban MITRA, sebagai berikut:  
+Bertanggung jawab terhadap semua risiko yang timbul dalam pelaksanaan Pekerjaan sampai dengan diterimanya hasil Pekerjaan, serta bertanggung jawab selama Masa Pemeliharaan. 
+Berkewajiban untuk menggunakan tenaga-tenaga yang mempunyai kemampuan/keahlian dan pengalaman profesional yang memadai.  
+Berkewajiban menyediakan alat-alat (sarana/prasarana), metode, teknik, dan prosedur pemasangan dalam keadaan cukup dan berkualitas baik untuk melaksanakan Pekerjaan. 
+Berkewajiban selalu memperhatikan kebersihan lingkungan tempatnya bekerja dan  membersihkan kembali lokasi Pekerjaan dari sisa-sisa barang sehubungan dengan pelaksanaan Pekerjaan.  
+Berkewajiban mentaati segala peraturan serta ketentuan yang berlaku guna menjamin keamanan perangkat TKM, kesehatan dan keselamatan kerja orang-orang yang bekerja untuknya, serta kesehatan dan keselamatan umum di sekitarnya.  
+Bertanggung jawab untuk mengawasi pekerjaan-pekerjaan pegawainya dan harus segera mengatasi segala pelanggaran yang dilaporkan kepadanya. 
+Berkewajiban memberikan perlindungan kepada pegawai yang ada di bawah kendali MITRA  atas keselamatan dan kesehatan kerja dari kemungkinan terjadinya kecelakaan dan/atau sakit akibat kerja. 
+Pegawai MITRA diwajibkan mengenakan identifikasi sebagai pegawai dari TKM. 
+Disamping tanggung jawab dan kewajiban yang telah jelas diatur dalam pasal-pasal Perjanjian ini, hal-hal dibawah ini menjadi tanggung jawab dan kewajiban TKM :  
+Menugaskan dan Menempatkan : 
+Regional Project Manager 
+Regional Logistik Manager 
+Site Manager 
+Supervisor 
+Team Logistik 
+Menjamin kesiapan Lokasi dan perijinan Instansi untuk pelaksanaan Pekerjaan.  
+Menerbitkan BAUT/BA ATP, Berita Acara Opname, Berita Acara Rekon Material, BAST dan berita acara lainnya terkait pekerjaan sesuai dengan ketentuan dalam Perjanjian ini tepat pada waktunya.  
+Melakukan pembayaran kepada MITRA tepat pada waktunya. 
+Para Pihak akan melaksanakan tanggung jawab dalam Jangka Waktu Pelaksanaan Pekerjaan, sehingga Pekerjaan dapat diselesaikan sesuai dengan jadwal. 
+PASAL 6 MASA BERLAKU KONTRAK INDUK 
+Masa berlaku Perjanjian Kontrak Kerja Pekerjaan Pemasangan Outside Plan Fiber Optik (OSP-FO) ini berlaku sejak di tandatangani nya kontrak ini sampai dengan tanggal 31 Desember 2026 
+PASAL 7 KANTOR DAN GUDANG MATERIAL 
+MITRA wajib menyediakan Kantor Project yang layak sesuai standar yang sudah ditetapkan TKM   
+Gudang material project yang memenuhi SOP yang sudah ditetapkan TKM. 
+MITRA wajib membuat laporan material secara berkala (Harian, Mingguan dan Bulanan). 
+Segala kerusakan dan kehilangan material yang disebabkan kelalaian MITRA menjadi tanggung jawab mitra pelaksana. 
+Jika dalam perhitungan rekonsiliasi material terdapat perbedaan penggunaan material, maka nilai selisih kekurangan akan dipotongkan dari tagihan mitra pelaksana. 
+Jika Gudang dinyatakan tidak layak, maka penyediaan gudang diambil alih oleh TKM. 
+PASAL 8 SURAT PERINTAH KERJA 
+Pelaksanaan Pekerjaan akan dilakukan dengan penerbitan Surat Perintah Kerja (selanjutnya disebut dengan “SPK”), yang ditandatangani oleh TKM dan MITRA. 
+Periode penerbitan SPK dilakukan dalam kurun waktu sesuai masa laku Perjanjian ini. 
+Dalam SPK akan dicantumkan antara lain data atau informasi sebagai berikut: 
+Lokasi Pekerjaan 
+Pekerjaan yang diperintahkan 
+Volume Pekerjaan 
+Jangka Waktu Pelaksanaan Pekerjaan 
+Harga Borongan  
+Tanggal SPK akan dihitung sebagai tanggal awal Jangka Waktu Pelaksanaan. 
+PASAL 9 JANGKA WAKTU PELAKSANAAN PEKERJAAN 
+Jangka Waktu Pelaksanaan Pekerjaan akan ditentukan di dalam SPK yang ditandatangani TKM dan MITRA.  
+Jangka waktu dimaksud ayat (1) di atas, dihitung sampai dengan diterbitkannya Berita Acara Pekerjaan 100%, dengan lampiran kelengkapan dokumen BA ATP/BAUT yang disetujui Bouwheer. 
+PASAL 10 PERPANJANGAN WAKTU PELAKSANAAN PEKERJAAN 
+Jangka Waktu Pelaksanaan/Penyelesaian Pekerjaan dimaksud Pasal 5 Perjanjian ini dapat diperpanjang, apabila :  
+Fasilitas dan kewajiban yang menjadi tanggung jawab TKM belum tersedia yang dibuktikan dengan Berita Acara yang ditandatangani oleh TKM dan MITRA; atau 
+Ada perintah tertulis dari TKM untuk menunda waktu pelaksanaan Pekerjaan; atau 
+Terjadinya peristiwa/kejadian Force Majeure yang menyebabkan terlambatnya penyelesaian Pekerjaan, sebagaimana dimaksud Perjanjian ini.  
+Perpanjangan Jangka Waktu Pelaksanaan Pekerjaan yang bukan disebabkan oleh hal-hal dimaksud ayat (1) di atas, hanya dapat diberikan apabila MITRA menyampaikan permohonan tertulis kepada TKM dengan mengemukakan alasan yang dapat diterima TKM, dan sudah harus diterima TKM dalam waktu 7 (tujuh) Hari Kalender sebelum berakhirnya Waktu Pelaksanaan.  
+PASAL 11 HARGA BORONGAN 
+Harga Borongan adalah harga total seluruh Pekerjaan sebagaimana tercantum dalam Surat Perintah Kerja (SPK). 
+Harga Borongan dapat berubah apabila terdapat Pekerjaan Tambah Kurang yang dibuktikan dengan  Berita Acara Opname.  
+Apabila terdapat item baru yang belum ada harga satuannya dalam Kontrak (new item) maka terhadap harga satuan untuk Pengadaan tambahan (new item) harus dinegosiasikan dan disepakati oleh Para Pihak. Harga satuan (new item) yang telah disepakati oleh Para Pihak akan dituangkan dalam Amandemen Perjanjian ini. Perubahan Harga Borongan akibat new item harus dibuktikan dengan Berita Acara Opname. 
+PASAL 12 PEKERJAAN TAMBAH/KURANG 
+Setiap penambahan atau pengurangan terhadap Volume/BoQ yang telah ditetapkan dalam Perjanjian ini  baru dapat dilaksanakan setelah ada persetujuan secara tertulis dari TKM c.q. Supevisor, Site Manager dan diketahui oleh Regional Project Manager. 
+TKM berhak melakukan penambahan atau pengurangan pekerjaan yang tercantum dalam perjanjian atau diluar perjanjian disertai dengan pemberitahuan secara tertulis kepada MITRA. MITRA berkewajiban melaksanakan penambahan dan/atau pengurangan pekerjaan tersebut. 
+Apabila harga satuan untuk Pekerjaan tambahan tidak terdapat dalam Perjanjian ini, maka akan dilakukan negosiasi untuk mencapai kesepakatan harga antara Para Pihak.  
+Apabila persetujuan pekerjaan tambah atau kurang diberikan dalam bentuk lisan sebagaimana dimaksud ayat (1) Pasal ini, maka harus diikuti dengan persetujuan tertulis dari TKM c.q. Supervisor, Site Manager dan diketahui oleh Regional Project Manager paling lambat 3 (tiga) hari kerja sejak tanggal persetujuan lisan diberikan. 
+Apabila MITRA melakukan tambahan Pekerjaan tanpa adanya persetujuan tertulis dari TKM c.q. Supervisor, Site Manager dan diketahui oleh Regional Project Manager, maka harus dianggap suatu pelepasan oleh MITRA atas setiap dan semua klaim untuk pembayaran atas Pekerjaan tambahan dimaksud. 
+PASAL 13 PENYELESAIAN PERHITUNGAN AKHIR PEKERJAAN 
+Pada akhir pelaksanaan Pekerjaan dan setelah diterbitkannya Berita Acara Uji Terima (BAUT/BAATP) akan dilakukan Perhitungan Akhir Pekerjaan (Opname) oleh TKM dan MITRA yang hasilnya dituangkan dalam Berita Acara Opname dan selanjutnya akan dipergunakan sebagai dasar penerbitan Berita Acara Serah Terima Pertama (BAST-I) dan pembayaran, dengan ketentuan sebagai berikut: 
+Perhitungan Akhir Pekerjaan (Opname) dilakukan berdasarkan data-data yang dapat dipertanggungjawabkan yaitu : 
+Apabila terdapat pekerjaan tambah-kurang, maka harus didukung dokumen persetujuan tertulis adanya pekerjaan tambah-kurang. 
+Apabila terdapat perubahan jangka waktu penyelesaian/pelaksanaan Pekerjaan dari yang telah ditetapkan, maka harus didukung dokumen persetujuan tertulis tentang perubahan jangka waktu. 
+Berdasarkan Berita Acara Uji Terima (BAUT) dan Berita Acara Opname, akan diterbitkan Berita Acara Serah Terima Pertama (BAST-I), dengan ketentuan apabila Harga Borongan yang bertalian hasil perhitungan akhir Pekerjaan (Opname) lebih tinggi atau lebih rendah dari Harga Borongan, maka Harga Borongan yang dicantumkan dalam Berita Acara Serah Terima Pertama (BAST-I) sebesar Harga Borongan yang tercantum dalam Berita Acara Opname. 
+Apabila nilai pelaksanaan Pekerjaan yang tercantum dalam Berita Acara Serah Terima Pertama (BAST-I) lebih tinggi dari Harga Borongan yang bertalian, maka Harga Borongan yang akan dibayarkan maksimum sebesar Harga Borongan yang telah ditetapkan dalam SPK yang bertalian terlebih dahulu tanpa menunggu diterbitkannya Amandemen terhadap Perjanjian ini, sedangkan sisanya akan dibayarkan setelah Amandemen terhadap SPK yang bertalian. 
+Apabila nilai pelaksanaan Pekerjaan yang tercantum dalam Berita Acara Serah Terima 
+Pertama (BAST-I) lebih rendah dari Harga Borongan yang bertalian, maka Harga Borongan yang akan dibayarkan maksimum sebesar Harga Borongan yang bertalian yang tercantum dalam Berita Acara Serah Terima Pertama (BAST-I) tanpa menunggu diterbitkannya Amandemen terhadap SPK yang bertalian. 
+Perubahan Harga Borongan dari Harga Borongan yang telah ditetapkan dalam SPK, setelah diterbitkannya Berita Acara Opname, selanjutnya akan dituangkan dalam Amandemen terhadap SPK yang bertalian. 
+PASAL 14 TATA CARA PEMBAYARAN 
+Pembayaran akan dilakukan langsung oleh TKM kepada MITRA dengan cara giral melalui BANK atas nama MITRA dengan biaya transfer dibebankan kepada MITRA dan dipotong langsung dari jumlah pembayaran, dengan sistem pembayaran setelah pekerjaan selesai dengan mengajukan permohonan pembayaran yang dilengkapi syarat penagihan sebagai berikut:  
+Copy Surat Perintah Kerja (SPK). 
+Berita Acara Opname. 
+Berita Acara Rekon Material. 
+Permohonan Pembayaran. 
+Kwitansi bermaterai. 
+d. Invoice. 
+Pembayaran dari masing – masing Surat Pesanan akan dilakukan sebagai ketentuan sebagai berikut: 
+a. Pembayaran Pertama sebagai Uang Muka sebesar 15% (lima belas persen) dari harga Borongan dalam Surat Pesanan yang bertalian, akan dibayarkan oleh TKM kepada MITRA setelah dipenuhi syarat - syarat sebagai berikut:  
+Setelah perjanjian ditandatangani oleh kedua Belah Pihak 
+Setelah diterbitkannya Surat Perintah Kerja yang bertalian. 
+Setelah dilakukan Kick Of Meeting antara TKM dan MITRA, sebagai dasar pembuatan RAB (Rencana Anggaran Biaya) Proyek. 
+Setelah perjanjian ditandatangani oleh kedua Belah Pihak 
+Pembayaran Kedua sebesar 35% (tiga puluh lima persen) dari Harga Borongan Sub Sistem yang terkait dari Surat Pesanan yang bertalian, akan dibayarkan oleh TKM kepada MITRA setelah Bobot Pekerjaan mencapai lebih dari 75% (Tujuh puluh lima persen). 
+Pembayaran Ketiga sebesar 25% (dua puluh lima persen) dari Harga Borongan Sub Sistem yang terkait dari Surat Pesanan yang bertalian, akan dibayarkan oleh TKM kepada MITRA setelah Bobot Pekerjaan mencapai 100% (seratus persen) dan Amandemen SPK. 
+Pembayaran Keempat sebesar 15% (lima belas persen) dari Harga Borongan Sub Sistem yang terkait dari Surat Pesanan yang bertalian, akan dibayarkan setelah terbit Berita Acara Penyelesaian Pekerjaan (BAPP). 
+Pembayaran Kelima sebesar 10% (lima persen) dari Harga Borongan Sub Sistem yang terkait dari Surat Pesanan yang bertalian, akan dibayarkan setelah masa pemeliharaan berakhir selama 90 (Sembilan puluh) Hari Kalender Sejak tanggal Amandemen SPK di tandatangani dan apabila tidak ada Amandemen SPK acuannya 3 bulan setelah tagihan Term Of Payment (TOP) sebelumnya. 
+Pembayaran kepada Mitra Pelaksana akan dibayarkan 14 Hari Kerja setelah dokumen dinyatakan Lengkap dan memenuhi persyaratan. 
+PASAL 15 DENDA 
+Toleransi Keterlambatan adalah 7 Hari Kalender dari tanggal Batas Waktu Pelaksanaan (Time Of Contract) Surat Perintah Kerja. 
+Jika setelah diberikan Toleransi Keterlambatan dan pekerjaan masih belum selesai, maka akan dikenakan Denda sebesar 1% perhari setelah selesai masa toleransi  dari Nilai Surat Perintah Kerja (SPK). 
+Batas maksimum Keterlambatan adalah selama 10 Hari Kalender atau Denda sebesar 10% dari Nilai SPK atau Amandemen SPK. 
+Jika setelah dikenakan Denda 10% pekerjaan masih belum selesai, maka TKM akan melakukan Take Over SPK tersebut.  
+Jatuh Tempo Pembayaran Denda. MITRA harus membayar denda kepada TKM selambatlambatnya 30 (Tiga Puluh) hari kalender sejak penerimaan pemberitahuan tertulis dari TKM. 
+Kegagalan dalam Membayar Penalti. Apabila MITRA gagal untuk langsung melakukan pembayaran penalti tersebut, TKM dapat segera memberlakukan dan melakukan perjumpaan utang atas penalti tersebut. 
+PASAL 16 PEMBEBASAN DENDA 
+MITRA dapat dibebaskan dari denda dimaksud Pasal 15 Perjanjian ini apabila terpenuhinya salah satu ketentuan sebagai berikut:  
+Apabila MITRA dapat membuktikan secara sah dengan surat resmi dari Pejabat Pemerintah yang berwenang bahwa keterlambatan dimaksud terjadi akibat Force Majeure sebagaimana dimaksud dalam Perjanjian ini. 
+Apabila Fasilitas dan kewajiban-kewajiban yang menjadi tanggung jawab TKM berdasarkan Perjanjian ini belum tersedia tepat pada waktunya yang dibuktikan dengan Berita Acara yang ditandatangani oleh TKM c.q. Supervisor, Site Manager dan Regional Project Manager dan MITRA. 
+Apabila keterlambatan dimaksud disebabkan karena perintah tertulis dari TKM kepada MITRA untuk menunda atau menghentikan untuk sementara waktu pelaksanaan Pekerjaan.  
+Apabila permintaan perpanjangan waktu penyelesaian Pekerjaan dari MITRA telah disetujui secara tertulis oleh TKM c.q. Supervisor, Site Manager dan Regional Project Manager. 
+PASAL 17 PENGAWASAN PELAKSANAAN PEKERJAAN 
+Pengawasan pelaksanaan Pekerjaan akan dilakukan oleh Supervisor, Site Manager dan Regional Project Manager yang akan ditunjuk oleh TKM. 
+MITRA wajib mematuhi petunjuk atau perintah dari Supervisor, Site Manager atau Regional Project Manager sepanjang petunjuk atau perintah tersebut mengenai Ruang Lingkup Pekerjaan yang harus dilaksanakan oleh MITRA menurut Perjanjian ini. 
+MITRA wajib melaporkan jurnal logistik ke Regional Logistik Manager. 
+PASAL 18 KERUSAKAN DAN KERUGIAN 
+MITRA bertanggung jawab untuk mengganti semua kerusakan dan/atau kerugian baik langsung maupun tidak langsung (loss of opportunity) maksimum sebesar 100% (seratus persen) dari Total Harga Borongan atau hasil Opname (apabila ada) yang diterbitkan berdasarkan SPK yang bertalian, terhadap barang-barang atau kepentingan TKM  yang timbul akibat kesengajaan atau kelalaian MITRA, pegawai-pegawainya, pekerja-pekerjanya ataupun orang-orang yang bekerja untuknya, paling lambat 30 (tiga puluh) Hari Kalender terhitung sejak tanggal pemberitahuan dari TKM. Apabila MITRA lalai atau tidak melaksanakannya, maka TKM berhak secara sepihak memotong langsung dari jumlah tagihan MITRA yang belum dibayarkan TKM, senilai kerugian dimaksud.  
+Segala kerusakan dan kerugian yang diderita oleh pihak ketiga akibat kesengajaan/ kelalaian/kesalahan MITRA, pegawai-pegawainya, pekerja-pekerjanya ataupun orang-orang yang bekerja untuknya sepenuhnya menjadi tanggung jawab MITRA. 
+Bilamana kerusakan atau kerugian dimaksud ayat (1) Pasal ini dapat dibuktikan oleh MITRA bukan sebagai akibat kesengajaan atau kelalaian MITRA, pegawai-pegawainya, pekerja-pekerjanya ataupun orang-orang yang bekerja untuknya maka MITRA dibebaskan dari tanggung jawab tersebut ayat (1) Pasal ini. 
+Kerusakan dan kerugian yang menjadi tanggung jawab MITRA dimaksud ayat (1) Pasal ini adalah semua kerugian fisik yang terkait dengan pelaksanaan Pekerjaan. 
+PASAL 19 PENGGANTIAN KERUGIAN 
+Tanpa mengurangi ketentuan lain Perjanjian ini, MITRA berjanji untuk memberikan ganti kerugian kepada TKM atau pihak lainnya dan membebaskan TKM dari semua kerugian, biaya dan pengeluaran yang timbul dari setiap klaim/tuntutan, termasuk biaya arbitrase, biaya pengadilan, biaya pengacara serta ganti rugi yang ditetapkan pengadilan maupun lembaga lain yang berwenang menyelesaikan klaim/tuntutan, apabila klaim/ tuntutan dimaksud timbul karena hal-hal sebagai berikut: 
+Sebagai akibat dari kelalaian MITRA dalam melaksanakan kewajibannya sesuai dengan 
+Perjanjian ini atau perjanjian khusus lain terkait dengan Perjanjian ini. 
+Sehubungan dengan setiap klaim/tuntutan termasuk denda atau sanksi lainnya yang diderita TKM sebagai akibat dari pelanggaran oleh MITRA atau salah satu karyawannya  terhadap hukum dan peraturan yang berlaku. 
+Atas cidera pribadi yang menimpa dan/atau kematian seseorang dan kerusakan yang terjadi pada harta benda akibat tindakan atau kelalaian untuk melakukan suatu tindakan baik karena kelalaian atau bukan dari MITRA, para karyawannya, agen atau sub-kontraktornya.  
+Adanya sengketa yang timbul sehubungan dengan perjanjian yang telah ditandatangani MITRA dengan pihak ketiga sebelum maupun selama pelaksanaan Perjanjian ini. Jika TKM ikut digugat dalam sengketa ini, maka MITRA akan bertanggung jawab penuh untuk menanggung biaya Pengacara yang ditunjuk sendiri oleh TKM untuk menghadapi gugatan tersebut. Jika atas permohonan dari lawan sengketa MITRA pengadilan menjatuhkan putusan provisionil yang melarang pelaksanaan proyek lebih lanjut, maka MITRA sepakat bahwa TKM berhak untuk mengalihkan proyek tersebut kepada pihak lain agar kepentingan TKM atas proyek tersebut tidak terganggu atau terhenti. 
+Apabila terjadi hal-hal dimaksud ayat (1) Pasal ini, maka TKM harus : 
+Menyampaikan segera pemberitahuan tertulis kepada MITRA, jika ada klaim gugatan dari pihak ketiga.  
+Mengijinkan MITRA untuk menyelesaikan klaim dan/atau gugatan dimaksud atas permintaan MITRA dan atas biaya MITRA. 
+Memberikan informasi dan bantuan yang wajar bila diperlukan MITRA dan atas permintaan tertulis dari MITRA dalam upaya menyangkal atau menyelesaikan klaim dan atau gugatan dimaksud. 
+PASAL 20 LAPORAN 
+Selama Jangka Waktu Pelaksanaan/Penyelesaian Pekerjaan berdasarkan Perjanjian ini, MITRA harus membuat rencana kerja dan menyampaikan laporan Harian, Mingguan dan Bulanan secara tertulis kepada TKM mengenai kemajuan pelaksanaan Pekerjaan dan serta permasalahan utama yang timbul di Lokasi dilengkapi dokumen pendukung. 
+MITRA harus memperhatikan secara langsung untuk mempersiapkan laporan kemajuan dalam waktu dan format dimana TKM dengan mudah dapat memeriksa pelaksanaan Pekerjaan yang telah dilaksanakan.  
+Laporan tersebut ayat (1) Pasal ini ditujukan kepada Supervisor, Site Manager dan Regional Project Manager TKM. 
+PASAL 21 DOKUMENTASI 
+Semua dokumentasi yang berhubungan dengan Pekerjaan dimaksud dalam Perjanjian  ini seperti gambar akhir pelaksanaan (as built drawing) dan informasi lainnya menurut Perjanjian ini harus diserahkan oleh MITRA kepada TKM dan merupakan salah satu persyaratan pembayaran. MITRA harus bertanggung jawab terhadap setiap keterlambatan yang diakibatkan oleh ketidakmampuannya untuk menyerahkan dokumentasi tersebut sehingga tidak dapat dilakukannya pembayaran tepat pada waktunya. 
+PASAL 22 KERAHASIAAN DAN PERLINDUNGAN DATA PRIBADI 
+Kerahasiaan 
+Para Pihak sepakat untuk menjaga kerahasiaan semua informasi, data, dokumen, pengetahuan dalam bentuk apapun yang timbul dan diperoleh dalam pelaksanaan perjanjian ini (“Informasi Rahasia”) dan tidak akan mengungkapkannya kepada pihak mana pun tanpa persetujuan tertulis terlebih dahulu dari pihak lainnya, kecuali pengungkapan tersebut dilakukan kepada (i) instansi pemerintah yang berwenang sesuai dengan ketentuan Hukum dan Peraturan Perundangundangan yang berlaku, (ii) konsultan hukum, atau (iii) Lembaga keuangan yang tugasnya memerlukan informasi rahasia tersebut, dengan ketentuan bahwa konsultan hukum dan Lembaga keuangan tersebut telah menyetujui untuk tidak akan dipublikasikan kepada pihak luar dengan alasan apa pun dan telah membuat kesepakatan tertulis untuk tidak mengungkapkan informasi rahasia tersebut kepada pihak lain untuk maksud apa pun. 
+Pembatasan tersebut pada ayat 1 Pasal ini tidak diterapkan atas informasi rahasia dalam hal sebagai berikut: (i) Informasi rahasia tersebut telah menjadi public domain yang tidak disebabkan oleh pelanggaran ayat (1) Pasal ini, (ii) Informasi rahasia tersebut berada pada pihak yang menerimanya secara sah sebelum pengungkapan informasi rahasia dilakukan, (iii) Informasi rahasia tersebut diperoleh dengan itikad baik dari pihak yang berhak untuk mengungkapkannya. 
+Pembatasan dimaksud pada Perjanjian ini akan tetap berlaku sekalipun Perjanjian ini telah berakhir. 
+Perlindungan Data Pribadi 
+Para Pihak sepakat bahwa masing-masing Pihak akan memproses, menerapkan, melihat dan menggunakan Data Pribadi yang terlibat dalam project ini hanya sejauh yang diperlukan untuk melaksanakan Perjanjian ini. Tidak ada Pihak yang boleh melakukan pengalihan, transfer atau mengizinkan penggunaan Data Pribadi yang terlibat dalam project ini kecuali secara tegas dan mengikat diinstruksikan atau diizinkan oleh Para Pihak. Para Pihak harus mematuhi hukum yang berlaku dan praktik terbaik terkait Privasi Data dan Keamanan Data. 
+Para Pihak yang selanjutnya terlibat dalam pemrosesan dan penggunaan Data Pribadi untuk kebutuhan proses bisnis, yang didalamnya terdapat proses pengaturan hak dan kewajiban tentang pengendali Data Pribadi, selanjutnya akan berpedoman dan mengambil referensi dari Undang-undang No. 27 tahun 2022 tentang perlindungan Data Pribadi beserta peraturan pelaksananya (termasuk perubahan sewaktu-waktu) yang berlaku di Republik Indonesia. 
+PASAL 23 LARANGAN 
+Larangan untuk Memberi atau Menerima Hadiah. MITRA dilarang menawarkan, memberikan, menerima atau setuju untuk memberi/menerima pemberian hadiah, komisi, rabat atau bentukbentuk hadiah atau uang lainnya kepada atau dari pegawai TKM atau pihak ketiga sehubungan dengan pelaksanaan Jasa, atau sehubungan dengan segala bentuk transaksi sebagaimana yang tercamtum dalam Kontrak dan atau dalam Pelaksanaannya. 
+Larangan terhadap Tindakan yang Tidak Jujur atau Menipu. MITRA tidak akan memberikan pernyataan atau janji palsu dan informasi tidak benar atau tidak akurat, atau salah penggambaran fakta atau otoritas, atau menyesatkan pihak ketiga terkait pelaksanaan Jasa. 
+Pelanggaran. Setiap pelanggaran terhadap ketentuan Pasal 23 oleh MITRA, karyawannya atau Subkontraktornya atau orang lain yang bekerja untuk TKM akan mengakibatkan diakhirinya Kontrak ini atau SPK oleh TKM dengan tidak mengurangi hak untuk tuntutan pidana. 
+PASAL 24 FORCE MAJEURE 
+Yang dimaksud dengan Force Majeure dalam Perjanjian ini adalah keadaan yang terjadi di luar kekuasaan salah satu Pihak dan tidak dapat diperkirakan sebelumnya, yang mengakibatkan Pihak dimaksud tidak dapat memenuhi kewajiban yang telah ditetapkan dalam Perjanjian, sebagai berikut:  
+Bencana alam yaitu gempa bumi besar, tsunami, angin topan, gunung meletus, banjir besar, kebakaran besar, hujan deras terus menerus lebih dari 10 (sepuluh) Hari Kalender dan tanah longsor. 
+Bencana non alam yaitu epidemi dan wabah penyakit. 
+Konflik sosial antar kelompok atau antar komunitas, pemogokan umum, huru-hara, perang, sabotase dan pemberontakan.  
+Dalam hal terjadi Force Majeure, Pihak yang mengalami Force Majeure wajib memberitahukan secara tertulis kepada Pihak lainnya maksimal dalam waktu 14 (empat belas) Hari Kalender sejak saat terjadinya. 
+Kelalaian atau kelambatan dalam memenuhi kewajiban pemberitahuan dimaksud ayat (2) Pasal ini, mengakibatkan tidak diakuinya peristiwa dimaksud ayat (1) Pasal ini sebagai Force Majeure. 
+Kejadian-kejadian tersebut ayat (1) Pasal ini dapat diperhitungkan sebagai perpanjangan waktu pelaksanaan kewajiban Para Pihak, apabila ketentuan ayat (2) Pasal ini dipenuhi. 
+Semua kerugian yang timbul atau diderita salah satu pihak karena terjadinya Force Majeure bukan merupakan tanggung jawab pihak lain.  
+PASAL 25 PEMUTUSAN / PEMBATALAN PERJANJIAN 
+(1) TKM berhak secara sepihak tanpa adanya tuntutan apapun dari MITRA, untuk memutuskan sebagian atau seluruh Pekerjaan menurut Perjanjian ini, apabila salah satu diantara sebab-sebab tersebut dibawah ini terjadi :  
+Apabila dalam waktu 20 (dua puluh) Hari Kalender terhitung sejak SPK diterbitkan, MITRA ternyata belum memulai pelaksanaan Pekerjaan. 
+Apabila jumlah denda telah mencapai jumlah denda maksimum. 
+Apabila MITRA mengundurkan diri setelah menandatangani Perjanjian ini dan/atau selama pelaksanaan ini. 
+TKM menilai kinerja MITRA tidak baik atau tidak sesuai spesifikasi teknis dalam proses pelaksanaan project yang telah disepakati. 
+PASAL 26 WAKIL PARA PIHAK 
+(1) Untuk kelancaran pelaksanaan Pekerjaan menurut Perjanjian ini, TKM dan MITRA menunjuk wakilnya masing-masing berkaitan dengan pelaksanaan Perjanjian ini, sebagai berikut:  
+Perwakilan TKM : 
+Nama  : YAYA SUNARYA 
+ Jabatan  : General Manager Project  
+Alamat  : Rukan Puri Botanical Residence Blok H.8 No.22, Joglo – Jakarta Barat 
+No.Telp.  : 021 – 5855552, 58905600, 081316637204, 08112777831 
+Email  : info@tkm.co.id, yaya@tkm.co.id 
+Tanda Tangan :     Stempel: 
+    ………………………………        ………………………………………..…. 
+Perwakilan MITRA : 
+Nama  : MUHAMMAD HATTA IBRAHIM 
+Jabatan  : Mitra Pelaksana 
+Alamat : Jl. Blang TGK.II LR. Cendana DSN III RT000/000 Kelurahan Lamlagang Kecamatan Banda Raya, Aceh No.Telp.  : 0811686219 
+Email  : hatta.mohd78@gmail.com  
+Tanda Tangan :     Stempel: 
+    ………………………………        ………………………………………..…. 
+(2) Perubahan terhadap wakil dan alamat  dimaksud ayat (1) pasal ini harus disampaikan secara tertulis oleh pihak yang mengusulkan perubahan kepada pihak lainnya. 
+PASAL 27 KONFLIK KEPENTINGAN 
+Pembatalan Kontrak karena Konflik Kepentingan. Jika MITRA mempunyai konflik kepentingan kapan pun selama Jangka Waktu Kontrak ini, MITRA wajib untuk memberitahukan konflik tersebut kepada TKM dan TKM berhak untuk mengakhiri Kontrak dan/atau SPK tanpa adanya kewajiban untuk membayar atau menggantii biaya, pengeluaran atau harga akibat pengakhiran tersebut, selain untuk pelaksanaan Jasa yang sesuai dengan ketentuan-ketentuan dari Kontrak dan pembayaran atau penggantian biaya tersebut bertentangan dengan hukum atau peraturan perusahaan atau merugikan TKM. 
+PASAL 28 PERBEDAAN-PERBEDAAN 
+Apabila terdapat perbedaan antara lampiran-lampiran Perjanjian ini dengan pasal-pasal Perjanjian ini yang mengatur hal yang sama, maka yang berlaku dan mengikat adalah Pasal-pasal dalam Perjanjian ini. 
+PASAL 29 PENYELESAIAN PERSELISIHAN 
+Apabila di kemudian hari terjadi perselisihan dalam penafsiran atau pelaksanaan ketentuanketentuan dari Perjanjian, Para Pihak sepakat untuk terlebih dahulu menyelesaikan secara musyawarah untuk mufakat. 
+Bilamana musyawarah tersebut ayat (1) Pasal ini tidak menghasilkan mufakat, maka Para Pihak sepakat untuk menyerahkan semua sengketa yang timbul dari Perjanjian ini kepada Badan Arbitrase Nasional Indonesia (BANI) untuk diselesaikan pada tingkat pertama dan terakhir menurut peraturan dan prosedur BANI serta Undang-Undang Arbitrase, dan keputusan  BANI bersifat final dan mengikat. 
+Selama perselisihan dalam proses penyelesaian, TKM dan MITRA wajib tetap melaksanakan Pekerjaan dan kewajiban lainnya menurut Perjanjian ini. 
+PASAL  30 LAIN - LAIN 
+Perjanjian ini tidak bertentangan dengan Anggaran Dasar masing-masing pihak serta tidak melanggar peraturan yang mengikat masing-masing pihak. Masing-masing pihak telah mengambil semua tindakan yang diperlukan dan memperoleh semua persetujuan/ ijin sesuai dengan ketentuan Anggaran Dasar masing-masing pihak dan/atau peraturan yang berlaku untuk menandatangani dan melaksanakan Perjanjian ini dan pihak yang menandatangani Perjanjian ini untuk Para Pihak memiliki wewenang untuk menandatangani Perjanjian ini dan mengikat masingmasing Pihak. 
+Setiap perubahan isi Perjanjian ini termasuk lampirannya akan mengikat apabila dinyatakan secara tertulis dan disetujui oleh TKM dan MITRA dengan membuat dan menandatangani Amandemen atau Side Letter terhadap Perjanjian ini, serta akan merupakan bagian yang tidak dapat dipisahkan dari Perjanjian ini. 
+Segala  ketentuan  dan syarat-syarat  dalam  Perjanjian ini berlaku serta mengikat bagi pihak-pihak yang menandatangani, pengganti-penggantinya dan mereka yang memperoleh keuntungan dari padanya. 
+Perjanjian ini dibuat dalam rangkap 2 (dua) asli masing-masing sama bunyinya diatas kertas bermeterai cukup serta mempunyai kekuatan hukum yang sama setelah ditandatangani kedua belah pihak.  
+Demikian Perjanjian ini dibuat dengan itikad baik dan telah disepakati oleh Para Pihak. 
+TKM MITRA 
+IDA ISNAENI MUHAMMAD HATTA IBRAHIM 
+DIREKTUR PELAKSANA 

@@ -498,7 +498,9 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                         $id_menu == 'Batch_Approval_MyRep' ||
                         $id_menu == 'Implementasi_BOQ_MyRep' ||
                         $id_menu == 'PO_MyRep' ||
-                        $id_menu == 'DRM_MyRep'
+                        $id_menu == 'DRM_MyRep' ||
+                        $id_menu == 'Kontrak_Payung' ||
+                        $id_menu == 'SPK'
                     ) ? 'menu-open' : '' ?>">
                         <a href="#" class="nav-link <?= (
                             $id_menu == 'Fiberstar_PO' ||
@@ -516,7 +518,9 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                             $id_menu == 'Batch_Approval_MyRep' ||
                             $id_menu == 'Implementasi_BOQ_MyRep' ||
                             $id_menu == 'PO_MyRep' ||
-                            $id_menu == 'DRM_MyRep'
+                            $id_menu == 'DRM_MyRep' ||
+                            $id_menu == 'Kontrak_Payung' ||
+                            $id_menu == 'SPK'
                         ) ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-project-diagram"></i>
                             <p>
@@ -527,6 +531,32 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                         </a>
 
                         <ul class="nav nav-treeview">
+                            <li class="nav-item has-treeview <?= ($id_menu == 'Kontrak_Payung' || $id_menu == 'SPK') ? 'menu-open' : '' ?>">
+                                <a href="#" class="nav-link <?= ($id_menu == 'Kontrak_Payung' || $id_menu == 'SPK') ? 'active' : '' ?>">
+                                    <i class="nav-icon fas fa-file-signature"></i>
+                                    <p>
+                                        Kontrak & SPK
+                                        <i class="fas fa-angle-left right"></i>
+                                        <span class="badge badge-info right">2</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('Kontrak_Payung') ?>"
+                                            class="nav-link <?= ($id_menu == 'Kontrak_Payung') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Kontrak Payung (PKS)</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('SPK') ?>"
+                                            class="nav-link <?= ($id_menu == 'SPK') ? 'active' : '' ?>">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>SPK</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
                             <!-- Fiberstar -->
                             <li class="nav-item has-treeview <?= (
                                 $id_menu == 'Fiberstar_PO' ||
@@ -571,6 +601,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                     </li>
                                 </ul>
                             </li>
+                            
 
                             <!-- My Republik -->
                             <li class="nav-item has-treeview <?= (
