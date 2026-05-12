@@ -750,6 +750,11 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                         <a href="<?= base_url($item['file_path']) ?>" target="_blank">
                                                                             <?= !empty($item['file_name']) ? $item['file_name'] : basename($item['file_path']) ?>
                                                                         </a>
+                                                                    <?php elseif (!empty($item['linked_source_file_id']) && !empty($item['linked_source_preview_path'])): ?>
+                                                                        <a href="<?= base_url($item['linked_source_preview_path']) ?>" target="_blank">
+                                                                            <?= !empty($item['linked_source_file_name']) ? $item['linked_source_file_name'] : ('LINKED FILE #' . (int) $item['linked_source_file_id']) ?>
+                                                                        </a>
+                                                                        <div class="doc-flag-chip">Linked: <?= htmlspecialchars((string) ($item['linked_source_flow_type'] ?? '-')) ?></div>
                                                                     <?php elseif (!empty($item['is_document_not_required'])): ?>
                                                                         <span class="text-muted">Tanpa file</span>
                                                                         <div class="doc-flag-chip">Tidak dibutuhkan dokument</div>
@@ -767,7 +772,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                     <div><strong>ASTRI:</strong> <?= $item['astri_remark'] !== '' ? $item['astri_remark'] : '-' ?></div>
                                                                 </td>
                                                                 <td>
-                                                                    <?php if (in_array($item['status_file'], ['NOT UPLOADED', 'REJECTED'], true)): ?>
+                                                                    <?php if (empty($item['linked_source_file_id']) && in_array($item['status_file'], ['NOT UPLOADED', 'REJECTED'], true)): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-success btn-upload-doc"
                                                                             data-toggle="modal"
@@ -779,6 +784,8 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             data-doc-note="<?= htmlspecialchars((string) $item['doc_requirement_note'], ENT_QUOTES) ?>">
                                                                             Upload
                                                                         </button>
+                                                                    <?php elseif (!empty($item['linked_source_file_id'])): ?>
+                                                                        <span class="badge badge-info">Linked Source</span>
                                                                     <?php endif; ?>
                                                                     <?php if (!empty($item['file_path'])): ?>
                                                                         <a href="<?= base_url('Checklist_Dokument_MyRep/previewDocument/' . (int) $item['id_doc_file']) ?>" target="_blank" class="btn btn-sm btn-warning">View</a>
@@ -793,7 +800,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             Detail
                                                                         </button>
                                                                     <?php endif; ?>
-                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
+                                                                    <?php if (empty($item['linked_source_file_id']) && $canApprove && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-secondary btn-astri-doc"
                                                                             data-toggle="modal"
@@ -808,7 +815,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             ASTRI
                                                                         </button>
                                                                     <?php endif; ?>
-                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
+                                                                    <?php if (empty($item['linked_source_file_id']) && $canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-primary btn-approve-doc"
                                                                             data-toggle="modal"
@@ -819,7 +826,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             Approve
                                                                         </button>
                                                                     <?php endif; ?>
-                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'APPROVED'], true)): ?>
+                                                                    <?php if (empty($item['linked_source_file_id']) && $canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'APPROVED'], true)): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-danger btn-reject-doc"
                                                                             data-toggle="modal"

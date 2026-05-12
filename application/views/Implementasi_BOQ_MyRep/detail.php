@@ -1829,7 +1829,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                 <td><?= htmlspecialchars((string) ($group['date'] ?? '-')) ?></td>
                                                 <td><?= count((array) ($group['activities'] ?? [])) ?> aktivitas</td>
                                                 <td><?= (int) ($group['team_count'] ?? 0) ?> Team / <?= (int) ($group['worker_count'] ?? 0) ?> Orang</td>
-                                                <td><?= number_format((float) ($group['total_qty'] ?? 0), 2, ',', '.') ?></td>
+                                                <td><?= number_format((float) ($group['total_qty'] ?? 0), 0, ',', '.') ?></td>
                                                 <td><?= (int) ($group['photo_count'] ?? 0) ?> foto</td>
                                                 <td><?= !empty($group['pic']) ? htmlspecialchars(implode(', ', array_keys($group['pic']))) : '-' ?></td>
                                                 <td><?= !empty($group['scope']) ? htmlspecialchars(implode(', ', array_keys($group['scope']))) : '-' ?></td>
@@ -2717,6 +2717,14 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 .replace(/>/g, '&gt;');
         }
 
+        function formatDailyQty(value) {
+            var number = parseFloat(value || 0);
+            if (isNaN(number)) {
+                number = 0;
+            }
+            return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(number);
+        }
+
         function syncLightboxButtons() {
             if (!lightboxPrev || !lightboxNext) {
                 return;
@@ -3005,11 +3013,13 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                     htmlDaily += '<div class="col-md-3"><div class="small text-muted">Regional</div><div class="font-weight-bold"><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-'), ENT_QUOTES) ?></div></div>';
                     htmlDaily += '<div class="col-md-2"><div class="small text-muted">Kota</div><div class="font-weight-bold"><?= htmlspecialchars((string) ($cluster['city_name'] ?? '-'), ENT_QUOTES) ?></div></div>';
                     htmlDaily += '<div class="col-md-3"><div class="small text-muted">Status</div><div class="font-weight-bold"><?= htmlspecialchars((string) ($cluster['implementation_status'] ?? '-'), ENT_QUOTES) ?></div></div>';
-                    htmlDaily += '</div><hr class="my-2">';
+                    htmlDaily += '</div></div></div>';
+
+                    htmlDaily += '<div class="card border-0 shadow-sm mb-3"><div class="card-body py-3">';
                     htmlDaily += '<div class="row">';
                     htmlDaily += '<div class="col-md-3"><div class="small text-muted">Tanggal</div><div class="font-weight-bold">' + escapeAttr(dailyDate) + '</div></div>';
                     htmlDaily += '<div class="col-md-3"><div class="small text-muted">Total Aktivitas</div><div class="font-weight-bold">' + dailyActivities.length + '</div></div>';
-                    htmlDaily += '<div class="col-md-3"><div class="small text-muted">Total Qty</div><div class="font-weight-bold">' + totalQty.toFixed(2) + '</div></div>';
+                    htmlDaily += '<div class="col-md-3"><div class="small text-muted">Total Qty</div><div class="font-weight-bold">' + formatDailyQty(totalQty) + '</div></div>';
                     htmlDaily += '<div class="col-md-3"><div class="small text-muted">Total Foto / Scope</div><div class="font-weight-bold">' + totalPhotos + ' foto / ' + escapeAttr(scopeList.join(', ') || '-') + '</div></div>';
                     htmlDaily += '</div><hr class="my-2">';
                     htmlDaily += '<div class="row">';
@@ -3026,7 +3036,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         htmlDaily += '<td>' + escapeAttr(activity.activity_detail || '-') + '</td>';
                         htmlDaily += '<td>' + escapeAttr(activity.boq_type || '-') + '</td>';
                         htmlDaily += '<td><span class="badge badge-secondary">' + escapeAttr(activity.scope_type || '-') + '</span></td>';
-                        htmlDaily += '<td>' + escapeAttr(activity.qty_activity || '0') + ' ' + escapeAttr(activity.unit_activity || '') + '</td>';
+                        htmlDaily += '<td>' + formatDailyQty(activity.qty_activity || 0) + ' ' + escapeAttr(activity.unit_activity || '') + '</td>';
                         htmlDaily += '<td>';
                         var photos = activity.photos || [];
                         if (!photos.length) {

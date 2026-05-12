@@ -754,6 +754,105 @@ class Checklist_Dokument_MyRep extends CI_Controller
         exit;
     }
 
+    public function previewKesepakatanPdf($clusterId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            show_404();
+            return;
+        }
+
+        $cluster = $this->MChecklist_Dokument_MyRep->getClusterDetail($clusterId);
+        if (empty($cluster) || empty($cluster['id_myrep_cluster'])) {
+            show_404();
+            return;
+        }
+
+        $sourceDocs = $this->MChecklist_Dokument_MyRep->getKesepakatanSourceDocuments((int) $cluster['id_myrep_cluster']);
+        if (empty($sourceDocs) || count($sourceDocs) < 4) {
+            $this->session->set_flashdata('error', 'Dokumen sumber Berita Acara Kesepakatan belum lengkap di Batch Approval/Post Donasi.');
+            redirect('Checklist_Dokument_MyRep/detail/' . $clusterId);
+            return;
+        }
+
+        $autoload = $this->resolveVendorAutoloadPath();
+        if ($autoload === '') {
+            show_error('Autoload vendor tidak ditemukan untuk proses merge PDF.', 500);
+            return;
+        }
+        require_once $autoload;
+
+        if (!class_exists('\setasign\Fpdi\Tcpdf\Fpdi')) {
+            show_error('Library FPDI tidak ditemukan. Pastikan dependency Composer terpasang.', 500);
+            return;
+        }
+
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi('P', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->SetCreator('DatabaseTKM');
+        $pdf->SetAuthor('DatabaseTKM');
+        $pdf->SetTitle('Berita Acara Kesepakatan - ' . (string) ($cluster['cluster_name'] ?? 'Cluster'));
+        $pdf->SetSubject('Merge Dokumen Batch Approval');
+        $pdf->SetPrintHeader(false);
+        $pdf->SetPrintFooter(false);
+        $pdf->SetMargins(10, 10, 10);
+
+        foreach ($sourceDocs as $doc) {
+            $filePath = (string) ($doc['file_path'] ?? '');
+            $fullPath = FCPATH . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filePath);
+            if (!is_file($fullPath)) {
+                continue;
+            }
+
+            $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+            if ($ext === 'pdf') {
+                try {
+                    $pageCount = $pdf->setSourceFile($fullPath);
+                    for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                        $tplId = $pdf->importPage($pageNo);
+                        $size = $pdf->getTemplateSize($tplId);
+                        $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+                        $pdf->AddPage($orientation);
+                        $pdf->useTemplate($tplId, 0, 0, null, null, true);
+                    }
+                } catch (\Throwable $e) {
+                    $pdf->AddPage('P');
+                    $pdf->SetFont('helvetica', 'B', 10);
+                    $pdf->Cell(0, 6, 'Gagal merge PDF sumber', 0, 1, 'L');
+                    $pdf->SetFont('helvetica', '', 9);
+                    $pdf->MultiCell(0, 5, (string) ($doc['doc_name'] ?? '-') . ' - ' . basename($fullPath), 0, 'L', false, 1);
+                }
+                continue;
+            }
+
+            if (in_array($ext, ['jpg', 'jpeg', 'png'], true)) {
+                $pdf->AddPage('P');
+                $pdf->SetFont('helvetica', 'B', 10);
+                $pdf->Cell(0, 6, (string) ($doc['doc_name'] ?? '-'), 0, 1, 'L');
+                try {
+                    $pdf->Image($fullPath, 10, 20, 190, 260, '', '', '', false, 150, '', true, false, 0, false, false, false);
+                } catch (\Throwable $e) {
+                    $pdf->SetFont('helvetica', '', 9);
+                    $pdf->MultiCell(0, 5, 'Gagal memuat image: ' . basename($fullPath), 0, 'L', false, 1);
+                }
+                continue;
+            }
+
+            $pdf->AddPage('P');
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->Cell(0, 6, (string) ($doc['doc_name'] ?? '-'), 0, 1, 'L');
+            $pdf->SetFont('helvetica', '', 9);
+            $pdf->MultiCell(0, 5, 'File non-PDF/Image tidak bisa di-embed: ' . basename($fullPath), 0, 'L', false, 1);
+        }
+
+        $fileName = 'BA_KESEPAKATAN_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($cluster['cluster_name'] ?? ('CLUSTER_' . $clusterId))) . '.pdf';
+        $pdf->Output($fileName, 'I');
+    }
+
     public function downloadDocumentFormat($itemId = 0)
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -866,6 +965,40 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         return $date;
+    }
+
+    private function resolveTcpdfPath()
+    {
+        $paths = [
+            'D:/XAMPP/phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
+            dirname(FCPATH) . '/phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
+            FCPATH . '../phpMyAdmin/vendor/tecnickcom/tcpdf/tcpdf.php',
+            'D:/XAMPP/htdocs/DatabaseTKM/application/third_party/tcpdf/tcpdf.php',
+        ];
+
+        foreach ($paths as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return '';
+    }
+
+    private function resolveVendorAutoloadPath()
+    {
+        $paths = [
+            FCPATH . 'vendor/autoload.php',
+            dirname(FCPATH) . '/DatabaseTKM/vendor/autoload.php',
+        ];
+
+        foreach ($paths as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return '';
     }
 
     private function notifyClusterDocumentSubmittedToHo($clusterId, array $document)

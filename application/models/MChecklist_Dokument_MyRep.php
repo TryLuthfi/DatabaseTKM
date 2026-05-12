@@ -43,6 +43,167 @@ class MChecklist_Dokument_MyRep extends CI_Model
         return $status;
     }
 
+    public function getKesepakatanSourceDocuments($myrepClusterId)
+    {
+        $myrepClusterId = (int) $myrepClusterId;
+        if ($myrepClusterId <= 0) {
+            return [];
+        }
+
+        $required = [
+            'PERJANJIAN DONASI DAN PEMBERIAN IZIN',
+            'BUKTI TRANSFER KONTRIBUSI',
+            'DOKUMENTASI PENYERAHAN KONTRIBUSI',
+            'KTP RT/RW',
+        ];
+
+        $rows = $this->db
+            ->select('
+                i.doc_name,
+                f.id_doc_file,
+                f.file_name,
+                f.file_path,
+                f.status_file
+            ')
+            ->from('tb_myrep_flow_doc_package p')
+            ->join('md_myrep_flow_doc_group g', 'g.id_doc_group = p.id_doc_group AND g.is_active = 1', 'inner')
+            ->join('md_myrep_flow_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1', 'inner')
+            ->join('tb_myrep_flow_doc_file f', 'f.id_doc_package = p.id_doc_package AND f.id_doc_item = i.id_doc_item', 'inner')
+            ->where('p.id_myrep_cluster', $myrepClusterId)
+            ->where('p.flow_type', 'POST_DONASI')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $docKey = strtoupper(trim((string) ($row['doc_name'] ?? '')));
+            if (!in_array($docKey, $required, true) || isset($map[$docKey])) {
+                continue;
+            }
+            $map[$docKey] = $row;
+        }
+
+        $result = [];
+        foreach ($required as $docKey) {
+            if (!isset($map[$docKey])) {
+                return [];
+            }
+            $result[] = [
+                'doc_name' => (string) ($map[$docKey]['doc_name'] ?? ''),
+                'id_doc_file' => (int) ($map[$docKey]['id_doc_file'] ?? 0),
+                'file_name' => (string) ($map[$docKey]['file_name'] ?? ''),
+                'file_path' => (string) ($map[$docKey]['file_path'] ?? ''),
+                'status_file' => strtoupper(trim((string) ($map[$docKey]['status_file'] ?? ''))),
+            ];
+        }
+
+        return $result;
+    }
+
+    private function getChecklistLinkedDocumentMap($myrepClusterId, $rfsClusterId = 0)
+    {
+        $myrepClusterId = (int) $myrepClusterId;
+        if ($myrepClusterId <= 0) {
+            return [];
+        }
+
+        $sourceRows = $this->db
+            ->select('
+                p.flow_type,
+                g.group_label,
+                i.doc_name,
+                f.id_doc_file,
+                f.file_name,
+                f.file_path,
+                f.status_file
+            ')
+            ->from('tb_myrep_flow_doc_package p')
+            ->join('md_myrep_flow_doc_group g', 'g.id_doc_group = p.id_doc_group AND g.is_active = 1', 'inner')
+            ->join('md_myrep_flow_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1', 'inner')
+            ->join('tb_myrep_flow_doc_file f', 'f.id_doc_package = p.id_doc_package AND f.id_doc_item = i.id_doc_item', 'inner')
+            ->where('p.id_myrep_cluster', $myrepClusterId)
+            ->where_in('p.flow_type', ['POST_DONASI', 'VALSAL'])
+            ->get()
+            ->result_array();
+
+        $lookup = [];
+        $lookupByFlowDoc = [];
+        foreach ($sourceRows as $row) {
+            $flowKey = strtoupper(trim((string) ($row['flow_type'] ?? '')));
+            $groupKey = strtoupper(trim((string) ($row['group_label'] ?? '')));
+            $docKey = strtoupper(trim((string) ($row['doc_name'] ?? '')));
+            $key = $flowKey . '|' . $groupKey . '|' . $docKey;
+            if (!isset($lookup[$key])) {
+                $lookup[$key] = $row;
+            }
+
+            $flowDocKey = $flowKey . '|' . $docKey;
+            if (!isset($lookupByFlowDoc[$flowDocKey])) {
+                $lookupByFlowDoc[$flowDocKey] = $row;
+            }
+        }
+
+        $targetMappings = [
+            'BERITA ACARA OPEN' => ['flow_type' => 'POST_DONASI', 'group_label' => '', 'doc_name' => 'Berita Acara Open'],
+            'CLUSTER APPROVAL PROPOSAL' => ['flow_type' => 'POST_DONASI', 'group_label' => '', 'doc_name' => 'Cluster Approval Proposal'],
+            'FORM CLUSTER SURVEY' => ['flow_type' => 'POST_DONASI', 'group_label' => '', 'doc_name' => 'Form Cluster Survey'],
+            'FORM FREE LAYANAN' => ['flow_type' => 'POST_DONASI', 'group_label' => '', 'doc_name' => 'Form Free Layanan'],
+            'LAYOUT SND KASAR' => ['flow_type' => 'VALSAL', 'group_label' => 'VALIDASI SALES', 'doc_name' => 'SND Kasar'],
+        ];
+
+        $result = [];
+        foreach ($targetMappings as $targetDocName => $sourceMap) {
+            $sourceRow = [];
+            if (trim((string) ($sourceMap['group_label'] ?? '')) !== '') {
+                $lookupKey = strtoupper($sourceMap['flow_type']) . '|' .
+                    strtoupper($sourceMap['group_label']) . '|' .
+                    strtoupper($sourceMap['doc_name']);
+                $sourceRow = $lookup[$lookupKey] ?? [];
+            } else {
+                $lookupKey = strtoupper($sourceMap['flow_type']) . '|' . strtoupper($sourceMap['doc_name']);
+                $sourceRow = $lookupByFlowDoc[$lookupKey] ?? [];
+            }
+
+            if (empty($sourceRow['id_doc_file'])) {
+                continue;
+            }
+            $sourceFlow = strtoupper(trim((string) ($sourceRow['flow_type'] ?? '')));
+            $previewPath = '';
+            if ($sourceFlow === 'POST_DONASI') {
+                $previewPath = 'Post_Donasi_MyRep/previewDocument/' . (int) $sourceRow['id_doc_file'];
+            } elseif ($sourceFlow === 'VALSAL') {
+                $previewPath = 'VALSAL_MyRep/previewDocument/' . (int) $sourceRow['id_doc_file'];
+            }
+
+            $result[$targetDocName] = [
+                'linked_source_flow_type' => $sourceFlow,
+                'linked_source_group_label' => (string) ($sourceRow['group_label'] ?? ''),
+                'linked_source_doc_name' => (string) ($sourceRow['doc_name'] ?? ''),
+                'linked_source_file_id' => (int) ($sourceRow['id_doc_file'] ?? 0),
+                'linked_source_file_name' => (string) ($sourceRow['file_name'] ?? ''),
+                'linked_source_file_path' => (string) ($sourceRow['file_path'] ?? ''),
+                'linked_source_status' => strtoupper(trim((string) ($sourceRow['status_file'] ?? ''))),
+                'linked_source_preview_path' => $previewPath,
+            ];
+        }
+
+        $kesepakatanDocs = $this->getKesepakatanSourceDocuments($myrepClusterId);
+        if (!empty($kesepakatanDocs) && (int) $rfsClusterId > 0) {
+            $result['BERITA ACARA KESEPAKATAN'] = [
+                'linked_source_flow_type' => 'POST_DONASI',
+                'linked_source_group_label' => 'BATCH APPROVAL',
+                'linked_source_doc_name' => 'Berita Acara Kesepakatan (Generated)',
+                'linked_source_file_id' => 1,
+                'linked_source_file_name' => 'BA_KESEPAKATAN_' . (int) $rfsClusterId . '.pdf',
+                'linked_source_file_path' => '',
+                'linked_source_status' => 'APPROVED',
+                'linked_source_preview_path' => 'Checklist_Dokument_MyRep/previewKesepakatanPdf/' . (int) $rfsClusterId,
+            ];
+        }
+
+        return $result;
+    }
+
     public function ensureClusterPackages($clusterId, $tanggalRfs = null)
     {
         $clusterId = (int) $clusterId;
@@ -310,6 +471,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 c.cluster_name,
                 c.homepass,
                 c.status_rfs,
+                mc.id_myrep_cluster,
                 mt.id_target,
                 mt.year_num,
                 mt.month_num,
@@ -326,6 +488,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 latest_claim.rfs_date
             ", false)
             ->from('tb_rfs_myrep_cluster c')
+            ->join('tb_myrep_cluster mc', 'mc.rfs_cluster_id = c.id_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
             ->join('tb_master_user u_ho', 'u_ho.id_user = mt.id_user_pic_ho', 'left')
             ->join('(
@@ -353,6 +516,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         $items = $this->getDocumentItems();
         $packagesByCluster = $this->getPackagesByClusterIds([(int) $clusterId]);
         $clusterPackages = isset($packagesByCluster[(int) $clusterId]) ? $packagesByCluster[(int) $clusterId] : [];
+        $linkedDocMap = $this->getChecklistLinkedDocumentMap((int) ($clusterDetail['id_myrep_cluster'] ?? 0), (int) $clusterId);
         $packageIds = [];
 
         foreach ($clusterPackages as $package) {
@@ -388,11 +552,28 @@ class MChecklist_Dokument_MyRep extends CI_Model
                         ? $fileMap[$packageId][(int) $item['id_doc_item']]
                         : [];
 
-                    if ($this->isUploadedRow($itemFile)) {
+                    $docKey = strtoupper(trim((string) ($item['doc_name'] ?? '')));
+                    $linkedSource = ($scopeKey = strtoupper(trim((string) ($group['scope_type'] ?? '')))) === 'CLUSTER'
+                        && strtoupper(trim((string) ($group['sow_type'] ?? ''))) === 'CW ATP'
+                        && isset($linkedDocMap[$docKey])
+                        ? $linkedDocMap[$docKey]
+                        : [];
+
+                    $effectiveStatus = (string) ($itemFile['status_file'] ?? 'NOT UPLOADED');
+                    if (!empty($linkedSource['linked_source_file_id'])) {
+                        $sourceStatus = (string) ($linkedSource['linked_source_status'] ?? '');
+                        if ($sourceStatus !== '') {
+                            $effectiveStatus = $sourceStatus;
+                        } elseif ($effectiveStatus === 'NOT UPLOADED') {
+                            $effectiveStatus = 'UPLOADED';
+                        }
+                    }
+
+                    if ($this->isUploadedRow($itemFile) || !empty($linkedSource['linked_source_file_id'])) {
                         $uploadedDocs++;
                     }
 
-                    if (($itemFile['status_file'] ?? '') === 'APPROVED') {
+                    if (strtoupper(trim($effectiveStatus)) === 'APPROVED') {
                         $approvedDocs++;
                     }
 
@@ -405,7 +586,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                         'format_file_name' => (string) ($item['format_file_name'] ?? ''),
                         'format_file_path' => (string) ($item['format_file_path'] ?? ''),
                         'verification_team' => (string) ($item['verification_team'] ?? ''),
-                        'status_file' => (string) ($itemFile['status_file'] ?? 'NOT UPLOADED'),
+                        'status_file' => $effectiveStatus,
                         'file_name' => (string) ($itemFile['file_name'] ?? ''),
                         'file_path' => (string) ($itemFile['file_path'] ?? ''),
                         'is_document_not_required' => (int) ($itemFile['is_document_not_required'] ?? 0),
@@ -432,6 +613,13 @@ class MChecklist_Dokument_MyRep extends CI_Model
                             (string) ($item['verification_team'] ?? ''),
                             (string) ($clusterDetail['ho_pic_name'] ?? '')
                         ),
+                        'linked_source_flow_type' => (string) ($linkedSource['linked_source_flow_type'] ?? ''),
+                        'linked_source_group_label' => (string) ($linkedSource['linked_source_group_label'] ?? ''),
+                        'linked_source_doc_name' => (string) ($linkedSource['linked_source_doc_name'] ?? ''),
+                        'linked_source_file_id' => (int) ($linkedSource['linked_source_file_id'] ?? 0),
+                        'linked_source_file_name' => (string) ($linkedSource['linked_source_file_name'] ?? ''),
+                        'linked_source_file_path' => (string) ($linkedSource['linked_source_file_path'] ?? ''),
+                        'linked_source_preview_path' => (string) ($linkedSource['linked_source_preview_path'] ?? ''),
                         'history' => [],
                     ];
                 }
