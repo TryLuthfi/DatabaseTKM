@@ -248,8 +248,16 @@ END AS status_monitor');
             $this->db->where_in('regional_payment', $regional);
         if (!empty($city))
             $this->db->where_in('area_payment', $city);
-        if (!empty($statusInvoice) && $statusInvoice !== 'all')
+        if (is_array($statusInvoice)) {
+            $statusInvoice = array_values(array_filter(array_map('trim', $statusInvoice), function ($value) {
+                return $value !== '' && $value !== 'all';
+            }));
+            if (!empty($statusInvoice)) {
+                $this->db->where_in('tbp.status_invoice', $statusInvoice);
+            }
+        } elseif (!empty($statusInvoice) && $statusInvoice !== 'all') {
             $this->db->where('tbp.status_invoice', $statusInvoice);
+        }
         if (!empty($priority)) {
 
             $conditions = [];

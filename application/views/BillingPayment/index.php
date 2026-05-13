@@ -667,12 +667,12 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                 <div class="col-md-12">
                                     <div class="form-group mb-0">
                                         <label class="billing-field-label">Status Invoice</label>
-                                        <select name="status_invoice" id="report_filter_status" class="form-control billing-report-input">
+                                        <select name="status_invoice[]" id="report_filter_status" class="select2 billing-report-input"
+                                            multiple="multiple" data-placeholder="Pilih status invoice" style="width: 100%;">
                                             <option value="open">Open</option>
                                             <option value="partial">Partial</option>
                                             <option value="paid">Paid</option>
                                             <option value="reject">Reject</option>
-                                            <option value="all">Semua Status</option>
                                         </select>
                                     </div>
                                 </div>
@@ -2229,7 +2229,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             $('#report_filter_regional').val($('#filter_regional_up').val()).trigger('change');
             $('#report_filter_city').val($('#filter_city_up').val()).trigger('change');
             $('#report_filter_priority').val($('#filter_priority_up').val()).trigger('change');
-            $('#report_filter_status').val(activeStatus || 'open');
+            $('#report_filter_status').val(['open', 'partial']).trigger('change');
         });
     });
 

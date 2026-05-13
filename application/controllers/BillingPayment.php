@@ -731,9 +731,14 @@ class BillingPayment extends CI_Controller
         $city = $this->input->get('city');
         $priority = $this->input->get('priority');
         $statusInvoice = $this->input->get('status_invoice');
-
-        if ($statusInvoice === 'all') {
-            $statusInvoice = null;
+        if (!is_array($statusInvoice)) {
+            $statusInvoice = ($statusInvoice === null || $statusInvoice === '') ? [] : [$statusInvoice];
+        }
+        $statusInvoice = array_values(array_filter(array_map('trim', $statusInvoice), function ($value) {
+            return $value !== '' && $value !== 'all';
+        }));
+        if (empty($statusInvoice)) {
+            $statusInvoice = ['open', 'partial'];
         }
 
         $rows = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice);
