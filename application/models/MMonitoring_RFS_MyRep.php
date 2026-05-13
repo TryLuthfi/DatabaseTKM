@@ -530,29 +530,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
                AND p.year_num = ?
                AND p.month_num = ?
              WHERE UPPER(COALESCE(mc.status_current, '')) IN ('DRM', 'RFS', 'ATP', 'DONE')
-               AND (
-                    SELECT COUNT(1)
-                    FROM md_myrep_flow_doc_group dg
-                    INNER JOIN md_myrep_flow_doc_item di
-                        ON di.id_doc_group = dg.id_doc_group
-                       AND di.is_active = 1
-                    LEFT JOIN tb_myrep_flow_doc_package dp
-                        ON dp.id_myrep_cluster = mc.id_myrep_cluster
-                       AND dp.flow_type = 'DRM'
-                       AND dp.id_doc_group = dg.id_doc_group
-                    LEFT JOIN tb_myrep_flow_doc_file df
-                        ON df.id_doc_package = dp.id_doc_package
-                       AND df.id_doc_item = di.id_doc_item
-                    WHERE dg.flow_type = 'DRM'
-                      AND UPPER(COALESCE(df.status_file, '')) = 'APPROVED'
-               ) = (
-                    SELECT COUNT(1)
-                    FROM md_myrep_flow_doc_group dg2
-                    INNER JOIN md_myrep_flow_doc_item di2
-                        ON di2.id_doc_group = dg2.id_doc_group
-                       AND di2.is_active = 1
-                    WHERE dg2.flow_type = 'DRM'
-               )";
+               ";
 
         $params = [$year, $endMonth];
 
