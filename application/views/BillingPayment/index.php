@@ -77,7 +77,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     <div class="card-body billing-filter-card__body">
                         <div class="container-fluid">
                             <div class="row">
-                                <div class="col-sm-3">
+                                <div class="col-sm-4">
                                     <div class="form-group">
                                         <label class="billing-field-label">Project / Bowheer</label>
                                         <select id="filter_bowheer_up" class="select2 billing-filter-select" multiple="multiple"
@@ -88,7 +88,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-sm-3">
+                                <div class="col-sm-4">
                                     <div class="form-group">
                                         <label class="billing-field-label">Regional</label>
                                         <select id="filter_regional_up" class="select2 billing-filter-select" multiple="multiple"
@@ -99,7 +99,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-sm-3">
+                                <div class="col-sm-4">
                                     <div class="form-group">
                                         <label class="billing-field-label">Kota</label>
                                         <select id="filter_city_up" class="select2 billing-filter-select" multiple="multiple"
@@ -110,18 +110,6 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-sm-3">
-                                    <div class="form-group">
-                                        <label class="billing-field-label">Priority</label>
-                                        <select id="filter_priority_up" class="select2 billing-filter-select" multiple="multiple"
-                                            data-placeholder="Pilih Prioritas" style="width: 100%;">
-                                            <?php foreach ($unique_priority as $priority): ?>
-                                                <option value="<?= $priority ?>"><?= $priority ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </div>
-
                                 <div class="col-sm-12">
                                     <div class="billing-filter-actions">
                                         <button id="btnFilterDataProject" type="button" class="btn budget-btn budget-btn--primary billing-filter-btn">
@@ -373,28 +361,43 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                         </div>
 
                         <div class="billing-workbench-tabs-wrap">
-                            <ul class="nav nav-pills" id="invoice-status-tab" role="tablist">
-                                <li class="nav-item">
-                                    <a class="nav-link active tab-status-invoice" data-status="open"
-                                        href="javascript:void(0)">Outstanding</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link tab-status-invoice" data-status="partial"
-                                        href="javascript:void(0)">Partial Payment</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link tab-status-invoice" data-status="paid"
-                                        href="javascript:void(0)">Full Payment</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link tab-status-invoice" data-status="all"
-                                        href="javascript:void(0)">All Invoice</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link tab-status-invoice" data-status="reject"
-                                        href="javascript:void(0)">Reject Payment</a>
-                                </li>
-                            </ul>
+                            <div class="row align-items-end">
+                                <div class="col-lg-8 mb-2 mb-lg-0">
+                                    <ul class="nav nav-pills" id="invoice-status-tab" role="tablist">
+                                        <li class="nav-item">
+                                            <a class="nav-link active tab-status-invoice" data-status="open"
+                                                href="javascript:void(0)">Outstanding <span class="tab-count-badge tab-count" data-status="open">0</span></a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link tab-status-invoice" data-status="partial"
+                                                href="javascript:void(0)">Partial Payment <span class="tab-count-badge tab-count" data-status="partial">0</span></a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link tab-status-invoice" data-status="paid"
+                                                href="javascript:void(0)">Full Payment <span class="tab-count-badge tab-count" data-status="paid">0</span></a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link tab-status-invoice" data-status="all"
+                                                href="javascript:void(0)">All Invoice <span class="tab-count-badge tab-count" data-status="all">0</span></a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link tab-status-invoice" data-status="reject"
+                                                href="javascript:void(0)">Reject Payment <span class="tab-count-badge tab-count" data-status="reject">0</span></a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="form-group mb-0">
+                                        <label class="billing-field-label">Priority</label>
+                                        <select id="filter_priority_workbench" class="select2 billing-filter-select"
+                                            data-placeholder="Pilih Prioritas" style="width: 100%;" multiple="multiple">
+                                            <?php foreach ($unique_priority as $priority): ?>
+                                                <option value="<?= $priority ?>"><?= $priority ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="card-body billing-workbench-card__body">
@@ -1295,12 +1298,14 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         // === EVENT: FILTER DATA ===
         $('#btnFilterDataProject').on('click', function (e) {
             e.preventDefault();
+            let selectedPriority = $('#filter_priority_workbench').val() || [];
+            selectedPriority = selectedPriority.filter(v => v);
 
             const filters = {
                 bowheer: $('#filter_bowheer_up').val(),
                 regional: $('#filter_regional_up').val(),
                 city: $('#filter_city_up').val(),
-                priority: $('#filter_priority_up').val(),
+                priority: selectedPriority,
                 status_invoice: activeStatus
             };
 
@@ -1340,6 +1345,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
                     const filteredData = response.data || [];
                     const outstandingSummary = response.summary || {};
+                    updateStatusTabCounts(response.tab_counts || {});
                     latestBillingRows = {};
 
                     filteredData.forEach(row => {
@@ -1513,6 +1519,10 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             $('#btnFilterDataProject').trigger('click');
         }, 500);
 
+        $('#filter_priority_workbench').on('change', function () {
+            $('#btnFilterDataProject').trigger('click');
+        });
+
         // === RESET FILTER ===
         $('#reset_filter').on('click', function () {
             window.location.reload();
@@ -1528,6 +1538,16 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         value = value.toString().replace(/[^\d]/g, '');
 
         return parseInt(value) || 0;
+    }
+
+    function updateStatusTabCounts(counts) {
+        const safeCounts = counts || {};
+        const mapping = ['open', 'partial', 'paid', 'reject', 'all'];
+
+        mapping.forEach(status => {
+            const value = parseInt(safeCounts[status] || 0, 10);
+            $(`.tab-count[data-status="${status}"]`).text(isNaN(value) ? 0 : value);
+        });
     }
 
     function parseAmount(value) {
@@ -2228,7 +2248,8 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             $('#report_filter_bowheer').val($('#filter_bowheer_up').val()).trigger('change');
             $('#report_filter_regional').val($('#filter_regional_up').val()).trigger('change');
             $('#report_filter_city').val($('#filter_city_up').val()).trigger('change');
-            $('#report_filter_priority').val($('#filter_priority_up').val()).trigger('change');
+            const selectedPriority = ($('#filter_priority_workbench').val() || []).filter(v => v);
+            $('#report_filter_priority').val(selectedPriority).trigger('change');
             $('#report_filter_status').val(['open', 'partial']).trigger('change');
         });
     });
@@ -3661,6 +3682,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         color: #3b6b8e;
         font-weight: 700;
         transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }
 
     #invoice-status-tab .nav-link:hover,
@@ -3674,6 +3698,28 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         background: linear-gradient(135deg, #103b5a 0%, #1f6da1 100%);
         color: #fff;
         box-shadow: 0 14px 26px rgba(16, 59, 90, 0.18);
+    }
+
+    .tab-count-badge {
+        min-width: 24px;
+        height: 24px;
+        padding: 0 8px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.76rem;
+        font-weight: 800;
+        line-height: 1;
+        background: #d9ebf7;
+        color: #1e5e8a;
+        border: 1px solid #b9d7ec;
+    }
+
+    #invoice-status-tab .nav-link.active .tab-count-badge {
+        background: rgba(255, 255, 255, 0.22);
+        color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.36);
     }
 
     .billing-workbench-card__body {

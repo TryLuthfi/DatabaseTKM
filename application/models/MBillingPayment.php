@@ -289,6 +289,64 @@ END AS status_monitor');
         return $query->result_array();
     }
 
+    public function getBillingStatusCounts($bowheer, $regional, $city, $priority)
+    {
+        $agingDueExpr = $this->agingDueExpr;
+
+        $this->db->select('tbp.status_invoice, COUNT(*) AS total_count', false);
+        $this->db->from('tb_billingpayment tbp');
+        $this->db->join('tb_master_bowheer_bilco tmbi', 'tbp.id_bowheer = tmbi.id_bowheer');
+
+        if (!empty($bowheer)) {
+            $this->db->where_in('nama_bowheer', $bowheer);
+        }
+        if (!empty($regional)) {
+            $this->db->where_in('regional_payment', $regional);
+        }
+        if (!empty($city)) {
+            $this->db->where_in('area_payment', $city);
+        }
+        if (!empty($priority)) {
+            $conditions = [];
+            foreach ($priority as $p) {
+                if ($p == "P1") {
+                    $conditions[] = $agingDueExpr . ' > 45';
+                } elseif ($p == "P2") {
+                    $conditions[] = '(' . $agingDueExpr . ' BETWEEN 31 AND 45)';
+                } elseif ($p == "P3") {
+                    $conditions[] = '(' . $agingDueExpr . ' BETWEEN 0 AND 30)';
+                } elseif ($p == "BJT") {
+                    $conditions[] = $agingDueExpr . ' < 0';
+                }
+            }
+            if (!empty($conditions)) {
+                $this->db->where('(' . implode(' OR ', $conditions) . ')', null, false);
+            }
+        }
+
+        $this->db->group_by('tbp.status_invoice');
+        $rows = $this->db->get()->result_array();
+
+        $counts = [
+            'open' => 0,
+            'partial' => 0,
+            'paid' => 0,
+            'reject' => 0,
+            'all' => 0
+        ];
+
+        foreach ($rows as $row) {
+            $status = strtolower((string) ($row['status_invoice'] ?? ''));
+            $total = (int) ($row['total_count'] ?? 0);
+            if (array_key_exists($status, $counts)) {
+                $counts[$status] = $total;
+                $counts['all'] += $total;
+            }
+        }
+
+        return $counts;
+    }
+
     public function getTargetInvoice($bowheer, $area, $month, $week)
     {
         // Ambil data id_bowheer

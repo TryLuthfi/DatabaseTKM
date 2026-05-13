@@ -480,6 +480,7 @@ class BillingPayment extends CI_Controller
 
         $data = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice);
         $summary = $this->MBillingPayment->getOutstandingSummary($bowheer, $regional, $city, $priority);
+        $tabCounts = $this->MBillingPayment->getBillingStatusCounts($bowheer, $regional, $city, $priority);
 
         // Tentukan kolom yang tampil berdasarkan filter
         $priceHeader = $statusInvoice === 'partial' ? 'Outstanding Balance' : 'Price';
@@ -488,7 +489,8 @@ class BillingPayment extends CI_Controller
         echo json_encode([
             'columns' => $columns,
             'data' => $data,
-            'summary' => $summary
+            'summary' => $summary,
+            'tab_counts' => $tabCounts
         ]);
 
         log_message('debug', 'Last Query: ' . $this->db->last_query());
@@ -740,6 +742,7 @@ class BillingPayment extends CI_Controller
         if (empty($statusInvoice)) {
             $statusInvoice = ['open', 'partial'];
         }
+        $isPartialOnly = (count($statusInvoice) === 1 && strtolower($statusInvoice[0]) === 'partial');
 
         $rows = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice);
         $filename = 'billing_report_' . date('Ymd_His') . '.xls';
@@ -755,13 +758,17 @@ class BillingPayment extends CI_Controller
 
         echo '<html><head><meta charset="UTF-8"></head><body>';
         echo '<table border="1">';
-        echo '<tr><th colspan="14" style="font-weight:bold;font-size:16px;">Billing Payment Report</th></tr>';
-        echo '<tr><th colspan="14">Generated At: ' . date('Y-m-d H:i:s') . '</th></tr>';
+        $totalColumns = $isPartialOnly ? 15 : 14;
+        echo '<tr><th colspan="' . $totalColumns . '" style="font-weight:bold;font-size:16px;">Billing Payment Report</th></tr>';
+        echo '<tr><th colspan="' . $totalColumns . '">Generated At: ' . date('Y-m-d H:i:s') . '</th></tr>';
         echo '<tr>';
         echo '<th>No</th>';
         echo '<th>Bowheer</th>';
         echo '<th>No Invoice</th>';
         echo '<th>Invoice Price</th>';
+        if ($isPartialOnly) {
+            echo '<th>Outstanding Balance</th>';
+        }
         echo '<th>Regional</th>';
         echo '<th>Area</th>';
         echo '<th>Date Invoice</th>';
@@ -775,13 +782,19 @@ class BillingPayment extends CI_Controller
         echo '</tr>';
 
         $total = 0;
+        $totalOutstanding = 0;
         foreach ($rows as $index => $row) {
             $total += (float) $row['invoice_price_nett'];
+            $outstandingBalance = max((float) $row['invoice_price_nett'] - (float) ($row['invoice_price_payment'] ?? 0), 0);
+            $totalOutstanding += $outstandingBalance;
             echo '<tr>';
             echo '<td>' . ($index + 1) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['nama_bowheer']) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['no_invoice']) . '</td>';
             echo '<td style="mso-number-format:\'#,##0.00\'">' . number_format((float) $row['invoice_price_nett'], 2, '.', '') . '</td>';
+            if ($isPartialOnly) {
+                echo '<td style="mso-number-format:\'#,##0.00\'">' . number_format($outstandingBalance, 2, '.', '') . '</td>';
+            }
             echo '<td>' . htmlspecialchars((string) $row['regional_payment']) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['area_payment']) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['tgl_create_invoice']) . '</td>';
@@ -798,7 +811,12 @@ class BillingPayment extends CI_Controller
         echo '<tr>';
         echo '<th colspan="3" style="text-align:right;">Total</th>';
         echo '<th style="mso-number-format:\'#,##0.00\'">' . number_format($total, 2, '.', '') . '</th>';
-        echo '<th colspan="10"></th>';
+        if ($isPartialOnly) {
+            echo '<th style="mso-number-format:\'#,##0.00\'">' . number_format($totalOutstanding, 2, '.', '') . '</th>';
+            echo '<th colspan="10"></th>';
+        } else {
+            echo '<th colspan="10"></th>';
+        }
         echo '</tr>';
         echo '</table>';
         echo '</body></html>';
