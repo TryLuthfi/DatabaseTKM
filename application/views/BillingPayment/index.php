@@ -306,7 +306,8 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="2">Total</th>
+                                        <th>Total</th>
+                                        <th></th>
                                         <th id="totalP1"></th>
                                         <th id="totalP2"></th>
                                         <th id="totalP3"></th>
@@ -1140,87 +1141,6 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     .css('width', '100%');
             }
         });
-        $('#tabel_targetpriority_bowheer').DataTable({
-            paging: true,
-            pageLength: 10,
-            info: true,
-            searching: true,
-            lengthChange: true,
-            autoWidth: false,     // aktifkan scroll horizontal otomatis
-            responsive: false,   // matikan agar kolom tetap sejajar
-            ordering: true,
-            initComplete: function () {
-                // pastikan wrapper scroll ikut lebar layar
-                $('.dataTables_scrollHead, .dataTables_scrollBody')
-                    .css('width', '100%');
-            }
-        });
-    });
-
-
-    $(document).ready(function () {
-        $.fn.dataTable.ext.errMode = 'none';
-
-        const table = $('#tabel_targetpriority_bowheer').DataTable({
-            footerCallback: function () {
-                updateTotal();
-            },
-            columnDefs: [
-                { orderable: false, targets: 0 } // Kolom No tidak bisa di-sort manual
-            ],
-            order: [[1, 'asc']]
-        });
-
-        // Tambah nomor otomatis di kolom pertama
-        table.on('order.dt search.dt', function () {
-            table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
-                cell.innerHTML = i + 1;
-            });
-        }).draw();
-
-        function parseValue(val) {
-            if (!val) return 0;
-
-            return parseFloat(
-                val.toString()
-                    .replace(/\./g, '')   // hapus titik ribuan
-                    .replace(',', '.')    // jaga kalau ada desimal
-            ) || 0;
-        }
-
-        // Fungsi utama untuk hitung total otomatis
-        function updateTotal() {
-            const data = table.rows({ search: 'applied' }).data();
-
-            let totalP1 = 0;
-            let totalP2 = 0;
-            let totalP3 = 0;
-            let totalBJT = 0;
-            let totalAll = 0;
-
-            data.each(function (row) {
-                totalP1 += parseValue(row[2]);
-                totalP2 += parseValue(row[3]);
-                totalP3 += parseValue(row[4]);
-                totalBJT += parseValue(row[5]);
-                totalAll += parseValue(row[6]);
-            });
-
-            // isi footer sesuai kolom
-            $(table.column(2).footer()).text(formatTitik(totalP1));
-            $(table.column(3).footer()).text(formatTitik(totalP2));
-            $(table.column(4).footer()).text(formatTitik(totalP3));
-            $(table.column(5).footer()).text(formatTitik(totalBJT));
-            $(table.column(6).footer()).text(formatTitik(totalAll));
-        }
-
-        // Jalankan ulang total setiap kali tabel berubah
-        table.on('draw', function () {
-            updateTotal();
-        });
-
-        // Hitung total pertama kali
-        updateTotal();
     });
 
     $(document).ready(function () {
@@ -1345,6 +1265,19 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 invoice_date_start: invoiceDateStart,
                 invoice_date_end: invoiceDateEnd
             };
+            
+            if (!filters.invoice_date_start && !filters.invoice_date_end) {
+                const rawRange = ($('#filter_invoice_date_workbench').val() || '').trim();
+                const parts = rawRange.split(' - ');
+                if (parts.length === 2 && typeof moment === 'function') {
+                    const mStart = moment(parts[0], 'MM/DD/YYYY', true);
+                    const mEnd = moment(parts[1], 'MM/DD/YYYY', true);
+                    if (mStart.isValid() && mEnd.isValid()) {
+                        filters.invoice_date_start = mStart.format('YYYY-MM-DD');
+                        filters.invoice_date_end = mEnd.format('YYYY-MM-DD');
+                    }
+                }
+            }
 
             $.ajax({
                 url: '<?= base_url("BillingPayment/getFilteredBillingPaymentAjax") ?>',
@@ -1610,7 +1543,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
         let tbodyHtml = '';
         if (detailRows.length === 0) {
-            tbodyHtml = '<tr><td colspan="7" class="text-center">No data available</td></tr>';
+            tbodyHtml = '';
         } else {
             detailRows.forEach((row, idx) => {
                 const p1 = parseAmount(row.total_p1 || 0);
@@ -1646,6 +1579,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             autoWidth: false,
             responsive: false,
             ordering: true,
+            language: {
+                emptyTable: 'No data available'
+            },
             footerCallback: function () {
                 let totalP1 = 0;
                 let totalP2 = 0;
@@ -1684,6 +1620,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         if (typeof value === 'number') return value;
 
         let normalized = value.toString().trim().replace(/\s/g, '');
+        const isOnlyDigitsAndDots = /^\d{1,3}(\.\d{3})+$/.test(normalized);
 
         const lastDot = normalized.lastIndexOf('.');
         const lastComma = normalized.lastIndexOf(',');
@@ -1697,10 +1634,15 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         } else if (lastComma > -1) {
             normalized = normalized.replace(/\./g, '').replace(',', '.');
         } else {
-            const parts = normalized.split('.');
-            if (parts.length > 2) {
-                const decimalPart = parts.pop();
-                normalized = `${parts.join('')}.${decimalPart}`;
+            if (isOnlyDigitsAndDots) {
+                // Format ribuan Indonesia: 7.622.729.445 -> 7622729445
+                normalized = normalized.replace(/\./g, '');
+            } else {
+                const parts = normalized.split('.');
+                if (parts.length > 2) {
+                    const decimalPart = parts.pop();
+                    normalized = `${parts.join('')}.${decimalPart}`;
+                }
             }
         }
 
