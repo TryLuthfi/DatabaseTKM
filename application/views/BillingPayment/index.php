@@ -1346,6 +1346,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                     const filteredData = response.data || [];
                     const outstandingSummary = response.summary || {};
                     updateStatusTabCounts(response.tab_counts || {});
+                    renderDetailSummaryTable(response.detail_rows || []);
                     latestBillingRows = {};
 
                     filteredData.forEach(row => {
@@ -1548,6 +1549,81 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             const value = parseInt(safeCounts[status] || 0, 10);
             $(`.tab-count[data-status="${status}"]`).text(isNaN(value) ? 0 : value);
         });
+    }
+
+    function renderDetailSummaryTable(rows) {
+        const detailRows = Array.isArray(rows) ? rows : [];
+        const $table = $('#tabel_targetpriority_bowheer');
+        const $tbody = $table.find('tbody');
+
+        let tbodyHtml = '';
+        if (detailRows.length === 0) {
+            tbodyHtml = '<tr><td colspan="7" class="text-center">No data available</td></tr>';
+        } else {
+            detailRows.forEach((row, idx) => {
+                const p1 = parseAmount(row.total_p1 || 0);
+                const p2 = parseAmount(row.total_p2 || 0);
+                const p3 = parseAmount(row.total_p3 || 0);
+                const bjt = parseAmount(row.total_bjt || 0);
+                const all = parseAmount(row.total_all || 0);
+
+                tbodyHtml += '<tr>';
+                tbodyHtml += `<td>${idx + 1}</td>`;
+                tbodyHtml += `<td>${row.nama_bowheer || '-'}</td>`;
+                tbodyHtml += `<td>${p1 === 0 ? '-' : formatTitik(p1)}</td>`;
+                tbodyHtml += `<td>${p2 === 0 ? '-' : formatTitik(p2)}</td>`;
+                tbodyHtml += `<td>${p3 === 0 ? '-' : formatTitik(p3)}</td>`;
+                tbodyHtml += `<td>${bjt === 0 ? '-' : formatTitik(bjt)}</td>`;
+                tbodyHtml += `<td>${all === 0 ? '-' : formatTitik(all)}</td>`;
+                tbodyHtml += '</tr>';
+            });
+        }
+
+        if ($.fn.DataTable.isDataTable('#tabel_targetpriority_bowheer')) {
+            $table.DataTable().clear().destroy();
+        }
+
+        $tbody.html(tbodyHtml);
+
+        const table = $table.DataTable({
+            paging: true,
+            pageLength: 10,
+            info: true,
+            searching: true,
+            lengthChange: true,
+            autoWidth: false,
+            responsive: false,
+            ordering: true,
+            footerCallback: function () {
+                let totalP1 = 0;
+                let totalP2 = 0;
+                let totalP3 = 0;
+                let totalBJT = 0;
+                let totalAll = 0;
+                const api = this.api();
+
+                api.rows({ search: 'applied' }).every(function () {
+                    const row = this.data();
+                    totalP1 += parseAmount(row[2] || 0);
+                    totalP2 += parseAmount(row[3] || 0);
+                    totalP3 += parseAmount(row[4] || 0);
+                    totalBJT += parseAmount(row[5] || 0);
+                    totalAll += parseAmount(row[6] || 0);
+                });
+
+                $(api.column(2).footer()).text(formatTitik(totalP1));
+                $(api.column(3).footer()).text(formatTitik(totalP2));
+                $(api.column(4).footer()).text(formatTitik(totalP3));
+                $(api.column(5).footer()).text(formatTitik(totalBJT));
+                $(api.column(6).footer()).text(formatTitik(totalAll));
+            }
+        });
+
+        table.on('order.dt search.dt', function () {
+            table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
+                cell.innerHTML = i + 1;
+            });
+        }).draw();
     }
 
     function parseAmount(value) {

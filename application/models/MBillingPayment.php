@@ -142,6 +142,62 @@ WHERE tbp.status_invoice IN ("open", "partial")
         return $data;
     }
 
+    public function getTargetPriorityBowheerFiltered($bowheer, $regional, $city, $priority)
+    {
+        $agingDueExpr = $this->agingDueExpr;
+        $outstandingSql = 'CASE
+            WHEN tbp.status_invoice = "partial" THEN GREATEST(
+                tbp.invoice_price_nett - CAST(COALESCE(NULLIF(tbp.invoice_price_payment, ""), "0") AS DECIMAL(18,2)),
+                0
+            )
+            ELSE tbp.invoice_price_nett
+        END';
+
+        $this->db->select("
+            tmbi.nama_bowheer,
+            SUM($outstandingSql) AS total_all,
+            SUM(CASE WHEN $agingDueExpr < 0 THEN $outstandingSql ELSE 0 END) AS total_bjt,
+            SUM(CASE WHEN $agingDueExpr > 45 THEN $outstandingSql ELSE 0 END) AS total_p1,
+            SUM(CASE WHEN $agingDueExpr BETWEEN 31 AND 45 THEN $outstandingSql ELSE 0 END) AS total_p2,
+            SUM(CASE WHEN $agingDueExpr BETWEEN 0 AND 30 THEN $outstandingSql ELSE 0 END) AS total_p3
+        ", false);
+        $this->db->from('tb_billingpayment tbp');
+        $this->db->join('tb_master_bowheer_bilco tmbi', 'tbp.id_bowheer = tmbi.id_bowheer');
+        $this->db->where_in('tbp.status_invoice', ['open', 'partial']);
+
+        if (!empty($bowheer)) {
+            $this->db->where_in('nama_bowheer', $bowheer);
+        }
+        if (!empty($regional)) {
+            $this->db->where_in('regional_payment', $regional);
+        }
+        if (!empty($city)) {
+            $this->db->where_in('area_payment', $city);
+        }
+        if (!empty($priority)) {
+            $conditions = [];
+            foreach ($priority as $p) {
+                if ($p == "P1") {
+                    $conditions[] = $agingDueExpr . ' > 45';
+                } elseif ($p == "P2") {
+                    $conditions[] = '(' . $agingDueExpr . ' BETWEEN 31 AND 45)';
+                } elseif ($p == "P3") {
+                    $conditions[] = '(' . $agingDueExpr . ' BETWEEN 0 AND 30)';
+                } elseif ($p == "BJT") {
+                    $conditions[] = $agingDueExpr . ' < 0';
+                }
+            }
+            if (!empty($conditions)) {
+                $this->db->where('(' . implode(' OR ', $conditions) . ')', null, false);
+            }
+        }
+
+        $this->db->group_by('tmbi.id_bowheer');
+        $this->db->order_by('total_p1', 'DESC');
+
+        return $this->db->get()->result_array();
+    }
+
     public function getOutstandingSummary($bowheer, $regional, $city, $priority)
     {
         $agingDueExpr = $this->agingDueExpr;

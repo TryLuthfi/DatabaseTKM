@@ -481,6 +481,7 @@ class BillingPayment extends CI_Controller
         $data = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice);
         $summary = $this->MBillingPayment->getOutstandingSummary($bowheer, $regional, $city, $priority);
         $tabCounts = $this->MBillingPayment->getBillingStatusCounts($bowheer, $regional, $city, $priority);
+        $detailRows = $this->MBillingPayment->getTargetPriorityBowheerFiltered($bowheer, $regional, $city, $priority);
 
         // Tentukan kolom yang tampil berdasarkan filter
         $priceHeader = $statusInvoice === 'partial' ? 'Outstanding Balance' : 'Price';
@@ -490,7 +491,8 @@ class BillingPayment extends CI_Controller
             'columns' => $columns,
             'data' => $data,
             'summary' => $summary,
-            'tab_counts' => $tabCounts
+            'tab_counts' => $tabCounts,
+            'detail_rows' => $detailRows
         ]);
 
         log_message('debug', 'Last Query: ' . $this->db->last_query());
@@ -765,7 +767,7 @@ class BillingPayment extends CI_Controller
         echo '<th>No</th>';
         echo '<th>Bowheer</th>';
         echo '<th>No Invoice</th>';
-        echo '<th>Invoice Price</th>';
+        echo '<th>Nilai Tagihan</th>';
         if ($isPartialOnly) {
             echo '<th>Outstanding Balance</th>';
         }
@@ -784,14 +786,16 @@ class BillingPayment extends CI_Controller
         $total = 0;
         $totalOutstanding = 0;
         foreach ($rows as $index => $row) {
-            $total += (float) $row['invoice_price_nett'];
             $outstandingBalance = max((float) $row['invoice_price_nett'] - (float) ($row['invoice_price_payment'] ?? 0), 0);
+            $isPartialRow = strtolower((string) ($row['status_invoice'] ?? '')) === 'partial';
+            $displayInvoicePrice = $isPartialRow ? $outstandingBalance : (float) $row['invoice_price_nett'];
+            $total += $displayInvoicePrice;
             $totalOutstanding += $outstandingBalance;
             echo '<tr>';
             echo '<td>' . ($index + 1) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['nama_bowheer']) . '</td>';
             echo '<td>' . htmlspecialchars((string) $row['no_invoice']) . '</td>';
-            echo '<td style="mso-number-format:\'#,##0.00\'">' . number_format((float) $row['invoice_price_nett'], 2, '.', '') . '</td>';
+            echo '<td style="mso-number-format:\'#,##0.00\'">' . number_format($displayInvoicePrice, 2, '.', '') . '</td>';
             if ($isPartialOnly) {
                 echo '<td style="mso-number-format:\'#,##0.00\'">' . number_format($outstandingBalance, 2, '.', '') . '</td>';
             }
