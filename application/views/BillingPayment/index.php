@@ -388,8 +388,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                 </div>
                                 <div class="col-lg-2">
                                     <div class="form-group mb-0">
-                                        <label class="billing-field-label">Tanggal Invoice</label>
-                                        <input type="date" id="filter_invoice_date_workbench" class="form-control billing-filter-input">
+                                        <label class="billing-field-label">Rentang Tanggal Invoice</label>
+                                        <input type="text" id="filter_invoice_date_workbench" class="form-control billing-filter-input"
+                                            placeholder="Pilih rentang tanggal" autocomplete="off">
                                     </div>
                                 </div>
                                 <div class="col-lg-2">
@@ -1231,6 +1232,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     var allData = <?= json_encode($getAllData) ?>;
 
     $(document).ready(function () {
+        let invoiceDateStart = '';
+        let invoiceDateEnd = '';
+
         // === PETA KOLOM DAN FILTER ===
         const colMap = {
             filter_pic: 'pic_user',
@@ -1258,6 +1262,31 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 return $(this).data('placeholder') || 'Pilih';
             }
         });
+        
+        if (typeof $.fn.daterangepicker === 'function' && typeof moment === 'function') {
+            $('#filter_invoice_date_workbench').daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    format: 'MM/DD/YYYY',
+                    cancelLabel: 'Cancel',
+                    applyLabel: 'Apply'
+                }
+            });
+
+            $('#filter_invoice_date_workbench').on('apply.daterangepicker', function (ev, picker) {
+                invoiceDateStart = picker.startDate.format('YYYY-MM-DD');
+                invoiceDateEnd = picker.endDate.format('YYYY-MM-DD');
+                $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+                $('#btnFilterDataProject').trigger('click');
+            });
+
+            $('#filter_invoice_date_workbench').on('cancel.daterangepicker', function () {
+                invoiceDateStart = '';
+                invoiceDateEnd = '';
+                $(this).val('');
+                $('#btnFilterDataProject').trigger('click');
+            });
+        }
 
         // === Helper Filter Antar-Select ===
         function getFilteredDataByAllSelections(excludeId = null) {
@@ -1313,8 +1342,8 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 city: $('#filter_city_up').val(),
                 priority: selectedPriority,
                 status_invoice: activeStatus,
-                invoice_date_start: $('#filter_invoice_date_workbench').val(),
-                invoice_date_end: $('#filter_invoice_date_workbench').val()
+                invoice_date_start: invoiceDateStart,
+                invoice_date_end: invoiceDateEnd
             };
 
             $.ajax({
@@ -1403,13 +1432,13 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         tbodyHtml += `<td>${row.area_payment || '-'}</td>`;
                                         break;
                                     case 'Date Invoice':
-                                        tbodyHtml += `<td>${row.tgl_create_invoice || '-'}</td>`;
+                                        tbodyHtml += `<td>${formatDateDdMmYyyy(row.tgl_create_invoice)}</td>`;
                                         break;
                                     case 'Date Submit':
-                                        tbodyHtml += `<td>${row.tgl_submit_invoice || '-'}</td>`;
+                                        tbodyHtml += `<td>${formatDateDdMmYyyy(row.tgl_submit_invoice)}</td>`;
                                         break;
                                     case 'Due Date':
-                                        tbodyHtml += `<td>${row.tgl_jatuh_tempo || '-'}</td>`;
+                                        tbodyHtml += `<td>${formatDateDdMmYyyy(row.tgl_jatuh_tempo)}</td>`;
                                         break;
                                     case 'Aging Today':
                                         tbodyHtml += `<td>${row.umur_invoice || '-'}</td>`;
@@ -1532,17 +1561,20 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             $('#btnFilterDataProject').trigger('click');
         });
         
-        $('#filter_invoice_date_workbench').on('change', function () {
-            $('#btnFilterDataProject').trigger('click');
-        });
-
         // === RESET FILTER ===
         $('#reset_filter').on('click', function () {
             $('#filter_bowheer_up').val(null).trigger('change');
             $('#filter_regional_up').val(null).trigger('change');
             $('#filter_city_up').val(null).trigger('change');
             $('#filter_priority_workbench').val(null).trigger('change');
+            invoiceDateStart = '';
+            invoiceDateEnd = '';
             $('#filter_invoice_date_workbench').val('');
+            if (typeof $('#filter_invoice_date_workbench').data('daterangepicker') !== 'undefined') {
+                const picker = $('#filter_invoice_date_workbench').data('daterangepicker');
+                picker.setStartDate(moment());
+                picker.setEndDate(moment());
+            }
             activeStatus = 'open';
             $('.tab-status-invoice').removeClass('active');
             $('.tab-status-invoice[data-status="open"]').addClass('active');
@@ -1559,6 +1591,27 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         value = value.toString().replace(/[^\d]/g, '');
 
         return parseInt(value) || 0;
+    }
+
+    function formatDateDdMmYyyy(value) {
+        if (!value) return '-';
+
+        const raw = String(value).trim();
+        if (raw === '') return '-';
+
+        const datePart = raw.split(' ')[0];
+        const ymd = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (ymd) {
+            return `${ymd[3]}-${ymd[2]}-${ymd[1]}`;
+        }
+
+        const parsed = new Date(raw);
+        if (isNaN(parsed.getTime())) return raw;
+
+        const dd = String(parsed.getDate()).padStart(2, '0');
+        const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+        const yyyy = parsed.getFullYear();
+        return `${dd}-${mm}-${yyyy}`;
     }
 
     function updateStatusTabCounts(counts) {
