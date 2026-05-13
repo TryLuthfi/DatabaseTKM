@@ -110,6 +110,18 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         </select>
                                     </div>
                                 </div>
+                                <div class="col-sm-6 col-lg-3">
+                                    <div class="form-group">
+                                        <label class="billing-field-label">Tanggal Invoice Dari</label>
+                                        <input type="date" id="filter_invoice_date_start" class="form-control billing-filter-input">
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 col-lg-3">
+                                    <div class="form-group">
+                                        <label class="billing-field-label">Tanggal Invoice Sampai</label>
+                                        <input type="date" id="filter_invoice_date_end" class="form-control billing-filter-input">
+                                    </div>
+                                </div>
                                 <div class="col-sm-12">
                                     <div class="billing-filter-actions">
                                         <button id="btnFilterDataProject" type="button" class="btn budget-btn budget-btn--primary billing-filter-btn">
@@ -1306,7 +1318,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 regional: $('#filter_regional_up').val(),
                 city: $('#filter_city_up').val(),
                 priority: selectedPriority,
-                status_invoice: activeStatus
+                status_invoice: activeStatus,
+                invoice_date_start: $('#filter_invoice_date_start').val(),
+                invoice_date_end: $('#filter_invoice_date_end').val()
             };
 
             $.ajax({
@@ -1523,10 +1537,23 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         $('#filter_priority_workbench').on('change', function () {
             $('#btnFilterDataProject').trigger('click');
         });
+        
+        $('#filter_invoice_date_start, #filter_invoice_date_end').on('change', function () {
+            $('#btnFilterDataProject').trigger('click');
+        });
 
         // === RESET FILTER ===
         $('#reset_filter').on('click', function () {
-            window.location.reload();
+            $('#filter_bowheer_up').val(null).trigger('change');
+            $('#filter_regional_up').val(null).trigger('change');
+            $('#filter_city_up').val(null).trigger('change');
+            $('#filter_priority_workbench').val(null).trigger('change');
+            $('#filter_invoice_date_start').val('');
+            $('#filter_invoice_date_end').val('');
+            activeStatus = 'open';
+            $('.tab-status-invoice').removeClass('active');
+            $('.tab-status-invoice[data-status="open"]').addClass('active');
+            $('#btnFilterDataProject').trigger('click');
         });
     });
 

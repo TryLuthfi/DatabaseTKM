@@ -473,15 +473,17 @@ class BillingPayment extends CI_Controller
         $city = $this->input->post('city');
         $priority = $this->input->post('priority');
         $statusInvoice = $this->input->post('status_invoice');
+        $invoiceDateStart = trim((string) $this->input->post('invoice_date_start'));
+        $invoiceDateEnd = trim((string) $this->input->post('invoice_date_end'));
 
         if ($statusInvoice === 'all') {
             $statusInvoice = null;
         }
 
-        $data = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice);
-        $summary = $this->MBillingPayment->getOutstandingSummary($bowheer, $regional, $city, $priority);
-        $tabCounts = $this->MBillingPayment->getBillingStatusCounts($bowheer, $regional, $city, $priority);
-        $detailRows = $this->MBillingPayment->getTargetPriorityBowheerFiltered($bowheer, $regional, $city, $priority);
+        $data = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice, $invoiceDateStart, $invoiceDateEnd);
+        $summary = $this->MBillingPayment->getOutstandingSummary($bowheer, $regional, $city, $priority, $invoiceDateStart, $invoiceDateEnd);
+        $tabCounts = $this->MBillingPayment->getBillingStatusCounts($bowheer, $regional, $city, $priority, $invoiceDateStart, $invoiceDateEnd);
+        $detailRows = $this->MBillingPayment->getTargetPriorityBowheerFiltered($bowheer, $regional, $city, $priority, $invoiceDateStart, $invoiceDateEnd);
 
         // Tentukan kolom yang tampil berdasarkan filter
         $priceHeader = $statusInvoice === 'partial' ? 'Outstanding Balance' : 'Price';

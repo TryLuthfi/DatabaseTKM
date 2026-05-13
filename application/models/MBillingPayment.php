@@ -5,6 +5,21 @@ class MBillingPayment extends CI_Model
 {
     private $agingInvoiceExpr = 'DATEDIFF(CURDATE(), DATE(tbp.tgl_create_invoice))';
     private $agingDueExpr = 'DATEDIFF(CURDATE(), DATE_ADD(tbp.tgl_create_invoice, INTERVAL tmbi.jt_invoice DAY))';
+    
+    private function applyInvoiceDateRangeFilter($startDate = null, $endDate = null)
+    {
+        $startDate = trim((string) $startDate);
+        $endDate = trim((string) $endDate);
+
+        if ($startDate !== '' && $endDate !== '') {
+            $this->db->where('DATE(tbp.tgl_create_invoice) >=', $startDate);
+            $this->db->where('DATE(tbp.tgl_create_invoice) <=', $endDate);
+        } elseif ($startDate !== '') {
+            $this->db->where('DATE(tbp.tgl_create_invoice) >=', $startDate);
+        } elseif ($endDate !== '') {
+            $this->db->where('DATE(tbp.tgl_create_invoice) <=', $endDate);
+        }
+    }
 
     public function getAllData()
     {
@@ -142,7 +157,7 @@ WHERE tbp.status_invoice IN ("open", "partial")
         return $data;
     }
 
-    public function getTargetPriorityBowheerFiltered($bowheer, $regional, $city, $priority)
+    public function getTargetPriorityBowheerFiltered($bowheer, $regional, $city, $priority, $startDate = null, $endDate = null)
     {
         $agingDueExpr = $this->agingDueExpr;
         $outstandingSql = 'CASE
@@ -174,6 +189,7 @@ WHERE tbp.status_invoice IN ("open", "partial")
         if (!empty($city)) {
             $this->db->where_in('area_payment', $city);
         }
+        $this->applyInvoiceDateRangeFilter($startDate, $endDate);
         if (!empty($priority)) {
             $conditions = [];
             foreach ($priority as $p) {
@@ -198,7 +214,7 @@ WHERE tbp.status_invoice IN ("open", "partial")
         return $this->db->get()->result_array();
     }
 
-    public function getOutstandingSummary($bowheer, $regional, $city, $priority)
+    public function getOutstandingSummary($bowheer, $regional, $city, $priority, $startDate = null, $endDate = null)
     {
         $agingDueExpr = $this->agingDueExpr;
         $outstandingSql = 'CASE
@@ -226,6 +242,7 @@ WHERE tbp.status_invoice IN ("open", "partial")
             $this->db->where_in('regional_payment', $regional);
         if (!empty($city))
             $this->db->where_in('area_payment', $city);
+        $this->applyInvoiceDateRangeFilter($startDate, $endDate);
         if (!empty($priority)) {
             $conditions = [];
 
@@ -249,7 +266,7 @@ WHERE tbp.status_invoice IN ("open", "partial")
         return $this->db->get()->row_array();
     }
 
-    public function getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice = 'open')
+    public function getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice = 'open', $startDate = null, $endDate = null)
     {
         $agingInvoiceExpr = $this->agingInvoiceExpr;
         $agingDueExpr = $this->agingDueExpr;
@@ -304,6 +321,7 @@ END AS status_monitor');
             $this->db->where_in('regional_payment', $regional);
         if (!empty($city))
             $this->db->where_in('area_payment', $city);
+        $this->applyInvoiceDateRangeFilter($startDate, $endDate);
         if (is_array($statusInvoice)) {
             $statusInvoice = array_values(array_filter(array_map('trim', $statusInvoice), function ($value) {
                 return $value !== '' && $value !== 'all';
@@ -345,7 +363,7 @@ END AS status_monitor');
         return $query->result_array();
     }
 
-    public function getBillingStatusCounts($bowheer, $regional, $city, $priority)
+    public function getBillingStatusCounts($bowheer, $regional, $city, $priority, $startDate = null, $endDate = null)
     {
         $agingDueExpr = $this->agingDueExpr;
 
@@ -362,6 +380,7 @@ END AS status_monitor');
         if (!empty($city)) {
             $this->db->where_in('area_payment', $city);
         }
+        $this->applyInvoiceDateRangeFilter($startDate, $endDate);
         if (!empty($priority)) {
             $conditions = [];
             foreach ($priority as $p) {
