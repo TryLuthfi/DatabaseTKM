@@ -1432,13 +1432,13 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         tbodyHtml += `<td>${row.area_payment || '-'}</td>`;
                                         break;
                                     case 'Date Invoice':
-                                        tbodyHtml += `<td>${formatDateDdMmYyyy(row.tgl_create_invoice)}</td>`;
+                                        tbodyHtml += `<td>${row.tgl_create_invoice || '-'}</td>`;
                                         break;
                                     case 'Date Submit':
-                                        tbodyHtml += `<td>${formatDateDdMmYyyy(row.tgl_submit_invoice)}</td>`;
+                                        tbodyHtml += `<td>${row.tgl_submit_invoice || '-'}</td>`;
                                         break;
                                     case 'Due Date':
-                                        tbodyHtml += `<td>${formatDateDdMmYyyy(row.tgl_jatuh_tempo)}</td>`;
+                                        tbodyHtml += `<td>${row.tgl_jatuh_tempo || '-'}</td>`;
                                         break;
                                     case 'Aging Today':
                                         tbodyHtml += `<td>${row.umur_invoice || '-'}</td>`;
@@ -1591,27 +1591,6 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         value = value.toString().replace(/[^\d]/g, '');
 
         return parseInt(value) || 0;
-    }
-
-    function formatDateDdMmYyyy(value) {
-        if (!value) return '-';
-
-        const raw = String(value).trim();
-        if (raw === '') return '-';
-
-        const datePart = raw.split(' ')[0];
-        const ymd = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if (ymd) {
-            return `${ymd[3]}-${ymd[2]}-${ymd[1]}`;
-        }
-
-        const parsed = new Date(raw);
-        if (isNaN(parsed.getTime())) return raw;
-
-        const dd = String(parsed.getDate()).padStart(2, '0');
-        const mm = String(parsed.getMonth() + 1).padStart(2, '0');
-        const yyyy = parsed.getFullYear();
-        return `${dd}-${mm}-${yyyy}`;
     }
 
     function updateStatusTabCounts(counts) {
