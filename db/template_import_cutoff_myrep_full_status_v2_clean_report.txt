@@ -1,0 +1,6 @@
+Input: db\template_import_cutoff_myrep_full_status_v2.csv
+Output: db\template_import_cutoff_myrep_full_status_v2_clean.csv
+Total rows: 194
+Date values changed: 380
+Invalid/non-date values cleared: 4
+Trim operations on text: 6

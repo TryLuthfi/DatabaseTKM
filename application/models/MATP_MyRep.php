@@ -151,6 +151,15 @@ class MATP_MyRep extends CI_Model
         $actualAtpDate = $this->normalizeDate($row['actual_atp_date'] ?? null);
         $statusAtp = strtoupper(trim((string) ($row['status_atp'] ?? '')));
 
+        // Prioritize explicit ATP status even when actual ATP date is still empty.
+        if ($statusAtp === 'DONE') {
+            return 'ATP DONE';
+        }
+
+        if ($statusAtp === 'PUNCLIST') {
+            return 'ATP PUNCLIST';
+        }
+
         if ($emailAtpDate === null) {
             return 'Waiting Email';
         }
@@ -165,14 +174,6 @@ class MATP_MyRep extends CI_Model
 
         if ($today === $actualAtpDate) {
             return 'PROSES ATP';
-        }
-
-        if ($statusAtp === 'DONE') {
-            return 'ATP DONE';
-        }
-
-        if ($statusAtp === 'PUNCLIST') {
-            return 'ATP PUNCLIST';
         }
 
         return 'Waiting Status ATP';

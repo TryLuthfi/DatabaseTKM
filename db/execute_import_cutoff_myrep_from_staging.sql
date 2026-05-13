@@ -1,48 +1,10 @@
 SET SESSION sql_mode = REPLACE(@@sql_mode, 'ONLY_FULL_GROUP_BY', '');
 
-DROP TEMPORARY TABLE IF EXISTS stg_myrep_cutoff_import_full;
-CREATE TEMPORARY TABLE stg_myrep_cutoff_import_full (
-  cutoff_group varchar(50) DEFAULT NULL,
-  cluster_name varchar(255) DEFAULT NULL,
-  cluster_code varchar(100) DEFAULT NULL,
-  regional_name varchar(100) DEFAULT NULL,
-  province_name varchar(100) DEFAULT NULL,
-  city_name varchar(100) DEFAULT NULL,
-  team_name varchar(100) DEFAULT NULL,
-  rpm varchar(100) DEFAULT NULL,
-  sm varchar(100) DEFAULT NULL,
-  spv varchar(100) DEFAULT NULL,
-  status_current varchar(50) DEFAULT NULL,
-  status_bak varchar(50) DEFAULT NULL,
-  status_valsal varchar(50) DEFAULT NULL,
-  status_batch_approval varchar(50) DEFAULT NULL,
-  status_drm varchar(50) DEFAULT NULL,
-  status_atp varchar(50) DEFAULT NULL,
-  status_checklist_document varchar(50) DEFAULT NULL,
-  hp_plan varchar(50) DEFAULT NULL,
-  homepass_bak varchar(50) DEFAULT NULL,
-  homepass_valsal varchar(50) DEFAULT NULL,
-  hp_donasi varchar(50) DEFAULT NULL,
-  homepass_drm varchar(50) DEFAULT NULL,
-  olt_name varchar(255) DEFAULT NULL,
-  ba_open_date varchar(50) DEFAULT NULL,
-  bak_date varchar(50) DEFAULT NULL,
-  valsal_date varchar(50) DEFAULT NULL,
-  submission_date varchar(50) DEFAULT NULL,
-  released_at varchar(50) DEFAULT NULL,
-  drm_date varchar(50) DEFAULT NULL,
-  email_atp_date varchar(50) DEFAULT NULL,
-  actual_atp_date varchar(50) DEFAULT NULL,
-  rfs_cluster_id varchar(50) DEFAULT NULL,
-  remark_general text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
-LOAD DATA LOCAL INFILE 'D:\XAMPP\htdocs\DatabaseTKM\db\DATA_FOR_IMPORT.csv'
-INTO TABLE stg_myrep_cutoff_import_full
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 LINES;
+/*
+  PRE-REQ:
+  1) CSV sudah diimport ke tabel stg_myrep_cutoff_import_full
+  2) Struktur kolom staging sesuai template v2_clean
+*/
 
 DROP TEMPORARY TABLE IF EXISTS tmp_myrep_cutoff_norm_full;
 CREATE TEMPORARY TABLE tmp_myrep_cutoff_norm_full AS
@@ -220,4 +182,3 @@ SELECT
 FROM tmp_myrep_cutoff_final_full n
 GROUP BY n.status_current_final
 ORDER BY FIELD(n.status_current_final, 'BAK', 'VALSAL', 'RELEASED', 'DRM', 'RFS', 'ATP', 'DONE'), n.status_current_final;
-
