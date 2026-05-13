@@ -92,9 +92,14 @@ CREATE TEMPORARY TABLE tmp_myrep_cutoff_final_full AS
 SELECT
   n.*,
   CASE
-    WHEN n.status_current_raw <> '' THEN n.status_current_raw
+    WHEN n.status_current_raw <> '' THEN
+      CASE
+        WHEN n.status_current_raw IN ('IMPLEMENTASI', 'OGP IMPLEMENTASI', 'A. OGP IMPLEMENTASI') THEN 'DRM'
+        ELSE n.status_current_raw
+      END
     WHEN n.cutoff_group = 'ATP' THEN 'ATP'
     WHEN n.cutoff_group = 'RFS' THEN 'RFS'
+    WHEN n.cutoff_group = 'DRM' THEN 'DRM'
     WHEN n.cutoff_group = 'IMPLEMENTASI' THEN 'DRM'
     WHEN n.cutoff_group = 'RELEASED' THEN 'RELEASED'
     WHEN n.cutoff_group = 'VALSAL' THEN 'VALSAL'

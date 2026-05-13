@@ -54,9 +54,14 @@ CREATE TEMPORARY TABLE tmp_myrep_cutoff_final_full AS
 SELECT
   n.*,
   CASE
-    WHEN n.status_current_raw <> '' THEN n.status_current_raw
+    WHEN n.status_current_raw <> '' THEN
+      CASE
+        WHEN n.status_current_raw IN ('IMPLEMENTASI', 'OGP IMPLEMENTASI', 'A. OGP IMPLEMENTASI') THEN 'DRM'
+        ELSE n.status_current_raw
+      END
     WHEN n.cutoff_group = 'ATP' THEN 'ATP'
     WHEN n.cutoff_group = 'RFS' THEN 'RFS'
+    WHEN n.cutoff_group = 'DRM' THEN 'DRM'
     WHEN n.cutoff_group = 'IMPLEMENTASI' THEN 'DRM'
     WHEN n.cutoff_group = 'RELEASED' THEN 'RELEASED'
     WHEN n.cutoff_group = 'VALSAL' THEN 'VALSAL'
@@ -95,10 +100,76 @@ SELECT
   END AS status_checklist_final
 FROM tmp_myrep_cutoff_norm_full n;
 
+DROP TEMPORARY TABLE IF EXISTS tmp_myrep_cutoff_match_full;
+CREATE TEMPORARY TABLE tmp_myrep_cutoff_match_full AS
+SELECT
+  x.id_myrep_cluster,
+  x.cluster_name,
+  x.city_name,
+  x.cluster_code,
+  x.cutoff_group,
+  x.status_current_final,
+  x.status_bak_final,
+  x.status_valsal_final,
+  x.status_batch_final,
+  x.status_drm_final,
+  x.status_atp_final,
+  x.status_checklist_final,
+  x.regional_name,
+  x.province_name,
+  x.team_name,
+  x.rpm,
+  x.sm,
+  x.spv,
+  x.hp_plan,
+  x.homepass_bak,
+  x.homepass_valsal,
+  x.hp_donasi,
+  x.homepass_drm,
+  x.olt_name,
+  x.ba_open_date,
+  x.bak_date,
+  x.valsal_date,
+  x.submission_date,
+  x.released_at,
+  x.drm_date,
+  x.email_atp_date,
+  x.actual_atp_date,
+  x.rfs_cluster_id,
+  x.remark_general
+FROM (
+  SELECT
+    c.id_myrep_cluster,
+    n.*,
+    1 AS match_priority,
+    ROW_NUMBER() OVER (
+      PARTITION BY n.cluster_name, n.city_name
+      ORDER BY c.id_myrep_cluster DESC
+    ) AS rn
+  FROM tmp_myrep_cutoff_final_full n
+  INNER JOIN tb_myrep_cluster c
+    ON n.cluster_code IS NOT NULL
+   AND UPPER(TRIM(c.cluster_code)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.cluster_code)) COLLATE utf8mb4_uca1400_ai_ci
+
+  UNION ALL
+
+  SELECT
+    c.id_myrep_cluster,
+    n.*,
+    2 AS match_priority,
+    ROW_NUMBER() OVER (
+      PARTITION BY n.cluster_name, n.city_name
+      ORDER BY c.id_myrep_cluster DESC
+    ) AS rn
+  FROM tmp_myrep_cutoff_final_full n
+  INNER JOIN tb_myrep_cluster c
+    ON UPPER(TRIM(c.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci
+   AND UPPER(TRIM(c.city_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.city_name)) COLLATE utf8mb4_uca1400_ai_ci
+) x
+WHERE x.rn = 1;
+
 UPDATE tb_myrep_cluster c
-INNER JOIN tmp_myrep_cutoff_final_full n
-  ON UPPER(TRIM(c.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci
- AND UPPER(TRIM(c.city_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.city_name)) COLLATE utf8mb4_uca1400_ai_ci
+INNER JOIN tmp_myrep_cutoff_match_full n ON n.id_myrep_cluster = c.id_myrep_cluster
 SET
   c.rfs_cluster_id = COALESCE(n.rfs_cluster_id, c.rfs_cluster_id),
   c.cluster_code = COALESCE(n.cluster_code, c.cluster_code),
@@ -115,10 +186,7 @@ SET
   c.updated_at = NOW();
 
 UPDATE tb_myrep_bak b
-INNER JOIN tb_myrep_cluster c ON c.id_myrep_cluster = b.id_myrep_cluster
-INNER JOIN tmp_myrep_cutoff_final_full n
-  ON UPPER(TRIM(c.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci
- AND UPPER(TRIM(c.city_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.city_name)) COLLATE utf8mb4_uca1400_ai_ci
+INNER JOIN tmp_myrep_cutoff_match_full n ON n.id_myrep_cluster = b.id_myrep_cluster
 SET
   b.ba_open_date = COALESCE(n.ba_open_date, b.ba_open_date),
   b.bak_date = COALESCE(n.bak_date, b.bak_date),
@@ -128,10 +196,7 @@ SET
   b.updated_at = NOW();
 
 UPDATE tb_myrep_valsal v
-INNER JOIN tb_myrep_cluster c ON c.id_myrep_cluster = v.id_myrep_cluster
-INNER JOIN tmp_myrep_cutoff_final_full n
-  ON UPPER(TRIM(c.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci
- AND UPPER(TRIM(c.city_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.city_name)) COLLATE utf8mb4_uca1400_ai_ci
+INNER JOIN tmp_myrep_cutoff_match_full n ON n.id_myrep_cluster = v.id_myrep_cluster
 SET
   v.valsal_date = COALESCE(n.valsal_date, v.valsal_date),
   v.homepass_valsal = COALESCE(n.homepass_valsal, v.homepass_valsal),
@@ -140,10 +205,7 @@ SET
   v.updated_at = NOW();
 
 UPDATE tb_myrep_batch_approval ba
-INNER JOIN tb_myrep_cluster c ON c.id_myrep_cluster = ba.id_myrep_cluster
-INNER JOIN tmp_myrep_cutoff_final_full n
-  ON UPPER(TRIM(c.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci
- AND UPPER(TRIM(c.city_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.city_name)) COLLATE utf8mb4_uca1400_ai_ci
+INNER JOIN tmp_myrep_cutoff_match_full n ON n.id_myrep_cluster = ba.id_myrep_cluster
 SET
   ba.submission_date = COALESCE(n.submission_date, ba.submission_date),
   ba.hp_donasi = COALESCE(n.hp_donasi, ba.hp_donasi),
@@ -152,11 +214,23 @@ SET
   ba.remark_batch_approval = COALESCE(n.remark_general, ba.remark_batch_approval),
   ba.updated_at = NOW();
 
+INSERT INTO tb_myrep_drm (id_myrep_cluster, drm_date, homepass_drm, nama_olt, status_drm, remark_drm, created_at, updated_at)
+SELECT
+  n.id_myrep_cluster,
+  n.drm_date,
+  n.homepass_drm,
+  n.olt_name,
+  n.status_drm_final,
+  n.remark_general,
+  NOW(),
+  NOW()
+FROM tmp_myrep_cutoff_match_full n
+LEFT JOIN tb_myrep_drm d ON d.id_myrep_cluster = n.id_myrep_cluster
+WHERE d.id_myrep_cluster IS NULL
+  AND n.status_current_final IN ('DRM', 'RFS', 'ATP', 'DONE');
+
 UPDATE tb_myrep_drm d
-INNER JOIN tb_myrep_cluster c ON c.id_myrep_cluster = d.id_myrep_cluster
-INNER JOIN tmp_myrep_cutoff_final_full n
-  ON UPPER(TRIM(c.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci
- AND UPPER(TRIM(c.city_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.city_name)) COLLATE utf8mb4_uca1400_ai_ci
+INNER JOIN tmp_myrep_cutoff_match_full n ON n.id_myrep_cluster = d.id_myrep_cluster
 SET
   d.drm_date = COALESCE(n.drm_date, d.drm_date),
   d.homepass_drm = COALESCE(n.homepass_drm, d.homepass_drm),
@@ -166,19 +240,28 @@ SET
   d.updated_at = NOW();
 
 UPDATE tb_rfs_myrep_cluster r
-INNER JOIN tmp_myrep_cutoff_final_full n ON n.rfs_cluster_id = r.id_cluster
+INNER JOIN tmp_myrep_cutoff_match_full n ON n.rfs_cluster_id = r.id_cluster
 SET
   r.email_atp_date = COALESCE(n.email_atp_date, r.email_atp_date),
   r.status_atp = COALESCE(n.status_atp_final, r.status_atp);
 
 UPDATE tb_rfs_myrep_doc_package p
-INNER JOIN tmp_myrep_cutoff_final_full n ON n.rfs_cluster_id = p.cluster_id
+INNER JOIN tmp_myrep_cutoff_match_full n ON n.rfs_cluster_id = p.cluster_id
 SET p.status_package = 'DONE'
 WHERE n.status_checklist_final = 'DONE';
 
 SELECT
   n.status_current_final AS status_current,
   COUNT(*) AS total_rows
-FROM tmp_myrep_cutoff_final_full n
+FROM tmp_myrep_cutoff_match_full n
 GROUP BY n.status_current_final
 ORDER BY FIELD(n.status_current_final, 'BAK', 'VALSAL', 'RELEASED', 'DRM', 'RFS', 'ATP', 'DONE'), n.status_current_final;
+
+SELECT
+  'UNMATCHED_STAGING_ROWS' AS metric,
+  COUNT(*) AS total_rows
+FROM tmp_myrep_cutoff_final_full f
+LEFT JOIN tmp_myrep_cutoff_match_full m
+  ON UPPER(TRIM(f.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(m.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci
+ AND UPPER(TRIM(f.city_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(m.city_name)) COLLATE utf8mb4_uca1400_ai_ci
+WHERE m.id_myrep_cluster IS NULL;

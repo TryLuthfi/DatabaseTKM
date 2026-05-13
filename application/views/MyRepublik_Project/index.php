@@ -314,7 +314,7 @@ if (!function_exists('myrepClusterDetailUrl')) {
                                             </td>
                                             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
                                             <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
-                                            <td><span class="badge badge-info"><?= htmlspecialchars((string) ($row['status_current'] ?? '-')) ?></span></td>
+                                            <td><span class="badge badge-info"><?= htmlspecialchars((string) ($row['status_current_display'] ?? $row['status_current'] ?? '-')) ?></span></td>
                                             <td><?= $metricMode === 'PO' ? myrepDashNumber((float) ($row['metric_value'] ?? 0)) : myrepDashNumber((float) ($row['metric_value'] ?? 0)) . ' HP' ?></td>
                                             <td><?= (int) ($row['po_count'] ?? 0) ?></td>
                                             <td><?= htmlspecialchars((string) ($row['rpm'] ?? '-')) ?> / <?= htmlspecialchars((string) ($row['spv'] ?? '-')) ?></td>

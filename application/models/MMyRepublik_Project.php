@@ -17,6 +17,7 @@ class MMyRepublik_Project extends CI_Model
         'RFS',
         'ATP',
         'DONE',
+        'IMPLEMENTASI',
         'REJECTED',
         'HOLD',
     ];
@@ -90,6 +91,7 @@ class MMyRepublik_Project extends CI_Model
             $row['po_total_value'] = (float) ($poMap[$clusterId]['po_total_value'] ?? 0);
             $row['po_count'] = (int) ($poMap[$clusterId]['po_count'] ?? 0);
             $row['metric_value'] = $this->resolveMetricValue($row, $metricMode);
+            $row['status_current_display'] = $this->resolveDisplayStatus($row);
         }
         unset($row);
 
@@ -114,6 +116,7 @@ class MMyRepublik_Project extends CI_Model
             }
 
             $legacyRow['metric_value'] = $this->resolveMetricValue($legacyRow, $metricMode);
+            $legacyRow['status_current_display'] = $this->resolveDisplayStatus($legacyRow);
             $rows[] = $legacyRow;
         }
 
@@ -142,7 +145,7 @@ class MMyRepublik_Project extends CI_Model
         }
 
         foreach ($rows as $row) {
-            $status = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
+            $status = $this->resolveDisplayStatus($row);
             if (!isset($cards[$status])) {
                 $cards[$status] = [
                     'status' => $status,
@@ -158,6 +161,18 @@ class MMyRepublik_Project extends CI_Model
         return array_values(array_filter($cards, static function ($card) {
             return $card['cluster_count'] > 0;
         }));
+    }
+
+    private function resolveDisplayStatus($row)
+    {
+        $status = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
+        $statusDrm = strtoupper(trim((string) ($row['status_drm'] ?? '')));
+
+        if ($status === 'DONE' && strpos($statusDrm, 'IMPLEMENTASI') !== false) {
+            return 'IMPLEMENTASI';
+        }
+
+        return $status;
     }
 
     public function getOverview($rows)
@@ -726,7 +741,13 @@ class MMyRepublik_Project extends CI_Model
         }
 
         if ($selectedStatus !== '') {
-            $this->db->where('UPPER(c.status_current)', strtoupper($selectedStatus));
+            $normalizedStatus = strtoupper($selectedStatus);
+            if ($normalizedStatus === 'IMPLEMENTASI') {
+                $this->db->where('UPPER(c.status_current)', 'DONE');
+                $this->db->like('UPPER(COALESCE(d.status_drm, ""))', 'IMPLEMENTASI');
+            } else {
+                $this->db->where('UPPER(c.status_current)', $normalizedStatus);
+            }
         }
 
         return $this->db
