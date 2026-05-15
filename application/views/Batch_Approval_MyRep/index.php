@@ -484,6 +484,17 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
                                             <tbody>
                                                 <?php $renderBatchTableRows($nyDrmRows, $docReady, $this->MBatch_Approval_MyRep); ?>
                                             </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="5" class="text-right">TOTAL</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th colspan="6"></th>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
                                 </div>
@@ -513,6 +524,17 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
                                             <tbody>
                                                 <?php $renderBatchTableRows($clusterRows, $docReady, $this->MBatch_Approval_MyRep); ?>
                                             </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="5" class="text-right">TOTAL</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th colspan="6"></th>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
                                 </div>
@@ -2543,6 +2565,31 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
                             responsive: true,
                             autoWidth: false,
                             order: [[0, 'asc']],
+                            footerCallback: function (row, data, start, end, display) {
+                                var api = this.api();
+                                var parseNumber = function (value) {
+                                    if (typeof value === 'string') {
+                                        value = value.replace(/<[^>]*>/g, '');
+                                        value = value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+                                    }
+                                    var parsed = parseFloat(value);
+                                    return isNaN(parsed) ? 0 : parsed;
+                                };
+
+                                var numericCols = [5, 6, 7, 8, 9];
+                                numericCols.forEach(function (colIdx) {
+                                    var total = api
+                                        .column(colIdx, { search: 'applied' })
+                                        .data()
+                                        .reduce(function (sum, val) {
+                                            return sum + parseNumber(val);
+                                        }, 0);
+
+                                    $(api.column(colIdx).footer()).html(
+                                        total.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                                    );
+                                });
+                            },
                             language: {
                                 emptyTable: 'Belum ada pengajuan Batch Approval.'
                             }

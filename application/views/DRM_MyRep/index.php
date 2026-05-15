@@ -288,6 +288,14 @@ if (!function_exists('drmBadgeClass')) {
                                             </tr>
                                         <?php endif; ?>
                                     </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="5" class="text-right">TOTAL</th>
+                                            <th class="text-right">0</th>
+                                            <th class="text-right">0</th>
+                                            <th colspan="4"></th>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>
@@ -961,12 +969,34 @@ if (!function_exists('drmBadgeClass')) {
             $('#table_drm_import_preview tbody').html(html);
         }
 
+        function parseDrmNumber(value) {
+            if (typeof value === 'number') {
+                return isNaN(value) ? 0 : value;
+            }
+            var cleaned = $('<div>').html(value || '').text();
+            cleaned = String(cleaned).replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.-]/g, '');
+            var parsed = parseFloat(cleaned);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
         $(function () {
             if ($.fn.DataTable) {
                 $('#table_drm_myrep').DataTable({
                     responsive: true,
                     autoWidth: false,
-                    order: [[0, 'asc']]
+                    order: [[0, 'asc']],
+                    footerCallback: function () {
+                        var api = this.api();
+                        var sumColumn = function (index) {
+                            return api.column(index, { page: 'current' }).data().reduce(function (a, b) {
+                                return parseDrmNumber(a) + parseDrmNumber(b);
+                            }, 0);
+                        };
+                        var hpDonasiTotal = sumColumn(5);
+                        var hpDrmTotal = sumColumn(6);
+                        $(api.column(5).footer()).html(hpDonasiTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                        $(api.column(6).footer()).html(hpDrmTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    }
                 });
             }
 

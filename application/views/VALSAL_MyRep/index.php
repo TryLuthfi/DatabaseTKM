@@ -535,6 +535,14 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                             <tbody>
                                                 <?php $renderValsalTableRows($valsalOnProcessRows, $docReady, $canApprove, $valsalDocumentDefinitions, $valsalDocumentMap); ?>
                                             </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="5" class="text-right">TOTAL</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th colspan="7"></th>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
                                 </div>
@@ -563,6 +571,14 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                             <tbody>
                                                 <?php $renderValsalTableRows($nyBatchApprovalNyDrmRows, $docReady, $canApprove, $valsalDocumentDefinitions, $valsalDocumentMap); ?>
                                             </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="5" class="text-right">TOTAL</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th colspan="7"></th>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
                                 </div>
@@ -591,6 +607,14 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                             <tbody>
                                                 <?php $renderValsalTableRows($allValsalRows, $docReady, $canApprove, $valsalDocumentDefinitions, $valsalDocumentMap); ?>
                                             </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="5" class="text-right">TOTAL</th>
+                                                    <th class="text-right">0</th>
+                                                    <th class="text-right">0</th>
+                                                    <th colspan="7"></th>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
                                 </div>
@@ -2000,6 +2024,38 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         responsive: true,
                         autoWidth: false,
                         order: [[0, 'asc']],
+                        footerCallback: function (row, data, start, end, display) {
+                            var api = this.api();
+                            var parseNumber = function (value) {
+                                if (typeof value === 'string') {
+                                    value = value.replace(/<[^>]*>/g, '');
+                                    value = value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+                                }
+                                var parsed = parseFloat(value);
+                                return isNaN(parsed) ? 0 : parsed;
+                            };
+
+                            var totalHpBak = api
+                                .column(5, { search: 'applied' })
+                                .data()
+                                .reduce(function (sum, val) {
+                                    return sum + parseNumber(val);
+                                }, 0);
+
+                            var totalHpValsal = api
+                                .column(6, { search: 'applied' })
+                                .data()
+                                .reduce(function (sum, val) {
+                                    return sum + parseNumber(val);
+                                }, 0);
+
+                            $(api.column(5).footer()).html(
+                                totalHpBak.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                            );
+                            $(api.column(6).footer()).html(
+                                totalHpValsal.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                            );
+                        },
                         language: {
                             emptyTable: 'Belum ada data untuk tab ini.'
                         }

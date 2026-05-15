@@ -627,6 +627,7 @@ class MMyRepublik_Project extends CI_Model
         $hpValsal = (float) ($row['homepass_valsal'] ?? 0);
         $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
         $hpDrm = (float) ($row['homepass_drm'] ?? 0);
+        $hpRfs = (float) ($row['homepass_rfs'] ?? 0);
 
         if (in_array($status, ['DRAFT', 'BA OPEN', 'BAK'], true)) {
             return $hpBak > 0 ? $hpBak : $hpPlan;
@@ -640,8 +641,12 @@ class MMyRepublik_Project extends CI_Model
             return $hpDonasi > 0 ? $hpDonasi : ($hpValsal > 0 ? $hpValsal : ($hpBak > 0 ? $hpBak : $hpPlan));
         }
 
-        if (in_array($status, ['DRM', 'RFS', 'ATP', 'DONE'], true)) {
+        if ($status === 'DRM') {
             return $hpDrm > 0 ? $hpDrm : ($hpDonasi > 0 ? $hpDonasi : ($hpValsal > 0 ? $hpValsal : ($hpBak > 0 ? $hpBak : $hpPlan)));
+        }
+
+        if (in_array($status, ['RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
+            return $hpRfs > 0 ? $hpRfs : ($hpDrm > 0 ? $hpDrm : ($hpDonasi > 0 ? $hpDonasi : ($hpValsal > 0 ? $hpValsal : ($hpBak > 0 ? $hpBak : $hpPlan))));
         }
 
         return $hpPlan;
@@ -735,13 +740,15 @@ class MMyRepublik_Project extends CI_Model
                 ba.hp_donasi,
                 ba.staging_status,
                 d.homepass_drm,
-                d.drm_date
+                d.drm_date,
+                r.homepass AS homepass_rfs
             ')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left');
+            ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_rfs_myrep_cluster r', 'r.id_cluster = c.rfs_cluster_id', 'left');
 
         if ($selectedCity !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($selectedCity));

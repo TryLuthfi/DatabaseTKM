@@ -27,6 +27,12 @@ class PO_MyRep extends CI_Controller
         $data['clusterRows'] = $data['isReady']
             ? $this->MPO_MyRep->getRows($selectedCity, $selectedStatus)
             : [];
+        $data['poListRows'] = $data['isReady']
+            ? $this->MPO_MyRep->getPoListRows($selectedCity, $selectedStatus)
+            : [];
+        $data['terminBreakdownRows'] = $data['isReady']
+            ? $this->MPO_MyRep->getTerminBreakdownByType($selectedCity, $selectedStatus)
+            : [];
         $data['summary'] = $this->MPO_MyRep->getDashboardSummary($data['clusterRows']);
 
         $this->load->view('Templates/01_Header', $data);
@@ -185,6 +191,36 @@ class PO_MyRep extends CI_Controller
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Termin berhasil diupdate.' : 'Termin gagal diupdate.');
         redirect('PO_MyRep/detail/' . (int) ($termin['id_myrep_cluster'] ?? 0));
+    }
+
+    public function getTerminBreakdownDetail()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            return $this->output
+                ->set_status_header(401)
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['status' => false, 'message' => 'Unauthorized']));
+        }
+
+        $city = strtoupper(trim((string) $this->input->post('city')));
+        $status = strtoupper(trim((string) $this->input->post('status')));
+        $poType = strtoupper(trim((string) $this->input->post('po_type')));
+        $metric = trim((string) $this->input->post('metric'));
+        $termNo = (int) $this->input->post('term_no');
+
+        $rows = $this->MPO_MyRep->getTerminBreakdownDetailRows($city, $status, $poType, $metric, $termNo);
+        $metricLabel = strtoupper($poType) . ' - ' . strtoupper($metric);
+        if ($metric === 'outstanding_term' && $termNo > 0) {
+            $metricLabel = strtoupper($poType) . ' - OUTSTANDING ' . $termNo;
+        }
+
+        return $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => true,
+                'title' => $metricLabel,
+                'rows' => $rows,
+            ]));
     }
 
     private function normalizeDate($value)

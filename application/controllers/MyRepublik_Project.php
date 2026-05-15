@@ -670,7 +670,7 @@ class MyRepublik_Project extends CI_Controller
                 $rows[$cityName]['rfs'] += $homepassValue;
             } elseif ($statusCurrent === 'ATP') {
                 $rows[$cityName]['atp'] += $homepassValue;
-            } elseif ($statusCurrent === 'DONE') {
+            } elseif (in_array($statusCurrent, ['CHECKLIST DOKUMENT', 'DONE'], true)) {
                 $rows[$cityName]['dokument'] += $homepassValue;
             }
 
@@ -724,6 +724,7 @@ class MyRepublik_Project extends CI_Controller
         $hpValsal = (float) ($clusterRow['homepass_valsal'] ?? 0);
         $hpDonasi = (float) ($clusterRow['hp_donasi'] ?? 0);
         $hpDrm = (float) ($clusterRow['homepass_drm'] ?? 0);
+        $hpRfs = (float) ($clusterRow['homepass_rfs'] ?? 0);
 
         if (in_array($status, ['DRAFT', 'BA OPEN', 'BAK'], true)) {
             return $hpBak > 0 ? $hpBak : $hpPlan;
@@ -737,8 +738,12 @@ class MyRepublik_Project extends CI_Controller
             return $hpDonasi > 0 ? $hpDonasi : ($hpValsal > 0 ? $hpValsal : ($hpBak > 0 ? $hpBak : $hpPlan));
         }
 
-        if (in_array($status, ['DRM', 'RFS', 'ATP', 'DONE'], true)) {
+        if ($status === 'DRM') {
             return $hpDrm > 0 ? $hpDrm : ($hpDonasi > 0 ? $hpDonasi : ($hpValsal > 0 ? $hpValsal : ($hpBak > 0 ? $hpBak : $hpPlan)));
+        }
+
+        if (in_array($status, ['RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
+            return $hpRfs > 0 ? $hpRfs : ($hpDrm > 0 ? $hpDrm : ($hpDonasi > 0 ? $hpDonasi : ($hpValsal > 0 ? $hpValsal : ($hpBak > 0 ? $hpBak : $hpPlan))));
         }
 
         return $hpPlan;

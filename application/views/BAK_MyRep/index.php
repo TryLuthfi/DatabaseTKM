@@ -449,6 +449,13 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                             <tbody>
                                                 <?php $renderBakTableRows($bakOnProcessRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap); ?>
                                             </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="5" class="text-right">TOTAL HP ESTIMASI</th>
+                                                    <th class="text-right">0</th>
+                                                    <th colspan="7"></th>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
                                 </div>
@@ -475,6 +482,13 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                             <tbody>
                                                 <?php $renderBakTableRows($nyValsalRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap); ?>
                                             </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="5" class="text-right">TOTAL HP ESTIMASI</th>
+                                                    <th class="text-right">0</th>
+                                                    <th colspan="7"></th>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
                                 </div>
@@ -501,6 +515,13 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                             <tbody>
                                                 <?php $renderBakTableRows($allBakRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap); ?>
                                             </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="5" class="text-right">TOTAL HP ESTIMASI</th>
+                                                    <th class="text-right">0</th>
+                                                    <th colspan="7"></th>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
                                 </div>
@@ -1965,6 +1986,28 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         responsive: true,
                         autoWidth: false,
                         order: [[0, 'asc']],
+                        footerCallback: function (row, data, start, end, display) {
+                            var api = this.api();
+                            var parseNumber = function (value) {
+                                if (typeof value === 'string') {
+                                    value = value.replace(/<[^>]*>/g, '');
+                                    value = value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+                                }
+                                var parsed = parseFloat(value);
+                                return isNaN(parsed) ? 0 : parsed;
+                            };
+
+                            var totalHp = api
+                                .column(5, { search: 'applied' })
+                                .data()
+                                .reduce(function (sum, val) {
+                                    return sum + parseNumber(val);
+                                }, 0);
+
+                            $(api.column(5).footer()).html(
+                                totalHp.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                            );
+                        },
                         language: {
                             emptyTable: 'Belum ada data untuk tab ini.'
                         }

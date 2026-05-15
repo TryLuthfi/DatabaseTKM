@@ -140,6 +140,84 @@ class MPO_MyRep extends CI_Model
         return $filtered;
     }
 
+    public function getPoListRows($city = '', $status = '')
+    {
+        if (!$this->tablesReady()) {
+            return [];
+        }
+
+        $this->db
+            ->select('
+                p.id_po_header,
+                p.id_myrep_cluster,
+                p.po_type,
+                p.po_category,
+                p.po_number,
+                p.po_date,
+                p.po_value,
+                p.status_po,
+                p.po_version_label,
+                c.cluster_name,
+                c.city_name,
+                c.regional_name,
+                c.status_current
+            ')
+            ->from('tb_myrep_po_header p')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner');
+
+        if ($city !== '') {
+            $this->db->where('UPPER(c.city_name)', strtoupper($city));
+        }
+        if ($status !== '') {
+            $this->db->where('UPPER(p.status_po)', strtoupper($status));
+        }
+
+        $rows = $this->db
+            ->order_by('p.po_date', 'DESC')
+            ->order_by('p.po_number', 'ASC')
+            ->get()
+            ->result_array();
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        $headerIds = array_values(array_filter(array_map('intval', array_column($rows, 'id_po_header'))));
+        $terminRows = $this->db
+            ->select('id_po_header, status_termin')
+            ->from('tb_myrep_po_termin')
+            ->where_in('id_po_header', $headerIds)
+            ->get()
+            ->result_array();
+
+        $terminMap = [];
+        foreach ($terminRows as $termin) {
+            $headerId = (int) ($termin['id_po_header'] ?? 0);
+            if (!isset($terminMap[$headerId])) {
+                $terminMap[$headerId] = ['total' => 0, 'progress' => 0, 'paid' => 0];
+            }
+            $terminMap[$headerId]['total']++;
+            $statusTermin = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
+            if (in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+                $terminMap[$headerId]['progress']++;
+            }
+            if ($statusTermin === 'PAID') {
+                $terminMap[$headerId]['paid']++;
+            }
+        }
+
+        foreach ($rows as &$row) {
+            $headerId = (int) ($row['id_po_header'] ?? 0);
+            $meta = $terminMap[$headerId] ?? ['total' => 0, 'progress' => 0, 'paid' => 0];
+            $row['termin_total_count'] = (int) $meta['total'];
+            $row['termin_progress_count'] = (int) $meta['progress'];
+            $row['termin_paid_count'] = (int) $meta['paid'];
+        }
+        unset($row);
+
+        return $rows;
+    }
+
     public function getDashboardSummary($rows)
     {
         $summary = [
@@ -168,6 +246,279 @@ class MPO_MyRep extends CI_Model
         }
 
         return $summary;
+    }
+
+    public function getTerminBreakdownByType($city = '', $status = '')
+    {
+        if (!$this->tablesReady()) {
+            return [];
+        }
+
+        $this->db
+            ->select('p.id_po_header, p.po_type, p.po_value')
+            ->from('tb_myrep_po_header p')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner');
+
+        if ($city !== '') {
+            $this->db->where('UPPER(c.city_name)', strtoupper($city));
+        }
+        if ($status !== '') {
+            $this->db->where('UPPER(p.status_po)', strtoupper($status));
+        }
+
+        $headerRows = $this->db->get()->result_array();
+        if (empty($headerRows)) {
+            return [];
+        }
+
+        $headerIds = array_values(array_filter(array_map('intval', array_column($headerRows, 'id_po_header'))));
+        if (empty($headerIds)) {
+            return [];
+        }
+
+        $terminRows = $this->db
+            ->select('id_po_header, termin_no, termin_value, status_termin')
+            ->from('tb_myrep_po_termin')
+            ->where_in('id_po_header', $headerIds)
+            ->get()
+            ->result_array();
+
+        $headerMeta = [];
+        foreach ($headerRows as $headerRow) {
+            $headerId = (int) ($headerRow['id_po_header'] ?? 0);
+            $headerMeta[$headerId] = [
+                'po_type' => strtoupper(trim((string) ($headerRow['po_type'] ?? 'CLUSTER'))),
+                'po_value' => (float) ($headerRow['po_value'] ?? 0),
+            ];
+        }
+
+        $result = [
+            'CLUSTER' => [
+                'po_type' => 'CLUSTER',
+                'total_po_value' => 0,
+                'term_done_count' => 0,
+                'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'total_invoiced_value' => 0,
+                'outstanding_value' => 0,
+            ],
+            'SUBFEEDER' => [
+                'po_type' => 'SUBFEEDER',
+                'total_po_value' => 0,
+                'term_done_count' => 0,
+                'termin_values' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'total_invoiced_value' => 0,
+                'outstanding_value' => 0,
+            ],
+        ];
+
+        foreach ($headerMeta as $meta) {
+            $type = $meta['po_type'] === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+            $result[$type]['total_po_value'] += (float) $meta['po_value'];
+            $result[$type]['outstanding_value'] += (float) $meta['po_value'];
+        }
+
+        foreach ($terminRows as $terminRow) {
+            $headerId = (int) ($terminRow['id_po_header'] ?? 0);
+            if (!isset($headerMeta[$headerId])) {
+                continue;
+            }
+
+            $type = $headerMeta[$headerId]['po_type'] === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+            $terminNo = (int) ($terminRow['termin_no'] ?? 0);
+            $terminValue = (float) ($terminRow['termin_value'] ?? 0);
+            $terminStatus = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
+
+            if (in_array($terminStatus, ['BILLED', 'PAID'], true)) {
+                $result[$type]['term_done_count']++;
+                $result[$type]['total_invoiced_value'] += $terminValue;
+                $result[$type]['outstanding_value'] -= $terminValue;
+            } elseif ($terminNo >= 1 && $terminNo <= 5) {
+                // Outstanding per termin: hanya yang belum billed/paid.
+                $result[$type]['termin_values'][$terminNo] += $terminValue;
+            }
+        }
+
+        foreach ($result as &$row) {
+            if ($row['outstanding_value'] < 0) {
+                $row['outstanding_value'] = 0;
+            }
+        }
+        unset($row);
+
+        return array_values($result);
+    }
+
+    public function getTerminBreakdownDetailRows($city = '', $status = '', $poType = 'CLUSTER', $metric = '', $termNo = 0)
+    {
+        if (!$this->tablesReady()) {
+            return [];
+        }
+
+        $poType = strtoupper(trim((string) $poType));
+        if (!in_array($poType, ['CLUSTER', 'SUBFEEDER'], true)) {
+            $poType = 'CLUSTER';
+        }
+
+        $this->db
+            ->select('
+                p.id_po_header,
+                p.po_number,
+                p.po_date,
+                p.po_type,
+                p.po_value,
+                p.status_po,
+                c.id_myrep_cluster,
+                c.cluster_name,
+                c.city_name,
+                c.regional_name
+            ')
+            ->from('tb_myrep_po_header p')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+            ->where('UPPER(p.po_type)', $poType);
+
+        if ($city !== '') {
+            $this->db->where('UPPER(c.city_name)', strtoupper($city));
+        }
+        if ($status !== '') {
+            $this->db->where('UPPER(p.status_po)', strtoupper($status));
+        }
+
+        $headerRows = $this->db
+            ->order_by('p.po_date', 'DESC')
+            ->order_by('p.po_number', 'ASC')
+            ->get()
+            ->result_array();
+
+        if (empty($headerRows)) {
+            return [];
+        }
+
+        $headerMap = [];
+        $headerIds = [];
+        foreach ($headerRows as $headerRow) {
+            $headerId = (int) ($headerRow['id_po_header'] ?? 0);
+            $headerIds[] = $headerId;
+            $headerMap[$headerId] = $headerRow;
+        }
+
+        $terminRows = $this->db
+            ->select('id_po_header, termin_no, termin_value, status_termin')
+            ->from('tb_myrep_po_termin')
+            ->where_in('id_po_header', $headerIds)
+            ->order_by('termin_no', 'ASC')
+            ->get()
+            ->result_array();
+
+        $detailRows = [];
+        $metric = strtolower(trim((string) $metric));
+        $termNo = (int) $termNo;
+
+        if ($metric === 'po_qty' || $metric === 'total_po') {
+            foreach ($headerRows as $headerRow) {
+                $detailRows[] = [
+                    'cluster_name' => (string) ($headerRow['cluster_name'] ?? '-'),
+                    'city_name' => (string) ($headerRow['city_name'] ?? '-'),
+                    'regional_name' => (string) ($headerRow['regional_name'] ?? '-'),
+                    'po_number' => (string) ($headerRow['po_number'] ?? '-'),
+                    'po_date' => (string) ($headerRow['po_date'] ?? ''),
+                    'termin_no' => null,
+                    'status_termin' => null,
+                    'amount' => $metric === 'po_qty' ? 1 : (float) ($headerRow['po_value'] ?? 0),
+                ];
+            }
+            return $detailRows;
+        }
+
+        if ($metric === 'term_done') {
+            foreach ($terminRows as $terminRow) {
+                $headerId = (int) ($terminRow['id_po_header'] ?? 0);
+                if (!isset($headerMap[$headerId])) {
+                    continue;
+                }
+                $statusTermin = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
+                if (!in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+                    continue;
+                }
+                $headerRow = $headerMap[$headerId];
+                $detailRows[] = [
+                    'cluster_name' => (string) ($headerRow['cluster_name'] ?? '-'),
+                    'city_name' => (string) ($headerRow['city_name'] ?? '-'),
+                    'regional_name' => (string) ($headerRow['regional_name'] ?? '-'),
+                    'po_number' => (string) ($headerRow['po_number'] ?? '-'),
+                    'po_date' => (string) ($headerRow['po_date'] ?? ''),
+                    'termin_no' => (int) ($terminRow['termin_no'] ?? 0),
+                    'status_termin' => $statusTermin,
+                    'amount' => 1,
+                ];
+            }
+            return $detailRows;
+        }
+
+        if ($metric === 'outstanding_total') {
+            $outstandingPerPo = [];
+            foreach ($terminRows as $terminRow) {
+                $headerId = (int) ($terminRow['id_po_header'] ?? 0);
+                $statusTermin = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
+                if (in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+                    continue;
+                }
+                if (!isset($outstandingPerPo[$headerId])) {
+                    $outstandingPerPo[$headerId] = 0;
+                }
+                $outstandingPerPo[$headerId] += (float) ($terminRow['termin_value'] ?? 0);
+            }
+            foreach ($outstandingPerPo as $headerId => $amount) {
+                if ($amount == 0 || !isset($headerMap[$headerId])) {
+                    continue;
+                }
+                $headerRow = $headerMap[$headerId];
+                $detailRows[] = [
+                    'cluster_name' => (string) ($headerRow['cluster_name'] ?? '-'),
+                    'city_name' => (string) ($headerRow['city_name'] ?? '-'),
+                    'regional_name' => (string) ($headerRow['regional_name'] ?? '-'),
+                    'po_number' => (string) ($headerRow['po_number'] ?? '-'),
+                    'po_date' => (string) ($headerRow['po_date'] ?? ''),
+                    'termin_no' => null,
+                    'status_termin' => 'OUTSTANDING',
+                    'amount' => (float) $amount,
+                ];
+            }
+            return $detailRows;
+        }
+
+        foreach ($terminRows as $terminRow) {
+            $headerId = (int) ($terminRow['id_po_header'] ?? 0);
+            if (!isset($headerMap[$headerId])) {
+                continue;
+            }
+            $statusTermin = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
+            $terminNoRow = (int) ($terminRow['termin_no'] ?? 0);
+            $include = false;
+
+            if ($metric === 'total_invoiced') {
+                $include = in_array($statusTermin, ['BILLED', 'PAID'], true);
+            } elseif ($metric === 'outstanding_term' && $termNo >= 1 && $termNo <= 5) {
+                $include = ($terminNoRow === $termNo && !in_array($statusTermin, ['BILLED', 'PAID'], true));
+            }
+
+            if (!$include) {
+                continue;
+            }
+
+            $headerRow = $headerMap[$headerId];
+            $detailRows[] = [
+                'cluster_name' => (string) ($headerRow['cluster_name'] ?? '-'),
+                'city_name' => (string) ($headerRow['city_name'] ?? '-'),
+                'regional_name' => (string) ($headerRow['regional_name'] ?? '-'),
+                'po_number' => (string) ($headerRow['po_number'] ?? '-'),
+                'po_date' => (string) ($headerRow['po_date'] ?? ''),
+                'termin_no' => $terminNoRow,
+                'status_termin' => $statusTermin,
+                'amount' => (float) ($terminRow['termin_value'] ?? 0),
+            ];
+        }
+
+        return $detailRows;
     }
 
     public function getClusterById($clusterId)
@@ -353,6 +704,7 @@ class MPO_MyRep extends CI_Model
             'po_subfeeder_count' => 0,
             'po_total_value' => 0,
             'termin_total_count' => 0,
+            'termin_progress_count' => 0,
             'termin_paid_count' => 0,
             'last_po_date' => null,
             'po_summary_status' => 'NOT ISSUED',
@@ -417,6 +769,9 @@ class MPO_MyRep extends CI_Model
 
             $statuses = $terminGrouped[(int) ($headerRow['id_po_header'] ?? 0)] ?? [];
             $metaMap[$clusterId]['termin_total_count'] += count($statuses);
+            $metaMap[$clusterId]['termin_progress_count'] += count(array_filter($statuses, static function ($status) {
+                return in_array($status, ['BILLED', 'PAID'], true);
+            }));
             $metaMap[$clusterId]['termin_paid_count'] += count(array_filter($statuses, static function ($status) {
                 return $status === 'PAID';
             }));
@@ -427,7 +782,7 @@ class MPO_MyRep extends CI_Model
                 $meta['po_summary_status'] = 'NOT ISSUED';
             } elseif ($meta['termin_total_count'] > 0 && $meta['termin_paid_count'] === $meta['termin_total_count']) {
                 $meta['po_summary_status'] = 'FULLY PAID';
-            } elseif ($meta['termin_paid_count'] > 0) {
+            } elseif ($meta['termin_progress_count'] > 0) {
                 $meta['po_summary_status'] = 'PARTIAL PAYMENT';
             } else {
                 $meta['po_summary_status'] = 'ISSUED';
