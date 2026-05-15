@@ -71,8 +71,99 @@ if (!function_exists('implCountWorkingDays')) {
     }
 }
 
+if (!function_exists('implDetectHistoryScope')) {
+    function implDetectHistoryScope($scopeValue, $remarkValue = '')
+    {
+        $scope = strtoupper(trim((string) $scopeValue));
+        if ($scope === 'CLUSTER' || $scope === 'SUBFEEDER') {
+            return $scope;
+        }
+
+        $remark = strtoupper(trim((string) $remarkValue));
+        if (strpos($remark, 'SUBFEEDER') !== false) {
+            return 'SUBFEEDER';
+        }
+        if (strpos($remark, 'CLUSTER') !== false) {
+            return 'CLUSTER';
+        }
+
+        return 'CLUSTER';
+    }
+}
+
+if (!function_exists('implBuildHistoryRowsByScope')) {
+    function implBuildHistoryRowsByScope($historyDateRowsByScope, $historyTypeOrder, $nonBoqLabelOrder, $initialDate)
+    {
+        if (!is_array($historyDateRowsByScope)) {
+            $historyDateRowsByScope = [];
+        }
+        ksort($historyDateRowsByScope);
+
+        $historyRows = [];
+        $historyRunningAchieve = array_fill_keys((array) $historyTypeOrder, 0);
+        $historyFinalAchieve = array_fill_keys((array) $historyTypeOrder, 0);
+
+        if (!empty($historyTypeOrder)) {
+            $historyRows[] = [
+                'progress_date' => $initialDate,
+                'remark' => 'BOQ Awal',
+                'achieve' => array_fill_keys($historyTypeOrder, 0),
+            ];
+        }
+
+        foreach ($historyDateRowsByScope as $progressDate => $entry) {
+            foreach ($historyTypeOrder as $itemType) {
+                $dailyAchieve = (float) ($entry['achieve'][$itemType] ?? 0);
+                $historyRunningAchieve[$itemType] += $dailyAchieve;
+                $historyFinalAchieve[$itemType] = $historyRunningAchieve[$itemType];
+            }
+
+            $remarkPool = array_values(array_filter(array_unique((array) ($entry['remark'] ?? [])), static function ($text) {
+                return trim((string) $text) !== '';
+            }));
+            $manualRemarkPool = array_values(array_filter($remarkPool, static function ($text) {
+                $upper = strtoupper(trim((string) $text));
+                return strpos($upper, '[AUTO]') !== 0
+                    && strpos($upper, '[DAILY]') !== 0
+                    && strpos($upper, 'UPLOAD FOTO COMPLY -') !== 0;
+            }));
+            $dailyNonBoqRemark = '';
+            if (!empty($entry['daily_non_boq_labels']) && is_array($entry['daily_non_boq_labels'])) {
+                $labels = array_keys($entry['daily_non_boq_labels']);
+                usort($labels, static function ($a, $b) use ($nonBoqLabelOrder) {
+                    $indexA = array_search($a, $nonBoqLabelOrder, true);
+                    $indexB = array_search($b, $nonBoqLabelOrder, true);
+                    $indexA = $indexA === false ? 999 : $indexA;
+                    $indexB = $indexB === false ? 999 : $indexB;
+                    return $indexA <=> $indexB;
+                });
+                $dailyNonBoqRemark = implode(' / ', $labels);
+            }
+            $finalRemark = !empty($manualRemarkPool)
+                ? implode(' | ', $manualRemarkPool)
+                : ($dailyNonBoqRemark !== '' ? $dailyNonBoqRemark
+                : (!empty($remarkPool) ? implode(' | ', $remarkPool) : 'Progress Harian'));
+
+            $historyRows[] = [
+                'progress_date' => $progressDate,
+                'remark' => $finalRemark,
+                'achieve' => $entry['achieve'],
+            ];
+        }
+
+        return [
+            'rows' => $historyRows,
+            'final_achieve' => $historyFinalAchieve,
+        ];
+    }
+}
+
 $historyTypePlan = [];
+$historyTypePlanCluster = [];
+$historyTypePlanSubfeeder = [];
 $historyDateRows = [];
+$historyDateRowsCluster = [];
+$historyDateRowsSubfeeder = [];
 $historyTypeOrder = [];
 $boqTypeBreakdown = [];
 $dailyActivitiesByDate = [];
@@ -100,18 +191,34 @@ foreach ((array) $dailyActivities as $dailyActivity) {
     }
 
     if ($label !== '') {
-        if (!isset($historyDateRows[$dailyDateKey])) {
-            $historyDateRows[$dailyDateKey] = [
-                'progress_date' => $dailyDateKey,
-                'remark' => [],
-                'achieve' => [],
-                'daily_non_boq_labels' => [],
-            ];
+        $dailyScope = implDetectHistoryScope($dailyActivity['scope_type'] ?? '', '');
+        if ($dailyScope === 'SUBFEEDER') {
+            if (!isset($historyDateRowsSubfeeder[$dailyDateKey])) {
+                $historyDateRowsSubfeeder[$dailyDateKey] = [
+                    'progress_date' => $dailyDateKey,
+                    'remark' => [],
+                    'achieve' => [],
+                    'daily_non_boq_labels' => [],
+                ];
+            }
+            if (!isset($historyDateRowsSubfeeder[$dailyDateKey]['daily_non_boq_labels'])) {
+                $historyDateRowsSubfeeder[$dailyDateKey]['daily_non_boq_labels'] = [];
+            }
+            $historyDateRowsSubfeeder[$dailyDateKey]['daily_non_boq_labels'][$label] = true;
+        } else {
+            if (!isset($historyDateRowsCluster[$dailyDateKey])) {
+                $historyDateRowsCluster[$dailyDateKey] = [
+                    'progress_date' => $dailyDateKey,
+                    'remark' => [],
+                    'achieve' => [],
+                    'daily_non_boq_labels' => [],
+                ];
+            }
+            if (!isset($historyDateRowsCluster[$dailyDateKey]['daily_non_boq_labels'])) {
+                $historyDateRowsCluster[$dailyDateKey]['daily_non_boq_labels'] = [];
+            }
+            $historyDateRowsCluster[$dailyDateKey]['daily_non_boq_labels'][$label] = true;
         }
-        if (!isset($historyDateRows[$dailyDateKey]['daily_non_boq_labels'])) {
-            $historyDateRows[$dailyDateKey]['daily_non_boq_labels'] = [];
-        }
-        $historyDateRows[$dailyDateKey]['daily_non_boq_labels'][$label] = true;
     }
 }
 
@@ -126,6 +233,14 @@ foreach ($compareRows as $row) {
         $historyTypeOrder[] = $itemType;
     }
     $historyTypePlan[$itemType] += (float) ($row['qty_boq'] ?? 0);
+    if (!isset($historyTypePlanCluster[$itemType])) {
+        $historyTypePlanCluster[$itemType] = 0;
+    }
+    if (!isset($historyTypePlanSubfeeder[$itemType])) {
+        $historyTypePlanSubfeeder[$itemType] = 0;
+    }
+    $historyTypePlanCluster[$itemType] += (float) ($row['qty_cluster'] ?? 0);
+    $historyTypePlanSubfeeder[$itemType] += (float) ($row['qty_subfeeder'] ?? 0);
 
     if (!isset($boqTypeBreakdown[$itemType])) {
         $boqTypeBreakdown[$itemType] = [];
@@ -133,6 +248,8 @@ foreach ($compareRows as $row) {
     $boqTypeBreakdown[$itemType][] = [
         'item_name' => (string) ($row['item_name'] ?? '-'),
         'excel_item_name' => (string) ($row['excel_item_name'] ?? ''),
+        'qty_cluster' => (float) ($row['qty_cluster'] ?? 0),
+        'qty_subfeeder' => (float) ($row['qty_subfeeder'] ?? 0),
         'qty_plan' => (float) ($row['qty_boq'] ?? 0),
         'qty_achiev' => (float) ($row['progress_qty'] ?? 0),
         'qty_remaining' => (float) ($row['remaining_qty'] ?? 0),
@@ -147,29 +264,29 @@ foreach ($compareRows as $row) {
             continue;
         }
 
-        if (!isset($historyDateRows[$progressDate])) {
-            $historyDateRows[$progressDate] = [
+        $entryScope = implDetectHistoryScope($entry['scope_type'] ?? '', $entry['remark_progress'] ?? '');
+        $targetHistoryRows = $entryScope === 'SUBFEEDER' ? 'historyDateRowsSubfeeder' : 'historyDateRowsCluster';
+        if (!isset($$targetHistoryRows[$progressDate])) {
+            $$targetHistoryRows[$progressDate] = [
                 'progress_date' => $progressDate,
                 'remark' => [],
                 'achieve' => [],
             ];
         }
 
-        if (!isset($historyDateRows[$progressDate]['achieve'][$itemType])) {
-            $historyDateRows[$progressDate]['achieve'][$itemType] = 0;
+        if (!isset($$targetHistoryRows[$progressDate]['achieve'][$itemType])) {
+            $$targetHistoryRows[$progressDate]['achieve'][$itemType] = 0;
         }
-        $historyDateRows[$progressDate]['achieve'][$itemType] += (float) ($entry['qty_progress'] ?? 0);
+        $$targetHistoryRows[$progressDate]['achieve'][$itemType] += (float) ($entry['qty_progress'] ?? 0);
 
         $remarkValue = trim((string) ($entry['remark_progress'] ?? ''));
         if ($remarkValue !== '') {
-            $historyDateRows[$progressDate]['remark'][] = $remarkValue;
+            $$targetHistoryRows[$progressDate]['remark'][] = $remarkValue;
         }
     }
 }
-
-ksort($historyDateRows);
+$historyDateRows = $historyDateRowsCluster;
 $historyRows = [];
-$historyRunningAchieve = array_fill_keys($historyTypeOrder, 0);
 $historyFinalAchieve = array_fill_keys($historyTypeOrder, 0);
 $galleryRows = [];
 $implementationGalleryGroups = [];
@@ -299,56 +416,21 @@ foreach ((array) ($masterBoqItems ?? []) as $masterItem) {
 }
 $complyBuilderItems = array_values($complyBuilderItems);
 
-ksort($historyDateRows);
-$historyRows = [];
-$historyRunningAchieve = array_fill_keys($historyTypeOrder, 0);
-$historyFinalAchieve = array_fill_keys($historyTypeOrder, 0);
-if (!empty($historyTypeOrder)) {
-    $historyRows[] = [
-        'progress_date' => !empty($cluster['drm_date']) ? (string) $cluster['drm_date'] : (!empty($cluster['boq_approved_at']) ? substr((string) $cluster['boq_approved_at'], 0, 10) : '-'),
-        'remark' => 'BOQ Awal',
-        'achieve' => array_fill_keys($historyTypeOrder, 0),
-    ];
-}
-foreach ($historyDateRows as $progressDate => $entry) {
-    foreach ($historyTypeOrder as $itemType) {
-        $dailyAchieve = (float) ($entry['achieve'][$itemType] ?? 0);
-        $historyRunningAchieve[$itemType] += $dailyAchieve;
-        $historyFinalAchieve[$itemType] = $historyRunningAchieve[$itemType];
-    }
+$historyInitialDate = !empty($cluster['drm_date'])
+    ? (string) $cluster['drm_date']
+    : (!empty($cluster['boq_approved_at']) ? substr((string) $cluster['boq_approved_at'], 0, 10) : '-');
 
-    $remarkPool = array_values(array_filter(array_unique((array) ($entry['remark'] ?? [])), static function ($text) {
-        return trim((string) $text) !== '';
-    }));
-    $manualRemarkPool = array_values(array_filter($remarkPool, static function ($text) {
-        $upper = strtoupper(trim((string) $text));
-        return strpos($upper, '[AUTO]') !== 0
-            && strpos($upper, '[DAILY]') !== 0
-            && strpos($upper, 'UPLOAD FOTO COMPLY -') !== 0;
-    }));
-    $dailyNonBoqRemark = '';
-    if (!empty($entry['daily_non_boq_labels']) && is_array($entry['daily_non_boq_labels'])) {
-        $labels = array_keys($entry['daily_non_boq_labels']);
-        usort($labels, static function ($a, $b) use ($nonBoqLabelOrder) {
-            $indexA = array_search($a, $nonBoqLabelOrder, true);
-            $indexB = array_search($b, $nonBoqLabelOrder, true);
-            $indexA = $indexA === false ? 999 : $indexA;
-            $indexB = $indexB === false ? 999 : $indexB;
-            return $indexA <=> $indexB;
-        });
-        $dailyNonBoqRemark = implode(' / ', $labels);
-    }
-    $finalRemark = !empty($manualRemarkPool)
-        ? implode(' | ', $manualRemarkPool)
-        : ($dailyNonBoqRemark !== '' ? $dailyNonBoqRemark
-        : (!empty($remarkPool) ? implode(' | ', $remarkPool) : 'Progress Harian'));
+$historyBuildCluster = implBuildHistoryRowsByScope($historyDateRowsCluster, $historyTypeOrder, $nonBoqLabelOrder, $historyInitialDate);
+$historyBuildSubfeeder = implBuildHistoryRowsByScope($historyDateRowsSubfeeder, $historyTypeOrder, $nonBoqLabelOrder, $historyInitialDate);
 
-    $historyRows[] = [
-        'progress_date' => $progressDate,
-        'remark' => $finalRemark,
-        'achieve' => $entry['achieve'],
-    ];
-}
+$historyRowsCluster = (array) ($historyBuildCluster['rows'] ?? []);
+$historyRowsSubfeeder = (array) ($historyBuildSubfeeder['rows'] ?? []);
+$historyFinalAchieveCluster = (array) ($historyBuildCluster['final_achieve'] ?? array_fill_keys($historyTypeOrder, 0));
+$historyFinalAchieveSubfeeder = (array) ($historyBuildSubfeeder['final_achieve'] ?? array_fill_keys($historyTypeOrder, 0));
+
+// Backward compatibility for sections that still consume single history dataset.
+$historyRows = $historyRowsCluster;
+$historyFinalAchieve = $historyFinalAchieveCluster;
 foreach ($activityDetailOptions as $activityCode => $optionValues) {
     if (array_values($optionValues) !== $optionValues) {
         $activityDetailOptions[$activityCode] = array_keys($optionValues);
@@ -1658,7 +1740,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                     <div class="impl-history-panel__title">History Progress Cluster</div>
                                     <div class="impl-history-panel__note">Ringkasan plan vs achievement per jenis item dan per tanggal progress.</div>
                                 </div>
-                                <div class="table-responsive">
+                                <div class="font-weight-bold text-dark mb-2">Scope: Cluster</div>
+                                <div class="table-responsive mb-4">
                                     <table class="table table-bordered impl-history-table">
                                         <thead>
                                             <tr>
@@ -1689,12 +1772,12 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php foreach ($historyRows as $index => $historyRow): ?>
+                                            <?php foreach ($historyRowsCluster as $index => $historyRow): ?>
                                                 <tr>
                                                     <td><?= $index + 1 ?></td>
                                                     <td><?= $index === 0 ? implHistoryNumber((float) ($cluster['homepass_drm'] ?? 0), false) : '-' ?></td>
                                                     <?php foreach ($historyTypeOrder as $itemType): ?>
-                                                        <td><?= $index === 0 ? implHistoryNumber((float) ($historyTypePlan[$itemType] ?? 0)) : '-' ?></td>
+                                                        <td><?= $index === 0 ? implHistoryNumber((float) ($historyTypePlanCluster[$itemType] ?? 0)) : '-' ?></td>
                                                         <td><?= implHistoryNumber((float) ($historyRow['achieve'][$itemType] ?? 0)) ?></td>
                                                     <?php endforeach; ?>
                                                     <td>
@@ -1718,7 +1801,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                     <td><?= htmlspecialchars((string) ($historyRow['remark'] ?? '-')) ?></td>
                                                 </tr>
                                             <?php endforeach; ?>
-                                            <?php if (empty($historyRows)): ?>
+                                            <?php if (empty($historyRowsCluster)): ?>
                                                 <tr><td colspan="<?= 4 + (count($historyTypeOrder) * 2) ?>" class="text-center text-muted">Belum ada history implementasi.</td></tr>
                                             <?php endif; ?>
                                         </tbody>
@@ -1727,15 +1810,74 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                 <tr>
                                                     <td colspan="2">Total</td>
                                                     <?php foreach ($historyTypeOrder as $itemType): ?>
-                                                        <td><?= implHistoryNumber((float) ($historyTypePlan[$itemType] ?? 0)) ?></td>
-                                                        <td><?= implHistoryNumber((float) ($historyFinalAchieve[$itemType] ?? 0)) ?></td>
+                                                        <td><?= implHistoryNumber((float) ($historyTypePlanCluster[$itemType] ?? 0)) ?></td>
+                                                        <td><?= implHistoryNumber((float) ($historyFinalAchieveCluster[$itemType] ?? 0)) ?></td>
                                                     <?php endforeach; ?>
                                                     <td colspan="2"></td>
                                                 </tr>
                                                 <tr>
                                                     <td colspan="2">Selisih</td>
                                                     <?php foreach ($historyTypeOrder as $itemType): ?>
-                                                        <td colspan="2"><?= implHistoryNumber((float) (($historyTypePlan[$itemType] ?? 0) - ($historyFinalAchieve[$itemType] ?? 0))) ?></td>
+                                                        <td colspan="2"><?= implHistoryNumber((float) (($historyTypePlanCluster[$itemType] ?? 0) - ($historyFinalAchieveCluster[$itemType] ?? 0))) ?></td>
+                                                    <?php endforeach; ?>
+                                                    <td colspan="2"></td>
+                                                </tr>
+                                            </tfoot>
+                                        <?php endif; ?>
+                                    </table>
+                                </div>
+
+                                <div class="font-weight-bold text-dark mb-2">Scope: Subfeeder</div>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered impl-history-table">
+                                        <thead>
+                                            <tr>
+                                                <th rowspan="2">No</th>
+                                                <th rowspan="2">HP DRM</th>
+                                                <?php foreach ($historyTypeOrder as $itemType): ?>
+                                                    <th colspan="2"><?= htmlspecialchars($itemType) ?></th>
+                                                <?php endforeach; ?>
+                                                <th rowspan="2">Tanggal Progress</th>
+                                                <th rowspan="2">Keterangan</th>
+                                            </tr>
+                                            <tr>
+                                                <?php foreach ($historyTypeOrder as $itemType): ?>
+                                                    <th>PLAN</th>
+                                                    <th>ACHIEV</th>
+                                                <?php endforeach; ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($historyRowsSubfeeder as $index => $historyRow): ?>
+                                                <tr>
+                                                    <td><?= $index + 1 ?></td>
+                                                    <td><?= $index === 0 ? implHistoryNumber((float) ($cluster['homepass_drm'] ?? 0), false) : '-' ?></td>
+                                                    <?php foreach ($historyTypeOrder as $itemType): ?>
+                                                        <td><?= $index === 0 ? implHistoryNumber((float) ($historyTypePlanSubfeeder[$itemType] ?? 0)) : '-' ?></td>
+                                                        <td><?= implHistoryNumber((float) ($historyRow['achieve'][$itemType] ?? 0)) ?></td>
+                                                    <?php endforeach; ?>
+                                                    <td><?= htmlspecialchars((string) ($historyRow['progress_date'] ?? '-')) ?></td>
+                                                    <td><?= htmlspecialchars((string) ($historyRow['remark'] ?? '-')) ?></td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                            <?php if (empty($historyRowsSubfeeder)): ?>
+                                                <tr><td colspan="<?= 4 + (count($historyTypeOrder) * 2) ?>" class="text-center text-muted">Belum ada history implementasi.</td></tr>
+                                            <?php endif; ?>
+                                        </tbody>
+                                        <?php if (!empty($historyTypeOrder)): ?>
+                                            <tfoot>
+                                                <tr>
+                                                    <td colspan="2">Total</td>
+                                                    <?php foreach ($historyTypeOrder as $itemType): ?>
+                                                        <td><?= implHistoryNumber((float) ($historyTypePlanSubfeeder[$itemType] ?? 0)) ?></td>
+                                                        <td><?= implHistoryNumber((float) ($historyFinalAchieveSubfeeder[$itemType] ?? 0)) ?></td>
+                                                    <?php endforeach; ?>
+                                                    <td colspan="2"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="2">Selisih</td>
+                                                    <?php foreach ($historyTypeOrder as $itemType): ?>
+                                                        <td colspan="2"><?= implHistoryNumber((float) (($historyTypePlanSubfeeder[$itemType] ?? 0) - ($historyFinalAchieveSubfeeder[$itemType] ?? 0))) ?></td>
                                                     <?php endforeach; ?>
                                                     <td colspan="2"></td>
                                                 </tr>
@@ -2924,19 +3066,25 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                     boqRowsNode.innerHTML = '<div class="text-muted">Belum ada data breakdown.</div>';
                 } else {
                     var totalPlan = 0;
+                    var totalCluster = 0;
+                    var totalSubfeeder = 0;
                     var totalAchiev = 0;
                     var totalRemain = 0;
                     var totalPhotoTarget = 0;
                     var totalPhotoUploaded = 0;
 
                     var htmlBreakdown = '<div class="table-responsive"><table class="table table-bordered table-sm">';
-                    htmlBreakdown += '<thead><tr><th style="width:60px;">No</th><th>Jenis</th><th style="width:120px;">Plan</th><th style="width:120px;">Achiev</th><th style="width:120px;">Remaining</th><th style="width:150px;">Foto (Upload/Target)</th></tr></thead><tbody>';
+                    htmlBreakdown += '<thead><tr><th style="width:60px;">No</th><th>Jenis</th><th style="width:120px;">Vol Cluster</th><th style="width:130px;">Vol Subfeeder</th><th style="width:120px;">Plan</th><th style="width:120px;">Achiev</th><th style="width:120px;">Remaining</th><th style="width:150px;">Foto (Upload/Target)</th></tr></thead><tbody>';
                     breakdownRows.forEach(function (row, index) {
+                        var qtyCluster = parseFloat(row.qty_cluster || 0);
+                        var qtySubfeeder = parseFloat(row.qty_subfeeder || 0);
                         var plan = parseFloat(row.qty_plan || 0);
                         var achiev = parseFloat(row.qty_achiev || 0);
                         var remain = parseFloat(row.qty_remaining || 0);
                         var photoTarget = parseInt(row.photo_target || 0, 10);
                         var photoUploaded = parseInt(row.photo_uploaded || 0, 10);
+                        totalCluster += qtyCluster;
+                        totalSubfeeder += qtySubfeeder;
                         totalPlan += plan;
                         totalAchiev += achiev;
                         totalRemain += remain;
@@ -2947,14 +3095,16 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         htmlBreakdown += '<tr>';
                         htmlBreakdown += '<td class="text-center">' + (index + 1) + '</td>';
                         htmlBreakdown += '<td>' + escapeAttr(jenis) + '</td>';
-                        htmlBreakdown += '<td class="text-right">' + plan.toFixed(2) + '</td>';
-                        htmlBreakdown += '<td class="text-right">' + achiev.toFixed(2) + '</td>';
-                        htmlBreakdown += '<td class="text-right">' + remain.toFixed(2) + '</td>';
+                        htmlBreakdown += '<td class="text-right">' + Math.round(qtyCluster).toLocaleString('id-ID') + '</td>';
+                        htmlBreakdown += '<td class="text-right">' + Math.round(qtySubfeeder).toLocaleString('id-ID') + '</td>';
+                        htmlBreakdown += '<td class="text-right">' + Math.round(plan).toLocaleString('id-ID') + '</td>';
+                        htmlBreakdown += '<td class="text-right">' + Math.round(achiev).toLocaleString('id-ID') + '</td>';
+                        htmlBreakdown += '<td class="text-right">' + Math.round(remain).toLocaleString('id-ID') + '</td>';
                         htmlBreakdown += '<td class="text-center">' + photoUploaded + ' / ' + photoTarget + '</td>';
                         htmlBreakdown += '</tr>';
                     });
                     htmlBreakdown += '</tbody>';
-                    htmlBreakdown += '<tfoot><tr class="font-weight-bold"><td colspan="2" class="text-right">Total</td><td class="text-right">' + totalPlan.toFixed(2) + '</td><td class="text-right">' + totalAchiev.toFixed(2) + '</td><td class="text-right">' + totalRemain.toFixed(2) + '</td><td class="text-center">' + totalPhotoUploaded + ' / ' + totalPhotoTarget + '</td></tr></tfoot>';
+                    htmlBreakdown += '<tfoot><tr class="font-weight-bold"><td colspan="2" class="text-right">Total</td><td class="text-right">' + Math.round(totalCluster).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalSubfeeder).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalPlan).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalAchiev).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalRemain).toLocaleString('id-ID') + '</td><td class="text-center">' + totalPhotoUploaded + ' / ' + totalPhotoTarget + '</td></tr></tfoot>';
                     htmlBreakdown += '</table></div>';
                     boqRowsNode.innerHTML = htmlBreakdown;
                 }

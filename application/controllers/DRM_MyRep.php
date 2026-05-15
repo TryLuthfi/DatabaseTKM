@@ -1694,11 +1694,41 @@ class DRM_MyRep extends CI_Controller
             return 0;
         }
 
-        if (is_numeric($value)) {
-            return (float) $value;
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return 0;
         }
 
-        $normalized = preg_replace('/[^\d,.\-]/', '', (string) $value);
+        // Format Indonesia ribuan: 1.276 atau 12.345.678 => 1276 / 12345678
+        if (preg_match('/^-?\d{1,3}(\.\d{3})+$/', $raw)) {
+            return (float) str_replace('.', '', $raw);
+        }
+
+        // Format EN ribuan: 1,276 atau 12,345,678 => 1276 / 12345678
+        if (preg_match('/^-?\d{1,3}(,\d{3})+$/', $raw)) {
+            return (float) str_replace(',', '', $raw);
+        }
+
+        // Format Indonesia desimal dengan ribuan: 1.276,50 => 1276.50
+        if (preg_match('/^-?\d{1,3}(\.\d{3})+,\d+$/', $raw)) {
+            $normalized = str_replace('.', '', $raw);
+            $normalized = str_replace(',', '.', $normalized);
+            return (float) $normalized;
+        }
+
+        // Format EN desimal dengan ribuan: 1,276.50 => 1276.50
+        if (preg_match('/^-?\d{1,3}(,\d{3})+\.\d+$/', $raw)) {
+            $normalized = str_replace(',', '', $raw);
+            return (float) $normalized;
+        }
+
+        // Format desimal koma tanpa ribuan: 12,5 => 12.5
+        if (preg_match('/^-?\d+,\d+$/', $raw)) {
+            return (float) str_replace(',', '.', $raw);
+        }
+
+        // Fallback: bersihkan karakter non numeric.
+        $normalized = preg_replace('/[^\d,.\-]/', '', $raw);
         $normalized = str_replace('.', '', $normalized);
         $normalized = str_replace(',', '.', $normalized);
 

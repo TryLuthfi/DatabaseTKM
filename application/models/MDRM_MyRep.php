@@ -1010,7 +1010,9 @@ class MDRM_MyRep extends CI_Model
             return false;
         }
 
-        return $this->db
+        $this->db->trans_start();
+
+        $result = $this->db
             ->where('id_drm_boq', (int) $header['id_drm_boq'])
             ->update('tb_myrep_drm_boq', [
                 'review_status' => 'REJECTED',
@@ -1020,6 +1022,54 @@ class MDRM_MyRep extends CI_Model
                 'ho_review_remark' => $remark !== '' ? $remark : null,
                 'updated_by' => (int) $userId,
             ]);
+
+        if ($result && $this->drmDocumentTablesReady()) {
+            $flowType = $this->resolveDrmDocumentFlowType($scopeType);
+            $documentFiles = $this->db
+                ->select('f.id_doc_file, f.id_doc_package, f.id_doc_item, f.file_name, f.status_file')
+                ->from('tb_myrep_flow_doc_package p')
+                ->join('tb_myrep_flow_doc_file f', 'f.id_doc_package = p.id_doc_package', 'inner')
+                ->where('p.id_myrep_cluster', (int) $clusterId)
+                ->where('p.flow_type', $flowType)
+                ->get()
+                ->result_array();
+
+            $packageIds = [];
+            $rejectedAt = date('Y-m-d H:i:s');
+            foreach ($documentFiles as $file) {
+                $packageIds[(int) $file['id_doc_package']] = true;
+                if (strtoupper((string) ($file['status_file'] ?? '')) !== 'UPLOADED') {
+                    continue;
+                }
+
+                $this->db
+                    ->where('id_doc_file', (int) $file['id_doc_file'])
+                    ->update('tb_myrep_flow_doc_file', [
+                        'status_file' => 'REJECTED',
+                        'remark' => $remark !== '' ? $remark : 'Rejected via BOQ review',
+                        'approved_by' => (int) $userId,
+                        'reviewed_at' => $rejectedAt,
+                    ]);
+
+                $this->createFileLog([
+                    'id_doc_file' => (int) $file['id_doc_file'],
+                    'id_doc_package' => (int) $file['id_doc_package'],
+                    'id_doc_item' => (int) $file['id_doc_item'],
+                    'action_type' => 'REJECT',
+                    'status_after' => 'REJECTED',
+                    'file_name' => (string) ($file['file_name'] ?? ''),
+                    'remark' => $remark !== '' ? $remark : 'Rejected via BOQ review',
+                    'action_by' => (int) $userId,
+                ]);
+            }
+
+            foreach (array_keys($packageIds) as $packageId) {
+                $this->refreshPackageStatus((int) $packageId);
+            }
+        }
+
+        $this->db->trans_complete();
+        return $this->db->trans_status();
     }
 
     public function getDrmFileById($fileId)

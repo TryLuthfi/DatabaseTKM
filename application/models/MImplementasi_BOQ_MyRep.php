@@ -587,7 +587,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         $this->db
-            ->select('bi.id_boq_baseline_item, bi.id_boq_baseline, bi.id_boq_item, bi.qty_boq, bi.jumlah_foto, bi.remarks_rule, bi.target_foto_required, bi.item_note, m.excel_item_name, m.item_name, m.item_type, m.photo_type, m.sort_no')
+            ->select('b.id_myrep_cluster, bi.id_boq_baseline_item, bi.id_boq_baseline, bi.id_boq_item, bi.qty_boq, bi.jumlah_foto, bi.remarks_rule, bi.target_foto_required, bi.item_note, m.excel_item_name, m.item_name, m.item_type, m.photo_type, m.sort_no')
             ->from('tb_myrep_boq_baseline_item bi')
             ->join('tb_myrep_boq_baseline b', 'b.id_boq_baseline = bi.id_boq_baseline', 'inner')
             ->join('md_myrep_boq_item m', 'm.id_boq_item = bi.id_boq_item', 'inner')
@@ -607,8 +607,10 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             return [];
         }
 
+        $scopeQtyMap = $this->getBoqScopeQtyMapByItem((int) $clusterId);
         $baselineItemIds = array_column($rows, 'id_boq_baseline_item');
         $progressMap = $this->getProgressAggregateMap($baselineItemIds);
+        $tiangAdjustedProgressMap = $this->buildTiangAdjustedProgressMap($rows, $progressMap, [$clusterId]);
 
         foreach ($rows as &$row) {
             $aggregate = $progressMap[(int) $row['id_boq_baseline_item']] ?? [
@@ -625,7 +627,10 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             $complyRule = $this->resolveComplyRuleMeta($row);
 
             $qtyBoq = (float) ($row['qty_boq'] ?? 0);
-            $progressQty = (float) ($aggregate['progress_qty'] ?? 0);
+            $baselineItemId = (int) ($row['id_boq_baseline_item'] ?? 0);
+            $progressQty = array_key_exists($baselineItemId, $tiangAdjustedProgressMap)
+                ? (float) $tiangAdjustedProgressMap[$baselineItemId]
+                : (float) ($aggregate['progress_qty'] ?? 0);
             $targetPhoto = (int) ($row['target_foto_required'] ?? 0) + (int) $this->calculateTargetComplyPhotos($qtyBoq, $complyRule);
             $uploadedPhotos = (int) ($aggregate['uploaded_photos'] ?? 0);
 
@@ -640,6 +645,9 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             $row['entry_count'] = (int) ($aggregate['entry_count'] ?? 0);
             $row['last_progress_date'] = $aggregate['last_progress_date'] ?? null;
             $row['completion_percent'] = $qtyBoq > 0 ? min(100, round(($progressQty / $qtyBoq) * 100, 2)) : 0;
+            $boqItemId = (int) ($row['id_boq_item'] ?? 0);
+            $row['qty_cluster'] = (float) (($scopeQtyMap[$boqItemId]['CLUSTER'] ?? 0));
+            $row['qty_subfeeder'] = (float) (($scopeQtyMap[$boqItemId]['SUBFEEDER'] ?? 0));
             $row = array_merge($row, $complyRule);
             $row['implementation_status'] = $this->resolveItemStatus($qtyBoq, $progressQty, $row, $aggregate);
         }
@@ -936,6 +944,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
 
         $baselineItemIds = array_column($baselineRows, 'id_boq_baseline_item');
         $progressMap = $this->getProgressAggregateMap($baselineItemIds);
+        $tiangAdjustedProgressMap = $this->buildTiangAdjustedProgressMap($baselineRows, $progressMap, $clusterIds);
 
         $result = [];
         foreach ($clusterIds as $clusterId) {
@@ -955,11 +964,15 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             ];
             $complyRule = $this->resolveComplyRuleMeta($row);
             $targetComplyPhotos = (int) $this->calculateTargetComplyPhotos((float) ($row['qty_boq'] ?? 0), $complyRule);
+            $baselineItemId = (int) ($row['id_boq_baseline_item'] ?? 0);
+            $progressQty = array_key_exists($baselineItemId, $tiangAdjustedProgressMap)
+                ? (float) $tiangAdjustedProgressMap[$baselineItemId]
+                : (float) ($aggregate['progress_qty'] ?? 0);
 
             $meta = &$result[$clusterId];
             $meta['total_item']++;
             $meta['target_qty_total'] += (float) ($row['qty_boq'] ?? 0);
-            $meta['actual_qty_total'] += (float) ($aggregate['progress_qty'] ?? 0);
+            $meta['actual_qty_total'] += $progressQty;
             $meta['target_photo_total'] += (int) ($row['target_foto_required'] ?? 0) + $targetComplyPhotos;
             $meta['uploaded_photo_total'] += (int) ($aggregate['uploaded_photos'] ?? 0);
             $meta['progress_entry_total'] += (int) ($aggregate['entry_count'] ?? 0);
@@ -972,7 +985,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
 
             $itemStatus = $this->resolveItemStatus(
                 (float) ($row['qty_boq'] ?? 0),
-                (float) ($aggregate['progress_qty'] ?? 0),
+                $progressQty,
                 array_merge($row, $complyRule, [
                     'target_comply_photo_required' => $targetComplyPhotos,
                 ]),
@@ -1282,6 +1295,128 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             'last_progress_date' => null,
             'implementation_status' => 'NOT STARTED',
         ];
+    }
+
+    private function buildTiangAdjustedProgressMap(array $baselineRows, array $progressMap, array $clusterIds = [])
+    {
+        if (empty($baselineRows)) {
+            return [];
+        }
+
+        $clusterIds = array_values(array_filter(array_map('intval', (array) $clusterIds)));
+        if (empty($clusterIds)) {
+            $clusterIds = array_values(array_unique(array_map(static function ($row) {
+                return (int) ($row['id_myrep_cluster'] ?? 0);
+            }, $baselineRows)));
+        }
+
+        $corQtyByCluster = $this->getCorFondationQtyByCluster($clusterIds);
+        $tiangRawTotalByCluster = [];
+
+        foreach ($baselineRows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            $itemType = strtoupper(trim((string) ($row['item_type'] ?? '')));
+            if ($clusterId <= 0 || $itemType !== 'TIANG') {
+                continue;
+            }
+
+            $baselineItemId = (int) ($row['id_boq_baseline_item'] ?? 0);
+            $rawProgress = (float) (($progressMap[$baselineItemId]['progress_qty'] ?? 0));
+            if (!isset($tiangRawTotalByCluster[$clusterId])) {
+                $tiangRawTotalByCluster[$clusterId] = 0;
+            }
+            $tiangRawTotalByCluster[$clusterId] += max($rawProgress, 0);
+        }
+
+        $ratioByCluster = [];
+        foreach ($tiangRawTotalByCluster as $clusterId => $rawTotal) {
+            $corQty = (float) ($corQtyByCluster[$clusterId] ?? 0);
+            if ($rawTotal <= 0) {
+                $ratioByCluster[$clusterId] = 0;
+                continue;
+            }
+            $effectiveTotal = min($rawTotal, max($corQty, 0));
+            $ratioByCluster[$clusterId] = $effectiveTotal / $rawTotal;
+        }
+
+        $adjusted = [];
+        foreach ($baselineRows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            $itemType = strtoupper(trim((string) ($row['item_type'] ?? '')));
+            if ($clusterId <= 0 || $itemType !== 'TIANG') {
+                continue;
+            }
+
+            $baselineItemId = (int) ($row['id_boq_baseline_item'] ?? 0);
+            $qtyBoq = (float) ($row['qty_boq'] ?? 0);
+            $rawProgress = (float) (($progressMap[$baselineItemId]['progress_qty'] ?? 0));
+            $ratio = (float) ($ratioByCluster[$clusterId] ?? 0);
+            $effective = max($rawProgress * $ratio, 0);
+            $adjusted[$baselineItemId] = min($effective, max($qtyBoq, 0));
+        }
+
+        return $adjusted;
+    }
+
+    private function getCorFondationQtyByCluster(array $clusterIds)
+    {
+        $clusterIds = array_values(array_filter(array_map('intval', (array) $clusterIds)));
+        if (empty($clusterIds)) {
+            return [];
+        }
+        if (!$this->activityTablesReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('id_myrep_cluster, COALESCE(SUM(qty_activity), 0) AS cor_qty', false)
+            ->from('tb_myrep_impl_daily_activity')
+            ->where_in('id_myrep_cluster', $clusterIds)
+            ->where('activity_code', 'COR_FONDATION')
+            ->group_by('id_myrep_cluster')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) ($row['id_myrep_cluster'] ?? 0)] = (float) ($row['cor_qty'] ?? 0);
+        }
+        return $map;
+    }
+
+    private function getBoqScopeQtyMapByItem($clusterId)
+    {
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0 || !$this->db->table_exists('tb_myrep_drm_boq') || !$this->db->table_exists('tb_myrep_drm_boq_item')) {
+            return [];
+        }
+
+        $this->db
+            ->select('i.id_boq_item, h.scope_type, COALESCE(i.qty_boq, 0) AS qty_boq', false)
+            ->from('tb_myrep_drm_boq h')
+            ->join('tb_myrep_drm_boq_item i', 'i.id_drm_boq = h.id_drm_boq', 'inner')
+            ->where('h.id_myrep_cluster', $clusterId)
+            ->where("UPPER(COALESCE(h.review_status, '')) = 'APPROVED'", null, false);
+
+        if ($this->db->field_exists('scope_type', 'tb_myrep_drm_boq')) {
+            $this->db->where_in('h.scope_type', ['CLUSTER', 'SUBFEEDER']);
+        }
+
+        $rows = $this->db->get()->result_array();
+        $map = [];
+        foreach ($rows as $row) {
+            $boqItemId = (int) ($row['id_boq_item'] ?? 0);
+            $scope = strtoupper(trim((string) ($row['scope_type'] ?? 'CLUSTER')));
+            if ($boqItemId <= 0 || !in_array($scope, ['CLUSTER', 'SUBFEEDER'], true)) {
+                continue;
+            }
+            if (!isset($map[$boqItemId])) {
+                $map[$boqItemId] = ['CLUSTER' => 0, 'SUBFEEDER' => 0];
+            }
+            $map[$boqItemId][$scope] += (float) ($row['qty_boq'] ?? 0);
+        }
+
+        return $map;
     }
 
     private function deletePhysicalFile($filePath)

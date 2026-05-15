@@ -219,7 +219,11 @@ if (!function_exists('drmScopeText')) {
                     color: #1f2937;
                     margin-bottom: .85rem;
                 }
-
+                .boq-zero-cell {
+                    background-color: #fdecec !important;
+                    color: #9f1239;
+                    font-weight: 600;
+                }
                 .doc-history-list {
                     list-style: none;
                     margin: 0;
@@ -381,6 +385,132 @@ if (!function_exists('drmScopeText')) {
                 </div>
             </div>
 
+            <?php
+            $boqClusterTotal = 0;
+            $boqSubfeederTotal = 0;
+            $boqClusterItems = (array) (($drmScopes['CLUSTER']['boqItems'] ?? []));
+            $boqSubfeederItems = (array) (($drmScopes['SUBFEEDER']['boqItems'] ?? []));
+            foreach ($boqClusterItems as $clusterBoqItem) {
+                $boqClusterTotal += (float) ($clusterBoqItem['qty_boq'] ?? 0);
+            }
+            foreach ($boqSubfeederItems as $subfeederBoqItem) {
+                $boqSubfeederTotal += (float) ($subfeederBoqItem['qty_boq'] ?? 0);
+            }
+            $boqTotal = $boqClusterTotal + $boqSubfeederTotal;
+
+            $boqCombinedRowsMap = [];
+            foreach ($boqClusterItems as $clusterBoqItem) {
+                $boqItemId = (int) ($clusterBoqItem['id_boq_item'] ?? 0);
+                if ($boqItemId <= 0) {
+                    continue;
+                }
+                if (!isset($boqCombinedRowsMap[$boqItemId])) {
+                    $boqCombinedRowsMap[$boqItemId] = [
+                        'id_boq_item' => $boqItemId,
+                        'item_name' => (string) ($clusterBoqItem['item_name'] ?? '-'),
+                        'item_type' => (string) ($clusterBoqItem['item_type'] ?? '-'),
+                        'sort_no' => (int) ($clusterBoqItem['sort_no'] ?? 0),
+                        'qty_cluster' => 0,
+                        'qty_subfeeder' => 0,
+                    ];
+                }
+                $boqCombinedRowsMap[$boqItemId]['qty_cluster'] = (float) ($clusterBoqItem['qty_boq'] ?? 0);
+            }
+            foreach ($boqSubfeederItems as $subfeederBoqItem) {
+                $boqItemId = (int) ($subfeederBoqItem['id_boq_item'] ?? 0);
+                if ($boqItemId <= 0) {
+                    continue;
+                }
+                if (!isset($boqCombinedRowsMap[$boqItemId])) {
+                    $boqCombinedRowsMap[$boqItemId] = [
+                        'id_boq_item' => $boqItemId,
+                        'item_name' => (string) ($subfeederBoqItem['item_name'] ?? '-'),
+                        'item_type' => (string) ($subfeederBoqItem['item_type'] ?? '-'),
+                        'sort_no' => (int) ($subfeederBoqItem['sort_no'] ?? 0),
+                        'qty_cluster' => 0,
+                        'qty_subfeeder' => 0,
+                    ];
+                }
+                $boqCombinedRowsMap[$boqItemId]['qty_subfeeder'] = (float) ($subfeederBoqItem['qty_boq'] ?? 0);
+            }
+
+            $boqCombinedRows = array_values(array_filter($boqCombinedRowsMap, static function ($row) {
+                $qtyCluster = (float) ($row['qty_cluster'] ?? 0);
+                $qtySubfeeder = (float) ($row['qty_subfeeder'] ?? 0);
+                return ($qtyCluster + $qtySubfeeder) > 0;
+            }));
+            usort($boqCombinedRows, static function ($a, $b) {
+                $sortA = (int) ($a['sort_no'] ?? 0);
+                $sortB = (int) ($b['sort_no'] ?? 0);
+                if ($sortA === $sortB) {
+                    return (int) ($a['id_boq_item'] ?? 0) <=> (int) ($b['id_boq_item'] ?? 0);
+                }
+                return $sortA <=> $sortB;
+            });
+            ?>
+
+            <div class="card card-outline card-info shadow-sm">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Ringkasan BOQ</h3>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($boqCombinedRows)): ?>
+                        <div class="drm-form-box mb-0">
+                            <div class="drm-form-box__title">Baseline BOQ Implementasi Cluster</div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Nama Item</th>
+                                            <th>Jenis</th>
+                                            <th>BOQ Cluster</th>
+                                            <th>BOQ Subfeeder</th>
+                                            <th>Total BOQ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($boqCombinedRows as $index => $item): ?>
+                                            <?php
+                                            $qtyCluster = (float) ($item['qty_cluster'] ?? 0);
+                                            $qtySubfeeder = (float) ($item['qty_subfeeder'] ?? 0);
+                                            $qtyItemTotal = $qtyCluster + $qtySubfeeder;
+                                            ?>
+                                            <tr>
+                                                <td><?= $index + 1 ?></td>
+                                                <td><?= htmlspecialchars((string) ($item['item_name'] ?? '-')) ?></td>
+                                                <td><?= htmlspecialchars((string) ($item['item_type'] ?? '-')) ?></td>
+                                                <td class="<?= abs($qtyCluster) < 0.00001 ? 'boq-zero-cell' : '' ?>">
+                                                    <?= abs($qtyCluster) < 0.00001 ? '-' : number_format($qtyCluster, 0, ',', '.') ?>
+                                                </td>
+                                                <td class="<?= abs($qtySubfeeder) < 0.00001 ? 'boq-zero-cell' : '' ?>">
+                                                    <?= abs($qtySubfeeder) < 0.00001 ? '-' : number_format($qtySubfeeder, 0, ',', '.') ?>
+                                                </td>
+                                                <td class="<?= abs($qtyItemTotal) < 0.00001 ? 'boq-zero-cell' : '' ?>">
+                                                    <?= abs($qtyItemTotal) < 0.00001 ? '-' : number_format($qtyItemTotal, 0, ',', '.') ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        <tr class="table-secondary font-weight-bold">
+                                            <td colspan="3" class="text-right">TOTAL</td>
+                                            <td class="<?= abs($boqClusterTotal) < 0.00001 ? 'boq-zero-cell' : '' ?>">
+                                                <?= abs($boqClusterTotal) < 0.00001 ? '-' : number_format($boqClusterTotal, 0, ',', '.') ?>
+                                            </td>
+                                            <td class="<?= abs($boqSubfeederTotal) < 0.00001 ? 'boq-zero-cell' : '' ?>">
+                                                <?= abs($boqSubfeederTotal) < 0.00001 ? '-' : number_format($boqSubfeederTotal, 0, ',', '.') ?>
+                                            </td>
+                                            <td class="<?= abs($boqTotal) < 0.00001 ? 'boq-zero-cell' : '' ?>">
+                                                <?= abs($boqTotal) < 0.00001 ? '-' : number_format($boqTotal, 0, ',', '.') ?>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <div class="card card-outline card-primary shadow-sm">
                 <div class="card-header p-0">
                     <ul class="nav nav-tabs drm-scope-tabs px-3 pt-2 border-bottom-0" role="tablist">
@@ -438,38 +568,6 @@ if (!function_exists('drmScopeText')) {
                                         Struktur <?= htmlspecialchars($scopeLabel) ?> belum siap. Jalankan patch database DRM subfeeder dulu.
                                     </div>
                                 <?php else: ?>
-                                    <?php if (!empty($boqBaselineItems)): ?>
-                                        <div class="card card-outline card-success shadow-sm drm-boq-card">
-                                            <div class="card-header">
-                                                <h3 class="card-title mb-0">Baseline BOQ Implementasi <?= htmlspecialchars(drmScopeText($scopeKey)) ?></h3>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="table-responsive">
-                                                    <table class="table table-bordered table-hover mb-0">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>No</th>
-                                                                <th>Nama Item</th>
-                                                                <th>Jenis</th>
-                                                                <th>Qty BOQ</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <?php foreach ($boqBaselineItems as $index => $item): ?>
-                                                                <tr>
-                                                                    <td><?= $index + 1 ?></td>
-                                                                    <td><?= htmlspecialchars((string) ($item['item_name'] ?? '-')) ?></td>
-                                                                    <td><?= htmlspecialchars((string) ($item['item_type'] ?? '-')) ?></td>
-                                                                    <td><?= number_format((float) ($item['qty_boq'] ?? 0), 2, ',', '.') ?></td>
-                                                                </tr>
-                                                            <?php endforeach; ?>
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-
                                     <div class="card card-outline card-primary shadow-sm drm-doc-card">
                                         <div class="card-header">
                                             <h3 class="card-title mb-0">Dokumen <?= htmlspecialchars($scopeLabel) ?></h3>
@@ -834,14 +932,14 @@ if (!function_exists('drmScopeText')) {
                                     <tbody>
                                         <?php foreach ($boqItems as $index => $item): ?>
                                             <?php $qtyValue = (float) ($item['qty_boq'] ?? 0); ?>
-                                            <tr>
+                                            <tr class="<?= $qtyValue > 0 ? 'table-success' : 'table-light' ?>">
                                                 <td><?= $index + 1 ?></td>
                                                 <td><?= htmlspecialchars((string) ($item['excel_item_name'] ?? '-')) ?></td>
                                                 <td><?= htmlspecialchars((string) ($item['item_name'] ?? '-')) ?></td>
                                                 <td><?= htmlspecialchars((string) ($item['item_type'] ?? '-')) ?></td>
                                                 <td><?= htmlspecialchars((string) ($item['item_satuan'] ?? '-')) ?></td>
                                                 <td>
-                                                    <input type="number" step="0.01" min="0" name="boq_qty[<?= (int) $item['id_boq_item'] ?>]" class="form-control form-control-sm js-modal-boq-qty" value="<?= rtrim(rtrim(number_format($qtyValue, 2, '.', ''), '0'), '.') ?>" <?= $isBoqLocked ? 'readonly' : '' ?>>
+                                                    <input type="number" step="any" min="0" name="boq_qty[<?= (int) $item['id_boq_item'] ?>]" class="form-control form-control-sm js-modal-boq-qty" value="<?= rtrim(rtrim(number_format($qtyValue, 3, '.', ''), '0'), '.') ?>" <?= $isBoqLocked ? 'readonly' : '' ?>>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -928,6 +1026,41 @@ if (!function_exists('drmScopeText')) {
                         <div class="drm-form-box">
                             <div class="drm-form-box__title">Informasi Review</div>
                             <div class="small text-muted">Approve BOQ akan sekaligus meng-approve dokumen <?= htmlspecialchars($scopeLabel) ?> yang sudah berstatus upload.</div>
+                        </div>
+                        <div class="drm-form-box">
+                            <div class="drm-form-box__title">Detail Item BOQ</div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Item di Excel</th>
+                                            <th>Nama Item</th>
+                                            <th>Jenis</th>
+                                            <th>Satuan</th>
+                                            <th>Qty BOQ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($boqItems as $index => $item): ?>
+                                            <?php $qtyValue = (float) ($item['qty_boq'] ?? 0); ?>
+                                            <tr class="<?= $qtyValue > 0 ? 'table-success' : 'table-light' ?>">
+                                                <td><?= $index + 1 ?></td>
+                                                <td><?= htmlspecialchars((string) ($item['excel_item_name'] ?? '-')) ?></td>
+                                                <td><?= htmlspecialchars((string) ($item['item_name'] ?? '-')) ?></td>
+                                                <td><?= htmlspecialchars((string) ($item['item_type'] ?? '-')) ?></td>
+                                                <td><?= htmlspecialchars((string) ($item['item_satuan'] ?? '-')) ?></td>
+                                                <td><?= htmlspecialchars(rtrim(rtrim(number_format($qtyValue, 3, '.', ''), '0'), '.')) ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                        <?php if (empty($boqItems)): ?>
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted">Belum ada item BOQ.</td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6">
