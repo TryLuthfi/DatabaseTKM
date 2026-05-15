@@ -1044,6 +1044,46 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         margin-bottom: 0;
     }
 
+    .impl-history-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .75rem;
+        padding: .75rem 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .impl-history-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        gap: .75rem;
+        padding: .75rem 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: #fff;
+    }
+
+    .impl-history-summary__card {
+        border: 1px solid #dbeafe;
+        border-radius: 10px;
+        padding: .55rem .7rem;
+        background: #f8fbff;
+    }
+
+    .impl-history-summary__label {
+        font-size: .72rem;
+        color: #475569;
+        font-weight: 700;
+    }
+
+    .impl-history-summary__value {
+        font-size: .9rem;
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+
     .impl-gallery-section + .impl-gallery-section {
         margin-top: 1.25rem;
     }
@@ -1740,15 +1780,44 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                     <div class="impl-history-panel__title">History Progress Cluster</div>
                                     <div class="impl-history-panel__note">Ringkasan plan vs achievement per jenis item dan per tanggal progress.</div>
                                 </div>
-                                <div class="font-weight-bold text-dark mb-2">Scope: Cluster</div>
-                                <div class="table-responsive mb-4">
+                                <div class="impl-history-toolbar">
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="Pilih Scope">
+                                        <button type="button" class="btn btn-primary js-history-scope-toggle" data-scope="CLUSTER">Cluster</button>
+                                        <button type="button" class="btn btn-outline-primary js-history-scope-toggle" data-scope="SUBFEEDER">Subfeeder</button>
+                                    </div>
+                                    <div class="custom-control custom-switch">
+                                        <input type="checkbox" class="custom-control-input" id="history_filter_nonzero">
+                                        <label class="custom-control-label" for="history_filter_nonzero">Hanya tampilkan item yang ada progress</label>
+                                    </div>
+                                </div>
+                                <div class="impl-history-summary">
+                                    <div class="impl-history-summary__card">
+                                        <div class="impl-history-summary__label">Scope Aktif</div>
+                                        <div class="impl-history-summary__value" id="history_scope_label">Cluster</div>
+                                    </div>
+                                    <div class="impl-history-summary__card">
+                                        <div class="impl-history-summary__label">Total Plan</div>
+                                        <div class="impl-history-summary__value" id="history_total_plan">-</div>
+                                    </div>
+                                    <div class="impl-history-summary__card">
+                                        <div class="impl-history-summary__label">Total Achievement</div>
+                                        <div class="impl-history-summary__value" id="history_total_achiev">-</div>
+                                    </div>
+                                    <div class="impl-history-summary__card">
+                                        <div class="impl-history-summary__label">Selisih</div>
+                                        <div class="impl-history-summary__value" id="history_total_gap">-</div>
+                                    </div>
+                                </div>
+
+                                <div class="font-weight-bold text-dark mb-2 px-3 pt-2 js-history-scope-title" data-scope-title="CLUSTER">Scope: Cluster</div>
+                                <div class="table-responsive mb-4 js-history-scope-table" data-scope-table="CLUSTER" data-total-plan="<?= htmlspecialchars((string) round(array_sum((array) $historyTypePlanCluster)), ENT_QUOTES) ?>" data-total-achiev="<?= htmlspecialchars((string) round(array_sum((array) $historyFinalAchieveCluster)), ENT_QUOTES) ?>">
                                     <table class="table table-bordered impl-history-table">
                                         <thead>
                                             <tr>
                                                 <th rowspan="2">No</th>
                                                 <th rowspan="2">HP DRM</th>
                                                 <?php foreach ($historyTypeOrder as $itemType): ?>
-                                                    <th colspan="2">
+                                                    <th colspan="2" data-item-group="<?= htmlspecialchars($itemType, ENT_QUOTES) ?>">
                                                         <?= htmlspecialchars($itemType) ?>
                                                         <?php if (!empty($boqTypeBreakdown[$itemType])): ?>
                                                             <button
@@ -1766,8 +1835,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                             </tr>
                                             <tr>
                                                 <?php foreach ($historyTypeOrder as $itemType): ?>
-                                                    <th>PLAN</th>
-                                                    <th>ACHIEV</th>
+                                                    <th data-item-type="<?= htmlspecialchars($itemType, ENT_QUOTES) ?>">PLAN</th>
+                                                    <th data-item-type="<?= htmlspecialchars($itemType, ENT_QUOTES) ?>">ACHIEV</th>
                                                 <?php endforeach; ?>
                                             </tr>
                                         </thead>
@@ -1777,8 +1846,12 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                     <td><?= $index + 1 ?></td>
                                                     <td><?= $index === 0 ? implHistoryNumber((float) ($cluster['homepass_drm'] ?? 0), false) : '-' ?></td>
                                                     <?php foreach ($historyTypeOrder as $itemType): ?>
-                                                        <td><?= $index === 0 ? implHistoryNumber((float) ($historyTypePlanCluster[$itemType] ?? 0)) : '-' ?></td>
-                                                        <td><?= implHistoryNumber((float) ($historyRow['achieve'][$itemType] ?? 0)) ?></td>
+                                                        <?php
+                                                        $planCluster = (float) ($historyTypePlanCluster[$itemType] ?? 0);
+                                                        $achieveCluster = (float) ($historyRow['achieve'][$itemType] ?? 0);
+                                                        ?>
+                                                        <td data-item-type="<?= htmlspecialchars($itemType, ENT_QUOTES) ?>" data-role="plan"><?= $index === 0 ? implHistoryNumber($planCluster) : '-' ?></td>
+                                                        <td data-item-type="<?= htmlspecialchars($itemType, ENT_QUOTES) ?>" data-role="achiev"><?= implHistoryNumber($achieveCluster) ?></td>
                                                     <?php endforeach; ?>
                                                     <td>
                                                         <?php
@@ -1827,23 +1900,23 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                     </table>
                                 </div>
 
-                                <div class="font-weight-bold text-dark mb-2">Scope: Subfeeder</div>
-                                <div class="table-responsive">
+                                <div class="font-weight-bold text-dark mb-2 px-3 pt-2 d-none js-history-scope-title" data-scope-title="SUBFEEDER">Scope: Subfeeder</div>
+                                <div class="table-responsive d-none js-history-scope-table" data-scope-table="SUBFEEDER" data-total-plan="<?= htmlspecialchars((string) round(array_sum((array) $historyTypePlanSubfeeder)), ENT_QUOTES) ?>" data-total-achiev="<?= htmlspecialchars((string) round(array_sum((array) $historyFinalAchieveSubfeeder)), ENT_QUOTES) ?>">
                                     <table class="table table-bordered impl-history-table">
                                         <thead>
                                             <tr>
                                                 <th rowspan="2">No</th>
                                                 <th rowspan="2">HP DRM</th>
                                                 <?php foreach ($historyTypeOrder as $itemType): ?>
-                                                    <th colspan="2"><?= htmlspecialchars($itemType) ?></th>
+                                                    <th colspan="2" data-item-group="<?= htmlspecialchars($itemType, ENT_QUOTES) ?>"><?= htmlspecialchars($itemType) ?></th>
                                                 <?php endforeach; ?>
                                                 <th rowspan="2">Tanggal Progress</th>
                                                 <th rowspan="2">Keterangan</th>
                                             </tr>
                                             <tr>
                                                 <?php foreach ($historyTypeOrder as $itemType): ?>
-                                                    <th>PLAN</th>
-                                                    <th>ACHIEV</th>
+                                                    <th data-item-type="<?= htmlspecialchars($itemType, ENT_QUOTES) ?>">PLAN</th>
+                                                    <th data-item-type="<?= htmlspecialchars($itemType, ENT_QUOTES) ?>">ACHIEV</th>
                                                 <?php endforeach; ?>
                                             </tr>
                                         </thead>
@@ -1853,8 +1926,12 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                     <td><?= $index + 1 ?></td>
                                                     <td><?= $index === 0 ? implHistoryNumber((float) ($cluster['homepass_drm'] ?? 0), false) : '-' ?></td>
                                                     <?php foreach ($historyTypeOrder as $itemType): ?>
-                                                        <td><?= $index === 0 ? implHistoryNumber((float) ($historyTypePlanSubfeeder[$itemType] ?? 0)) : '-' ?></td>
-                                                        <td><?= implHistoryNumber((float) ($historyRow['achieve'][$itemType] ?? 0)) ?></td>
+                                                        <?php
+                                                        $planSubfeeder = (float) ($historyTypePlanSubfeeder[$itemType] ?? 0);
+                                                        $achieveSubfeeder = (float) ($historyRow['achieve'][$itemType] ?? 0);
+                                                        ?>
+                                                        <td data-item-type="<?= htmlspecialchars($itemType, ENT_QUOTES) ?>" data-role="plan"><?= $index === 0 ? implHistoryNumber($planSubfeeder) : '-' ?></td>
+                                                        <td data-item-type="<?= htmlspecialchars($itemType, ENT_QUOTES) ?>" data-role="achiev"><?= implHistoryNumber($achieveSubfeeder) ?></td>
                                                     <?php endforeach; ?>
                                                     <td><?= htmlspecialchars((string) ($historyRow['progress_date'] ?? '-')) ?></td>
                                                     <td><?= htmlspecialchars((string) ($historyRow['remark'] ?? '-')) ?></td>
@@ -3742,5 +3819,166 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         });
 
         syncUnit();
+    })();
+
+    (function () {
+        function formatIdNumber(value) {
+            var num = parseFloat(value || 0);
+            if (!isFinite(num)) {
+                num = 0;
+            }
+            return Math.round(num).toLocaleString('id-ID');
+        }
+
+        var scopeButtons = Array.prototype.slice.call(document.querySelectorAll('.js-history-scope-toggle'));
+        var scopeTitles = Array.prototype.slice.call(document.querySelectorAll('.js-history-scope-title'));
+        var scopeTables = Array.prototype.slice.call(document.querySelectorAll('.js-history-scope-table'));
+        var filterInput = document.getElementById('history_filter_nonzero');
+        var scopeLabel = document.getElementById('history_scope_label');
+        var totalPlanNode = document.getElementById('history_total_plan');
+        var totalAchievNode = document.getElementById('history_total_achiev');
+        var totalGapNode = document.getElementById('history_total_gap');
+        var activeScope = 'CLUSTER';
+
+        if (!scopeButtons.length || !scopeTables.length) {
+            return;
+        }
+
+        function getScopeTable(scope) {
+            for (var i = 0; i < scopeTables.length; i++) {
+                if (scopeTables[i].getAttribute('data-scope-table') === scope) {
+                    return scopeTables[i];
+                }
+            }
+            return null;
+        }
+
+        function applyProgressFilter(scope) {
+            var tableWrap = getScopeTable(scope);
+            if (!tableWrap) {
+                return;
+            }
+
+            var table = tableWrap.querySelector('table');
+            if (!table) {
+                return;
+            }
+
+            var showOnlyProgress = !!(filterInput && filterInput.checked);
+            var itemTypes = {};
+            table.querySelectorAll('td[data-role="achiev"]').forEach(function (cell) {
+                var itemType = cell.getAttribute('data-item-type');
+                if (!itemType) {
+                    return;
+                }
+                if (!itemTypes[itemType]) {
+                    itemTypes[itemType] = { hasProgress: false };
+                }
+                var text = (cell.textContent || '').replace(/\./g, '').replace(',', '.').trim();
+                var value = parseFloat(text || '0');
+                if (isFinite(value) && value > 0) {
+                    itemTypes[itemType].hasProgress = true;
+                }
+            });
+
+            Object.keys(itemTypes).forEach(function (itemType) {
+                var hide = showOnlyProgress && !itemTypes[itemType].hasProgress;
+                var selector = '[data-item-type="' + itemType.replace(/"/g, '\\"') + '"]';
+                table.querySelectorAll(selector).forEach(function (cell) {
+                    if (hide) {
+                        cell.classList.add('d-none');
+                    } else {
+                        cell.classList.remove('d-none');
+                    }
+                });
+                var groupSelector = '[data-item-group="' + itemType.replace(/"/g, '\\"') + '"]';
+                table.querySelectorAll(groupSelector).forEach(function (cell) {
+                    cell.classList.toggle('d-none', hide);
+                });
+            });
+
+            table.querySelectorAll('tbody tr').forEach(function (row, rowIndex) {
+                if (rowIndex === 0) {
+                    row.classList.remove('d-none');
+                    return;
+                }
+                if (!showOnlyProgress) {
+                    row.classList.remove('d-none');
+                    return;
+                }
+                var hasProgress = false;
+                row.querySelectorAll('td[data-role="achiev"]').forEach(function (cell) {
+                    if (cell.classList.contains('d-none')) {
+                        return;
+                    }
+                    var text = (cell.textContent || '').replace(/\./g, '').replace(',', '.').trim();
+                    var value = parseFloat(text || '0');
+                    if (isFinite(value) && value > 0) {
+                        hasProgress = true;
+                    }
+                });
+                row.classList.toggle('d-none', !hasProgress);
+            });
+        }
+
+        function syncSummary(scope) {
+            var tableWrap = getScopeTable(scope);
+            if (!tableWrap) {
+                return;
+            }
+
+            var totalPlan = parseFloat(tableWrap.getAttribute('data-total-plan') || 0);
+            var totalAchiev = parseFloat(tableWrap.getAttribute('data-total-achiev') || 0);
+            var gap = totalPlan - totalAchiev;
+
+            if (scopeLabel) {
+                scopeLabel.textContent = scope === 'SUBFEEDER' ? 'Subfeeder' : 'Cluster';
+            }
+            if (totalPlanNode) {
+                totalPlanNode.textContent = formatIdNumber(totalPlan);
+            }
+            if (totalAchievNode) {
+                totalAchievNode.textContent = formatIdNumber(totalAchiev);
+            }
+            if (totalGapNode) {
+                totalGapNode.textContent = formatIdNumber(gap);
+            }
+        }
+
+        function setScope(scope) {
+            activeScope = scope === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+
+            scopeButtons.forEach(function (button) {
+                var buttonScope = button.getAttribute('data-scope');
+                var active = buttonScope === activeScope;
+                button.classList.toggle('btn-primary', active);
+                button.classList.toggle('btn-outline-primary', !active);
+            });
+
+            scopeTitles.forEach(function (title) {
+                title.classList.toggle('d-none', title.getAttribute('data-scope-title') !== activeScope);
+            });
+
+            scopeTables.forEach(function (tableWrap) {
+                tableWrap.classList.toggle('d-none', tableWrap.getAttribute('data-scope-table') !== activeScope);
+            });
+
+            applyProgressFilter(activeScope);
+            syncSummary(activeScope);
+        }
+
+        scopeButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                setScope(button.getAttribute('data-scope') || 'CLUSTER');
+            });
+        });
+
+        if (filterInput) {
+            filterInput.addEventListener('change', function () {
+                applyProgressFilter(activeScope);
+            });
+        }
+
+        setScope('CLUSTER');
     })();
 </script>
