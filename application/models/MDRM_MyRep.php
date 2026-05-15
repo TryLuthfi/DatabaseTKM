@@ -264,7 +264,7 @@ class MDRM_MyRep extends CI_Model
         }
 
         return $this->db
-            ->select('m.id_boq_item, m.excel_item_name, m.item_name, m.item_type, m.default_photo_qty, m.photo_type, m.remarks_rule AS master_remarks_rule, m.sort_no, h.id_drm_boq, h.review_status, i.id_drm_boq_item, i.qty_boq, i.jumlah_foto, i.remarks_rule, i.target_foto_required, i.item_note')
+            ->select('m.id_boq_item, m.excel_item_name, m.item_name, m.item_type, m.item_satuan, m.default_photo_qty, m.photo_type, m.remarks_rule AS master_remarks_rule, m.sort_no, h.id_drm_boq, h.review_status, i.id_drm_boq_item, i.qty_boq, i.jumlah_foto, i.remarks_rule, i.target_foto_required, i.item_note')
             ->from('md_myrep_boq_item m')
             ->join('tb_myrep_drm_boq h', $joinHeader, 'left', false)
             ->join('tb_myrep_drm_boq_item i', 'i.id_drm_boq = h.id_drm_boq AND i.id_boq_item = m.id_boq_item', 'left')

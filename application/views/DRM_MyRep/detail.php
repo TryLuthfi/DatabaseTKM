@@ -782,7 +782,7 @@ if (!function_exists('drmScopeText')) {
     <div class="modal fade" id="modal-apd-boq-package-<?= strtolower($scopeKey) ?>" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content drm-modal">
-                <form method="post" action="<?= base_url('DRM_MyRep/saveApdBoqPackage') ?>" enctype="multipart/form-data" class="js-apd-boq-form" data-existing-file="<?= $hasApdBoqFile ? '1' : '0' ?>">
+                <form method="post" action="<?= base_url('DRM_MyRep/saveApdBoqPackage') ?>" enctype="multipart/form-data" class="js-apd-boq-form" data-existing-file="<?= $hasApdBoqFile ? '1' : '0' ?>" data-preview-url="<?= base_url('DRM_MyRep/previewApdBoqParse') ?>">
                     <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
                     <input type="hidden" name="scope_type" value="<?= htmlspecialchars($scopeKey) ?>">
                     <div class="modal-header bg-primary text-white">
@@ -817,7 +817,7 @@ if (!function_exists('drmScopeText')) {
                             <?php endif; ?>
                         </div>
 
-                        <div class="drm-form-box">
+                        <div class="drm-form-box js-manual-boq-section" style="display:none;">
                             <div class="drm-form-box__title">Input Jumlah Item Manual</div>
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover mb-0">
@@ -827,6 +827,7 @@ if (!function_exists('drmScopeText')) {
                                             <th>Item di Excel</th>
                                             <th>Nama Item</th>
                                             <th>Jenis Item</th>
+                                            <th>Satuan</th>
                                             <th>Qty BOQ</th>
                                         </tr>
                                     </thead>
@@ -838,6 +839,7 @@ if (!function_exists('drmScopeText')) {
                                                 <td><?= htmlspecialchars((string) ($item['excel_item_name'] ?? '-')) ?></td>
                                                 <td><?= htmlspecialchars((string) ($item['item_name'] ?? '-')) ?></td>
                                                 <td><?= htmlspecialchars((string) ($item['item_type'] ?? '-')) ?></td>
+                                                <td><?= htmlspecialchars((string) ($item['item_satuan'] ?? '-')) ?></td>
                                                 <td>
                                                     <input type="number" step="0.01" min="0" name="boq_qty[<?= (int) $item['id_boq_item'] ?>]" class="form-control form-control-sm js-modal-boq-qty" value="<?= rtrim(rtrim(number_format($qtyValue, 2, '.', ''), '0'), '.') ?>" <?= $isBoqLocked ? 'readonly' : '' ?>>
                                                 </td>
@@ -870,10 +872,36 @@ if (!function_exists('drmScopeText')) {
                                 <label>Remark Upload File</label>
                                 <textarea name="apd_boq_remark" rows="2" class="form-control" placeholder="Catatan upload APD BOQ jika diperlukan"></textarea>
                             </div>
+                            <div class="mt-3 js-apd-boq-alert" style="display:none;"></div>
+                            <div class="mt-3 p-2 border rounded bg-light js-apd-boq-preview" style="display:none;">
+                                <div class="js-apd-boq-loading" style="display:none;">
+                                    <div class="small text-primary mb-2">Sedang parsing APD BOQ, mohon tunggu...</div>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>ID Item</th>
+                                                <th>Item di Excel</th>
+                                                <th>Nama Item</th>
+                                                <th>Jenis</th>
+                                                <th>Satuan</th>
+                                                <th>Qty Hasil Parse</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="js-apd-boq-preview-body">
+                                            <tr><td colspan="6" class="text-muted text-center">Belum ada hasil parsing.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer d-flex justify-content-between">
-                        <div class="text-muted small">File APD BOQ dan BOQ manual harus sama-sama terisi sebelum disimpan.</div>
+                        <div class="text-muted small">Upload APD BOQ dulu, lalu cek hasil parsing sebelum simpan.</div>
                         <div>
                             <?php if (!$isBoqLocked): ?>
                                 <button type="submit" class="btn btn-outline-primary">Simpan Draft</button>
@@ -1070,6 +1098,7 @@ if (!function_exists('drmScopeText')) {
                     if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
                         input.files = event.dataTransfer.files;
                         label.textContent = event.dataTransfer.files[0].name;
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 });
 
@@ -1077,6 +1106,253 @@ if (!function_exists('drmScopeText')) {
                     label.textContent = input.files && input.files.length > 0
                         ? input.files[0].name
                         : 'Belum ada file dipilih';
+                });
+            });
+        }
+
+        function getQtyInputMap(form) {
+            var map = {};
+            var qtyInputs = form.querySelectorAll('.js-modal-boq-qty');
+            Array.prototype.forEach.call(qtyInputs, function (input) {
+                var name = input.getAttribute('name') || '';
+                var match = name.match(/^boq_qty\[(\d+)\]$/);
+                if (match) {
+                    map[match[1]] = input;
+                }
+            });
+            return map;
+        }
+
+        function renderApdBoqPreview(form, payload) {
+            var wrapper = form.querySelector('.js-apd-boq-preview');
+            var manualSection = form.querySelector('.js-manual-boq-section');
+            var loadingEl = form.querySelector('.js-apd-boq-loading');
+            var bodyEl = form.querySelector('.js-apd-boq-preview-body');
+            if (!wrapper || !bodyEl) {
+                return;
+            }
+
+            wrapper.style.display = '';
+            if (loadingEl) {
+                loadingEl.style.display = 'none';
+            }
+
+            var items = Array.isArray(payload.items) ? payload.items : [];
+            if (!items.length) {
+                if (manualSection) {
+                    manualSection.style.display = 'none';
+                }
+                bodyEl.innerHTML = '<tr><td colspan="6" class="text-muted text-center">Tidak ada item yang berhasil diparsing.</td></tr>';
+                return;
+            }
+            if (manualSection) {
+                manualSection.style.display = '';
+            }
+
+            var itemInfoMap = {};
+            var qtyInputs = form.querySelectorAll('.js-modal-boq-qty');
+            Array.prototype.forEach.call(qtyInputs, function (input) {
+                var name = input.getAttribute('name') || '';
+                var match = name.match(/^boq_qty\[(\d+)\]$/);
+                if (!match) {
+                    return;
+                }
+                var id = match[1];
+                var row = input.closest('tr');
+                if (!row) {
+                    return;
+                }
+                var cells = row.querySelectorAll('td');
+                itemInfoMap[id] = {
+                    excelName: cells[1] ? (cells[1].textContent || '').trim() : '-',
+                    itemName: cells[2] ? (cells[2].textContent || '').trim() : '-',
+                    itemType: cells[3] ? (cells[3].textContent || '').trim() : '-',
+                    itemSatuan: cells[4] ? (cells[4].textContent || '').trim() : '-'
+                };
+            });
+
+            var rows = '';
+            items.forEach(function (item) {
+                var id = String(item.id_boq_item || '-');
+                var info = itemInfoMap[id] || { excelName: '-', itemName: '-', itemType: '-', itemSatuan: '-' };
+                rows += '<tr>' +
+                    '<td>' + id + '</td>' +
+                    '<td>' + info.excelName + '</td>' +
+                    '<td>' + info.itemName + '</td>' +
+                    '<td>' + info.itemType + '</td>' +
+                    '<td>' + info.itemSatuan + '</td>' +
+                    '<td>' + (item.qty_boq || 0) + '</td>' +
+                '</tr>';
+            });
+            bodyEl.innerHTML = rows;
+        }
+
+        function renderApdBoqNotice(form, type, message) {
+            var alertHost = form.querySelector('.js-apd-boq-alert');
+            if (!alertHost) {
+                return;
+            }
+            if (!message) {
+                alertHost.style.display = 'none';
+                alertHost.innerHTML = '';
+                return;
+            }
+            var alertClass = type === 'success' ? 'alert-success' : (type === 'warning' ? 'alert-warning' : 'alert-danger');
+            alertHost.style.display = '';
+            alertHost.innerHTML = '<div class="alert ' + alertClass + ' mb-0 py-2 px-3 small">' + message + '</div>';
+        }
+
+        function fillManualQtyFromParsed(form, items) {
+            var map = getQtyInputMap(form);
+            Object.keys(map).forEach(function (id) {
+                map[id].value = '0';
+            });
+
+            items.forEach(function (item) {
+                var id = String(item.id_boq_item || '');
+                var input = map[id];
+                if (!input) {
+                    return;
+                }
+                var qty = parseFloat(item.qty_boq || 0);
+                input.value = qty > 0 ? String(qty) : '';
+            });
+            refreshManualBoqRowColors(form);
+        }
+
+        function refreshManualBoqRowColors(form) {
+            var qtyInputs = form.querySelectorAll('.js-modal-boq-qty');
+            Array.prototype.forEach.call(qtyInputs, function (input) {
+                var row = input.closest('tr');
+                if (!row) {
+                    return;
+                }
+                var qty = parseFloat(input.value || '0');
+                row.classList.remove('table-success', 'table-light');
+                if (qty > 0) {
+                    row.classList.add('table-success');
+                } else {
+                    row.classList.add('table-light');
+                }
+            });
+        }
+
+        function bindApdBoqPreview() {
+            var forms = document.querySelectorAll('.js-apd-boq-form');
+            Array.prototype.forEach.call(forms, function (form) {
+                if (form.dataset.previewBound === '1') {
+                    return;
+                }
+                form.dataset.previewBound = '1';
+
+                var fileInput = form.querySelector('input[name="apd_boq_file"]');
+                if (!fileInput) {
+                    return;
+                }
+                refreshManualBoqRowColors(form);
+
+                var qtyInputs = form.querySelectorAll('.js-modal-boq-qty');
+                Array.prototype.forEach.call(qtyInputs, function (qtyInput) {
+                    qtyInput.addEventListener('input', function () {
+                        refreshManualBoqRowColors(form);
+                    });
+                    qtyInput.addEventListener('change', function () {
+                        refreshManualBoqRowColors(form);
+                    });
+                });
+
+                fileInput.addEventListener('change', function () {
+                    var file = fileInput.files && fileInput.files.length > 0 ? fileInput.files[0] : null;
+                    if (!file) {
+                        console.log('[APD BOQ][Preview] Tidak ada file terpilih.');
+                        return;
+                    }
+                    console.log('[APD BOQ][Preview] File dipilih:', {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type
+                    });
+
+                    var previewUrl = form.getAttribute('data-preview-url') || '';
+                    if (previewUrl === '') {
+                        console.warn('[APD BOQ][Preview] URL preview kosong.');
+                        return;
+                    }
+                    console.log('[APD BOQ][Preview] Mulai request parsing ke:', previewUrl);
+
+                    renderApdBoqPreview(form, {
+                        status: false,
+                        message: 'Memproses parsing file APD BOQ...',
+                        items: [],
+                        warnings: []
+                    });
+                    renderApdBoqNotice(form, '', '');
+                    var loadingEl = form.querySelector('.js-apd-boq-loading');
+                    if (loadingEl) {
+                        loadingEl.style.display = '';
+                    }
+
+                    var fd = new FormData();
+                    fd.append('apd_boq_file', file);
+                    fd.append('scope_type', form.querySelector('input[name="scope_type"]') ? form.querySelector('input[name="scope_type"]').value : 'CLUSTER');
+
+                    fetch(previewUrl, {
+                        method: 'POST',
+                        body: fd,
+                        credentials: 'same-origin'
+                    })
+                    .then(function (response) {
+                        console.log('[APD BOQ][Preview] HTTP status:', response.status);
+                        return response.text().then(function (text) {
+                            var payload = null;
+                            try {
+                                payload = JSON.parse(text);
+                            } catch (e) {
+                                var firstBrace = text.indexOf('{');
+                                var lastBrace = text.lastIndexOf('}');
+                                if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                                    var candidate = text.substring(firstBrace, lastBrace + 1);
+                                    try {
+                                        payload = JSON.parse(candidate);
+                                    } catch (e2) {
+                                        console.error('[APD BOQ][Preview] Response bukan JSON:', text);
+                                        throw new Error('Response preview bukan JSON valid.');
+                                    }
+                                } else {
+                                    console.error('[APD BOQ][Preview] Response bukan JSON:', text);
+                                    throw new Error('Response preview bukan JSON valid.');
+                                }
+                            }
+                            return payload;
+                        });
+                    })
+                    .then(function (payload) {
+                        console.log('[APD BOQ][Preview] Response payload:', payload);
+                        renderApdBoqPreview(form, payload || {});
+                        if (payload && Array.isArray(payload.items) && payload.items.length > 0) {
+                            console.log('[APD BOQ][Preview] Parsing berhasil. Item terpetakan:', payload.items.length, '| warning:', (payload.warnings || []).length);
+                            fillManualQtyFromParsed(form, payload.items);
+                            console.log('[APD BOQ][Preview] Auto-fill qty manual selesai.');
+                            renderApdBoqNotice(form, 'success', 'Parsing APD BOQ berhasil. ' + payload.items.length + ' item terpetakan.');
+                        } else {
+                            console.warn('[APD BOQ][Preview] Parsing tidak menghasilkan item terpetakan.');
+                            renderApdBoqNotice(form, 'warning', 'Parsing APD BOQ selesai, tetapi tidak ada item yang berhasil terpetakan.');
+                        }
+                    })
+                    .catch(function (error) {
+                        console.error('[APD BOQ][Preview] Gagal request preview parsing:', error);
+                        renderApdBoqPreview(form, {
+                            status: false,
+                            message: 'Gagal preview parsing file APD BOQ.',
+                            items: [],
+                            warnings: []
+                        });
+                        var loadingEl = form.querySelector('.js-apd-boq-loading');
+                        if (loadingEl) {
+                            loadingEl.style.display = 'none';
+                        }
+                        renderApdBoqNotice(form, 'error', 'Parsing APD BOQ gagal karena error sistem. Coba ulangi.');
+                    });
                 });
             });
         }
@@ -1099,6 +1375,7 @@ if (!function_exists('drmScopeText')) {
         }
 
         bindDropzones();
+        bindApdBoqPreview();
 
         document.addEventListener('click', function (event) {
             var uploadButton = event.target.closest('.js-open-drm-upload-modal');
@@ -1158,6 +1435,7 @@ if (!function_exists('drmScopeText')) {
             var hasExistingFile = event.target.getAttribute('data-existing-file') === '1';
             var uploadInput = event.target.querySelector('input[name="apd_boq_file"]');
             var hasNewFile = uploadInput && uploadInput.files && uploadInput.files.length > 0;
+            var manualSection = event.target.querySelector('.js-manual-boq-section');
             var hasQty = false;
             var qtyInputs = event.target.querySelectorAll('.js-modal-boq-qty');
 
@@ -1167,9 +1445,10 @@ if (!function_exists('drmScopeText')) {
                 }
             });
 
-            if (!hasQty || (!hasExistingFile && !hasNewFile)) {
+            var manualVisible = manualSection && manualSection.style.display !== 'none';
+            if (!manualVisible || !hasQty || (!hasExistingFile && !hasNewFile)) {
                 event.preventDefault();
-                alert('File APD BOQ dan BOQ manual wajib sama-sama terisi sebelum disimpan.');
+                alert('Upload APD BOQ dan pastikan parsing berhasil dulu sebelum disimpan.');
             }
         });
     })();

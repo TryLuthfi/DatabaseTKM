@@ -762,11 +762,6 @@ class DRM_MyRep extends CI_Controller
         }
 
         $items = $this->collectBoqItemsFromPost();
-        if (empty($items)) {
-            $this->session->set_flashdata('error', 'BOQ manual wajib diisi minimal satu item dengan qty lebih dari nol.');
-            redirect('DRM_MyRep/detail/' . $clusterId);
-            return;
-        }
 
         $hasExistingFile = !empty($docDetail['id_doc_file']);
         $hasNewFile = !empty($_FILES['apd_boq_file']['name']);
@@ -819,6 +814,21 @@ class DRM_MyRep extends CI_Controller
                 redirect('DRM_MyRep/detail/' . $clusterId);
                 return;
             }
+
+            $uploadedFilePath = FCPATH . 'uploads/myrep_drm/' . $fileData['file_name'];
+            $parsedFromFile = $this->collectBoqItemsFromUploadedFile($uploadedFilePath, (string) $fileData['file_name'], $scopeType);
+            if (!empty($parsedFromFile['items'])) {
+                $items = $parsedFromFile['items'];
+                if (!empty($parsedFromFile['warnings'])) {
+                    $this->session->set_flashdata('warning', implode(' ', $parsedFromFile['warnings']));
+                }
+            }
+        }
+
+        if (empty($items)) {
+            $this->session->set_flashdata('error', 'BOQ manual wajib diisi minimal satu item dengan qty lebih dari nol (input manual atau hasil parsing file APD BOQ).');
+            redirect('DRM_MyRep/detail/' . $clusterId);
+            return;
         }
 
         $submitToHo = (int) $this->input->post('submit_to_ho') === 1;
@@ -835,6 +845,424 @@ class DRM_MyRep extends CI_Controller
         $message = $submitToHo ? 'APD BOQ dan BOQ manual berhasil dikirim ke review HO.' : 'APD BOQ dan BOQ manual berhasil disimpan.';
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? $message : 'Gagal menyimpan paket APD BOQ.');
         redirect('DRM_MyRep/detail/' . $clusterId);
+    }
+
+    public function previewApdBoqParse()
+    {
+        $bufferLevel = ob_get_level();
+        ob_start();
+        if (empty($this->session->userdata('id_user'))) {
+            while (ob_get_level() > $bufferLevel) {
+                ob_end_clean();
+            }
+            $this->jsonResponse(false, 'Session login tidak ditemukan.');
+            return;
+        }
+        if (!$this->MDRM_MyRep->drmBoqTablesReady()) {
+            while (ob_get_level() > $bufferLevel) {
+                ob_end_clean();
+            }
+            $this->jsonResponse(false, 'Tabel BOQ DRM belum tersedia.');
+            return;
+        }
+        if (empty($_FILES['apd_boq_file']['name']) || empty($_FILES['apd_boq_file']['tmp_name'])) {
+            while (ob_get_level() > $bufferLevel) {
+                ob_end_clean();
+            }
+            $this->jsonResponse(false, 'File APD BOQ belum dipilih.');
+            return;
+        }
+
+        $scopeType = $this->normalizeScopeType($this->input->post('scope_type'));
+        $result = $this->collectBoqItemsFromUploadedFile(
+            (string) $_FILES['apd_boq_file']['tmp_name'],
+            (string) $_FILES['apd_boq_file']['name'],
+            $scopeType
+        );
+
+        $strayOutput = '';
+        while (ob_get_level() > $bufferLevel) {
+            $strayOutput .= ob_get_clean();
+        }
+
+        $status = !empty($result['items']);
+        $warnings = array_values((array) ($result['warnings'] ?? []));
+        if (trim($strayOutput) !== '') {
+            $warnings[] = 'Terdapat output non-JSON dari library saat parsing dan sudah di-sanitize oleh server.';
+            log_message('error', '[DRM_MyRep][previewApdBoqParse] stray output: ' . substr(strip_tags($strayOutput), 0, 1000));
+        }
+
+        $this->output->set_content_type('application/json')->set_output(json_encode([
+            'status' => $status,
+            'message' => $status
+                ? 'Parsing berhasil: ' . count($result['items']) . ' item terpetakan.'
+                : 'Parsing tidak menghasilkan item yang bisa dipakai.',
+            'items' => array_values((array) ($result['items'] ?? [])),
+            'warnings' => $warnings,
+            'debug' => array_values((array) ($result['debug'] ?? [])),
+        ]));
+    }
+
+    private function collectBoqItemsFromUploadedFile($fullPath, $originalName = '', $scopeType = 'CLUSTER')
+    {
+        $fullPath = trim((string) $fullPath);
+        if ($fullPath === '' || !is_file($fullPath)) {
+            return ['items' => [], 'warnings' => ['File APD BOQ tidak ditemukan untuk diparsing.']];
+        }
+
+        $scopeType = $this->normalizeScopeType($scopeType);
+        $extensionSource = $originalName !== '' ? $originalName : $fullPath;
+        $extension = strtolower(pathinfo($extensionSource, PATHINFO_EXTENSION));
+        if (!in_array($extension, ['xls', 'xlsx', 'csv'], true)) {
+            return ['items' => [], 'warnings' => ['Format APD BOQ bukan xls/xlsx/csv, parsing manual BOQ dilewati.']];
+        }
+        if ($extension === 'xlsx' && !class_exists('ZipArchive')) {
+            return [
+                'items' => [],
+                'warnings' => [
+                    'Server belum mendukung parsing file .xlsx (ekstensi PHP ZipArchive belum aktif). Gunakan .xls/.csv atau aktifkan ekstensi zip di PHP.'
+                ],
+            ];
+        }
+
+        $sheetData = [];
+        $sheetParseCandidates = [];
+        $previousErrorReporting = error_reporting();
+        try {
+            error_reporting($previousErrorReporting & ~E_DEPRECATED & ~E_USER_DEPRECATED & ~E_WARNING & ~E_NOTICE & ~E_USER_WARNING & ~E_USER_NOTICE);
+            $this->loadPHPExcel();
+            if ($extension === 'csv') {
+                $sheetData = $this->readCsvSheetData($fullPath);
+            } else {
+                $excel = PHPExcel_IOFactory::load($fullPath);
+                $worksheets = $excel->getAllSheets();
+                foreach ($worksheets as $worksheet) {
+                    $sheetParseCandidates[] = [
+                        'name' => (string) $worksheet->getTitle(),
+                        'rows' => $worksheet->toArray(null, true, true, true),
+                    ];
+                }
+            }
+        } catch (Exception $e) {
+            log_message('error', '[DRM_MyRep] gagal parsing APD BOQ: ' . $e->getMessage());
+            return ['items' => [], 'warnings' => ['File APD BOQ gagal diparsing, silakan isi manual BOQ seperti biasa.']];
+        } catch (Error $e) {
+            log_message('error', '[DRM_MyRep] gagal parsing APD BOQ (error): ' . $e->getMessage());
+            return ['items' => [], 'warnings' => ['File APD BOQ gagal diparsing karena dependency server belum lengkap.']];
+        } finally {
+            error_reporting($previousErrorReporting);
+        }
+
+        if ($extension === 'csv' && (empty($sheetData) || !is_array($sheetData))) {
+            return ['items' => [], 'warnings' => ['Sheet APD BOQ kosong, parsing manual BOQ dilewati.']];
+        }
+
+        $masterItems = $this->MDRM_MyRep->getBoqMasterItems();
+        $masterMap = [];
+        $masterMeta = [];
+        $masterById = [];
+        foreach ($masterItems as $masterItem) {
+            $id = (int) ($masterItem['id_boq_item'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $masterById[$id] = $masterItem;
+            $excelKey = $this->normalizeBoqItemName((string) ($masterItem['excel_item_name'] ?? ''));
+            $itemKey = $this->normalizeBoqItemName((string) ($masterItem['item_name'] ?? ''));
+            $excelFlat = $this->normalizeBoqItemNameFlat((string) ($masterItem['excel_item_name'] ?? ''));
+            $itemFlat = $this->normalizeBoqItemNameFlat((string) ($masterItem['item_name'] ?? ''));
+            if ($excelKey !== '') {
+                $masterMap[$excelKey] = $id;
+            }
+            if ($itemKey !== '' && !isset($masterMap[$itemKey])) {
+                $masterMap[$itemKey] = $id;
+            }
+            $masterMeta[$id] = [
+                'excel_key' => $excelKey,
+                'item_key' => $itemKey,
+                'excel_flat' => $excelFlat,
+                'item_flat' => $itemFlat,
+            ];
+        }
+
+        $parseSheets = [];
+        if ($extension === 'csv') {
+            $parseSheets[] = [
+                'name' => 'CSV',
+                'rows' => $sheetData,
+            ];
+        } else {
+            $preferredSheetName = $scopeType === 'SUBFEEDER' ? 'BoQ NRO All Feeder' : 'BoQ NRO Cluster';
+            $preferred = [];
+            $others = [];
+            foreach ($sheetParseCandidates as $candidate) {
+                $candidateName = trim((string) ($candidate['name'] ?? ''));
+                if (strcasecmp($candidateName, $preferredSheetName) === 0) {
+                    $preferred[] = $candidate;
+                } else {
+                    $others[] = $candidate;
+                }
+            }
+            $parseSheets = !empty($preferred) ? array_merge($preferred, $others) : $sheetParseCandidates;
+        }
+
+        if (empty($parseSheets)) {
+            return ['items' => [], 'warnings' => ['Tidak ada sheet yang bisa diproses dari file APD BOQ.']];
+        }
+
+        $bestResult = [
+            'sheet_name' => '',
+            'aggregates' => [],
+            'unknown_rows' => [],
+            'mapped_row_count' => 0,
+            'debug' => [],
+        ];
+        foreach ($parseSheets as $sheet) {
+            $sheetRows = (array) ($sheet['rows'] ?? []);
+            $sheetName = (string) ($sheet['name'] ?? 'Sheet');
+            $columnCandidates = [['item' => 'B', 'qty' => 'E']];
+            $detectedColumns = $this->detectBoqColumnsFromSheet($sheetRows);
+            if (!empty($detectedColumns)) {
+                $alreadyExists = false;
+                foreach ($columnCandidates as $candidate) {
+                    if ($candidate['item'] === $detectedColumns['item'] && $candidate['qty'] === $detectedColumns['qty']) {
+                        $alreadyExists = true;
+                        break;
+                    }
+                }
+                if (!$alreadyExists) {
+                    $columnCandidates[] = $detectedColumns;
+                }
+            }
+
+            $aggregates = [];
+            $unknownRows = [];
+            $mappedRowCount = 0;
+            $sheetDebug = [];
+
+            foreach ($columnCandidates as $columnCandidate) {
+                $currentAggregates = [];
+                $currentUnknownRows = [];
+                $currentMappedRowCount = 0;
+                $currentDebug = [];
+                $itemColumn = (string) ($columnCandidate['item'] ?? 'B');
+                $qtyColumn = (string) ($columnCandidate['qty'] ?? 'E');
+
+                foreach ($sheetRows as $rowNumber => $row) {
+                    $itemNameRaw = trim((string) ($row[$itemColumn] ?? ''));
+                    $qtyRaw = $row[$qtyColumn] ?? '';
+                    if ($itemNameRaw === '') {
+                        continue;
+                    }
+
+                    $qty = $this->normalizeNumber($qtyRaw);
+                    if ($qty <= 0) {
+                        continue;
+                    }
+
+                    $normalizedName = $this->normalizeBoqItemName($itemNameRaw);
+                    if ($normalizedName === '') {
+                        continue;
+                    }
+
+                    $boqItemId = $this->resolveBoqItemIdFromName($normalizedName, $masterMap, $masterMeta);
+                    if ($boqItemId <= 0) {
+                        $currentUnknownRows[] = 'Sheet ' . $sheetName . ' [' . $itemColumn . '/' . $qtyColumn . '] baris ' . (int) $rowNumber . ' item "' . $itemNameRaw . '" tidak cocok dengan master BOQ.';
+                        if (count($currentDebug) < 8) {
+                            $currentDebug[] = [
+                                'row' => (int) $rowNumber,
+                                'item_raw' => $itemNameRaw,
+                                'item_normalized' => $normalizedName,
+                                'qty' => $qty,
+                                'matched_id' => 0,
+                                'columns' => $itemColumn . '/' . $qtyColumn,
+                            ];
+                        }
+                        continue;
+                    }
+
+                    $currentMappedRowCount++;
+                    if (!isset($currentAggregates[$boqItemId])) {
+                        $currentAggregates[$boqItemId] = 0;
+                    }
+                    $currentAggregates[$boqItemId] += (float) $qty;
+                    if (count($currentDebug) < 8) {
+                        $currentDebug[] = [
+                            'row' => (int) $rowNumber,
+                            'item_raw' => $itemNameRaw,
+                            'item_normalized' => $normalizedName,
+                            'qty' => $qty,
+                            'matched_id' => (int) $boqItemId,
+                            'columns' => $itemColumn . '/' . $qtyColumn,
+                        ];
+                    }
+                }
+
+                if ($currentMappedRowCount > $mappedRowCount) {
+                    $aggregates = $currentAggregates;
+                    $unknownRows = $currentUnknownRows;
+                    $mappedRowCount = $currentMappedRowCount;
+                    $sheetDebug = $currentDebug;
+                }
+            }
+
+            if ($mappedRowCount > $bestResult['mapped_row_count']) {
+                $bestResult = [
+                    'sheet_name' => $sheetName,
+                    'aggregates' => $aggregates,
+                    'unknown_rows' => $unknownRows,
+                    'mapped_row_count' => $mappedRowCount,
+                    'debug' => $sheetDebug,
+                ];
+            }
+        }
+
+        $aggregates = (array) $bestResult['aggregates'];
+        $unknownRows = (array) $bestResult['unknown_rows'];
+
+        if (empty($aggregates)) {
+            return ['items' => [], 'warnings' => $unknownRows];
+        }
+
+        $items = [];
+        foreach ($aggregates as $boqItemId => $qty) {
+            $masterItem = $masterById[(int) $boqItemId] ?? [];
+            if (empty($masterItem)) {
+                continue;
+            }
+            $photoQty = (int) ($masterItem['default_photo_qty'] ?? 0);
+            $remarksRule = strtoupper(trim((string) ($masterItem['remarks_rule'] ?? 'SESUAI ITEM')));
+            $remarksRule = $remarksRule === 'SAMPLING' ? 'SAMPLING' : 'SESUAI ITEM';
+            $targetFoto = $remarksRule === 'SAMPLING'
+                ? $photoQty
+                : (int) round(((float) $qty) * $photoQty);
+
+            $items[] = [
+                'id_boq_item' => (int) $boqItemId,
+                'qty_boq' => (float) $qty,
+                'jumlah_foto' => max($photoQty, 0),
+                'remarks_rule' => $remarksRule,
+                'target_foto_required' => max($targetFoto, 0),
+                'item_note' => null,
+            ];
+        }
+
+        $warnings = $unknownRows;
+        if ($bestResult['sheet_name'] !== '') {
+            $preferredSheetName = $scopeType === 'SUBFEEDER' ? 'BoQ NRO All Feeder' : 'BoQ NRO Cluster';
+            array_unshift($warnings, 'Sheet parsing terpilih: ' . $bestResult['sheet_name'] . ' (' . (int) $bestResult['mapped_row_count'] . ' baris termapping). Target scope: ' . $scopeType . ' (prefer "' . $preferredSheetName . '").');
+        }
+
+        return ['items' => $items, 'warnings' => $warnings, 'debug' => (array) ($bestResult['debug'] ?? [])];
+    }
+
+    private function normalizeBoqItemName($value)
+    {
+        $value = strtoupper(trim((string) $value));
+        if ($value === '') {
+            return '';
+        }
+
+        $value = preg_replace('/^\s*\d+\s*[.)-]?\s*/', '', $value);
+        $value = str_replace(['“', '”', '’', '`'], "'", $value);
+        $value = str_replace(['—', '–'], '-', $value);
+        $value = preg_replace('/\s+/', ' ', $value);
+        $value = str_replace([' ,', ' .'], [',', '.'], $value);
+        $value = str_replace([' ,', ', ', ' .', '. '], [',', ',', '.', '.'], $value);
+        $value = str_replace([' "', '" ', " '", "' "], ['"', '"', "'", "'"], $value);
+        $value = str_replace('STEL-L003', 'STEL L-003', $value);
+        $value = str_replace('STEL -003', 'STEL L-003', $value);
+        $value = preg_replace('/\s*\/\s*/', '/', $value);
+        return trim((string) $value);
+    }
+
+    private function normalizeBoqItemNameFlat($value)
+    {
+        $value = $this->normalizeBoqItemName($value);
+        if ($value === '') {
+            return '';
+        }
+        $value = preg_replace('/[^A-Z0-9]/', '', $value);
+        return trim((string) $value);
+    }
+
+    private function resolveBoqItemIdFromName($normalizedName, array $masterMap, array $masterMeta)
+    {
+        $normalizedName = trim((string) $normalizedName);
+        if ($normalizedName === '') {
+            return 0;
+        }
+
+        if (isset($masterMap[$normalizedName])) {
+            return (int) $masterMap[$normalizedName];
+        }
+
+        $flat = $this->normalizeBoqItemNameFlat($normalizedName);
+        if ($flat === '') {
+            return 0;
+        }
+
+        foreach ($masterMeta as $id => $meta) {
+            $excelFlat = (string) ($meta['excel_flat'] ?? '');
+            $itemFlat = (string) ($meta['item_flat'] ?? '');
+            if ($flat !== '' && ($flat === $excelFlat || $flat === $itemFlat)) {
+                return (int) $id;
+            }
+        }
+
+        foreach ($masterMeta as $id => $meta) {
+            $excelFlat = (string) ($meta['excel_flat'] ?? '');
+            $itemFlat = (string) ($meta['item_flat'] ?? '');
+            if (
+                ($excelFlat !== '' && (strpos($flat, $excelFlat) !== false || strpos($excelFlat, $flat) !== false)) ||
+                ($itemFlat !== '' && (strpos($flat, $itemFlat) !== false || strpos($itemFlat, $flat) !== false))
+            ) {
+                return (int) $id;
+            }
+        }
+
+        return 0;
+    }
+
+    private function detectBoqColumnsFromSheet(array $sheetRows)
+    {
+        $maxHeaderRow = 25;
+        $itemKeywords = ['ITEM', 'URAIAN', 'PEKERJAAN', 'DESKRIPSI', 'MATERIAL'];
+        $qtyKeywords = ['QTY', 'QUANTITY', 'VOLUME', 'VOL', 'JUMLAH'];
+
+        foreach ($sheetRows as $rowNumber => $row) {
+            if ((int) $rowNumber > $maxHeaderRow) {
+                break;
+            }
+            if (!is_array($row)) {
+                continue;
+            }
+            $itemColumn = '';
+            $qtyColumn = '';
+            foreach ($row as $column => $value) {
+                $text = strtoupper(trim((string) $value));
+                if ($text === '') {
+                    continue;
+                }
+                foreach ($itemKeywords as $keyword) {
+                    if (strpos($text, $keyword) !== false) {
+                        $itemColumn = (string) $column;
+                        break;
+                    }
+                }
+                foreach ($qtyKeywords as $keyword) {
+                    if (strpos($text, $keyword) !== false) {
+                        $qtyColumn = (string) $column;
+                        break;
+                    }
+                }
+            }
+            if ($itemColumn !== '' && $qtyColumn !== '') {
+                return ['item' => $itemColumn, 'qty' => $qtyColumn];
+            }
+        }
+
+        return [];
     }
 
     public function approveBoq()
