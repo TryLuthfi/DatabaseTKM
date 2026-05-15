@@ -1028,9 +1028,10 @@ class MyRepublik_Project extends CI_Controller
                 'claim_qty' => $homepass,
             ];
         }
+        $homepassRfs = $totalClaimQty > 0 ? $totalClaimQty : $homepass;
 
         $statusRfsInput = strtoupper(trim((string) ($row['status_rfs'] ?? '')));
-        $statusRfs = ($homepass > 0 && $totalClaimQty >= $homepass) ? 'FULL RFS' : 'NY RFS';
+        $statusRfs = ($homepassRfs > 0 && $totalClaimQty >= $homepassRfs) ? 'FULL RFS' : 'NY RFS';
         if (in_array($statusRfsInput, ['FULL RFS', 'FULL'], true)) {
             // Explicit override from CSV: force full even if claim qty is still below DRM.
             $statusRfs = 'FULL RFS';
@@ -1051,7 +1052,7 @@ class MyRepublik_Project extends CI_Controller
             'id_target' => (int) ($target['id_target'] ?? 0),
             'cluster_name' => trim((string) ($row['cluster_name'] ?? '')),
             'status_rfs' => $statusRfs,
-            'homepass' => $homepass,
+            'homepass' => $homepassRfs,
             'status_atp' => $statusAtp,
             'email_atp_date' => $emailAtpDate,
             'created_by' => $userId,
@@ -1074,6 +1075,8 @@ class MyRepublik_Project extends CI_Controller
             $claimHasMonthNum = $this->db->field_exists('month_num', 'tb_rfs_myrep_claim');
             $claimHasStatusRfs = $this->db->field_exists('status_rfs', 'tb_rfs_myrep_claim');
             $claimHasStatusClaim = $this->db->field_exists('status_claim', 'tb_rfs_myrep_claim');
+            $claimHasClaimYear = $this->db->field_exists('claim_year', 'tb_rfs_myrep_claim');
+            $claimHasClaimMonth = $this->db->field_exists('claim_month', 'tb_rfs_myrep_claim');
             $claimHasApprovalStatus = $this->db->field_exists('approval_status', 'tb_rfs_myrep_claim');
             $claimHasRpmApprovalStatus = $this->db->field_exists('rpm_approval_status', 'tb_rfs_myrep_claim');
             $claimHasRpmApprovalNote = $this->db->field_exists('rpm_approval_note', 'tb_rfs_myrep_claim');
@@ -1101,6 +1104,12 @@ class MyRepublik_Project extends CI_Controller
                 }
                 if ($claimHasStatusRfs) {
                     $payload['status_rfs'] = $statusRfs;
+                }
+                if ($claimHasClaimYear) {
+                    $payload['claim_year'] = (int) date('Y', strtotime($claimDate));
+                }
+                if ($claimHasClaimMonth) {
+                    $payload['claim_month'] = (int) date('n', strtotime($claimDate));
                 }
                 if ($claimHasStatusClaim) {
                     $payload['status_claim'] = 'APPROVED';

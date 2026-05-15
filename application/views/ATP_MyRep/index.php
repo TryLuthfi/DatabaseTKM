@@ -245,7 +245,7 @@ $summaryCards = [
                                     <th>Cluster</th>
                                     <th>Regional</th>
                                     <th>Kota</th>
-                                    <th>HP</th>
+                                    <th>HP RFS</th>
                                     <th>Tanggal RFS</th>
                                     <th>Email ATP</th>
                                     <th>Tanggal ATP</th>
@@ -320,6 +320,13 @@ $summaryCards = [
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="4" class="text-right">TOTAL HP RFS</th>
+                                    <th class="text-right" id="atp-total-hp-rfs">0</th>
+                                    <th colspan="7"></th>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -651,7 +658,29 @@ $summaryCards = [
         $('#table-atp-myrep').DataTable({
             responsive: true,
             autoWidth: false,
-            order: []
+            order: [],
+            footerCallback: function (row, data, start, end, display) {
+                var api = this.api();
+                var parseNumber = function (value) {
+                    if (typeof value === 'string') {
+                        value = value.replace(/<[^>]*>/g, '');
+                        value = value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+                    }
+                    var parsed = parseFloat(value);
+                    return isNaN(parsed) ? 0 : parsed;
+                };
+
+                var totalHp = api
+                    .column(4, { search: 'applied' })
+                    .data()
+                    .reduce(function (sum, val) {
+                        return sum + parseNumber(val);
+                    }, 0);
+
+                $(api.column(4).footer()).html(
+                    totalHp.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                );
+            }
         });
 
         $('.js-edit-atp').on('click', function () {

@@ -3,7 +3,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MMonitoring_RFS_MyRep extends CI_Model
 {
-    private $rfsReadyStatuses = ['DRM', 'RFS', 'ATP', 'DONE'];
+    private $rfsReadyStatuses = ['DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'];
 
     public function claimSupportsStatusRfs()
     {
@@ -529,7 +529,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
                ON p.cluster_id = c.id_cluster
                AND p.year_num = ?
                AND p.month_num = ?
-             WHERE UPPER(COALESCE(mc.status_current, '')) IN ('DRM', 'RFS', 'ATP', 'DONE')
+             WHERE UPPER(COALESCE(mc.status_current, '')) IN ('DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE')
                ";
 
         $params = [$year, $endMonth];
@@ -999,10 +999,11 @@ class MMonitoring_RFS_MyRep extends CI_Model
             }
 
             $rfsClusterId = (int) ($cluster['rfs_cluster_id'] ?? 0);
-            $homepass = (int) round((float) ($cluster['hp_plan'] ?? 0));
+            $homepassPlan = (int) round((float) ($cluster['hp_plan'] ?? 0));
             $mappedStatus = $this->mapMyrepStatusToRfs((string) ($cluster['status_current'] ?? ''));
 
             if ($rfsClusterId > 0) {
+                $homepass = $this->resolveRfsHomepassFromClaims($rfsClusterId, $homepassPlan);
                 $this->db
                     ->where('id_cluster', $rfsClusterId)
                     ->update('tb_rfs_myrep_cluster', [
@@ -1025,6 +1026,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
             if ($existing) {
                 $rfsClusterId = (int) $existing['id_cluster'];
+                $homepass = $this->resolveRfsHomepassFromClaims($rfsClusterId, $homepassPlan);
                 $this->db
                     ->where('id_cluster', $rfsClusterId)
                     ->update('tb_rfs_myrep_cluster', [
@@ -1032,6 +1034,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
                         'status_rfs' => $mappedStatus,
                     ]);
             } else {
+                $homepass = $homepassPlan;
                 $this->db->insert('tb_rfs_myrep_cluster', [
                     'id_target' => $idTarget,
                     'cluster_name' => $cluster['cluster_name'],
@@ -1099,7 +1102,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
     private function mapMyrepStatusToRfs($statusCurrent)
     {
         $statusCurrent = strtoupper(trim((string) $statusCurrent));
-        if (in_array($statusCurrent, ['RFS', 'ATP', 'DONE'], true)) {
+        if (in_array($statusCurrent, ['RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
             return 'FULL RFS';
         }
 
@@ -1161,5 +1164,25 @@ class MMonitoring_RFS_MyRep extends CI_Model
         }
 
         return null;
+    }
+
+    private function resolveRfsHomepassFromClaims($rfsClusterId, $fallbackHomepass)
+    {
+        $rfsClusterId = (int) $rfsClusterId;
+        $fallbackHomepass = max(0, (int) $fallbackHomepass);
+        if ($rfsClusterId <= 0 || !$this->db->table_exists('tb_rfs_myrep_claim')) {
+            return $fallbackHomepass;
+        }
+
+        $row = $this->db
+            ->select('COALESCE(SUM(claim_qty), 0) AS total_claim', false)
+            ->from('tb_rfs_myrep_claim')
+            ->where('cluster_id', $rfsClusterId)
+            ->where_in('status_claim', ['WAITING APPROVAL RPM', 'WAITING APPROVAL HO', 'APPROVED'])
+            ->get()
+            ->row_array();
+
+        $totalClaim = (int) round((float) ($row['total_claim'] ?? 0));
+        return $totalClaim > 0 ? $totalClaim : $fallbackHomepass;
     }
 }
