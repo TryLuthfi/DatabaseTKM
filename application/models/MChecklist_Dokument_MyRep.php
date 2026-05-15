@@ -261,8 +261,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                     GROUP BY cluster_id
                 ) atp_summary', 'atp_summary.cluster_id = c.id_cluster', 'left')
                 ->where("UPPER(COALESCE(c.status_atp, '')) = 'DONE'", null, false)
-                ->where('atp_summary.actual_atp_date IS NOT NULL', null, false)
-                ->where('atp_summary.actual_atp_date < CURDATE()', null, false);
+                ->where('atp_summary.actual_atp_date IS NOT NULL', null, false);
         }
 
         $rows = $query
@@ -298,8 +297,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                     GROUP BY cluster_id
                 ) atp_summary', 'atp_summary.cluster_id = c.id_cluster', 'left')
                 ->where("UPPER(COALESCE(c.status_atp, '')) = 'DONE'", null, false)
-                ->where('atp_summary.actual_atp_date IS NOT NULL', null, false)
-                ->where('atp_summary.actual_atp_date < CURDATE()', null, false);
+                ->where('atp_summary.actual_atp_date IS NOT NULL', null, false);
         }
 
         $rows = $query
@@ -353,8 +351,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                     GROUP BY cluster_id
                 ) atp_summary', 'atp_summary.cluster_id = c.id_cluster', 'left')
                 ->where("UPPER(COALESCE(c.status_atp, '')) = 'DONE'", null, false)
-                ->where('atp_summary.actual_atp_date IS NOT NULL', null, false)
-                ->where('atp_summary.actual_atp_date < CURDATE()', null, false);
+                ->where('atp_summary.actual_atp_date IS NOT NULL', null, false);
         }
 
         if ($city !== '') {
@@ -423,8 +420,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                     GROUP BY cluster_id
                 ) atp_summary', 'atp_summary.cluster_id = c.id_cluster', 'left')
                 ->where("UPPER(COALESCE(c.status_atp, '')) = 'DONE'", null, false)
-                ->where('atp_summary.actual_atp_date IS NOT NULL', null, false)
-                ->where('atp_summary.actual_atp_date < CURDATE()', null, false);
+                ->where('atp_summary.actual_atp_date IS NOT NULL', null, false);
         }
 
         if ($city !== '') {
@@ -2204,3 +2200,4 @@ class MChecklist_Dokument_MyRep extends CI_Model
             && in_array((string) ($row['status_file'] ?? ''), ['UPLOADED', 'APPROVED'], true);
     }
 }
+

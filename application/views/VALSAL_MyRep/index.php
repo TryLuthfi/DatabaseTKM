@@ -469,6 +469,9 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                             <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-valsal-create">
                                 <i class="fas fa-plus mr-1"></i> Input VALSAL
                             </button>
+                            <button type="button" class="btn budget-btn budget-btn--ghost ml-2" data-toggle="modal" data-target="#modal-valsal-import">
+                                <i class="fas fa-file-import mr-1"></i> Import VALSAL Batch
+                            </button>
                             <a href="<?= base_url('VALSAL_MyRep/downloadReport?city=' . urlencode((string) $selectedCity) . '&status=' . urlencode((string) $selectedStatus)) ?>" class="btn budget-btn budget-btn--success">
                                 <i class="fas fa-download mr-1"></i> Download Report Valsal
                             </a>
@@ -601,6 +604,78 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
 </div>
 
 <?php if ($isReady): ?>
+    <div class="modal fade" id="modal-valsal-import" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xxl" role="document">
+            <div class="modal-content budget-modal valsal-modal-shell">
+                <form id="valsal-import-preview-form" enctype="multipart/form-data">
+                    <div class="modal-header budget-modal__header">
+                        <div>
+                            <span class="budget-modal__eyebrow">VALSAL MyRep</span>
+                            <h5 class="modal-title mb-1">Import VALSAL Batch (Excel/CSV)</h5>
+                            <p class="mb-0 budget-modal__subtitle">Import massal VALSAL. Saat import, data BAK otomatis dibuat/diupdate menjadi DONE.</p>
+                        </div>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="doc-modal-panel mb-3">
+                            <a href="<?= base_url('VALSAL_MyRep/downloadValsalImportTemplate') ?>" class="btn budget-btn budget-btn--success">
+                                <i class="fas fa-download mr-1"></i> Download Format CSV
+                            </a>
+                            <p class="doc-modal-subtitle mt-2 mb-0">
+                                Header utama: <code>cluster_id</code> atau <code>cluster_name</code>, <code>homepass_valsal</code>, <code>status_valsal</code>. Versi lengkap support <code>id_target</code>, <code>city_name</code>, <code>cluster_code</code>, <code>valsal_date</code>, <code>remark_valsal</code>.
+                            </p>
+                        </div>
+                        <div class="doc-modal-panel">
+                            <div class="upload-dropzone" id="valsal-import-dropzone">
+                                <input type="file" id="valsal-import-file-input" name="file_excel" accept=".xls,.xlsx,.csv">
+                                <div class="upload-dropzone-content">
+                                    <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                    <div class="upload-dropzone-title">Drag & drop file import di sini</div>
+                                    <div class="upload-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
+                                    <div class="upload-dropzone-file" id="valsal-import-file-name">Belum ada file dipilih</div>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-2">Format: xls, xlsx, csv. Maksimal 4 MB.</small>
+                        </div>
+                        <div class="doc-modal-panel mb-0">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="doc-modal-title mb-0">Preview Import</div>
+                                <small id="valsal-import-summary" class="text-muted">Belum ada file dipreview</small>
+                            </div>
+                            <div class="table-responsive" style="max-height: 320px;">
+                                <table class="table table-bordered table-sm mb-0" id="table_valsal_import_preview">
+                                    <thead>
+                                        <tr>
+                                            <th>Row</th>
+                                            <th>Cluster ID</th>
+                                            <th>Kota</th>
+                                            <th>Cluster</th>
+                                            <th>Kode Cluster</th>
+                                            <th>HP VALSAL</th>
+                                            <th>Tanggal VALSAL</th>
+                                            <th>Status VALSAL</th>
+                                            <th>Status</th>
+                                            <th>Message</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="10" class="text-center text-muted">Belum ada data preview</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer budget-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                        <button type="button" class="btn budget-btn budget-btn--primary" id="valsal-save-import-btn" disabled>Simpan Hasil Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modal-valsal-create" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content budget-modal valsal-modal-shell">
@@ -1557,7 +1632,10 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
         var valsalPreviewBaseUrl = '<?= base_url('VALSAL_MyRep/previewDocument/') ?>';
         var valsalDownloadBaseUrl = '<?= base_url('VALSAL_MyRep/downloadDocument/') ?>';
         var valsalDownloadBundleBaseUrl = '<?= base_url('VALSAL_MyRep/downloadDocumentBundle/') ?>';
+        var valsalPreviewImportUrl = '<?= base_url('VALSAL_MyRep/previewValsalImport') ?>';
+        var valsalSaveImportUrl = '<?= base_url('VALSAL_MyRep/saveImportedValsal') ?>';
         var currentValsalDetailClusterId = 0;
+        var importedValsalRows = [];
 
         function escapeHtml(value) {
             return String(value == null ? '' : value)
@@ -1734,6 +1812,38 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                     ? input.files[0].name
                     : 'Belum ada file dipilih';
             });
+        }
+
+        function resetValsalImportPreview() {
+            importedValsalRows = [];
+            $('#valsal-import-summary').text('Belum ada file dipreview');
+            $('#valsal-save-import-btn').prop('disabled', true);
+            $('#table_valsal_import_preview tbody').html('<tr><td colspan="10" class="text-center text-muted">Belum ada data preview</td></tr>');
+        }
+
+        function renderValsalImportPreview(rows) {
+            if (!rows || !rows.length) {
+                $('#table_valsal_import_preview tbody').html('<tr><td colspan="10" class="text-center text-muted">Belum ada data preview</td></tr>');
+                return;
+            }
+
+            var html = rows.map(function (row) {
+                var badgeClass = String(row.status || '').toLowerCase() === 'valid' ? 'success' : 'danger';
+                return '<tr>' +
+                    '<td>' + Number(row.row_number || 0) + '</td>' +
+                    '<td>' + Number(row.cluster_id || 0) + '</td>' +
+                    '<td>' + escapeHtml(row.city_name || '-') + '</td>' +
+                    '<td>' + escapeHtml(row.cluster_name || '-') + '</td>' +
+                    '<td>' + escapeHtml(row.cluster_code || '-') + '</td>' +
+                    '<td class="text-right">' + Number(row.homepass_valsal || 0).toLocaleString('id-ID') + '</td>' +
+                    '<td>' + escapeHtml(row.valsal_date || '-') + '</td>' +
+                    '<td>' + escapeHtml(row.status_valsal || '-') + '</td>' +
+                    '<td><span class="badge badge-' + badgeClass + '">' + escapeHtml(row.status || '-') + '</span></td>' +
+                    '<td>' + escapeHtml(row.message || '-') + '</td>' +
+                '</tr>';
+            }).join('');
+
+            $('#table_valsal_import_preview tbody').html(html);
         }
 
         function updateValsalCreateSubmitState() {
@@ -2253,6 +2363,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             });
 
             bindDropzone('#valsal-upload-dropzone', '#valsal-upload-file-input', '#valsal-upload-file-name');
+            bindDropzone('#valsal-import-dropzone', '#valsal-import-file-input', '#valsal-import-file-name');
             $('.create-doc-input').each(function () {
                 var inputId = this.id;
                 if (!inputId) {
@@ -2263,6 +2374,74 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                 bindDropzone('#valsal-create-dropzone-' + suffix, '#' + inputId, '#valsal-create-file-name-' + suffix);
             });
             updateValsalCreateSubmitState();
+
+            $('#modal-valsal-import').on('shown.bs.modal', function () {
+                resetValsalImportPreview();
+                $('#valsal-import-file-input').val('');
+                $('#valsal-import-file-name').text('Belum ada file dipilih');
+            });
+
+            $('#valsal-import-file-input').on('change', function () {
+                var file = this.files && this.files[0] ? this.files[0] : null;
+                if (!file) {
+                    return;
+                }
+
+                var formData = new FormData($('#valsal-import-preview-form')[0]);
+                formData.set('file_excel', file);
+                $('#valsal-import-summary').text('Memproses preview...');
+
+                $.ajax({
+                    url: valsalPreviewImportUrl,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    success: function (response) {
+                        if (!response || !response.status) {
+                            resetValsalImportPreview();
+                            alert(response && response.message ? response.message : 'Preview import VALSAL gagal.');
+                            return;
+                        }
+
+                        importedValsalRows = response.valid_rows || [];
+                        $('#valsal-import-summary').text(response.message || 'Preview selesai');
+                        $('#valsal-save-import-btn').prop('disabled', !importedValsalRows.length);
+                        renderValsalImportPreview(response.rows || []);
+                    },
+                    error: function () {
+                        resetValsalImportPreview();
+                        alert('Terjadi kesalahan saat preview import VALSAL.');
+                    }
+                });
+            });
+
+            $('#valsal-save-import-btn').on('click', function () {
+                if (!importedValsalRows.length) {
+                    alert('Belum ada data valid untuk disimpan.');
+                    return;
+                }
+
+                $.ajax({
+                    url: valsalSaveImportUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { rows_json: JSON.stringify(importedValsalRows) },
+                    success: function (response) {
+                        if (response && response.status) {
+                            alert(response.message || 'Import VALSAL berhasil.');
+                            window.location.reload();
+                            return;
+                        }
+
+                        alert(response && response.message ? response.message : 'Gagal menyimpan import VALSAL.');
+                    },
+                    error: function () {
+                        alert('Terjadi kesalahan saat menyimpan import VALSAL.');
+                    }
+                });
+            });
         });
     })();
 </script>

@@ -385,6 +385,9 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                             <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-bak-create">
                                 <i class="fas fa-plus mr-1"></i> Input BAK
                             </button>
+                            <button type="button" class="btn budget-btn budget-btn--ghost ml-2" data-toggle="modal" data-target="#modal-bak-import">
+                                <i class="fas fa-file-import mr-1"></i> Import Cluster Batch
+                            </button>
                             <a href="<?= base_url('BAK_MyRep/downloadReport?city=' . urlencode((string) $selectedCity) . '&status=' . urlencode((string) $selectedStatus)) ?>" class="btn budget-btn budget-btn--success">
                                 <i class="fas fa-download mr-1"></i> Download Report BAK
                             </a>
@@ -511,6 +514,80 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
 </div>
 
 <?php if ($isReady): ?>
+    <div class="modal fade" id="modal-bak-import" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content budget-modal bak-modal-shell">
+                <form id="bak-import-preview-form" enctype="multipart/form-data">
+                    <div class="modal-header budget-modal__header">
+                        <div>
+                            <span class="budget-modal__eyebrow">BAK MyRep</span>
+                            <h5 class="modal-title mb-1">Import Cluster Batch (Excel/CSV)</h5>
+                            <p class="mb-0 budget-modal__subtitle">Upload file untuk import massal cluster BAK. Status BAK default mengikuti form BAK (`ON REVIEW`).</p>
+                        </div>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="doc-modal-panel mb-3">
+                            <a href="<?= base_url('BAK_MyRep/downloadClusterImportTemplate') ?>" class="btn budget-btn budget-btn--success">
+                                <i class="fas fa-download mr-1"></i> Download Format CSV
+                            </a>
+                            <p class="doc-modal-subtitle mt-2 mb-0">
+                                Header wajib: <code>cluster_name</code>, <code>homepass_bak</code>, dan salah satu <code>id_target</code> / <code>city_name</code>. Versi lengkap support <code>cluster_code</code>, <code>district_id/district_name</code>, <code>village_id/village_name</code>, <code>ba_open_date</code>, <code>bak_date</code>, <code>remark_bak</code>. Kolom <code>status_bak</code> opsional.
+                            </p>
+                        </div>
+                        <div class="doc-modal-panel">
+                            <div class="upload-dropzone" id="bak-import-dropzone">
+                                <input type="file" id="bak-import-file-input" name="file_excel" accept=".xls,.xlsx,.csv">
+                                <div class="upload-dropzone-content">
+                                    <div class="upload-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                    <div class="upload-dropzone-title">Drag & drop file import di sini</div>
+                                    <div class="upload-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
+                                    <div class="upload-dropzone-file" id="bak-import-file-name">Belum ada file dipilih</div>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-2">Format: xls, xlsx, csv. Maksimal 4 MB.</small>
+                        </div>
+                        <div class="doc-modal-panel mb-0">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="doc-modal-title mb-0">Preview Import</div>
+                                <small id="bak-import-summary" class="text-muted">Belum ada file dipreview</small>
+                            </div>
+                            <div class="table-responsive" style="max-height: 320px;">
+                                <table class="table table-bordered table-sm mb-0" id="table_bak_import_preview">
+                                    <thead>
+                                        <tr>
+                                            <th>Row</th>
+                                            <th>Kota</th>
+                                            <th>Cluster</th>
+                                            <th>Kode Cluster</th>
+                                            <th>Kecamatan</th>
+                                            <th>Kelurahan</th>
+                                            <th>Homepass</th>
+                                            <th>BA OPEN</th>
+                                            <th>BAK</th>
+                                            <th>Status BAK</th>
+                                            <th>Status</th>
+                                            <th>Message</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="11" class="text-center text-muted">Belum ada data preview</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer budget-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                        <button type="button" class="btn budget-btn budget-btn--primary" id="bak-save-import-btn" disabled>Simpan Hasil Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modal-bak-create" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content budget-modal bak-modal-shell">
@@ -1502,7 +1579,10 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
         var bakDownloadBundleBaseUrl = '<?= base_url('BAK_MyRep/downloadDocumentBundle/') ?>';
         var bakDistrictOptionsUrl = '<?= base_url('BAK_MyRep/getDistrictOptions') ?>';
         var bakVillageOptionsUrl = '<?= base_url('BAK_MyRep/getVillageOptions') ?>';
+        var bakPreviewImportUrl = '<?= base_url('BAK_MyRep/previewClusterImport') ?>';
+        var bakSaveImportUrl = '<?= base_url('BAK_MyRep/saveImportedClusters') ?>';
         var currentBakDetailClusterId = 0;
+        var importedBakRows = [];
 
         function getBakStatusBadgeClass(statusLabel) {
             var value = String(statusLabel || '').toUpperCase().trim();
@@ -1762,6 +1842,40 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                     ? input.files[0].name
                     : 'Belum ada file dipilih';
             });
+        }
+
+        function resetBakImportPreview() {
+            importedBakRows = [];
+            $('#bak-import-summary').text('Belum ada file dipreview');
+            $('#bak-save-import-btn').prop('disabled', true);
+            $('#table_bak_import_preview tbody').html('<tr><td colspan="11" class="text-center text-muted">Belum ada data preview</td></tr>');
+        }
+
+        function renderBakImportPreview(rows) {
+            if (!rows || !rows.length) {
+                $('#table_bak_import_preview tbody').html('<tr><td colspan="11" class="text-center text-muted">Belum ada data preview</td></tr>');
+                return;
+            }
+
+            var html = rows.map(function (row) {
+                var badgeClass = String(row.status || '').toLowerCase() === 'valid' ? 'success' : 'danger';
+                return '<tr>' +
+                    '<td>' + Number(row.row_number || 0) + '</td>' +
+                    '<td>' + escapeHtml(row.city_name || '-') + '</td>' +
+                    '<td>' + escapeHtml(row.cluster_name || '-') + '</td>' +
+                    '<td>' + escapeHtml(row.cluster_code || '-') + '</td>' +
+                    '<td>' + escapeHtml(row.district_name || row.district_id || '-') + '</td>' +
+                    '<td>' + escapeHtml(row.village_name || row.village_id || '-') + '</td>' +
+                    '<td class="text-right">' + Number(row.homepass_bak || 0).toLocaleString('id-ID') + '</td>' +
+                    '<td>' + escapeHtml(row.ba_open_date || '-') + '</td>' +
+                    '<td>' + escapeHtml(row.bak_date || '-') + '</td>' +
+                    '<td>' + escapeHtml(row.status_bak || '-') + '</td>' +
+                    '<td><span class="badge badge-' + badgeClass + '">' + escapeHtml(row.status || '-') + '</span></td>' +
+                    '<td>' + escapeHtml(row.message || '-') + '</td>' +
+                '</tr>';
+            }).join('');
+
+            $('#table_bak_import_preview tbody').html(html);
         }
 
         function updateBakCreateSubmitState() {
@@ -2237,6 +2351,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
             });
 
             bindDropzone('#bak-upload-dropzone', '#bak-upload-file-input', '#bak-upload-file-name');
+            bindDropzone('#bak-import-dropzone', '#bak-import-file-input', '#bak-import-file-name');
             $('.create-doc-input').each(function () {
                 var inputId = this.id;
                 if (!inputId) {
@@ -2247,6 +2362,74 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 bindDropzone('#bak-create-dropzone-' + suffix, '#' + inputId, '#bak-create-file-name-' + suffix);
             });
             updateBakCreateSubmitState();
+
+            $('#modal-bak-import').on('shown.bs.modal', function () {
+                resetBakImportPreview();
+                $('#bak-import-file-input').val('');
+                $('#bak-import-file-name').text('Belum ada file dipilih');
+            });
+
+            $('#bak-import-file-input').on('change', function () {
+                var file = this.files && this.files[0] ? this.files[0] : null;
+                if (!file) {
+                    return;
+                }
+
+                var formData = new FormData($('#bak-import-preview-form')[0]);
+                formData.set('file_excel', file);
+                $('#bak-import-summary').text('Memproses preview...');
+
+                $.ajax({
+                    url: bakPreviewImportUrl,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    success: function (response) {
+                        if (!response || !response.status) {
+                            resetBakImportPreview();
+                            alert(response && response.message ? response.message : 'Preview import cluster BAK gagal.');
+                            return;
+                        }
+
+                        importedBakRows = response.valid_rows || [];
+                        $('#bak-import-summary').text(response.message || 'Preview selesai');
+                        $('#bak-save-import-btn').prop('disabled', !importedBakRows.length);
+                        renderBakImportPreview(response.rows || []);
+                    },
+                    error: function () {
+                        resetBakImportPreview();
+                        alert('Terjadi kesalahan saat preview import cluster BAK.');
+                    }
+                });
+            });
+
+            $('#bak-save-import-btn').on('click', function () {
+                if (!importedBakRows.length) {
+                    alert('Belum ada data valid untuk disimpan.');
+                    return;
+                }
+
+                $.ajax({
+                    url: bakSaveImportUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { rows_json: JSON.stringify(importedBakRows) },
+                    success: function (response) {
+                        if (response && response.status) {
+                            alert(response.message || 'Import cluster BAK berhasil.');
+                            window.location.reload();
+                            return;
+                        }
+
+                        alert(response && response.message ? response.message : 'Gagal menyimpan import cluster BAK.');
+                    },
+                    error: function () {
+                        alert('Terjadi kesalahan saat menyimpan import cluster BAK.');
+                    }
+                });
+            });
         });
     })();
 </script>

@@ -206,6 +206,9 @@ if (!function_exists('drmBadgeClass')) {
                             <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-drm-create">
                                 <i class="fas fa-plus mr-1"></i> Input DRM
                             </button>
+                            <button type="button" class="btn budget-btn budget-btn--ghost ml-2" data-toggle="modal" data-target="#modal-drm-import">
+                                <i class="fas fa-file-import mr-1"></i> Import DRM
+                            </button>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -296,6 +299,61 @@ if (!function_exists('drmBadgeClass')) {
 </div>
 
 <?php if ($isReady): ?>
+    <div class="modal fade" id="modal-drm-import" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xxl" role="document">
+            <div class="modal-content budget-modal drm-modal-shell">
+                <form id="drm-import-preview-form" enctype="multipart/form-data">
+                    <div class="modal-header budget-modal__header">
+                        <div>
+                            <div class="budget-modal__eyebrow">DRM MyRep</div>
+                            <h5 class="modal-title mb-1">Import DRM (Excel/CSV)</h5>
+                            <p class="budget-modal__subtitle mb-0">Auto-create cluster jika belum ada, auto BAK DONE, auto VALSAL DONE, auto BATCH RELEASED, lalu input DRM.</p>
+                        </div>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="drm-form-section">
+                            <a href="<?= base_url('DRM_MyRep/downloadDrmImportTemplate') ?>" class="btn budget-btn budget-btn--success">
+                                <i class="fas fa-download mr-1"></i> Download Format CSV
+                            </a>
+                        </div>
+                        <div class="drm-form-section">
+                            <div class="batch-dropzone" id="drm-import-dropzone">
+                                <input type="file" id="drm-import-file-input" name="file_excel" accept=".xls,.xlsx,.csv">
+                                <div class="batch-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                <div class="batch-dropzone-title">Drag & drop file import di sini</div>
+                                <div class="batch-dropzone-text">Atau klik area ini untuk memilih file</div>
+                                <div class="batch-dropzone-file" id="drm-import-file-name">Belum ada file dipilih</div>
+                            </div>
+                        </div>
+                        <div class="drm-form-section mb-0">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="drm-form-section__title mb-0">Preview Import</div>
+                                <small id="drm-import-summary" class="text-muted">Belum ada file dipreview</small>
+                            </div>
+                            <div class="table-responsive" style="max-height:320px;">
+                                <table class="table table-bordered table-sm mb-0" id="table_drm_import_preview">
+                                    <thead>
+                                        <tr>
+                                            <th>Row</th><th>Cluster</th><th>Kota</th><th>HP DRM</th><th>Tanggal DRM</th><th>Status</th><th>Message</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="7" class="text-center text-muted">Belum ada data preview</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer budget-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                        <button type="button" class="btn budget-btn budget-btn--primary" id="drm-save-import-btn" disabled>Simpan Hasil Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modal-drm-create" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content budget-modal drm-modal-shell">
@@ -607,6 +665,52 @@ if (!function_exists('drmBadgeClass')) {
         max-width: 78vw;
     }
 
+    .batch-dropzone {
+        border: 2px dashed #94c8ff;
+        border-radius: 14px;
+        background: linear-gradient(180deg, #f6fbff, #edf6ff);
+        padding: 1.2rem;
+        text-align: center;
+        position: relative;
+        transition: border-color .2s ease, background .2s ease;
+    }
+
+    .batch-dropzone.dragover {
+        border-color: #1d7ed6;
+        background: #e8f3ff;
+    }
+
+    .batch-dropzone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .batch-dropzone-icon {
+        font-size: 1.8rem;
+        color: #198754;
+        margin-bottom: .5rem;
+    }
+
+    .batch-dropzone-title {
+        font-weight: 700;
+        color: #166534;
+        margin-bottom: .2rem;
+    }
+
+    .batch-dropzone-text {
+        color: #4b5563;
+        font-size: .9rem;
+        margin-bottom: .3rem;
+    }
+
+    .batch-dropzone-file {
+        color: #0f766e;
+        font-weight: 600;
+        font-size: .88rem;
+    }
+
     .select2-container--open {
         z-index: 1065;
     }
@@ -644,6 +748,10 @@ if (!function_exists('drmBadgeClass')) {
 
 <script>
     (function () {
+        var drmPreviewImportUrl = '<?= base_url('DRM_MyRep/previewDrmImport') ?>';
+        var drmSaveImportUrl = '<?= base_url('DRM_MyRep/saveImportedDrm') ?>';
+        var importedDrmRows = [];
+
         function initDrmSelects() {
             var $modal = $('#modal-drm-create');
             if (!$.fn.select2 || !$modal.length) {
@@ -799,6 +907,60 @@ if (!function_exists('drmBadgeClass')) {
             }
         }
 
+        function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
+            var dropzone = document.querySelector(dropzoneSelector);
+            var input = document.querySelector(inputSelector);
+            var label = document.querySelector(labelSelector);
+            if (!dropzone || !input || !label) { return; }
+
+            ['dragenter', 'dragover'].forEach(function (eventName) {
+                dropzone.addEventListener(eventName, function (e) {
+                    e.preventDefault(); e.stopPropagation(); dropzone.classList.add('dragover');
+                });
+            });
+            ['dragleave', 'drop'].forEach(function (eventName) {
+                dropzone.addEventListener(eventName, function (e) {
+                    e.preventDefault(); e.stopPropagation(); dropzone.classList.remove('dragover');
+                });
+            });
+            dropzone.addEventListener('drop', function (e) {
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    input.files = e.dataTransfer.files;
+                    label.textContent = e.dataTransfer.files[0].name;
+                }
+            });
+            input.addEventListener('change', function () {
+                label.textContent = (input.files && input.files.length > 0) ? input.files[0].name : 'Belum ada file dipilih';
+            });
+        }
+
+        function resetDrmImportPreview() {
+            importedDrmRows = [];
+            $('#drm-import-summary').text('Belum ada file dipreview');
+            $('#drm-save-import-btn').prop('disabled', true);
+            $('#table_drm_import_preview tbody').html('<tr><td colspan="7" class="text-center text-muted">Belum ada data preview</td></tr>');
+        }
+
+        function renderDrmImportPreview(rows) {
+            if (!rows || !rows.length) {
+                $('#table_drm_import_preview tbody').html('<tr><td colspan="7" class="text-center text-muted">Belum ada data preview</td></tr>');
+                return;
+            }
+            var html = rows.map(function (row) {
+                var badgeClass = String(row.status || '').toLowerCase() === 'valid' ? 'success' : 'danger';
+                return '<tr>' +
+                    '<td>' + Number(row.row_number || 0) + '</td>' +
+                    '<td>' + (row.cluster_name || '-') + '</td>' +
+                    '<td>' + (row.city_name || '-') + '</td>' +
+                    '<td class="text-right">' + Number(row.homepass_drm || 0).toLocaleString('id-ID') + '</td>' +
+                    '<td>' + (row.drm_date || '-') + '</td>' +
+                    '<td><span class="badge badge-' + badgeClass + '">' + (row.status || '-') + '</span></td>' +
+                    '<td>' + (row.message || '-') + '</td>' +
+                '</tr>';
+            }).join('');
+            $('#table_drm_import_preview tbody').html(html);
+        }
+
         $(function () {
             if ($.fn.DataTable) {
                 $('#table_drm_myrep').DataTable({
@@ -850,6 +1012,69 @@ if (!function_exists('drmBadgeClass')) {
             $(document).on('input blur', '.js-number-format', function () {
                 applyNumberFormatting($(this));
             });
+
+            $('#modal-drm-import').on('shown.bs.modal', function () {
+                resetDrmImportPreview();
+                $('#drm-import-file-input').val('');
+                $('#drm-import-file-name').text('Belum ada file dipilih');
+            });
+
+            $('#drm-import-file-input').on('change', function () {
+                var file = this.files && this.files[0] ? this.files[0] : null;
+                if (!file) { return; }
+                var formData = new FormData($('#drm-import-preview-form')[0]);
+                formData.set('file_excel', file);
+                $('#drm-import-summary').text('Memproses preview...');
+                $.ajax({
+                    url: drmPreviewImportUrl,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    success: function (response) {
+                        if (!response || !response.status) {
+                            resetDrmImportPreview();
+                            alert(response && response.message ? response.message : 'Preview import DRM gagal.');
+                            return;
+                        }
+                        importedDrmRows = response.valid_rows || [];
+                        $('#drm-import-summary').text(response.message || 'Preview selesai');
+                        $('#drm-save-import-btn').prop('disabled', !importedDrmRows.length);
+                        renderDrmImportPreview(response.rows || []);
+                    },
+                    error: function () {
+                        resetDrmImportPreview();
+                        alert('Terjadi kesalahan saat preview import DRM.');
+                    }
+                });
+            });
+
+            $('#drm-save-import-btn').on('click', function () {
+                if (!importedDrmRows.length) {
+                    alert('Belum ada data valid untuk disimpan.');
+                    return;
+                }
+                $.ajax({
+                    url: drmSaveImportUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { rows_json: JSON.stringify(importedDrmRows) },
+                    success: function (response) {
+                        if (response && response.status) {
+                            alert(response.message || 'Import DRM berhasil.');
+                            window.location.reload();
+                            return;
+                        }
+                        alert(response && response.message ? response.message : 'Gagal menyimpan import DRM.');
+                    },
+                    error: function () {
+                        alert('Terjadi kesalahan saat menyimpan import DRM.');
+                    }
+                });
+            });
+
+            bindDropzone('#drm-import-dropzone', '#drm-import-file-input', '#drm-import-file-name');
         });
     })();
 </script>

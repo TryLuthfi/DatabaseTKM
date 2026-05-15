@@ -45,6 +45,14 @@ SELECT
   DATE(NULLIF(TRIM(COALESCE(actual_atp_date, '')), '')) AS actual_atp_date,
 
   CAST(NULLIF(REPLACE(REPLACE(TRIM(COALESCE(rfs_cluster_id, '')), '.', ''), ',', ''), '') AS UNSIGNED) AS rfs_cluster_id,
+  UPPER(TRIM(COALESCE(po_type, ''))) AS po_type_raw,
+  UPPER(TRIM(COALESCE(po_category, ''))) AS po_category_raw,
+  NULLIF(TRIM(COALESCE(po_number, '')), '') AS po_number,
+  DATE(NULLIF(TRIM(COALESCE(po_date, '')), '')) AS po_date,
+  CAST(NULLIF(REPLACE(REPLACE(TRIM(COALESCE(po_value, '')), '.', ''), ',', ''), '') AS DECIMAL(18,2)) AS po_value,
+  UPPER(TRIM(COALESCE(status_po, ''))) AS status_po_raw,
+  NULLIF(TRIM(COALESCE(po_version_label, '')), '') AS po_version_label,
+  NULLIF(TRIM(COALESCE(remark_po, '')), '') AS remark_po,
   NULLIF(TRIM(COALESCE(remark_general, '')), '') AS remark_general
 FROM stg_myrep_cutoff_import_full
 WHERE TRIM(COALESCE(cluster_name, '')) <> '';
@@ -97,7 +105,19 @@ SELECT
     WHEN n.status_checklist_raw <> '' THEN n.status_checklist_raw
     WHEN n.status_current_raw = 'ATP' OR n.cutoff_group = 'ATP' THEN 'DONE'
     ELSE NULL
-  END AS status_checklist_final
+  END AS status_checklist_final,
+  CASE
+    WHEN n.po_type_raw IN ('CLUSTER', 'SUBFEEDER') THEN n.po_type_raw
+    ELSE 'CLUSTER'
+  END AS po_type_final,
+  CASE
+    WHEN n.po_category_raw IN ('INITIAL', 'FINAL', 'AMANDMENT') THEN n.po_category_raw
+    ELSE 'INITIAL'
+  END AS po_category_final,
+  CASE
+    WHEN n.status_po_raw IN ('NOT ISSUED', 'ISSUED', 'PARTIAL PAYMENT', 'FULLY PAID', 'CLOSED') THEN n.status_po_raw
+    ELSE 'ISSUED'
+  END AS status_po_final
 FROM tmp_myrep_cutoff_norm_full n;
 
 DROP TEMPORARY TABLE IF EXISTS tmp_myrep_cutoff_match_full;
@@ -136,6 +156,14 @@ SELECT
   x.email_atp_date,
   x.actual_atp_date,
   x.rfs_cluster_id,
+  x.po_type_final,
+  x.po_category_final,
+  x.po_number,
+  x.po_date,
+  x.po_value,
+  x.status_po_final,
+  x.po_version_label,
+  x.remark_po,
   x.remark_general
 FROM (
   SELECT
@@ -250,6 +278,165 @@ INNER JOIN tmp_myrep_cutoff_match_full n ON n.rfs_cluster_id = p.cluster_id
 SET p.status_package = 'DONE'
 WHERE n.status_checklist_final = 'DONE';
 
+DROP TEMPORARY TABLE IF EXISTS tmp_myrep_po_match_full;
+CREATE TEMPORARY TABLE tmp_myrep_po_match_full AS
+SELECT
+  y.id_myrep_cluster,
+  y.cluster_name,
+  y.city_name,
+  y.cluster_code,
+  y.po_type_final,
+  y.po_category_final,
+  y.po_number,
+  y.po_date,
+  y.po_value,
+  y.status_po_final,
+  y.po_version_label,
+  y.remark_po,
+  y.remark_general
+FROM (
+  SELECT
+    x.*,
+    ROW_NUMBER() OVER (
+      PARTITION BY UPPER(TRIM(COALESCE(x.po_number, ''))), UPPER(TRIM(COALESCE(x.cluster_name, ''))), UPPER(TRIM(COALESCE(x.city_name, '')))
+      ORDER BY x.match_priority ASC, x.id_myrep_cluster DESC
+    ) AS rn
+  FROM (
+    SELECT
+      c.id_myrep_cluster,
+      n.cluster_name,
+      n.city_name,
+      n.cluster_code,
+      n.po_type_final,
+      n.po_category_final,
+      n.po_number,
+      n.po_date,
+      n.po_value,
+      n.status_po_final,
+      n.po_version_label,
+      n.remark_po,
+      n.remark_general,
+      1 AS match_priority
+    FROM tmp_myrep_cutoff_final_full n
+    INNER JOIN tb_myrep_cluster c
+      ON n.cluster_code IS NOT NULL
+     AND UPPER(TRIM(c.cluster_code)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.cluster_code)) COLLATE utf8mb4_uca1400_ai_ci
+    WHERE n.po_number IS NOT NULL
+
+    UNION ALL
+
+    SELECT
+      c.id_myrep_cluster,
+      n.cluster_name,
+      n.city_name,
+      n.cluster_code,
+      n.po_type_final,
+      n.po_category_final,
+      n.po_number,
+      n.po_date,
+      n.po_value,
+      n.status_po_final,
+      n.po_version_label,
+      n.remark_po,
+      n.remark_general,
+      2 AS match_priority
+    FROM tmp_myrep_cutoff_final_full n
+    INNER JOIN tb_myrep_cluster c
+      ON UPPER(TRIM(c.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci
+     AND UPPER(TRIM(c.city_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.city_name)) COLLATE utf8mb4_uca1400_ai_ci
+    WHERE n.po_number IS NOT NULL
+  ) x
+) y
+WHERE y.rn = 1;
+
+INSERT INTO tb_myrep_po_header
+(
+  id_myrep_cluster,
+  po_type,
+  po_category,
+  po_number,
+  po_date,
+  po_value,
+  status_po,
+  po_version_label,
+  remark_po,
+  created_at,
+  updated_at
+)
+SELECT
+  n.id_myrep_cluster,
+  n.po_type_final,
+  n.po_category_final,
+  n.po_number,
+  n.po_date,
+  COALESCE(n.po_value, 0),
+  n.status_po_final,
+  n.po_version_label,
+  COALESCE(n.remark_po, n.remark_general),
+  NOW(),
+  NOW()
+FROM tmp_myrep_po_match_full n
+LEFT JOIN tb_myrep_po_header p
+  ON p.id_myrep_cluster = n.id_myrep_cluster
+ AND UPPER(TRIM(p.po_number)) = UPPER(TRIM(n.po_number))
+WHERE n.po_number IS NOT NULL
+  AND p.id_po_header IS NULL;
+
+UPDATE tb_myrep_po_header p
+INNER JOIN tmp_myrep_po_match_full n
+  ON p.id_myrep_cluster = n.id_myrep_cluster
+ AND UPPER(TRIM(p.po_number)) = UPPER(TRIM(n.po_number))
+SET
+  p.po_type = n.po_type_final,
+  p.po_category = n.po_category_final,
+  p.po_date = COALESCE(n.po_date, p.po_date),
+  p.po_value = COALESCE(n.po_value, p.po_value),
+  p.status_po = n.status_po_final,
+  p.po_version_label = COALESCE(n.po_version_label, p.po_version_label),
+  p.remark_po = COALESCE(n.remark_po, p.remark_po),
+  p.updated_at = NOW()
+WHERE n.po_number IS NOT NULL;
+
+INSERT INTO tb_myrep_po_termin
+(
+  id_po_header,
+  termin_no,
+  termin_percent,
+  termin_value,
+  status_termin,
+  created_at,
+  updated_at
+)
+SELECT
+  src.id_po_header,
+  src.termin_no,
+  src.termin_percent,
+  src.termin_value,
+  'NOT READY',
+  NOW(),
+  NOW()
+FROM (
+  SELECT DISTINCT
+    p.id_po_header,
+    t.termin_no,
+    t.termin_percent,
+    ROUND((COALESCE(p.po_value, 0) * t.termin_percent) / 100, 2) AS termin_value
+  FROM tb_myrep_po_header p
+  INNER JOIN tmp_myrep_po_match_full m ON m.id_myrep_cluster = p.id_myrep_cluster
+    AND UPPER(TRIM(m.po_number)) = UPPER(TRIM(p.po_number))
+  INNER JOIN (
+    SELECT 1 AS termin_no, 20.00 AS termin_percent
+    UNION ALL SELECT 2, 25.00
+    UNION ALL SELECT 3, 15.00
+    UNION ALL SELECT 4, 30.00
+    UNION ALL SELECT 5, 10.00
+  ) t ON 1 = 1
+) src
+LEFT JOIN tb_myrep_po_termin pt
+  ON pt.id_po_header = src.id_po_header
+ AND pt.termin_no = src.termin_no
+WHERE pt.id_po_termin IS NULL;
+
 SELECT
   n.status_current_final AS status_current,
   COUNT(*) AS total_rows
@@ -265,3 +452,14 @@ LEFT JOIN tmp_myrep_cutoff_match_full m
   ON UPPER(TRIM(f.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(m.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci
  AND UPPER(TRIM(f.city_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(m.city_name)) COLLATE utf8mb4_uca1400_ai_ci
 WHERE m.id_myrep_cluster IS NULL;
+
+SELECT
+  'UNMATCHED_STAGING_PO_ROWS' AS metric,
+  COUNT(*) AS total_rows
+FROM tmp_myrep_cutoff_final_full f
+LEFT JOIN tmp_myrep_po_match_full m
+  ON UPPER(TRIM(COALESCE(f.po_number, ''))) = UPPER(TRIM(COALESCE(m.po_number, '')))
+ AND UPPER(TRIM(COALESCE(f.cluster_name, ''))) = UPPER(TRIM(COALESCE(m.cluster_name, '')))
+ AND UPPER(TRIM(COALESCE(f.city_name, ''))) = UPPER(TRIM(COALESCE(m.city_name, '')))
+WHERE f.po_number IS NOT NULL
+  AND m.id_myrep_cluster IS NULL;

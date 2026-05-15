@@ -677,6 +677,266 @@ class VALSAL_MyRep extends CI_Controller
         exit;
     }
 
+    public function downloadValsalImportTemplate()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $filename = 'format_import_valsal_myrep_' . date('Ymd_His') . '.csv';
+        $headers = [
+            'cluster_id',
+            'id_target',
+            'city_name',
+            'cluster_name',
+            'cluster_code',
+            'homepass_valsal',
+            'valsal_date',
+            'status_valsal',
+            'remark_valsal',
+        ];
+
+        $exampleRows = [
+            ['', '', 'MALANG', 'Cluster A', 'CL-A', '100', date('Y-m-d'), 'DRAFT', 'Contoh status DRAFT'],
+            ['', '', 'MALANG', 'Cluster B', 'CL-B', '120', date('Y-m-d'), 'ON REVIEW', 'Contoh status ON REVIEW'],
+            ['', '', 'MALANG', 'Cluster C', 'CL-C', '90', date('Y-m-d'), 'REJECTED', 'Contoh status REJECTED'],
+            ['', '', 'MALANG', 'Cluster D', 'CL-D', '110', date('Y-m-d'), 'DONE', 'Contoh status DONE'],
+            ['', '', 'MALANG', 'Cluster E', 'CL-E', '130', date('Y-m-d'), 'APPROVED', 'Contoh status APPROVED'],
+        ];
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, $headers);
+        foreach ($exampleRows as $exampleRow) {
+            fputcsv($output, $exampleRow);
+        }
+        fclose($output);
+        exit;
+    }
+
+    public function previewValsalImport()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session login tidak ditemukan.');
+            return;
+        }
+
+        if (!$this->MVALSAL_MyRep->valsalTablesReady()) {
+            $this->jsonResponse(false, 'Tabel VALSAL MyRep belum tersedia.');
+            return;
+        }
+
+        $config['upload_path'] = './uploads/';
+        $config['allowed_types'] = 'xls|xlsx|csv';
+        $config['max_size'] = 4096;
+        $config['encrypt_name'] = true;
+
+        if (!is_dir($config['upload_path'])) {
+            @mkdir($config['upload_path'], 0777, true);
+        }
+
+        $this->upload->initialize($config);
+        if (!$this->upload->do_upload('file_excel')) {
+            $this->jsonResponse(false, strip_tags($this->upload->display_errors('', '')));
+            return;
+        }
+
+        $fileData = $this->upload->data();
+        $filePath = $fileData['full_path'];
+
+        try {
+            $extension = strtolower(pathinfo($fileData['file_name'], PATHINFO_EXTENSION));
+            if ($extension === 'csv') {
+                $this->loadPHPExcel();
+                $sheetData = $this->readCsvSheetData($filePath);
+            } else {
+                $this->loadPHPExcel();
+                $objPHPExcel = PHPExcel_IOFactory::load($filePath);
+                $sheetData = $objPHPExcel->getActiveSheet()->toArray(null, true, true, true);
+            }
+        } catch (Exception $e) {
+            @unlink($filePath);
+            $this->jsonResponse(false, 'File import VALSAL tidak bisa dibaca.');
+            return;
+        }
+
+        @unlink($filePath);
+
+        if (count($sheetData) < 2) {
+            $this->jsonResponse(false, 'File import VALSAL tidak memiliki data.');
+            return;
+        }
+
+        $headerRow = reset($sheetData);
+        $headerMap = [];
+        foreach ($headerRow as $column => $header) {
+            $mappedField = $this->parseValsalImportHeader($header);
+            if ($mappedField) {
+                $headerMap[$column] = $mappedField;
+            }
+        }
+
+        foreach (['homepass_valsal', 'status_valsal'] as $requiredField) {
+            if (!in_array($requiredField, $headerMap, true)) {
+                $this->jsonResponse(false, 'Header file wajib memuat ' . $requiredField . '.');
+                return;
+            }
+        }
+
+        if (
+            !in_array('cluster_id', $headerMap, true)
+            && !in_array('cluster_name', $headerMap, true)
+        ) {
+            $this->jsonResponse(false, 'Header file wajib memuat cluster_id atau cluster_name.');
+            return;
+        }
+
+        $rows = [];
+        foreach ($sheetData as $rowIndex => $excelRow) {
+            if ($rowIndex === 1) {
+                continue;
+            }
+
+            $row = [];
+            foreach ($headerMap as $column => $field) {
+                $row[$field] = isset($excelRow[$column]) ? trim((string) $excelRow[$column]) : '';
+            }
+
+            $isBlank = true;
+            foreach ($row as $value) {
+                if (trim((string) $value) !== '') {
+                    $isBlank = false;
+                    break;
+                }
+            }
+
+            if (!$isBlank) {
+                $rows[] = $row;
+            }
+        }
+
+        $validated = $this->validateValsalImportRows($rows);
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => true,
+                'message' => count($validated['valid_rows']) . ' data valid dari ' . count($validated['rows']) . ' baris',
+                'rows' => $validated['rows'],
+                'valid_rows' => $validated['valid_rows'],
+                'error_rows' => $validated['errors'],
+            ]));
+    }
+
+    public function saveImportedValsal()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session login tidak ditemukan.');
+            return;
+        }
+
+        if (!$this->MVALSAL_MyRep->valsalTablesReady()) {
+            $this->jsonResponse(false, 'Tabel VALSAL MyRep belum tersedia.');
+            return;
+        }
+
+        $rowsJson = $this->input->post('rows_json');
+        $rows = json_decode((string) $rowsJson, true);
+        if (empty($rows) || !is_array($rows)) {
+            $this->jsonResponse(false, 'Tidak ada data import yang siap disimpan.');
+            return;
+        }
+
+        $validated = $this->validateValsalImportRows($rows);
+        if (empty($validated['valid_rows'])) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'status' => false,
+                    'message' => 'Semua data import tidak valid.',
+                    'errors' => $validated['errors'],
+                ]));
+            return;
+        }
+
+        $inserted = 0;
+        $userId = (int) $this->session->userdata('id_user');
+        foreach ($validated['valid_rows'] as $row) {
+            $clusterId = (int) ($row['cluster_id'] ?? 0);
+            $targetId = (int) ($row['id_target'] ?? 0);
+            $isNewCluster = (int) ($row['is_new_cluster'] ?? 0) === 1;
+            $clusterName = trim((string) ($row['cluster_name'] ?? ''));
+            $clusterCode = trim((string) ($row['cluster_code'] ?? ''));
+            $statusValsal = $this->normalizeImportValsalStatus((string) ($row['status_valsal'] ?? 'ON REVIEW'));
+            $valsalDate = $this->normalizeDate((string) ($row['valsal_date'] ?? '')) ?: date('Y-m-d');
+            $homepassValsal = (int) $this->normalizeNumber($row['homepass_valsal'] ?? 0);
+            $remarkValsal = trim((string) ($row['remark_valsal'] ?? ''));
+
+            if ($clusterId <= 0 && $isNewCluster) {
+                $clusterId = $this->MVALSAL_MyRep->createClusterForValsalImport(
+                    $targetId,
+                    $clusterName,
+                    $clusterCode,
+                    $homepassValsal,
+                    $userId
+                );
+            }
+
+            if ($clusterId <= 0) {
+                continue;
+            }
+
+            $bakSynced = $this->MVALSAL_MyRep->upsertBakDoneForValsalImport(
+                $clusterId,
+                $homepassValsal,
+                $valsalDate,
+                $userId,
+                $remarkValsal
+            );
+            if (!$bakSynced) {
+                continue;
+            }
+
+            $result = $this->MVALSAL_MyRep->createValsal($clusterId, [
+                'valsal_date' => $valsalDate,
+                'homepass_valsal' => $homepassValsal,
+                'status_valsal' => $statusValsal,
+                'remark_valsal' => $remarkValsal !== '' ? $remarkValsal : null,
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ], [
+                'status_current' => $this->buildCurrentStatus($valsalDate, $statusValsal),
+                'updated_by' => $userId,
+            ]);
+
+            if ($result) {
+                $inserted++;
+            }
+        }
+
+        if ($inserted <= 0) {
+            $this->jsonResponse(false, 'Gagal menyimpan hasil import VALSAL.');
+            return;
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => true,
+                'message' => $inserted . ' data VALSAL berhasil diimport.',
+                'errors' => $validated['errors'],
+            ]));
+    }
+
     public function previewDocument($fileId = 0)
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -936,8 +1196,29 @@ class VALSAL_MyRep extends CI_Controller
 
     private function normalizeDate($date)
     {
+        if ($date === null || $date === '') {
+            return null;
+        }
+
+        if (is_numeric($date) && class_exists('PHPExcel_Shared_Date')) {
+            try {
+                return PHPExcel_Shared_Date::ExcelToPHPObject($date)->format('Y-m-d');
+            } catch (Exception $e) {
+            }
+        }
+
         $date = trim((string) $date);
-        return $date !== '' ? $date : null;
+        if ($date === '') {
+            return null;
+        }
+
+        $date = str_replace('/', '-', $date);
+        $timestamp = strtotime($date);
+        if ($timestamp === false) {
+            return null;
+        }
+
+        return date('Y-m-d', $timestamp);
     }
 
     private function normalizeNumber($value)
@@ -955,6 +1236,200 @@ class VALSAL_MyRep extends CI_Controller
         $normalized = str_replace(',', '.', $normalized);
 
         return (float) $normalized;
+    }
+
+    private function parseValsalImportHeader($header)
+    {
+        $header = strtolower(trim((string) $header));
+        $header = preg_replace('/[^a-z0-9]+/', '_', $header);
+        $header = trim($header, '_');
+
+        $aliases = [
+            'cluster_id' => ['cluster_id', 'id_myrep_cluster', 'id_cluster'],
+            'id_target' => ['id_target', 'target_id'],
+            'city_name' => ['city_name', 'city', 'kota', 'nama_kota'],
+            'cluster_name' => ['cluster_name', 'nama_cluster', 'cluster'],
+            'cluster_code' => ['cluster_code', 'kode_cluster'],
+            'homepass_valsal' => ['homepass_valsal', 'hp_valsal', 'homepass', 'hp'],
+            'valsal_date' => ['valsal_date', 'tanggal_valsal'],
+            'status_valsal' => ['status_valsal', 'status'],
+            'remark_valsal' => ['remark_valsal', 'remark', 'catatan'],
+        ];
+
+        foreach ($aliases as $field => $options) {
+            if (in_array($header, $options, true)) {
+                return $field;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeImportValsalStatus($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        $allowed = ['DRAFT', 'ON REVIEW', 'REJECTED', 'DONE', 'APPROVED'];
+        if (in_array($status, $allowed, true)) {
+            return $status;
+        }
+
+        return 'ON REVIEW';
+    }
+
+    private function validateValsalImportRows(array $rawRows)
+    {
+        $preparedRows = [];
+        $errors = [];
+
+        foreach ($rawRows as $index => $rawRow) {
+            $rowNumber = $index + 1;
+            $clusterId = (int) ($rawRow['cluster_id'] ?? 0);
+            $targetId = (int) ($rawRow['id_target'] ?? 0);
+            $cityName = strtoupper(trim((string) ($rawRow['city_name'] ?? '')));
+            $clusterName = trim((string) ($rawRow['cluster_name'] ?? ''));
+            $clusterCode = trim((string) ($rawRow['cluster_code'] ?? ''));
+            $homepassValsal = (int) $this->normalizeNumber($rawRow['homepass_valsal'] ?? 0);
+            $valsalDate = $this->normalizeDate((string) ($rawRow['valsal_date'] ?? '')) ?: date('Y-m-d');
+            $statusValsal = $this->normalizeImportValsalStatus((string) ($rawRow['status_valsal'] ?? 'ON REVIEW'));
+            $remarkValsal = trim((string) ($rawRow['remark_valsal'] ?? ''));
+            $rowErrors = [];
+
+            $candidate = [];
+            if ($clusterId > 0) {
+                $candidate = $this->MVALSAL_MyRep->getClusterForValsalImportById($clusterId);
+            }
+
+            if (empty($candidate) && $clusterName !== '') {
+                if ($targetId <= 0 && $cityName !== '') {
+                    $target = $this->MVALSAL_MyRep->getTargetByCity($cityName);
+                    $targetId = (int) ($target['id_target'] ?? 0);
+                }
+                $candidate = $this->MVALSAL_MyRep->getClusterForValsalImportByName($clusterName, $cityName, $targetId);
+                $clusterId = (int) ($candidate['id_myrep_cluster'] ?? 0);
+            }
+
+            $isNewCluster = false;
+            if (empty($candidate) || $clusterId <= 0) {
+                if ($targetId <= 0 && $cityName !== '') {
+                    $target = $this->MVALSAL_MyRep->getTargetByCity($cityName);
+                    $targetId = (int) ($target['id_target'] ?? 0);
+                }
+
+                if ($clusterName === '') {
+                    $rowErrors[] = 'Cluster name wajib diisi jika cluster belum ada di master';
+                }
+                if ($targetId <= 0) {
+                    $rowErrors[] = 'id_target / city_name wajib valid untuk membuat cluster baru';
+                }
+
+                $isNewCluster = empty($rowErrors);
+            } else {
+                if (!empty($candidate['id_valsal'])) {
+                    $rowErrors[] = 'Cluster sudah punya data VALSAL';
+                }
+            }
+
+            if ($homepassValsal <= 0) {
+                $rowErrors[] = 'Homepass VALSAL harus lebih besar dari 0';
+            }
+
+            $preparedRows[] = [
+                'row_number' => $rowNumber,
+                'cluster_id' => $clusterId,
+                'id_target' => $targetId,
+                'is_new_cluster' => $isNewCluster ? 1 : 0,
+                'city_name' => $cityName !== '' ? $cityName : (string) ($candidate['city_name'] ?? ''),
+                'cluster_name' => $clusterName !== '' ? $clusterName : (string) ($candidate['cluster_name'] ?? ''),
+                'cluster_code' => $clusterCode !== '' ? $clusterCode : (string) ($candidate['cluster_code'] ?? ''),
+                'homepass_valsal' => $homepassValsal,
+                'valsal_date' => $valsalDate,
+                'status_valsal' => $statusValsal,
+                'remark_valsal' => $remarkValsal,
+                'status' => empty($rowErrors) ? 'valid' : 'invalid',
+                'message' => empty($rowErrors) ? 'Siap diimport' : implode(', ', array_unique($rowErrors)),
+                'errors' => $rowErrors,
+            ];
+        }
+
+        foreach ($preparedRows as $preparedRow) {
+            if (!empty($preparedRow['errors'])) {
+                $errors[] = [
+                    'row' => $preparedRow['row_number'],
+                    'message' => implode(', ', array_unique($preparedRow['errors'])),
+                ];
+            }
+        }
+
+        $validRows = [];
+        foreach ($preparedRows as $preparedRow) {
+            if (empty($preparedRow['errors'])) {
+                $validRows[] = [
+                    'cluster_id' => (int) $preparedRow['cluster_id'],
+                    'id_target' => (int) $preparedRow['id_target'],
+                    'is_new_cluster' => (int) $preparedRow['is_new_cluster'],
+                    'city_name' => (string) $preparedRow['city_name'],
+                    'cluster_name' => (string) $preparedRow['cluster_name'],
+                    'cluster_code' => (string) $preparedRow['cluster_code'],
+                    'homepass_valsal' => (int) $preparedRow['homepass_valsal'],
+                    'valsal_date' => (string) $preparedRow['valsal_date'],
+                    'status_valsal' => (string) $preparedRow['status_valsal'],
+                    'remark_valsal' => (string) $preparedRow['remark_valsal'],
+                ];
+            }
+        }
+
+        return [
+            'rows' => $preparedRows,
+            'valid_rows' => $validRows,
+            'errors' => $errors,
+        ];
+    }
+
+    private function loadPHPExcel()
+    {
+        if (!class_exists('PHPExcel')) {
+            require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        }
+    }
+
+    private function readCsvSheetData($filePath)
+    {
+        $rows = [];
+        $handle = fopen($filePath, 'r');
+        if ($handle === false) {
+            return $rows;
+        }
+
+        $firstLine = fgets($handle);
+        if ($firstLine === false) {
+            fclose($handle);
+            return $rows;
+        }
+
+        $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
+        rewind($handle);
+
+        while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
+            if (!empty($data)) {
+                if (isset($data[0])) {
+                    $data[0] = preg_replace('/^\xEF\xBB\xBF/', '', $data[0]);
+                }
+                $rows[] = $data;
+            }
+        }
+        fclose($handle);
+
+        $sheetData = [];
+        foreach ($rows as $rowIndex => $row) {
+            $sheetRow = [];
+            foreach ($row as $colIndex => $value) {
+                $columnLetter = PHPExcel_Cell::stringFromColumnIndex($colIndex);
+                $sheetRow[$columnLetter] = $value;
+            }
+            $sheetData[$rowIndex + 1] = $sheetRow;
+        }
+
+        return $sheetData;
     }
 
     private function isApprover()

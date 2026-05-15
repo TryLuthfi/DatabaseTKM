@@ -16,6 +16,7 @@ class MMyRepublik_Project extends CI_Model
         'DRM',
         'RFS',
         'ATP',
+        'CHECKLIST DOKUMENT',
         'DONE',
         'IMPLEMENTASI',
         'REJECTED',
@@ -121,13 +122,19 @@ class MMyRepublik_Project extends CI_Model
         }
 
         usort($rows, static function ($a, $b) {
-            $dateA = strtotime((string) ($a['created_at'] ?? '')) ?: 0;
-            $dateB = strtotime((string) ($b['created_at'] ?? '')) ?: 0;
-            if ($dateA === $dateB) {
-                return strcmp((string) ($a['cluster_name'] ?? ''), (string) ($b['cluster_name'] ?? ''));
+            $cityCompare = strcmp(
+                strtoupper(trim((string) ($a['city_name'] ?? ''))),
+                strtoupper(trim((string) ($b['city_name'] ?? '')))
+            );
+
+            if ($cityCompare !== 0) {
+                return $cityCompare;
             }
 
-            return $dateB <=> $dateA;
+            return strcmp(
+                strtoupper(trim((string) ($a['cluster_name'] ?? ''))),
+                strtoupper(trim((string) ($b['cluster_name'] ?? '')))
+            );
         });
 
         return $rows;

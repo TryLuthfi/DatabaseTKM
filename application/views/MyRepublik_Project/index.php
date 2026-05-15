@@ -149,6 +149,19 @@ if (!function_exists('myrepClusterDetailUrl')) {
     }
 </style>
 
+<?php
+$summaryRows = $clusterStageSummaryRows ?? [];
+$summaryFooter = null;
+$isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
+if (!empty($summaryRows)) {
+    $lastSummaryRow = end($summaryRows);
+    if (strtoupper((string) ($lastSummaryRow['city_name'] ?? '')) === 'TOTAL') {
+        $summaryFooter = $lastSummaryRow;
+        array_pop($summaryRows);
+    }
+}
+?>
+
 <div class="content-wrapper">
     <section class="content-header">
         <div class="container-fluid">
@@ -165,6 +178,12 @@ if (!function_exists('myrepClusterDetailUrl')) {
             <?php if (!$isReady): ?>
                 <div class="alert alert-warning">Tabel flow MyRep baru belum tersedia.</div>
             <?php else: ?>
+                <?php if (!empty($this->session->flashdata('success'))): ?>
+                    <div class="alert alert-success"><?= htmlspecialchars((string) $this->session->flashdata('success')) ?></div>
+                <?php endif; ?>
+                <?php if (!empty($this->session->flashdata('error'))): ?>
+                    <div class="alert alert-danger"><?= htmlspecialchars((string) $this->session->flashdata('error')) ?></div>
+                <?php endif; ?>
                 <?php
                 $baseQuery = [];
                 if ($selectedCity !== '') {
@@ -181,9 +200,14 @@ if (!function_exists('myrepClusterDetailUrl')) {
                             <div class="h4 font-weight-bold mb-1">Status List Project MyRep</div>
                             <div class="text-white-50">Dashboard utama untuk memantau flow project dari BAK sampai ATP.</div>
                         </div>
-                        <div class="myrep-toggle">
-                            <a href="<?= base_url('MyRepublik_Project?' . http_build_query(array_merge($baseQuery, ['metric' => 'HP']))) ?>" class="<?= $metricMode === 'HP' ? 'active' : '' ?>">Angka Homepass</a>
-                            <a href="<?= base_url('MyRepublik_Project?' . http_build_query(array_merge($baseQuery, ['metric' => 'PO']))) ?>" class="<?= $metricMode === 'PO' ? 'active' : '' ?>">Angka PO</a>
+                        <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap;">
+                            <div class="myrep-toggle">
+                                <a href="<?= base_url('MyRepublik_Project?' . http_build_query(array_merge($baseQuery, ['metric' => 'HP']))) ?>" class="<?= $metricMode === 'HP' ? 'active' : '' ?>">Angka Homepass</a>
+                                <a href="<?= base_url('MyRepublik_Project?' . http_build_query(array_merge($baseQuery, ['metric' => 'PO']))) ?>" class="<?= $metricMode === 'PO' ? 'active' : '' ?>">Angka PO</a>
+                            </div>
+                            <button type="button" class="btn btn-light btn-sm" data-toggle="modal" data-target="#modal-import-cutoff-myrep">
+                                Import Cutoff CSV
+                            </button>
                         </div>
                     </div>
 
@@ -274,13 +298,81 @@ if (!function_exists('myrepClusterDetailUrl')) {
                 </div>
 
                 <div class="card card-outline card-primary shadow-sm">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h3 class="card-title mb-0">Daftar Cluster</h3>
-                        <div class="myrep-table-note">Angka utama saat ini: <?= $metricMode === 'PO' ? 'PO Value' : 'Homepass' ?></div>
+                    <div class="card-header">
+                        <h3 class="card-title mb-0">Rekap Cluster per Kota</h3>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-bordered table-hover">
+                            <table class="table table-bordered table-sm text-center" id="table_myrep_city_stage_summary">
+                                <thead>
+                                    <tr>
+                                        <th>KOTA</th>
+                                        <th>BAK</th>
+                                        <th>VALSAL</th>
+                                        <th>BATCH</th>
+                                        <th>DRM</th>
+                                        <th>IMPLEMENTASI</th>
+                                        <th>RFS</th>
+                                        <th>ATP</th>
+                                        <th>DOKUMENT</th>
+                                        <th>TOTAL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($summaryRows as $summaryRow): ?>
+                                        <tr>
+                                            <td class="text-left"><?= htmlspecialchars((string) ($summaryRow['city_name'] ?? '-')) ?></td>
+                                            <td><?= myrepDashNumber((float) ($summaryRow['bak'] ?? 0)) ?></td>
+                                            <td><?= myrepDashNumber((float) ($summaryRow['valsal'] ?? 0)) ?></td>
+                                            <td><?= myrepDashNumber((float) ($summaryRow['batch'] ?? 0)) ?></td>
+                                            <td><?= myrepDashNumber((float) ($summaryRow['drm'] ?? 0)) ?></td>
+                                            <td><?= myrepDashNumber((float) ($summaryRow['implementasi'] ?? 0)) ?></td>
+                                            <td><?= myrepDashNumber((float) ($summaryRow['rfs'] ?? 0)) ?></td>
+                                            <td><?= myrepDashNumber((float) ($summaryRow['atp'] ?? 0)) ?></td>
+                                            <td><?= myrepDashNumber((float) ($summaryRow['dokument'] ?? 0)) ?></td>
+                                            <td><?= myrepDashNumber((float) ($summaryRow['total'] ?? 0)) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($clusterStageSummaryRows)): ?>
+                                        <tr><td colspan="10" class="text-center text-muted">Belum ada data rekap cluster.</td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                                <?php if (!empty($summaryFooter)): ?>
+                                    <tfoot>
+                                        <tr class="font-weight-bold">
+                                            <th class="text-left">TOTAL</th>
+                                            <th><?= myrepDashNumber((float) ($summaryFooter['bak'] ?? 0)) ?></th>
+                                            <th><?= myrepDashNumber((float) ($summaryFooter['valsal'] ?? 0)) ?></th>
+                                            <th><?= myrepDashNumber((float) ($summaryFooter['batch'] ?? 0)) ?></th>
+                                            <th><?= myrepDashNumber((float) ($summaryFooter['drm'] ?? 0)) ?></th>
+                                            <th><?= myrepDashNumber((float) ($summaryFooter['implementasi'] ?? 0)) ?></th>
+                                            <th><?= myrepDashNumber((float) ($summaryFooter['rfs'] ?? 0)) ?></th>
+                                            <th><?= myrepDashNumber((float) ($summaryFooter['atp'] ?? 0)) ?></th>
+                                            <th><?= myrepDashNumber((float) ($summaryFooter['dokument'] ?? 0)) ?></th>
+                                            <th><?= myrepDashNumber((float) ($summaryFooter['total'] ?? 0)) ?></th>
+                                        </tr>
+                                    </tfoot>
+                                <?php endif; ?>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-outline card-primary shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">Daftar Cluster</h3>
+                        <div class="d-flex align-items-center">
+                            <div class="myrep-table-note mr-2">Angka utama saat ini: <?= $metricMode === 'PO' ? 'PO Value' : 'Homepass' ?></div>
+                            <?php if ($isSuperAdmin): ?>
+                                <form method="post" action="<?= base_url('MyRepublik_Project/deleteAllClusters') ?>" class="d-inline" onsubmit="return confirm('Hapus ALL cluster MyRep? Seluruh flow dari BAK sampai Checklist Dokument akan ikut terhapus semua.');">
+                                    <button type="submit" class="btn btn-sm btn-danger">Hapus All</button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover" id="table_myrep_cluster_list">
                                 <thead>
                                     <tr>
                                         <th>No</th>
@@ -327,6 +419,12 @@ if (!function_exists('myrepClusterDetailUrl')) {
                                                 <?php else: ?>
                                                     <span class="text-muted">-</span>
                                                 <?php endif; ?>
+                                                <?php if ($isSuperAdmin && (int) ($row['id_myrep_cluster'] ?? 0) > 0): ?>
+                                                    <form method="post" action="<?= base_url('MyRepublik_Project/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini? Seluruh flow MyRep dari BAK sampai Checklist Dokument akan ikut terhapus.');">
+                                                        <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
+                                                        <button type="submit" class="btn btn-sm btn-danger">Hapus Cluster</button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -342,3 +440,197 @@ if (!function_exists('myrepClusterDetailUrl')) {
         </div>
     </section>
 </div>
+
+<div class="modal fade" id="modal-import-cutoff-myrep" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Import Cutoff MyRep (Tahap BAK)</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-dropzone" id="myrep-cutoff-dropzone" style="border:2px dashed #cbd5e1;border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;background:#f8fafc;">
+                    <input type="file" id="myrep-cutoff-file-input" name="file_excel" accept=".xls,.xlsx,.csv" style="display:none;">
+                    <div><strong>Drag & drop file CSV/XLSX di sini</strong></div>
+                    <div class="text-muted small">Atau klik area ini untuk pilih file template CSV khusus BAK.</div>
+                    <div id="myrep-cutoff-file-name" class="mt-2 text-primary">Belum ada file dipilih</div>
+                </div>
+                <div class="mt-3">
+                    <a href="<?= base_url('MyRepublik_Project/downloadCutoffImportTemplate') ?>" class="btn btn-outline-secondary btn-sm">
+                        Download Contoh CSV
+                    </a>
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-preview-cutoff-import">Preview Data</button>
+                    <button type="button" class="btn btn-success btn-sm" id="btn-save-cutoff-import" disabled>Import Semua Data Valid</button>
+                </div>
+                <div class="mt-3 table-responsive">
+                    <table class="table table-bordered table-sm" id="table-preview-cutoff-import">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function initMyrepClusterTable() {
+        var importedValidRows = [];
+
+        function bindDropzone(dropzoneSelector, inputSelector, labelSelector) {
+            var dropzone = document.querySelector(dropzoneSelector);
+            var input = document.querySelector(inputSelector);
+            var label = document.querySelector(labelSelector);
+            if (!dropzone || !input || !label) {
+                return;
+            }
+
+            dropzone.addEventListener('click', function () { input.click(); });
+            input.addEventListener('change', function () {
+                label.textContent = input.files && input.files[0] ? input.files[0].name : 'Belum ada file dipilih';
+            });
+            ['dragenter', 'dragover'].forEach(function (eventName) {
+                dropzone.addEventListener(eventName, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.style.borderColor = '#0ea5e9';
+                });
+            });
+            ['dragleave', 'drop'].forEach(function (eventName) {
+                dropzone.addEventListener(eventName, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.style.borderColor = '#cbd5e1';
+                });
+            });
+            dropzone.addEventListener('drop', function (e) {
+                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    input.files = e.dataTransfer.files;
+                    label.textContent = e.dataTransfer.files[0].name;
+                }
+            });
+        }
+
+        function renderPreviewTable(headers, rows) {
+            var thead = document.querySelector('#table-preview-cutoff-import thead');
+            var tbody = document.querySelector('#table-preview-cutoff-import tbody');
+            if (!thead || !tbody) {
+                return;
+            }
+
+            var headHtml = '<tr><th>No</th><th>Status</th><th>Message</th>';
+            headers.forEach(function (h) { headHtml += '<th>' + h + '</th>'; });
+            headHtml += '</tr>';
+            thead.innerHTML = headHtml;
+
+            var bodyHtml = '';
+            rows.forEach(function (row, index) {
+                var badge = row.status === 'valid' ? 'success' : 'danger';
+                bodyHtml += '<tr>';
+                bodyHtml += '<td>' + (index + 1) + '</td>';
+                bodyHtml += '<td><span class="badge badge-' + badge + '">' + row.status + '</span></td>';
+                bodyHtml += '<td>' + (row.message || '') + '</td>';
+                headers.forEach(function (h) {
+                    var value = row.raw && row.raw[h] ? row.raw[h] : '';
+                    bodyHtml += '<td>' + value + '</td>';
+                });
+                bodyHtml += '</tr>';
+            });
+            tbody.innerHTML = bodyHtml;
+        }
+
+        function bootDataTable(tryCount) {
+            if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable) {
+                if (tryCount < 30) {
+                    window.setTimeout(function () {
+                        bootDataTable(tryCount + 1);
+                    }, 200);
+                }
+                return;
+            }
+
+            var $ = window.jQuery;
+            if (!$.fn.DataTable.isDataTable('#table_myrep_cluster_list')) {
+                $('#table_myrep_cluster_list').DataTable({
+                    order: [[2, 'asc'], [1, 'asc']],
+                    pageLength: 10,
+                    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                    responsive: false,
+                    autoWidth: false
+                });
+            }
+
+            if (!$.fn.DataTable.isDataTable('#table_myrep_city_stage_summary')) {
+                $('#table_myrep_city_stage_summary').DataTable({
+                    order: [[0, 'asc']],
+                    pageLength: 10,
+                    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                    responsive: false,
+                    autoWidth: false
+                });
+            }
+        }
+
+        bindDropzone('#myrep-cutoff-dropzone', '#myrep-cutoff-file-input', '#myrep-cutoff-file-name');
+
+        $(document).on('click', '#btn-preview-cutoff-import', function () {
+            var fileInput = document.getElementById('myrep-cutoff-file-input');
+            if (!fileInput || !fileInput.files || !fileInput.files.length) {
+                alert('Pilih file import terlebih dahulu.');
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('file_excel', fileInput.files[0]);
+
+            $.ajax({
+                url: '<?= base_url("MyRepublik_Project/previewCutoffImport") ?>',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json'
+            }).done(function (response) {
+                if (!response || !response.status) {
+                    alert(response && response.message ? response.message : 'Preview import gagal.');
+                    return;
+                }
+                importedValidRows = response.valid_rows || [];
+                renderPreviewTable(response.headers || [], response.rows || []);
+                $('#btn-save-cutoff-import').prop('disabled', importedValidRows.length === 0);
+            }).fail(function () {
+                alert('Preview import gagal dijalankan.');
+            });
+        });
+
+        $(document).on('click', '#btn-save-cutoff-import', function () {
+            if (!importedValidRows.length) {
+                alert('Tidak ada data valid untuk diimport.');
+                return;
+            }
+            if (!confirm('Lanjut import semua data valid? Distribusi flow akan mengikuti status_current.')) {
+                return;
+            }
+
+            $.ajax({
+                url: '<?= base_url("MyRepublik_Project/saveCutoffImport") ?>',
+                method: 'POST',
+                data: { rows_json: JSON.stringify(importedValidRows) },
+                dataType: 'json'
+            }).done(function (response) {
+                if (!response || !response.status) {
+                    alert(response && response.message ? response.message : 'Import gagal.');
+                    return;
+                }
+                alert(response.message || 'Import selesai.');
+                window.location.reload();
+            }).fail(function () {
+                alert('Import gagal dijalankan.');
+            });
+        });
+
+        bootDataTable(0);
+    })();
+</script>

@@ -909,6 +909,195 @@ class DRM_MyRep extends CI_Controller
         redirect('DRM_MyRep');
     }
 
+    public function downloadDrmImportTemplate()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $headers = [
+            'cluster_id', 'id_target', 'city_name', 'cluster_name', 'cluster_code',
+            'homepass_drm', 'drm_date', 'nama_olt', 'status_drm', 'remark_drm',
+        ];
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=drm_import_template_' . date('Ymd_His') . '.csv');
+        $output = fopen('php://output', 'w');
+        fputcsv($output, $headers);
+        $exampleRows = [
+            ['', '', 'MALANG', 'Cluster A', 'CL-A', '100', date('Y-m-d'), 'OLT-MAL-01', 'WAITING DOC', 'Contoh status WAITING DOC'],
+            ['', '', 'MALANG', 'Cluster B', 'CL-B', '120', date('Y-m-d'), 'OLT-MAL-02', 'WAITING APPROVE', 'Contoh status WAITING APPROVE'],
+            ['', '', 'MALANG', 'Cluster C', 'CL-C', '90', date('Y-m-d'), 'OLT-MAL-03', 'COMPLETE', 'Contoh status COMPLETE'],
+            ['', '', 'MALANG', 'Cluster D', 'CL-D', '110', date('Y-m-d'), 'OLT-MAL-04', 'REJECTED', 'Contoh status REJECTED'],
+            ['', '', 'MALANG', 'Cluster E', 'CL-E', '130', date('Y-m-d'), 'OLT-MAL-05', 'WAITING DOC', 'Contoh tambahan import'],
+        ];
+        foreach ($exampleRows as $exampleRow) {
+            fputcsv($output, $exampleRow);
+        }
+        fclose($output);
+        exit;
+    }
+
+    public function previewDrmImport()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session login tidak ditemukan.');
+            return;
+        }
+        if (!$this->MDRM_MyRep->drmTablesReady()) {
+            $this->jsonResponse(false, 'Tabel DRM MyRep belum tersedia.');
+            return;
+        }
+        if (empty($_FILES['file_excel']['name'])) {
+            $this->jsonResponse(false, 'File import belum dipilih.');
+            return;
+        }
+
+        $uploadDir = FCPATH . 'uploads/temp_drm_import/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $extension = strtolower(pathinfo($_FILES['file_excel']['name'], PATHINFO_EXTENSION));
+        if (!in_array($extension, ['xls', 'xlsx', 'csv'], true)) {
+            $this->jsonResponse(false, 'Format file harus xls/xlsx/csv.');
+            return;
+        }
+
+        $tempPath = $uploadDir . 'drm_import_' . date('YmdHis') . '_' . mt_rand(1000, 9999) . '.' . $extension;
+        if (!move_uploaded_file($_FILES['file_excel']['tmp_name'], $tempPath)) {
+            $this->jsonResponse(false, 'Gagal upload file import.');
+            return;
+        }
+
+        $sheetData = [];
+        if ($extension === 'csv') {
+            $this->loadPHPExcel();
+            $sheetData = $this->readCsvSheetData($tempPath);
+        } else {
+            $this->loadPHPExcel();
+            $excel = PHPExcel_IOFactory::load($tempPath);
+            $sheetData = $excel->getActiveSheet()->toArray(null, true, true, true);
+        }
+        @unlink($tempPath);
+
+        if (empty($sheetData) || !is_array($sheetData)) {
+            $this->jsonResponse(false, 'Isi file import kosong.');
+            return;
+        }
+
+        $headerRow = [];
+        foreach ($sheetData as $row) { $headerRow = $row; break; }
+        $mappedHeader = [];
+        foreach ($headerRow as $columnKey => $columnName) {
+            $key = $this->parseDrmImportHeader((string) $columnName);
+            if ($key !== null) { $mappedHeader[$columnKey] = $key; }
+        }
+
+        $rows = [];
+        $rowIndex = 0;
+        foreach ($sheetData as $row) {
+            $rowIndex++;
+            if ($rowIndex === 1) { continue; }
+            $item = [];
+            $isBlank = true;
+            foreach ($mappedHeader as $columnKey => $fieldName) {
+                $value = isset($row[$columnKey]) ? trim((string) $row[$columnKey]) : '';
+                if ($value !== '') { $isBlank = false; }
+                $item[$fieldName] = $value;
+            }
+            if (!$isBlank) { $rows[] = $item; }
+        }
+
+        $validated = $this->validateDrmImportRows($rows);
+        $this->output->set_content_type('application/json')->set_output(json_encode([
+            'status' => true,
+            'message' => count($validated['valid_rows']) . ' data valid dari ' . count($validated['rows']) . ' baris',
+            'rows' => $validated['rows'],
+            'valid_rows' => $validated['valid_rows'],
+            'error_rows' => $validated['errors'],
+        ]));
+    }
+
+    public function saveImportedDrm()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session login tidak ditemukan.');
+            return;
+        }
+        if (!$this->MDRM_MyRep->drmTablesReady()) {
+            $this->jsonResponse(false, 'Tabel DRM MyRep belum tersedia.');
+            return;
+        }
+
+        $rows = json_decode((string) $this->input->post('rows_json'), true);
+        if (empty($rows) || !is_array($rows)) {
+            $this->jsonResponse(false, 'Tidak ada data import yang siap disimpan.');
+            return;
+        }
+
+        $validated = $this->validateDrmImportRows($rows);
+        if (empty($validated['valid_rows'])) {
+            $this->output->set_content_type('application/json')->set_output(json_encode([
+                'status' => false,
+                'message' => 'Semua data import tidak valid.',
+                'errors' => $validated['errors'],
+            ]));
+            return;
+        }
+
+        $inserted = 0;
+        $userId = (int) $this->session->userdata('id_user');
+        foreach ($validated['valid_rows'] as $row) {
+            $clusterId = (int) ($row['cluster_id'] ?? 0);
+            if ($clusterId <= 0 && (int) ($row['is_new_cluster'] ?? 0) === 1) {
+                $clusterId = $this->MDRM_MyRep->createClusterForDrmImport(
+                    (int) ($row['id_target'] ?? 0),
+                    (string) ($row['cluster_name'] ?? ''),
+                    (string) ($row['cluster_code'] ?? ''),
+                    (int) ($row['homepass_drm'] ?? 0),
+                    $userId
+                );
+            }
+            if ($clusterId <= 0) { continue; }
+
+            $readyPrev = $this->MDRM_MyRep->upsertBakValsalBatchForDrmImport(
+                $clusterId,
+                (int) ($row['homepass_drm'] ?? 0),
+                (string) ($row['drm_date'] ?? date('Y-m-d')),
+                $userId,
+                (string) ($row['remark_drm'] ?? '')
+            );
+            if (!$readyPrev) { continue; }
+
+            $result = $this->MDRM_MyRep->createDrm($clusterId, [
+                'drm_date' => (string) ($row['drm_date'] ?? date('Y-m-d')),
+                'homepass_drm' => (int) ($row['homepass_drm'] ?? 0),
+                'nama_olt' => trim((string) ($row['nama_olt'] ?? '')) ?: null,
+                'status_drm' => (string) ($row['status_drm'] ?? 'WAITING DOC'),
+                'remark_drm' => trim((string) ($row['remark_drm'] ?? '')) ?: null,
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ], [
+                'status_current' => $this->buildCurrentStatus((string) ($row['drm_date'] ?? ''), (string) ($row['status_drm'] ?? 'WAITING DOC')),
+                'updated_by' => $userId,
+            ]);
+
+            if ($result) { $inserted++; }
+        }
+
+        if ($inserted <= 0) {
+            $this->jsonResponse(false, 'Gagal menyimpan hasil import DRM.');
+            return;
+        }
+
+        $this->output->set_content_type('application/json')->set_output(json_encode([
+            'status' => true,
+            'message' => $inserted . ' data DRM berhasil diimport.',
+        ]));
+    }
+
     private function buildCurrentStatus($drmDate, $statusDrm)
     {
         $statusDrm = strtoupper(trim((string) $statusDrm));
@@ -927,6 +1116,148 @@ class DRM_MyRep extends CI_Controller
     {
         $date = trim((string) $date);
         return $date !== '' ? $date : null;
+    }
+
+    private function parseDrmImportHeader($header)
+    {
+        $header = strtolower(trim((string) $header));
+        if ($header === '') { return null; }
+        $header = preg_replace('/[^a-z0-9]+/', '_', $header);
+        $header = trim($header, '_');
+        $aliases = [
+            'cluster_id' => ['cluster_id', 'id_myrep_cluster', 'id_cluster'],
+            'id_target' => ['id_target', 'target_id'],
+            'city_name' => ['city_name', 'city', 'kota'],
+            'cluster_name' => ['cluster_name', 'nama_cluster', 'cluster'],
+            'cluster_code' => ['cluster_code', 'kode_cluster'],
+            'homepass_drm' => ['homepass_drm', 'hp_drm', 'homepass', 'hp'],
+            'drm_date' => ['drm_date', 'tanggal_drm'],
+            'nama_olt' => ['nama_olt', 'olt'],
+            'status_drm' => ['status_drm', 'status'],
+            'remark_drm' => ['remark_drm', 'remark', 'catatan'],
+        ];
+        foreach ($aliases as $field => $opts) {
+            if (in_array($header, $opts, true)) { return $field; }
+        }
+        return null;
+    }
+
+    private function validateDrmImportRows(array $rawRows)
+    {
+        $preparedRows = [];
+        $errors = [];
+        foreach ($rawRows as $index => $rawRow) {
+            $rowNumber = $index + 1;
+            $clusterId = (int) ($rawRow['cluster_id'] ?? 0);
+            $targetId = (int) ($rawRow['id_target'] ?? 0);
+            $cityName = strtoupper(trim((string) ($rawRow['city_name'] ?? '')));
+            $clusterName = trim((string) ($rawRow['cluster_name'] ?? ''));
+            $clusterCode = trim((string) ($rawRow['cluster_code'] ?? ''));
+            $homepassDrm = (int) $this->normalizeNumber($rawRow['homepass_drm'] ?? 0);
+            $drmDate = $this->normalizeDate((string) ($rawRow['drm_date'] ?? '')) ?: date('Y-m-d');
+            $statusDrm = strtoupper(trim((string) ($rawRow['status_drm'] ?? 'WAITING DOC')));
+            $remarkDrm = trim((string) ($rawRow['remark_drm'] ?? ''));
+            $rowErrors = [];
+
+            $candidate = [];
+            if ($clusterId > 0) {
+                $candidate = $this->MDRM_MyRep->getClusterForDrmImportById($clusterId);
+            }
+            if (empty($candidate) && $clusterName !== '') {
+                if ($targetId <= 0 && $cityName !== '') {
+                    $target = $this->MDRM_MyRep->getTargetByCity($cityName);
+                    $targetId = (int) ($target['id_target'] ?? 0);
+                }
+                $candidate = $this->MDRM_MyRep->getClusterForDrmImportByName($clusterName, $cityName, $targetId);
+                $clusterId = (int) ($candidate['id_myrep_cluster'] ?? 0);
+            }
+
+            $isNewCluster = false;
+            if (empty($candidate) || $clusterId <= 0) {
+                if ($targetId <= 0 && $cityName !== '') {
+                    $target = $this->MDRM_MyRep->getTargetByCity($cityName);
+                    $targetId = (int) ($target['id_target'] ?? 0);
+                }
+                if ($clusterName === '') { $rowErrors[] = 'Cluster name wajib diisi jika cluster belum ada'; }
+                if ($targetId <= 0) { $rowErrors[] = 'id_target / city_name wajib valid untuk cluster baru'; }
+                $isNewCluster = empty($rowErrors);
+            } else {
+                if (!empty($candidate['id_drm'])) { $rowErrors[] = 'Cluster sudah punya data DRM'; }
+            }
+
+            if ($homepassDrm <= 0) { $rowErrors[] = 'homepass_drm wajib > 0'; }
+            if (!in_array($statusDrm, ['WAITING DOC', 'WAITING APPROVE', 'COMPLETE', 'REJECTED'], true)) {
+                $statusDrm = 'WAITING DOC';
+            }
+
+            $preparedRows[] = [
+                'row_number' => $rowNumber,
+                'cluster_id' => $clusterId,
+                'id_target' => $targetId,
+                'is_new_cluster' => $isNewCluster ? 1 : 0,
+                'city_name' => $cityName !== '' ? $cityName : (string) ($candidate['city_name'] ?? ''),
+                'cluster_name' => $clusterName !== '' ? $clusterName : (string) ($candidate['cluster_name'] ?? ''),
+                'cluster_code' => $clusterCode !== '' ? $clusterCode : (string) ($candidate['cluster_code'] ?? ''),
+                'homepass_drm' => $homepassDrm,
+                'drm_date' => $drmDate,
+                'nama_olt' => trim((string) ($rawRow['nama_olt'] ?? '')),
+                'status_drm' => $statusDrm,
+                'remark_drm' => $remarkDrm,
+                'status' => empty($rowErrors) ? 'valid' : 'invalid',
+                'message' => empty($rowErrors) ? 'Siap diimport' : implode(', ', array_unique($rowErrors)),
+                'errors' => $rowErrors,
+            ];
+        }
+
+        foreach ($preparedRows as $r) {
+            if (!empty($r['errors'])) {
+                $errors[] = ['row' => $r['row_number'], 'message' => implode(', ', array_unique($r['errors']))];
+            }
+        }
+        $validRows = array_values(array_filter($preparedRows, static function ($r) { return empty($r['errors']); }));
+        return ['rows' => $preparedRows, 'valid_rows' => $validRows, 'errors' => $errors];
+    }
+
+    private function loadPHPExcel()
+    {
+        if (!class_exists('PHPExcel')) {
+            require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        }
+    }
+
+    private function readCsvSheetData($filePath)
+    {
+        $rows = [];
+        $handle = fopen($filePath, 'r');
+        if ($handle === false) { return $rows; }
+        $firstLine = fgets($handle);
+        if ($firstLine === false) { fclose($handle); return $rows; }
+        $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
+        rewind($handle);
+        while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
+            if (!empty($data)) {
+                if (isset($data[0])) { $data[0] = preg_replace('/^\xEF\xBB\xBF/', '', $data[0]); }
+                $rows[] = $data;
+            }
+        }
+        fclose($handle);
+        $sheetData = [];
+        foreach ($rows as $rowIndex => $row) {
+            $sheetRow = [];
+            foreach ($row as $colIndex => $value) {
+                $sheetRow[PHPExcel_Cell::stringFromColumnIndex($colIndex)] = $value;
+            }
+            $sheetData[$rowIndex + 1] = $sheetRow;
+        }
+        return $sheetData;
+    }
+
+    private function jsonResponse($status, $message)
+    {
+        $this->output->set_content_type('application/json')->set_output(json_encode([
+            'status' => $status,
+            'message' => $message,
+        ]));
     }
 
     private function normalizeNumber($value)

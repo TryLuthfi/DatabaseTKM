@@ -34,6 +34,14 @@ CREATE TEMPORARY TABLE stg_myrep_cutoff_import_full (
   email_atp_date varchar(50) DEFAULT NULL,
   actual_atp_date varchar(50) DEFAULT NULL,
   rfs_cluster_id varchar(50) DEFAULT NULL,
+  po_type varchar(50) DEFAULT NULL,
+  po_category varchar(50) DEFAULT NULL,
+  po_number varchar(100) DEFAULT NULL,
+  po_date varchar(50) DEFAULT NULL,
+  po_value varchar(50) DEFAULT NULL,
+  status_po varchar(50) DEFAULT NULL,
+  po_version_label varchar(100) DEFAULT NULL,
+  remark_po text DEFAULT NULL,
   remark_general text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
@@ -83,6 +91,14 @@ SELECT
   DATE(NULLIF(TRIM(COALESCE(actual_atp_date, '')), '')) AS actual_atp_date,
 
   CAST(NULLIF(REPLACE(REPLACE(TRIM(COALESCE(rfs_cluster_id, '')), '.', ''), ',', ''), '') AS UNSIGNED) AS rfs_cluster_id,
+  UPPER(TRIM(COALESCE(po_type, ''))) AS po_type_raw,
+  UPPER(TRIM(COALESCE(po_category, ''))) AS po_category_raw,
+  NULLIF(TRIM(COALESCE(po_number, '')), '') AS po_number,
+  DATE(NULLIF(TRIM(COALESCE(po_date, '')), '')) AS po_date,
+  CAST(NULLIF(REPLACE(REPLACE(TRIM(COALESCE(po_value, '')), '.', ''), ',', ''), '') AS DECIMAL(18,2)) AS po_value,
+  UPPER(TRIM(COALESCE(status_po, ''))) AS status_po_raw,
+  NULLIF(TRIM(COALESCE(po_version_label, '')), '') AS po_version_label,
+  NULLIF(TRIM(COALESCE(remark_po, '')), '') AS remark_po,
   NULLIF(TRIM(COALESCE(remark_general, '')), '') AS remark_general
 FROM stg_myrep_cutoff_import_full
 WHERE TRIM(COALESCE(cluster_name, '')) <> '';
@@ -135,7 +151,19 @@ SELECT
     WHEN n.status_checklist_raw <> '' THEN n.status_checklist_raw
     WHEN n.status_current_raw = 'ATP' OR n.cutoff_group = 'ATP' THEN 'DONE'
     ELSE NULL
-  END AS status_checklist_final
+  END AS status_checklist_final,
+  CASE
+    WHEN n.po_type_raw IN ('CLUSTER', 'SUBFEEDER') THEN n.po_type_raw
+    ELSE 'CLUSTER'
+  END AS po_type_final,
+  CASE
+    WHEN n.po_category_raw IN ('INITIAL', 'FINAL', 'AMANDMENT') THEN n.po_category_raw
+    ELSE 'INITIAL'
+  END AS po_category_final,
+  CASE
+    WHEN n.status_po_raw IN ('NOT ISSUED', 'ISSUED', 'PARTIAL PAYMENT', 'FULLY PAID', 'CLOSED') THEN n.status_po_raw
+    ELSE 'ISSUED'
+  END AS status_po_final
 FROM tmp_myrep_cutoff_norm_full n;
 
 UPDATE tb_myrep_cluster c
@@ -218,6 +246,59 @@ UPDATE tb_rfs_myrep_doc_package p
 INNER JOIN tmp_myrep_cutoff_final_full n ON n.rfs_cluster_id = p.cluster_id
 SET p.status_package = 'DONE'
 WHERE n.status_checklist_final = 'DONE';
+
+INSERT INTO tb_myrep_po_header
+(
+  id_myrep_cluster,
+  po_type,
+  po_category,
+  po_number,
+  po_date,
+  po_value,
+  status_po,
+  po_version_label,
+  remark_po,
+  created_at,
+  updated_at
+)
+SELECT
+  c.id_myrep_cluster,
+  n.po_type_final,
+  n.po_category_final,
+  n.po_number,
+  n.po_date,
+  COALESCE(n.po_value, 0),
+  n.status_po_final,
+  n.po_version_label,
+  COALESCE(n.remark_po, n.remark_general),
+  NOW(),
+  NOW()
+FROM tmp_myrep_cutoff_final_full n
+INNER JOIN tb_myrep_cluster c
+  ON UPPER(TRIM(c.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci
+ AND UPPER(TRIM(c.city_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.city_name)) COLLATE utf8mb4_uca1400_ai_ci
+LEFT JOIN tb_myrep_po_header p
+  ON p.id_myrep_cluster = c.id_myrep_cluster
+ AND UPPER(TRIM(p.po_number)) = UPPER(TRIM(n.po_number))
+WHERE n.po_number IS NOT NULL
+  AND p.id_po_header IS NULL;
+
+UPDATE tb_myrep_po_header p
+INNER JOIN tb_myrep_cluster c ON c.id_myrep_cluster = p.id_myrep_cluster
+INNER JOIN tmp_myrep_cutoff_final_full n
+  ON UPPER(TRIM(c.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.cluster_name)) COLLATE utf8mb4_uca1400_ai_ci
+ AND UPPER(TRIM(c.city_name)) COLLATE utf8mb4_uca1400_ai_ci = UPPER(TRIM(n.city_name)) COLLATE utf8mb4_uca1400_ai_ci
+ AND UPPER(TRIM(p.po_number)) = UPPER(TRIM(n.po_number))
+SET
+  p.po_type = n.po_type_final,
+  p.po_category = n.po_category_final,
+  p.po_date = COALESCE(n.po_date, p.po_date),
+  p.po_value = COALESCE(n.po_value, p.po_value),
+  p.status_po = n.status_po_final,
+  p.po_version_label = COALESCE(n.po_version_label, p.po_version_label),
+  p.remark_po = COALESCE(n.remark_po, p.remark_po),
+  p.updated_at = NOW()
+WHERE n.po_number IS NOT NULL;
 
 SELECT
   n.status_current_final AS status_current,

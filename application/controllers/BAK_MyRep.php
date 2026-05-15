@@ -729,6 +729,278 @@ class BAK_MyRep extends CI_Controller
         exit;
     }
 
+    public function downloadClusterImportTemplate()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $filename = 'format_import_cluster_bak_myrep_' . date('Ymd_His') . '.csv';
+        $headers = [
+            'id_target',
+            'city_name',
+            'cluster_name',
+            'cluster_code',
+            'district_id',
+            'district_name',
+            'village_id',
+            'village_name',
+            'homepass_bak',
+            'ba_open_date',
+            'bak_date',
+            'remark_bak',
+        ];
+
+        $exampleRows = [
+            ['', 'MALANG', 'Cluster A', 'CL-A', '', 'KLOJEN', '', 'KAUMAN', '100', date('Y-m-d'), date('Y-m-d'), 'Contoh cluster BAK 1'],
+            ['', 'MALANG', 'Cluster B', 'CL-B', '', 'BLIMBING', '', 'POLOWIJEN', '120', date('Y-m-d'), date('Y-m-d'), 'Contoh cluster BAK 2'],
+            ['', 'MALANG', 'Cluster C', 'CL-C', '', 'LOWOKWARU', '', 'MOJOLANGU', '90', date('Y-m-d'), date('Y-m-d'), 'Contoh cluster BAK 3'],
+            ['', 'MALANG', 'Cluster D', 'CL-D', '', 'SUKUN', '', 'BANDULAN', '110', date('Y-m-d'), date('Y-m-d'), 'Contoh cluster BAK 4'],
+            ['', 'MALANG', 'Cluster E', 'CL-E', '', 'KEDUNGKANDANG', '', 'SAWOJAJAR', '130', date('Y-m-d'), date('Y-m-d'), 'Contoh cluster BAK 5'],
+        ];
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, $headers);
+        foreach ($exampleRows as $exampleRow) {
+            fputcsv($output, $exampleRow);
+        }
+        fclose($output);
+        exit;
+    }
+
+    public function previewClusterImport()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session login tidak ditemukan.');
+            return;
+        }
+
+        if (!$this->MBAK_MyRep->bakTablesReady()) {
+            $this->jsonResponse(false, 'Tabel BAK MyRep belum tersedia.');
+            return;
+        }
+
+        $config['upload_path'] = './uploads/';
+        $config['allowed_types'] = 'xls|xlsx|csv';
+        $config['max_size'] = 4096;
+        $config['encrypt_name'] = true;
+
+        if (!is_dir($config['upload_path'])) {
+            @mkdir($config['upload_path'], 0777, true);
+        }
+
+        $this->upload->initialize($config);
+
+        if (!$this->upload->do_upload('file_excel')) {
+            $this->jsonResponse(false, strip_tags($this->upload->display_errors('', '')));
+            return;
+        }
+
+        $fileData = $this->upload->data();
+        $filePath = $fileData['full_path'];
+
+        try {
+            $extension = strtolower(pathinfo($fileData['file_name'], PATHINFO_EXTENSION));
+
+            if ($extension === 'csv') {
+                $this->loadPHPExcel();
+                $sheetData = $this->readCsvSheetData($filePath);
+            } else {
+                $this->loadPHPExcel();
+                $objPHPExcel = PHPExcel_IOFactory::load($filePath);
+                $sheetData = $objPHPExcel->getActiveSheet()->toArray(null, true, true, true);
+            }
+        } catch (Exception $e) {
+            @unlink($filePath);
+            $this->jsonResponse(false, 'File import cluster BAK tidak bisa dibaca.');
+            return;
+        }
+
+        @unlink($filePath);
+
+        if (count($sheetData) < 2) {
+            $this->jsonResponse(false, 'File import cluster BAK tidak memiliki data.');
+            return;
+        }
+
+        $headerRow = reset($sheetData);
+        $headerMap = [];
+        foreach ($headerRow as $column => $header) {
+            $mappedField = $this->parseBakImportHeader($header);
+            if ($mappedField) {
+                $headerMap[$column] = $mappedField;
+            }
+        }
+
+        foreach (['cluster_name', 'homepass_bak'] as $requiredField) {
+            if (!in_array($requiredField, $headerMap, true)) {
+                $this->jsonResponse(false, 'Header file wajib memuat ' . $requiredField . '.');
+                return;
+            }
+        }
+
+        if (!in_array('id_target', $headerMap, true) && !in_array('city_name', $headerMap, true)) {
+            $this->jsonResponse(false, 'Header file wajib memuat id_target atau city_name.');
+            return;
+        }
+
+        $rows = [];
+        foreach ($sheetData as $rowIndex => $excelRow) {
+            if ($rowIndex === 1) {
+                continue;
+            }
+
+            $row = [];
+            foreach ($headerMap as $column => $field) {
+                $row[$field] = isset($excelRow[$column]) ? trim((string) $excelRow[$column]) : '';
+            }
+
+            $isBlank = true;
+            foreach ($row as $value) {
+                if (trim((string) $value) !== '') {
+                    $isBlank = false;
+                    break;
+                }
+            }
+
+            if (!$isBlank) {
+                $rows[] = $row;
+            }
+        }
+
+        $validated = $this->validateBakImportRows($rows);
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => true,
+                'message' => count($validated['valid_rows']) . ' data valid dari ' . count($validated['rows']) . ' baris',
+                'rows' => $validated['rows'],
+                'valid_rows' => $validated['valid_rows'],
+                'error_rows' => $validated['errors'],
+            ]));
+    }
+
+    public function saveImportedClusters()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonResponse(false, 'Session login tidak ditemukan.');
+            return;
+        }
+
+        if (!$this->MBAK_MyRep->bakTablesReady()) {
+            $this->jsonResponse(false, 'Tabel BAK MyRep belum tersedia.');
+            return;
+        }
+
+        $rowsJson = $this->input->post('rows_json');
+        $rows = json_decode((string) $rowsJson, true);
+        if (empty($rows) || !is_array($rows)) {
+            $this->jsonResponse(false, 'Tidak ada data import yang siap disimpan.');
+            return;
+        }
+
+        $validated = $this->validateBakImportRows($rows);
+        if (empty($validated['valid_rows'])) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'status' => false,
+                    'message' => 'Semua data import tidak valid.',
+                    'errors' => $validated['errors'],
+                ]));
+            return;
+        }
+
+        $inserted = 0;
+        $userId = (int) $this->session->userdata('id_user');
+        foreach ($validated['valid_rows'] as $row) {
+            $target = $this->MBAK_MyRep->getTargetById((int) ($row['id_target'] ?? 0));
+            if (empty($target)) {
+                continue;
+            }
+
+            $districtId = trim((string) ($row['district_id'] ?? ''));
+            $districtName = trim((string) ($row['district_name'] ?? ''));
+            $villageId = trim((string) ($row['village_id'] ?? ''));
+            $villageName = trim((string) ($row['village_name'] ?? ''));
+            $district = $districtId !== '' ? $this->MBAK_MyRep->getDistrictById($districtId) : [];
+            if (empty($district) && $districtName !== '') {
+                $district = $this->MBAK_MyRep->getDistrictByNameAndTarget($districtName, (int) ($row['id_target'] ?? 0), (string) ($target['city_name'] ?? ''));
+            }
+            $village = $villageId !== '' ? $this->MBAK_MyRep->getVillageById($villageId) : [];
+            if (empty($village) && !empty($district['id']) && $villageName !== '') {
+                $village = $this->MBAK_MyRep->getVillageByNameAndDistrict($villageName, (string) $district['id']);
+            }
+            $statusBak = $this->normalizeImportBakStatus((string) ($row['status_bak'] ?? 'ON REVIEW'));
+            $baOpenDate = $this->normalizeDate((string) ($row['ba_open_date'] ?? '')) ?: date('Y-m-d');
+            $bakDate = $this->normalizeDate((string) ($row['bak_date'] ?? '')) ?: date('Y-m-d');
+            $homepassBak = (int) $this->normalizeNumber($row['homepass_bak'] ?? 0);
+
+            $clusterId = $this->MBAK_MyRep->createClusterAndBak(
+                [
+                    'id_target' => (int) $row['id_target'],
+                    'cluster_name' => (string) ($row['cluster_name'] ?? ''),
+                    'cluster_code' => (($row['cluster_code'] ?? '') !== '') ? (string) $row['cluster_code'] : null,
+                    'regional_name' => $target['regional_name'] ?? null,
+                    'province_name' => $target['province_name'] ?? null,
+                    'city_name' => $target['city_name'] ?? null,
+                    'regency_id' => null,
+                    'district_id' => !empty($district['id']) ? (string) $district['id'] : null,
+                    'district_name' => !empty($district['name']) ? (string) $district['name'] : null,
+                    'village_id' => !empty($village['id']) ? (string) $village['id'] : null,
+                    'village_name' => !empty($village['name']) ? (string) $village['name'] : null,
+                    'team_name' => $target['team_name'] ?? null,
+                    'chief' => $target['chief'] ?? null,
+                    'rpm' => $target['rpm'] ?? null,
+                    'sm' => $target['sm'] ?? null,
+                    'spv' => $target['spv'] ?? null,
+                    'hp_plan' => $homepassBak,
+                    'status_current' => $this->buildCurrentStatus($baOpenDate, $bakDate, $statusBak),
+                    'remark_general' => (($row['remark_bak'] ?? '') !== '') ? (string) $row['remark_bak'] : null,
+                    'created_by' => $userId,
+                    'updated_by' => $userId,
+                ],
+                [
+                    'ba_open_date' => $baOpenDate,
+                    'bak_date' => $bakDate,
+                    'homepass_bak' => $homepassBak,
+                    'status_bak' => $statusBak,
+                    'remark_bak' => (($row['remark_bak'] ?? '') !== '') ? (string) $row['remark_bak'] : null,
+                    'created_by' => $userId,
+                    'updated_by' => $userId,
+                ]
+            );
+
+            if ($clusterId > 0) {
+                $inserted++;
+            }
+        }
+
+        if ($inserted <= 0) {
+            $this->jsonResponse(false, 'Gagal menyimpan hasil import cluster BAK.');
+            return;
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => true,
+                'message' => $inserted . ' cluster BAK berhasil diimport.',
+                'errors' => $validated['errors'],
+            ]));
+    }
+
     public function getDistrictOptions()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -1081,8 +1353,29 @@ class BAK_MyRep extends CI_Controller
 
     private function normalizeDate($date)
     {
+        if ($date === null || $date === '') {
+            return null;
+        }
+
+        if (is_numeric($date) && class_exists('PHPExcel_Shared_Date')) {
+            try {
+                return PHPExcel_Shared_Date::ExcelToPHPObject($date)->format('Y-m-d');
+            } catch (Exception $e) {
+            }
+        }
+
         $date = trim((string) $date);
-        return $date !== '' ? $date : null;
+        if ($date === '') {
+            return null;
+        }
+
+        $date = str_replace('/', '-', $date);
+        $timestamp = strtotime($date);
+        if ($timestamp === false) {
+            return null;
+        }
+
+        return date('Y-m-d', $timestamp);
     }
 
     private function normalizeNumber($value)
@@ -1100,6 +1393,244 @@ class BAK_MyRep extends CI_Controller
         $normalized = str_replace(',', '.', $normalized);
 
         return (float) $normalized;
+    }
+
+    private function parseBakImportHeader($header)
+    {
+        $header = strtolower(trim((string) $header));
+        $header = preg_replace('/[^a-z0-9]+/', '_', $header);
+        $header = trim($header, '_');
+
+        $aliases = [
+            'id_target' => ['id_target', 'target_id'],
+            'city_name' => ['city_name', 'city', 'kota', 'nama_kota'],
+            'cluster_name' => ['cluster_name', 'nama_cluster', 'cluster'],
+            'cluster_code' => ['cluster_code', 'kode_cluster'],
+            'district_id' => ['district_id', 'kecamatan_id'],
+            'district_name' => ['district_name', 'kecamatan', 'nama_kecamatan'],
+            'village_id' => ['village_id', 'kelurahan_id', 'desa_id'],
+            'village_name' => ['village_name', 'kelurahan', 'desa', 'nama_kelurahan', 'nama_desa'],
+            'homepass_bak' => ['homepass_bak', 'homepass', 'hp', 'hp_bak'],
+            'ba_open_date' => ['ba_open_date', 'tanggal_ba_open', 'ba_open'],
+            'bak_date' => ['bak_date', 'tanggal_bak'],
+            'status_bak' => ['status_bak', 'status'],
+            'remark_bak' => ['remark_bak', 'remark', 'catatan'],
+        ];
+
+        foreach ($aliases as $field => $options) {
+            if (in_array($header, $options, true)) {
+                return $field;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeImportBakStatus($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        $allowed = ['DRAFT', 'ON REVIEW', 'REJECTED', 'DONE', 'APPROVED'];
+        if (in_array($status, $allowed, true)) {
+            return $status;
+        }
+
+        return 'ON REVIEW';
+    }
+
+    private function validateBakImportRows(array $rawRows)
+    {
+        $preparedRows = [];
+        $errors = [];
+
+        foreach ($rawRows as $index => $rawRow) {
+            $rowNumber = $index + 1;
+            $targetId = (int) ($rawRow['id_target'] ?? 0);
+            $cityName = strtoupper(trim((string) ($rawRow['city_name'] ?? '')));
+            $clusterName = trim((string) ($rawRow['cluster_name'] ?? ''));
+            $clusterCode = trim((string) ($rawRow['cluster_code'] ?? ''));
+            $districtId = trim((string) ($rawRow['district_id'] ?? ''));
+            $districtName = trim((string) ($rawRow['district_name'] ?? ''));
+            $villageId = trim((string) ($rawRow['village_id'] ?? ''));
+            $villageName = trim((string) ($rawRow['village_name'] ?? ''));
+            $homepassBak = (int) $this->normalizeNumber($rawRow['homepass_bak'] ?? 0);
+            $baOpenDate = $this->normalizeDate((string) ($rawRow['ba_open_date'] ?? '')) ?: date('Y-m-d');
+            $bakDate = $this->normalizeDate((string) ($rawRow['bak_date'] ?? '')) ?: date('Y-m-d');
+            $statusBak = $this->normalizeImportBakStatus((string) ($rawRow['status_bak'] ?? 'ON REVIEW'));
+            $remarkBak = trim((string) ($rawRow['remark_bak'] ?? ''));
+            $rowErrors = [];
+
+            if ($targetId <= 0 && $cityName !== '') {
+                $target = $this->MBAK_MyRep->getTargetByCity($cityName);
+                $targetId = (int) ($target['id_target'] ?? 0);
+            }
+
+            if ($targetId <= 0) {
+                $rowErrors[] = 'Target kota tidak ditemukan (isi id_target atau city_name yang valid)';
+            }
+
+            if ($clusterName === '') {
+                $rowErrors[] = 'Nama cluster wajib diisi';
+            }
+
+            if ($homepassBak <= 0) {
+                $rowErrors[] = 'Homepass BAK harus lebih besar dari 0';
+            }
+
+            $resolvedTargetCityName = '';
+            if ($targetId > 0) {
+                $targetById = $this->MBAK_MyRep->getTargetById($targetId);
+                $resolvedTargetCityName = strtoupper(trim((string) ($targetById['city_name'] ?? '')));
+            }
+
+            $districtRow = [];
+            if ($districtId !== '') {
+                $districtRow = $this->MBAK_MyRep->getDistrictById($districtId);
+                if (empty($districtRow)) {
+                    $rowErrors[] = 'district_id tidak ditemukan';
+                }
+            } elseif ($districtName !== '') {
+                $districtRow = $this->MBAK_MyRep->getDistrictByNameAndTarget($districtName, $targetId, $resolvedTargetCityName !== '' ? $resolvedTargetCityName : $cityName);
+                if (empty($districtRow)) {
+                    $rowErrors[] = 'Nama kecamatan tidak ditemukan';
+                } else {
+                    $districtId = (string) ($districtRow['id'] ?? '');
+                    $districtName = (string) ($districtRow['name'] ?? $districtName);
+                }
+            }
+
+            if ($villageId !== '') {
+                $villageRow = $this->MBAK_MyRep->getVillageById($villageId);
+                if (empty($villageRow)) {
+                    $rowErrors[] = 'village_id tidak ditemukan';
+                } elseif (!empty($districtId) && (string) ($villageRow['district_id'] ?? '') !== (string) $districtId) {
+                    $rowErrors[] = 'village_id tidak sesuai dengan district_id';
+                } else {
+                    if ($villageName === '') {
+                        $villageName = (string) ($villageRow['name'] ?? '');
+                    }
+                }
+            } elseif ($villageName !== '') {
+                if ($districtId === '') {
+                    $rowErrors[] = 'Isi kecamatan dulu untuk validasi kelurahan';
+                } else {
+                    $villageRow = $this->MBAK_MyRep->getVillageByNameAndDistrict($villageName, $districtId);
+                    if (empty($villageRow)) {
+                        $rowErrors[] = 'Nama kelurahan tidak ditemukan';
+                    } else {
+                        $villageId = (string) ($villageRow['id'] ?? '');
+                        $villageName = (string) ($villageRow['name'] ?? $villageName);
+                    }
+                }
+            }
+
+            if ($targetId > 0 && $clusterName !== '' && $this->MBAK_MyRep->clusterExists($clusterName, $targetId)) {
+                $rowErrors[] = 'Cluster dengan target yang sama sudah ada';
+            }
+
+            $preparedRows[] = [
+                'row_number' => $rowNumber,
+                'id_target' => $targetId,
+                'city_name' => $cityName,
+                'cluster_name' => $clusterName,
+                'cluster_code' => $clusterCode,
+                'district_id' => $districtId,
+                'district_name' => $districtName,
+                'village_id' => $villageId,
+                'village_name' => $villageName,
+                'homepass_bak' => $homepassBak,
+                'ba_open_date' => $baOpenDate,
+                'bak_date' => $bakDate,
+                'status_bak' => $statusBak,
+                'remark_bak' => $remarkBak,
+                'status' => empty($rowErrors) ? 'valid' : 'invalid',
+                'message' => empty($rowErrors) ? 'Siap diimport' : implode(', ', array_unique($rowErrors)),
+                'errors' => $rowErrors,
+            ];
+        }
+
+        foreach ($preparedRows as $preparedRow) {
+            if (!empty($preparedRow['errors'])) {
+                $errors[] = [
+                    'row' => $preparedRow['row_number'],
+                    'message' => implode(', ', array_unique($preparedRow['errors'])),
+                ];
+            }
+        }
+
+        $validRows = [];
+        foreach ($preparedRows as $preparedRow) {
+            if (empty($preparedRow['errors'])) {
+                $validRows[] = [
+                    'id_target' => (int) $preparedRow['id_target'],
+                    'cluster_name' => (string) $preparedRow['cluster_name'],
+                    'cluster_code' => (string) $preparedRow['cluster_code'],
+                    'district_id' => (string) $preparedRow['district_id'],
+                    'district_name' => (string) $preparedRow['district_name'],
+                    'village_id' => (string) $preparedRow['village_id'],
+                    'village_name' => (string) $preparedRow['village_name'],
+                    'homepass_bak' => (int) $preparedRow['homepass_bak'],
+                    'ba_open_date' => (string) $preparedRow['ba_open_date'],
+                    'bak_date' => (string) $preparedRow['bak_date'],
+                    'status_bak' => (string) $preparedRow['status_bak'],
+                    'remark_bak' => (string) $preparedRow['remark_bak'],
+                ];
+            }
+        }
+
+        return [
+            'rows' => $preparedRows,
+            'valid_rows' => $validRows,
+            'errors' => $errors,
+        ];
+    }
+
+    private function loadPHPExcel()
+    {
+        if (!class_exists('PHPExcel')) {
+            require_once APPPATH . 'third_party/PHPExcel/Classes/PHPExcel.php';
+        }
+    }
+
+    private function readCsvSheetData($filePath)
+    {
+        $rows = [];
+        $handle = fopen($filePath, 'r');
+
+        if ($handle === false) {
+            return $rows;
+        }
+
+        $firstLine = fgets($handle);
+        if ($firstLine === false) {
+            fclose($handle);
+            return $rows;
+        }
+
+        $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
+        rewind($handle);
+
+        while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
+            if (!empty($data)) {
+                if (isset($data[0])) {
+                    $data[0] = preg_replace('/^\xEF\xBB\xBF/', '', $data[0]);
+                }
+                $rows[] = $data;
+            }
+        }
+
+        fclose($handle);
+
+        $sheetData = [];
+        foreach ($rows as $rowIndex => $row) {
+            $sheetRow = [];
+            foreach ($row as $colIndex => $value) {
+                $columnLetter = PHPExcel_Cell::stringFromColumnIndex($colIndex);
+                $sheetRow[$columnLetter] = $value;
+            }
+            $sheetData[$rowIndex + 1] = $sheetRow;
+        }
+
+        return $sheetData;
     }
 
     private function isApprover()

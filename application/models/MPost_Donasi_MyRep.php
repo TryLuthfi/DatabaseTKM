@@ -56,7 +56,7 @@ class MPost_Donasi_MyRep extends CI_Model
             ->select('c.city_name')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
-            ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'DONE'])
+            ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'])
             ->where('UPPER(ba.staging_status)', 'RELEASED')
             ->order_by('c.city_name', 'ASC')
             ->get()
@@ -84,7 +84,7 @@ class MPost_Donasi_MyRep extends CI_Model
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
-            ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'DONE'])
+            ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'])
             ->where('UPPER(ba.staging_status)', 'RELEASED');
 
         if ($city !== '') {

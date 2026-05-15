@@ -296,6 +296,220 @@ class MBatch_Approval_MyRep extends CI_Model
             ->get()
             ->row_array();
     }
+
+    public function getTargetByCity($cityName)
+    {
+        if (!$this->db->table_exists('tb_rfs_myrep_monthly_target')) {
+            return [];
+        }
+
+        $cityName = strtoupper(trim((string) $cityName));
+        if ($cityName === '') {
+            return [];
+        }
+
+        return $this->db
+            ->from('tb_rfs_myrep_monthly_target')
+            ->where('UPPER(city_name)', $cityName)
+            ->order_by('year_num', 'DESC')
+            ->order_by('month_num', 'DESC')
+            ->order_by('id_target', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+    }
+
+    public function getTargetById($targetId)
+    {
+        $targetId = (int) $targetId;
+        if ($targetId <= 0 || !$this->db->table_exists('tb_rfs_myrep_monthly_target')) {
+            return [];
+        }
+
+        return $this->db
+            ->from('tb_rfs_myrep_monthly_target')
+            ->where('id_target', $targetId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+    }
+
+    public function getClusterForBatchImportById($clusterId)
+    {
+        if (!$this->batchTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->select('c.*, b.id_bak, b.status_bak, b.bak_date, v.id_valsal, v.status_valsal, v.valsal_date, ba.id_batch_approval')
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->where('c.id_myrep_cluster', (int) $clusterId)
+            ->get()
+            ->row_array();
+    }
+
+    public function getClusterForBatchImportByName($clusterName, $cityName = '', $targetId = 0)
+    {
+        if (!$this->batchTablesReady()) {
+            return [];
+        }
+
+        $clusterName = strtoupper(trim((string) $clusterName));
+        $cityName = strtoupper(trim((string) $cityName));
+        $targetId = (int) $targetId;
+        if ($clusterName === '') {
+            return [];
+        }
+
+        $this->db
+            ->select('c.*, b.id_bak, b.status_bak, b.bak_date, v.id_valsal, v.status_valsal, v.valsal_date, ba.id_batch_approval')
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->where('UPPER(c.cluster_name)', $clusterName);
+
+        if ($cityName !== '') {
+            $this->db->where('UPPER(c.city_name)', $cityName);
+        }
+
+        if ($targetId > 0) {
+            $this->db->where('c.id_target', $targetId);
+        }
+
+        return $this->db
+            ->order_by('c.created_at', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+    }
+
+    public function createClusterForBatchImport($targetId, $clusterName, $clusterCode, $homepassPlan, $userId)
+    {
+        $targetId = (int) $targetId;
+        $clusterName = trim((string) $clusterName);
+        $clusterCode = trim((string) $clusterCode);
+        $homepassPlan = (int) $homepassPlan;
+        $userId = (int) $userId;
+
+        if ($targetId <= 0 || $clusterName === '' || $homepassPlan <= 0) {
+            return 0;
+        }
+
+        $target = $this->getTargetById($targetId);
+        if (empty($target)) {
+            return 0;
+        }
+
+        $this->db->insert('tb_myrep_cluster', [
+            'id_target' => $targetId,
+            'cluster_name' => $clusterName,
+            'cluster_code' => $clusterCode !== '' ? $clusterCode : null,
+            'regional_name' => $target['regional_name'] ?? null,
+            'province_name' => $target['province_name'] ?? null,
+            'city_name' => $target['city_name'] ?? null,
+            'regency_id' => null,
+            'district_id' => null,
+            'district_name' => null,
+            'village_id' => null,
+            'village_name' => null,
+            'team_name' => $target['team_name'] ?? null,
+            'chief' => $target['chief'] ?? null,
+            'rpm' => $target['rpm'] ?? null,
+            'sm' => $target['sm'] ?? null,
+            'spv' => $target['spv'] ?? null,
+            'hp_plan' => $homepassPlan,
+            'status_current' => 'BAK',
+            'remark_general' => null,
+            'created_by' => $userId > 0 ? $userId : null,
+            'updated_by' => $userId > 0 ? $userId : null,
+        ]);
+
+        return (int) $this->db->insert_id();
+    }
+
+    public function upsertBakDoneForBatchImport($clusterId, $homepassBak, $bakDate, $userId, $remarkBak = '')
+    {
+        $clusterId = (int) $clusterId;
+        $homepassBak = (int) $homepassBak;
+        $userId = (int) $userId;
+        $bakDate = trim((string) $bakDate) !== '' ? (string) $bakDate : date('Y-m-d');
+        $remarkBak = trim((string) $remarkBak);
+
+        if ($clusterId <= 0 || $homepassBak <= 0 || !$this->db->table_exists('tb_myrep_bak')) {
+            return false;
+        }
+
+        $this->db->trans_start();
+        $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_cluster', [
+            'hp_plan' => $homepassBak,
+            'status_current' => 'BAK',
+            'updated_by' => $userId > 0 ? $userId : null,
+        ]);
+
+        $payload = [
+            'ba_open_date' => $bakDate,
+            'bak_date' => $bakDate,
+            'homepass_bak' => $homepassBak,
+            'status_bak' => 'DONE',
+            'remark_bak' => $remarkBak !== '' ? $remarkBak : null,
+            'updated_by' => $userId > 0 ? $userId : null,
+        ];
+
+        $existing = $this->db->get_where('tb_myrep_bak', ['id_myrep_cluster' => $clusterId])->row_array();
+        if ($existing) {
+            $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_bak', $payload);
+        } else {
+            $payload['id_myrep_cluster'] = $clusterId;
+            $payload['created_by'] = $userId > 0 ? $userId : null;
+            $this->db->insert('tb_myrep_bak', $payload);
+        }
+
+        $this->db->trans_complete();
+        return $this->db->trans_status();
+    }
+
+    public function upsertValsalDoneForBatchImport($clusterId, $homepassValsal, $valsalDate, $userId, $remarkValsal = '')
+    {
+        $clusterId = (int) $clusterId;
+        $homepassValsal = (int) $homepassValsal;
+        $userId = (int) $userId;
+        $valsalDate = trim((string) $valsalDate) !== '' ? (string) $valsalDate : date('Y-m-d');
+        $remarkValsal = trim((string) $remarkValsal);
+
+        if ($clusterId <= 0 || $homepassValsal <= 0) {
+            return false;
+        }
+
+        $this->db->trans_start();
+        $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_cluster', [
+            'status_current' => 'VALSAL',
+            'updated_by' => $userId > 0 ? $userId : null,
+        ]);
+
+        $payload = [
+            'valsal_date' => $valsalDate,
+            'homepass_valsal' => $homepassValsal,
+            'status_valsal' => 'DONE',
+            'remark_valsal' => $remarkValsal !== '' ? $remarkValsal : null,
+            'updated_by' => $userId > 0 ? $userId : null,
+        ];
+
+        $existing = $this->db->get_where('tb_myrep_valsal', ['id_myrep_cluster' => $clusterId])->row_array();
+        if ($existing) {
+            $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_valsal', $payload);
+        } else {
+            $payload['id_myrep_cluster'] = $clusterId;
+            $payload['created_by'] = $userId > 0 ? $userId : null;
+            $this->db->insert('tb_myrep_valsal', $payload);
+        }
+
+        $this->db->trans_complete();
+        return $this->db->trans_status();
+    }
     
     public function getBatchByClusterId($clusterId)
     {

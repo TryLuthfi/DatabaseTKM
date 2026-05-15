@@ -3,6 +3,34 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MMyRep_Cleanup extends CI_Model
 {
+    public function deleteAllClusters()
+    {
+        if (!$this->db->table_exists('tb_myrep_cluster')) {
+            return 0;
+        }
+
+        $rows = $this->db
+            ->select('id_myrep_cluster')
+            ->from('tb_myrep_cluster')
+            ->order_by('id_myrep_cluster', 'asc')
+            ->get()
+            ->result_array();
+
+        if (empty($rows)) {
+            return 0;
+        }
+
+        $deletedCount = 0;
+        foreach ($rows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            if ($clusterId > 0 && $this->deleteWholeCluster($clusterId)) {
+                $deletedCount++;
+            }
+        }
+
+        return $deletedCount;
+    }
+
     public function deleteWholeCluster($myrepClusterId)
     {
         $myrepClusterId = (int) $myrepClusterId;

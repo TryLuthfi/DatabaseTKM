@@ -65,7 +65,7 @@ class MDRM_MyRep extends CI_Model
             ->select('c.city_name')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
-            ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'DONE'])
+            ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'])
             ->where('UPPER(ba.staging_status)', 'RELEASED')
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
@@ -117,7 +117,7 @@ class MDRM_MyRep extends CI_Model
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
-            ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'DONE'])
+            ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'])
             ->where('UPPER(ba.staging_status)', 'RELEASED');
 
         if ($city !== '') {
@@ -126,7 +126,7 @@ class MDRM_MyRep extends CI_Model
 
         $filterByDisplayStatus = false;
         if ($status !== '') {
-            if (in_array($status, ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'DONE'], true)) {
+            if (in_array($status, ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
                 $this->db->where('UPPER(c.status_current)', $status);
             } else {
                 $filterByDisplayStatus = true;
@@ -343,6 +343,220 @@ class MDRM_MyRep extends CI_Model
         $this->db->insert('tb_myrep_drm', $drmPayload);
         $this->db->trans_complete();
 
+        return $this->db->trans_status();
+    }
+
+    public function getTargetByCity($cityName)
+    {
+        if (!$this->db->table_exists('tb_rfs_myrep_monthly_target')) {
+            return [];
+        }
+
+        $cityName = strtoupper(trim((string) $cityName));
+        if ($cityName === '') {
+            return [];
+        }
+
+        return $this->db
+            ->from('tb_rfs_myrep_monthly_target')
+            ->where('UPPER(city_name)', $cityName)
+            ->order_by('year_num', 'DESC')
+            ->order_by('month_num', 'DESC')
+            ->order_by('id_target', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+    }
+
+    public function getTargetById($targetId)
+    {
+        $targetId = (int) $targetId;
+        if ($targetId <= 0 || !$this->db->table_exists('tb_rfs_myrep_monthly_target')) {
+            return [];
+        }
+
+        return $this->db
+            ->from('tb_rfs_myrep_monthly_target')
+            ->where('id_target', $targetId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+    }
+
+    public function getClusterForDrmImportById($clusterId)
+    {
+        if (!$this->drmTablesReady()) {
+            return [];
+        }
+
+        return $this->db
+            ->select('c.*, b.id_bak, b.status_bak, v.id_valsal, v.status_valsal, ba.id_batch_approval, ba.staging_status, d.id_drm')
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->where('c.id_myrep_cluster', (int) $clusterId)
+            ->get()
+            ->row_array();
+    }
+
+    public function getClusterForDrmImportByName($clusterName, $cityName = '', $targetId = 0)
+    {
+        if (!$this->drmTablesReady()) {
+            return [];
+        }
+
+        $clusterName = strtoupper(trim((string) $clusterName));
+        $cityName = strtoupper(trim((string) $cityName));
+        $targetId = (int) $targetId;
+        if ($clusterName === '') {
+            return [];
+        }
+
+        $this->db
+            ->select('c.*, b.id_bak, b.status_bak, v.id_valsal, v.status_valsal, ba.id_batch_approval, ba.staging_status, d.id_drm')
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->where('UPPER(c.cluster_name)', $clusterName);
+
+        if ($cityName !== '') {
+            $this->db->where('UPPER(c.city_name)', $cityName);
+        }
+        if ($targetId > 0) {
+            $this->db->where('c.id_target', $targetId);
+        }
+
+        return $this->db->order_by('c.created_at', 'DESC')->limit(1)->get()->row_array();
+    }
+
+    public function createClusterForDrmImport($targetId, $clusterName, $clusterCode, $homepassPlan, $userId)
+    {
+        $targetId = (int) $targetId;
+        $clusterName = trim((string) $clusterName);
+        $clusterCode = trim((string) $clusterCode);
+        $homepassPlan = (int) $homepassPlan;
+        $userId = (int) $userId;
+        if ($targetId <= 0 || $clusterName === '' || $homepassPlan <= 0) {
+            return 0;
+        }
+
+        $target = $this->getTargetById($targetId);
+        if (empty($target)) {
+            return 0;
+        }
+
+        $this->db->insert('tb_myrep_cluster', [
+            'id_target' => $targetId,
+            'cluster_name' => $clusterName,
+            'cluster_code' => $clusterCode !== '' ? $clusterCode : null,
+            'regional_name' => $target['regional_name'] ?? null,
+            'province_name' => $target['province_name'] ?? null,
+            'city_name' => $target['city_name'] ?? null,
+            'regency_id' => null,
+            'district_id' => null,
+            'district_name' => null,
+            'village_id' => null,
+            'village_name' => null,
+            'team_name' => $target['team_name'] ?? null,
+            'chief' => $target['chief'] ?? null,
+            'rpm' => $target['rpm'] ?? null,
+            'sm' => $target['sm'] ?? null,
+            'spv' => $target['spv'] ?? null,
+            'hp_plan' => $homepassPlan,
+            'status_current' => 'BAK',
+            'remark_general' => null,
+            'created_by' => $userId > 0 ? $userId : null,
+            'updated_by' => $userId > 0 ? $userId : null,
+        ]);
+
+        return (int) $this->db->insert_id();
+    }
+
+    public function upsertBakValsalBatchForDrmImport($clusterId, $homepass, $activityDate, $userId, $remark = '')
+    {
+        $clusterId = (int) $clusterId;
+        $homepass = (int) $homepass;
+        $activityDate = trim((string) $activityDate) !== '' ? (string) $activityDate : date('Y-m-d');
+        $userId = (int) $userId;
+        $remark = trim((string) $remark);
+        if ($clusterId <= 0 || $homepass <= 0) {
+            return false;
+        }
+
+        $this->db->trans_start();
+
+        if ($this->db->table_exists('tb_myrep_bak')) {
+            $bakPayload = [
+                'ba_open_date' => $activityDate,
+                'bak_date' => $activityDate,
+                'homepass_bak' => $homepass,
+                'status_bak' => 'DONE',
+                'remark_bak' => $remark !== '' ? $remark : null,
+                'updated_by' => $userId > 0 ? $userId : null,
+            ];
+            $existingBak = $this->db->get_where('tb_myrep_bak', ['id_myrep_cluster' => $clusterId])->row_array();
+            if ($existingBak) {
+                $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_bak', $bakPayload);
+            } else {
+                $bakPayload['id_myrep_cluster'] = $clusterId;
+                $bakPayload['created_by'] = $userId > 0 ? $userId : null;
+                $this->db->insert('tb_myrep_bak', $bakPayload);
+            }
+        }
+
+        if ($this->db->table_exists('tb_myrep_valsal')) {
+            $valsalPayload = [
+                'valsal_date' => $activityDate,
+                'homepass_valsal' => $homepass,
+                'status_valsal' => 'DONE',
+                'remark_valsal' => $remark !== '' ? $remark : null,
+                'updated_by' => $userId > 0 ? $userId : null,
+            ];
+            $existingValsal = $this->db->get_where('tb_myrep_valsal', ['id_myrep_cluster' => $clusterId])->row_array();
+            if ($existingValsal) {
+                $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_valsal', $valsalPayload);
+            } else {
+                $valsalPayload['id_myrep_cluster'] = $clusterId;
+                $valsalPayload['created_by'] = $userId > 0 ? $userId : null;
+                $this->db->insert('tb_myrep_valsal', $valsalPayload);
+            }
+        }
+
+        if ($this->db->table_exists('tb_myrep_batch_approval')) {
+            $batchPayload = [
+                'submission_date' => $activityDate,
+                'hp_donasi' => $homepass,
+                'nominal_pengajuan_area' => 0,
+                'nominal_per_homepass' => 0,
+                'bank_name' => '-',
+                'bank_account_number' => '-',
+                'recipient_name' => 'AUTO IMPORT DRM',
+                'staging_status' => 'RELEASED',
+                'released_at' => date('Y-m-d H:i:s'),
+                'remark_batch_approval' => $remark !== '' ? $remark : null,
+                'updated_by' => $userId > 0 ? $userId : null,
+            ];
+            $existingBatch = $this->db->get_where('tb_myrep_batch_approval', ['id_myrep_cluster' => $clusterId])->row_array();
+            if ($existingBatch) {
+                $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_batch_approval', $batchPayload);
+            } else {
+                $batchPayload['id_myrep_cluster'] = $clusterId;
+                $batchPayload['created_by'] = $userId > 0 ? $userId : null;
+                $this->db->insert('tb_myrep_batch_approval', $batchPayload);
+            }
+        }
+
+        $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_cluster', [
+            'hp_plan' => $homepass,
+            'status_current' => 'RELEASED',
+            'updated_by' => $userId > 0 ? $userId : null,
+        ]);
+
+        $this->db->trans_complete();
         return $this->db->trans_status();
     }
 

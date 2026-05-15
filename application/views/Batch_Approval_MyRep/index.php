@@ -426,6 +426,9 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
                             <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-batch-create">
                                 <i class="fas fa-plus mr-1"></i> Input Batch Approval
                             </button>
+                            <button type="button" class="btn budget-btn budget-btn--ghost ml-2" data-toggle="modal" data-target="#modal-batch-import">
+                                <i class="fas fa-file-import mr-1"></i> Import Batch Approval
+                            </button>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -523,6 +526,72 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
 </div>
 
 <?php if ($isReady): ?>
+    <div class="modal fade" id="modal-batch-import" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xxl" role="document">
+            <div class="modal-content">
+                <form id="batch-import-preview-form" enctype="multipart/form-data">
+                    <div class="modal-header budget-modal__header">
+                        <div>
+                            <div class="budget-modal__eyebrow">MyRep Batch Approval</div>
+                            <h5 class="modal-title mb-1">Import Batch Approval (Excel/CSV)</h5>
+                            <p class="budget-modal__subtitle mb-0">Sistem auto-create cluster (jika belum ada), auto BAK DONE, auto VALSAL DONE, lalu input Batch Approval.</p>
+                        </div>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="batch-form-section">
+                            <a href="<?= base_url('Batch_Approval_MyRep/downloadBatchImportTemplate') ?>" class="btn budget-btn budget-btn--success">
+                                <i class="fas fa-download mr-1"></i> Download Format CSV (Lengkap)
+                            </a>
+                            <p class="text-muted mt-2 mb-0">Template berisi semua kebutuhan import Batch termasuk data cluster, VALSAL, finansial, penerima, bank, dan PIC.</p>
+                        </div>
+                        <div class="batch-form-section">
+                            <div class="batch-dropzone" id="batch-import-dropzone">
+                                <input type="file" id="batch-import-file-input" name="file_excel" accept=".xls,.xlsx,.csv">
+                                <div class="batch-dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                <div class="batch-dropzone-title">Drag & drop file import di sini</div>
+                                <div class="batch-dropzone-text">Atau klik area ini untuk memilih file dari komputer</div>
+                                <div class="batch-dropzone-file" id="batch-import-file-name">Belum ada file dipilih</div>
+                            </div>
+                        </div>
+                        <div class="batch-form-section mb-0">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="batch-form-section__title mb-0">Preview Import</div>
+                                <small id="batch-import-summary" class="text-muted">Belum ada file dipreview</small>
+                            </div>
+                            <div class="table-responsive" style="max-height:320px;">
+                                <table class="table table-bordered table-sm mb-0" id="table_batch_import_preview">
+                                    <thead>
+                                        <tr>
+                                            <th>Row</th>
+                                            <th>Cluster</th>
+                                            <th>Kota</th>
+                                            <th>HP Donasi</th>
+                                            <th>Nominal Area</th>
+                                            <th>Recipient</th>
+                                            <th>Bank</th>
+                                            <th>Status</th>
+                                            <th>Message</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="9" class="text-center text-muted">Belum ada data preview</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer budget-modal__footer">
+                        <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                        <button type="button" class="btn budget-btn budget-btn--primary" id="batch-save-import-btn" disabled>Simpan Hasil Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modal-batch-create" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content">
@@ -1647,6 +1716,9 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
 <script>
     (function () {
         var MAX_PIC_ROWS = 5;
+        var batchPreviewImportUrl = '<?= base_url('Batch_Approval_MyRep/previewBatchImport') ?>';
+        var batchSaveImportUrl = '<?= base_url('Batch_Approval_MyRep/saveImportedBatch') ?>';
+        var importedBatchRows = [];
 
         function initBatchCreateSelects() {
             var $modal = $('#modal-batch-create');
@@ -1706,6 +1778,37 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
                     ? input.files[0].name
                     : 'Belum ada file dipilih';
             });
+        }
+
+        function resetBatchImportPreview() {
+            importedBatchRows = [];
+            $('#batch-import-summary').text('Belum ada file dipreview');
+            $('#batch-save-import-btn').prop('disabled', true);
+            $('#table_batch_import_preview tbody').html('<tr><td colspan="9" class="text-center text-muted">Belum ada data preview</td></tr>');
+        }
+
+        function renderBatchImportPreview(rows) {
+            if (!rows || !rows.length) {
+                $('#table_batch_import_preview tbody').html('<tr><td colspan="9" class="text-center text-muted">Belum ada data preview</td></tr>');
+                return;
+            }
+
+            var html = rows.map(function (row) {
+                var badgeClass = String(row.status || '').toLowerCase() === 'valid' ? 'success' : 'danger';
+                return '<tr>' +
+                    '<td>' + Number(row.row_number || 0) + '</td>' +
+                    '<td>' + (row.cluster_name || '-') + '</td>' +
+                    '<td>' + (row.city_name || '-') + '</td>' +
+                    '<td class="text-right">' + Number(row.hp_donasi || 0).toLocaleString('id-ID') + '</td>' +
+                    '<td class="text-right">' + Number(row.nominal_pengajuan_area || 0).toLocaleString('id-ID') + '</td>' +
+                    '<td>' + (row.recipient_name || '-') + '</td>' +
+                    '<td>' + (row.bank_name || '-') + '</td>' +
+                    '<td><span class="badge badge-' + badgeClass + '">' + (row.status || '-') + '</span></td>' +
+                    '<td>' + (row.message || '-') + '</td>' +
+                '</tr>';
+            }).join('');
+
+            $('#table_batch_import_preview tbody').html(html);
         }
 
         function bindInlineDropzones() {
@@ -2354,7 +2457,75 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
                 });
             });
 
+            $('#modal-batch-import').on('shown.bs.modal', function () {
+                resetBatchImportPreview();
+                $('#batch-import-file-input').val('');
+                $('#batch-import-file-name').text('Belum ada file dipilih');
+            });
+
+            $('#batch-import-file-input').on('change', function () {
+                var file = this.files && this.files[0] ? this.files[0] : null;
+                if (!file) {
+                    return;
+                }
+
+                var formData = new FormData($('#batch-import-preview-form')[0]);
+                formData.set('file_excel', file);
+                $('#batch-import-summary').text('Memproses preview...');
+
+                $.ajax({
+                    url: batchPreviewImportUrl,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    success: function (response) {
+                        if (!response || !response.status) {
+                            resetBatchImportPreview();
+                            alert(response && response.message ? response.message : 'Preview import Batch gagal.');
+                            return;
+                        }
+
+                        importedBatchRows = response.valid_rows || [];
+                        $('#batch-import-summary').text(response.message || 'Preview selesai');
+                        $('#batch-save-import-btn').prop('disabled', !importedBatchRows.length);
+                        renderBatchImportPreview(response.rows || []);
+                    },
+                    error: function () {
+                        resetBatchImportPreview();
+                        alert('Terjadi kesalahan saat preview import Batch.');
+                    }
+                });
+            });
+
+            $('#batch-save-import-btn').on('click', function () {
+                if (!importedBatchRows.length) {
+                    alert('Belum ada data valid untuk disimpan.');
+                    return;
+                }
+
+                $.ajax({
+                    url: batchSaveImportUrl,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: { rows_json: JSON.stringify(importedBatchRows) },
+                    success: function (response) {
+                        if (response && response.status) {
+                            alert(response.message || 'Import Batch berhasil.');
+                            window.location.reload();
+                            return;
+                        }
+                        alert(response && response.message ? response.message : 'Gagal menyimpan import Batch.');
+                    },
+                    error: function () {
+                        alert('Terjadi kesalahan saat menyimpan import Batch.');
+                    }
+                });
+            });
+
             bindDropzone('#batch-upload-dropzone', '#batch-upload-file-input', '#batch-upload-file-name');
+            bindDropzone('#batch-import-dropzone', '#batch-import-file-input', '#batch-import-file-name');
             bindInlineDropzones();
             renderPicRows('create', []);
             toggleStageFields('create');

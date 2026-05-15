@@ -413,6 +413,28 @@ class MBAK_MyRep extends CI_Model
             ->row_array();
     }
 
+    public function getTargetByCity($cityName)
+    {
+        if (!$this->db->table_exists('tb_rfs_myrep_monthly_target')) {
+            return [];
+        }
+
+        $cityName = strtoupper(trim((string) $cityName));
+        if ($cityName === '') {
+            return [];
+        }
+
+        return $this->db
+            ->from('tb_rfs_myrep_monthly_target')
+            ->where('UPPER(city_name)', $cityName)
+            ->order_by('year_num', 'DESC')
+            ->order_by('month_num', 'DESC')
+            ->order_by('id_target', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+    }
+
     public function clusterExists($clusterName, $targetId)
     {
         return $this->db
@@ -620,6 +642,51 @@ class MBAK_MyRep extends CI_Model
         return $this->db
             ->get_where('md_dusun_indonesia', ['id' => trim((string) $villageId)])
             ->row_array();
+    }
+
+    public function getDistrictByNameAndTarget($districtName, $targetId = 0, $cityNameOverride = '')
+    {
+        $districtName = trim((string) $districtName);
+        if (!$this->wilayahTablesReady() || $districtName === '') {
+            return [];
+        }
+
+        $rows = $this->searchDistrictOptionsByTarget((int) $targetId, $districtName, 200, (string) $cityNameOverride);
+        if (empty($rows)) {
+            return [];
+        }
+
+        $normalizedTarget = $this->normalizeWilayahName($districtName);
+        foreach ($rows as $row) {
+            if ($this->normalizeWilayahName((string) ($row['name'] ?? '')) === $normalizedTarget) {
+                return $row;
+            }
+        }
+
+        return $rows[0];
+    }
+
+    public function getVillageByNameAndDistrict($villageName, $districtId)
+    {
+        $villageName = trim((string) $villageName);
+        $districtId = trim((string) $districtId);
+        if (!$this->wilayahTablesReady() || $villageName === '' || $districtId === '') {
+            return [];
+        }
+
+        $rows = $this->searchVillageOptionsByDistrict($districtId, $villageName, 200);
+        if (empty($rows)) {
+            return [];
+        }
+
+        $normalizedTarget = $this->normalizeWilayahName($villageName);
+        foreach ($rows as $row) {
+            if ($this->normalizeWilayahName((string) ($row['name'] ?? '')) === $normalizedTarget) {
+                return $row;
+            }
+        }
+
+        return $rows[0];
     }
 
     public function searchDistrictOptionsByTarget($targetId, $keyword = '', $limit = 50, $cityNameOverride = '')

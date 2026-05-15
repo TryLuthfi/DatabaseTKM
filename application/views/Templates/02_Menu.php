@@ -642,7 +642,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                     <p>
                                         My Republik
                                         <i class="fas fa-angle-left right"></i>
-                                        <span class="badge badge-info right">11</span>
+                                        <span class="badge badge-info right"><?= $this->session->userdata('nama_level') == "Super Admin" ? '12' : '11' ?></span>
                                     </p>
                                 </a>
                                 <ul class="nav nav-treeview">
@@ -716,6 +716,15 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                             <p>Checklist Dokument</p>
                                         </a>
                                     </li>
+                                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                        <li class="nav-item">
+                                            <a href="<?= base_url('MyRepublik_Project#table_myrep_cluster_list') ?>"
+                                                class="nav-link <?= ($id_menu == 'MyRepublik_Project') ? 'active' : '' ?>">
+                                                <i class="far fa-trash-alt nav-icon text-danger"></i>
+                                                <p>Hapus Cluster MyRep</p>
+                                            </a>
+                                        </li>
+                                    <?php } ?>
                                 </ul>
                             </li>
                         </ul>
