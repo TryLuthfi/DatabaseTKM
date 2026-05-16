@@ -130,7 +130,7 @@ class MPO_MyRep extends CI_Model
             $meta = $poMetaMap[$clusterId] ?? $this->buildEmptyMeta();
             $mergedRow = array_merge($row, $meta);
 
-            if ($status !== '' && strtoupper((string) $mergedRow['po_summary_status']) !== strtoupper($status)) {
+            if ($status !== '' && strtoupper((string) ($mergedRow['po_stage_status'] ?? 'NOT ISSUED')) !== strtoupper($status)) {
                 continue;
             }
 
@@ -184,22 +184,40 @@ class MPO_MyRep extends CI_Model
 
         $headerIds = array_values(array_filter(array_map('intval', array_column($rows, 'id_po_header'))));
         $terminRows = $this->db
-            ->select('id_po_header, status_termin')
+            ->select('id_po_header, termin_no, termin_value, status_termin')
             ->from('tb_myrep_po_termin')
             ->where_in('id_po_header', $headerIds)
             ->get()
             ->result_array();
 
         $terminMap = [];
+        $terminByHeader = [];
         foreach ($terminRows as $termin) {
             $headerId = (int) ($termin['id_po_header'] ?? 0);
+            $terminByHeader[$headerId][] = $termin;
             if (!isset($terminMap[$headerId])) {
-                $terminMap[$headerId] = ['total' => 0, 'progress' => 0, 'paid' => 0];
+                $terminMap[$headerId] = [
+                    'total' => 0,
+                    'progress' => 0,
+                    'paid' => 0,
+                    'plan_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                    'done_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                ];
             }
             $terminMap[$headerId]['total']++;
             $statusTermin = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
+            $terminNo = (int) ($termin['termin_no'] ?? 0);
+            $terminValue = (float) ($termin['termin_value'] ?? 0);
+
+            if ($terminNo >= 1 && $terminNo <= 5 && !in_array($statusTermin, ['BILLED', 'PAID'], true)) {
+                // Plan invoice hanya untuk termin yang belum ditagihkan
+                $terminMap[$headerId]['plan_invoice'][$terminNo] = $terminValue;
+            }
             if (in_array($statusTermin, ['BILLED', 'PAID'], true)) {
                 $terminMap[$headerId]['progress']++;
+                if ($terminNo >= 1 && $terminNo <= 5) {
+                    $terminMap[$headerId]['done_invoice'][$terminNo] = $terminValue;
+                }
             }
             if ($statusTermin === 'PAID') {
                 $terminMap[$headerId]['paid']++;
@@ -208,10 +226,24 @@ class MPO_MyRep extends CI_Model
 
         foreach ($rows as &$row) {
             $headerId = (int) ($row['id_po_header'] ?? 0);
-            $meta = $terminMap[$headerId] ?? ['total' => 0, 'progress' => 0, 'paid' => 0];
+            $meta = $terminMap[$headerId] ?? [
+                'total' => 0,
+                'progress' => 0,
+                'paid' => 0,
+                'plan_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+                'done_invoice' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0],
+            ];
             $row['termin_total_count'] = (int) $meta['total'];
             $row['termin_progress_count'] = (int) $meta['progress'];
             $row['termin_paid_count'] = (int) $meta['paid'];
+            $row['plan_invoice_per_termin'] = $meta['plan_invoice'];
+            $row['done_invoice_per_termin'] = $meta['done_invoice'];
+            $row['plan_invoice_total'] = array_sum($meta['plan_invoice']);
+            $row['done_invoice_total'] = array_sum($meta['done_invoice']);
+            $row['total_invoiced'] = $row['done_invoice_total'];
+            $row['outstanding_total'] = max(0, (float) ($row['po_value'] ?? 0) - (float) $row['total_invoiced']);
+            $terminsForHeader = $terminByHeader[$headerId] ?? [];
+            $row['po_stage_status'] = $this->resolveStageStatus($terminsForHeader);
         }
         unset($row);
 
@@ -708,6 +740,7 @@ class MPO_MyRep extends CI_Model
             'termin_paid_count' => 0,
             'last_po_date' => null,
             'po_summary_status' => 'NOT ISSUED',
+            'po_stage_status' => 'NOT ISSUED',
         ];
     }
 
@@ -729,7 +762,7 @@ class MPO_MyRep extends CI_Model
         $terminRows = [];
         if (!empty($headerIds)) {
             $terminRows = $this->db
-                ->select('id_po_header, status_termin')
+                ->select('id_po_header, termin_no, status_termin')
                 ->from('tb_myrep_po_termin')
                 ->where_in('id_po_header', $headerIds)
                 ->get()
@@ -738,7 +771,10 @@ class MPO_MyRep extends CI_Model
 
         $terminGrouped = [];
         foreach ($terminRows as $terminRow) {
-            $terminGrouped[(int) ($terminRow['id_po_header'] ?? 0)][] = strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY')));
+            $terminGrouped[(int) ($terminRow['id_po_header'] ?? 0)][] = [
+                'termin_no' => (int) ($terminRow['termin_no'] ?? 0),
+                'status_termin' => strtoupper(trim((string) ($terminRow['status_termin'] ?? 'NOT READY'))),
+            ];
         }
 
         $metaMap = [];
@@ -767,14 +803,30 @@ class MPO_MyRep extends CI_Model
                 }
             }
 
-            $statuses = $terminGrouped[(int) ($headerRow['id_po_header'] ?? 0)] ?? [];
-            $metaMap[$clusterId]['termin_total_count'] += count($statuses);
-            $metaMap[$clusterId]['termin_progress_count'] += count(array_filter($statuses, static function ($status) {
-                return in_array($status, ['BILLED', 'PAID'], true);
+            $termins = $terminGrouped[(int) ($headerRow['id_po_header'] ?? 0)] ?? [];
+            $metaMap[$clusterId]['termin_total_count'] += count($termins);
+            $metaMap[$clusterId]['termin_progress_count'] += count(array_filter($termins, static function ($termin) {
+                return in_array((string) ($termin['status_termin'] ?? 'NOT READY'), ['BILLED', 'PAID'], true);
             }));
-            $metaMap[$clusterId]['termin_paid_count'] += count(array_filter($statuses, static function ($status) {
-                return $status === 'PAID';
+            $metaMap[$clusterId]['termin_paid_count'] += count(array_filter($termins, static function ($termin) {
+                return (string) ($termin['status_termin'] ?? 'NOT READY') === 'PAID';
             }));
+        }
+
+        // Stage status diambil dari PO terbaru per cluster.
+        $latestHeaderByCluster = [];
+        foreach ($headerRows as $headerRow) {
+            $clusterId = (int) ($headerRow['id_myrep_cluster'] ?? 0);
+            $headerId = (int) ($headerRow['id_po_header'] ?? 0);
+            $poDate = (string) ($headerRow['po_date'] ?? '');
+            if (!isset($latestHeaderByCluster[$clusterId])) {
+                $latestHeaderByCluster[$clusterId] = ['id_po_header' => $headerId, 'po_date' => $poDate];
+                continue;
+            }
+            $current = $latestHeaderByCluster[$clusterId];
+            if ($poDate > (string) ($current['po_date'] ?? '') || ($poDate === (string) ($current['po_date'] ?? '') && $headerId > (int) ($current['id_po_header'] ?? 0))) {
+                $latestHeaderByCluster[$clusterId] = ['id_po_header' => $headerId, 'po_date' => $poDate];
+            }
         }
 
         foreach ($metaMap as $clusterId => &$meta) {
@@ -787,9 +839,46 @@ class MPO_MyRep extends CI_Model
             } else {
                 $meta['po_summary_status'] = 'ISSUED';
             }
+
+            $latestHeaderId = (int) ($latestHeaderByCluster[$clusterId]['id_po_header'] ?? 0);
+            $latestTermins = $latestHeaderId > 0 ? ($terminGrouped[$latestHeaderId] ?? []) : [];
+            $meta['po_stage_status'] = $this->resolveStageStatus($latestTermins);
         }
         unset($meta);
 
         return $metaMap;
+    }
+
+    private function resolveStageStatus(array $termins)
+    {
+        if (empty($termins)) {
+            return 'NOT ISSUED';
+        }
+
+        $statusByTermin = [];
+        foreach ($termins as $termin) {
+            $no = (int) ($termin['termin_no'] ?? 0);
+            if ($no < 1 || $no > 5) {
+                continue;
+            }
+            $statusByTermin[$no] = strtoupper(trim((string) ($termin['status_termin'] ?? 'NOT READY')));
+        }
+
+        $labels = [
+            1 => 'DP',
+            2 => 'ATP CW',
+            3 => 'FULL OPM',
+            4 => 'RFS',
+            5 => 'FAC',
+        ];
+
+        for ($i = 1; $i <= 5; $i++) {
+            $status = $statusByTermin[$i] ?? 'NOT READY';
+            if (!in_array($status, ['BILLED', 'PAID'], true)) {
+                return $labels[$i];
+            }
+        }
+
+        return 'FAC';
     }
 }

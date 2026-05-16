@@ -1436,22 +1436,45 @@ class MImplementasi_BOQ_MyRep extends CI_Model
     {
         $itemName = strtoupper(trim((string) ($row['item_name'] ?? '')));
         $excelItemName = strtoupper(trim((string) ($row['excel_item_name'] ?? '')));
-        $combined = trim($itemName . ' ' . $excelItemName);
+        $complyLabel = strtoupper(trim((string) ($row['comply_label'] ?? '')));
+        $caption = strtoupper(trim((string) ($row['caption'] ?? '')));
+        $labelCombined = trim($complyLabel . ' ' . $caption);
+        $masterCombined = trim($itemName . ' ' . $excelItemName);
 
-        if (strpos($combined, 'TIANG') !== false || strpos($combined, 'POLE') !== false) {
-            return 'POLE';
+        // Prioritas 1: tentukan kategori dari label/description foto.
+        if (strpos($labelCombined, 'FDT') !== false) {
+            return 'FDT';
+        }
+        if (strpos($labelCombined, 'FAT') !== false) {
+            return 'FAT';
+        }
+        if (
+            strpos($labelCombined, 'TIANG') !== false
+            || strpos($labelCombined, 'POLE') !== false
+            || preg_match('/\bT\d+\b/', $labelCombined)
+        ) {
+            return 'TIANG';
         }
 
-        if (strpos($combined, 'FDT') !== false) {
+        // Prioritas 2 (fallback): pakai item master jika label tidak memberi sinyal.
+        if (strpos($masterCombined, 'FDT') !== false) {
             return 'FDT';
         }
 
-        if (strpos($combined, 'FAT') !== false) {
+        if (strpos($masterCombined, 'FAT') !== false) {
             return 'FAT';
         }
 
-        if (strpos($combined, 'SPLITTER') !== false) {
+        if (strpos($masterCombined, 'TIANG') !== false || strpos($masterCombined, 'POLE') !== false) {
+            return 'TIANG';
+        }
+
+        if (strpos($labelCombined, 'SPLITTER') !== false || strpos($masterCombined, 'SPLITTER') !== false) {
             return 'SPLITTER';
+        }
+
+        if ($complyLabel !== '') {
+            return $complyLabel;
         }
 
         return $itemName !== '' ? $itemName : 'COMPLY';

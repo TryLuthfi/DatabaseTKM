@@ -227,6 +227,10 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
 
         $complyGroups = $this->MImplementasi_BOQ_MyRep->getApprovedComplyPrintGroups($clusterId);
+        $selectedCategory = trim((string) $this->input->get('category'));
+        if ($selectedCategory !== '') {
+            $complyGroups = $this->filterComplyGroupsByCategory($complyGroups, $selectedCategory);
+        }
         if (empty($complyGroups)) {
             $this->session->set_flashdata('error', 'Belum ada foto comply APPROVED yang bisa dicetak.');
             redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane');
@@ -288,6 +292,11 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         }
 
         $complyGroups = $this->MImplementasi_BOQ_MyRep->getApprovedComplyPrintGroups($clusterId);
+        $allCategoryTitles = array_keys($complyGroups);
+        $selectedCategory = trim((string) $this->input->get('category'));
+        if ($selectedCategory !== '') {
+            $complyGroups = $this->filterComplyGroupsByCategory($complyGroups, $selectedCategory);
+        }
         if (empty($complyGroups)) {
             $this->session->set_flashdata('error', 'Belum ada foto comply APPROVED yang bisa dipreview.');
             redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane');
@@ -297,13 +306,31 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $data['title'] = 'Preview Foto Comply';
         $data['cluster'] = $cluster;
         $data['complyGroups'] = $complyGroups;
-        $data['pdfUrl'] = base_url('Implementasi_BOQ_MyRep/printComplyPdf/' . $clusterId);
+        $data['allCategoryTitles'] = $allCategoryTitles;
+        $data['selectedCategory'] = $selectedCategory;
+        $data['pdfUrl'] = base_url('Implementasi_BOQ_MyRep/printComplyPdf/' . $clusterId) . ($selectedCategory !== '' ? ('?category=' . rawurlencode($selectedCategory)) : '');
         $data['tcpdfAvailable'] = class_exists('TCPDF') || $this->resolveTcpdfPath() !== '';
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Implementasi_BOQ_MyRep/preview_comply_pdf', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    private function filterComplyGroupsByCategory(array $groups, $selectedCategory)
+    {
+        $selectedCategory = trim((string) $selectedCategory);
+        if ($selectedCategory === '' || empty($groups)) {
+            return $groups;
+        }
+
+        foreach ($groups as $title => $rows) {
+            if (strcasecmp((string) $title, $selectedCategory) === 0) {
+                return [$title => $rows];
+            }
+        }
+
+        return [];
     }
 
     public function saveProgress()

@@ -220,7 +220,21 @@ $clusterCode = (string) (!empty($cluster['cluster_code']) ? $cluster['cluster_co
                     <div class="comply-preview-title">Preview Foto Comply</div>
                     <div class="comply-preview-subtitle"><?= htmlspecialchars($clusterName) ?></div>
                 </div>
-                <div class="d-flex align-items-center" style="gap:.5rem;">
+                <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap; justify-content:flex-end;">
+                    <?php if (!empty($allCategoryTitles)): ?>
+                        <form method="get" action="<?= base_url('Implementasi_BOQ_MyRep/previewComplyPdf/' . (int) ($cluster['id_myrep_cluster'] ?? 0)) ?>" class="d-flex align-items-center" style="gap:.4rem;">
+                            <label for="comply-category-select" class="mb-0 font-weight-bold">Kategori:</label>
+                            <select id="comply-category-select" name="category" class="form-control form-control-sm" style="min-width:260px;">
+                                <option value="">Semua Kategori</option>
+                                <?php foreach ((array) $allCategoryTitles as $title): ?>
+                                    <option value="<?= htmlspecialchars((string) $title) ?>" <?= strcasecmp((string) $title, (string) ($selectedCategory ?? '')) === 0 ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars((string) $title) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">Terapkan</button>
+                        </form>
+                    <?php endif; ?>
                     <?php if (!empty($tcpdfAvailable)): ?>
                         <a href="<?= htmlspecialchars((string) ($pdfUrl ?? '#')) ?>" target="_blank" class="btn btn-outline-dark btn-sm">
                             <i class="fas fa-file-pdf mr-1"></i>Buka PDF

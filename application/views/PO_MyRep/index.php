@@ -8,6 +8,13 @@ if (!function_exists('poMyRepNumber')) {
         return number_format((float) $value, 0, ',', '.');
     }
 }
+
+if (!function_exists('poMyRepNumberOrDash')) {
+    function poMyRepNumberOrDash($value)
+    {
+        return (float) $value == 0.0 ? '-' : poMyRepNumber($value);
+    }
+}
 ?>
 
 <style>
@@ -52,6 +59,68 @@ if (!function_exists('poMyRepNumber')) {
         cursor: pointer;
         color: inherit;
         text-decoration: underline;
+    }
+
+    #table_po_list_only th,
+    #table_po_list_only td {
+        white-space: nowrap;
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    #table_po_list_only thead th,
+    #table_po_list_only.dataTable thead th,
+    #table_po_list_only.dataTable thead td {
+        text-align: center !important;
+        vertical-align: middle !important;
+        font-weight: 700;
+    }
+
+    #table_po_list_only.dataTable thead th.sorting,
+    #table_po_list_only.dataTable thead th.sorting_asc,
+    #table_po_list_only.dataTable thead th.sorting_desc {
+        text-align: center !important;
+    }
+
+    #table_po_list_only .text-right {
+        text-align: right !important;
+    }
+
+    .po-list-inline-filters {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        margin-bottom: 10px;
+    }
+
+    .po-list-inline-filters .form-group {
+        margin-bottom: 0;
+        min-width: 270px;
+    }
+
+    .po-list-inline-filters label {
+        display: block;
+        margin-bottom: 4px;
+        font-size: .72rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        font-weight: 700;
+        color: #475569;
+    }
+
+    .po-list-inline-filters .form-control {
+        height: 40px;
+        border-radius: 12px;
+        border: 1px solid #d5dee8;
+        box-shadow: none;
+        padding: 0 12px;
+        background: #fff;
+    }
+
+    .po-list-inline-filters .form-control:focus {
+        border-color: #9db8d6;
+        box-shadow: 0 0 0 0.16rem rgba(29, 126, 214, 0.12);
     }
 </style>
 
@@ -100,7 +169,7 @@ if (!function_exists('poMyRepNumber')) {
                                     <label>Status PO</label>
                                     <select name="status" class="form-control">
                                         <option value="">Semua Status</option>
-                                        <?php foreach (['NOT ISSUED', 'ISSUED', 'PARTIAL PAYMENT', 'FULLY PAID', 'CLOSED'] as $statusOption): ?>
+                                        <?php foreach (['DP', 'ATP CW', 'FULL OPM', 'RFS', 'FAC'] as $statusOption): ?>
                                             <option value="<?= htmlspecialchars($statusOption) ?>" <?= strtoupper((string) $selectedStatus) === $statusOption ? 'selected' : '' ?>><?= htmlspecialchars($statusOption) ?></option>
                                         <?php endforeach; ?>
                                     </select>
@@ -292,15 +361,17 @@ if (!function_exists('poMyRepNumber')) {
                                             <?php foreach ($clusterRows as $index => $row): ?>
                                                 <?php
                                                 $statusBadgeClass = 'secondary';
-                                                $summaryStatus = strtoupper(trim((string) ($row['po_summary_status'] ?? 'NOT ISSUED')));
-                                                if ($summaryStatus === 'FULLY PAID') {
-                                                    $statusBadgeClass = 'success';
-                                                } elseif ($summaryStatus === 'PARTIAL PAYMENT') {
+                                                $summaryStatus = strtoupper(trim((string) ($row['po_stage_status'] ?? 'NOT ISSUED')));
+                                                if ($summaryStatus === 'DP') {
+                                                    $statusBadgeClass = 'danger';
+                                                } elseif ($summaryStatus === 'ATP CW') {
                                                     $statusBadgeClass = 'warning';
-                                                } elseif ($summaryStatus === 'ISSUED') {
+                                                } elseif ($summaryStatus === 'FULL OPM') {
+                                                    $statusBadgeClass = 'info';
+                                                } elseif ($summaryStatus === 'RFS') {
                                                     $statusBadgeClass = 'primary';
-                                                } elseif ($summaryStatus === 'CLOSED') {
-                                                    $statusBadgeClass = 'dark';
+                                                } elseif ($summaryStatus === 'FAC') {
+                                                    $statusBadgeClass = 'success';
                                                 }
                                                 $terminTotal = (int) ($row['termin_total_count'] ?? 0);
                                                 $terminProgress = (int) ($row['termin_progress_count'] ?? $row['termin_paid_count'] ?? 0);
@@ -361,28 +432,71 @@ if (!function_exists('poMyRepNumber')) {
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="po-list-pane" role="tabpanel" aria-labelledby="po-list-tab">
+                                <div class="po-list-inline-filters" id="po-list-inline-filters">
+                                    <div class="form-group">
+                                        <label for="po-list-filter-type">Filter Tipe PO</label>
+                                        <select id="po-list-filter-type" class="form-control">
+                                            <option value="">Semua Tipe</option>
+                                            <option value="CLUSTER">CLUSTER</option>
+                                            <option value="SUBFEEDER">SUBFEEDER</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="po-list-filter-status">Filter Status PO</label>
+                                        <select id="po-list-filter-status" class="form-control">
+                                            <option value="">Semua Status</option>
+                                            <option value="DP">DP</option>
+                                            <option value="ATP CW">ATP CW</option>
+                                            <option value="FULL OPM">FULL OPM</option>
+                                            <option value="RFS">RFS</option>
+                                            <option value="FAC">FAC</option>
+                                        </select>
+                                    </div>
+                                </div>
                                 <div class="table-responsive">
                                     <table id="table_po_list_only" class="table table-bordered table-hover">
                                         <thead>
                                             <tr>
-                                                <th>No</th>
-                                                <th>Tipe PO</th>
-                                                <th>No PO</th>
-                                                <th>Cluster</th>
-                                                <th>Kota</th>
-                                                <th>Regional</th>
-                                                <th>Status PO</th>
-                                                <th>Nilai PO</th>
-                                                <th>Termin</th>
-                                                <th>Tanggal PO</th>
-                                                <th>Aksi</th>
+                                                <th rowspan="3">No</th>
+                                                <th rowspan="3">Tipe PO</th>
+                                                <th rowspan="3">No PO</th>
+                                                <th rowspan="3">Tanggal PO</th>
+                                                <th rowspan="3">Cluster</th>
+                                                <th rowspan="3">Kota</th>
+                                                <th rowspan="3">Regional</th>
+                                                <th rowspan="3">Status PO</th>
+                                                <th rowspan="3">Nilai PO</th>
+                                                <th rowspan="3">Termin</th>
+                                                <th colspan="10" class="text-center">PROGRESS INVOICE</th>
+                                                <th rowspan="3">Total Invoiced</th>
+                                                <th rowspan="3">Outstanding Total</th>
+                                                <th rowspan="3">Aksi</th>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="2" class="text-center">TOP 1<br>20%(DP)</th>
+                                                <th colspan="2" class="text-center">TOP 2<br>25%(CW)</th>
+                                                <th colspan="2" class="text-center">TOP 3<br>15%(FULL OPM)</th>
+                                                <th colspan="2" class="text-center">TOP 4<br>30%(RFS)</th>
+                                                <th colspan="2" class="text-center">TOP 5<br>10%(FAC)</th>
+                                            </tr>
+                                            <tr>
+                                                <th class="text-center">PLAN INV</th>
+                                                <th class="text-center">NILAI</th>
+                                                <th class="text-center">PLAN INV</th>
+                                                <th class="text-center">NILAI</th>
+                                                <th class="text-center">PLAN INV</th>
+                                                <th class="text-center">NILAI</th>
+                                                <th class="text-center">PLAN INV</th>
+                                                <th class="text-center">NILAI</th>
+                                                <th class="text-center">PLAN INV</th>
+                                                <th class="text-center">NILAI</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <?php foreach ($poListRows as $index => $row): ?>
                                                 <?php
                                                 $tipePo = strtoupper(trim((string) ($row['po_type'] ?? 'CLUSTER')));
-                                                $statusPo = strtoupper(trim((string) ($row['status_po'] ?? 'NOT ISSUED')));
+                                                $statusPo = strtoupper(trim((string) ($row['po_stage_status'] ?? 'NOT ISSUED')));
                                                 $terminTotal = (int) ($row['termin_total_count'] ?? 0);
                                                 $terminProgress = (int) ($row['termin_progress_count'] ?? 0);
                                                 ?>
@@ -390,28 +504,61 @@ if (!function_exists('poMyRepNumber')) {
                                                     <td><?= $index + 1 ?></td>
                                                     <td><span class="badge badge-<?= $tipePo === 'SUBFEEDER' ? 'warning' : 'primary' ?>"><?= htmlspecialchars($tipePo) ?></span></td>
                                                     <td>
-                                                        <strong><?= htmlspecialchars((string) ($row['po_number'] ?? '-')) ?></strong>
+                                                        <strong>
+                                                            <a href="<?= base_url('PO_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>">
+                                                                <?= htmlspecialchars((string) ($row['po_number'] ?? '-')) ?>
+                                                            </a>
+                                                        </strong>
                                                         <div class="small text-muted"><?= htmlspecialchars((string) ($row['po_category'] ?? '-')) ?></div>
                                                     </td>
+                                                    <td><?= !empty($row['po_date']) ? htmlspecialchars((string) $row['po_date']) : '-' ?></td>
                                                     <td><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></td>
                                                     <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
                                                     <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
-                                                    <td><span class="badge badge-secondary"><?= htmlspecialchars($statusPo) ?></span></td>
+                                                    <td>
+                                                        <span class="badge badge-<?= $statusPo === 'DP' ? 'danger' : ($statusPo === 'ATP CW' ? 'warning' : ($statusPo === 'FULL OPM' ? 'info' : ($statusPo === 'RFS' ? 'primary' : ($statusPo === 'FAC' ? 'success' : 'secondary')))) ?>">
+                                                            <?= htmlspecialchars($statusPo) ?>
+                                                        </span>
+                                                    </td>
                                                     <td class="text-right"><?= poMyRepNumber((float) ($row['po_value'] ?? 0)) ?></td>
                                                     <td class="text-center"><?= $terminProgress ?>/<?= $terminTotal ?></td>
-                                                    <td><?= !empty($row['po_date']) ? htmlspecialchars((string) $row['po_date']) : '-' ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][1] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][1] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][2] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][2] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][3] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][3] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][4] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][4] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['plan_invoice_per_termin'][5] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) (($row['done_invoice_per_termin'][5] ?? 0))) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) ($row['total_invoiced'] ?? 0)) ?></td>
+                                                    <td class="text-right"><?= poMyRepNumberOrDash((float) ($row['outstanding_total'] ?? 0)) ?></td>
                                                     <td><a href="<?= base_url('PO_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="btn btn-sm btn-primary">Detail</a></td>
                                                 </tr>
                                             <?php endforeach; ?>
                                             <?php if (empty($poListRows)): ?>
-                                                <tr><td colspan="11" class="text-center text-muted">Belum ada data PO.</td></tr>
+                                                <tr><td colspan="25" class="text-center text-muted">Belum ada data PO.</td></tr>
                                             <?php endif; ?>
                                         </tbody>
                                         <tfoot>
                                             <tr>
-                                                <th colspan="7" class="text-right">TOTAL NILAI PO</th>
-                                                <th class="text-right" id="po-list-footer-nilai-po">0</th>
-                                                <th colspan="3"></th>
+                                                <th colspan="8" class="text-right">TOTAL NILAI PO</th>
+                                                <th class="text-right po-list-footer-nilai-po" id="po-list-footer-nilai-po">0</th>
+                                                <th></th>
+                                                <th class="text-right po-list-footer-plan-1" id="po-list-footer-plan-1">-</th>
+                                                <th class="text-right po-list-footer-done-1" id="po-list-footer-done-1">-</th>
+                                                <th class="text-right po-list-footer-plan-2" id="po-list-footer-plan-2">-</th>
+                                                <th class="text-right po-list-footer-done-2" id="po-list-footer-done-2">-</th>
+                                                <th class="text-right po-list-footer-plan-3" id="po-list-footer-plan-3">-</th>
+                                                <th class="text-right po-list-footer-done-3" id="po-list-footer-done-3">-</th>
+                                                <th class="text-right po-list-footer-plan-4" id="po-list-footer-plan-4">-</th>
+                                                <th class="text-right po-list-footer-done-4" id="po-list-footer-done-4">-</th>
+                                                <th class="text-right po-list-footer-plan-5" id="po-list-footer-plan-5">-</th>
+                                                <th class="text-right po-list-footer-done-5" id="po-list-footer-done-5">-</th>
+                                                <th class="text-right po-list-footer-total-invoiced" id="po-list-footer-total-invoiced">-</th>
+                                                <th class="text-right po-list-footer-outstanding-total" id="po-list-footer-outstanding-total">-</th>
+                                                <th></th>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -510,18 +657,62 @@ if (!function_exists('poMyRepNumber')) {
             }) : null;
 
             var tablePoList = $('#table_po_list_only').length ? $('#table_po_list_only').DataTable({
-                responsive: true,
+                responsive: false,
+                scrollX: true,
                 autoWidth: false,
                 pageLength: 10,
-                order: [[9, 'desc']],
+                order: [[3, 'desc']],
                 footerCallback: function () {
                     var api = this.api();
-                    var totalNilaiPo = api.column(7, { page: 'current' }).data().reduce(function (a, b) {
+                    var totalNilaiPo = api.column(8, { page: 'current' }).data().reduce(function (a, b) {
                         return parseLocaleNumber(a) + parseLocaleNumber(b);
                     }, 0);
-                    $('#po-list-footer-nilai-po').text(totalNilaiPo.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    var totalPlan1 = api.column(10, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone1 = api.column(11, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalPlan2 = api.column(12, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone2 = api.column(13, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalPlan3 = api.column(14, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone3 = api.column(15, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalPlan4 = api.column(16, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone4 = api.column(17, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalPlan5 = api.column(18, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalDone5 = api.column(19, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalInvoiced = api.column(20, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    var totalOutstanding = api.column(21, { page: 'current' }).data().reduce(function (a, b) { return parseLocaleNumber(a) + parseLocaleNumber(b); }, 0);
+                    $('.po-list-footer-nilai-po').text(totalNilaiPo.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-plan-1').text(totalPlan1 === 0 ? '-' : totalPlan1.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-done-1').text(totalDone1 === 0 ? '-' : totalDone1.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-plan-2').text(totalPlan2 === 0 ? '-' : totalPlan2.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-done-2').text(totalDone2 === 0 ? '-' : totalDone2.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-plan-3').text(totalPlan3 === 0 ? '-' : totalPlan3.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-done-3').text(totalDone3 === 0 ? '-' : totalDone3.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-plan-4').text(totalPlan4 === 0 ? '-' : totalPlan4.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-done-4').text(totalDone4 === 0 ? '-' : totalDone4.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-plan-5').text(totalPlan5 === 0 ? '-' : totalPlan5.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-done-5').text(totalDone5 === 0 ? '-' : totalDone5.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-total-invoiced').text(totalInvoiced === 0 ? '-' : totalInvoiced.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    $('.po-list-footer-outstanding-total').text(totalOutstanding === 0 ? '-' : totalOutstanding.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                 }
             }) : null;
+
+            if (tablePoList) {
+                var $filters = $('#po-list-inline-filters');
+                var $wrapper = $('#table_po_list_only_wrapper');
+                var $search = $wrapper.find('.dataTables_filter');
+                if ($filters.length && $search.length) {
+                    $filters.insertBefore($search);
+                }
+
+                $('#po-list-filter-type').on('change', function () {
+                    var val = String($(this).val() || '');
+                    tablePoList.column(1).search(val ? '^' + val + '$' : '', true, false).draw();
+                });
+
+                $('#po-list-filter-status').on('change', function () {
+                    var val = String($(this).val() || '');
+                    tablePoList.column(7).search(val ? '^' + val + '$' : '', true, false).draw();
+                });
+            }
 
             $('a[data-toggle="pill"]').on('shown.bs.tab', function () {
                 if (tableMonitor) {
