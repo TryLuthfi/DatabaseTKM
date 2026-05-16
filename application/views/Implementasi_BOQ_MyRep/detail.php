@@ -253,8 +253,9 @@ foreach ($compareRows as $row) {
         'qty_plan' => (float) ($row['qty_boq'] ?? 0),
         'qty_achiev' => (float) ($row['progress_qty'] ?? 0),
         'qty_remaining' => (float) ($row['remaining_qty'] ?? 0),
-        'photo_target' => (int) ($row['target_foto_required'] ?? 0),
-        'photo_uploaded' => (int) ($row['uploaded_harian_photos'] ?? 0),
+        // Breakdown foto tampilkan total upload/target (harian + comply)
+        'photo_target' => (int) (($row['target_foto_required'] ?? 0) + ($row['target_comply_photo_required'] ?? 0)),
+        'photo_uploaded' => (int) ($row['uploaded_photos'] ?? 0),
     ];
 
     $rowHistory = $historyMap[(int) ($row['id_boq_baseline_item'] ?? 0)] ?? [];
