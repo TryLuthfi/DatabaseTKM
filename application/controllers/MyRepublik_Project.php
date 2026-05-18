@@ -333,15 +333,15 @@ class MyRepublik_Project extends CI_Controller
                     continue;
                 }
 
-                $saved = $this->saveOneImportedCluster($row, $userId);
-                if ($saved) {
+                $saveResult = $this->saveOneImportedCluster($row, $userId);
+                if (!empty($saveResult['inserted'])) {
                     $inserted++;
                 } else {
                     $skipped++;
                     $errorDetails[] = [
                         'row_number' => $index + 1,
                         'cluster_name' => (string) ($row['cluster_name'] ?? ''),
-                        'message' => 'Dilewati (kemungkinan data sudah ada / tidak valid untuk insert).',
+                        'message' => (string) ($saveResult['message'] ?? 'Dilewati (kemungkinan data sudah ada / tidak valid untuk insert).'),
                     ];
                 }
             } catch (Throwable $e) {
@@ -787,11 +787,11 @@ class MyRepublik_Project extends CI_Controller
         $statusCurrent = $this->resolveImportStatusCurrent($row);
         $target = $this->resolveTargetByCity($cityName);
         if (empty($target) || $clusterName === '') {
-            return false;
+            return ['inserted' => false, 'message' => 'Target/city atau cluster_name tidak valid.'];
         }
         $targetId = (int) ($target['id_target'] ?? 0);
         if ($targetId <= 0) {
-            return false;
+            return ['inserted' => false, 'message' => 'Target ID tidak valid.'];
         }
 
         // Hindari duplicate insert untuk cluster + target yang sama.
@@ -803,7 +803,7 @@ class MyRepublik_Project extends CI_Controller
             ->get()
             ->row_array();
         if (!empty($existingCluster['id_myrep_cluster'])) {
-            return false;
+            return ['inserted' => false, 'message' => 'Cluster sudah ada di target kota yang sama.'];
         }
 
         $homepassPlan = (int) $this->normalizeNumber($row['hp_plan'] ?? 0);
@@ -848,6 +848,10 @@ class MyRepublik_Project extends CI_Controller
             'updated_by' => $userId,
         ]);
         $clusterId = (int) $this->db->insert_id();
+        if ($clusterId <= 0) {
+            $this->db->trans_rollback();
+            return ['inserted' => false, 'message' => 'Gagal insert ke tb_myrep_cluster.'];
+        }
 
         $this->upsertImportedBak($clusterId, $row, $userId);
         $this->upsertImportedValsal($clusterId, $row, $userId);
@@ -857,7 +861,15 @@ class MyRepublik_Project extends CI_Controller
         $this->upsertImportedRfsAtp($clusterId, $row, $userId, $target, $statusCurrent);
 
         $this->db->trans_complete();
-        return $this->db->trans_status();
+        if (!$this->db->trans_status()) {
+            return ['inserted' => false, 'message' => 'Transaksi gagal (rollback).'];
+        }
+
+        return [
+            'inserted' => true,
+            'cluster_id' => $clusterId,
+            'message' => 'OK',
+        ];
     }
 
     private function upsertImportedBak($clusterId, array $row, $userId)
