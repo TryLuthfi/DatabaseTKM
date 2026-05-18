@@ -241,7 +241,9 @@ class MPO_MyRep extends CI_Model
             $row['plan_invoice_total'] = array_sum($meta['plan_invoice']);
             $row['done_invoice_total'] = array_sum($meta['done_invoice']);
             $row['total_invoiced'] = $row['done_invoice_total'];
-            $row['outstanding_total'] = max(0, (float) ($row['po_value'] ?? 0) - (float) $row['total_invoiced']);
+            // Samakan definisi dengan modal breakdown:
+            // Outstanding Total = total termin yang belum BILLED/PAID.
+            $row['outstanding_total'] = (float) $row['plan_invoice_total'];
             $terminsForHeader = $terminByHeader[$headerId] ?? [];
             $row['po_stage_status'] = $this->resolveStageStatus($terminsForHeader);
         }
@@ -346,7 +348,6 @@ class MPO_MyRep extends CI_Model
         foreach ($headerMeta as $meta) {
             $type = $meta['po_type'] === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
             $result[$type]['total_po_value'] += (float) $meta['po_value'];
-            $result[$type]['outstanding_value'] += (float) $meta['po_value'];
         }
 
         foreach ($terminRows as $terminRow) {
@@ -363,19 +364,12 @@ class MPO_MyRep extends CI_Model
             if (in_array($terminStatus, ['BILLED', 'PAID'], true)) {
                 $result[$type]['term_done_count']++;
                 $result[$type]['total_invoiced_value'] += $terminValue;
-                $result[$type]['outstanding_value'] -= $terminValue;
             } elseif ($terminNo >= 1 && $terminNo <= 5) {
                 // Outstanding per termin: hanya yang belum billed/paid.
                 $result[$type]['termin_values'][$terminNo] += $terminValue;
+                $result[$type]['outstanding_value'] += $terminValue;
             }
         }
-
-        foreach ($result as &$row) {
-            if ($row['outstanding_value'] < 0) {
-                $row['outstanding_value'] = 0;
-            }
-        }
-        unset($row);
 
         return array_values($result);
     }
