@@ -115,67 +115,14 @@ if (!function_exists('checklist_doc_status_label')) {
     }
 }
 
-$totalCluster = count($clusterList);
-$clusterDoneRfsBelumAtp = 0;
-$clusterDoneAtpBelumDokument = 0;
-$clusterNyAstri = 0;
-$internalStatusSummary = [
-    'NY' => 0,
-    'ON REVIEW' => 0,
-    'REJECTED' => 0,
-    'APPROVED' => 0,
-];
-$astriStatusSummary = [
-    'NY' => 0,
-    'ON REVIEW' => 0,
-    'REJECTED' => 0,
-    'APPROVED' => 0,
-];
-$projectOpnameFlowSummary = [
-    'WAITING WASPANG' => 0,
-    'WAITING PLANNING' => 0,
-    'WAITING TL' => 0,
-    'WAITING LOGISTIK' => 0,
-];
-
-foreach ($clusterList as $cluster) {
-    if (!empty($cluster['tanggal_rfs']) && empty($cluster['actual_atp_date'])) {
-        $clusterDoneRfsBelumAtp++;
-    }
-
-    if (!empty($cluster['actual_atp_date']) && empty($cluster['actual_submit_doc_date'])) {
-        $clusterDoneAtpBelumDokument++;
-    }
-
-    if (empty($cluster['approved_astri_date'])) {
-        $clusterNyAstri++;
-    }
-}
-
-foreach ($documentItemList as $item) {
-    $internalStatus = checklist_doc_status_label($item['status_file'] ?? 'NOT UPLOADED');
-    if ($internalStatus === 'NOT UPLOADED') {
-        $internalStatusSummary['NY']++;
-    } elseif (isset($internalStatusSummary[$internalStatus])) {
-        $internalStatusSummary[$internalStatus]++;
-    }
-
-    $astriStatus = checklist_doc_status_label($item['astri_status'] ?? 'NY');
-    if (in_array($astriStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'], true)) {
-        $astriStatusSummary['ON REVIEW']++;
-    } elseif (isset($astriStatusSummary[$astriStatus])) {
-        $astriStatusSummary[$astriStatus]++;
-    }
-
-    if (
-        strtoupper(trim((string) ($item['scope_type'] ?? ''))) === 'CLUSTER'
-        && strtoupper(trim((string) ($item['sow_type'] ?? ''))) === 'RFS'
-        && strtoupper(trim((string) ($item['doc_name'] ?? ''))) === 'PROJECT OPNAME'
-        && isset($projectOpnameFlowSummary[$astriStatus])
-    ) {
-        $projectOpnameFlowSummary[$astriStatus]++;
-    }
-}
+$summary = isset($dashboardSummary) && is_array($dashboardSummary) ? $dashboardSummary : [];
+$totalCluster = (int) ($summary['totalCluster'] ?? count($clusterList));
+$clusterDoneRfsBelumAtp = (int) ($summary['clusterDoneRfsBelumAtp'] ?? 0);
+$clusterDoneAtpBelumDokument = (int) ($summary['clusterDoneAtpBelumDokument'] ?? 0);
+$clusterNyAstri = (int) ($summary['clusterNyAstri'] ?? 0);
+$internalStatusSummary = isset($summary['internalStatusSummary']) && is_array($summary['internalStatusSummary']) ? $summary['internalStatusSummary'] : ['NY' => 0, 'ON REVIEW' => 0, 'REJECTED' => 0, 'APPROVED' => 0];
+$astriStatusSummary = isset($summary['astriStatusSummary']) && is_array($summary['astriStatusSummary']) ? $summary['astriStatusSummary'] : ['NY' => 0, 'ON REVIEW' => 0, 'REJECTED' => 0, 'APPROVED' => 0];
+$projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_array($summary['projectOpnameFlowSummary']) ? $summary['projectOpnameFlowSummary'] : ['WAITING WASPANG' => 0, 'WAITING PLANNING' => 0, 'WAITING TL' => 0, 'WAITING LOGISTIK' => 0];
 ?>
 
 <style>
@@ -1214,12 +1161,18 @@ foreach ($documentItemList as $item) {
                             <label for="item-filter-regional">Regional</label>
                             <select id="item-filter-regional" class="form-control form-control-sm">
                                 <option value="">Semua Regional</option>
+                                <?php foreach ($regionalOptions as $regionalOption): ?>
+                                    <option value="<?= htmlspecialchars($regionalOption, ENT_QUOTES) ?>"><?= htmlspecialchars($regionalOption, ENT_QUOTES) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="item-filter-group">
                             <label for="item-filter-city">Kota</label>
                             <select id="item-filter-city" class="form-control form-control-sm">
                                 <option value="">Semua Kota</option>
+                                <?php foreach ($cityOptions as $cityOption): ?>
+                                    <option value="<?= htmlspecialchars($cityOption, ENT_QUOTES) ?>"><?= htmlspecialchars($cityOption, ENT_QUOTES) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="item-filter-group">
@@ -1274,53 +1227,7 @@ foreach ($documentItemList as $item) {
                                 <th>Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <?php if (!empty($documentItemList)): ?>
-                                <?php $itemNo = 1; ?>
-                                <?php foreach ($documentItemList as $item): ?>
-                                    <tr>
-                                        <td><?= $itemNo++ ?></td>
-                                        <td><?= !empty($item['regional_name']) ? $item['regional_name'] : '-' ?></td>
-                                        <td><?= !empty($item['city_name']) ? $item['city_name'] : '-' ?></td>
-                                        <td>
-                                            <div class="flat-cluster-name">
-                                                <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . (int) $item['id_cluster']) ?>" class="cluster-name-link">
-                                                    <?= !empty($item['cluster_name']) ? $item['cluster_name'] : '-' ?>
-                                                </a>
-                                            </div>
-                                        </td>
-                                        <td><?= !empty($item['scope_type']) ? $item['scope_type'] : '-' ?></td>
-                                        <td><?= !empty($item['sow_type']) ? $item['sow_type'] : '-' ?></td>
-                                        <td>
-                                            <strong><?= !empty($item['doc_name']) ? $item['doc_name'] : '-' ?></strong>
-                                        </td>
-                                        <td><?= !empty($item['verification_by']) ? $item['verification_by'] : '-' ?></td>
-                                        <td>
-                                            <?php $internalStatus = checklist_doc_status_label($item['status_file'] ?? 'NOT UPLOADED'); ?>
-                                            <span class="badge badge-<?= checklist_doc_status_badge($item['status_file'] ?? 'NOT UPLOADED') ?>"><?= $internalStatus ?></span>
-                                        </td>
-                                        <td class="remark-cell"><?= !empty($item['remark']) ? nl2br(htmlspecialchars($item['remark'])) : '-' ?></td>
-                                        <td>
-                                            <?php $astriStatus = checklist_doc_status_label($item['astri_status'] ?? 'NY'); ?>
-                                            <span class="badge badge-<?= checklist_doc_status_badge($item['astri_status'] ?? 'NY') ?>"><?= $astriStatus ?></span>
-                                        </td>
-                                        <td class="remark-cell"><?= !empty($item['astri_remark']) ? nl2br(htmlspecialchars($item['astri_remark'])) : '-' ?></td>
-                                        <td><?= checklist_doc_format_date($item['uploaded_at'] ?? null) ?></td>
-                                        <td><?= checklist_doc_format_date($item['reviewed_at'] ?? null) ?></td>
-                                        <td><?= checklist_doc_format_date($item['approved_at'] ?? null) ?></td>
-                                        <td><?= checklist_doc_format_date($item['astri_submitted_date'] ?? null) ?></td>
-                                        <td>
-                                            <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . (int) $item['id_cluster']) ?>"
-                                                class="btn btn-primary btn-sm">Detail</a>
-                                            <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?');">
-                                                <input type="hidden" name="cluster_id" value="<?= (int) $item['id_cluster'] ?>">
-                                                <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
             </div>
@@ -1416,10 +1323,12 @@ foreach ($documentItemList as $item) {
         var itemTable = null;
         if ($('#table-checklist-item').length) {
             itemTable = $('#table-checklist-item').DataTable({
+                "processing": true,
+                "serverSide": true,
                 "paging": true,
                 "lengthChange": true,
                 "searching": true,
-                "ordering": true,
+                "ordering": false,
                 "info": true,
                 "autoWidth": false,
                 "responsive": false,
@@ -1429,6 +1338,20 @@ foreach ($documentItemList as $item) {
                     [10, 25, 50, 100],
                     [10, 25, 50, 100]
                 ],
+                "ajax": {
+                    "url": "<?= base_url('Checklist_Dokument_MyRep/itemTableData') ?>",
+                    "type": "POST",
+                    "data": function(d) {
+                        d.selected_city = "<?= htmlspecialchars($selectedCity, ENT_QUOTES) ?>";
+                        d.selected_regional = "<?= htmlspecialchars($selectedRegional, ENT_QUOTES) ?>";
+                        d.item_regional = $('#item-filter-regional').val() || '';
+                        d.item_city = $('#item-filter-city').val() || '';
+                        d.internal_status = $('#item-filter-internal-status').val() || '';
+                        d.astri_status = $('#item-filter-astri-status').val() || '';
+                        d.quick_type = activeQuickFilter.type || '';
+                        d.quick_value = activeQuickFilter.value || '';
+                    }
+                },
                 "language": {
                     "emptyTable": "Belum ada item dokumen."
                 }
@@ -1440,78 +1363,24 @@ foreach ($documentItemList as $item) {
             return;
         }
 
-        $.fn.dataTable.ext.search.push(function(settings, data) {
-            if (settings.nTable.id !== 'table-checklist-item') {
-                return true;
-            }
-
-            if (!activeQuickFilter.type || !activeQuickFilter.value) {
-                return true;
-            }
-
-            var docName = (data[6] || '').toUpperCase().trim();
-            var astriStatus = (data[10] || '').toUpperCase().trim();
-
-            if (activeQuickFilter.type === 'project-opname') {
-                return docName === 'PROJECT OPNAME' && astriStatus === activeQuickFilter.value;
-            }
-
-            if (activeQuickFilter.type === 'astri' && activeQuickFilter.value === 'ON REVIEW') {
-                return ['ON REVIEW', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'].indexOf(astriStatus) !== -1;
-            }
-
-            return true;
-        });
-
-        function escapeRegex(value) {
-            return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-
-        function populateFilterOptions(columnIndex, selector) {
-            var select = $(selector);
-            var values = [];
-
-            itemTable.column(columnIndex).data().each(function(value) {
-                var text = $('<div>').html(value).text().trim();
-                if (text !== '' && values.indexOf(text) === -1) {
-                    values.push(text);
-                }
-            });
-
-            values.sort();
-            $.each(values, function(_, value) {
-                select.append($('<option>', {
-                    value: value,
-                    text: value
-                }));
-            });
-        }
-
-        populateFilterOptions(1, '#item-filter-regional');
-        populateFilterOptions(2, '#item-filter-city');
-
         $('#item-filter-regional').on('change', function() {
-            var value = $.fn.dataTable.util.escapeRegex($(this).val());
-            itemTable.column(1).search(value ? '^' + value + '$' : '', true, false).draw();
+            itemTable.draw();
         });
 
         $('#item-filter-city').on('change', function() {
-            var value = $.fn.dataTable.util.escapeRegex($(this).val());
-            itemTable.column(2).search(value ? '^' + value + '$' : '', true, false).draw();
+            itemTable.draw();
         });
 
         $('#item-filter-internal-status').on('change', function() {
             activeQuickFilter.type = '';
             activeQuickFilter.value = '';
-            var value = $(this).val();
-            itemTable.column(8).search(value ? escapeRegex(value) : '', true, false).draw();
+            itemTable.draw();
         });
 
         $('#item-filter-astri-status').on('change', function() {
             activeQuickFilter.type = '';
             activeQuickFilter.value = '';
-            var value = $(this).val();
-            itemTable.column(10).search(value ? escapeRegex(value) : '', true, false).draw();
+            itemTable.draw();
         });
 
         $('.quick-item-filter').on('click', function() {
@@ -1523,25 +1392,12 @@ foreach ($documentItemList as $item) {
             $('#item-filter-internal-status').val('');
             $('#item-filter-astri-status').val('');
 
-            itemTable.column(1).search('', true, false);
-            itemTable.column(2).search('', true, false);
-            itemTable.column(8).search('', true, false);
-            itemTable.column(10).search('', true, false);
-
             activeQuickFilter.type = filterType;
             activeQuickFilter.value = filterValue;
-
             if (filterType === 'internal') {
                 $('#item-filter-internal-status').val(filterValue);
-                itemTable.column(8).search(escapeRegex(filterValue), true, false);
-            } else if (filterType === 'astri') {
+            } else if (filterType === 'astri' || filterType === 'project-opname') {
                 $('#item-filter-astri-status').val(filterValue);
-                if (filterValue !== 'ON REVIEW') {
-                    itemTable.column(10).search(escapeRegex(filterValue), true, false);
-                }
-            } else if (filterType === 'project-opname') {
-                $('#item-filter-astri-status').val(filterValue);
-                itemTable.column(10).search(escapeRegex(filterValue), true, false);
             }
 
             setCardCollapsed('#cluster-monitor-card', true);
@@ -1554,59 +1410,18 @@ foreach ($documentItemList as $item) {
         });
 
         $('#btn-export-item-excel').on('click', function() {
-            var exportColumnIndexes = [];
-            var headers = [];
-            $('#table-checklist-item thead th').each(function(index) {
-                var headerText = $(this).text().trim();
-                if (headerText !== 'Aksi') {
-                    exportColumnIndexes.push(index);
-                    headers.push(headerText);
-                }
+            var params = $.param({
+                selected_city: "<?= htmlspecialchars($selectedCity, ENT_QUOTES) ?>",
+                selected_regional: "<?= htmlspecialchars($selectedRegional, ENT_QUOTES) ?>",
+                item_regional: $('#item-filter-regional').val() || '',
+                item_city: $('#item-filter-city').val() || '',
+                internal_status: $('#item-filter-internal-status').val() || '',
+                astri_status: $('#item-filter-astri-status').val() || '',
+                quick_type: activeQuickFilter.type || '',
+                quick_value: activeQuickFilter.value || '',
+                search: itemTable.search() || ''
             });
-
-            var rows = itemTable.rows({
-                search: 'applied',
-                order: 'applied'
-            }).nodes();
-
-            var html = '<table border="1"><thead><tr>';
-            $.each(headers, function(_, header) {
-                html += '<th>' + $('<div>').text(header).html() + '</th>';
-            });
-            html += '</tr></thead><tbody>';
-
-            if (!rows.length) {
-                html += '<tr><td colspan="' + headers.length + '">Tidak ada data.</td></tr>';
-            } else {
-                $(rows).each(function() {
-                    html += '<tr>';
-                    var cells = $(this).find('td');
-                    $.each(exportColumnIndexes, function(_, columnIndex) {
-                        var cell = cells.eq(columnIndex).clone();
-                        cell.find('.item-note').remove();
-                        var cellText = cell.text().trim().replace(/\s+/g, ' ');
-                        html += '<td>' + $('<div>').text(cellText).html() + '</td>';
-                    });
-                    html += '</tr>';
-                });
-            }
-
-            html += '</tbody></table>';
-
-            var blob = new Blob(
-                ['\ufeff' + html], {
-                    type: 'application/vnd.ms-excel'
-                }
-            );
-
-            var url = URL.createObjectURL(blob);
-            var link = document.createElement('a');
-            link.href = url;
-            link.download = 'monitoring_item_dokumen_' + new Date().toISOString().slice(0, 10) + '.xls';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            window.location.href = "<?= base_url('Checklist_Dokument_MyRep/exportItemExcel') ?>?" + params;
         });
 
         setTimeout(showChecklistContent, 150);
