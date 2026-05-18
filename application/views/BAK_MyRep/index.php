@@ -190,8 +190,8 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                     data-homepass_bak="<?= (int) ($row['homepass_bak'] ?? 0) ?>"
                     data-ba_open_date="<?= htmlspecialchars((string) ($row['ba_open_date'] ?? ''), ENT_QUOTES) ?>"
                     data-bak_date="<?= htmlspecialchars((string) ($row['bak_date'] ?? ''), ENT_QUOTES) ?>"
-                    data-ntp_name="<?= htmlspecialchars((string) ($row['ntp_name'] ?? ''), ENT_QUOTES) ?>"
-                    data-ntp_date="<?= htmlspecialchars((string) ($row['ntp_date'] ?? ''), ENT_QUOTES) ?>"
+                    data-ntp-name="<?= htmlspecialchars((string) ($row['ntp_name'] ?? ''), ENT_QUOTES) ?>"
+                    data-ntp-date="<?= htmlspecialchars((string) ($row['ntp_date'] ?? ''), ENT_QUOTES) ?>"
                     data-status_bak="<?= htmlspecialchars((string) ($row['status_bak'] ?? 'DRAFT'), ENT_QUOTES) ?>"
                     data-remark_bak="<?= htmlspecialchars((string) ($row['remark_bak'] ?? ''), ENT_QUOTES) ?>">
                     Edit
@@ -666,7 +666,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                             <div class="col-md-4"><div class="form-group"><label>Tanggal BA OPEN</label><input type="date" name="ba_open_date" class="form-control" value="<?= $today ?>"></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Tanggal BAK</label><input type="date" name="bak_date" class="form-control" value="<?= $today ?>"></div></div>
                             <div class="col-md-6"><div class="form-group"><label>Nomor NTP</label><input type="text" name="nomor_ntp" class="form-control" placeholder="Contoh: NTP/EMR/001"></div></div>
-                            <div class="col-md-6"><div class="form-group"><label>Tanggal NTP</label><input type="date" name="tanggal_ntp" class="form-control"></div></div>
+                            <div class="col-md-6"><div class="form-group"><label>Tanggal NTP</label><input type="date" name="tanggal_ntp" class="form-control" value="<?= $today ?>"></div></div>
                             <div class="col-md-4"><div class="form-group"><label>Status BAK</label><input type="text" class="form-control" value="ON REVIEW" readonly></div></div>
                             <div class="col-md-12"><div class="form-group"><label>Remark</label><textarea name="remark_bak" rows="3" class="form-control"></textarea></div></div>
                             <?php if ($docReady): ?>
@@ -2100,8 +2100,8 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 $modal.find('#edit_homepass_bak').val($button.data('homepass_bak'));
                 $modal.find('#edit_ba_open_date').val($button.data('ba_open_date'));
                 $modal.find('#edit_bak_date').val($button.data('bak_date'));
-                $modal.find('#edit_nomor_ntp').val($button.data('ntp_name'));
-                $modal.find('#edit_tanggal_ntp').val($button.data('ntp_date'));
+                $modal.find('#edit_nomor_ntp').val($button.attr('data-ntp-name') || $button.data('ntpName') || '');
+                $modal.find('#edit_tanggal_ntp').val($button.attr('data-ntp-date') || $button.data('ntpDate') || '');
                 $modal.find('#edit_status_bak').val($button.data('status_bak'));
                 $modal.find('#edit_remark_bak').val($button.data('remark_bak'));
                 populateSelect2Option($modal.find('#edit_district_id'), $button.data('district_id') || '', $button.data('district_name') || '');

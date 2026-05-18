@@ -3,6 +3,16 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MChecklist_Dokument_MyRep extends CI_Model
 {
+    private $maxWhereInChunk = 500;
+
+    private function sanitizeIdList(array $ids)
+    {
+        $clean = array_values(array_unique(array_filter(array_map('intval', $ids), static function ($id) {
+            return $id > 0;
+        })));
+        return $clean;
+    }
+
     public function supportsAtpColumns()
     {
         return $this->db->field_exists('status_atp', 'tb_rfs_myrep_cluster');
@@ -1903,17 +1913,24 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     private function getPackagesByClusterIds($clusterIds)
     {
+        $clusterIds = $this->sanitizeIdList((array) $clusterIds);
         if (empty($clusterIds)) {
             return [];
         }
 
-        $rows = $this->db
-            ->select('p.*, g.scope_type, g.sow_type, g.group_label')
-            ->from('tb_rfs_myrep_doc_package p')
-            ->join('md_rfs_myrep_doc_group g', 'g.id_doc_group = p.id_doc_group', 'inner')
-            ->where_in('p.cluster_id', $clusterIds)
-            ->get()
-            ->result_array();
+        $rows = [];
+        foreach (array_chunk($clusterIds, $this->maxWhereInChunk) as $chunkIds) {
+            $chunkRows = $this->db
+                ->select('p.*, g.scope_type, g.sow_type, g.group_label')
+                ->from('tb_rfs_myrep_doc_package p')
+                ->join('md_rfs_myrep_doc_group g', 'g.id_doc_group = p.id_doc_group', 'inner')
+                ->where_in('p.cluster_id', $chunkIds)
+                ->get()
+                ->result_array();
+            if (!empty($chunkRows)) {
+                $rows = array_merge($rows, $chunkRows);
+            }
+        }
 
         $packages = [];
         foreach ($rows as $row) {
@@ -1925,21 +1942,28 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     private function getFileSummaryByPackageIds($packageIds)
     {
+        $packageIds = $this->sanitizeIdList((array) $packageIds);
         if (empty($packageIds)) {
             return [];
         }
 
-        $rows = $this->db
-            ->select("
-                id_doc_package,
-                SUM(CASE WHEN ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1) AND status_file IN ('UPLOADED','APPROVED') THEN 1 ELSE 0 END) AS uploaded_docs,
-                SUM(CASE WHEN status_file = 'APPROVED' THEN 1 ELSE 0 END) AS approved_docs
-            ", false)
-            ->from('tb_rfs_myrep_doc_file')
-            ->where_in('id_doc_package', $packageIds)
-            ->group_by('id_doc_package')
-            ->get()
-            ->result_array();
+        $rows = [];
+        foreach (array_chunk($packageIds, $this->maxWhereInChunk) as $chunkIds) {
+            $chunkRows = $this->db
+                ->select("
+                    id_doc_package,
+                    SUM(CASE WHEN ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1) AND status_file IN ('UPLOADED','APPROVED') THEN 1 ELSE 0 END) AS uploaded_docs,
+                    SUM(CASE WHEN status_file = 'APPROVED' THEN 1 ELSE 0 END) AS approved_docs
+                ", false)
+                ->from('tb_rfs_myrep_doc_file')
+                ->where_in('id_doc_package', $chunkIds)
+                ->group_by('id_doc_package')
+                ->get()
+                ->result_array();
+            if (!empty($chunkRows)) {
+                $rows = array_merge($rows, $chunkRows);
+            }
+        }
 
         $summary = [];
         foreach ($rows as $row) {
@@ -1954,62 +1978,69 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     private function getFileStatusSummaryByPackageIds($packageIds)
     {
+        $packageIds = $this->sanitizeIdList((array) $packageIds);
         if (empty($packageIds)) {
             return [];
         }
 
-        $rows = $this->db
-            ->select("
-                f.id_doc_package,
-                SUM(CASE WHEN f.status_file = 'APPROVED' THEN 1 ELSE 0 END) AS approved,
-                SUM(CASE WHEN f.status_file = 'UPLOADED' THEN 1 ELSE 0 END) AS on_review,
-                SUM(CASE WHEN f.status_file = 'REJECTED' THEN 1 ELSE 0 END) AS rejected,
-                COUNT(*) AS existing,
-                SUM(CASE WHEN f.astri_status = 'APPROVED' THEN 1 ELSE 0 END) AS astri_approved,
-                SUM(CASE WHEN f.astri_status = 'REJECTED' THEN 1 ELSE 0 END) AS astri_rejected,
-                SUM(CASE
-                    WHEN f.astri_status IN ('ON REVIEW', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
-                        THEN 1
-                    WHEN f.astri_status = 'NY'
-                        AND p.actual_atp_date IS NOT NULL
-                        AND g.scope_type = 'CLUSTER'
-                        AND g.sow_type = 'RFS'
-                        AND UPPER(i.doc_name) = 'PROJECT OPNAME'
-                        THEN 1
-                    ELSE 0
-                END) AS astri_on_review,
-                SUM(CASE
-                    WHEN f.astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
-                        THEN 1
-                    WHEN f.astri_status = 'NY'
-                        AND p.actual_atp_date IS NOT NULL
-                        AND g.scope_type = 'CLUSTER'
-                        AND g.sow_type = 'RFS'
-                        AND UPPER(i.doc_name) = 'PROJECT OPNAME'
-                        THEN 1
-                    ELSE 0
-                END) AS astri_submitted,
-                MAX(CASE
-                    WHEN (
-                        f.astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
-                        OR (
-                            f.astri_status = 'NY'
+        $rows = [];
+        foreach (array_chunk($packageIds, $this->maxWhereInChunk) as $chunkIds) {
+            $chunkRows = $this->db
+                ->select("
+                    f.id_doc_package,
+                    SUM(CASE WHEN f.status_file = 'APPROVED' THEN 1 ELSE 0 END) AS approved,
+                    SUM(CASE WHEN f.status_file = 'UPLOADED' THEN 1 ELSE 0 END) AS on_review,
+                    SUM(CASE WHEN f.status_file = 'REJECTED' THEN 1 ELSE 0 END) AS rejected,
+                    COUNT(*) AS existing,
+                    SUM(CASE WHEN f.astri_status = 'APPROVED' THEN 1 ELSE 0 END) AS astri_approved,
+                    SUM(CASE WHEN f.astri_status = 'REJECTED' THEN 1 ELSE 0 END) AS astri_rejected,
+                    SUM(CASE
+                        WHEN f.astri_status IN ('ON REVIEW', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
+                            THEN 1
+                        WHEN f.astri_status = 'NY'
                             AND p.actual_atp_date IS NOT NULL
                             AND g.scope_type = 'CLUSTER'
                             AND g.sow_type = 'RFS'
                             AND UPPER(i.doc_name) = 'PROJECT OPNAME'
-                        )
-                    ) AND f.astri_submitted_date IS NOT NULL THEN f.astri_submitted_date ELSE NULL END) AS astri_latest_submitted_date,
-                MAX(CASE WHEN f.astri_status = 'APPROVED' AND f.astri_status_updated_at IS NOT NULL THEN DATE(f.astri_status_updated_at) ELSE NULL END) AS astri_latest_approved_date
-            ", false)
-            ->from('tb_rfs_myrep_doc_file f')
-            ->join('tb_rfs_myrep_doc_package p', 'p.id_doc_package = f.id_doc_package', 'left')
-            ->join('md_rfs_myrep_doc_item i', 'i.id_doc_item = f.id_doc_item', 'left')
-            ->join('md_rfs_myrep_doc_group g', 'g.id_doc_group = i.id_doc_group', 'left')
-            ->where_in('f.id_doc_package', $packageIds)
-            ->group_by('f.id_doc_package')
-            ->get()
-            ->result_array();
+                            THEN 1
+                        ELSE 0
+                    END) AS astri_on_review,
+                    SUM(CASE
+                        WHEN f.astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
+                            THEN 1
+                        WHEN f.astri_status = 'NY'
+                            AND p.actual_atp_date IS NOT NULL
+                            AND g.scope_type = 'CLUSTER'
+                            AND g.sow_type = 'RFS'
+                            AND UPPER(i.doc_name) = 'PROJECT OPNAME'
+                            THEN 1
+                        ELSE 0
+                    END) AS astri_submitted,
+                    MAX(CASE
+                        WHEN (
+                            f.astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
+                            OR (
+                                f.astri_status = 'NY'
+                                AND p.actual_atp_date IS NOT NULL
+                                AND g.scope_type = 'CLUSTER'
+                                AND g.sow_type = 'RFS'
+                                AND UPPER(i.doc_name) = 'PROJECT OPNAME'
+                            )
+                        ) AND f.astri_submitted_date IS NOT NULL THEN f.astri_submitted_date ELSE NULL END) AS astri_latest_submitted_date,
+                    MAX(CASE WHEN f.astri_status = 'APPROVED' AND f.astri_status_updated_at IS NOT NULL THEN DATE(f.astri_status_updated_at) ELSE NULL END) AS astri_latest_approved_date
+                ", false)
+                ->from('tb_rfs_myrep_doc_file f')
+                ->join('tb_rfs_myrep_doc_package p', 'p.id_doc_package = f.id_doc_package', 'left')
+                ->join('md_rfs_myrep_doc_item i', 'i.id_doc_item = f.id_doc_item', 'left')
+                ->join('md_rfs_myrep_doc_group g', 'g.id_doc_group = i.id_doc_group', 'left')
+                ->where_in('f.id_doc_package', $chunkIds)
+                ->group_by('f.id_doc_package')
+                ->get()
+                ->result_array();
+            if (!empty($chunkRows)) {
+                $rows = array_merge($rows, $chunkRows);
+            }
+        }
 
         $summary = [];
         foreach ($rows as $row) {
@@ -2032,16 +2063,25 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     private function getFilesByPackageIds($packageIds)
     {
+        $packageIds = $this->sanitizeIdList((array) $packageIds);
         if (empty($packageIds)) {
             return [];
         }
 
-        return $this->db
-            ->select('id_doc_file, id_doc_package, id_doc_item, file_name, file_path, is_document_not_required, status_file, remark, uploaded_at, reviewed_at, approved_at, astri_submitted_date, astri_status, astri_status_updated_at, astri_remark')
-            ->from('tb_rfs_myrep_doc_file')
-            ->where_in('id_doc_package', $packageIds)
-            ->get()
-            ->result_array();
+        $rows = [];
+        foreach (array_chunk($packageIds, $this->maxWhereInChunk) as $chunkIds) {
+            $chunkRows = $this->db
+                ->select('id_doc_file, id_doc_package, id_doc_item, file_name, file_path, is_document_not_required, status_file, remark, uploaded_at, reviewed_at, approved_at, astri_submitted_date, astri_status, astri_status_updated_at, astri_remark')
+                ->from('tb_rfs_myrep_doc_file')
+                ->where_in('id_doc_package', $chunkIds)
+                ->get()
+                ->result_array();
+            if (!empty($chunkRows)) {
+                $rows = array_merge($rows, $chunkRows);
+            }
+        }
+
+        return $rows;
     }
 
     private function createFileLog($data)

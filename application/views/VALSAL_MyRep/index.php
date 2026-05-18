@@ -271,8 +271,8 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         class="btn btn-sm btn-outline-primary js-start-valsal"
                         data-toggle="modal"
                         data-target="#modal-valsal-create"
-                        data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
-                        data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>">
+                        data-cluster-id="<?= (int) $row['id_myrep_cluster'] ?>"
+                        data-city-name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>">
                         Input VALSAL
                     </button>
                 <?php endif; ?>
@@ -1660,6 +1660,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
         var valsalSaveImportUrl = '<?= base_url('VALSAL_MyRep/saveImportedValsal') ?>';
         var currentValsalDetailClusterId = 0;
         var importedValsalRows = [];
+        var valsalSyncingSelection = false;
 
         function escapeHtml(value) {
             return String(value == null ? '' : value)
@@ -1966,13 +1967,21 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             }
 
             if (($citySelect.val() || '').toString().toUpperCase() !== clusterCity) {
-                $citySelect.val(clusterCity).trigger('change');
+                valsalSyncingSelection = true;
+                $citySelect.val(clusterCity);
+                if ($citySelect.hasClass('select2-hidden-accessible')) {
+                    $citySelect.trigger('change.select2');
+                }
+                valsalSyncingSelection = false;
             }
         }
 
         function filterValsalClusterOptions($modal) {
             var selectedCity = ($modal.find('.js-valsal-city-selector').val() || '').toUpperCase();
             var $clusterSelect = $modal.find('.js-valsal-cluster-selector');
+            if (!$clusterSelect.length) {
+                return;
+            }
 
             if (selectedCity !== '') {
                 var currentOption = $clusterSelect.find('option:selected');
@@ -1982,20 +1991,30 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                 }
             }
 
-            $clusterSelect.trigger('change');
+            // Hindari loop event city -> cluster -> city yang bisa memicu error Select2 (nodeName null).
             syncClusterMeta($modal);
         }
 
         function applyCreateClusterPreset($modal) {
             var presetClusterId = ($modal.attr('data-preset-cluster-id') || '').toString();
             var presetCity = ($modal.attr('data-preset-city') || '').toString().toUpperCase();
+            var $citySelect = $modal.find('.js-valsal-city-selector');
+            var $clusterSelect = $modal.find('.js-valsal-cluster-selector');
 
             if (presetCity !== '') {
-                $modal.find('.js-valsal-city-selector').val(presetCity).trigger('change');
+                $citySelect.val(presetCity);
+                if ($citySelect.hasClass('select2-hidden-accessible')) {
+                    $citySelect.trigger('change.select2');
+                }
+                filterValsalClusterOptions($modal);
             }
 
             if (presetClusterId !== '') {
-                $modal.find('.js-valsal-cluster-selector').val(presetClusterId).trigger('change');
+                $clusterSelect.val(presetClusterId);
+                if ($clusterSelect.hasClass('select2-hidden-accessible')) {
+                    $clusterSelect.trigger('change.select2');
+                }
+                syncClusterMeta($modal);
             }
         }
 
@@ -2010,51 +2029,60 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         return;
                     }
 
-                    valsalTables.push($(selector).DataTable({
-                        responsive: true,
-                        autoWidth: false,
-                        order: [[0, 'asc']],
-                        footerCallback: function (row, data, start, end, display) {
-                            var api = this.api();
-                            var parseNumber = function (value) {
-                                if (typeof value === 'string') {
-                                    value = value.replace(/<[^>]*>/g, '');
-                                    value = value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
-                                }
-                                var parsed = parseFloat(value);
-                                return isNaN(parsed) ? 0 : parsed;
-                            };
+                    try {
+                        valsalTables.push($(selector).DataTable({
+                            responsive: false,
+                            autoWidth: false,
+                            order: [[0, 'asc']],
+                            pageLength: 10,
+                            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                            footerCallback: function (row, data, start, end, display) {
+                                var api = this.api();
+                                var parseNumber = function (value) {
+                                    if (typeof value === 'string') {
+                                        value = value.replace(/<[^>]*>/g, '');
+                                        value = value.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+                                    }
+                                    var parsed = parseFloat(value);
+                                    return isNaN(parsed) ? 0 : parsed;
+                                };
 
-                            var totalHpBak = api
-                                .column(5, { search: 'applied' })
-                                .data()
-                                .reduce(function (sum, val) {
-                                    return sum + parseNumber(val);
-                                }, 0);
+                                var totalHpBak = api
+                                    .column(5, { search: 'applied' })
+                                    .data()
+                                    .reduce(function (sum, val) {
+                                        return sum + parseNumber(val);
+                                    }, 0);
 
-                            var totalHpValsal = api
-                                .column(6, { search: 'applied' })
-                                .data()
-                                .reduce(function (sum, val) {
-                                    return sum + parseNumber(val);
-                                }, 0);
+                                var totalHpValsal = api
+                                    .column(6, { search: 'applied' })
+                                    .data()
+                                    .reduce(function (sum, val) {
+                                        return sum + parseNumber(val);
+                                    }, 0);
 
-                            $(api.column(5).footer()).html(
-                                totalHpBak.toLocaleString('id-ID', { maximumFractionDigits: 0 })
-                            );
-                            $(api.column(6).footer()).html(
-                                totalHpValsal.toLocaleString('id-ID', { maximumFractionDigits: 0 })
-                            );
-                        },
-                        language: {
-                            emptyTable: 'Belum ada data untuk tab ini.'
-                        }
-                    }));
+                                $(api.column(5).footer()).html(
+                                    totalHpBak.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                                );
+                                $(api.column(6).footer()).html(
+                                    totalHpValsal.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+                                );
+                            },
+                            language: {
+                                emptyTable: 'Belum ada data untuk tab ini.'
+                            }
+                        }));
+                    } catch (err) {
+                        console.error('DataTable init failed for', selector, err);
+                    }
                 });
 
                 $('a[data-toggle="tab"][href^="#valsal-"]').on('shown.bs.tab', function () {
                     valsalTables.forEach(function (table) {
-                        table.columns.adjust().responsive.recalc();
+                        table.columns.adjust();
+                        if (table.responsive && typeof table.responsive.recalc === 'function') {
+                            table.responsive.recalc();
+                        }
                     });
                 });
             }
@@ -2063,21 +2091,26 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             initValsalSelect('.js-valsal-cluster-select', '#modal-valsal-create', 'Pilih cluster');
 
             $(document).on('change', '.js-valsal-cluster-selector', function () {
+                if (valsalSyncingSelection) {
+                    return;
+                }
                 var $container = $(this).closest('.modal-body, .modal-content');
                 syncCityFromCluster($container);
-                filterValsalClusterOptions($container);
                 syncClusterMeta($container);
             });
 
             $(document).on('change', '.js-valsal-city-selector', function () {
+                if (valsalSyncingSelection) {
+                    return;
+                }
                 filterValsalClusterOptions($(this).closest('.modal-body, .modal-content'));
             });
 
             $('#modal-valsal-create').on('shown.bs.modal', function () {
-                initValsalSelect('.js-valsal-city-selector', '#modal-valsal-create', 'Pilih kota');
-                initValsalSelect('.js-valsal-cluster-select', '#modal-valsal-create', 'Pilih cluster');
-                $(this).find('.js-valsal-city-selector').val('').trigger('change');
-                $(this).find('.js-valsal-cluster-selector').val('').trigger('change');
+                $(this).find('.js-valsal-city-selector').val('');
+                $(this).find('.js-valsal-cluster-selector').val('');
+                $(this).find('.js-valsal-city-selector').trigger('change.select2');
+                $(this).find('.js-valsal-cluster-selector').trigger('change.select2');
                 filterValsalClusterOptions($(this));
                 applyCreateClusterPreset($(this));
                 syncClusterMeta($(this));
@@ -2109,8 +2142,8 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
 
             $(document).on('click', '.js-start-valsal', function () {
                 var $button = $(this);
-                var presetClusterId = ($button.attr('data-cluster_id') || $button.data('cluster_id') || '').toString();
-                var presetCity = ($button.attr('data-city_name') || $button.data('city_name') || '').toString().toUpperCase();
+                var presetClusterId = ($button.attr('data-cluster-id') || $button.data('clusterId') || '').toString();
+                var presetCity = ($button.attr('data-city-name') || $button.data('cityName') || '').toString().toUpperCase();
                 $('#modal-valsal-create')
                     .attr('data-preset-cluster-id', presetClusterId)
                     .attr('data-preset-city', presetCity);
