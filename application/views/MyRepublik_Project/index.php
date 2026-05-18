@@ -454,7 +454,7 @@ if (!empty($summaryRows)) {
                 <div class="upload-dropzone" id="myrep-cutoff-dropzone" style="border:2px dashed #cbd5e1;border-radius:14px;padding:1.25rem;text-align:center;cursor:pointer;background:#f8fafc;">
                     <input type="file" id="myrep-cutoff-file-input" name="file_excel" accept=".xls,.xlsx,.csv" style="display:none;">
                     <div><strong>Drag & drop file CSV/XLSX di sini</strong></div>
-                    <div class="text-muted small">Atau klik area ini untuk pilih file template CSV khusus BAK.</div>
+                    <div class="text-muted small">Atau klik area ini untuk pilih file template CSV khusus BAK (termasuk kolom nomor_ntp dan tanggal_ntp).</div>
                     <div id="myrep-cutoff-file-name" class="mt-2 text-primary">Belum ada file dipilih</div>
                 </div>
                 <div class="mt-3">

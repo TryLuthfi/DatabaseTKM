@@ -73,6 +73,9 @@ class BAK_MyRep extends CI_Controller
         $today = date('Y-m-d');
         $baOpenDate = $this->normalizeDate($this->input->post('ba_open_date')) ?: $today;
         $bakDate = $this->normalizeDate($this->input->post('bak_date')) ?: $today;
+        $ntpName = trim((string) $this->input->post('nomor_ntp'));
+        $ntpDate = $this->normalizeDate($this->input->post('tanggal_ntp'));
+        $ntpYear = $ntpDate ? (int) date('Y', strtotime($ntpDate)) : null;
         $homepassBak = (int) $this->normalizeNumber($this->input->post('homepass_bak'));
         $remarkBak = trim((string) $this->input->post('remark_bak'));
         $docReady = $this->MBAK_MyRep->bakDocumentTablesReady();
@@ -151,6 +154,9 @@ class BAK_MyRep extends CI_Controller
                 'sm' => $target['sm'] ?? null,
                 'spv' => $target['spv'] ?? null,
                 'hp_plan' => $homepassBak,
+                'ntp_name' => $ntpName !== '' ? $ntpName : null,
+                'ntp_date' => $ntpDate ?: null,
+                'ntp_year' => $ntpYear,
                 'status_current' => $currentStatus,
                 'remark_general' => $remarkBak !== '' ? $remarkBak : null,
                 'created_by' => $userId,
@@ -260,6 +266,9 @@ class BAK_MyRep extends CI_Controller
 
         $baOpenDate = $this->normalizeDate($this->input->post('ba_open_date')) ?: date('Y-m-d');
         $bakDate = $this->normalizeDate($this->input->post('bak_date')) ?: date('Y-m-d');
+        $ntpName = trim((string) $this->input->post('nomor_ntp'));
+        $ntpDate = $this->normalizeDate($this->input->post('tanggal_ntp'));
+        $ntpYear = $ntpDate ? (int) date('Y', strtotime($ntpDate)) : null;
         $homepassBak = (int) $this->normalizeNumber($this->input->post('homepass_bak'));
         $remarkBak = trim((string) $this->input->post('remark_bak'));
 
@@ -307,6 +316,9 @@ class BAK_MyRep extends CI_Controller
                 'sm' => $target['sm'] ?? null,
                 'spv' => $target['spv'] ?? null,
                 'hp_plan' => $homepassBak,
+                'ntp_name' => $ntpName !== '' ? $ntpName : null,
+                'ntp_date' => $ntpDate ?: null,
+                'ntp_year' => $ntpYear,
                 'status_current' => $this->buildCurrentStatus($baOpenDate, $bakDate, $statusBak),
                 'remark_general' => $remarkBak !== '' ? $remarkBak : null,
                 'updated_by' => $userId,

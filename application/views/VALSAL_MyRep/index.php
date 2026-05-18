@@ -1966,27 +1966,13 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             }
 
             if (($citySelect.val() || '').toString().toUpperCase() !== clusterCity) {
-                $citySelect.val(clusterCity).trigger('change.select2');
+                $citySelect.val(clusterCity).trigger('change');
             }
         }
 
         function filterValsalClusterOptions($modal) {
             var selectedCity = ($modal.find('.js-valsal-city-selector').val() || '').toUpperCase();
             var $clusterSelect = $modal.find('.js-valsal-cluster-selector');
-
-            $clusterSelect.find('option').each(function () {
-                var $option = $(this);
-                var optionValue = $option.attr('value');
-
-                if (!optionValue) {
-                    $option.prop('hidden', false).prop('disabled', false);
-                    return;
-                }
-
-                var optionCity = ($option.data('city-filter') || '').toString().toUpperCase();
-                var shouldShow = selectedCity === '' || optionCity === selectedCity;
-                $option.prop('hidden', !shouldShow).prop('disabled', !shouldShow);
-            });
 
             if (selectedCity !== '') {
                 var currentOption = $clusterSelect.find('option:selected');
@@ -1996,7 +1982,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                 }
             }
 
-            $clusterSelect.trigger('change.select2');
+            $clusterSelect.trigger('change');
             syncClusterMeta($modal);
         }
 
@@ -2005,7 +1991,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             var presetCity = ($modal.attr('data-preset-city') || '').toString().toUpperCase();
 
             if (presetCity !== '') {
-                $modal.find('.js-valsal-city-selector').val(presetCity).trigger('change.select2');
+                $modal.find('.js-valsal-city-selector').val(presetCity).trigger('change');
             }
 
             if (presetClusterId !== '') {
@@ -2020,6 +2006,10 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
 
             if ($.fn.DataTable) {
                 ['#table_valsal_on_process', '#table_valsal_ny_batch_drm', '#table_valsal_all'].forEach(function (selector) {
+                    if (!$(selector).length) {
+                        return;
+                    }
+
                     valsalTables.push($(selector).DataTable({
                         responsive: true,
                         autoWidth: false,
@@ -2119,9 +2109,11 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
 
             $(document).on('click', '.js-start-valsal', function () {
                 var $button = $(this);
+                var presetClusterId = ($button.attr('data-cluster_id') || $button.data('cluster_id') || '').toString();
+                var presetCity = ($button.attr('data-city_name') || $button.data('city_name') || '').toString().toUpperCase();
                 $('#modal-valsal-create')
-                    .attr('data-preset-cluster-id', ($button.data('cluster_id') || '').toString())
-                    .attr('data-preset-city', ($button.data('city_name') || '').toString().toUpperCase());
+                    .attr('data-preset-cluster-id', presetClusterId)
+                    .attr('data-preset-city', presetCity);
             });
 
             $(document).on('click', '.js-edit-valsal', function () {

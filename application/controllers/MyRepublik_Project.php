@@ -318,28 +318,57 @@ class MyRepublik_Project extends CI_Controller
         $userId = (int) $this->session->userdata('id_user');
         $inserted = 0;
         $skipped = 0;
+        $errorDetails = [];
 
-        foreach ($rows as $row) {
-            $errors = $this->validateCutoffImportRow($row);
-            if (!empty($errors)) {
-                $skipped++;
-                continue;
-            }
+        foreach ($rows as $index => $row) {
+            try {
+                $errors = $this->validateCutoffImportRow($row);
+                if (!empty($errors)) {
+                    $skipped++;
+                    $errorDetails[] = [
+                        'row_number' => $index + 1,
+                        'cluster_name' => (string) ($row['cluster_name'] ?? ''),
+                        'message' => implode(', ', $errors),
+                    ];
+                    continue;
+                }
 
-            $saved = $this->saveOneImportedCluster($row, $userId);
-            if ($saved) {
-                $inserted++;
-            } else {
+                $saved = $this->saveOneImportedCluster($row, $userId);
+                if ($saved) {
+                    $inserted++;
+                } else {
+                    $skipped++;
+                    $errorDetails[] = [
+                        'row_number' => $index + 1,
+                        'cluster_name' => (string) ($row['cluster_name'] ?? ''),
+                        'message' => 'Dilewati (kemungkinan data sudah ada / tidak valid untuk insert).',
+                    ];
+                }
+            } catch (Throwable $e) {
                 $skipped++;
+                log_message('error', 'Cutoff import row failed: row=' . ($index + 1) . ' cluster=' . (string) ($row['cluster_name'] ?? '-') . ' error=' . $e->getMessage());
+                $errorDetails[] = [
+                    'row_number' => $index + 1,
+                    'cluster_name' => (string) ($row['cluster_name'] ?? ''),
+                    'message' => $e->getMessage(),
+                ];
             }
         }
 
         if ($inserted <= 0) {
-            $this->jsonResponse(false, 'Tidak ada data yang berhasil disimpan.');
+            $this->jsonResponse(false, 'Tidak ada data yang berhasil disimpan.', [
+                'inserted' => $inserted,
+                'skipped' => $skipped,
+                'error_rows' => $errorDetails,
+            ]);
             return;
         }
 
-        $this->jsonResponse(true, $inserted . ' cluster berhasil diimport. ' . $skipped . ' baris dilewati.');
+        $this->jsonResponse(true, $inserted . ' cluster berhasil diimport. ' . $skipped . ' baris dilewati.', [
+            'inserted' => $inserted,
+            'skipped' => $skipped,
+            'error_rows' => $errorDetails,
+        ]);
     }
 
     public function downloadCutoffImportTemplate()
@@ -356,6 +385,8 @@ class MyRepublik_Project extends CI_Controller
             'homepass_bak',
             'ba_open_date',
             'bak_date',
+            'nomor_ntp',
+            'tanggal_ntp',
             'homepass_valsal',
             'valsal_date',
             'remark_valsal',
@@ -406,7 +437,7 @@ class MyRepublik_Project extends CI_Controller
         $headers = array_merge($headers, $this->buildPoTerminImportHeaders());
 
         $exampleRowMaps = [
-            ['status_current' => 'BAK', 'city_name' => 'MALANG', 'district_name' => 'KLOJEN', 'village_name' => 'KAUMAN', 'cluster_name' => 'Cluster A', 'cluster_code' => 'CL-A', 'hp_plan' => '120', 'homepass_bak' => '120', 'ba_open_date' => '2026-05-01', 'bak_date' => '2026-05-03', 'remark_general' => 'Contoh cluster BAK 1'],
+            ['status_current' => 'BAK', 'city_name' => 'MALANG', 'district_name' => 'KLOJEN', 'village_name' => 'KAUMAN', 'cluster_name' => 'Cluster A', 'cluster_code' => 'CL-A', 'hp_plan' => '120', 'homepass_bak' => '120', 'ba_open_date' => '2026-05-01', 'bak_date' => '2026-05-03', 'nomor_ntp' => 'NTP-MLG-001', 'tanggal_ntp' => '2026-05-04', 'remark_general' => 'Contoh cluster BAK 1'],
             ['status_current' => 'BAK', 'city_name' => 'MALANG', 'district_name' => 'BLIMBING', 'village_name' => 'POLOWIJEN', 'cluster_name' => 'Cluster B', 'cluster_code' => 'CL-B', 'hp_plan' => '95', 'homepass_bak' => '95', 'ba_open_date' => '2026-05-02', 'bak_date' => '2026-05-04', 'remark_general' => 'Contoh cluster BAK 2'],
             ['status_current' => 'BAK', 'city_name' => 'MALANG', 'district_name' => 'LOWOKWARU', 'village_name' => 'MOJOLANGU', 'cluster_name' => 'Cluster C', 'cluster_code' => 'CL-C', 'hp_plan' => '140', 'homepass_bak' => '140', 'ba_open_date' => '2026-05-03', 'bak_date' => '2026-05-05', 'remark_general' => 'Contoh cluster BAK 3'],
             ['status_current' => 'VALSAL', 'city_name' => 'MALANG', 'district_name' => 'SUKUN', 'village_name' => 'BANDULAN', 'cluster_name' => 'Cluster D', 'cluster_code' => 'CL-D', 'hp_plan' => '110', 'homepass_bak' => '110', 'ba_open_date' => '2026-05-04', 'bak_date' => '2026-05-06', 'homepass_valsal' => '108', 'valsal_date' => '2026-05-08', 'remark_valsal' => 'Contoh remark VALSAL 1', 'remark_general' => 'Contoh cluster VALSAL 1'],
@@ -758,6 +789,22 @@ class MyRepublik_Project extends CI_Controller
         if (empty($target) || $clusterName === '') {
             return false;
         }
+        $targetId = (int) ($target['id_target'] ?? 0);
+        if ($targetId <= 0) {
+            return false;
+        }
+
+        // Hindari duplicate insert untuk cluster + target yang sama.
+        $existingCluster = $this->db
+            ->from('tb_myrep_cluster')
+            ->where('id_target', $targetId)
+            ->where('UPPER(cluster_name)', strtoupper($clusterName))
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!empty($existingCluster['id_myrep_cluster'])) {
+            return false;
+        }
 
         $homepassPlan = (int) $this->normalizeNumber($row['hp_plan'] ?? 0);
         if ($homepassPlan <= 0) {
@@ -778,8 +825,9 @@ class MyRepublik_Project extends CI_Controller
         }
 
         $this->db->trans_start();
+        $ntpDate = $this->normalizeDate((string) ($row['tanggal_ntp'] ?? ''));
         $this->db->insert('tb_myrep_cluster', [
-            'id_target' => (int) ($target['id_target'] ?? 0),
+            'id_target' => $targetId,
             'cluster_name' => $clusterName,
             'cluster_code' => trim((string) ($row['cluster_code'] ?? '')) !== '' ? trim((string) ($row['cluster_code'] ?? '')) : null,
             'regional_name' => trim((string) ($row['regional_name'] ?? '')) !== '' ? trim((string) ($row['regional_name'] ?? '')) : ($target['regional_name'] ?? null),
@@ -791,6 +839,9 @@ class MyRepublik_Project extends CI_Controller
             'sm' => trim((string) ($row['sm'] ?? '')) !== '' ? trim((string) ($row['sm'] ?? '')) : ($target['sm'] ?? null),
             'spv' => trim((string) ($row['spv'] ?? '')) !== '' ? trim((string) ($row['spv'] ?? '')) : ($target['spv'] ?? null),
             'hp_plan' => $homepassPlan,
+            'ntp_name' => trim((string) ($row['nomor_ntp'] ?? '')) !== '' ? trim((string) ($row['nomor_ntp'] ?? '')) : null,
+            'ntp_date' => $ntpDate,
+            'ntp_year' => $ntpDate ? (int) date('Y', strtotime($ntpDate)) : null,
             'status_current' => $statusCurrent,
             'remark_general' => trim((string) ($row['remark_general'] ?? '')) !== '' ? trim((string) ($row['remark_general'] ?? '')) : null,
             'created_by' => $userId,
