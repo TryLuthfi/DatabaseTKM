@@ -10,7 +10,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $this->load->model('MMonitoring_RFS_MyRep');
         $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
-        $this->load->driver('cache', ['adapter' => 'file', 'backup' => 'dummy']);
     }
 
     public function index()
@@ -33,7 +32,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $data['cityOptions'] = $this->MChecklist_Dokument_MyRep->getCityOptions();
         $data['regionalOptions'] = $this->MChecklist_Dokument_MyRep->getRegionalOptions();
 
-        $cachedPayload = $this->cache->get($cacheKey);
+        $cachedPayload = $this->getChecklistCache($cacheKey);
         if (!is_array($cachedPayload)) {
             $clusterList = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional);
             $documentItemList = $this->MChecklist_Dokument_MyRep->getClusterDocumentItemRows($selectedCity, $selectedRegional);
@@ -42,7 +41,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 'documentItemList' => $documentItemList,
                 'dashboardSummary' => $this->buildDashboardSummary($clusterList, $documentItemList),
             ];
-            $this->cache->save($cacheKey, $cachedPayload, 300);
+            $this->saveChecklistCache($cacheKey, $cachedPayload, 300);
         }
 
         $data['clusterList'] = isset($cachedPayload['clusterList']) && is_array($cachedPayload['clusterList']) ? $cachedPayload['clusterList'] : [];
@@ -79,7 +78,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $selectedCity = strtoupper(trim((string) $this->input->post('selected_city')));
         $selectedRegional = strtoupper(trim((string) $this->input->post('selected_regional')));
         $cacheKey = 'checklist_doc_index_' . md5($selectedCity . '|' . $selectedRegional);
-        $cachedPayload = $this->cache->get($cacheKey);
+        $cachedPayload = $this->getChecklistCache($cacheKey);
         if (!is_array($cachedPayload)) {
             $clusterList = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional);
             $documentItemList = $this->MChecklist_Dokument_MyRep->getClusterDocumentItemRows($selectedCity, $selectedRegional);
@@ -88,7 +87,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 'documentItemList' => $documentItemList,
                 'dashboardSummary' => $this->buildDashboardSummary($clusterList, $documentItemList),
             ];
-            $this->cache->save($cacheKey, $cachedPayload, 300);
+            $this->saveChecklistCache($cacheKey, $cachedPayload, 300);
         }
 
         $rows = isset($cachedPayload['documentItemList']) && is_array($cachedPayload['documentItemList'])
@@ -228,7 +227,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $selectedCity = strtoupper(trim((string) $this->input->get('selected_city')));
         $selectedRegional = strtoupper(trim((string) $this->input->get('selected_regional')));
         $cacheKey = 'checklist_doc_index_' . md5($selectedCity . '|' . $selectedRegional);
-        $cachedPayload = $this->cache->get($cacheKey);
+        $cachedPayload = $this->getChecklistCache($cacheKey);
         if (!is_array($cachedPayload)) {
             $clusterList = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional);
             $documentItemList = $this->MChecklist_Dokument_MyRep->getClusterDocumentItemRows($selectedCity, $selectedRegional);
@@ -237,7 +236,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 'documentItemList' => $documentItemList,
                 'dashboardSummary' => $this->buildDashboardSummary($clusterList, $documentItemList),
             ];
-            $this->cache->save($cacheKey, $cachedPayload, 300);
+            $this->saveChecklistCache($cacheKey, $cachedPayload, 300);
         }
 
         $rows = isset($cachedPayload['documentItemList']) && is_array($cachedPayload['documentItemList'])
@@ -364,6 +363,41 @@ class Checklist_Dokument_MyRep extends CI_Controller
             default:
                 return 'info';
         }
+    }
+
+    private function getChecklistCache($cacheKey)
+    {
+        $path = APPPATH . 'cache/' . preg_replace('/[^A-Za-z0-9_\-]/', '_', $cacheKey) . '.json';
+        if (!is_file($path)) {
+            return null;
+        }
+
+        $raw = @file_get_contents($path);
+        if ($raw === false || $raw === '') {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded) || empty($decoded['expires_at']) || !isset($decoded['payload'])) {
+            return null;
+        }
+
+        if ((int) $decoded['expires_at'] < time()) {
+            @unlink($path);
+            return null;
+        }
+
+        return is_array($decoded['payload']) ? $decoded['payload'] : null;
+    }
+
+    private function saveChecklistCache($cacheKey, array $payload, $ttlSeconds = 300)
+    {
+        $path = APPPATH . 'cache/' . preg_replace('/[^A-Za-z0-9_\-]/', '_', $cacheKey) . '.json';
+        $data = [
+            'expires_at' => time() + max(60, (int) $ttlSeconds),
+            'payload' => $payload,
+        ];
+        @file_put_contents($path, json_encode($data));
     }
 
     private function buildDashboardSummary(array $clusterList, array $documentItemList)
