@@ -183,7 +183,7 @@ foreach ($documentItemList as $item) {
         position: fixed;
         inset: 0;
         background: rgba(255, 255, 255, 0.92);
-        display: flex;
+        display: none !important;
         align-items: center;
         justify-content: center;
         z-index: 9999;
@@ -211,7 +211,7 @@ foreach ($documentItemList as $item) {
     }
 
     .checklist-page-content {
-        visibility: hidden;
+        visibility: visible;
     }
 
     .checklist-page-content.is-ready {
