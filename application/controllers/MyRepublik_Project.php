@@ -999,6 +999,10 @@ class MyRepublik_Project extends CI_Controller
         if ($nominalPerHomepass === null && $hpDonasi > 0 && $nominalPengajuanArea > 0) {
             $nominalPerHomepass = round($nominalPengajuanArea / $hpDonasi, 2);
         }
+        // Sebagian schema production mewajibkan nominal_per_homepass NOT NULL.
+        if ($nominalPerHomepass === null) {
+            $nominalPerHomepass = 0;
+        }
 
         $freeWifiQty = $this->normalizeNullableInt($row['free_wifi_qty'] ?? null);
         $freeWifiPeriodMonth = $this->normalizeNullableInt($row['free_wifi_period_month'] ?? null);
