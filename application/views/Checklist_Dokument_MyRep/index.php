@@ -1329,6 +1329,29 @@ foreach ($documentItemList as $item) {
 </div>
 
 <script>
+    // Failsafe: pastikan loader tidak pernah menggantung permanen.
+    (function() {
+        function forceShowChecklistContent() {
+            try {
+                $('#checklistPageContent').addClass('is-ready');
+                $('#globalLoader').fadeOut(200);
+            } catch (e) {
+                var content = document.getElementById('checklistPageContent');
+                var loader = document.getElementById('globalLoader');
+                if (content) {
+                    content.classList.add('is-ready');
+                    content.style.visibility = 'visible';
+                }
+                if (loader) {
+                    loader.style.display = 'none';
+                }
+            }
+        }
+
+        window.setTimeout(forceShowChecklistContent, 1200);
+        window.addEventListener('load', forceShowChecklistContent);
+    })();
+
     $(function() {
         function showChecklistContent() {
             $('#checklistPageContent').addClass('is-ready');
@@ -1364,43 +1387,58 @@ foreach ($documentItemList as $item) {
             $('#cluster-filter-form').trigger('submit');
         });
 
-        $('#table-checklist-dokument').DataTable({
-            "paging": true,
-            "lengthChange": true,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "autoWidth": false,
-            "responsive": false,
-            "scrollX": true,
-            "pageLength": 10,
-            "lengthMenu": [
-                [10, 25, 50, 100],
-                [10, 25, 50, 100]
-            ],
-            "language": {
-                "emptyTable": "Belum ada cluster ATP DONE."
-            }
-        });
+        if (!$.fn.DataTable) {
+            showChecklistContent();
+            return;
+        }
 
-        var itemTable = $('#table-checklist-item').DataTable({
-            "paging": true,
-            "lengthChange": true,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "autoWidth": false,
-            "responsive": false,
-            "scrollX": true,
-            "pageLength": 10,
-            "lengthMenu": [
-                [10, 25, 50, 100],
-                [10, 25, 50, 100]
-            ],
-            "language": {
-                "emptyTable": "Belum ada item dokumen."
-            }
-        });
+        if ($('#table-checklist-dokument').length) {
+            $('#table-checklist-dokument').DataTable({
+                "paging": true,
+                "lengthChange": true,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                "autoWidth": false,
+                "responsive": false,
+                "scrollX": true,
+                "pageLength": 10,
+                "lengthMenu": [
+                    [10, 25, 50, 100],
+                    [10, 25, 50, 100]
+                ],
+                "language": {
+                    "emptyTable": "Belum ada cluster ATP DONE."
+                }
+            });
+        }
+
+        var itemTable = null;
+        if ($('#table-checklist-item').length) {
+            itemTable = $('#table-checklist-item').DataTable({
+                "paging": true,
+                "lengthChange": true,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                "autoWidth": false,
+                "responsive": false,
+                "scrollX": true,
+                "pageLength": 10,
+                "lengthMenu": [
+                    [10, 25, 50, 100],
+                    [10, 25, 50, 100]
+                ],
+                "language": {
+                    "emptyTable": "Belum ada item dokumen."
+                }
+            });
+        }
+
+        if (!itemTable) {
+            showChecklistContent();
+            return;
+        }
 
         $.fn.dataTable.ext.search.push(function(settings, data) {
             if (settings.nTable.id !== 'table-checklist-item') {
