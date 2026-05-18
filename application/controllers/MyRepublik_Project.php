@@ -316,6 +316,7 @@ class MyRepublik_Project extends CI_Controller
         }
 
         $userId = (int) $this->session->userdata('id_user');
+        $username = (string) $this->session->userdata('nama_user');
         $inserted = 0;
         $skipped = 0;
         $errorDetails = [];
@@ -356,6 +357,7 @@ class MyRepublik_Project extends CI_Controller
         }
 
         if ($inserted <= 0) {
+            $this->logCutoffImportSummary($userId, $username, count($rows), $inserted, $skipped, $errorDetails);
             $this->jsonResponse(false, 'Tidak ada data yang berhasil disimpan.', [
                 'inserted' => $inserted,
                 'skipped' => $skipped,
@@ -364,11 +366,30 @@ class MyRepublik_Project extends CI_Controller
             return;
         }
 
+        $this->logCutoffImportSummary($userId, $username, count($rows), $inserted, $skipped, $errorDetails);
         $this->jsonResponse(true, $inserted . ' cluster berhasil diimport. ' . $skipped . ' baris dilewati.', [
             'inserted' => $inserted,
             'skipped' => $skipped,
             'error_rows' => $errorDetails,
         ]);
+    }
+
+    private function logCutoffImportSummary($userId, $username, $totalRows, $inserted, $skipped, array $errorDetails)
+    {
+        $summary = [
+            'user_id' => (int) $userId,
+            'user_name' => $username,
+            'total_rows' => (int) $totalRows,
+            'inserted' => (int) $inserted,
+            'skipped' => (int) $skipped,
+            'error_count' => count($errorDetails),
+        ];
+        log_message('error', 'CUTOFF_IMPORT_SUMMARY ' . json_encode($summary));
+
+        if (!empty($errorDetails)) {
+            $topErrors = array_slice($errorDetails, 0, 50);
+            log_message('error', 'CUTOFF_IMPORT_ERROR_ROWS ' . json_encode($topErrors));
+        }
     }
 
     public function downloadCutoffImportTemplate()
