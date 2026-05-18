@@ -334,6 +334,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 c.cluster_name,
                 c.homepass,
                 c.status_rfs,
+                mc.status_current,
                 mt.city_name,
                 mt.regional_name,
                 mt.province_name,
@@ -344,6 +345,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 latest_claim.rfs_date
             ", false)
             ->from('tb_rfs_myrep_cluster c')
+            ->join('tb_myrep_cluster mc', 'mc.rfs_cluster_id = c.id_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
             ->join('(
                 SELECT cluster_id, MAX(claim_date) AS rfs_date
@@ -351,7 +353,11 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 WHERE status_claim = "APPROVED"
                 GROUP BY cluster_id
             ) latest_claim', 'latest_claim.cluster_id = c.id_cluster', 'left')
-            ->where('c.status_rfs', 'FULL RFS');
+            ->where('c.status_rfs', 'FULL RFS')
+            ->group_start()
+                ->where('mc.status_current IS NULL', null, false)
+                ->or_where('UPPER(mc.status_current) <>', 'DONE')
+            ->group_end();
 
         if ($this->supportsAtpColumns()) {
             $query
@@ -387,6 +393,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->select("
                 c.id_cluster,
                 c.cluster_name,
+                mc.status_current,
                 mt.city_name,
                 mt.regional_name,
                 mt.id_user_pic_ho,
@@ -414,13 +421,18 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 f.astri_remark
             ", false)
             ->from('tb_rfs_myrep_cluster c')
+            ->join('tb_myrep_cluster mc', 'mc.rfs_cluster_id = c.id_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
             ->join('md_rfs_myrep_doc_group g', 'g.is_active = 1', 'inner')
             ->join('md_rfs_myrep_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1 AND i.is_required = 1', 'inner')
             ->join('tb_master_user u_ho', 'u_ho.id_user = mt.id_user_pic_ho', 'left')
             ->join('tb_rfs_myrep_doc_package p', 'p.cluster_id = c.id_cluster AND p.id_doc_group = g.id_doc_group', 'left')
             ->join('tb_rfs_myrep_doc_file f', 'f.id_doc_package = p.id_doc_package AND f.id_doc_item = i.id_doc_item', 'left')
-            ->where('c.status_rfs', 'FULL RFS');
+            ->where('c.status_rfs', 'FULL RFS')
+            ->group_start()
+                ->where('mc.status_current IS NULL', null, false)
+                ->or_where('UPPER(mc.status_current) <>', 'DONE')
+            ->group_end();
 
         if ($this->supportsAtpColumns()) {
             $query
