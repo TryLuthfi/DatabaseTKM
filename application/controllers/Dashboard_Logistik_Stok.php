@@ -256,6 +256,21 @@ class Dashboard_Logistik_Stok extends CI_Controller
             redirect('Dashboard_Logistik_Stok/revamp');
             return;
         }
+        if ((string) $id_sumber_material === '9' && $nama_mitra === '') {
+            $this->session->set_flashdata('error', 'PIC Pengambil wajib diisi untuk Out (ke Project).');
+            redirect('Dashboard_Logistik_Stok/revamp');
+            return;
+        }
+        if ((string) $id_sumber_material === '9' && $pic_mitra === '') {
+            $this->session->set_flashdata('error', 'Telp Pengambil wajib diisi untuk Out (ke Project).');
+            redirect('Dashboard_Logistik_Stok/revamp');
+            return;
+        }
+        if ((string) $id_sumber_material === '9' && $nomor_polisi === '') {
+            $this->session->set_flashdata('error', 'NOPOL Kendaraan wajib diisi untuk Out (ke Project).');
+            redirect('Dashboard_Logistik_Stok/revamp');
+            return;
+        }
 
         if (in_array($modeSuratJalan, ['REFERENCE_DROPDOWN', 'REFERENCE_MANUAL', 'AUTO_WITH_REFERENCE'], true) && $nomorSuratJalanInput === '') {
             $this->session->set_flashdata('error', 'Nomor surat jalan / referensi surat jalan wajib diisi untuk sumber material ini.');
@@ -311,7 +326,65 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
         $suratJalanGenerated = [];
         $nomorSuratJalanFinal = $nomorSuratJalanInput;
-        if (in_array($modeSuratJalan, ['AUTO', 'AUTO_WITH_REFERENCE'], true)) {
+        $manualOutProjectCounter = [];
+        $isOutProjectAutoMode = (string) $id_sumber_material === '9' && in_array($modeSuratJalan, ['AUTO', 'AUTO_WITH_REFERENCE'], true);
+
+        if ($isOutProjectAutoMode) {
+            $preview = $this->MDashboard_Logistik_Stok->previewSuratJalanNumber((int) $id_lokasi_gudang, (string) $tanggal_upload_stok);
+            $parsedNomorSurat = $this->parseAutoSuratJalanNumber($nomorSuratJalanInput);
+            $confirmGap = (int) $this->input->post('confirm_sj_gap') === 1;
+
+            if ($nomorSuratJalanInput === '' || empty($parsedNomorSurat)) {
+                $this->session->set_flashdata('error', 'Nomor surat jalan wajib diisi dengan format auto generator (contoh: TEC.003/TKM-01/SJ/V/2026).');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+
+            if ((int) $parsedNomorSurat['id_lokasi_gudang'] !== (int) $id_lokasi_gudang) {
+                $this->session->set_flashdata('error', 'Nomor surat jalan tidak sesuai dengan area gudang yang dipilih.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+
+            if (!empty($preview['nomor_surat_jalan_year']) && (int) $parsedNomorSurat['nomor_surat_jalan_year'] !== (int) $preview['nomor_surat_jalan_year']) {
+                $this->session->set_flashdata('error', 'Tahun pada nomor surat jalan tidak sesuai dengan tanggal surat.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+
+            $cekNomorSudahDipakai = $this->db
+                ->get_where('tb_logistik_stok', [
+                    'no_surat_jalan' => $nomorSuratJalanInput,
+                    'id_lokasi_gudang' => (int) $id_lokasi_gudang,
+                ])
+                ->row_array();
+
+            if (!empty($cekNomorSudahDipakai)) {
+                $this->session->set_flashdata('error', 'Nomor surat jalan tersebut sudah dipakai.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+
+            $expectedSequence = (int) ($preview['nomor_surat_jalan_seq'] ?? 0);
+            $manualSequence = (int) ($parsedNomorSurat['nomor_surat_jalan_seq'] ?? 0);
+            if ($manualSequence > $expectedSequence && !$confirmGap) {
+                $this->session->set_flashdata('error', 'Nomor ' . str_pad((string) $expectedSequence, 3, '0', STR_PAD_LEFT) . ' belum dipakai. Konfirmasi diperlukan untuk melanjutkan.');
+                redirect('Dashboard_Logistik_Stok/revamp');
+                return;
+            }
+
+            $nomorSuratJalanFinal = $nomorSuratJalanInput;
+            $suratJalanGenerated = [
+                'nomor_surat_jalan' => $nomorSuratJalanFinal,
+                'nomor_surat_jalan_year' => (int) $parsedNomorSurat['nomor_surat_jalan_year'],
+                'nomor_surat_jalan_seq' => (int) $parsedNomorSurat['nomor_surat_jalan_seq'],
+            ];
+            $manualOutProjectCounter = [
+                'id_lokasi_gudang' => (int) $id_lokasi_gudang,
+                'tahun_counter' => (int) $parsedNomorSurat['nomor_surat_jalan_year'],
+                'last_sequence' => (int) $parsedNomorSurat['nomor_surat_jalan_seq'],
+            ];
+        } elseif (in_array($modeSuratJalan, ['AUTO', 'AUTO_WITH_REFERENCE'], true)) {
             $suratJalanGenerated = $this->MDashboard_Logistik_Stok->generateSuratJalanNumber((int) $id_lokasi_gudang, (string) $tanggal_upload_stok);
             if (empty($suratJalanGenerated['nomor_surat_jalan'])) {
                 $this->session->set_flashdata('error', 'Generator nomor surat jalan belum siap. Pastikan tabel counter surat jalan sudah dibuat.');
@@ -387,7 +460,13 @@ class Dashboard_Logistik_Stok extends CI_Controller
         foreach ($jumlah_stok as $key => $value) {
             $keteranganStok = trim((string) $this->input->post('keterangan_stok'));
             if ((string) $id_sumber_material === '9' && $nomor_spk !== '') {
-                $keteranganStok = trim('Nomor SPK: ' . $nomor_spk . ($keteranganStok !== '' ? ' | ' . $keteranganStok : ''));
+                $keteranganOutProject = trim(
+                    'Nomor SPK: ' . $nomor_spk .
+                    ' | PIC Pengambil: ' . $nama_mitra .
+                    ' | Telp Pengambil: ' . $pic_mitra .
+                    ' | NOPOL Kendaraan: ' . $nomor_polisi
+                );
+                $keteranganStok = trim($keteranganOutProject . ($keteranganStok !== '' ? ' | ' . $keteranganStok : ''));
             }
             if ((string) $id_sumber_material === '10') {
                 $keteranganTambahanHo = trim(
@@ -456,13 +535,13 @@ class Dashboard_Logistik_Stok extends CI_Controller
                     'updated_at' => $tanggaCreated,
                 ];
 
-                if (!empty($sourceRule['require_nama_mitra']) && $this->input->post('nama_mitra')) {
+                if (((string) $id_sumber_material === '9' || !empty($sourceRule['require_nama_mitra'])) && $this->input->post('nama_mitra')) {
                     $rincianInsert['nama_mitra'] = $nama_mitra;
                 }
-                if (!empty($sourceRule['require_pic_mitra']) && $this->input->post('pic_mitra')) {
+                if (((string) $id_sumber_material === '9' || !empty($sourceRule['require_pic_mitra'])) && $this->input->post('pic_mitra')) {
                     $rincianInsert['pic_mitra'] = $pic_mitra;
                 }
-                if (!empty($sourceRule['require_nomor_polisi']) && $this->input->post('nomor_polisi')) {
+                if (((string) $id_sumber_material === '9' || !empty($sourceRule['require_nomor_polisi'])) && $this->input->post('nomor_polisi')) {
                     $rincianInsert['nomor_polisi'] = $nomor_polisi;
                 }
                 if ($isMitraReturnMode) {
@@ -477,6 +556,14 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
                 $this->db->insert('tb_logistik_stok_rincian', $rincianInsert);
             }
+        }
+
+        if (!empty($manualOutProjectCounter)) {
+            $this->syncSuratJalanCounterSequence(
+                (int) $manualOutProjectCounter['id_lokasi_gudang'],
+                (int) $manualOutProjectCounter['tahun_counter'],
+                (int) $manualOutProjectCounter['last_sequence']
+            );
         }
 
         $this->db->trans_complete();
@@ -730,6 +817,95 @@ class Dashboard_Logistik_Stok extends CI_Controller
         } else {
             die(json_encode(['status' => 'available']));
         }
+    }
+
+    public function validateManualSuratJalanOutProject()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $idLokasiGudang = (int) $this->input->post('id_lokasi_gudang');
+        $idSumberMaterial = (int) $this->input->post('id_sumber_material');
+        $tanggalDokumen = trim((string) $this->input->post('tanggal_upload_stok'));
+        $nomorSuratJalan = trim((string) $this->input->post('nomor_surat_jalan'));
+
+        $response = [
+            'status' => 'error',
+            'message' => 'Validasi nomor surat jalan gagal diproses.',
+            'expected_sequence' => 0,
+            'entered_sequence' => 0,
+            'next_sequence_after_submit' => 0,
+        ];
+
+        if ($idLokasiGudang <= 0 || $idSumberMaterial <= 0 || $nomorSuratJalan === '') {
+            $response['message'] = 'Data validasi belum lengkap.';
+            $this->output->set_content_type('application/json')->set_output(json_encode($response));
+            return;
+        }
+
+        $sourceRule = $this->MDashboard_Logistik_Stok->getSumberMaterialRuleById($idSumberMaterial);
+        $modeSuratJalan = strtoupper((string) ($sourceRule['mode_surat_jalan'] ?? ''));
+        $isOutProjectAutoMode = $idSumberMaterial === 9 && in_array($modeSuratJalan, ['AUTO', 'AUTO_WITH_REFERENCE'], true);
+        if (!$isOutProjectAutoMode) {
+            $response['status'] = 'ok';
+            $response['message'] = 'Sumber material ini tidak memakai validasi khusus Out Project.';
+            $this->output->set_content_type('application/json')->set_output(json_encode($response));
+            return;
+        }
+
+        $preview = $this->MDashboard_Logistik_Stok->previewSuratJalanNumber($idLokasiGudang, $tanggalDokumen);
+        $parsed = $this->parseAutoSuratJalanNumber($nomorSuratJalan);
+        if (empty($parsed)) {
+            $response['status'] = 'invalid';
+            $response['message'] = 'Format nomor surat jalan tidak valid. Gunakan format TEC.xxx/TKM-xx/SJ/BULAN/TAHUN.';
+            $this->output->set_content_type('application/json')->set_output(json_encode($response));
+            return;
+        }
+
+        if ((int) $parsed['id_lokasi_gudang'] !== $idLokasiGudang) {
+            $response['status'] = 'invalid';
+            $response['message'] = 'Nomor surat jalan tidak sesuai dengan area gudang.';
+            $this->output->set_content_type('application/json')->set_output(json_encode($response));
+            return;
+        }
+
+        $expectedSequence = (int) ($preview['nomor_surat_jalan_seq'] ?? 0);
+        $enteredSequence = (int) ($parsed['nomor_surat_jalan_seq'] ?? 0);
+        $response['expected_sequence'] = $expectedSequence;
+        $response['entered_sequence'] = $enteredSequence;
+        $response['next_sequence_after_submit'] = $enteredSequence > 0 ? ($enteredSequence + 1) : 0;
+
+        if (!empty($preview['nomor_surat_jalan_year']) && (int) $parsed['nomor_surat_jalan_year'] !== (int) $preview['nomor_surat_jalan_year']) {
+            $response['status'] = 'invalid';
+            $response['message'] = 'Tahun pada nomor surat jalan tidak sesuai dengan tanggal surat.';
+            $this->output->set_content_type('application/json')->set_output(json_encode($response));
+            return;
+        }
+
+        $existing = $this->db->get_where('tb_logistik_stok', [
+            'no_surat_jalan' => $nomorSuratJalan,
+            'id_lokasi_gudang' => $idLokasiGudang,
+        ])->row_array();
+
+        if (!empty($existing)) {
+            $response['status'] = 'exists';
+            $response['message'] = 'Nomor tersebut sudah dipakai.';
+            $this->output->set_content_type('application/json')->set_output(json_encode($response));
+            return;
+        }
+
+        if ($expectedSequence > 0 && $enteredSequence > $expectedSequence) {
+            $response['status'] = 'gap';
+            $response['message'] = 'Nomor ' . str_pad((string) $expectedSequence, 3, '0', STR_PAD_LEFT) . ' belum dipakai, apakah anda yakin?';
+            $this->output->set_content_type('application/json')->set_output(json_encode($response));
+            return;
+        }
+
+        $response['status'] = 'ok';
+        $response['message'] = 'Nomor surat jalan valid.';
+        $this->output->set_content_type('application/json')->set_output(json_encode($response));
     }
 
     public function hapusReportStokLogistik($no_surat_jalan)
@@ -1128,5 +1304,41 @@ class Dashboard_Logistik_Stok extends CI_Controller
         }
 
         return $uploadedFiles;
+    }
+
+    private function parseAutoSuratJalanNumber($nomorSuratJalan): array
+    {
+        $nomorSuratJalan = trim((string) $nomorSuratJalan);
+        if ($nomorSuratJalan === '') {
+            return [];
+        }
+
+        if (!preg_match('/^TEC\.(\d+)\/TKM-(\d{1,2})\/SJ\/([IVXLCDM]+)\/(\d{4})$/i', $nomorSuratJalan, $matches)) {
+            return [];
+        }
+
+        return [
+            'nomor_surat_jalan_seq' => (int) $matches[1],
+            'id_lokasi_gudang' => (int) $matches[2],
+            'bulan_romawi' => strtoupper((string) $matches[3]),
+            'nomor_surat_jalan_year' => (int) $matches[4],
+        ];
+    }
+
+    private function syncSuratJalanCounterSequence($idLokasiGudang, $tahunCounter, $lastSequence): void
+    {
+        $idLokasiGudang = (int) $idLokasiGudang;
+        $tahunCounter = (int) $tahunCounter;
+        $lastSequence = (int) $lastSequence;
+
+        if ($idLokasiGudang <= 0 || $tahunCounter <= 0 || $lastSequence <= 0) {
+            return;
+        }
+
+        $this->db->query("
+            INSERT INTO tb_logistik_surat_jalan_counter (id_lokasi_gudang, tahun_counter, last_sequence)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE last_sequence = VALUES(last_sequence), updated_at = CURRENT_TIMESTAMP
+        ", [$idLokasiGudang, $tahunCounter, $lastSequence]);
     }
 }

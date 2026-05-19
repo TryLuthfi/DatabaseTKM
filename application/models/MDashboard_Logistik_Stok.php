@@ -292,7 +292,8 @@ ORDER BY
         $rows = $this->db->get('tb_logistik_sumber_material_rule')->result_array();
         $map = [];
         foreach ($rows as $row) {
-            $map[(string) ($row['id_sumber_material'] ?? '')] = $row;
+            $normalizedRow = $this->normalizeSumberMaterialRule($row);
+            $map[(string) ($normalizedRow['id_sumber_material'] ?? '')] = $normalizedRow;
         }
 
         return $map;
@@ -304,9 +305,11 @@ ORDER BY
             return [];
         }
 
-        return $this->db
+        $row = $this->db
             ->get_where('tb_logistik_sumber_material_rule', ['id_sumber_material' => $idSumberMaterial])
             ->row_array() ?: [];
+
+        return $this->normalizeSumberMaterialRule($row);
     }
 
     public function getSumberMaterialById($idSumberMaterial)
@@ -453,6 +456,18 @@ ORDER BY
     {
         return $this->relationExists($table) && in_array($field, $this->db->list_fields($table), true);
     }
+
+    private function normalizeSumberMaterialRule(array $row): array
+    {
+        if ((string) ($row['id_sumber_material'] ?? '') === '9') {
+            $row['require_nomor_spk'] = 1;
+            $row['require_nomor_polisi'] = 1;
+            $row['require_nama_mitra'] = 1;
+            $row['require_pic_mitra'] = 1;
+        }
+
+        return $row;
+    }
     public function getMasterKodeItem(): mixed
     {
         $data = $this->db->query('SELECT * FROM tb_master_logistik_kode_item tmlki join tb_master_bowheer tmb ON tmlki.id_bowheer_pemilik_item = tmb.id_bowheer')->result_array();
@@ -523,14 +538,40 @@ ORDER BY
             return [];
         }
 
+        $nomorPolisiSelect = 'NULL AS nomor_polisi';
+        $namaMitraSelect = 'NULL AS nama_mitra';
+        $picMitraSelect = 'NULL AS pic_mitra';
+        $hasRincianTable = false;
+
+        if ($this->relationExists('tb_logistik_stok_rincian')) {
+            $hasRincianTable = true;
+            $rincianFields = $this->db->list_fields('tb_logistik_stok_rincian');
+            if (in_array('nomor_polisi', $rincianFields, true)) {
+                $nomorPolisiSelect = 'rin.nomor_polisi AS nomor_polisi';
+            } elseif (in_array('no_polisi', $rincianFields, true)) {
+                $nomorPolisiSelect = 'rin.no_polisi AS nomor_polisi';
+            }
+            if (in_array('nama_mitra', $rincianFields, true)) {
+                $namaMitraSelect = 'rin.nama_mitra AS nama_mitra';
+            }
+            if (in_array('pic_mitra', $rincianFields, true)) {
+                $picMitraSelect = 'rin.pic_mitra AS pic_mitra';
+            }
+        }
+
         $this->db
-            ->select('*')
+            ->select('tb_logistik_stok.*, tb_master_logistik_lokasi_gudang.*, tb_master_bowheer.*, tb_master_logistik_sumber_material.*, tb_master_logistik_kode_item.*, tb_master_user.*')
+            ->select($nomorPolisiSelect . ', ' . $namaMitraSelect . ', ' . $picMitraSelect, false)
             ->from('tb_logistik_stok')
             ->join('tb_master_logistik_lokasi_gudang', 'tb_logistik_stok.id_lokasi_gudang = tb_master_logistik_lokasi_gudang.id_lokasi_gudang')
             ->join('tb_master_bowheer', 'tb_logistik_stok.id_bowheer = tb_master_bowheer.id_bowheer')
             ->join('tb_master_logistik_sumber_material', 'tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material')
             ->join('tb_master_logistik_kode_item', 'tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item')
             ->join('tb_master_user', 'tb_logistik_stok.id_user = tb_master_user.id_user');
+
+        if ($hasRincianTable) {
+            $this->db->join('tb_logistik_stok_rincian rin', 'rin.id_logistik_stok = tb_logistik_stok.id_logistik_stok', 'left');
+        }
 
         if ((string) $noSuratJalan !== '') {
             $this->db->where('tb_logistik_stok.no_surat_jalan', (string) $noSuratJalan);
