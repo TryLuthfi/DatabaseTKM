@@ -171,7 +171,7 @@ ORDER BY lg.regional_lokasi_gudang, ki.project_item;')
     {
         $areaContext = $this->resolveAreaFilterContext();
         $filterArea = $areaContext['is_regional'] ? 'lg.regional_lokasi_gudang' : 'lg.kota_lokasi_gudang';
-        $signedQtySql = "CASE 
+        $signedQtySql = "CASE
             WHEN sm.status_sumber_material = 'IN' THEN ls.jumlah_stok
             WHEN sm.status_sumber_material = 'OUT' THEN -ls.jumlah_stok
             ELSE 0
@@ -180,17 +180,20 @@ ORDER BY lg.regional_lokasi_gudang, ki.project_item;')
         $sql = "SELECT
     ki.kategori_item,
     MAX(ki.satuan_item) AS satuan_item,
-    SUM($signedQtySql) AS total_jumlah_stok
-FROM tb_logistik_stok ls
-JOIN tb_master_logistik_lokasi_gudang lg
-    ON ls.id_lokasi_gudang = lg.id_lokasi_gudang
-JOIN tb_master_logistik_kode_item ki
+    COALESCE(SUM(
+        CASE
+            WHEN $filterArea = ? THEN $signedQtySql
+            ELSE 0
+        END
+    ), 0) AS total_jumlah_stok
+FROM tb_master_logistik_kode_item ki
+LEFT JOIN tb_logistik_stok ls
     ON ls.id_kode_item = ki.id_kode_item
-JOIN tb_master_logistik_sumber_material sm
+LEFT JOIN tb_master_logistik_lokasi_gudang lg
+    ON ls.id_lokasi_gudang = lg.id_lokasi_gudang
+LEFT JOIN tb_master_logistik_sumber_material sm
     ON ls.id_sumber_material = sm.id_sumber_material
-WHERE $filterArea = ?
 GROUP BY ki.kategori_item
-HAVING SUM($signedQtySql) <> 0
 ORDER BY ki.kategori_item";
 
         return $this->db->query($sql, [$areaContext['value']])->result_array();
