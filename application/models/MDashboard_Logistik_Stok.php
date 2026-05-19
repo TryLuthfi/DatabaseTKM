@@ -519,6 +519,10 @@ ORDER BY
 
     public function getDetailAreaBySJ($noSuratJalan, $idLokasiGudang = null, $idSumberMaterial = null, $suratJalanPath = null)
     {
+        if ((string) $noSuratJalan === '' && (string) $suratJalanPath === '') {
+            return [];
+        }
+
         $this->db
             ->select('*')
             ->from('tb_logistik_stok')
