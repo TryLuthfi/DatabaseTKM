@@ -3598,6 +3598,7 @@ $itemCount = count($getUniqueItemLogistik);
                 width: '100%',
                 allowClear: true
             });
+            $('#revamp_filter_tanggal').val('');
 
             updateCategoryCardsFromMap(categoryTotalsMap);
             rebuildRegionalTable(initialRegionalRows);
