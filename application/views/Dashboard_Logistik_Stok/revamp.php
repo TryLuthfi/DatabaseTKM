@@ -771,7 +771,7 @@ $itemCount = count($getUniqueItemLogistik);
                             <select id="revamp_filter_bowheer" class="form-control select2" multiple="multiple"
                                 data-placeholder="Pilih project">
                                 <?php foreach ($getUniqueProjectLogistik as $data): ?>
-                                    <option value="<?= $data['nama_bowheer'] ?>"><?= $data['nama_bowheer'] ?></option>
+                                    <option value="<?= (int) ($data['id_bowheer'] ?? 0) ?>"><?= $data['nama_bowheer'] ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>

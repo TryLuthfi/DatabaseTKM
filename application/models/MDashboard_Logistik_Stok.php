@@ -234,10 +234,11 @@ ORDER BY
 
     public function getUniqueProjectLogistik()
     {
-        $data = $this->db->query('SELECT tb_logistik_stok.id_bowheer, tb_master_bowheer.nama_bowheer 
-                                        FROM tb_logistik_stok 
-                                        JOIN tb_master_bowheer ON tb_logistik_stok.id_bowheer = tb_master_bowheer.id_bowheer
-                                        GROUP BY tb_master_bowheer.nama_bowheer;')
+        $data = $this->db->query('SELECT ki.id_bowheer_pemilik_item AS id_bowheer, tmb.nama_bowheer
+                                        FROM tb_logistik_stok ls
+                                        JOIN tb_master_logistik_kode_item ki ON ls.id_kode_item = ki.id_kode_item
+                                        JOIN tb_master_bowheer tmb ON ki.id_bowheer_pemilik_item = tmb.id_bowheer
+                                        GROUP BY ki.id_bowheer_pemilik_item, tmb.nama_bowheer;')
             ->result_array();
         return $data;
     }
@@ -929,7 +930,7 @@ LEFT JOIN
         }
 
         if (!empty($bowheerArray)) {
-            $sql .= " AND ki.project_item IN ($bowheerArray)";
+            $sql .= " AND ki.id_bowheer_pemilik_item IN ($bowheerArray)";
         }
 
         if (!empty($itemArray)) {
@@ -1030,7 +1031,7 @@ ORDER BY
         }
 
         if (!empty($bowheerArray)) {
-            $sql .= " AND ki.project_item IN ($bowheerArray)";
+            $sql .= " AND ki.id_bowheer_pemilik_item IN ($bowheerArray)";
         }
 
         if (!empty($itemArray)) {
@@ -1092,7 +1093,7 @@ LEFT JOIN tb_master_logistik_sumber_material sm
         }
 
         if (!empty($bowheerArray)) {
-            $sql .= " AND ki.project_item IN ($bowheerArray)";
+            $sql .= " AND ki.id_bowheer_pemilik_item IN ($bowheerArray)";
         }
 
         if (!empty($itemArray)) {
@@ -1152,7 +1153,7 @@ LEFT JOIN tb_master_logistik_sumber_material sm
         }
 
         if (!empty($bowheerArray)) {
-            $sql .= " AND ki.project_item IN ($bowheerArray)";
+            $sql .= " AND ki.id_bowheer_pemilik_item IN ($bowheerArray)";
         }
 
         if (!empty($itemArray)) {
@@ -1193,7 +1194,7 @@ ORDER BY ki.kategori_item;";
         }
 
         if (!empty($bowheerArray)) {
-            $sql .= " AND project_item IN ($bowheerArray)";
+            $sql .= " AND tb_master_logistik_kode_item.id_bowheer_pemilik_item IN ($bowheerArray)";
         }
 
         if (!empty($itemArray)) {
