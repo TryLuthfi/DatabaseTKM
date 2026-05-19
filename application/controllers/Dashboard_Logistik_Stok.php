@@ -761,8 +761,17 @@ class Dashboard_Logistik_Stok extends CI_Controller
 
     public function filterDetailSuratJalan()
     {
-        $no_surat_jalan = $this->input->post('no_surat_jalan');
-        $data['getDetailAreaBySJ'] = $this->MDashboard_Logistik_Stok->getDetailAreaBySJ($no_surat_jalan);
+        $noSuratJalan = trim((string) $this->input->post('no_surat_jalan'));
+        $suratJalanPath = trim((string) $this->input->post('surat_jalan'));
+        $idLokasiGudang = (int) $this->input->post('id_lokasi_gudang');
+        $idSumberMaterial = (int) $this->input->post('id_sumber_material');
+
+        $data['getDetailAreaBySJ'] = $this->MDashboard_Logistik_Stok->getDetailAreaBySJ(
+            $noSuratJalan,
+            $idLokasiGudang,
+            $idSumberMaterial,
+            $suratJalanPath
+        );
 
         echo json_encode($data);
         die();

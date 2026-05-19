@@ -1030,7 +1030,10 @@ $itemCount = count($getUniqueItemLogistik);
                                                 <?php endif; ?>
                                                 <button type="button"
                                                     class="stock-action-btn stock-action-btn--view revamp-detail-trigger"
-                                                    data-suratjalan="<?= htmlspecialchars($data['surat_jalan'], ENT_QUOTES, 'UTF-8') ?>">
+                                                    data-suratjalan="<?= htmlspecialchars($data['surat_jalan'], ENT_QUOTES, 'UTF-8') ?>"
+                                                    data-no-surat-jalan="<?= htmlspecialchars($data['no_surat_jalan'], ENT_QUOTES, 'UTF-8') ?>"
+                                                    data-id-lokasi-gudang="<?= (int) ($data['id_lokasi_gudang'] ?? 0) ?>"
+                                                    data-id-sumber-material="<?= (int) ($data['id_sumber_material'] ?? 0) ?>">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                             </div>
@@ -3273,6 +3276,9 @@ $itemCount = count($getUniqueItemLogistik);
         function initDetailModal() {
             $(document).on('click', '.revamp-detail-trigger', function() {
                 const suratJalanPath = $(this).data('suratjalan');
+                const noSuratJalan = $(this).data('no-surat-jalan');
+                const idLokasiGudang = $(this).data('id-lokasi-gudang');
+                const idSumberMaterial = $(this).data('id-sumber-material');
 
                 Swal.fire({
                     title: 'Loading...',
@@ -3285,7 +3291,12 @@ $itemCount = count($getUniqueItemLogistik);
                     url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>",
                     method: "POST",
                     dataType: "json",
-                    data: { no_surat_jalan: suratJalanPath },
+                    data: {
+                        no_surat_jalan: noSuratJalan,
+                        id_lokasi_gudang: idLokasiGudang,
+                        id_sumber_material: idSumberMaterial,
+                        surat_jalan: suratJalanPath
+                    },
                     success: function(response) {
                         Swal.close();
                         const rows = response.getDetailAreaBySJ || [];

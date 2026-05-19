@@ -8,6 +8,7 @@ class MDashboard_Logistik_Stok extends CI_Model
     {
         $data = $this->db->query('SELECT
     tls.id_lokasi_gudang,
+    tls.id_sumber_material,
     tls.surat_jalan,
     tls.evidence,
 	tmllg.regional_lokasi_gudang,
@@ -516,19 +517,32 @@ ORDER BY
         return $res;
     }
 
-    public function getDetailAreaBySJ($no_surat_jalan)
+    public function getDetailAreaBySJ($noSuratJalan, $idLokasiGudang = null, $idSumberMaterial = null, $suratJalanPath = null)
     {
-        $data = $this->db->query('SELECT * FROM `tb_logistik_stok` JOIN tb_master_logistik_lokasi_gudang ON tb_logistik_stok.id_lokasi_gudang = tb_master_logistik_lokasi_gudang.id_lokasi_gudang
-	                                    JOIN tb_master_bowheer ON tb_logistik_stok.id_bowheer = tb_master_bowheer.id_bowheer
-                                        JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
-                                        JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
-                                        JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user
-                                        WHERE surat_jalan = "' . $no_surat_jalan . '"
-                                        ORDER BY id_logistik_stok DESC
-                                        ')->result_array();
+        $this->db
+            ->select('*')
+            ->from('tb_logistik_stok')
+            ->join('tb_master_logistik_lokasi_gudang', 'tb_logistik_stok.id_lokasi_gudang = tb_master_logistik_lokasi_gudang.id_lokasi_gudang')
+            ->join('tb_master_bowheer', 'tb_logistik_stok.id_bowheer = tb_master_bowheer.id_bowheer')
+            ->join('tb_master_logistik_sumber_material', 'tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material')
+            ->join('tb_master_logistik_kode_item', 'tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item')
+            ->join('tb_master_user', 'tb_logistik_stok.id_user = tb_master_user.id_user');
 
-        log_message('error', 'query asdasdasdasd : ' . $this->db->last_query());
-        return $data;
+        if ((string) $noSuratJalan !== '') {
+            $this->db->where('tb_logistik_stok.no_surat_jalan', (string) $noSuratJalan);
+        } elseif ((string) $suratJalanPath !== '') {
+            $this->db->where('tb_logistik_stok.surat_jalan', (string) $suratJalanPath);
+        }
+
+        if ((int) $idLokasiGudang > 0) {
+            $this->db->where('tb_logistik_stok.id_lokasi_gudang', (int) $idLokasiGudang);
+        }
+
+        if ((int) $idSumberMaterial > 0) {
+            $this->db->where('tb_logistik_stok.id_sumber_material', (int) $idSumberMaterial);
+        }
+
+        return $this->db->order_by('tb_logistik_stok.id_logistik_stok', 'DESC')->get()->result_array();
     }
 
     public function getOpenPengirimanPabrikBySjGudang($noSuratJalan, $idLokasiGudang)

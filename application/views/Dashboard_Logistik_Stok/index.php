@@ -692,6 +692,8 @@ $total_stok_dashboard = [];
 
                                                     <a href="" data-suratjalan="<?= $data['no_surat_jalan']; ?>"
                                                         data-id-logistik-stok-unique="<?= $data['surat_jalan'] ?>"
+                                                        data-id-lokasi-gudang="<?= (int) ($data['id_lokasi_gudang'] ?? 0) ?>"
+                                                        data-id-sumber-material="<?= (int) ($data['id_sumber_material'] ?? 0) ?>"
                                                         data-target="#form_detail_surat_jalan" data-toggle="modal"
                                                         class="btn btn-primary tombol_detail ml-1"><i
                                                             class=" fas fa-eye"></i></a>
@@ -1568,6 +1570,8 @@ $total_stok_dashboard = [];
         $(".tombol_detail").click(function() {
             var selectedSJ = $(this).data("suratjalan"); // Ambil ID dari tombol yang ditekan
             var selectedunique = $(this).data("id-logistik-stok-unique"); // Ambil ID dari tombol yang ditekan
+            var selectedLokasi = $(this).data("id-lokasi-gudang") || 0;
+            var selectedSumber = $(this).data("id-sumber-material") || 0;
             // console.log(selectedunique);
 
             if (!selectedSJ || selectedSJ === "") {
@@ -1599,7 +1603,10 @@ $total_stok_dashboard = [];
                     url: "<?= base_url('Dashboard_Logistik_Stok/filterDetailSuratJalan') ?>", // Arahkan ke file PHP yang menangani filtering
                     method: "POST",
                     data: {
-                        no_surat_jalan: selectedunique
+                        no_surat_jalan: selectedSJ,
+                        id_lokasi_gudang: selectedLokasi,
+                        id_sumber_material: selectedSumber,
+                        surat_jalan: selectedunique
                     },
                     dataType: "json",
                     success: function(response) {
