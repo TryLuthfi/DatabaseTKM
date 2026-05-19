@@ -475,15 +475,17 @@ class BillingPayment extends CI_Controller
         $statusInvoice = $this->input->post('status_invoice');
         $invoiceDateStart = trim((string) $this->input->post('invoice_date_start'));
         $invoiceDateEnd = trim((string) $this->input->post('invoice_date_end'));
+        $paymentDateStart = trim((string) $this->input->post('payment_date_start'));
+        $paymentDateEnd = trim((string) $this->input->post('payment_date_end'));
 
         if ($statusInvoice === 'all') {
             $statusInvoice = null;
         }
 
-        $data = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice, $invoiceDateStart, $invoiceDateEnd);
-        $summary = $this->MBillingPayment->getOutstandingSummary($bowheer, $regional, $city, $priority, $invoiceDateStart, $invoiceDateEnd);
-        $tabCounts = $this->MBillingPayment->getBillingStatusCounts($bowheer, $regional, $city, $priority, $invoiceDateStart, $invoiceDateEnd);
-        $detailRows = $this->MBillingPayment->getTargetPriorityBowheerFiltered($bowheer, $regional, $city, $priority, $invoiceDateStart, $invoiceDateEnd);
+        $data = $this->MBillingPayment->getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice, $invoiceDateStart, $invoiceDateEnd, $paymentDateStart, $paymentDateEnd);
+        $summary = $this->MBillingPayment->getOutstandingSummary($bowheer, $regional, $city, $priority, $invoiceDateStart, $invoiceDateEnd, $paymentDateStart, $paymentDateEnd);
+        $tabCounts = $this->MBillingPayment->getBillingStatusCounts($bowheer, $regional, $city, $priority, $invoiceDateStart, $invoiceDateEnd, $paymentDateStart, $paymentDateEnd);
+        $detailRows = $this->MBillingPayment->getTargetPriorityBowheerFiltered($bowheer, $regional, $city, $priority, $invoiceDateStart, $invoiceDateEnd, $paymentDateStart, $paymentDateEnd);
 
         // Tentukan kolom yang tampil berdasarkan filter
         $priceHeader = $statusInvoice === 'partial' ? 'Outstanding Balance' : 'Price';

@@ -363,7 +363,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
 
                         <div class="billing-workbench-tabs-wrap">
                             <div class="row align-items-end">
-                                <div class="col-lg-8 mb-2 mb-lg-0">
+                                <div class="col-lg-9 mb-2 mb-lg-0">
                                     <ul class="nav nav-pills" id="invoice-status-tab" role="tablist">
                                         <li class="nav-item">
                                             <a class="nav-link active tab-status-invoice" data-status="open"
@@ -387,22 +387,12 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         </li>
                                     </ul>
                                 </div>
-                                <div class="col-lg-2">
-                                    <div class="form-group mb-0">
-                                        <label class="billing-field-label">Rentang Tanggal Invoice</label>
-                                        <input type="text" id="filter_invoice_date_workbench" class="form-control billing-filter-input"
-                                            placeholder="Pilih rentang tanggal" autocomplete="off">
-                                    </div>
-                                </div>
-                                <div class="col-lg-2">
-                                    <div class="form-group mb-0">
-                                        <label class="billing-field-label">Priority</label>
-                                        <select id="filter_priority_workbench" class="select2 billing-filter-select"
-                                            data-placeholder="Pilih Prioritas" style="width: 100%;" multiple="multiple">
-                                            <?php foreach ($unique_priority as $priority): ?>
-                                                <option value="<?= $priority ?>"><?= $priority ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
+                                <div class="col-lg-3">
+                                    <div class="d-flex justify-content-lg-end">
+                                        <button type="button" class="btn budget-btn budget-btn--ghost billing-filter-btn"
+                                            data-toggle="modal" data-target="#modal-workbench-filter">
+                                            <i class="fas fa-filter mr-1"></i> Filter Workbench
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -845,6 +835,61 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         </div>
     </div>
 
+    <div class="modal fade" id="modal-workbench-filter" tabindex="-1" role="dialog"
+        aria-labelledby="modalWorkbenchFilterLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md" role="document">
+            <div class="modal-content billing-report-modal">
+                <div class="modal-header billing-report-modal__header">
+                    <div>
+                        <span class="billing-report-modal__eyebrow">Workbench Filter</span>
+                        <h5 class="modal-title mb-1" id="modalWorkbenchFilterLabel">Filter Invoice Detail Workbench</h5>
+                        <p class="mb-0 billing-report-modal__subtitle">Atur filter tanggal invoice, tanggal pencairan, dan priority.</p>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="billing-field-label">Rentang Tanggal Invoice</label>
+                                <input type="text" id="filter_invoice_date_workbench" class="form-control billing-filter-input"
+                                    placeholder="Pilih rentang tanggal" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="billing-field-label">Rentang Tanggal Pencairan</label>
+                                <input type="text" id="filter_payment_date_workbench" class="form-control billing-filter-input"
+                                    placeholder="Pilih rentang tanggal" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-group mb-0">
+                                <label class="billing-field-label">Priority</label>
+                                <select id="filter_priority_workbench" class="select2 billing-filter-select"
+                                    data-placeholder="Pilih Prioritas" style="width: 100%;" multiple="multiple">
+                                    <?php foreach ($unique_priority as $priority): ?>
+                                        <option value="<?= $priority ?>"><?= $priority ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer billing-report-modal__footer">
+                    <button type="button" class="btn budget-btn budget-btn--ghost" id="btnResetWorkbenchFilterModal">
+                        <i class="fas fa-redo-alt mr-1"></i> Reset
+                    </button>
+                    <button type="button" class="btn budget-btn budget-btn--primary" id="btnApplyWorkbenchFilterModal">
+                        <i class="fas fa-check mr-1"></i> Terapkan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modal-edit-partial-payment" tabindex="-1" role="dialog"
         aria-labelledby="modalEditPartialPaymentLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
@@ -1154,6 +1199,8 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     $(document).ready(function () {
         let invoiceDateStart = '';
         let invoiceDateEnd = '';
+        let paymentDateStart = '';
+        let paymentDateEnd = '';
 
         // === PETA KOLOM DAN FILTER ===
         const colMap = {
@@ -1197,14 +1244,33 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 invoiceDateStart = picker.startDate.format('YYYY-MM-DD');
                 invoiceDateEnd = picker.endDate.format('YYYY-MM-DD');
                 $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
-                $('#btnFilterDataProject').trigger('click');
             });
 
             $('#filter_invoice_date_workbench').on('cancel.daterangepicker', function () {
                 invoiceDateStart = '';
                 invoiceDateEnd = '';
                 $(this).val('');
-                $('#btnFilterDataProject').trigger('click');
+            });
+
+            $('#filter_payment_date_workbench').daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    format: 'MM/DD/YYYY',
+                    cancelLabel: 'Cancel',
+                    applyLabel: 'Apply'
+                }
+            });
+
+            $('#filter_payment_date_workbench').on('apply.daterangepicker', function (ev, picker) {
+                paymentDateStart = picker.startDate.format('YYYY-MM-DD');
+                paymentDateEnd = picker.endDate.format('YYYY-MM-DD');
+                $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+            });
+
+            $('#filter_payment_date_workbench').on('cancel.daterangepicker', function () {
+                paymentDateStart = '';
+                paymentDateEnd = '';
+                $(this).val('');
             });
         }
 
@@ -1263,7 +1329,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 priority: selectedPriority,
                 status_invoice: activeStatus,
                 invoice_date_start: invoiceDateStart,
-                invoice_date_end: invoiceDateEnd
+                invoice_date_end: invoiceDateEnd,
+                payment_date_start: paymentDateStart,
+                payment_date_end: paymentDateEnd
             };
             
             if (!filters.invoice_date_start && !filters.invoice_date_end) {
@@ -1490,7 +1558,43 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             $('#btnFilterDataProject').trigger('click');
         }, 500);
 
-        $('#filter_priority_workbench').on('change', function () {
+        $('#modal-workbench-filter').on('shown.bs.modal', function () {
+            if (!$('#filter_priority_workbench').hasClass('select2-hidden-accessible')) {
+                $('#filter_priority_workbench').select2({
+                    theme: 'bootstrap4',
+                    width: '100%',
+                    allowClear: true,
+                    dropdownParent: $('#modal-workbench-filter'),
+                    placeholder: function () {
+                        return $(this).data('placeholder') || 'Pilih';
+                    }
+                });
+            }
+        });
+
+        $('#btnApplyWorkbenchFilterModal').on('click', function () {
+            $('#modal-workbench-filter').modal('hide');
+            $('#btnFilterDataProject').trigger('click');
+        });
+
+        $('#btnResetWorkbenchFilterModal').on('click', function () {
+            invoiceDateStart = '';
+            invoiceDateEnd = '';
+            paymentDateStart = '';
+            paymentDateEnd = '';
+            $('#filter_priority_workbench').val(null).trigger('change');
+            $('#filter_invoice_date_workbench').val('');
+            $('#filter_payment_date_workbench').val('');
+            if (typeof $('#filter_invoice_date_workbench').data('daterangepicker') !== 'undefined') {
+                const picker = $('#filter_invoice_date_workbench').data('daterangepicker');
+                picker.setStartDate(moment());
+                picker.setEndDate(moment());
+            }
+            if (typeof $('#filter_payment_date_workbench').data('daterangepicker') !== 'undefined') {
+                const pickerPayment = $('#filter_payment_date_workbench').data('daterangepicker');
+                pickerPayment.setStartDate(moment());
+                pickerPayment.setEndDate(moment());
+            }
             $('#btnFilterDataProject').trigger('click');
         });
         
@@ -1502,11 +1606,19 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             $('#filter_priority_workbench').val(null).trigger('change');
             invoiceDateStart = '';
             invoiceDateEnd = '';
+            paymentDateStart = '';
+            paymentDateEnd = '';
             $('#filter_invoice_date_workbench').val('');
+            $('#filter_payment_date_workbench').val('');
             if (typeof $('#filter_invoice_date_workbench').data('daterangepicker') !== 'undefined') {
                 const picker = $('#filter_invoice_date_workbench').data('daterangepicker');
                 picker.setStartDate(moment());
                 picker.setEndDate(moment());
+            }
+            if (typeof $('#filter_payment_date_workbench').data('daterangepicker') !== 'undefined') {
+                const pickerPayment = $('#filter_payment_date_workbench').data('daterangepicker');
+                pickerPayment.setStartDate(moment());
+                pickerPayment.setEndDate(moment());
             }
             activeStatus = 'open';
             $('.tab-status-invoice').removeClass('active');

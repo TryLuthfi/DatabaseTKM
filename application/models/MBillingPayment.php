@@ -21,6 +21,21 @@ class MBillingPayment extends CI_Model
         }
     }
 
+    private function applyPaymentDateRangeFilter($startDate = null, $endDate = null)
+    {
+        $startDate = trim((string) $startDate);
+        $endDate = trim((string) $endDate);
+
+        if ($startDate !== '' && $endDate !== '') {
+            $this->db->where('DATE(tbp.tgl_payment_invoice) >=', $startDate);
+            $this->db->where('DATE(tbp.tgl_payment_invoice) <=', $endDate);
+        } elseif ($startDate !== '') {
+            $this->db->where('DATE(tbp.tgl_payment_invoice) >=', $startDate);
+        } elseif ($endDate !== '') {
+            $this->db->where('DATE(tbp.tgl_payment_invoice) <=', $endDate);
+        }
+    }
+
     public function getAllData()
     {
         $agingInvoiceExpr = $this->agingInvoiceExpr;
@@ -157,7 +172,7 @@ WHERE tbp.status_invoice IN ("open", "partial")
         return $data;
     }
 
-    public function getTargetPriorityBowheerFiltered($bowheer, $regional, $city, $priority, $startDate = null, $endDate = null)
+    public function getTargetPriorityBowheerFiltered($bowheer, $regional, $city, $priority, $startDate = null, $endDate = null, $paymentStartDate = null, $paymentEndDate = null)
     {
         $agingDueExpr = $this->agingDueExpr;
         $outstandingSql = 'CASE
@@ -190,6 +205,7 @@ WHERE tbp.status_invoice IN ("open", "partial")
             $this->db->where_in('area_payment', $city);
         }
         $this->applyInvoiceDateRangeFilter($startDate, $endDate);
+        $this->applyPaymentDateRangeFilter($paymentStartDate, $paymentEndDate);
         if (!empty($priority)) {
             $conditions = [];
             foreach ($priority as $p) {
@@ -214,7 +230,7 @@ WHERE tbp.status_invoice IN ("open", "partial")
         return $this->db->get()->result_array();
     }
 
-    public function getOutstandingSummary($bowheer, $regional, $city, $priority, $startDate = null, $endDate = null)
+    public function getOutstandingSummary($bowheer, $regional, $city, $priority, $startDate = null, $endDate = null, $paymentStartDate = null, $paymentEndDate = null)
     {
         $agingDueExpr = $this->agingDueExpr;
         $outstandingSql = 'CASE
@@ -243,6 +259,7 @@ WHERE tbp.status_invoice IN ("open", "partial")
         if (!empty($city))
             $this->db->where_in('area_payment', $city);
         $this->applyInvoiceDateRangeFilter($startDate, $endDate);
+        $this->applyPaymentDateRangeFilter($paymentStartDate, $paymentEndDate);
         if (!empty($priority)) {
             $conditions = [];
 
@@ -266,7 +283,7 @@ WHERE tbp.status_invoice IN ("open", "partial")
         return $this->db->get()->row_array();
     }
 
-    public function getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice = 'open', $startDate = null, $endDate = null)
+    public function getFilteredBillingPayment($bowheer, $regional, $city, $priority, $statusInvoice = 'open', $startDate = null, $endDate = null, $paymentStartDate = null, $paymentEndDate = null)
     {
         $agingInvoiceExpr = $this->agingInvoiceExpr;
         $agingDueExpr = $this->agingDueExpr;
@@ -322,6 +339,7 @@ END AS status_monitor');
         if (!empty($city))
             $this->db->where_in('area_payment', $city);
         $this->applyInvoiceDateRangeFilter($startDate, $endDate);
+        $this->applyPaymentDateRangeFilter($paymentStartDate, $paymentEndDate);
         if (is_array($statusInvoice)) {
             $statusInvoice = array_values(array_filter(array_map('trim', $statusInvoice), function ($value) {
                 return $value !== '' && $value !== 'all';
@@ -363,7 +381,7 @@ END AS status_monitor');
         return $query->result_array();
     }
 
-    public function getBillingStatusCounts($bowheer, $regional, $city, $priority, $startDate = null, $endDate = null)
+    public function getBillingStatusCounts($bowheer, $regional, $city, $priority, $startDate = null, $endDate = null, $paymentStartDate = null, $paymentEndDate = null)
     {
         $agingDueExpr = $this->agingDueExpr;
 
@@ -381,6 +399,7 @@ END AS status_monitor');
             $this->db->where_in('area_payment', $city);
         }
         $this->applyInvoiceDateRangeFilter($startDate, $endDate);
+        $this->applyPaymentDateRangeFilter($paymentStartDate, $paymentEndDate);
         if (!empty($priority)) {
             $conditions = [];
             foreach ($priority as $p) {
