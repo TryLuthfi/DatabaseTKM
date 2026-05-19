@@ -392,6 +392,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                                         <button type="button" class="btn budget-btn budget-btn--ghost billing-filter-btn"
                                             data-toggle="modal" data-target="#modal-workbench-filter">
                                             <i class="fas fa-filter mr-1"></i> Filter Workbench
+                                            <span id="workbench-filter-badge" class="badge badge-info ml-1" style="display:none;">0</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1201,6 +1202,17 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         let invoiceDateEnd = '';
         let paymentDateStart = '';
         let paymentDateEnd = '';
+        
+        function updateWorkbenchFilterBadge() {
+            const priorityCount = ($('#filter_priority_workbench').val() || []).filter(v => v).length;
+            const totalActive = (invoiceDateStart ? 1 : 0) + (paymentDateStart ? 1 : 0) + (priorityCount > 0 ? 1 : 0);
+            const $badge = $('#workbench-filter-badge');
+            if (totalActive > 0) {
+                $badge.text(totalActive).show();
+            } else {
+                $badge.hide();
+            }
+        }
 
         // === PETA KOLOM DAN FILTER ===
         const colMap = {
@@ -1244,12 +1256,14 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 invoiceDateStart = picker.startDate.format('YYYY-MM-DD');
                 invoiceDateEnd = picker.endDate.format('YYYY-MM-DD');
                 $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+                updateWorkbenchFilterBadge();
             });
 
             $('#filter_invoice_date_workbench').on('cancel.daterangepicker', function () {
                 invoiceDateStart = '';
                 invoiceDateEnd = '';
                 $(this).val('');
+                updateWorkbenchFilterBadge();
             });
 
             $('#filter_payment_date_workbench').daterangepicker({
@@ -1265,12 +1279,14 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 paymentDateStart = picker.startDate.format('YYYY-MM-DD');
                 paymentDateEnd = picker.endDate.format('YYYY-MM-DD');
                 $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+                updateWorkbenchFilterBadge();
             });
 
             $('#filter_payment_date_workbench').on('cancel.daterangepicker', function () {
                 paymentDateStart = '';
                 paymentDateEnd = '';
                 $(this).val('');
+                updateWorkbenchFilterBadge();
             });
         }
 
@@ -1573,6 +1589,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
         });
 
         $('#btnApplyWorkbenchFilterModal').on('click', function () {
+            updateWorkbenchFilterBadge();
             $('#modal-workbench-filter').modal('hide');
             $('#btnFilterDataProject').trigger('click');
         });
@@ -1595,6 +1612,7 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 pickerPayment.setStartDate(moment());
                 pickerPayment.setEndDate(moment());
             }
+            updateWorkbenchFilterBadge();
             $('#btnFilterDataProject').trigger('click');
         });
         
@@ -1620,11 +1638,14 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
                 pickerPayment.setStartDate(moment());
                 pickerPayment.setEndDate(moment());
             }
+            updateWorkbenchFilterBadge();
             activeStatus = 'open';
             $('.tab-status-invoice').removeClass('active');
             $('.tab-status-invoice[data-status="open"]').addClass('active');
             $('#btnFilterDataProject').trigger('click');
         });
+
+        updateWorkbenchFilterBadge();
     });
 
     function parseNumber(value) {
