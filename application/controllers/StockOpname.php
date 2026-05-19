@@ -592,14 +592,21 @@ class StockOpname extends CI_Controller
 
     public function hapusPeriode($id_sop)
     {
-        $id_sop = array('id_sop' => $id_sop);
-        $res = $this->MStockOpname->hapusPeriode($id_sop);
+        $idSop = (int) $id_sop;
+        $res = $this->MStockOpname->hapusPeriodeDenganRelasi($idSop);
 
-        if ($res >= 1) {
+        if ($res) {
             $this->session->set_flashdata('status', 'sukses_hapus');
+            $this->setStockOpnameFlash('success', 'Periode berhasil dihapus beserta data relasinya.');
             redirect("StockOpname");
         } else {
             $this->session->set_flashdata('status', 'gagal_hapus');
+            $dbError = $this->db->error();
+            if (!empty($dbError['message'])) {
+                $this->setStockOpnameFlash('error', 'Gagal menghapus periode: ' . $dbError['message']);
+            } else {
+                $this->setStockOpnameFlash('error', 'Gagal menghapus periode. Pastikan tidak ada relasi data yang masih aktif.');
+            }
             redirect("StockOpname");
         }
     }

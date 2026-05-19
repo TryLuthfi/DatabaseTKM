@@ -161,6 +161,58 @@ WHERE tsi.id_sop = "' . $id_sop . '" AND tsi.id_kota_gudang = "' . $id_lokasi_gu
         return $res;
     }
 
+    public function hapusPeriodeDenganRelasi($idSop)
+    {
+        $idSop = (int) $idSop;
+        if ($idSop <= 0) {
+            return false;
+        }
+
+        $this->db->trans_start();
+
+        $soKotaRows = $this->db
+            ->select('id_so_kota')
+            ->from('tb_so_kota')
+            ->where('id_so_periode', $idSop)
+            ->get()
+            ->result_array();
+        $soKotaIds = array_map(static function ($row) {
+            return (int) ($row['id_so_kota'] ?? 0);
+        }, $soKotaRows);
+        $soKotaIds = array_values(array_filter($soKotaIds, static function ($value) {
+            return $value > 0;
+        }));
+
+        $baRows = $this->db
+            ->select('id_so_ba')
+            ->from('tb_so_ba')
+            ->where('id_so_periode', $idSop)
+            ->get()
+            ->result_array();
+        $baIds = array_map(static function ($row) {
+            return (int) ($row['id_so_ba'] ?? 0);
+        }, $baRows);
+        $baIds = array_values(array_filter($baIds, static function ($value) {
+            return $value > 0;
+        }));
+
+        if (!empty($baIds)) {
+            $this->db->where_in('id_so_ba', $baIds)->delete('tb_so_ba_item');
+        }
+
+        if (!empty($soKotaIds)) {
+            $this->db->where_in('id_so_kota', $soKotaIds)->delete('tb_so_approval_log');
+        }
+
+        $this->db->delete('tb_so_ba', ['id_so_periode' => $idSop]);
+        $this->db->delete('tb_so_item', ['id_sop' => $idSop]);
+        $this->db->delete('tb_so_kota', ['id_so_periode' => $idSop]);
+        $this->db->delete('tb_so_periode', ['id_sop' => $idSop]);
+
+        $this->db->trans_complete();
+        return $this->db->trans_status();
+    }
+
     public function hapusKotaById($id_so_kota)
     {
         return $this->db->delete("tb_so_kota", ['id_so_kota' => $id_so_kota]);
