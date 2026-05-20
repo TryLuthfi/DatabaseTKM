@@ -75,24 +75,19 @@ class Checklist_Dokument_MyRep extends CI_Controller
             return;
         }
 
-        $selectedCity = strtoupper(trim((string) $this->input->post('selected_city')));
-        $selectedRegional = strtoupper(trim((string) $this->input->post('selected_regional')));
-        $cacheKey = 'checklist_doc_index_' . md5($selectedCity . '|' . $selectedRegional);
-        $cachedPayload = $this->getChecklistCache($cacheKey);
-        if (!is_array($cachedPayload)) {
-            $clusterList = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional);
-            $documentItemList = $this->MChecklist_Dokument_MyRep->getClusterDocumentItemRows($selectedCity, $selectedRegional);
-            $cachedPayload = [
-                'clusterList' => $clusterList,
-                'documentItemList' => $documentItemList,
-                'dashboardSummary' => $this->buildDashboardSummary($clusterList, $documentItemList),
-            ];
-            $this->saveChecklistCache($cacheKey, $cachedPayload, 300);
-        }
+        try {
+            $selectedCity = strtoupper(trim((string) $this->input->post('selected_city')));
+            $selectedRegional = strtoupper(trim((string) $this->input->post('selected_regional')));
+            $cacheKey = 'checklist_doc_index_' . md5($selectedCity . '|' . $selectedRegional);
+            $cachedPayload = $this->getChecklistCache($cacheKey);
+            if (!is_array($cachedPayload)) {
+                // Hindari query berat di endpoint DataTables agar response selalu JSON valid.
+                $cachedPayload = ['documentItemList' => []];
+            }
 
-        $rows = isset($cachedPayload['documentItemList']) && is_array($cachedPayload['documentItemList'])
-            ? $cachedPayload['documentItemList']
-            : [];
+            $rows = isset($cachedPayload['documentItemList']) && is_array($cachedPayload['documentItemList'])
+                ? $cachedPayload['documentItemList']
+                : [];
 
         $itemRegional = strtoupper(trim((string) $this->input->post('item_regional')));
         $itemCity = strtoupper(trim((string) $this->input->post('item_city')));
@@ -207,14 +202,25 @@ class Checklist_Dokument_MyRep extends CI_Controller
             ];
         }
 
-        $this->output
-            ->set_content_type('application/json')
-            ->set_output(json_encode([
-                'draw' => (int) $this->input->post('draw'),
-                'recordsTotal' => $recordsTotal,
-                'recordsFiltered' => $recordsFiltered,
-                'data' => $data,
-            ]));
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'draw' => (int) $this->input->post('draw'),
+                    'recordsTotal' => $recordsTotal,
+                    'recordsFiltered' => $recordsFiltered,
+                    'data' => $data,
+                ]));
+        } catch (\Throwable $e) {
+            log_message('error', 'Checklist itemTableData failed: ' . $e->getMessage());
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'draw' => (int) $this->input->post('draw'),
+                    'recordsTotal' => 0,
+                    'recordsFiltered' => 0,
+                    'data' => [],
+                ]));
+        }
     }
 
     public function exportItemExcel()
