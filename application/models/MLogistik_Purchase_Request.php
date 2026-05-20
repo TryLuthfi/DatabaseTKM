@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MLogistik_Purchase_Request extends CI_Model
@@ -14,21 +14,21 @@ class MLogistik_Purchase_Request extends CI_Model
 
     public function get_all_purchase_request($tipe)
     {
-        $where = ($tipe == 'ho') ? 'WHERE tmu.lokasi_user = "HO"' : 'WHERE tmu.lokasi_user != "HO"';
+        $where = ($tipe == 'ho') ? 'WHERE tmu.lokasi_kantor = "HO"' : 'WHERE tmu.lokasi_kantor != "HO"';
         $data = $this->db->query("
             SELECT
                 tlp.*,
                 tmb.nama_bowheer as nama_project,
-                tmu.nama_user as nama_pembuat,
-                tmu.lokasi_user as lokasi_user_pembuat,
+                tmu.nama_karyawan as nama_pembuat,
+                tmu.lokasi_kantor as lokasi_user_pembuat,
                 tmlg.kota_lokasi_gudang,
                 tlp.nama_project as nama_projects
             FROM
                 tb_logistik_purchase_request tlp
             LEFT JOIN tb_master_bowheer tmb ON
                 tmb.nama_bowheer = tlp.id_project
-            LEFT JOIN tb_master_user tmu ON
-                tmu.id_user = tlp.pembuat
+            LEFT JOIN tb_master_user_new tmu ON
+                tmu.id = tlp.pembuat
             LEFT JOIN tb_master_logistik_lokasi_gudang tmlg ON
                 tmlg.id_lokasi_gudang = tlp.lokasi_project
             $where
@@ -44,8 +44,8 @@ class MLogistik_Purchase_Request extends CI_Model
                 tlprd.*,
                 tmlki.nama_item,
                 tmlki.satuan_item,
-                tmu.nama_user as nama_pembuat,
-                tmu.lokasi_user as lokasi_user_pembuat,
+                tmu.nama_karyawan as nama_pembuat,
+                tmu.lokasi_kantor as lokasi_user_pembuat,
                 tmlg.kota_lokasi_gudang
             FROM
                 tb_logistik_purchase_request_detail tlprd
@@ -53,8 +53,8 @@ class MLogistik_Purchase_Request extends CI_Model
                 tlprd.id_purchase_request = tlpr.id_purchase_request
             LEFT JOIN tb_master_logistik_kode_item tmlki ON
                 tlprd.id_kode_item = tmlki.id_kode_item
-            LEFT JOIN tb_master_user tmu ON
-                tmu.id_user = tlpr.pembuat
+            LEFT JOIN tb_master_user_new tmu ON
+                tmu.id = tlpr.pembuat
             LEFT JOIN tb_master_logistik_lokasi_gudang tmlg ON
                 tmlg.id_lokasi_gudang = tlpr.lokasi_project
             WHERE
@@ -222,15 +222,15 @@ class MLogistik_Purchase_Request extends CI_Model
             return null;
         }
 
-        $hasUserRelation = $this->relation_exists('tb_master_user');
-        $userSelect = $hasUserRelation ? ', u.nama_user AS nama_user' : '';
+        $hasUserRelation = $this->relation_exists('tb_master_user_new');
+        $userSelect = $hasUserRelation ? ', u.nama_karyawan AS nama_user' : '';
 
         $row = $this->db->query("
             SELECT
                 h.*
                 {$userSelect}
             FROM tb_logistik_nota_dinas_po h
-            " . ($hasUserRelation ? "LEFT JOIN tb_master_user u ON u.id_user = h.dibuat_oleh" : '') . "
+            " . ($hasUserRelation ? "LEFT JOIN tb_master_user_new u ON u.id = h.dibuat_oleh" : '') . "
             WHERE h.id_nota_dinas_po = ?
             LIMIT 1
         ", [$idNodin])->row_array();
@@ -649,3 +649,5 @@ class MLogistik_Purchase_Request extends CI_Model
         return is_numeric($value) ? (float) $value : 0.0;
     }
 }
+
+

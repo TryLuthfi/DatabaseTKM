@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MLogistik_Pesanan_Pabrik extends CI_Model
@@ -86,13 +86,13 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 pr.nama_project,
                 pr.id_project,
                 lg.kota_lokasi_gudang,
-                mu.nama_user,
+                mu.nama_karyawan AS nama_user,
                 {$outstandingSelect}
             FROM tb_logistik_purchase_request pr
             LEFT JOIN tb_master_logistik_lokasi_gudang lg
                 ON lg.id_lokasi_gudang = pr.lokasi_project
-            LEFT JOIN tb_master_user mu
-                ON mu.id_user = pr.pembuat
+            LEFT JOIN tb_master_user_new mu
+                ON mu.id = pr.pembuat
             LEFT JOIN tb_logistik_purchase_request_detail prd
                 ON prd.id_purchase_request = pr.id_purchase_request
             {$allocationJoin}
@@ -104,7 +104,7 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 pr.nama_project,
                 pr.id_project,
                 lg.kota_lokasi_gudang,
-                mu.nama_user
+                mu.nama_karyawan AS nama_user
             HAVING total_qty_outstanding_pr > 0
             ORDER BY pr.tanggal_pembuatan DESC, pr.nomor_purchase_request DESC
         ")->result_array();
@@ -554,7 +554,7 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 mp.jenis_pabrik,
                 mp.pic_pabrik,
                 mp.tlp_pabrik,
-                mu.nama_user,
+                mu.nama_karyawan AS nama_user,
                 " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'id_system_pembayaran') ? 'p.id_system_pembayaran' : 'NULL AS id_system_pembayaran') . ",
                 " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'id_jenis_pembayaran') ? 'p.id_jenis_pembayaran' : 'NULL AS id_jenis_pembayaran') . ",
                 " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'keterangan_po') ? 'p.keterangan_po' : 'NULL AS keterangan_po') . ",
@@ -572,8 +572,8 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
             FROM tb_logistik_pesanan_pabrik p
             LEFT JOIN tb_master_logistik_pabrik mp
                 ON mp.id_pabrik = p.id_pabrik
-            LEFT JOIN tb_master_user mu
-                ON mu.id_user = p.id_user
+            LEFT JOIN tb_master_user_new mu
+                ON mu.id = p.id_user
             " . ($this->relationExists('tb_master_logistik_system_pembayaran') && $this->fieldExists('tb_logistik_pesanan_pabrik', 'id_system_pembayaran')
                 ? "LEFT JOIN tb_master_logistik_system_pembayaran sp
                 ON sp.id_system_pembayaran = p.id_system_pembayaran"
@@ -602,7 +602,7 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
                 mp.jenis_pabrik,
                 mp.pic_pabrik,
                 mp.tlp_pabrik,
-                mu.nama_user
+                mu.nama_karyawan AS nama_user
                 " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'id_system_pembayaran') ? ', p.id_system_pembayaran' : '') . "
                 " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'id_jenis_pembayaran') ? ', p.id_jenis_pembayaran' : '') . "
                 " . ($this->fieldExists('tb_logistik_pesanan_pabrik', 'keterangan_po') ? ', p.keterangan_po' : '') . "
@@ -1023,3 +1023,5 @@ class MLogistik_Pesanan_Pabrik extends CI_Model
         return ((int) ($row['max_id'] ?? 0)) + 1;
     }
 }
+
+

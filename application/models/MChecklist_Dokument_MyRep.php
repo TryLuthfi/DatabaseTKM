@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MChecklist_Dokument_MyRep extends CI_Model
@@ -406,7 +406,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 i.format_file_name,
                 i.format_file_path,
                 i.verification_team,
-                u_ho.nama_user AS ho_pic_name,
+                u_ho.nama_karyawan AS ho_pic_name,
                 p.actual_atp_date,
                 f.id_doc_file,
                 f.status_file,
@@ -425,7 +425,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
             ->join('md_rfs_myrep_doc_group g', 'g.is_active = 1', 'inner')
             ->join('md_rfs_myrep_doc_item i', 'i.id_doc_group = g.id_doc_group AND i.is_active = 1 AND i.is_required = 1', 'inner')
-            ->join('tb_master_user u_ho', 'u_ho.id_user = mt.id_user_pic_ho', 'left')
+            ->join('tb_master_user_new u_ho', 'u_ho.id = mt.id_user_pic_ho', 'left')
             ->join('tb_rfs_myrep_doc_package p', 'p.cluster_id = c.id_cluster AND p.id_doc_group = g.id_doc_group', 'left')
             ->join('tb_rfs_myrep_doc_file f', 'f.id_doc_package = p.id_doc_package AND f.id_doc_item = i.id_doc_item', 'left')
             ->where('c.status_rfs', 'FULL RFS')
@@ -501,14 +501,14 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 mt.rpm,
                 mt.sm,
                 mt.spv,
-                u_ho.nama_user AS ho_pic_name,
+                u_ho.nama_karyawan AS ho_pic_name,
                 u_ho.telegram_user_id AS ho_pic_telegram_user_id,
                 latest_claim.rfs_date
             ", false)
             ->from('tb_rfs_myrep_cluster c')
             ->join('tb_myrep_cluster mc', 'mc.rfs_cluster_id = c.id_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
-            ->join('tb_master_user u_ho', 'u_ho.id_user = mt.id_user_pic_ho', 'left')
+            ->join('tb_master_user_new u_ho', 'u_ho.id = mt.id_user_pic_ho', 'left')
             ->join('(
                 SELECT cluster_id, MAX(claim_date) AS rfs_date
                 FROM tb_rfs_myrep_claim
@@ -1026,9 +1026,9 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         $rows = $this->db
-            ->select('l.*, u.nama_user')
+            ->select('l.*, u.nama_karyawan AS nama_user')
             ->from('tb_rfs_myrep_doc_file_log l')
-            ->join('tb_master_user u', 'u.id_user = l.action_by', 'left')
+            ->join('tb_master_user_new u', 'u.id = l.action_by', 'left')
             ->where_in('l.id_doc_file', $fileIds)
             ->order_by('l.action_at', 'DESC')
             ->order_by('l.id_doc_file_log', 'DESC')
@@ -1128,12 +1128,12 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 mt.regional_name,
                 mt.province_name,
                 mt.id_user_pic_ho,
-                u_ho.nama_user AS ho_pic_name,
+                u_ho.nama_karyawan AS ho_pic_name,
                 u_ho.telegram_user_id AS ho_pic_telegram_user_id
             ')
             ->from('tb_rfs_myrep_mainfeeder mf')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'inner')
-            ->join('tb_master_user u_ho', 'u_ho.id_user = mt.id_user_pic_ho', 'left')
+            ->join('tb_master_user_new u_ho', 'u_ho.id = mt.id_user_pic_ho', 'left')
             ->where('mf.id_mainfeeder', (int) $mainfeederId)
             ->get()
             ->row_array();
@@ -1379,9 +1379,9 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         $rows = $this->db
-            ->select('l.*, u.nama_user')
+            ->select('l.*, u.nama_karyawan AS nama_user')
             ->from('tb_rfs_myrep_mainfeeder_doc_file_log l')
-            ->join('tb_master_user u', 'u.id_user = l.action_by', 'left')
+            ->join('tb_master_user_new u', 'u.id = l.action_by', 'left')
             ->where_in('l.id_doc_file_mainfeeder', $fileIds)
             ->order_by('l.action_at', 'DESC')
             ->order_by('l.id_doc_file_log_mainfeeder', 'DESC')
@@ -1889,9 +1889,9 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         $user = $this->db
-            ->select('id_user, nama_user, telegram_user_id')
-            ->from('tb_master_user')
-            ->where('id_user', $this->getSitacApproverId())
+            ->select('id AS id_user, nama_karyawan AS nama_user, telegram_user_id')
+            ->from('tb_master_user_new')
+            ->where('id', $this->getSitacApproverId())
             ->get()
             ->row_array();
 
@@ -2252,4 +2252,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             && in_array((string) ($row['status_file'] ?? ''), ['UPLOADED', 'APPROVED'], true);
     }
 }
+
+
+
 

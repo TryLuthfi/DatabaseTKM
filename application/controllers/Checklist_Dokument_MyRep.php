@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class Checklist_Dokument_MyRep extends CI_Controller
@@ -1532,13 +1532,13 @@ class Checklist_Dokument_MyRep extends CI_Controller
         ]);
 
         $lines = [
-            '📥 <b>' . $this->escapeTelegramText($notificationTitle) . '</b>',
+            'ðŸ“¥ <b>' . $this->escapeTelegramText($notificationTitle) . '</b>',
             '',
-            '📄 ' . $this->escapeTelegramText($displayDocLabel),
-            '🏗 ' . $this->escapeTelegramText($categoryLabel) . ' | ' . $this->escapeTelegramText($siteLabel) . ' | ' . $this->escapeTelegramText($clusterLabel),
+            'ðŸ“„ ' . $this->escapeTelegramText($displayDocLabel),
+            'ðŸ— ' . $this->escapeTelegramText($categoryLabel) . ' | ' . $this->escapeTelegramText($siteLabel) . ' | ' . $this->escapeTelegramText($clusterLabel),
             '',
-            '👤 ' . $senderLabel . ' -> HO (' . $picMention . ')',
-            '🕒 ' . $this->escapeTelegramText($this->formatTelegramDate(date('Y-m-d H:i:s'))),
+            'ðŸ‘¤ ' . $senderLabel . ' -> HO (' . $picMention . ')',
+            'ðŸ•’ ' . $this->escapeTelegramText($this->formatTelegramDate(date('Y-m-d H:i:s'))),
         ];
 
         if ($detailUrl !== '') {
@@ -1695,9 +1695,9 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         $sitacUser = $this->db
-            ->select('nama_user, telegram_user_id')
-            ->from('tb_master_user')
-            ->where('id_user', 22)
+            ->select('nama_karyawan AS nama_user, telegram_user_id')
+            ->from('tb_master_user_new')
+            ->where('id', 22)
             ->get()
             ->row_array();
 
@@ -1764,3 +1764,4 @@ class Checklist_Dokument_MyRep extends CI_Controller
         return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
     }
 }
+

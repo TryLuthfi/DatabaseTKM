@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class Myrep_notification_service
@@ -112,9 +112,9 @@ class Myrep_notification_service
         }
 
         $row = $this->ci->db
-            ->select('id_user, nama_user, telegram_user_id')
-            ->from('tb_master_user')
-            ->where('id_user', (int) $userId)
+            ->select('id AS id_user, nama_karyawan AS nama_user, telegram_user_id')
+            ->from('tb_master_user_new')
+            ->where('id', (int) $userId)
             ->get()
             ->row_array();
 
@@ -142,11 +142,11 @@ class Myrep_notification_service
         $lines = [
             $title,
             '',
-            '📄 ' . $this->escapeTelegramText($docLine),
-            '🏗 ' . $this->escapeTelegramText($metaLine),
+            'ðŸ“„ ' . $this->escapeTelegramText($docLine),
+            'ðŸ— ' . $this->escapeTelegramText($metaLine),
             '',
-            '👤 ' . $senderLine,
-            '🕒 ' . $this->escapeTelegramText($timeLine),
+            'ðŸ‘¤ ' . $senderLine,
+            'ðŸ•’ ' . $this->escapeTelegramText($timeLine),
         ];
 
         if (!empty($supplementalLines)) {
@@ -165,14 +165,14 @@ class Myrep_notification_service
     {
         switch (strtolower(trim((string) $eventName))) {
             case 'cluster_masuk':
-                return '🟢 <b>NEW CLUSTER</b>';
+                return 'ðŸŸ¢ <b>NEW CLUSTER</b>';
             case 'document_revised':
-                return '🔵 <b>REVISED DOCUMENT</b>';
+                return 'ðŸ”µ <b>REVISED DOCUMENT</b>';
             case 'claim_rfs_approved':
-                return '🚀 <b>CLAIM RFS</b>';
+                return 'ðŸš€ <b>CLAIM RFS</b>';
             case 'document_masuk':
             default:
-                return '🟡 <b>NEW DOCUMENT</b>';
+                return 'ðŸŸ¡ <b>NEW DOCUMENT</b>';
         }
     }
 
@@ -184,19 +184,19 @@ class Myrep_notification_service
         $moduleLabel = trim((string) ($payload['module_label'] ?? $moduleName));
 
         if ($normalizedEvent === 'full_upload' && in_array($normalizedModule, ['batch_approval_myrep', 'drm_myrep'], true)) {
-            return '✅ <b>FULL UPLOAD - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+            return 'âœ… <b>FULL UPLOAD - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
         }
 
         if ($normalizedEvent === 'batch_revised' && $normalizedModule === 'batch_approval_myrep') {
-            return '🔵 <b>REVISED - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+            return 'ðŸ”µ <b>REVISED - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
         }
 
         if ($normalizedEvent === 'cluster_masuk' && in_array($normalizedModule, ['bak_myrep', 'valsal_myrep', 'batch_approval_myrep'], true)) {
-            return '✅ <b>NEW CLUSTER - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+            return 'âœ… <b>NEW CLUSTER - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
         }
 
         if ($normalizedEvent === 'document_revised' && in_array($normalizedModule, ['bak_myrep', 'valsal_myrep'], true) && $documentLabel !== '') {
-            return '🔵 <b>REVISED - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+            return 'ðŸ”µ <b>REVISED - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
         }
 
         return $this->resolveTitle($eventName);
@@ -258,8 +258,8 @@ class Myrep_notification_service
             $nominalPerHomepass = (float) ($payload['nominal_per_homepass'] ?? 0);
 
             return [
-                '💲 ' . $this->escapeTelegramText('Total Pengajuan Donasi: ' . $this->formatRupiah($donationTotal)),
-                '🏠 ' . $this->escapeTelegramText('Nominal per Homepass: ' . $this->formatRupiah($nominalPerHomepass)),
+                'ðŸ’² ' . $this->escapeTelegramText('Total Pengajuan Donasi: ' . $this->formatRupiah($donationTotal)),
+                'ðŸ  ' . $this->escapeTelegramText('Nominal per Homepass: ' . $this->formatRupiah($nominalPerHomepass)),
                 '',
             ];
         }
@@ -379,3 +379,4 @@ class Myrep_notification_service
         return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
     }
 }
+

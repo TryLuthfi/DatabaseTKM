@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MStockOpname extends CI_Model
@@ -297,10 +297,10 @@ WHERE tsi.id_sop = "' . $id_sop . '" AND tsi.id_kota_gudang = "' . $id_lokasi_gu
     public function getSOBABySoKota($idSoKota)
     {
         return $this->db
-            ->select('ba.*, u_submit.nama_user AS submitted_name, u_approve.nama_user AS approved_name')
+            ->select('ba.*, u_submit.nama_karyawan AS submitted_name, u_approve.nama_karyawan AS approved_name')
             ->from('tb_so_ba ba')
-            ->join('tb_master_user u_submit', 'u_submit.id_user = ba.ba_submitted_by', 'left')
-            ->join('tb_master_user u_approve', 'u_approve.id_user = ba.ba_approved_by', 'left')
+            ->join('tb_master_user_new u_submit', 'u_submit.id = ba.ba_submitted_by', 'left')
+            ->join('tb_master_user_new u_approve', 'u_approve.id = ba.ba_approved_by', 'left')
             ->where('ba.id_so_kota', (int) $idSoKota)
             ->order_by('ba.id_so_ba', 'DESC')
             ->get()
@@ -349,9 +349,9 @@ WHERE tsi.id_sop = "' . $id_sop . '" AND tsi.id_kota_gudang = "' . $id_lokasi_gu
     public function getSOApprovalLogs($idSoKota)
     {
         return $this->db
-            ->select('l.*, u.nama_user')
+            ->select('l.*, u.nama_karyawan AS nama_user')
             ->from('tb_so_approval_log l')
-            ->join('tb_master_user u', 'u.id_user = l.action_by', 'left')
+            ->join('tb_master_user_new u', 'u.id = l.action_by', 'left')
             ->where('l.id_so_kota', (int) $idSoKota)
             ->order_by('l.action_at', 'DESC')
             ->order_by('l.id_so_approval_log', 'DESC')
@@ -438,3 +438,5 @@ WHERE tsi.id_sop = "' . $id_sop . '" AND tsi.id_kota_gudang = "' . $id_lokasi_gu
     }
 
 }
+
+

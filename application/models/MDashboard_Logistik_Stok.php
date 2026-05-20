@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MDashboard_Logistik_Stok extends CI_Model
@@ -16,7 +16,7 @@ class MDashboard_Logistik_Stok extends CI_Model
 	tmb.nama_bowheer,
 	tmlsm.nama_sumber_material,
 	tls.no_surat_jalan,
-	tmu.nama_user,
+	tmu.nama_karyawan AS nama_user,
 	tls.tanggal_upload_stok,
 	tls.no_po_logistik,
 	tls.no_pr_logistik,
@@ -39,9 +39,9 @@ JOIN tb_master_logistik_sumber_material  tmlsm
 JOIN tb_master_logistik_kode_item 
     ON
 	tls.id_kode_item = tb_master_logistik_kode_item.id_kode_item
-JOIN tb_master_user tmu
+JOIN tb_master_user_new tmu
     ON
-	tls.id_user = tmu.id_user
+	tls.id_user = tmu.id
 WHERE
 	no_surat_jalan != ""
 GROUP BY
@@ -561,14 +561,14 @@ ORDER BY
         }
 
         $this->db
-            ->select('tb_logistik_stok.*, tb_master_logistik_lokasi_gudang.*, tb_master_bowheer.*, tb_master_logistik_sumber_material.*, tb_master_logistik_kode_item.*, tb_master_user.*')
+            ->select('tb_logistik_stok.*, tb_master_logistik_lokasi_gudang.*, tb_master_bowheer.*, tb_master_logistik_sumber_material.*, tb_master_logistik_kode_item.*, tb_master_user_new.*')
             ->select($nomorPolisiSelect . ', ' . $namaMitraSelect . ', ' . $picMitraSelect, false)
             ->from('tb_logistik_stok')
             ->join('tb_master_logistik_lokasi_gudang', 'tb_logistik_stok.id_lokasi_gudang = tb_master_logistik_lokasi_gudang.id_lokasi_gudang')
             ->join('tb_master_bowheer', 'tb_logistik_stok.id_bowheer = tb_master_bowheer.id_bowheer')
             ->join('tb_master_logistik_sumber_material', 'tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material')
             ->join('tb_master_logistik_kode_item', 'tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item')
-            ->join('tb_master_user', 'tb_logistik_stok.id_user = tb_master_user.id_user');
+            ->join('tb_master_user_new', 'tb_logistik_stok.id_user = tb_master_user_new.id');
 
         if ($hasRincianTable) {
             $this->db->join('tb_logistik_stok_rincian rin', 'rin.id_logistik_stok = tb_logistik_stok.id_logistik_stok', 'left');
@@ -1187,7 +1187,7 @@ ORDER BY ki.kategori_item;";
 	                                    JOIN tb_master_bowheer ON tb_logistik_stok.id_bowheer = tb_master_bowheer.id_bowheer
                                         JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
                                         JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
-                                        JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user WHERE 1=1";
+                                        JOIN tb_master_user_new ON tb_logistik_stok.id_user = tb_master_user_new.id WHERE 1=1";
 
         if (!empty($lokasiArray)) {
             $sql .= " AND tb_master_logistik_lokasi_gudang.id_lokasi_gudang IN ($lokasiArray)";
@@ -1241,7 +1241,7 @@ ORDER BY ki.kategori_item;";
     tmlsm.nama_sumber_material,
     tmlsm.status_sumber_material,
     tls.tanggal_upload_stok,
-    tmu.nama_user,
+    tmu.nama_karyawan AS nama_user,
     tls.no_pr_logistik,
     tls.no_po_logistik
 FROM tb_logistik_stok tls
@@ -1250,7 +1250,7 @@ LEFT JOIN tb_master_logistik_lokasi_gudang tmllg2 ON tls.id_lokasi_gudang_pengir
 LEFT JOIN tb_master_bowheer tmb ON tls.id_bowheer = tmb.id_bowheer
 LEFT JOIN tb_master_logistik_sumber_material tmlsm ON tls.id_sumber_material = tmlsm.id_sumber_material
 LEFT JOIN tb_master_logistik_kode_item tmlki ON tls.id_kode_item = tmlki.id_kode_item
-LEFT JOIN tb_master_user tmu ON tls.id_user = tmu.id_user
+LEFT JOIN tb_master_user_new tmu ON tls.id_user = tmu.id
 ORDER BY tls.id_logistik_stok DESC;")->result_array();
 
         return $data;
@@ -1549,4 +1549,6 @@ public function getReportStokMaterial($dateStart = null)
     }
 
 }
+
+
 

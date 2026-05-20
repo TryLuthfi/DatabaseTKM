@@ -1,9 +1,9 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MAuth extends CI_Model
 {
-    private $_table = 'tb_master_user';
+    private $_table = 'tb_master_user_new';
     // public $username_acc;
     // public $password_acc;
 
@@ -17,17 +17,14 @@ class MAuth extends CI_Model
         $akun = $this->db->query("select
                                     a.*,
                                     tl.*,
-                                    tj.*,
-                                    COALESCE(b.nama_user, a.nama_user) as under_sm,
-                                    COALESCE(c.nama_user, a.nama_user) as under_pm
+                                    COALESCE(a.nama_karyawan, '') as nama_user,
+                                    COALESCE(a.lokasi_kantor, a.homebase, 'HO') as lokasi_user,
+                                    '' as nama_jabatan,
+                                    '' as under_sm,
+                                    '' as under_pm
                                 from
-                                    tb_master_user a
-                                left join tb_master_user b on
-                                    a.under_sm  = b.id_user
-                                left join tb_master_user c on
-                                    a.under_pm  = c.id_user
+                                    tb_master_user_new a
                                 left join tb_level tl  ON a.id_level = tl.id_level
-                                LEFT JOIN tb_jabatan tj ON a.id_jabatan = tj.id_jabatan
                                 WHERE a.username_user = " . $this->db->escape($username) . "
                         ")->row_array();
         if ($akun) {
@@ -38,7 +35,7 @@ class MAuth extends CI_Model
                 $validationRows = $this->db
                     ->select('validation_user')
                     ->from('tb_master_user_child')
-                    ->where('id_master_user', (int) $akun['id_user'])
+                    ->where('id_master_user', (int) $akun['id'])
                     ->get()
                     ->result_array();
 
@@ -59,7 +56,7 @@ class MAuth extends CI_Model
 
                 $data =
                     [
-                        'id_user' => $akun['id_user'],
+                        'id_user' => $akun['id'],
                         'nama_user' => $akun['nama_user'],
                         'username_user' => $akun['username_user'],
                         'password_user' => $akun['password_user'],
@@ -83,3 +80,5 @@ class MAuth extends CI_Model
         
     }
 }
+
+

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MImplementasi_BOQ_MyRep extends CI_Model
@@ -268,9 +268,9 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         $rows = $this->db
-            ->select('a.*, u.nama_user')
+            ->select('a.*, u.nama_karyawan AS nama_user')
             ->from('tb_myrep_impl_daily_activity a')
-            ->join('tb_master_user u', 'u.id_user = a.created_by', 'left')
+            ->join('tb_master_user_new u', 'u.id = a.created_by', 'left')
             ->where('a.id_myrep_cluster', (int) $clusterId)
             ->order_by('a.activity_date', 'DESC')
             ->order_by('a.id_daily_activity', 'DESC')
@@ -714,9 +714,9 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         $rows = $this->db
-            ->select('p.id_progress_item, p.id_boq_baseline_item, p.progress_date, p.qty_progress, p.status_progress, p.remark_progress, p.created_at, u.nama_user')
+            ->select('p.id_progress_item, p.id_boq_baseline_item, p.progress_date, p.qty_progress, p.status_progress, p.remark_progress, p.created_at, u.nama_karyawan AS nama_user')
             ->from('tb_myrep_boq_progress_item p')
-            ->join('tb_master_user u', 'u.id_user = p.created_by', 'left')
+            ->join('tb_master_user_new u', 'u.id = p.created_by', 'left')
             ->where('p.id_myrep_cluster', (int) $clusterId)
             ->order_by('p.progress_date', 'DESC')
             ->order_by('p.id_progress_item', 'DESC')
@@ -1531,3 +1531,5 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         return $itemName !== '' ? $itemName : 'COMPLY';
     }
 }
+
+

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MPost_Donasi_MyRep extends CI_Model
@@ -361,9 +361,9 @@ class MPost_Donasi_MyRep extends CI_Model
         }
 
         return $this->db
-            ->select('l.*, u.nama_user')
+            ->select('l.*, u.nama_karyawan AS nama_user')
             ->from('tb_myrep_flow_doc_file_log l')
-            ->join('tb_master_user u', 'u.id_user = l.action_by', 'left')
+            ->join('tb_master_user_new u', 'u.id = l.action_by', 'left')
             ->where('l.id_doc_file', (int) $fileId)
             ->order_by('l.action_at', 'DESC')
             ->order_by('l.id_doc_file_log', 'DESC')
@@ -575,3 +575,5 @@ class MPost_Donasi_MyRep extends CI_Model
         }
     }
 }
+
+

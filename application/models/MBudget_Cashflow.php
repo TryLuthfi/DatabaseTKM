@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MBudget_Cashflow extends CI_Model
@@ -70,18 +70,18 @@ class MBudget_Cashflow extends CI_Model
 
     public function getActivePicUsers()
     {
-        if (!$this->db->table_exists('tb_master_user')) {
+        if (!$this->db->table_exists('tb_master_user_new')) {
             return [];
         }
 
         return $this->db
             ->distinct()
-            ->select('nama_user AS value, nama_user AS label')
-            ->from('tb_master_user')
+            ->select('nama_karyawan AS value, nama_karyawan AS label')
+            ->from('tb_master_user_new')
             ->where('status_user', 'ACTIVE')
-            ->where('nama_user IS NOT NULL', null, false)
-            ->where('TRIM(nama_user) !=', '')
-            ->order_by('nama_user', 'ASC')
+            ->where('nama_karyawan IS NOT NULL', null, false)
+            ->where('TRIM(nama_karyawan) !=', '')
+            ->order_by('nama_karyawan', 'ASC')
             ->get()
             ->result_array();
     }
@@ -89,14 +89,14 @@ class MBudget_Cashflow extends CI_Model
     public function findActivePicUserByName($namaUser)
     {
         $namaUser = trim((string) $namaUser);
-        if ($namaUser === '' || !$this->db->table_exists('tb_master_user')) {
+        if ($namaUser === '' || !$this->db->table_exists('tb_master_user_new')) {
             return [];
         }
 
         return $this->db
-            ->select('nama_user')
-            ->from('tb_master_user')
-            ->where('nama_user', $namaUser)
+            ->select('nama_karyawan AS nama_user')
+            ->from('tb_master_user_new')
+            ->where('nama_karyawan', $namaUser)
             ->where('status_user', 'ACTIVE')
             ->get()
             ->row_array();
@@ -325,3 +325,4 @@ class MBudget_Cashflow extends CI_Model
             ->row_array();
     }
 }
+

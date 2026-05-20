@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MMaster_Logistik_Lokasi_Gudang extends CI_Model
@@ -6,13 +6,13 @@ class MMaster_Logistik_Lokasi_Gudang extends CI_Model
 
     public function getMasterLogistikLokasiGudang()
     {
-        $data = $this->db->query('SELECT * FROM `tb_master_logistik_lokasi_gudang` LEFT JOIN tb_master_user ON tb_master_logistik_lokasi_gudang.id_user = tb_master_user.id_user;')->result_array();
+        $data = $this->db->query('SELECT * FROM `tb_master_logistik_lokasi_gudang` LEFT JOIN tb_master_user_new ON tb_master_logistik_lokasi_gudang.id_user = tb_master_user_new.id;')->result_array();
         return $data;
     }
 
     public function getMasterUser()
     {
-        $data = $this->db->query('SELECT * FROM tb_master_user ORDER BY nama_user ASC;')->result_array();
+        $data = $this->db->query('SELECT id AS id_user, nama_karyawan AS nama_user, status_user FROM tb_master_user_new ORDER BY nama_karyawan ASC;')->result_array();
         return $data;
     }
 
@@ -35,3 +35,5 @@ class MMaster_Logistik_Lokasi_Gudang extends CI_Model
     }
 
 }
+
+

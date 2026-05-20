@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MFiberstar_Project_Detail extends CI_Model
@@ -74,12 +74,12 @@ class MFiberstar_Project_Detail extends CI_Model
         $segments = explode("/", $url_path); // Pecah berdasarkan "/"
         $last_segment = end($segments); // Ambil bagian terakhir dari URL
 
-        $data = $this->db->query('SELECT tb_project_progress_fiberstar.*, tb_project_implementasi_fiberstar.*, tb_master_user.* 
+        $data = $this->db->query('SELECT tb_project_progress_fiberstar.*, tb_project_implementasi_fiberstar.*, tb_master_user_new.* 
                                   FROM tb_project_implementasi_fiberstar 
                                   LEFT JOIN tb_project_progress_fiberstar 
                                   ON tb_project_implementasi_fiberstar.access_id_project = tb_project_progress_fiberstar.access_id_project 
-                                  LEFT JOIN tb_master_user 
-                                  ON tb_project_implementasi_fiberstar.id_user = tb_master_user.id_user
+                                  LEFT JOIN tb_master_user_new 
+                                  ON tb_project_implementasi_fiberstar.id_user = tb_master_user_new.id
                                   WHERE tb_project_implementasi_fiberstar.primary_access_id_project = "' . $last_segment . '"
                                   ')
             ->result_array();
@@ -142,7 +142,9 @@ class MFiberstar_Project_Detail extends CI_Model
     }
 
     public function getMasterUser(){
-        $data = $this->db->query('SELECT * FROM tb_master_user')->result_array();
+        $data = $this->db->query('SELECT * FROM tb_master_user_new')->result_array();
         return $data;
     }
 }
+
+

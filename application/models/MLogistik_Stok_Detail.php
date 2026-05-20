@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MLogistik_Stok_Detail extends CI_Model
@@ -144,7 +144,7 @@ ORDER BY lg.regional_lokasi_gudang, ki.project_item;')
 	                                    JOIN tb_master_bowheer ON tb_logistik_stok.id_bowheer = tb_master_bowheer.id_bowheer
                                         JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
                                         JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
-                                        JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user
+                                        JOIN tb_master_user_new ON tb_logistik_stok.id_user = tb_master_user_new.id
                                         WHERE ' . $filter_area . ' = "' . $decoded_url_area . '" ORDER by tanggal_upload_stok DESC;')
             ->result_array();
         return $data;
@@ -161,7 +161,7 @@ ORDER BY lg.regional_lokasi_gudang, ki.project_item;')
 	                                    JOIN tb_master_bowheer ON tb_logistik_stok.id_bowheer = tb_master_bowheer.id_bowheer
                                         JOIN tb_master_logistik_sumber_material ON tb_logistik_stok.id_sumber_material = tb_master_logistik_sumber_material.id_sumber_material
                                         JOIN tb_master_logistik_kode_item ON tb_logistik_stok.id_kode_item = tb_master_logistik_kode_item.id_kode_item
-                                        JOIN tb_master_user ON tb_logistik_stok.id_user = tb_master_user.id_user
+                                        JOIN tb_master_user_new ON tb_logistik_stok.id_user = tb_master_user_new.id
                                         WHERE kategori_item = "' . $last_segment . '" ORDER by tanggal_upload_stok DESC;')
             ->result_array();
         return $data;
@@ -212,3 +212,5 @@ ORDER BY ki.kategori_item";
         ];
     }
 }
+
+

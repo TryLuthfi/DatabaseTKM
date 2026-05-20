@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MMonitoring_RFS_MyRep extends CI_Model
@@ -583,15 +583,15 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 mt.rpm,
                 mt.sm,
                 mt.spv,
-                su.nama_user AS submitted_name,
-                au.nama_user AS approved_name,
-                ru.nama_user AS rpm_approved_name
+                su.nama_karyawan AS submitted_name,
+                au.nama_karyawan AS approved_name,
+                ru.nama_karyawan AS rpm_approved_name
              FROM tb_rfs_myrep_claim cl
              INNER JOIN tb_rfs_myrep_cluster c ON c.id_cluster = cl.cluster_id
              INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
-             LEFT JOIN tb_master_user su ON su.id_user = cl.submitted_by
-             LEFT JOIN tb_master_user au ON au.id_user = cl.approved_by
-             LEFT JOIN tb_master_user ru ON ru.id_user = cl.rpm_approved_by
+             LEFT JOIN tb_master_user_new su ON su.id = cl.submitted_by
+             LEFT JOIN tb_master_user_new au ON au.id = cl.approved_by
+             LEFT JOIN tb_master_user_new ru ON ru.id = cl.rpm_approved_by
              WHERE cl.claim_year = ? AND cl.claim_month BETWEEN ? AND ?";
 
         $params = [$year, $startMonth, $endMonth];
@@ -1249,3 +1249,5 @@ class MMonitoring_RFS_MyRep extends CI_Model
         return max($fallbackHomepass, $totalClaim);
     }
 }
+
+

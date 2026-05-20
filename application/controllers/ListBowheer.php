@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class ListBowheer extends CI_Controller
@@ -19,7 +19,7 @@ class ListBowheer extends CI_Controller
             $data['judul'] = 'List Target Bowheer TKM';
             $data['rincian_bowheer'] = $this->MListBowheer->getData();
             $data['bowheer'] = $this->db->get('tb_master_bowheer')->result_array();
-            $data['list_user'] = $this->db->get('tb_master_user')->result_array();
+            $data['list_user'] = $this->db->get('tb_master_user_new')->result_array();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -102,3 +102,4 @@ class ListBowheer extends CI_Controller
         }
     }
 }
+

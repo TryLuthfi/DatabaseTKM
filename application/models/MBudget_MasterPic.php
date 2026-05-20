@@ -1,9 +1,9 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MBudget_MasterPic extends CI_Model
 {
-    private $table = 'tb_master_user';
+    private $table = 'tb_master_user_new';
 
     public function getAvailableUsers()
     {
@@ -17,17 +17,17 @@ class MBudget_MasterPic extends CI_Model
         }
 
         $this->db
-            ->select('id_user, nama_user, status_user')
+            ->select('id AS id_user, nama_karyawan AS nama_user, status_user')
             ->from($this->table)
             ->where('status_user', 'ACTIVE')
-            ->where('nama_user IS NOT NULL', null, false)
-            ->where('TRIM(nama_user) !=', '');
+            ->where('nama_karyawan IS NOT NULL', null, false)
+            ->where('TRIM(nama_karyawan) !=', '');
 
         if ($keyword !== '') {
-            $this->db->like('nama_user', $keyword);
+            $this->db->like('nama_karyawan', $keyword);
         }
 
-        $this->db->order_by('nama_user', 'ASC');
+        $this->db->order_by('nama_karyawan', 'ASC');
 
         return $this->db->get()->result_array();
     }
@@ -39,10 +39,10 @@ class MBudget_MasterPic extends CI_Model
         }
 
         $this->db->from($this->table);
-        $this->db->where('nama_user', trim((string) $namaUser));
+        $this->db->where('nama_karyawan', trim((string) $namaUser));
         $this->db->where('status_user', 'ACTIVE');
         if ((int) $excludeId > 0) {
-            $this->db->where('id_user !=', (int) $excludeId);
+            $this->db->where('id !=', (int) $excludeId);
         }
 
         return $this->db->count_all_results() > 0;
@@ -57,7 +57,7 @@ class MBudget_MasterPic extends CI_Model
 
         return $this->db
             ->from($this->table)
-            ->where('nama_user', $namaUser)
+            ->where('nama_karyawan', $namaUser)
             ->where('status_user', 'ACTIVE')
             ->count_all_results() > 0;
     }
@@ -69,7 +69,7 @@ class MBudget_MasterPic extends CI_Model
         }
 
         $payload = [
-            'nama_user' => trim((string) $namaUser),
+            'nama_karyawan' => trim((string) $namaUser),
             'status_user' => 'ACTIVE',
         ];
 
@@ -84,9 +84,9 @@ class MBudget_MasterPic extends CI_Model
         }
 
         $this->db
-            ->where('id_user', (int) $id)
+            ->where('id', (int) $id)
             ->update($this->table, [
-                'nama_user' => trim((string) $namaUser),
+                'nama_karyawan' => trim((string) $namaUser),
             ]);
 
         return $this->db->affected_rows() >= 0;
@@ -98,7 +98,7 @@ class MBudget_MasterPic extends CI_Model
             return false;
         }
 
-        $this->db->delete($this->table, ['id_user' => (int) $id]);
+        $this->db->delete($this->table, ['id' => (int) $id]);
         return $this->db->affected_rows() > 0;
     }
 
@@ -110,13 +110,14 @@ class MBudget_MasterPic extends CI_Model
 
         return $this->db
             ->distinct()
-            ->select('nama_user AS value, nama_user AS label')
+            ->select('nama_karyawan AS value, nama_karyawan AS label')
             ->from($this->table)
             ->where('status_user', 'ACTIVE')
-            ->where('nama_user IS NOT NULL', null, false)
-            ->where('TRIM(nama_user) !=', '')
-            ->order_by('nama_user', 'ASC')
+            ->where('nama_karyawan IS NOT NULL', null, false)
+            ->where('TRIM(nama_karyawan) !=', '')
+            ->order_by('nama_karyawan', 'ASC')
             ->get()
             ->result_array();
     }
 }
+

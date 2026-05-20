@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MListBowheer extends CI_Model
@@ -7,7 +7,7 @@ class MListBowheer extends CI_Model
     public function getData()
     {
         $this->db->from('tb_master_bowheer');
-        $this->db->join('tb_master_user','tb_master_bowheer.id_user = tb_master_user.id_user', 'left');
+        $this->db->join('tb_master_user_new','tb_master_bowheer.id_user = tb_master_user_new.id', 'left');
         $this->db->order_by("target_bowheer", "desc");
         $data = $this->db->get();
         return $data->result_array();
@@ -31,3 +31,5 @@ class MListBowheer extends CI_Model
         return $res;
     }
 }
+
+

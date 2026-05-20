@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class ListUser extends CI_Controller
@@ -23,7 +23,7 @@ class ListUser extends CI_Controller
             $data['rincian_level'] = $this->MListUser->getLevel();
             $data['count_jabatan'] = $this->MListUser->getCountJabatan();
             $data['count_active_user'] = $this->MListUser->getCountActiveUser();
-            $data['user'] = $this->db->get('tb_master_user')->result_array();
+            $data['user'] = $this->db->get('tb_master_user_new')->result_array();
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');
@@ -42,14 +42,14 @@ class ListUser extends CI_Controller
         // print_r($_POST);
         // echo ("</pre>");
 
-        $rincian_user = $this->db->get('tb_master_user')->row_array();
+        $rincian_user = $this->db->get('tb_master_user_new')->row_array();
 
         $hasil_data = array(
-            'nama_user' => $_POST['nama_user'],
+            'nama_karyawan' => $_POST['nama_user'],
             'username_user' => $_POST['username_user'],
             'password_user' => $_POST['password_user'],
             'id_level' => $_POST['id_level'],
-            'id_jabatan' => $_POST['id_jabatan'],
+            'jabatan' => $_POST['id_jabatan'],
             'status_user' => $_POST['status_user']
         );
 
@@ -69,15 +69,15 @@ class ListUser extends CI_Controller
     {
 
         $data_array = array(
-            'nama_user' => $_POST['nama_user'],
+            'nama_karyawan' => $_POST['nama_user'],
             'username_user' => $_POST['username_user'],
             'password_user' => $_POST['password_user'],
             'id_level' => $_POST['id_level'],
-            'id_jabatan' => $_POST['id_jabatan'],
+            'jabatan' => $_POST['id_jabatan'],
             'status_user' => $_POST['status_user']
         );
 
-        $where = array('id_user' => $id);
+        $where = array('id' => $id);
 
         $res = $this->MListUser->updateUser($data_array, $where);
 
@@ -94,7 +94,7 @@ class ListUser extends CI_Controller
 
     public function delete($id)
     {
-        $id_user = array('id_user' => $id);
+        $id_user = array('id' => $id);
         $res = $this->MListUser->deleteUser($id_user);
 
         if ($res >= 1) {
@@ -106,3 +106,4 @@ class ListUser extends CI_Controller
         }
     }
 }
+
