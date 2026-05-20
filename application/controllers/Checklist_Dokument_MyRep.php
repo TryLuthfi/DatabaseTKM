@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class Checklist_Dokument_MyRep extends CI_Controller
