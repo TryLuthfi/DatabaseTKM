@@ -23,7 +23,12 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $selectedRegional = strtoupper(trim((string) $this->input->get('regional')));
         $cacheKey = 'checklist_doc_index_' . md5($selectedCity . '|' . $selectedRegional);
 
-        $this->MMonitoring_RFS_MyRep->syncMyrepCompatibilityBridge((int) date('Y'), (int) date('n'), $selectedCity);
+        try {
+            // Sync bridge bisa berat; jangan sampai memblokir render halaman monitoring.
+            $this->MMonitoring_RFS_MyRep->syncMyrepCompatibilityBridge((int) date('Y'), (int) date('n'), $selectedCity);
+        } catch (\Throwable $e) {
+            log_message('error', 'Checklist index sync bridge failed: ' . $e->getMessage());
+        }
 
         $data['title'] = 'Checklist Dokument';
         $data['atpSchemaReady'] = $this->MChecklist_Dokument_MyRep->supportsAtpColumns();
@@ -81,8 +86,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $cacheKey = 'checklist_doc_index_' . md5($selectedCity . '|' . $selectedRegional);
             $cachedPayload = $this->getChecklistCache($cacheKey);
             if (!is_array($cachedPayload)) {
-                // Hindari query berat di endpoint DataTables agar response selalu JSON valid.
-                $cachedPayload = ['documentItemList' => []];
+                // Fallback: tetap ambil data item langsung agar tabel tidak kosong saat cache belum terbentuk.
+                $documentItemList = $this->MChecklist_Dokument_MyRep->getClusterDocumentItemRows($selectedCity, $selectedRegional);
+                $cachedPayload = ['documentItemList' => $documentItemList];
+                $this->saveChecklistCache($cacheKey, $cachedPayload, 180);
             }
 
             $rows = isset($cachedPayload['documentItemList']) && is_array($cachedPayload['documentItemList'])
