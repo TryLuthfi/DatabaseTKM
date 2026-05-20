@@ -1350,11 +1350,29 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                         d.astri_status = $('#item-filter-astri-status').val() || '';
                         d.quick_type = activeQuickFilter.type || '';
                         d.quick_value = activeQuickFilter.value || '';
+                    },
+                    "error": function(xhr, textStatus, errorThrown) {
+                        console.group('[Checklist Item] DataTables AJAX Error');
+                        console.log('url:', "<?= base_url('Checklist_Dokument_MyRep/itemTableData') ?>");
+                        console.log('status:', xhr ? xhr.status : null);
+                        console.log('textStatus:', textStatus);
+                        console.log('errorThrown:', errorThrown);
+                        console.log('responseText:', xhr ? xhr.responseText : null);
+                        console.groupEnd();
                     }
                 },
                 "language": {
                     "emptyTable": "Belum ada item dokumen."
                 }
+            });
+
+            $('#table-checklist-item').on('xhr.dt', function(e, settings, json, xhr) {
+                console.group('[Checklist Item] DataTables XHR');
+                console.log('requestUrl:', settings && settings.ajax ? settings.ajax.url : null);
+                console.log('status:', xhr ? xhr.status : null);
+                console.log('json:', json);
+                console.log('rawResponse:', xhr ? xhr.responseText : null);
+                console.groupEnd();
             });
         }
 
