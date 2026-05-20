@@ -498,6 +498,8 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 c.*,
                 mc.id_myrep_cluster,
                 mc.status_current AS myrep_status_current,
+                md.homepass_drm AS homepass_drm_latest,
+                COALESCE(NULLIF(md.homepass_drm, 0), c.homepass) AS homepass_drm_effective,
                 mt.id_target,
                 mt.year_num,
                 mt.month_num,
@@ -524,7 +526,15 @@ class MMonitoring_RFS_MyRep extends CI_Model
              FROM tb_rfs_myrep_cluster c
              INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
              INNER JOIN tb_myrep_cluster mc ON mc.rfs_cluster_id = c.id_cluster
-             INNER JOIN tb_myrep_drm md ON md.id_myrep_cluster = mc.id_myrep_cluster
+             INNER JOIN (
+                SELECT d.id_myrep_cluster, d.homepass_drm
+                FROM tb_myrep_drm d
+                INNER JOIN (
+                    SELECT id_myrep_cluster, MAX(id_drm) AS latest_id_drm
+                    FROM tb_myrep_drm
+                    GROUP BY id_myrep_cluster
+                ) latest_drm ON latest_drm.latest_id_drm = d.id_drm
+             ) md ON md.id_myrep_cluster = mc.id_myrep_cluster
              LEFT JOIN tb_rfs_myrep_cluster_plan p
                ON p.cluster_id = c.id_cluster
                AND p.year_num = ?
@@ -878,9 +888,37 @@ class MMonitoring_RFS_MyRep extends CI_Model
     public function getClusterById($clusterId)
     {
         return $this->db
-            ->select('c.*, mt.id_target, mt.year_num, mt.month_num, mt.city_name, mt.regional_name, mt.province_name, mt.chief, mt.rpm, mt.sm, mt.spv')
+            ->select('
+                c.*,
+                mt.id_target,
+                mt.year_num,
+                mt.month_num,
+                mt.city_name,
+                mt.regional_name,
+                mt.province_name,
+                mt.chief,
+                mt.rpm,
+                mt.sm,
+                mt.spv,
+                md.homepass_drm AS homepass_drm_latest,
+                COALESCE(NULLIF(md.homepass_drm, 0), c.homepass) AS homepass_drm_effective
+            ', false)
             ->from('tb_rfs_myrep_cluster c')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
+            ->join('tb_myrep_cluster mc', 'mc.rfs_cluster_id = c.id_cluster', 'left')
+            ->join(
+                "(SELECT d.id_myrep_cluster, d.homepass_drm
+                  FROM tb_myrep_drm d
+                  INNER JOIN (
+                    SELECT id_myrep_cluster, MAX(id_drm) AS latest_id_drm
+                    FROM tb_myrep_drm
+                    GROUP BY id_myrep_cluster
+                  ) latest_drm ON latest_drm.latest_id_drm = d.id_drm
+                ) md",
+                'md.id_myrep_cluster = mc.id_myrep_cluster',
+                'left',
+                false
+            )
             ->where('c.id_cluster', $clusterId)
             ->get()
             ->row_array();
@@ -979,7 +1017,30 @@ class MMonitoring_RFS_MyRep extends CI_Model
         }
 
         $this->db
-            ->select('id_myrep_cluster, rfs_cluster_id, cluster_name, regional_name, province_name, city_name, team_name, chief, rpm, sm, spv, hp_plan, status_current, created_at, updated_at')
+            ->select('
+                id_myrep_cluster,
+                rfs_cluster_id,
+                cluster_name,
+                regional_name,
+                province_name,
+                city_name,
+                team_name,
+                chief,
+                rpm,
+                sm,
+                spv,
+                hp_plan,
+                status_current,
+                created_at,
+                updated_at,
+                (
+                    SELECT d.homepass_drm
+                    FROM tb_myrep_drm d
+                    WHERE d.id_myrep_cluster = tb_myrep_cluster.id_myrep_cluster
+                    ORDER BY d.id_drm DESC
+                    LIMIT 1
+                ) AS latest_homepass_drm
+            ', false)
             ->from('tb_myrep_cluster')
             ->where_in('status_current', $this->rfsReadyStatuses);
 
@@ -1000,10 +1061,12 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
             $rfsClusterId = (int) ($cluster['rfs_cluster_id'] ?? 0);
             $homepassPlan = (int) round((float) ($cluster['hp_plan'] ?? 0));
+            $homepassDrm = (int) round((float) ($cluster['latest_homepass_drm'] ?? 0));
+            $homepassBase = $homepassDrm > 0 ? $homepassDrm : $homepassPlan;
             $mappedStatus = $this->mapMyrepStatusToRfs((string) ($cluster['status_current'] ?? ''));
 
             if ($rfsClusterId > 0) {
-                $homepass = $this->resolveRfsHomepassFromClaims($rfsClusterId, $homepassPlan);
+                $homepass = $this->resolveRfsHomepassFromClaims($rfsClusterId, $homepassBase);
                 $this->db
                     ->where('id_cluster', $rfsClusterId)
                     ->update('tb_rfs_myrep_cluster', [
@@ -1026,7 +1089,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
             if ($existing) {
                 $rfsClusterId = (int) $existing['id_cluster'];
-                $homepass = $this->resolveRfsHomepassFromClaims($rfsClusterId, $homepassPlan);
+                $homepass = $this->resolveRfsHomepassFromClaims($rfsClusterId, $homepassBase);
                 $this->db
                     ->where('id_cluster', $rfsClusterId)
                     ->update('tb_rfs_myrep_cluster', [
@@ -1034,7 +1097,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
                         'status_rfs' => $mappedStatus,
                     ]);
             } else {
-                $homepass = $homepassPlan;
+                $homepass = $homepassBase;
                 $this->db->insert('tb_rfs_myrep_cluster', [
                     'id_target' => $idTarget,
                     'cluster_name' => $cluster['cluster_name'],
@@ -1183,6 +1246,6 @@ class MMonitoring_RFS_MyRep extends CI_Model
             ->row_array();
 
         $totalClaim = (int) round((float) ($row['total_claim'] ?? 0));
-        return $totalClaim > 0 ? $totalClaim : $fallbackHomepass;
+        return max($fallbackHomepass, $totalClaim);
     }
 }

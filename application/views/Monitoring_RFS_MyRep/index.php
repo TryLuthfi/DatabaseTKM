@@ -1882,6 +1882,7 @@ if (!empty($kpiDetailRowMap)) {
                                             : ($displayStatusRfs === 'REJECTED'
                                                 ? 'cluster-row-rejected'
                                                 : ($displayStatusRfs === 'WAITING APPROVAL' ? 'cluster-row-waiting' : '')));
+                                    $clusterHomepassDrm = (float) ($cluster['homepass_drm_effective'] ?? $cluster['homepass'] ?? 0);
                                     ?>
                                     <tr class="<?= $clusterRowClass ?>">
                                         <td></td>
@@ -1895,13 +1896,13 @@ if (!empty($kpiDetailRowMap)) {
                                         <td><?= htmlspecialchars($cluster['rpm'] ?? '') ?></td>
                                         <td><?= htmlspecialchars($cluster['sm'] ?? '') ?></td>
                                         <td><?= htmlspecialchars($cluster['spv'] ?? '') ?></td>
-                                        <td class="text-right"><?= number_format((float) $cluster['homepass'], 0, ',', '.') ?>
+                                        <td class="text-right"><?= number_format($clusterHomepassDrm, 0, ',', '.') ?>
                                         </td>
                                         <td class="text-right">
                                             <?= number_format((float) $cluster['claimed_qty'], 0, ',', '.') ?>
                                         </td>
                                         <td class="text-right">
-                                            <?= number_format((float) $cluster['homepass'] - (float) $cluster['claimed_qty'], 0, ',', '.') ?>
+                                            <?= number_format($clusterHomepassDrm - (float) $cluster['claimed_qty'], 0, ',', '.') ?>
                                         </td>
                                         <td>
                                             <?php if (in_array($displayStatusRfs, ['NY RFS', 'PARTIAL', 'REJECTED'], true)) { ?>
@@ -1946,7 +1947,7 @@ if (!empty($kpiDetailRowMap)) {
                                                         <div class="claim-summary-card">
                                                             <span class="summary-label">HP DRM</span>
                                                             <div class="summary-value">
-                                                                <?= number_format((float) $cluster['homepass'], 0, ',', '.') ?>
+                                                                <?= number_format($clusterHomepassDrm, 0, ',', '.') ?>
                                                             </div>
                                                         </div>
                                                         <div class="form-group">
@@ -1956,9 +1957,9 @@ if (!empty($kpiDetailRowMap)) {
                                                         </div>
                                                         <div class="form-group">
                                                             <label>HP RFS</label>
-                                                            <input type="number" min="1" max="<?= (int) $cluster['homepass'] ?>"
+                                                            <input type="number" min="1" max="<?= (int) $clusterHomepassDrm ?>"
                                                                 name="claim_qty" class="form-control claim-rfs-qty-input"
-                                                                data-homepass="<?= (int) $cluster['homepass'] ?>"
+                                                                data-homepass="<?= (int) $clusterHomepassDrm ?>"
                                                                 data-deviasi-target="#claim_rfs_deviasi_<?= (int) $cluster['id_cluster'] ?>"
                                                                 required>
                                                             <small class="text-muted">Isi sesuai HP RFS actual pada cluster ini.</small>
@@ -1966,7 +1967,7 @@ if (!empty($kpiDetailRowMap)) {
                                                         <div class="form-group">
                                                             <label>Deviasi</label>
                                                             <input type="text" id="claim_rfs_deviasi_<?= (int) $cluster['id_cluster'] ?>" class="form-control claim-rfs-deviasi-output"
-                                                                value="<?= number_format((float) $cluster['homepass'], 0, ',', '.') ?>" readonly>
+                                                                value="<?= number_format($clusterHomepassDrm, 0, ',', '.') ?>" readonly>
                                                             <small class="text-muted">Deviasi = HP DRM - HP RFS</small>
                                                         </div>
                                                         <div class="form-group">

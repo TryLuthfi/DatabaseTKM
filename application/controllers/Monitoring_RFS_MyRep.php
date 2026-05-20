@@ -673,8 +673,9 @@ class Monitoring_RFS_MyRep extends CI_Controller
             return;
         }
 
+        $clusterHomepass = (int) ($cluster['homepass_drm_effective'] ?? $cluster['homepass'] ?? 0);
         $claimedQty = $this->MMonitoring_RFS_MyRep->getClusterClaimedQty($clusterId);
-        if (($claimedQty + $claimQty) > (int) $cluster['homepass']) {
+        if (($claimedQty + $claimQty) > $clusterHomepass) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Total claim melebihi homepass cluster.');
             redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
             return;
