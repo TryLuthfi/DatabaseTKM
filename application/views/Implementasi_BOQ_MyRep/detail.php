@@ -158,6 +158,91 @@ if (!function_exists('implBuildHistoryRowsByScope')) {
     }
 }
 
+if (!function_exists('implBuildTiangTanamBreakdownMap')) {
+    function implBuildTiangTanamBreakdownMap($breakdownRows, $dailyActivities)
+    {
+        $rows = array_values((array) $breakdownRows);
+        $map = [];
+        if (empty($rows)) {
+            return $map;
+        }
+
+        foreach ($rows as $index => $row) {
+            $map[$index] = 0.0;
+        }
+
+        $unmatchedQty = 0.0;
+        foreach ((array) $dailyActivities as $activity) {
+            $code = strtoupper(trim((string) ($activity['activity_code'] ?? '')));
+            if ($code !== 'TANAM_TIANG') {
+                continue;
+            }
+
+            $qty = (float) ($activity['qty_activity'] ?? 0);
+            if ($qty <= 0) {
+                continue;
+            }
+
+            $detail = strtoupper(trim((string) ($activity['activity_detail'] ?? '')));
+            if ($detail === '' || $detail === '-') {
+                $unmatchedQty += $qty;
+                continue;
+            }
+
+            $matchedIndexes = [];
+            foreach ($rows as $rowIndex => $row) {
+                $itemName = strtoupper(trim((string) ($row['item_name'] ?? '')));
+                $excelName = strtoupper(trim((string) ($row['excel_item_name'] ?? '')));
+                $haystack = trim($itemName . ' ' . $excelName);
+                if ($haystack === '') {
+                    continue;
+                }
+
+                if (strpos($haystack, $detail) !== false || strpos($detail, $itemName) !== false || strpos($detail, $excelName) !== false) {
+                    $matchedIndexes[] = $rowIndex;
+                }
+            }
+
+            if (!empty($matchedIndexes)) {
+                $firstMatch = (int) $matchedIndexes[0];
+                $map[$firstMatch] += $qty;
+            } else {
+                $unmatchedQty += $qty;
+            }
+        }
+
+        if ($unmatchedQty > 0) {
+            $totalPlan = 0.0;
+            foreach ($rows as $row) {
+                $totalPlan += max((float) ($row['qty_plan'] ?? 0), 0);
+            }
+
+            if ($totalPlan > 0) {
+                $distributed = 0.0;
+                $lastIndex = count($rows) - 1;
+                foreach ($rows as $rowIndex => $row) {
+                    $plan = max((float) ($row['qty_plan'] ?? 0), 0);
+                    if ($plan <= 0) {
+                        continue;
+                    }
+
+                    if ($rowIndex === $lastIndex) {
+                        $allocation = max($unmatchedQty - $distributed, 0);
+                    } else {
+                        $allocation = ($plan / $totalPlan) * $unmatchedQty;
+                        $distributed += $allocation;
+                    }
+                    $map[$rowIndex] += $allocation;
+                }
+            } else {
+                $map[0] += $unmatchedQty;
+            }
+        }
+
+        return $map;
+    }
+}
+
 $historyTypePlan = [];
 $historyTypePlanCluster = [];
 $historyTypePlanSubfeeder = [];
@@ -284,6 +369,20 @@ foreach ($compareRows as $row) {
         }
     }
 }
+$tiangTanamMap = implBuildTiangTanamBreakdownMap((array) ($boqTypeBreakdown['TIANG'] ?? []), (array) $dailyActivities);
+foreach ($boqTypeBreakdown as $breakdownType => &$breakdownRows) {
+    foreach ($breakdownRows as $index => &$breakdownRow) {
+        $achievComply = (float) ($breakdownRow['qty_achiev'] ?? 0);
+        $achievTanam = strtoupper((string) $breakdownType) === 'TIANG'
+            ? (float) ($tiangTanamMap[$index] ?? 0)
+            : 0.0;
+        $breakdownRow['qty_achiev_tanam'] = $achievTanam;
+        $breakdownRow['qty_achiev_comply'] = $achievComply;
+        $breakdownRow['qty_gap_tanam_comply'] = $achievTanam - $achievComply;
+    }
+    unset($breakdownRow);
+}
+unset($breakdownRows);
 $historyDateRows = $historyDateRowsCluster;
 $historyRows = [];
 $historyFinalAchieve = array_fill_keys($historyTypeOrder, 0);
@@ -3141,21 +3240,32 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 if (!breakdownRows.length) {
                     boqRowsNode.innerHTML = '<div class="text-muted">Belum ada data breakdown.</div>';
                 } else {
+                    var isTiangBreakdown = String(boqType || '').toUpperCase() === 'TIANG';
                     var totalPlan = 0;
                     var totalCluster = 0;
                     var totalSubfeeder = 0;
                     var totalAchiev = 0;
+                    var totalAchievTanam = 0;
+                    var totalAchievComply = 0;
+                    var totalGapTanamComply = 0;
                     var totalRemain = 0;
                     var totalPhotoTarget = 0;
                     var totalPhotoUploaded = 0;
 
                     var htmlBreakdown = '<div class="table-responsive"><table class="table table-bordered table-sm">';
-                    htmlBreakdown += '<thead><tr><th style="width:60px;">No</th><th>Jenis</th><th style="width:120px;">Vol Cluster</th><th style="width:130px;">Vol Subfeeder</th><th style="width:120px;">Plan</th><th style="width:120px;">Achiev</th><th style="width:120px;">Remaining</th><th style="width:150px;">Foto (Upload/Target)</th></tr></thead><tbody>';
+                    if (isTiangBreakdown) {
+                        htmlBreakdown += '<thead><tr><th style="width:60px;">No</th><th>Jenis</th><th style="width:120px;">Vol Cluster</th><th style="width:130px;">Vol Subfeeder</th><th style="width:120px;">Plan</th><th style="width:130px;">Achiev Tanam</th><th style="width:130px;">Achiev Comply</th><th style="width:120px;">Selisih</th><th style="width:120px;">Remaining</th><th style="width:150px;">Foto (Upload/Target)</th></tr></thead><tbody>';
+                    } else {
+                        htmlBreakdown += '<thead><tr><th style="width:60px;">No</th><th>Jenis</th><th style="width:120px;">Vol Cluster</th><th style="width:130px;">Vol Subfeeder</th><th style="width:120px;">Plan</th><th style="width:120px;">Achiev</th><th style="width:120px;">Remaining</th><th style="width:150px;">Foto (Upload/Target)</th></tr></thead><tbody>';
+                    }
                     breakdownRows.forEach(function (row, index) {
                         var qtyCluster = parseFloat(row.qty_cluster || 0);
                         var qtySubfeeder = parseFloat(row.qty_subfeeder || 0);
                         var plan = parseFloat(row.qty_plan || 0);
                         var achiev = parseFloat(row.qty_achiev || 0);
+                        var achievTanam = parseFloat(row.qty_achiev_tanam || 0);
+                        var achievComply = parseFloat(row.qty_achiev_comply || row.qty_achiev || 0);
+                        var gapTanamComply = parseFloat(row.qty_gap_tanam_comply || (achievTanam - achievComply));
                         var remain = parseFloat(row.qty_remaining || 0);
                         var photoTarget = parseInt(row.photo_target || 0, 10);
                         var photoUploaded = parseInt(row.photo_uploaded || 0, 10);
@@ -3163,6 +3273,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         totalSubfeeder += qtySubfeeder;
                         totalPlan += plan;
                         totalAchiev += achiev;
+                        totalAchievTanam += achievTanam;
+                        totalAchievComply += achievComply;
+                        totalGapTanamComply += gapTanamComply;
                         totalRemain += remain;
                         totalPhotoTarget += photoTarget;
                         totalPhotoUploaded += photoUploaded;
@@ -3174,13 +3287,23 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                         htmlBreakdown += '<td class="text-right">' + Math.round(qtyCluster).toLocaleString('id-ID') + '</td>';
                         htmlBreakdown += '<td class="text-right">' + Math.round(qtySubfeeder).toLocaleString('id-ID') + '</td>';
                         htmlBreakdown += '<td class="text-right">' + Math.round(plan).toLocaleString('id-ID') + '</td>';
-                        htmlBreakdown += '<td class="text-right">' + Math.round(achiev).toLocaleString('id-ID') + '</td>';
+                        if (isTiangBreakdown) {
+                            htmlBreakdown += '<td class="text-right">' + Math.round(achievTanam).toLocaleString('id-ID') + '</td>';
+                            htmlBreakdown += '<td class="text-right">' + Math.round(achievComply).toLocaleString('id-ID') + '</td>';
+                            htmlBreakdown += '<td class="text-right">' + Math.round(gapTanamComply).toLocaleString('id-ID') + '</td>';
+                        } else {
+                            htmlBreakdown += '<td class="text-right">' + Math.round(achiev).toLocaleString('id-ID') + '</td>';
+                        }
                         htmlBreakdown += '<td class="text-right">' + Math.round(remain).toLocaleString('id-ID') + '</td>';
                         htmlBreakdown += '<td class="text-center">' + photoUploaded + ' / ' + photoTarget + '</td>';
                         htmlBreakdown += '</tr>';
                     });
                     htmlBreakdown += '</tbody>';
-                    htmlBreakdown += '<tfoot><tr class="font-weight-bold"><td colspan="2" class="text-right">Total</td><td class="text-right">' + Math.round(totalCluster).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalSubfeeder).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalPlan).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalAchiev).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalRemain).toLocaleString('id-ID') + '</td><td class="text-center">' + totalPhotoUploaded + ' / ' + totalPhotoTarget + '</td></tr></tfoot>';
+                    if (isTiangBreakdown) {
+                        htmlBreakdown += '<tfoot><tr class="font-weight-bold"><td colspan="2" class="text-right">Total</td><td class="text-right">' + Math.round(totalCluster).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalSubfeeder).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalPlan).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalAchievTanam).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalAchievComply).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalGapTanamComply).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalRemain).toLocaleString('id-ID') + '</td><td class="text-center">' + totalPhotoUploaded + ' / ' + totalPhotoTarget + '</td></tr></tfoot>';
+                    } else {
+                        htmlBreakdown += '<tfoot><tr class="font-weight-bold"><td colspan="2" class="text-right">Total</td><td class="text-right">' + Math.round(totalCluster).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalSubfeeder).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalPlan).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalAchiev).toLocaleString('id-ID') + '</td><td class="text-right">' + Math.round(totalRemain).toLocaleString('id-ID') + '</td><td class="text-center">' + totalPhotoUploaded + ' / ' + totalPhotoTarget + '</td></tr></tfoot>';
+                    }
                     htmlBreakdown += '</table></div>';
                     boqRowsNode.innerHTML = htmlBreakdown;
                 }
