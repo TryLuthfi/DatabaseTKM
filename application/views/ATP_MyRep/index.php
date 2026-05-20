@@ -683,17 +683,63 @@ $summaryCards = [
             }
         });
 
-        $('.js-edit-atp').on('click', function () {
-            var $button = $(this);
-            $('#atp-cluster-id').val($button.data('cluster-id'));
-            $('#atp-cluster-name').val($button.data('cluster-name'));
-            $('#atp-email-date').val($button.data('email-atp-date'));
-            $('#atp-actual-date').val($button.data('actual-atp-date'));
-            $('#atp-status').val($button.data('status-atp'));
-            $('#record-punclist-existing').text($button.data('record-punclist-file') ? 'Existing file: ' + $button.data('record-punclist-file') : 'Belum ada file.');
-            $('#ba-rectification-existing').text($button.data('ba-rectification-file') ? 'Existing file: ' + $button.data('ba-rectification-file') : 'Belum ada file.');
+        function normalizeDateValue(value) {
+            value = String(value || '').trim();
+            if (value === '') {
+                return '';
+            }
+
+            // Keep date input value valid: YYYY-MM-DD
+            var isoMatch = value.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (isoMatch) {
+                return isoMatch[1];
+            }
+
+            var slashMatch = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (slashMatch) {
+                return slashMatch[3] + '-' + slashMatch[1] + '-' + slashMatch[2];
+            }
+
+            return value;
+        }
+
+        function readButtonData($button, key) {
+            var dashed = 'data-' + key;
+            var value = $button.attr(dashed);
+            return typeof value === 'undefined' ? '' : value;
+        }
+
+        function fillAtpModal($button) {
+            var clusterId = readButtonData($button, 'cluster-id');
+            var clusterName = readButtonData($button, 'cluster-name');
+            var emailAtpDate = normalizeDateValue(readButtonData($button, 'email-atp-date'));
+            var actualAtpDate = normalizeDateValue(readButtonData($button, 'actual-atp-date'));
+            var statusAtp = readButtonData($button, 'status-atp');
+            var recordPunclistFile = readButtonData($button, 'record-punclist-file');
+            var baRectificationFile = readButtonData($button, 'ba-rectification-file');
+
+            $('#atp-cluster-id').val(clusterId);
+            $('#atp-cluster-name').val(clusterName);
+            $('#atp-email-date').val(emailAtpDate);
+            $('#atp-actual-date').val(actualAtpDate);
+            $('#atp-status').val(statusAtp);
+            $('#record-punclist-existing').text(recordPunclistFile ? 'Existing file: ' + recordPunclistFile : 'Belum ada file.');
+            $('#ba-rectification-existing').text(baRectificationFile ? 'Existing file: ' + baRectificationFile : 'Belum ada file.');
             $('#record-punclist-file').val('');
             $('#ba-rectification-file').val('');
+        }
+
+        // Works for static rows and rows redrawn by DataTables.
+        $(document).on('click', '.js-edit-atp', function () {
+            fillAtpModal($(this));
+        });
+
+        // Safety net when modal is shown via data-toggle / responsive child rows.
+        $('#modal-atp-update').on('show.bs.modal', function (event) {
+            var trigger = $(event.relatedTarget);
+            if (trigger && trigger.length) {
+                fillAtpModal(trigger);
+            }
         });
     });
 </script>

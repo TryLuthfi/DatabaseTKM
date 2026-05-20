@@ -202,7 +202,7 @@ if (!function_exists('implDashboardNumber')) {
                                         $photoTarget = (int) ($row['target_photo_total'] ?? 0);
                                         $photoUploaded = (int) ($row['uploaded_photo_total'] ?? 0);
                                         $itemTotal = (int) ($row['total_item'] ?? 0);
-                                        $itemDone = (int) ($row['done_item_count'] ?? 0);
+                                        $itemDone = (int) (($row['done_item'] ?? $row['done_item_count'] ?? 0));
                                         $qtyPercent = $qtyTarget > 0 ? min(100, round(($qtyActual / $qtyTarget) * 100)) : 0;
                                         $photoPercent = $photoTarget > 0 ? min(100, round(($photoUploaded / $photoTarget) * 100)) : 0;
                                         $itemPercent = $itemTotal > 0 ? min(100, round(($itemDone / $itemTotal) * 100)) : 0;

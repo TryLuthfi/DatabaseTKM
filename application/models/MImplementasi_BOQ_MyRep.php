@@ -18,6 +18,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             ['activity_code' => 'COR_FONDATION', 'activity_name' => 'Cor Fondation', 'boq_type' => 'TIANG', 'default_unit' => 'BATANG'],
             ['activity_code' => 'SLING_WIRE', 'activity_name' => 'Sling Wire', 'boq_type' => 'SLING WIRE', 'default_unit' => 'SPAN'],
             ['activity_code' => 'INSTALASI_FAT_FDT', 'activity_name' => 'Instalasi FAT / FDT', 'boq_type' => 'FAT/FDT', 'default_unit' => 'UNIT'],
+            ['activity_code' => 'SPLICING_FO', 'activity_name' => 'Splicing FO', 'boq_type' => 'SPLICING', 'default_unit' => 'TITIK'],
             ['activity_code' => 'RAPIH_AKSESORIS', 'activity_name' => 'Perapihan Aksesoris', 'boq_type' => 'PERAPIHAN', 'default_unit' => 'TITIK'],
             ['activity_code' => 'RAPIH_LABEL_TIANG', 'activity_name' => 'Perapihan Label Tiang', 'boq_type' => 'PERAPIHAN', 'default_unit' => 'LABEL'],
             ['activity_code' => 'RAPIH_LABEL_KABEL', 'activity_name' => 'Perapihan Label Kabel', 'boq_type' => 'PERAPIHAN', 'default_unit' => 'LABEL'],
@@ -177,6 +178,22 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             }));
             if (trim((string) $trackerRemark) === '') {
                 $remark = '[AUTO] Aktivitas Sling Wire (' . $scopeType . ')';
+            }
+        } elseif ($activityCode === 'SPLICING_FO') {
+            $targetRows = array_values(array_filter($rows, function ($row) use ($activityDetail) {
+                $type = strtoupper(trim((string) ($row['item_type'] ?? '')));
+                if ($type !== 'SPLICING') {
+                    return false;
+                }
+                if ($activityDetail === '' || $activityDetail === '-') {
+                    return true;
+                }
+                $itemName = strtoupper(trim((string) ($row['item_name'] ?? '')));
+                $excelName = strtoupper(trim((string) ($row['excel_item_name'] ?? '')));
+                return strpos($itemName . ' ' . $excelName, $activityDetail) !== false;
+            }));
+            if (trim((string) $trackerRemark) === '') {
+                $remark = '[AUTO] Aktivitas Splicing FO (' . $scopeType . ')';
             }
         }
 

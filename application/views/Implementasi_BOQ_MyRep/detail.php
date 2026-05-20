@@ -252,7 +252,7 @@ $historyDateRowsSubfeeder = [];
 $historyTypeOrder = [];
 $boqTypeBreakdown = [];
 $dailyActivitiesByDate = [];
-$nonBoqLabelOrder = ['PERAPIHAN', 'DIGGING HOLE'];
+$nonBoqLabelOrder = ['DIGGING HOLE', 'TANAM TIANG', 'PERAPIHAN'];
 
 foreach ((array) $dailyActivities as $dailyActivity) {
     $dailyDateKey = (string) ($dailyActivity['activity_date'] ?? '');
@@ -269,6 +269,8 @@ foreach ((array) $dailyActivities as $dailyActivity) {
     $label = '';
     if ($dailyCode === 'DIGGING_HOLE') {
         $label = 'DIGGING HOLE';
+    } elseif ($dailyCode === 'TANAM_TIANG') {
+        $label = 'TANAM TIANG';
     } elseif (strpos($dailyCode, 'RAPIH_') === 0) {
         $label = 'PERAPIHAN';
     }
@@ -400,6 +402,7 @@ $activityDetailOptions = [
     'COR_FONDATION' => [],
     'SLING_WIRE' => [],
     'INSTALASI_FAT_FDT' => [],
+    'SPLICING_FO' => [],
     'RAPIH_AKSESORIS' => ['AKSESORIS'],
     'RAPIH_LABEL_TIANG' => ['LABEL TIANG'],
     'RAPIH_LABEL_KABEL' => ['LABEL KABEL'],
@@ -420,6 +423,9 @@ foreach ($compareRows as $row) {
         }
         if (in_array($itemTypeForOption, ['FAT', 'FDT'], true)) {
             $activityDetailOptions['INSTALASI_FAT_FDT'][$itemNameForOption] = true;
+        }
+        if ($itemTypeForOption === 'SPLICING') {
+            $activityDetailOptions['SPLICING_FO'][$itemNameForOption] = true;
         }
     }
 
@@ -476,6 +482,8 @@ foreach ((array) ($masterBoqItems ?? []) as $masterItem) {
         $activityDetailOptions['SLING_WIRE'][$masterItemName] = true;
     } elseif (in_array($masterItemType, ['FAT', 'FDT'], true)) {
         $activityDetailOptions['INSTALASI_FAT_FDT'][$masterItemName] = true;
+    } elseif ($masterItemType === 'SPLICING') {
+        $activityDetailOptions['SPLICING_FO'][$masterItemName] = true;
     }
 
     $lookupName = strtoupper($masterItemName);
@@ -607,9 +615,10 @@ foreach ($compareRows as $row) {
     }
 }
 
+$itemActive = $itemDone + $itemOnProgress;
 $qtyPercent = $qtyTargetTotal > 0 ? min(100, round(($qtyActualTotal / $qtyTargetTotal) * 100)) : 0;
 $photoPercent = $photoTargetTotal > 0 ? min(100, round(($photoUploadedTotal / $photoTargetTotal) * 100)) : 0;
-$itemPercent = $itemTotal > 0 ? min(100, round((($itemDone + $itemOnProgress) / $itemTotal) * 100)) : 0;
+$itemPercent = $itemTotal > 0 ? min(100, round(($itemDone / $itemTotal) * 100)) : 0;
 $overallPercent = (int) round(($qtyPercent + $photoPercent + $itemPercent) / 3);
 $agingWorkingDays = !empty($cluster['drm_date']) ? implCountWorkingDays((string) $cluster['drm_date']) : 0;
 $agingTargetDate = !empty($cluster['drm_date']) ? implAddWorkingDays((string) $cluster['drm_date'], 23) : null;
@@ -988,6 +997,17 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         gap: .75rem;
         font-size: .84rem;
         color: rgba(255, 255, 255, .82);
+    }
+
+    .impl-progress-card__meta--item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .2rem;
+    }
+
+    .impl-progress-card__hint {
+        font-size: .78rem;
+        color: rgba(255, 255, 255, .72);
     }
 
     .impl-summary-box {
@@ -1761,10 +1781,12 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                 <div class="impl-progress-track impl-progress-track--item">
                                     <span style="width: <?= $itemPercent ?>%;"></span>
                                 </div>
-                                <div class="impl-progress-card__meta">
-                                    <span>Done <?= implHistoryNumber($itemDone, false) ?></span>
-                                    <span>Total <?= implHistoryNumber($itemTotal, false) ?></span>
+                                <div class="impl-progress-card__meta impl-progress-card__meta--item">
+                                    <span>Done <?= implHistoryNumber($itemDone, false) ?> dari Total <?= implHistoryNumber($itemTotal, false) ?></span>
+                                    <span>On Progress <?= implHistoryNumber($itemOnProgress, false) ?> (belum dihitung ke %)</span>
+                                    <span>Total Item <?= implHistoryNumber($itemTotal, false) ?></span>
                                 </div>
+                                <div class="impl-progress-card__hint">Rumus: Done / Total Item</div>
                             </div>
                         </div>
                     </div>
@@ -3254,7 +3276,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
                     var htmlBreakdown = '<div class="table-responsive"><table class="table table-bordered table-sm">';
                     if (isTiangBreakdown) {
-                        htmlBreakdown += '<thead><tr><th style="width:60px;">No</th><th>Jenis</th><th style="width:120px;">Vol Cluster</th><th style="width:130px;">Vol Subfeeder</th><th style="width:120px;">Plan</th><th style="width:130px;">Achiev Tanam</th><th style="width:130px;">Achiev Comply</th><th style="width:120px;">Selisih</th><th style="width:120px;">Remaining</th><th style="width:150px;">Foto (Upload/Target)</th></tr></thead><tbody>';
+                        htmlBreakdown += '<thead><tr><th style="width:60px;">No</th><th>Jenis</th><th style="width:120px;">Vol Cluster</th><th style="width:130px;">Vol Subfeeder</th><th style="width:120px;">Plan</th><th style="width:130px;">Achiev Tanam</th><th style="width:130px;">Achiev Cor</th><th style="width:120px;">Selisih</th><th style="width:120px;">Remaining</th><th style="width:150px;">Foto (Upload/Target)</th></tr></thead><tbody>';
                     } else {
                         htmlBreakdown += '<thead><tr><th style="width:60px;">No</th><th>Jenis</th><th style="width:120px;">Vol Cluster</th><th style="width:130px;">Vol Subfeeder</th><th style="width:120px;">Plan</th><th style="width:120px;">Achiev</th><th style="width:120px;">Remaining</th><th style="width:150px;">Foto (Upload/Target)</th></tr></thead><tbody>';
                     }
