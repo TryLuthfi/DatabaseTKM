@@ -6,9 +6,17 @@ class MMaster_Logistik_Kode_Item extends CI_Model
 
     public function getMasterLogistikKodeItem()
     {
-        $data = $this->db->query('SELECT * FROM tb_master_logistik_kode_item
-                                    LEFT JOIN tb_master_bowheer 
-                                    ON tb_master_logistik_kode_item.id_bowheer_pemilik_item = tb_master_bowheer.id_bowheer;')
+        $data = $this->db->query('SELECT
+                                    tmlki.*,
+                                    tmb.nama_bowheer,
+                                    COALESCE((
+                                        SELECT GROUP_CONCAT(b.nama_bowheer ORDER BY b.nama_bowheer SEPARATOR ", ")
+                                        FROM tb_master_bowheer b
+                                        WHERE FIND_IN_SET(CAST(b.id_bowheer AS CHAR), REPLACE(COALESCE(tmlki.project_item, ""), " ", "")) > 0
+                                    ), "") AS project_item_names
+                                  FROM tb_master_logistik_kode_item tmlki
+                                  LEFT JOIN tb_master_bowheer tmb
+                                    ON tmlki.id_bowheer_pemilik_item = tmb.id_bowheer;')
                                     ->result_array();
         return $data;
     }

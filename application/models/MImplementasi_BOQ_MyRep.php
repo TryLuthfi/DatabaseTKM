@@ -114,7 +114,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             $remark = '[AUTO] Aktivitas Harian (' . $activityCode . ') (' . $scopeType . ')';
         }
 
-        if ($activityCode === 'TANAM_TIANG') {
+        if ($activityCode === 'COR_FONDATION') {
             $targetRows = array_values(array_filter($rows, function ($row) use ($activityDetail) {
                 $type = strtoupper(trim((string) ($row['item_type'] ?? '')));
                 if ($type !== 'TIANG') {
@@ -137,7 +137,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             }
             $allowOverBoq = true;
             if (trim((string) $trackerRemark) === '') {
-                $remark = '[AUTO] Aktivitas Tanam Tiang (' . $scopeType . ')';
+                $remark = '[AUTO] Aktivitas Cor Fondation (' . $scopeType . ')';
             }
         } elseif ($activityCode === 'PULLING_CABLE') {
             $targetRows = array_values(array_filter($rows, function ($row) use ($activityDetail) {
@@ -224,7 +224,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             }
         }
 
-        // Khusus TANAM TIANG: jika qty implementasi masih tersisa walau plan BOQ sudah habis,
+        // Khusus COR FONDATION: jika qty implementasi masih tersisa walau plan BOQ sudah habis,
         // tetap catat ke BOQ tracker sebagai over-BOQ.
         if ($allowOverBoq && $remainingToAllocate > 0 && $firstTargetBaselineItemId > 0) {
             $created = $this->createProgressEntry($clusterId, $firstTargetBaselineItemId, [
@@ -361,9 +361,40 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             ->get()
             ->result_array();
 
+        $autoProgressRows = [];
+        $autoProgressPhotoRows = [];
+        if ($this->db->table_exists('tb_myrep_boq_progress_item')) {
+            $autoProgressRows = $this->db
+                ->select('id_progress_item')
+                ->from('tb_myrep_boq_progress_item')
+                ->where('id_myrep_cluster', $clusterId)
+                ->where('progress_date', $activityDate)
+                ->like('remark_progress', '[AUTO] Aktivitas', 'after')
+                ->get()
+                ->result_array();
+
+            $autoProgressIds = array_values(array_filter(array_map('intval', array_column($autoProgressRows, 'id_progress_item'))));
+            if (!empty($autoProgressIds) && $this->db->table_exists('tb_myrep_boq_progress_photo')) {
+                $autoProgressPhotoRows = $this->db
+                    ->from('tb_myrep_boq_progress_photo')
+                    ->where_in('id_progress_item', $autoProgressIds)
+                    ->get()
+                    ->result_array();
+            }
+        }
+
         $this->db->trans_start();
         $this->db->where_in('id_daily_activity', $dailyIds)->delete('tb_myrep_impl_daily_activity_photo');
         $this->db->where('id_myrep_cluster', $clusterId)->where('activity_date', $activityDate)->delete('tb_myrep_impl_daily_activity');
+        if (!empty($autoProgressRows) && $this->db->table_exists('tb_myrep_boq_progress_item')) {
+            $autoProgressIds = array_values(array_filter(array_map('intval', array_column($autoProgressRows, 'id_progress_item'))));
+            if (!empty($autoProgressIds)) {
+                if ($this->db->table_exists('tb_myrep_boq_progress_photo')) {
+                    $this->db->where_in('id_progress_item', $autoProgressIds)->delete('tb_myrep_boq_progress_photo');
+                }
+                $this->db->where('id_myrep_cluster', $clusterId)->where_in('id_progress_item', $autoProgressIds)->delete('tb_myrep_boq_progress_item');
+            }
+        }
         $this->db->trans_complete();
 
         if (!$this->db->trans_status()) {
@@ -371,6 +402,9 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         foreach ($photoRows as $photoRow) {
+            $this->deletePhysicalFile((string) ($photoRow['file_path'] ?? ''));
+        }
+        foreach ($autoProgressPhotoRows as $photoRow) {
             $this->deletePhysicalFile((string) ($photoRow['file_path'] ?? ''));
         }
 

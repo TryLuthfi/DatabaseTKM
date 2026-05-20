@@ -167,7 +167,7 @@ $historyDateRowsSubfeeder = [];
 $historyTypeOrder = [];
 $boqTypeBreakdown = [];
 $dailyActivitiesByDate = [];
-$nonBoqLabelOrder = ['PERAPIHAN', 'DIGGING HOLE', 'COR'];
+$nonBoqLabelOrder = ['PERAPIHAN', 'DIGGING HOLE'];
 
 foreach ((array) $dailyActivities as $dailyActivity) {
     $dailyDateKey = (string) ($dailyActivity['activity_date'] ?? '');
@@ -184,8 +184,6 @@ foreach ((array) $dailyActivities as $dailyActivity) {
     $label = '';
     if ($dailyCode === 'DIGGING_HOLE') {
         $label = 'DIGGING HOLE';
-    } elseif ($dailyCode === 'COR_FONDATION') {
-        $label = 'COR';
     } elseif (strpos($dailyCode, 'RAPIH_') === 0) {
         $label = 'PERAPIHAN';
     }

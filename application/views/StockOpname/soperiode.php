@@ -205,7 +205,7 @@ $total = 1;
                                         value="<?= $data['kota_lokasi_gudang'] ?>">
                                 </div>
                                 <div class="form-group">
-                                    <label class="col-form-label">Kecamatan</label>
+                                    <label class="col-form-label">Alamat Lokasi Gudang</label>
                                     <input type="text" class="form-control" name="alamat_lokasi_gudang"
                                         autocomplete="off" value="<?= $data['alamat_lokasi_gudang'] ?>">
                                 </div>

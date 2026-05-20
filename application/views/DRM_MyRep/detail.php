@@ -374,6 +374,18 @@ if (!function_exists('drmScopeText')) {
                         <div class="col-md-2"><strong>HP Donasi</strong><div><?= number_format((float) ($cluster['hp_donasi'] ?? 0), 0, ',', '.') ?></div></div>
                         <div class="col-md-2"><strong>HP DRM</strong><div><?= !is_null($cluster['homepass_drm'] ?? null) ? number_format((float) $cluster['homepass_drm'], 0, ',', '.') : '-' ?></div></div>
                         <div class="col-md-3"><strong>Tanggal DRM</strong><div><?= !empty($cluster['drm_date']) ? htmlspecialchars((string) $cluster['drm_date']) : '-' ?></div></div>
+                        <div class="col-md-4">
+                            <strong>Screenshoot Astri</strong>
+                            <div>
+                                <?php if (!empty($cluster['screenshot_astri_path'])): ?>
+                                    <a href="<?= base_url((string) $cluster['screenshot_astri_path']) ?>" target="_blank">
+                                        <img src="<?= base_url((string) $cluster['screenshot_astri_path']) ?>" alt="Screenshoot Astri" style="max-width: 220px; max-height: 140px; border-radius: 8px; border: 1px solid #dbeafe; margin-top: 6px;">
+                                    </a>
+                                <?php else: ?>
+                                    -
+                                <?php endif; ?>
+                            </div>
+                        </div>
                         <div class="col-md-3"><strong>Status DRM</strong><div><?= !empty($cluster['display_status_drm']) ? htmlspecialchars((string) $cluster['display_status_drm']) : (!empty($cluster['status_drm']) ? htmlspecialchars((string) $cluster['status_drm']) : 'WAITING INPUT') ?></div></div>
                     </div>
                     <hr>

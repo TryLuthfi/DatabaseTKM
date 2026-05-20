@@ -365,7 +365,7 @@ if (!function_exists('drmBadgeClass')) {
     <div class="modal fade" id="modal-drm-create" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xxl" role="document">
             <div class="modal-content budget-modal drm-modal-shell">
-                <form method="post" action="<?= base_url('DRM_MyRep/saveDrm') ?>">
+                <form method="post" action="<?= base_url('DRM_MyRep/saveDrm') ?>" enctype="multipart/form-data" id="form-drm-create">
                     <div class="modal-header budget-modal__header">
                         <div>
                             <div class="budget-modal__eyebrow">DRM MyRep</div>
@@ -435,7 +435,7 @@ if (!function_exists('drmBadgeClass')) {
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label>Tanggal DRM</label>
+                                        <label>Tanggal DRM ( Upload Astri )</label>
                                         <input type="date" name="drm_date" class="form-control" value="<?= $today ?>">
                                     </div>
                                 </div>
@@ -461,6 +461,21 @@ if (!function_exists('drmBadgeClass')) {
                                     <div class="form-group mb-0">
                                         <label>Remark</label>
                                         <input type="text" name="remark_drm" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <div class="form-group mb-0">
+                                        <label>Screenshot Astri</label>
+                                        <div class="drm-photo-dropzone" id="drm-photo-dropzone-create">
+                                            <input type="file" name="screenshot_astri" id="create_screenshot_astri" class="drm-photo-input" accept=".jpg,.jpeg,.png,.webp" hidden required>
+                                            <h6 class="mb-2">Drop foto claim di sini</h6>
+                                            <p class="text-muted mb-2">atau klik area ini untuk pilih file gambar</p>
+                                            <button type="button" class="btn btn-outline-primary btn-sm drm-photo-picker-btn">Pilih Foto</button>
+                                            <div class="small text-muted mt-2 drm-photo-filename" id="drm-photo-filename-create">Belum ada file dipilih</div>
+                                        </div>
+                                        <small class="text-muted d-block mt-2">Wajib diisi saat input DRM baru.</small>
                                     </div>
                                 </div>
                             </div>
@@ -719,6 +734,22 @@ if (!function_exists('drmBadgeClass')) {
         font-size: .88rem;
     }
 
+    .drm-photo-dropzone {
+        border: 2px dashed #38bdf8;
+        border-radius: 14px;
+        background: #f0f9ff;
+        padding: 24px 18px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .drm-photo-dropzone.dragover {
+        border-color: #0284c7;
+        background: #e0f2fe;
+        transform: translateY(-1px);
+    }
+
     .select2-container--open {
         z-index: 1065;
     }
@@ -942,6 +973,23 @@ if (!function_exists('drmBadgeClass')) {
             });
         }
 
+        $('#form-drm-create').on('submit', function (e) {
+            var fileInput = document.getElementById('create_screenshot_astri');
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                e.preventDefault();
+                if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Lengkapi Data',
+                        text: 'Screenshot Astri wajib dilampirkan sebelum submit.'
+                    });
+                } else {
+                    alert('Screenshot Astri wajib dilampirkan sebelum submit.');
+                }
+                return false;
+            }
+        });
+
         function resetDrmImportPreview() {
             importedDrmRows = [];
             $('#drm-import-summary').text('Belum ada file dipreview');
@@ -1011,6 +1059,63 @@ if (!function_exists('drmBadgeClass')) {
                 filterDrmClusterOptions($(this).closest('.modal-body, .modal-content'));
             });
 
+            $(document).on('click', '.drm-photo-dropzone', function (e) {
+                if ($(e.target).closest('.drm-photo-input').length) {
+                    return;
+                }
+                e.preventDefault();
+                e.stopPropagation();
+                var input = $(this).find('.drm-photo-input').get(0);
+                if (input) {
+                    input.click();
+                }
+            });
+
+            $(document).on('click', '.drm-photo-picker-btn', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var input = $(this).closest('.drm-photo-dropzone').find('.drm-photo-input').get(0);
+                if (input) {
+                    input.click();
+                }
+            });
+
+            $(document).on('dragover', '.drm-photo-dropzone', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).addClass('dragover');
+            });
+
+            $(document).on('dragleave', '.drm-photo-dropzone', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('dragover');
+            });
+
+            $(document).on('drop', '.drm-photo-dropzone', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $(this).removeClass('dragover');
+
+                var files = e.originalEvent.dataTransfer.files;
+                if (files && files.length) {
+                    $(this).find('.drm-photo-input')[0].files = files;
+                    $(this).find('.drm-photo-input').trigger('change');
+                }
+            });
+
+            $(document).on('change', '.drm-photo-input', function () {
+                var file = this.files && this.files[0] ? this.files[0] : null;
+                var fileName = file ? file.name : 'Belum ada file dipilih';
+                var $dropzone = $(this).closest('.drm-photo-dropzone');
+                $dropzone.find('.drm-photo-filename').text(fileName);
+                if (file) {
+                    $dropzone.attr('data-has-file', '1');
+                } else {
+                    $dropzone.removeAttr('data-has-file');
+                }
+            });
+
             $('#modal-drm-create').on('shown.bs.modal', function () {
                 initDrmSelects();
                 $(this).find('.js-drm-city-selector').val('').trigger('change');
@@ -1018,6 +1123,8 @@ if (!function_exists('drmBadgeClass')) {
                 filterDrmClusterOptions($(this));
                 applyCreateDrmPreset($(this));
                 syncClusterMeta($(this));
+                $(this).find('.drm-photo-filename').text('Belum ada file dipilih');
+                $(this).find('.drm-photo-dropzone').removeAttr('data-has-file');
             }).on('hidden.bs.modal', function () {
                 this.querySelector('form').reset();
                 $(this).removeAttr('data-preset-cluster-id').removeAttr('data-preset-city');
@@ -1029,6 +1136,8 @@ if (!function_exists('drmBadgeClass')) {
                 if ($clusterSelect.hasClass('select2-hidden-accessible')) {
                     $clusterSelect.select2('close');
                 }
+                $(this).find('.drm-photo-filename').text('Belum ada file dipilih');
+                $(this).find('.drm-photo-dropzone').removeAttr('data-has-file');
                 syncClusterMeta($(this));
             });
 

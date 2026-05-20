@@ -138,6 +138,28 @@ class DRM_MyRep extends CI_Controller
             return;
         }
 
+        if (empty($_FILES['screenshot_astri']['name'])) {
+            $this->session->set_flashdata('error', 'Screenshoot Astri wajib dilampirkan.');
+            redirect('DRM_MyRep');
+            return;
+        }
+
+        if (
+            !$this->db->field_exists('screenshot_astri_path', 'tb_myrep_drm')
+            || !$this->db->field_exists('screenshot_astri_name', 'tb_myrep_drm')
+        ) {
+            $this->session->set_flashdata('error', 'Kolom screenshot Astri belum tersedia. Jalankan patch database terlebih dahulu.');
+            redirect('DRM_MyRep');
+            return;
+        }
+
+        $uploadResult = $this->uploadDrmAstriScreenshot();
+        if (!$uploadResult['status']) {
+            $this->session->set_flashdata('error', $uploadResult['message']);
+            redirect('DRM_MyRep');
+            return;
+        }
+
         $allowedStatuses = ['WAITING DOC', 'WAITING APPROVE', 'COMPLETE', 'REJECTED'];
         if (!in_array($statusDrm, $allowedStatuses, true)) {
             $statusDrm = $drmDate ? 'WAITING DOC' : 'DRAFT';
@@ -149,6 +171,8 @@ class DRM_MyRep extends CI_Controller
             'homepass_drm' => $homepassDrm,
             'nama_olt' => $namaOlt !== '' ? $namaOlt : null,
             'status_drm' => $statusDrm,
+            'screenshot_astri_path' => $uploadResult['file_path'],
+            'screenshot_astri_name' => $uploadResult['file_name'],
             'remark_drm' => $remark !== '' ? $remark : null,
             'created_by' => $userId,
             'updated_by' => $userId,
@@ -159,6 +183,38 @@ class DRM_MyRep extends CI_Controller
 
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Data DRM berhasil ditambahkan.' : 'Gagal menyimpan data DRM.');
         redirect($result ? ('DRM_MyRep/detail/' . $clusterId) : 'DRM_MyRep');
+    }
+
+    private function uploadDrmAstriScreenshot()
+    {
+        $targetDir = FCPATH . 'uploads/myrep_drm_astri/';
+        if (!is_dir($targetDir)) {
+            @mkdir($targetDir, 0777, true);
+        }
+
+        $config = [
+            'upload_path' => $targetDir,
+            'allowed_types' => 'jpg|jpeg|png|webp',
+            'max_size' => 4096,
+            'encrypt_name' => true
+        ];
+
+        $this->upload->initialize($config);
+
+        if (!$this->upload->do_upload('screenshot_astri')) {
+            return [
+                'status' => false,
+                'message' => strip_tags($this->upload->display_errors('', ''))
+            ];
+        }
+
+        $fileData = $this->upload->data();
+
+        return [
+            'status' => true,
+            'file_name' => (string) ($fileData['file_name'] ?? ''),
+            'file_path' => 'uploads/myrep_drm_astri/' . (string) ($fileData['file_name'] ?? '')
+        ];
     }
 
     public function updateDrm()

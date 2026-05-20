@@ -716,7 +716,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                             <p>Checklist Dokument</p>
                                         </a>
                                     </li>
-                                    <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
+                                    <?php if (false && $this->session->userdata('nama_level') == "Super Admin") { ?>
                                         <li class="nav-item">
                                             <a href="<?= base_url('MyRepublik_Project#table_myrep_cluster_list') ?>"
                                                 class="nav-link <?= ($id_menu == 'MyRepublik_Project') ? 'active' : '' ?>">

@@ -1291,7 +1291,7 @@ if ($canApprove) {
                         <input type="date" name="released_at" class="form-control" value="<?= !empty($cluster['released_at']) ? htmlspecialchars(substr((string) $cluster['released_at'], 0, 10)) : date('Y-m-d') ?>" required>
                     </div>
                     <div class="form-group">
-                        <label>Nominal Cair</label>
+                        <label>Nominal Pencairan</label>
                         <input type="text" name="nominal_release_finance" class="form-control js-number-format" data-decimals="0" value="<?= htmlspecialchars((string) ($cluster['nominal_release_finance'] ?? '')) ?>" required>
                     </div>
                     <div class="form-group mb-0">

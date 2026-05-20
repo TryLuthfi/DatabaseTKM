@@ -527,7 +527,7 @@ class Batch_Approval_MyRep extends CI_Controller
             $nominalReleaseFinance = $this->normalizeNullableNumber($this->input->post('nominal_release_finance'));
 
             if ($releasedAt === null || $nominalReleaseFinance === null || empty($_FILES['transfer_proof']['name'])) {
-                $this->session->set_flashdata('error', 'Tanggal pencairan, nominal cair, dan foto transfer wajib diisi.');
+                $this->session->set_flashdata('error', 'Tanggal pencairan, nominal pencairan, dan foto transfer wajib diisi.');
                 redirect($redirectPath);
                 return;
             }
