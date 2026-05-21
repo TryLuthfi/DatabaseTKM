@@ -11,6 +11,11 @@ class Batch_Approval_MyRep extends CI_Controller
         $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
         $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
+        $this->load->library('Myrep_access_service', null, 'myrepAccess');
+        if (!empty($this->session->userdata('id_user'))) {
+            $this->myrepAccess->enforceView('Batch_Approval_MyRep');
+            $this->myrepAccess->enforceByMethod('Batch_Approval_MyRep', (string) $this->router->fetch_method());
+        }
     }
 
     public function index()

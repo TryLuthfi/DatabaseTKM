@@ -10,6 +10,11 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $this->load->model('MMonitoring_RFS_MyRep');
         $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
+        $this->load->library('Myrep_access_service', null, 'myrepAccess');
+        if (!empty($this->session->userdata('id_user'))) {
+            $this->myrepAccess->enforceView('Checklist_Dokument_MyRep');
+            $this->myrepAccess->enforceByMethod('Checklist_Dokument_MyRep', (string) $this->router->fetch_method());
+        }
     }
 
     public function index()

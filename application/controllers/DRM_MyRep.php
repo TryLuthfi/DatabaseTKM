@@ -10,6 +10,14 @@ class DRM_MyRep extends CI_Controller
         $this->load->model('MMyRep_Cleanup');
         $this->load->library('upload');
         $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
+        $this->load->library('Myrep_access_service', null, 'myrepAccess');
+        if (!empty($this->session->userdata('id_user'))) {
+            $this->myrepAccess->enforceView('DRM_MyRep');
+            $this->myrepAccess->enforceByMethod('DRM_MyRep', (string) $this->router->fetch_method(), [
+                'approveBoq' => 'APPROVAL',
+                'rejectBoq' => 'APPROVAL',
+            ]);
+        }
     }
 
     public function index()

@@ -116,6 +116,7 @@ if (!function_exists('checklist_doc_status_label')) {
 }
 
 $summary = isset($dashboardSummary) && is_array($dashboardSummary) ? $dashboardSummary : [];
+$canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'HAPUS') : true;
 $totalCluster = (int) ($summary['totalCluster'] ?? count($clusterList));
 $clusterDoneRfsBelumAtp = (int) ($summary['clusterDoneRfsBelumAtp'] ?? 0);
 $clusterDoneAtpBelumDokument = (int) ($summary['clusterDoneAtpBelumDokument'] ?? 0);
@@ -1132,10 +1133,12 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                                             <div class="action-stack">
                                                 <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . (int) $cluster['id_cluster']) ?>"
                                                     class="btn btn-primary btn-sm">Detail</a>
-                                                <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?');">
-                                                    <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_cluster'] ?>">
-                                                    <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
-                                                </form>
+                                                <?php if ($canHapus): ?>
+                                                    <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?');">
+                                                        <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_cluster'] ?>">
+                                                        <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                                                    </form>
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>

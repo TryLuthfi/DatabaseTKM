@@ -367,60 +367,6 @@ if (!function_exists('read_env_value'))
 	}
 }
 
-$maintenanceRaw = strtolower(trim((string) read_env_value('MAINTENANCE_MODE', 'false')));
-$isMaintenanceOn = in_array($maintenanceRaw, array('1', 'true', 'on', 'yes'), true);
-
-if ($isMaintenanceOn && PHP_SAPI !== 'cli')
-{
-	$uriPath = '/';
-	if (!empty($_SERVER['REQUEST_URI']))
-	{
-		$parsedPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-		if (is_string($parsedPath) && $parsedPath !== '')
-		{
-			$uriPath = strtolower($parsedPath);
-		}
-	}
-
-	$isAuthRoute = (strpos($uriPath, '/auth') !== false);
-
-	if (session_status() === PHP_SESSION_NONE)
-	{
-		@session_start();
-	}
-
-	$currentLevel = '';
-	if (isset($_SESSION['nama_level']))
-	{
-		$currentLevel = trim((string) $_SESSION['nama_level']);
-	}
-	elseif (isset($_SESSION['__ci_vars']) && isset($_SESSION['id_user']) && isset($_SESSION['username_user']))
-	{
-		// Keep this fallback for CI session variants where userdata is still in $_SESSION.
-		$currentLevel = trim((string) ($_SESSION['nama_level'] ?? ''));
-	}
-
-	$allowedRole = trim((string) read_env_value('MAINTENANCE_ALLOWED_ROLE', 'Super Admin'));
-	$isAllowedRole = ($allowedRole !== '' && strcasecmp($currentLevel, $allowedRole) === 0);
-
-	if (!$isAllowedRole && !$isAuthRoute)
-	{
-		header('HTTP/1.1 503 Service Unavailable', true, 503);
-		header('Retry-After: 3600');
-		header('Content-Type: text/html; charset=UTF-8');
-		$maintenanceView = APPPATH.'views/errors/html/error_403.php';
-		if (is_file($maintenanceView))
-		{
-			require $maintenanceView;
-		}
-		else
-		{
-			echo 'Maintenance';
-		}
-		exit;
-	}
-}
-
 /*
  * --------------------------------------------------------------------
  * LOAD THE BOOTSTRAP FILE

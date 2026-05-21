@@ -45,6 +45,8 @@ if (!function_exists('checklist_doc_percent')) {
 }
 
 $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session->userdata('nama_level') === 'Super Admin';
+$canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'TAMBAH') : true;
+$canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'APPROVAL') : true;
 $mainfeederProgressPercent = checklist_doc_percent(
     ((int) $mainfeeder['doc_cw_atp_uploaded']) + ((int) $mainfeeder['doc_full_opm_uploaded']) + ((int) $mainfeeder['doc_rfs_uploaded']),
     ((int) $mainfeeder['doc_cw_atp_required']) + ((int) $mainfeeder['doc_full_opm_required']) + ((int) $mainfeeder['doc_rfs_required'])
@@ -227,7 +229,7 @@ $mainfeederProgressPercent = checklist_doc_percent(
                                                     <div><strong>ASTRI:</strong> <?= $item['astri_remark'] !== '' ? $item['astri_remark'] : '-' ?></div>
                                                 </td>
                                                 <td>
-                                                    <?php if (in_array($item['status_file'], ['NOT UPLOADED', 'REJECTED'], true)): ?>
+                                                    <?php if ($canTambah && in_array($item['status_file'], ['NOT UPLOADED', 'REJECTED'], true)): ?>
                                                         <button type="button" class="btn btn-sm btn-success btn-mf-upload"
                                                             data-toggle="modal" data-target="#modalUploadMainfeeder"
                                                             data-mainfeeder-id="<?= (int) $mainfeeder['id_mainfeeder'] ?>"
@@ -235,21 +237,21 @@ $mainfeederProgressPercent = checklist_doc_percent(
                                                             data-item-id="<?= (int) $item['id_doc_item_mainfeeder'] ?>"
                                                             data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">Upload</button>
                                                     <?php endif; ?>
-                                                    <?php if ($canApprove && (int) $item['id_doc_file_mainfeeder'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
+                                                    <?php if ($canApprove && $canApprovalAction && (int) $item['id_doc_file_mainfeeder'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
                                                         <button type="button" class="btn btn-sm btn-primary btn-mf-approve"
                                                             data-toggle="modal" data-target="#modalApproveMainfeeder"
                                                             data-mainfeeder-id="<?= (int) $mainfeeder['id_mainfeeder'] ?>"
                                                             data-file-id="<?= (int) $item['id_doc_file_mainfeeder'] ?>"
                                                             data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">Approve</button>
                                                     <?php endif; ?>
-                                                    <?php if ($canApprove && (int) $item['id_doc_file_mainfeeder'] > 0 && in_array($item['status_file'], ['UPLOADED', 'APPROVED'], true)): ?>
+                                                    <?php if ($canApprove && $canApprovalAction && (int) $item['id_doc_file_mainfeeder'] > 0 && in_array($item['status_file'], ['UPLOADED', 'APPROVED'], true)): ?>
                                                         <button type="button" class="btn btn-sm btn-danger btn-mf-reject"
                                                             data-toggle="modal" data-target="#modalRejectMainfeeder"
                                                             data-mainfeeder-id="<?= (int) $mainfeeder['id_mainfeeder'] ?>"
                                                             data-file-id="<?= (int) $item['id_doc_file_mainfeeder'] ?>"
                                                             data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>">Reject</button>
                                                     <?php endif; ?>
-                                                    <?php if ($canApprove && (int) $item['id_doc_file_mainfeeder'] > 0 && $item['status_file'] === 'APPROVED'): ?>
+                                                    <?php if ($canTambah && (int) $item['id_doc_file_mainfeeder'] > 0 && $item['status_file'] === 'APPROVED'): ?>
                                                         <button type="button" class="btn btn-sm btn-secondary btn-mf-astri"
                                                             data-toggle="modal" data-target="#modalAstriMainfeeder"
                                                             data-mainfeeder-id="<?= (int) $mainfeeder['id_mainfeeder'] ?>"

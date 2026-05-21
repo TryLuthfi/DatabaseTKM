@@ -77,6 +77,9 @@ if (!function_exists('checklist_doc_history_label')) {
 $clusterTabRows = isset($scopeTabs['CLUSTER']) ? $scopeTabs['CLUSTER'] : [];
 $subfeederTabRows = isset($scopeTabs['SUBFEEDER']) ? $scopeTabs['SUBFEEDER'] : [];
 $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session->userdata('nama_level') === 'Super Admin';
+$canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'TAMBAH') : true;
+$canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'HAPUS') : true;
+$canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'APPROVAL') : true;
 $clusterProgressPercent = checklist_doc_percent(
     ((int) $cluster['doc_cw_atp_uploaded']) + ((int) $cluster['doc_full_opm_uploaded']) + ((int) $cluster['doc_rfs_uploaded']),
     ((int) $cluster['doc_cw_atp_required']) + ((int) $cluster['doc_full_opm_required']) + ((int) $cluster['doc_rfs_required'])
@@ -447,10 +450,12 @@ $clusterProgressPercent = checklist_doc_percent(
                 </div>
                 <div class="col-sm-4 text-right">
                     <a href="<?= base_url('Checklist_Dokument_MyRep') ?>" class="btn btn-default">Kembali</a>
-                    <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?');">
-                        <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_cluster'] ?? 0) ?>">
-                        <button type="submit" class="btn btn-danger">Hapus Cluster</button>
-                    </form>
+                    <?php if ($canHapus): ?>
+                        <form method="post" action="<?= base_url('Checklist_Dokument_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?');">
+                            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_cluster'] ?? 0) ?>">
+                            <button type="submit" class="btn btn-danger">Hapus Cluster</button>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -585,16 +590,18 @@ $clusterProgressPercent = checklist_doc_percent(
                         </div>
                     </div>
                     <div class="d-flex justify-content-end mt-3">
-                        <button type="button"
-                            class="btn btn-outline-primary btn-edit-timeline"
-                            data-toggle="modal"
-                            data-target="#modalTimeline"
-                            data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
-                            data-cluster-name="<?= htmlspecialchars($cluster['cluster_name'], ENT_QUOTES) ?>"
-                            data-tanggal-rfs="<?= $cluster['tanggal_rfs'] ?>"
-                            data-actual-atp-date="<?= $cluster['actual_atp_date'] ?>">
-                            Edit Timeline Cluster
-                        </button>
+                        <?php if ($canTambah): ?>
+                            <button type="button"
+                                class="btn btn-outline-primary btn-edit-timeline"
+                                data-toggle="modal"
+                                data-target="#modalTimeline"
+                                data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                                data-cluster-name="<?= htmlspecialchars($cluster['cluster_name'], ENT_QUOTES) ?>"
+                                data-tanggal-rfs="<?= $cluster['tanggal_rfs'] ?>"
+                                data-actual-atp-date="<?= $cluster['actual_atp_date'] ?>">
+                                Edit Timeline Cluster
+                            </button>
+                        <?php endif; ?>
                     </div>
                     <div class="row">
                         <div class="col-md-2">
@@ -681,12 +688,18 @@ $clusterProgressPercent = checklist_doc_percent(
                                                     data-target="#modalDownloadFormat-<?= (int) $group['id_doc_package'] ?>">
                                                     Download Format
                                                 </button>
-                                                <button type="button"
-                                                    class="btn btn-sm btn-outline-success"
-                                                    data-toggle="modal"
-                                                    data-target="#modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
-                                                    Bulk Upload
-                                                </button>
+                                                <?php if ($canTambah): ?>
+                                                <?php if ($canTambah): ?>
+                                                <?php if ($canTambah): ?>
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-outline-success"
+                                                        data-toggle="modal"
+                                                        data-target="#modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
+                                                        Bulk Upload
+                                                    </button>
+                                                <?php endif; ?>
+                                                <?php endif; ?>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -772,7 +785,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                     <div><strong>ASTRI:</strong> <?= $item['astri_remark'] !== '' ? $item['astri_remark'] : '-' ?></div>
                                                                 </td>
                                                                 <td>
-                                                                    <?php if (empty($item['linked_source_file_id']) && in_array($item['status_file'], ['NOT UPLOADED', 'REJECTED'], true)): ?>
+                                                                    <?php if ($canTambah && empty($item['linked_source_file_id']) && in_array($item['status_file'], ['NOT UPLOADED', 'REJECTED'], true)): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-success btn-upload-doc"
                                                                             data-toggle="modal"
@@ -800,7 +813,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             Detail
                                                                         </button>
                                                                     <?php endif; ?>
-                                                                    <?php if (empty($item['linked_source_file_id']) && $canApprove && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
+                                                                    <?php if ($canTambah && empty($item['linked_source_file_id']) && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-secondary btn-astri-doc"
                                                                             data-toggle="modal"
@@ -815,7 +828,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             ASTRI
                                                                         </button>
                                                                     <?php endif; ?>
-                                                                    <?php if (empty($item['linked_source_file_id']) && $canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
+                                                                    <?php if (empty($item['linked_source_file_id']) && $canApprove && $canApprovalAction && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-primary btn-approve-doc"
                                                                             data-toggle="modal"
@@ -826,7 +839,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             Approve
                                                                         </button>
                                                                     <?php endif; ?>
-                                                                    <?php if (empty($item['linked_source_file_id']) && $canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'APPROVED'], true)): ?>
+                                                                    <?php if (empty($item['linked_source_file_id']) && $canApprove && $canApprovalAction && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'APPROVED'], true)): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-danger btn-reject-doc"
                                                                             data-toggle="modal"
@@ -993,12 +1006,14 @@ $clusterProgressPercent = checklist_doc_percent(
                                                     data-target="#modalDownloadFormat-<?= (int) $group['id_doc_package'] ?>">
                                                     Download Format
                                                 </button>
-                                                <button type="button"
-                                                    class="btn btn-sm btn-outline-success"
-                                                    data-toggle="modal"
-                                                    data-target="#modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
-                                                    Bulk Upload
-                                                </button>
+                                                <?php if ($canTambah): ?>
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-outline-success"
+                                                        data-toggle="modal"
+                                                        data-target="#modalBulkUpload-<?= (int) $group['id_doc_package'] ?>">
+                                                        Bulk Upload
+                                                    </button>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -1079,7 +1094,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                     <div><strong>ASTRI:</strong> <?= $item['astri_remark'] !== '' ? $item['astri_remark'] : '-' ?></div>
                                                                 </td>
                                                                 <td>
-                                                                    <?php if (in_array($item['status_file'], ['NOT UPLOADED', 'REJECTED'], true)): ?>
+                                                                    <?php if ($canTambah && in_array($item['status_file'], ['NOT UPLOADED', 'REJECTED'], true)): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-success btn-upload-doc"
                                                                             data-toggle="modal"
@@ -1105,7 +1120,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             Detail
                                                                         </button>
                                                                     <?php endif; ?>
-                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
+                                                                    <?php if ($canTambah && (int) $item['id_doc_file'] > 0 && $item['status_file'] === 'APPROVED'): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-secondary btn-astri-doc"
                                                                             data-toggle="modal"
@@ -1120,7 +1135,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             ASTRI
                                                                         </button>
                                                                     <?php endif; ?>
-                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
+                                                                    <?php if ($canApprove && $canApprovalAction && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'REJECTED'], true)): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-primary btn-approve-doc"
                                                                             data-toggle="modal"
@@ -1131,7 +1146,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             Approve
                                                                         </button>
                                                                     <?php endif; ?>
-                                                                    <?php if ($canApprove && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'APPROVED'], true)): ?>
+                                                                    <?php if ($canApprove && $canApprovalAction && (int) $item['id_doc_file'] > 0 && in_array($item['status_file'], ['UPLOADED', 'APPROVED'], true)): ?>
                                                                         <button type="button"
                                                                             class="btn btn-sm btn-danger btn-reject-doc"
                                                                             data-toggle="modal"
@@ -1864,3 +1879,6 @@ $clusterProgressPercent = checklist_doc_percent(
 
     bindDropzone('#upload-dropzone', '#upload-file-input', '#upload-file-name');
 </script>
+
+
+

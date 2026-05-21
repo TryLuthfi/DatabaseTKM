@@ -13,6 +13,14 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $this->load->model('MMonitoring_RFS_MyRep');
         $this->load->library('upload');
         $this->load->library('Myrep_notification_service', null, 'myrepNotifier');
+        $this->load->library('Myrep_access_service', null, 'myrepAccess');
+        if (!empty($this->session->userdata('id_user'))) {
+            $this->myrepAccess->enforceView('Monitoring_RFS_MyRep');
+            $this->myrepAccess->enforceByMethod('Monitoring_RFS_MyRep', (string) $this->router->fetch_method(), [
+                'submitClaim' => 'TAMBAH',
+                'updateClaimStatus' => 'APPROVAL',
+            ]);
+        }
     }
 
     public function index()

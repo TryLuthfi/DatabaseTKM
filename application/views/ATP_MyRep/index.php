@@ -1,6 +1,7 @@
 <?php
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
+$canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('ATP_MyRep', 'EDIT') : true;
 $summaryTotal = count($clusterList);
 $summaryTotalHp = 0;
 $stageSummary = [];
@@ -297,20 +298,22 @@ $summaryCards = [
                                             </div>
                                         </td>
                                         <td>
-                                            <button
-                                                type="button"
-                                                class="btn btn-sm btn-outline-primary js-edit-atp"
-                                                data-toggle="modal"
-                                                data-target="#modal-atp-update"
-                                                data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
-                                                data-cluster-name="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                                data-email-atp-date="<?= htmlspecialchars((string) ($cluster['email_atp_date'] ?? ''), ENT_QUOTES) ?>"
-                                                data-actual-atp-date="<?= htmlspecialchars((string) ($cluster['actual_atp_date'] ?? ''), ENT_QUOTES) ?>"
-                                                data-status-atp="<?= htmlspecialchars((string) ($cluster['status_atp'] ?? ''), ENT_QUOTES) ?>"
-                                                data-record-punclist-file="<?= htmlspecialchars((string) ($cluster['record_punclist_file_name'] ?? ''), ENT_QUOTES) ?>"
-                                                data-ba-rectification-file="<?= htmlspecialchars((string) ($cluster['ba_rectification_file_name'] ?? ''), ENT_QUOTES) ?>">
-                                                Update
-                                            </button>
+                                            <?php if ($canEdit): ?>
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-sm btn-outline-primary js-edit-atp"
+                                                    data-toggle="modal"
+                                                    data-target="#modal-atp-update"
+                                                    data-cluster-id="<?= (int) $cluster['id_cluster'] ?>"
+                                                    data-cluster-name="<?= htmlspecialchars((string) ($cluster['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                                                    data-email-atp-date="<?= htmlspecialchars((string) ($cluster['email_atp_date'] ?? ''), ENT_QUOTES) ?>"
+                                                    data-actual-atp-date="<?= htmlspecialchars((string) ($cluster['actual_atp_date'] ?? ''), ENT_QUOTES) ?>"
+                                                    data-status-atp="<?= htmlspecialchars((string) ($cluster['status_atp'] ?? ''), ENT_QUOTES) ?>"
+                                                    data-record-punclist-file="<?= htmlspecialchars((string) ($cluster['record_punclist_file_name'] ?? ''), ENT_QUOTES) ?>"
+                                                    data-ba-rectification-file="<?= htmlspecialchars((string) ($cluster['ba_rectification_file_name'] ?? ''), ENT_QUOTES) ?>">
+                                                    Update
+                                                </button>
+                                            <?php endif; ?>
                                             <?php if (($cluster['stage_atp'] ?? '') === 'ATP DONE'): ?>
                                                 <a href="<?= base_url('Checklist_Dokument_MyRep/detail/' . (int) $cluster['id_cluster']) ?>" class="btn btn-sm btn-outline-success mt-1">
                                                     Checklist
@@ -335,6 +338,7 @@ $summaryCards = [
     </section>
 </div>
 
+<?php if ($canEdit): ?>
 <div class="modal fade" id="modal-atp-update" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content budget-modal atp-modal-shell">
@@ -427,6 +431,7 @@ $summaryCards = [
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <style>
     .atp-filter-card,

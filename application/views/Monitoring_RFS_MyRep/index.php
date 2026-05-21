@@ -1,5 +1,7 @@
 <?php
 $canApprove = $this->session->userdata('lokasi_user') === 'HO' || $this->session->userdata('nama_level') === 'Super Admin';
+$canTambahAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Monitoring_RFS_MyRep', 'TAMBAH') : true;
+$canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Monitoring_RFS_MyRep', 'APPROVAL') : true;
 $monthColumnCount = count($monthColumns);
 $clusterTargetCityMap = [];
 $monthlyTargetCityMap = [];
@@ -1090,17 +1092,19 @@ if (!empty($kpiDetailRowMap)) {
                 <div class="container-fluid">
                     <div class="row mb-2 justify-content-center">
                         <div class="d-flex flex-wrap justify-content-center">
-                            <button type="button" class="btn btn-gradient-primary shadow mr-2 mb-2"
-                                data-toggle="modal" data-target="#modal-target-bulanan">
-                                <i class="fas fa-plus-circle mr-2"></i>
-                                <strong>Add Target Realisasi</strong>
-                            </button>
+                            <?php if ($canTambahAction): ?>
+                                <button type="button" class="btn btn-gradient-primary shadow mr-2 mb-2"
+                                    data-toggle="modal" data-target="#modal-target-bulanan">
+                                    <i class="fas fa-plus-circle mr-2"></i>
+                                    <strong>Add Target Realisasi</strong>
+                                </button>
 
-                            <button type="button" class="btn btn-gradient-success shadow mr-2 mb-2"
-                                data-toggle="modal" data-target="#modal-cluster-baru">
-                                <i class="fas fa-plus-circle mr-2"></i>
-                                <strong>Add New Cluster</strong>
-                            </button>
+                                <button type="button" class="btn btn-gradient-success shadow mr-2 mb-2"
+                                    data-toggle="modal" data-target="#modal-cluster-baru">
+                                    <i class="fas fa-plus-circle mr-2"></i>
+                                    <strong>Add New Cluster</strong>
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -1905,7 +1909,7 @@ if (!empty($kpiDetailRowMap)) {
                                             <?= number_format($clusterHomepassDrm - (float) $cluster['claimed_qty'], 0, ',', '.') ?>
                                         </td>
                                         <td>
-                                            <?php if (in_array($displayStatusRfs, ['NY RFS', 'PARTIAL', 'REJECTED'], true)) { ?>
+                                            <?php if ($canTambahAction && in_array($displayStatusRfs, ['NY RFS', 'PARTIAL', 'REJECTED'], true)) { ?>
                                                 <button type="button" class="btn btn-sm btn-success" data-toggle="modal"
                                                     data-target="#claimModal<?= (int) $cluster['id_cluster'] ?>">
                                                     Claim RFS
@@ -2099,7 +2103,7 @@ if (!empty($kpiDetailRowMap)) {
                                             <?php if ($claimRpm === '') { ?>
                                                 <span class="badge badge-secondary">SKIPPED</span>
                                                 <div><small>Tidak ada RPM untuk area ini</small></div>
-                                            <?php } elseif ($claimStatus === 'WAITING APPROVAL RPM' && $canApproveRpm) { ?>
+                                            <?php } elseif ($claimStatus === 'WAITING APPROVAL RPM' && $canApproveRpm && $canApprovalAction) { ?>
                                                 <form method="post"
                                                     action="<?= base_url('Monitoring_RFS_MyRep/updateClaimStatus') ?>">
                                                     <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
@@ -2140,7 +2144,7 @@ if (!empty($kpiDetailRowMap)) {
                                             <?php } ?>
                                         </td>
                                         <td style="min-width: 280px;">
-                                            <?php if ($canApprove && in_array(($claim['status_claim'] ?? ''), ['WAITING APPROVAL HO', 'APPROVED', 'REJECTED'], true)) { ?>
+                                            <?php if ($canApprove && $canApprovalAction && in_array(($claim['status_claim'] ?? ''), ['WAITING APPROVAL HO', 'APPROVED', 'REJECTED'], true)) { ?>
                                                 <form method="post"
                                                     action="<?= base_url('Monitoring_RFS_MyRep/updateClaimStatus') ?>">
                                                     <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">

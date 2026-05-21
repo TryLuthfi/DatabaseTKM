@@ -1,6 +1,10 @@
 <?php
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
+$canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'TAMBAH') : true;
+$canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'EDIT') : true;
+$canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'HAPUS') : true;
+$canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'APPROVAL') : true;
 
 if (!function_exists('batchDetailBadgeClass')) {
     function batchDetailBadgeClass($status)
@@ -87,8 +91,8 @@ $displayStageStatus = (string) ($cluster['display_staging_status'] ?? $cluster['
 $stageMeta = batchDetailStageMeta($displayStageStatus);
 $batchDocumentStatus = batchDetailDocumentLabel($batchDocument);
 $batchDocumentRawStatus = strtoupper(trim((string) ($batchDocument['status_file'] ?? '')));
-$batchDocumentCanUpload = in_array($batchDocumentStatus, ['BELUM UPLOAD', 'REJECTED'], true);
-$batchDocumentCanReview = $canApprove && !empty($batchDocument['id_doc_file']) && $batchDocumentRawStatus === 'UPLOADED';
+$batchDocumentCanUpload = $canTambah && in_array($batchDocumentStatus, ['BELUM UPLOAD', 'REJECTED'], true);
+$batchDocumentCanReview = $canApprove && $canApprovalAction && !empty($batchDocument['id_doc_file']) && $batchDocumentRawStatus === 'UPLOADED';
 $transferProofPath = (string) ($cluster['transfer_proof_file_path'] ?? '');
 $transferProofExtension = strtolower(pathinfo($transferProofPath, PATHINFO_EXTENSION));
 $isTransferProofImage = $transferProofPath !== '' && in_array($transferProofExtension, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true);
@@ -122,15 +126,17 @@ foreach ((array) $postDonasiRows as $postDocRow) {
     if ($postDocCanUpload) {
         $postDonasiUploadableRows[] = $postDocRow;
     }
-    if ((!empty($postDocRow['id_doc_file']) && in_array($postDocRawStatus, ['UPLOADED', 'REJECTED'], true))
-        || ($postDocStatus === 'LINKED DOKUMENT' && !empty($postDocRow['linked_source_file_id']))) {
+    if ($canApprovalAction && (
+        (!empty($postDocRow['id_doc_file']) && in_array($postDocRawStatus, ['UPLOADED', 'REJECTED'], true))
+        || ($postDocStatus === 'LINKED DOKUMENT' && !empty($postDocRow['linked_source_file_id']))
+    )) {
         $postDonasiReviewableRows[] = $postDocRow;
     }
     if (!empty($postDocRow['file_path'])) {
         $postDonasiDownloadableRows[] = $postDocRow;
     }
 }
-if ($canApprove) {
+if ($canApprove && $canApprovalAction) {
     if ($currentStage === 'WAITING HO') {
         $stageButtonTarget = '#modal-stage-to-myrep';
         $stageButtonLabel = 'Edit Staging';
@@ -645,10 +651,12 @@ if ($canApprove) {
                 </div>
                 <div class="col-sm-6 text-right">
                     <a href="<?= base_url('Batch_Approval_MyRep') ?>" class="btn btn-outline-secondary">Kembali</a>
-                    <form method="post" action="<?= base_url('Batch_Approval_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta Batch Approval dan seluruh flow MyRep terkait?');">
-                        <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                        <button type="submit" class="btn btn-outline-danger">Hapus Cluster</button>
-                    </form>
+                    <?php if ($canHapus): ?>
+                        <form method="post" action="<?= base_url('Batch_Approval_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta Batch Approval dan seluruh flow MyRep terkait?');">
+                            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                            <button type="submit" class="btn btn-outline-danger">Hapus Cluster</button>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -666,10 +674,12 @@ if ($canApprove) {
             <div class="card card-primary shadow-sm batch-info-card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">Informasi Cluster & Batch</h3>
-                    <button type="button" class="btn btn-sm batch-edit-btn" data-toggle="modal" data-target="#modal-batch-edit-detail">
-                        <i class="fas fa-pen"></i>
-                        Edit Batch Approval
-                    </button>
+                    <?php if ($canEdit): ?>
+                        <button type="button" class="btn btn-sm batch-edit-btn" data-toggle="modal" data-target="#modal-batch-edit-detail">
+                            <i class="fas fa-pen"></i>
+                            Edit Batch Approval
+                        </button>
+                    <?php endif; ?>
                 </div>
                 <div class="card-body">
                     <div class="batch-progress-wrap">
@@ -841,7 +851,7 @@ if ($canApprove) {
                                     Download RAR
                                 </a>
                             <?php endif; ?>
-                            <?php if ($postDonasiDocReady && $canApprove && !empty($postDonasiReviewableRows)): ?>
+                            <?php if ($postDonasiDocReady && $canApprove && $canApprovalAction && !empty($postDonasiReviewableRows)): ?>
                                 <form method="post" action="<?= base_url('Post_Donasi_MyRep/approveAllDocuments') ?>" class="d-inline">
                                     <input type="hidden" name="cluster_id" value="<?= (int) $cluster['id_myrep_cluster'] ?>">
                                     <input type="hidden" name="redirect_to_batch_detail" value="1">
@@ -850,7 +860,7 @@ if ($canApprove) {
                                     </button>
                                 </form>
                             <?php endif; ?>
-                            <?php if ($postDonasiDocReady && !empty($postDonasiUploadableRows)): ?>
+                            <?php if ($postDonasiDocReady && $canTambah && !empty($postDonasiUploadableRows)): ?>
                                 <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-post-bulk-upload">
                                     Bulk Upload 12 Dokumen
                                 </button>
@@ -871,7 +881,7 @@ if ($canApprove) {
                                         <th>Status</th>
                                         <th>File</th>
                                         <th>Upload</th>
-                                        <?php if ($canApprove): ?><th>Review</th><?php endif; ?>
+                                        <?php if ($canApprove && $canApprovalAction): ?><th>Review</th><?php endif; ?>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -879,8 +889,8 @@ if ($canApprove) {
                                         <?php
                                         $postStatus = batchDetailDocumentLabel($row);
                                         $postRawStatus = strtoupper(trim((string) ($row['status_file'] ?? '')));
-                                        $postCanUpload = in_array($postStatus, ['BELUM UPLOAD', 'LINKED DOKUMENT'], true) || $postRawStatus === 'REJECTED';
-                                        $postCanReview = $canApprove && (
+                                        $postCanUpload = $canTambah && (in_array($postStatus, ['BELUM UPLOAD', 'LINKED DOKUMENT'], true) || $postRawStatus === 'REJECTED');
+                                        $postCanReview = $canApprove && $canApprovalAction && (
                                             (!empty($row['id_doc_file']) && $postRawStatus === 'UPLOADED')
                                             || ($postStatus === 'LINKED DOKUMENT' && !empty($row['linked_source_file_id']))
                                         );
@@ -930,7 +940,7 @@ if ($canApprove) {
                                                     <span class="text-muted small">Upload tidak tersedia</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <?php if ($canApprove): ?>
+                                            <?php if ($canApprove && $canApprovalAction): ?>
                                                 <td style="min-width:220px;">
                                                     <?php if ($postCanReview): ?>
                                                         <button
@@ -967,7 +977,7 @@ if ($canApprove) {
                                         </tr>
                                     <?php endforeach; ?>
                                     <?php if (empty($postDonasiRows)): ?>
-                                        <tr><td colspan="<?= $canApprove ? '6' : '5' ?>" class="text-center text-muted">Belum ada dokumen post donasi.</td></tr>
+                                        <tr><td colspan="<?= ($canApprove && $canApprovalAction) ? '6' : '5' ?>" class="text-center text-muted">Belum ada dokumen post donasi.</td></tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
@@ -979,6 +989,7 @@ if ($canApprove) {
     </section>
 </div>
 
+<?php if ($canEdit): ?>
 <div class="modal fade" id="modal-batch-edit-detail" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xxl" role="document">
         <div class="modal-content batch-modal">
@@ -1353,6 +1364,7 @@ if ($canApprove) {
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="modal fade" id="modal-post-bulk-upload" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
@@ -1429,6 +1441,7 @@ if ($canApprove) {
     </div>
 </div>
 
+<?php if ($canApprove && $canApprovalAction): ?>
 <div class="modal fade" id="modal-batch-approve" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content batch-modal">
@@ -1536,6 +1549,7 @@ if ($canApprove) {
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <script>
     (function () {

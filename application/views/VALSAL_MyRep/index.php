@@ -23,6 +23,10 @@ $postValsalStatuses = [
     'ATP',
     'DONE',
 ];
+$canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('VALSAL_MyRep', 'TAMBAH') : true;
+$canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('VALSAL_MyRep', 'EDIT') : true;
+$canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('VALSAL_MyRep', 'HAPUS') : true;
+$canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('VALSAL_MyRep', 'APPROVAL') : true;
 
 foreach ($eligibleClusterOptions as $clusterOption) {
     $cityName = trim((string) ($clusterOption['city_name'] ?? ''));
@@ -154,7 +158,7 @@ if (!function_exists('valsalReviewLabel')) {
     }
 }
 
-$renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $documentDefinitions, $documentMap) {
+$renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $documentDefinitions, $documentMap) use ($canTambah, $canEdit, $canHapus) {
     foreach ($rows as $index => $row) {
         $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
         $hasValsal = (int) ($row['id_valsal'] ?? 0) > 0;
@@ -214,7 +218,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             <td><?= !empty($row['valsal_date']) ? htmlspecialchars((string) $row['valsal_date']) : '-' ?></td>
             <td><span class="badge badge-<?= valsalBadgeClass($statusValsalLabel) ?>"><?= htmlspecialchars($statusValsalLabel) ?></span></td>
             <td>
-                <?php if ($hasValsal): ?>
+                <?php if ($hasValsal && $canEdit): ?>
                     <?php foreach ($documentDefinitions as $documentDefinition): ?>
                         <?php $docRow = $docsById[(int) $documentDefinition['id_doc_item']] ?? []; ?>
                         <div class="mb-2">
@@ -225,7 +229,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
-                <?php else: ?>
+                <?php elseif ($canTambah): ?>
                     <span class="badge badge-secondary">BELUM ADA DOC</span>
                 <?php endif; ?>
             </td>
@@ -293,7 +297,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         $docRow = $docsById[(int) $documentDefinition['id_doc_item']] ?? [];
                         $docStatusRaw = strtoupper(trim((string) ($docRow['status_file'] ?? '')));
                         $docName = (string) ($documentDefinition['doc_name'] ?? 'Dokumen');
-                        $allowUploadButton = $hasValsal && $docStatusRaw === '';
+                        $allowUploadButton = $canTambah && $hasValsal && $docStatusRaw === '';
                         ?>
                         <?php if ($allowUploadButton): ?>
                             <button
@@ -312,10 +316,12 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         <?php endif; ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
-                <form method="post" action="<?= base_url('VALSAL_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta flow VALSAL dan seluruh tahap MyRep sebelumnya/sesudahnya?');">
-                    <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
-                    <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
-                </form>
+                <?php if ($canHapus): ?>
+                    <form method="post" action="<?= base_url('VALSAL_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta flow VALSAL dan seluruh tahap MyRep sebelumnya/sesudahnya?');">
+                        <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
+                    </form>
+                <?php endif; ?>
             </td>
         </tr>
         <?php
@@ -465,7 +471,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             <div class="row">
                 <div class="col-md-12">
                     <div class="valsal-toolbar">
-                        <?php if ($isReady): ?>
+                        <?php if ($isReady && $canTambah): ?>
                             <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-valsal-create">
                                 <i class="fas fa-plus mr-1"></i> Input VALSAL
                             </button>
@@ -893,7 +899,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         <a href="#" target="_blank" class="btn budget-btn budget-btn--ghost d-none" id="valsal-doc-download-bundle-btn">
                             <i class="fas fa-file-archive mr-1"></i> Download Gabungan
                         </a>
-                        <?php if ($canApprove): ?>
+                        <?php if ($canApprove && $canApprovalAction): ?>
                             <button type="button" class="btn budget-btn budget-btn--success d-none" id="valsal-doc-approve-all-btn">
                                 <i class="fas fa-check-double mr-1"></i> Approve All
                             </button>
@@ -991,7 +997,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             </div>
         </div>
 
-        <?php if ($canApprove): ?>
+        <?php if ($canApprove && $canApprovalAction): ?>
             <div class="modal fade doc-modal" id="modal-valsal-approve-doc" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content budget-modal valsal-modal-shell">
@@ -1708,7 +1714,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         '<button type="button" class="btn btn-sm btn-outline-dark js-history-doc" data-toggle="modal" data-target="#modal-valsal-history-doc" data-cluster_name="' + escapeHtml(doc.cluster_name || '') + '" data-doc_name="' + docName + '" data-history="' + escapeHtml(JSON.stringify(doc.history || [])) + '">History</button>';
                 }
 
-                if (docStatusRaw === 'REJECTED') {
+                if (docStatusRaw === 'REJECTED' && <?= $canTambah ? 'true' : 'false' ?>) {
                     actionParts.push(
                         '<button type="button" class="btn btn-sm btn-outline-info btn-block js-detail-reupload-doc" ' +
                             'data-cluster_id="' + Number(doc.id_myrep_cluster || 0) + '" ' +
@@ -1722,7 +1728,7 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                     );
                 }
 
-                <?php if ($canApprove): ?>
+                <?php if ($canApprove && $canApprovalAction): ?>
                 if (doc.id_doc_file) {
                     actionParts.push(
                         '<form method="post" action="' + valsalApproveUrl + '" class="mb-2 js-valsal-inline-approve-form">' +

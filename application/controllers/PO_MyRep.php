@@ -7,6 +7,11 @@ class PO_MyRep extends CI_Controller
     {
         parent::__construct();
         $this->load->model('MPO_MyRep');
+        $this->load->library('Myrep_access_service', null, 'myrepAccess');
+        if (!empty($this->session->userdata('id_user'))) {
+            $this->myrepAccess->enforceView('PO_MyRep');
+            $this->myrepAccess->enforceByMethod('PO_MyRep', (string) $this->router->fetch_method());
+        }
     }
 
     public function index()

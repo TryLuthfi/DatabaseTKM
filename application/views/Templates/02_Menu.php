@@ -83,17 +83,17 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                     </li>
 
                     <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
-                        <li class="nav-item has-treeview <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea') {
+                        <li class="nav-item has-treeview <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea' || $id_menu == 'SuperAdmin_MyRep_Config') {
                             echo "menu-open";
                         } ?>">
-                            <a href="#" class="nav-link <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea') {
+                            <a href="#" class="nav-link <?php if ($id_menu == 'ListUser' || $id_menu == 'ListBowheer' || $id_menu == 'ListArea' || $id_menu == 'SuperAdmin_MyRep_Config') {
                                 echo "active";
                             } ?>">
                                 <i class="nav-icon fas fa-money-check-alt"></i>
                                 <p>
                                     Super Admin
                                     <i class="fas fa-angle-left right"></i>
-                                    <span class="badge badge-info right">3</span>
+                                    <span class="badge badge-info right">4</span>
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
@@ -127,6 +127,16 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                       } ?>">
                                         <i class="far fa-circle nav-icon"></i>
                                         <p>List Bowheer</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="<?= base_url('SuperAdmin_MyRep_Config') ?>" class="nav-link <?php if ($id_menu == 'SuperAdmin_MyRep_Config') {
+                                          echo "active";
+                                      } ?>">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>MyRep Role & Notif</p>
                                     </a>
                                 </li>
                             </ul>

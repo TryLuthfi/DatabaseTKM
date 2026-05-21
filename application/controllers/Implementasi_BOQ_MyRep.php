@@ -8,6 +8,15 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         parent::__construct();
         $this->load->model('MImplementasi_BOQ_MyRep');
         $this->load->library('upload');
+        $this->load->library('Myrep_access_service', null, 'myrepAccess');
+        if (!empty($this->session->userdata('id_user'))) {
+            $this->myrepAccess->enforceView('Implementasi_BOQ_MyRep');
+            $this->myrepAccess->enforceByMethod('Implementasi_BOQ_MyRep', (string) $this->router->fetch_method(), [
+                'approveComplyPhoto' => 'APPROVAL_FOTO_COMPLY',
+                'rejectComplyPhoto' => 'APPROVAL_FOTO_COMPLY',
+                'saveDailyActivity' => 'APPROVAL_DAILY',
+            ]);
+        }
     }
 
     public function index()

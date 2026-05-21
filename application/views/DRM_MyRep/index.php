@@ -13,6 +13,7 @@ $summaryDoneHp = 0;
 $summaryRejectedHp = 0;
 $createCityOptions = [];
 $postDrmStatuses = ['RFS', 'ATP', 'DONE'];
+$canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'TAMBAH') : true;
 
 foreach ($eligibleClusterOptions as $clusterOption) {
     $cityName = trim((string) ($clusterOption['city_name'] ?? ''));
@@ -202,7 +203,7 @@ if (!function_exists('drmBadgeClass')) {
             <div class="row">
                 <div class="col-md-12">
                     <div class="drm-toolbar">
-                        <?php if ($isReady): ?>
+                        <?php if ($isReady && $canTambah): ?>
                             <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-drm-create">
                                 <i class="fas fa-plus mr-1"></i> Input DRM
                             </button>

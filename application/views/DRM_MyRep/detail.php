@@ -1,6 +1,10 @@
 <?php
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
+$canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'TAMBAH') : true;
+$canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'EDIT') : true;
+$canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'HAPUS') : true;
+$canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'APPROVAL') : true;
 
 if (!function_exists('drmDetailBadgeClass')) {
     function drmDetailBadgeClass($status)
@@ -54,10 +58,12 @@ if (!function_exists('drmScopeText')) {
                 </div>
                 <div class="col-sm-6 text-right">
                     <a href="<?= base_url('DRM_MyRep') ?>" class="btn btn-outline-secondary">Kembali</a>
-                    <form method="post" action="<?= base_url('DRM_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta DRM dan seluruh flow MyRep terkait?');">
-                        <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
-                        <button type="submit" class="btn btn-outline-danger">Hapus Cluster</button>
-                    </form>
+                    <?php if ($canHapus): ?>
+                        <form method="post" action="<?= base_url('DRM_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta DRM dan seluruh flow MyRep terkait?');">
+                            <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
+                            <button type="submit" class="btn btn-outline-danger">Hapus Cluster</button>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -339,10 +345,12 @@ if (!function_exists('drmScopeText')) {
             <div class="card card-primary shadow-sm drm-header-card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">Header DRM</h3>
-                    <button type="button" class="btn btn-sm drm-edit-btn" data-toggle="modal" data-target="#modal-drm-edit">
-                        <i class="fas fa-pen"></i>
-                        Edit DRM
-                    </button>
+                    <?php if ($canEdit): ?>
+                        <button type="button" class="btn btn-sm drm-edit-btn" data-toggle="modal" data-target="#modal-drm-edit">
+                            <i class="fas fa-pen"></i>
+                            Edit DRM
+                        </button>
+                    <?php endif; ?>
                 </div>
                 <div class="card-body">
                     <div class="row drm-info-grid">
@@ -595,12 +603,12 @@ if (!function_exists('drmScopeText')) {
                                                             Download RAR
                                                         </a>
                                                     <?php endif; ?>
-                                                    <?php if (!empty($bulkUploadableRows)): ?>
+                                                    <?php if ($canTambah && !empty($bulkUploadableRows)): ?>
                                                         <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#modal-drm-bulk-upload-<?= strtolower($scopeKey) ?>">
                                                             Bulk Upload
                                                         </button>
                                                     <?php endif; ?>
-                                                    <?php if ($canApprove && !empty($reviewableRows)): ?>
+                                                    <?php if ($canApprove && $canApprovalAction && !empty($reviewableRows)): ?>
                                                         <form method="post" action="<?= base_url('DRM_MyRep/approveAllDocuments') ?>" class="d-inline">
                                                             <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                                                             <input type="hidden" name="scope_type" value="<?= htmlspecialchars((string) $scopeKey) ?>">
@@ -620,7 +628,7 @@ if (!function_exists('drmScopeText')) {
                                                             <th>Status</th>
                                                             <th>File</th>
                                                             <th>Upload / Update</th>
-                                                            <?php if ($canApprove): ?><th>Review</th><?php endif; ?>
+                                                            <?php if ($canApprove && $canApprovalAction): ?><th>Review</th><?php endif; ?>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -653,7 +661,7 @@ if (!function_exists('drmScopeText')) {
                                                                 </td>
                                                                 <td style="min-width:320px;">
                                                                     <?php if (($row['doc_name'] ?? '') === 'APD BOQ' && $boqReady): ?>
-                                                                        <?php if (!$isBoqLocked): ?>
+                                                                        <?php if ($canTambah && !$isBoqLocked): ?>
                                                                             <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modal-apd-boq-package-<?= strtolower($scopeKey) ?>">Kelola APD BOQ & BOQ Manual</button>
                                                                         <?php else: ?>
                                                                             <span class="text-success small font-weight-bold">BOQ sudah approved</span>
@@ -662,13 +670,13 @@ if (!function_exists('drmScopeText')) {
                                                                             Status BOQ:
                                                                             <span class="badge badge-<?= drmDetailBadgeClass($boqReviewStatus) ?>"><?= htmlspecialchars($boqReviewStatus !== '' ? $boqReviewStatus : 'DRAFT') ?></span>
                                                                         </div>
-                                                                        <?php if ($canApprove && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
+                                                                        <?php if ($canApprove && $canApprovalAction && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
                                                                             <button type="button" class="btn btn-sm btn-outline-success mt-2" data-toggle="modal" data-target="#modal-boq-review-<?= strtolower($scopeKey) ?>">Review BOQ</button>
                                                                         <?php endif; ?>
                                                                         <?php if (!empty($boqHeader['ho_review_remark'])): ?>
                                                                             <div class="small text-info mt-1">Catatan HO: <?= htmlspecialchars((string) $boqHeader['ho_review_remark']) ?></div>
                                                                         <?php endif; ?>
-                                                                    <?php elseif ($docCanUpload): ?>
+                                                                    <?php elseif ($canTambah && $docCanUpload): ?>
                                                                         <button
                                                                             type="button"
                                                                             class="btn btn-sm btn-primary js-open-drm-upload-modal"
@@ -685,7 +693,7 @@ if (!function_exists('drmScopeText')) {
                                                                         <span class="text-muted small">Upload tidak tersedia</span>
                                                                     <?php endif; ?>
                                                                 </td>
-                                                                <?php if ($canApprove): ?>
+                                                                <?php if ($canApprove && $canApprovalAction): ?>
                                                                     <td style="min-width:220px;">
                                                                         <?php if (($row['doc_name'] ?? '') === 'APD BOQ'): ?>
                                                                             <span class="text-info small font-weight-bold">Review mengikuti approval BOQ</span>
@@ -718,7 +726,7 @@ if (!function_exists('drmScopeText')) {
                                                             </tr>
                                                         <?php endforeach; ?>
                                                         <?php if (empty($documentRows)): ?>
-                                                            <tr><td colspan="<?= $canApprove ? '6' : '5' ?>" class="text-center text-muted">Belum ada dokumen <?= htmlspecialchars($scopeLabel) ?>.</td></tr>
+                                                            <tr><td colspan="<?= ($canApprove && $canApprovalAction) ? '6' : '5' ?>" class="text-center text-muted">Belum ada dokumen <?= htmlspecialchars($scopeLabel) ?>.</td></tr>
                                                         <?php endif; ?>
                                                     </tbody>
                                                 </table>
@@ -736,6 +744,7 @@ if (!function_exists('drmScopeText')) {
     </section>
 </div>
 
+<?php if ($canEdit): ?>
 <div class="modal fade" id="modal-drm-edit" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content drm-modal">
@@ -816,7 +825,9 @@ if (!function_exists('drmScopeText')) {
         </div>
     </div>
 </div>
+<?php endif; ?>
 
+<?php if ($canTambah): ?>
 <div class="modal fade" id="modal-drm-upload" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content drm-modal">
@@ -857,6 +868,7 @@ if (!function_exists('drmScopeText')) {
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="modal fade" id="modal-doc-history" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
@@ -889,6 +901,7 @@ if (!function_exists('drmScopeText')) {
     $apdBoqFile = (array) ($scope['apdBoqFile'] ?? []);
     $hasApdBoqFile = !empty($apdBoqFile['id_doc_file']);
     ?>
+    <?php if ($canTambah): ?>
     <div class="modal fade" id="modal-apd-boq-package-<?= strtolower($scopeKey) ?>" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content drm-modal">
@@ -1025,8 +1038,9 @@ if (!function_exists('drmScopeText')) {
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
-    <?php if ($canApprove && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
+    <?php if ($canApprove && $canApprovalAction && !empty($boqHeader['id_drm_boq']) && in_array($boqReviewStatus, ['WAITING HO', 'REJECTED'], true)): ?>
         <div class="modal fade" id="modal-boq-review-<?= strtolower($scopeKey) ?>" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-xl" role="document">
                 <div class="modal-content drm-modal">
@@ -1135,7 +1149,7 @@ if (!function_exists('drmScopeText')) {
         }
     }
     ?>
-    <?php if (!empty($bulkRows)): ?>
+    <?php if ($canTambah && !empty($bulkRows)): ?>
         <div class="modal fade" id="modal-drm-bulk-upload-<?= strtolower($scopeKey) ?>" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-xl" role="document">
                 <div class="modal-content drm-modal">

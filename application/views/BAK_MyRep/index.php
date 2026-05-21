@@ -28,6 +28,10 @@ $postBakStatuses = [
     'ATP',
     'DONE',
 ];
+$canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('BAK_MyRep', 'TAMBAH') : true;
+$canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('BAK_MyRep', 'EDIT') : true;
+$canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('BAK_MyRep', 'HAPUS') : true;
+$canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('BAK_MyRep', 'APPROVAL') : true;
 
 foreach ($clusterRows as $row) {
     $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
@@ -116,7 +120,7 @@ if (!function_exists('bakReviewLabel')) {
     }
 }
 
-$renderBakTableRows = static function (array $rows, $docReady, $canApprove, $documentDefinitions, $documentMap) {
+$renderBakTableRows = static function (array $rows, $docReady, $canApprove, $documentDefinitions, $documentMap) use ($canTambah, $canEdit, $canHapus) {
     foreach ($rows as $index => $row) {
         $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
         $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
@@ -174,28 +178,30 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
             </td>
             <td><span class="badge badge-<?= bakBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
             <td>
-                <button
-                    type="button"
-                    class="btn btn-sm btn-outline-primary js-edit-bak"
-                    data-toggle="modal"
-                    data-target="#modal-bak-edit"
-                    data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
-                    data-id_target="<?= (int) ($row['id_target'] ?? 0) ?>"
-                    data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                    data-cluster_code="<?= htmlspecialchars((string) ($row['cluster_code'] ?? ''), ENT_QUOTES) ?>"
-                    data-district_id="<?= htmlspecialchars((string) ($row['district_id'] ?? ''), ENT_QUOTES) ?>"
-                    data-district_name="<?= htmlspecialchars((string) ($row['district_name'] ?? ''), ENT_QUOTES) ?>"
-                    data-village_id="<?= htmlspecialchars((string) ($row['village_id'] ?? ''), ENT_QUOTES) ?>"
-                    data-village_name="<?= htmlspecialchars((string) ($row['village_name'] ?? ''), ENT_QUOTES) ?>"
-                    data-homepass_bak="<?= (int) ($row['homepass_bak'] ?? 0) ?>"
-                    data-ba_open_date="<?= htmlspecialchars((string) ($row['ba_open_date'] ?? ''), ENT_QUOTES) ?>"
-                    data-bak_date="<?= htmlspecialchars((string) ($row['bak_date'] ?? ''), ENT_QUOTES) ?>"
-                    data-ntp-name="<?= htmlspecialchars((string) ($row['ntp_name'] ?? ''), ENT_QUOTES) ?>"
-                    data-ntp-date="<?= htmlspecialchars((string) ($row['ntp_date'] ?? ''), ENT_QUOTES) ?>"
-                    data-status_bak="<?= htmlspecialchars((string) ($row['status_bak'] ?? 'DRAFT'), ENT_QUOTES) ?>"
-                    data-remark_bak="<?= htmlspecialchars((string) ($row['remark_bak'] ?? ''), ENT_QUOTES) ?>">
-                    Edit
-                </button>
+                <?php if ($canEdit): ?>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary js-edit-bak"
+                        data-toggle="modal"
+                        data-target="#modal-bak-edit"
+                        data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
+                        data-id_target="<?= (int) ($row['id_target'] ?? 0) ?>"
+                        data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                        data-cluster_code="<?= htmlspecialchars((string) ($row['cluster_code'] ?? ''), ENT_QUOTES) ?>"
+                        data-district_id="<?= htmlspecialchars((string) ($row['district_id'] ?? ''), ENT_QUOTES) ?>"
+                        data-district_name="<?= htmlspecialchars((string) ($row['district_name'] ?? ''), ENT_QUOTES) ?>"
+                        data-village_id="<?= htmlspecialchars((string) ($row['village_id'] ?? ''), ENT_QUOTES) ?>"
+                        data-village_name="<?= htmlspecialchars((string) ($row['village_name'] ?? ''), ENT_QUOTES) ?>"
+                        data-homepass_bak="<?= (int) ($row['homepass_bak'] ?? 0) ?>"
+                        data-ba_open_date="<?= htmlspecialchars((string) ($row['ba_open_date'] ?? ''), ENT_QUOTES) ?>"
+                        data-bak_date="<?= htmlspecialchars((string) ($row['bak_date'] ?? ''), ENT_QUOTES) ?>"
+                        data-ntp-name="<?= htmlspecialchars((string) ($row['ntp_name'] ?? ''), ENT_QUOTES) ?>"
+                        data-ntp-date="<?= htmlspecialchars((string) ($row['ntp_date'] ?? ''), ENT_QUOTES) ?>"
+                        data-status_bak="<?= htmlspecialchars((string) ($row['status_bak'] ?? 'DRAFT'), ENT_QUOTES) ?>"
+                        data-remark_bak="<?= htmlspecialchars((string) ($row['remark_bak'] ?? ''), ENT_QUOTES) ?>">
+                        Edit
+                    </button>
+                <?php endif; ?>
                 <?php if ($docReady): ?>
                     <button
                         type="button"
@@ -211,7 +217,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         $docRow = $docsById[(int) $documentDefinition['id_doc_item']] ?? [];
                         $docStatusRaw = strtoupper(trim((string) ($docRow['status_file'] ?? '')));
                         $docName = (string) ($documentDefinition['doc_name'] ?? 'Dokumen');
-                        $allowUploadButton = $docStatusRaw === '';
+                        $allowUploadButton = $canTambah && $docStatusRaw === '';
                         ?>
                         <?php if ($allowUploadButton): ?>
                             <button
@@ -230,10 +236,12 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         <?php endif; ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
-                <form method="post" action="<?= base_url('BAK_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta seluruh flow MyRep dari BAK sampai tahap terakhir?');">
-                    <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
-                    <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
-                </form>
+                <?php if ($canHapus): ?>
+                    <form method="post" action="<?= base_url('BAK_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta seluruh flow MyRep dari BAK sampai tahap terakhir?');">
+                        <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
+                    </form>
+                <?php endif; ?>
             </td>
         </tr>
         <?php
@@ -383,7 +391,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
             <div class="row">
                 <div class="col-md-12">
                     <div class="bak-toolbar">
-                        <?php if ($isReady): ?>
+                        <?php if ($isReady && $canTambah): ?>
                             <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-bak-create">
                                 <i class="fas fa-plus mr-1"></i> Input BAK
                             </button>
@@ -830,7 +838,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         <a href="#" target="_blank" class="btn budget-btn budget-btn--ghost d-none" id="bak-doc-download-bundle-btn">
                             <i class="fas fa-file-archive mr-1"></i> Download RAR
                         </a>
-                        <?php if ($canApprove): ?>
+                        <?php if ($canApprove && $canApprovalAction): ?>
                             <button type="button" class="btn budget-btn budget-btn--success d-none" id="bak-doc-approve-all-btn">
                                 <i class="fas fa-check-double mr-1"></i> Approve All
                             </button>
@@ -928,7 +936,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
             </div>
         </div>
 
-        <?php if ($canApprove): ?>
+        <?php if ($canApprove && $canApprovalAction): ?>
             <div class="modal fade doc-modal" id="modal-bak-approve-doc" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content budget-modal bak-modal-shell">
@@ -1659,7 +1667,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         '<button type="button" class="btn btn-sm btn-outline-dark js-history-doc" data-toggle="modal" data-target="#modal-bak-history-doc" data-cluster_name="' + escapeHtml(doc.cluster_name || '') + '" data-doc_name="' + docName + '" data-history="' + escapeHtml(JSON.stringify(doc.history || [])) + '">History</button>';
                 }
 
-                if (canReupload) {
+                if (canReupload && <?= $canTambah ? 'true' : 'false' ?>) {
                     actionParts.push(
                         '<button type="button" class="btn btn-sm btn-outline-info btn-block js-detail-reupload-doc" ' +
                             'data-cluster_id="' + Number(doc.id_myrep_cluster || 0) + '" ' +
@@ -1673,7 +1681,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                     );
                 }
 
-                <?php if ($canApprove): ?>
+                <?php if ($canApprove && $canApprovalAction): ?>
                 if (doc.id_doc_file) {
                     actionParts.push(
                         '<form method="post" action="' + bakApproveUrl + '" class="mb-2 js-bak-inline-approve-form">' +

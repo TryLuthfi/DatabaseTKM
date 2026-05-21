@@ -1,6 +1,10 @@
 <?php
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
+$canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'TAMBAH') : true;
+$canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'HAPUS') : true;
+$canApprovalDailyAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'APPROVAL_DAILY') : true;
+$canApprovalComplyAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Implementasi_BOQ_MyRep', 'APPROVAL_FOTO_COMPLY') : true;
 
 if (!function_exists('implHistoryNumber')) {
     function implHistoryNumber($value, $zeroAsDash = true)
@@ -1541,6 +1545,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             <?php endif; ?>
 
             <?php if (!empty($activityReady)): ?>
+<?php if ($canApprovalDailyAction): ?>
 <div class="modal fade impl-daily-modal" id="modal-daily-activity" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="true" data-keyboard="true">
                     <div class="modal-dialog" role="document">
                         <div class="modal-content">
@@ -2091,9 +2096,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                     <div class="font-weight-bold text-dark">Daily Progress Aktivitas</div>
                                     <div class="small text-muted">Input progress harian berbasis aktivitas. Foto dibedakan per scope CLUSTER/SUBFEEDER.</div>
                                 </div>
-                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-daily-activity">
-                                    <i class="fas fa-plus-circle mr-1"></i>Input Daily Progress
-                                </button>
+                                <?php if ($canApprovalDailyAction): ?>
+                                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-daily-activity">
+                                        <i class="fas fa-plus-circle mr-1"></i>Input Daily Progress
+                                    </button>
+                                <?php endif; ?>
                             </div>
                             <div class="table-responsive">
                                 <?php
@@ -2176,9 +2183,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                     <button class="btn btn-sm btn-outline-primary js-open-daily-detail mr-1" type="button" data-daily-date="<?= htmlspecialchars((string) ($group['date'] ?? '-'), ENT_QUOTES) ?>" data-daily-global-remark="<?= htmlspecialchars((string) ($group['global_remark'] ?? '-'), ENT_QUOTES) ?>" data-daily-activities="<?= $dailyJson ?>">
                                                         Lihat Detail
                                                     </button>
-                                                    <button class="btn btn-sm btn-outline-danger js-delete-daily-row" type="button" data-daily-date="<?= htmlspecialchars((string) ($group['date'] ?? '-'), ENT_QUOTES) ?>">
-                                                        Hapus
-                                                    </button>
+                                                    <?php if ($canHapus): ?>
+                                                        <button class="btn btn-sm btn-outline-danger js-delete-daily-row" type="button" data-daily-date="<?= htmlspecialchars((string) ($group['date'] ?? '-'), ENT_QUOTES) ?>">
+                                                            Hapus
+                                                        </button>
+                                                    <?php endif; ?>
                                                 </td>
                                             </tr>
                                             <?php $dailyRowNo++; ?>
@@ -2259,9 +2268,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                             <div class="impl-comply-upload-card__note">Input comply sekarang lewat modal agar fokus dan konsisten dengan daily progress.</div>
                                         </div>
                                         <div class="d-flex" style="gap:.5rem;">
-                                            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modal-comply-builder">
-                                                <i class="fas fa-plus-circle mr-1"></i>Input Foto Comply
-                                            </button>
+                                            <?php if ($canTambah): ?>
+                                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modal-comply-builder">
+                                                    <i class="fas fa-plus-circle mr-1"></i>Input Foto Comply
+                                                </button>
+                                            <?php endif; ?>
                                             <a href="<?= base_url('Implementasi_BOQ_MyRep/previewComplyPdf/' . (int) ($cluster['id_myrep_cluster'] ?? 0)) ?>" target="_blank" class="btn btn-outline-dark btn-sm">
                                                 <i class="fas fa-file-pdf mr-1"></i>Preview Foto Comply
                                             </a>
@@ -2320,7 +2331,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                                 <?php if (!empty($photo['review_remark'])): ?>
                                                                                     <div class="small text-muted mb-2">Review: <?= htmlspecialchars((string) $photo['review_remark']) ?></div>
                                                                                 <?php endif; ?>
-                                                                                <?php if (!empty($canApprove)): ?>
+                                                                                <?php if (!empty($canApprove) && $canApprovalComplyAction): ?>
                                                                                     <div>
                                                                                         <?php if ($photoStatus === 'UPLOADED' || $photoStatus === 'REJECTED'): ?>
                                                                                             <button
@@ -2374,7 +2385,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         </div>
     </section>
 </div>
+<?php endif; ?>
 
+<?php if ($canTambah): ?>
 <div class="modal fade" id="modal-progress" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
@@ -2547,7 +2560,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         </div>
     </div>
 </div>
+<?php endif; ?>
 
+<?php if ($canTambah): ?>
 <div class="modal fade impl-daily-modal" id="modal-comply-builder" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -2675,8 +2690,9 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         </div>
     </div>
 </div>
+<?php endif; ?>
 
-<?php if (!empty($canApprove)): ?>
+<?php if (!empty($canApprove) && $canApprovalComplyAction): ?>
     <div class="modal fade" id="modal-comply-approve" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -2728,6 +2744,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
     </div>
 <?php endif; ?>
 
+<?php if ($canHapus): ?>
 <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/deleteProgress') ?>" id="form-delete-progress" class="d-none">
     <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
     <input type="hidden" name="progress_item_id" id="delete_progress_item_id" value="">
@@ -2737,6 +2754,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
     <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
     <input type="hidden" name="activity_date" id="delete_daily_activity_date" value="">
 </form>
+<?php endif; ?>
 
 <div class="impl-lightbox" id="impl-lightbox" aria-hidden="true">
     <div class="impl-lightbox__dialog">
@@ -2761,7 +2779,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
 <script>
     (function () {
-        var canApproveComplyPhoto = <?= !empty($canApprove) ? 'true' : 'false' ?>;
+        var canApproveComplyPhoto = <?= (!empty($canApprove) && $canApprovalComplyAction) ? 'true' : 'false' ?>;
         var progressModal = document.getElementById('modal-progress');
         var progressSelector = document.querySelector('.js-progress-item-selector');
         var progressAddButton = document.querySelector('.js-add-progress-item');

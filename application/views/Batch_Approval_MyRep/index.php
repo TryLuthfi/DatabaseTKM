@@ -24,6 +24,10 @@ $postBatchStatuses = [
     'ATP',
     'DONE',
 ];
+$canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'TAMBAH') : true;
+$canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'EDIT') : true;
+$canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'HAPUS') : true;
+$canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'APPROVAL') : true;
 
 foreach ($eligibleClusterOptions as $clusterOption) {
     $cityName = trim((string) ($clusterOption['city_name'] ?? ''));
@@ -196,9 +200,9 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
             </td>
             <td><span class="badge badge-<?= batchBadgeClass($batchStageLabel) ?>"><?= htmlspecialchars($batchStageLabel) ?></span></td>
             <td>
-                <?php if ($hasBatch): ?>
+                <?php if ($hasBatch && $canEdit): ?>
                     <span class="badge badge-<?= batchBadgeClass(batchDocLabel($row)) ?>"><?= htmlspecialchars(batchDocLabel($row)) ?></span>
-                <?php else: ?>
+                <?php elseif ($canTambah): ?>
                     <span class="badge badge-secondary">BELUM ADA DOC</span>
                 <?php endif; ?>
                 <?php if ($hasBatch && !empty($row['batch_doc_file_name'])): ?>
@@ -219,7 +223,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
             </td>
             <td><span class="badge badge-<?= batchBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
             <td>
-                <?php if ($hasBatch): ?>
+                <?php if ($hasBatch && $canHapus): ?>
                     <button
                         type="button"
                         class="btn btn-sm btn-outline-primary js-edit-batch"
@@ -422,7 +426,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
             <div class="row">
                 <div class="col-md-12">
                     <div class="batch-toolbar">
-                        <?php if ($isReady): ?>
+                        <?php if ($isReady && $canTambah): ?>
                             <button type="button" class="btn budget-btn budget-btn--primary" data-toggle="modal" data-target="#modal-batch-create">
                                 <i class="fas fa-plus mr-1"></i> Input Batch Approval
                             </button>
@@ -974,7 +978,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
             </div>
         </div>
 
-        <?php if ($canApprove): ?>
+        <?php if ($canApprove && $canApprovalAction): ?>
             <div class="modal fade doc-modal" id="modal-batch-approve-doc" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">

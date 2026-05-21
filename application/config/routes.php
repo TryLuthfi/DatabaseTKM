@@ -76,4 +76,11 @@ $route['StockOpname/approveBA'] = 'StockOpname/approveBA';
 $route['Dashboard_Logistik_Stok/getReportStokByData'] = 'Dashboard_Logistik_Stok/getReportStokByData';
 $route['Dashboard_Logistik_Stok/revamp'] = 'Dashboard_Logistik_Stok/revamp';
 $route['maintenance-preview'] = 'MaintenancePreview/index';
+$route['SuperAdmin_MyRep_Config'] = 'SuperAdmin_MyRep_Config/index';
+$route['SuperAdmin_MyRep_Config/saveAccessMatrix'] = 'SuperAdmin_MyRep_Config/saveAccessMatrix';
+$route['SuperAdmin_MyRep_Config/saveApprovalMatrix'] = 'SuperAdmin_MyRep_Config/saveAccessMatrix';
+$route['SuperAdmin_MyRep_Config/savePermission'] = 'SuperAdmin_MyRep_Config/savePermission';
+$route['SuperAdmin_MyRep_Config/saveNotificationRoute'] = 'SuperAdmin_MyRep_Config/saveNotificationRoute';
+$route['SuperAdmin_MyRep_Config/deletePermission/(:num)'] = 'SuperAdmin_MyRep_Config/deletePermission/$1';
+$route['SuperAdmin_MyRep_Config/deleteNotificationRoute/(:num)'] = 'SuperAdmin_MyRep_Config/deleteNotificationRoute/$1';
 

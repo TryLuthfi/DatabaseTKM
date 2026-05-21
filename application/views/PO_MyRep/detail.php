@@ -1,6 +1,8 @@
 <?php
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
+$canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('PO_MyRep', 'TAMBAH') : true;
+$canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('PO_MyRep', 'EDIT') : true;
 
 if (!function_exists('poMyRepValue')) {
     function poMyRepValue($value)
@@ -120,7 +122,9 @@ if (!function_exists('poMyRepValue')) {
                         <div class="h4 font-weight-bold mb-1"><?= htmlspecialchars((string) ($cluster['cluster_name'] ?? '-')) ?></div>
                         <div class="text-white-50"><?= htmlspecialchars((string) ($cluster['regional_name'] ?? '-')) ?> • <?= htmlspecialchars((string) ($cluster['city_name'] ?? '-')) ?></div>
                     </div>
-                    <button type="button" class="btn btn-light btn-sm" data-toggle="modal" data-target="#modal-create-po">Tambah PO</button>
+                    <?php if ($canTambah): ?>
+                        <button type="button" class="btn btn-light btn-sm" data-toggle="modal" data-target="#modal-create-po">Tambah PO</button>
+                    <?php endif; ?>
                 </div>
 
                 <div class="po-detail-hero__grid">
@@ -204,22 +208,24 @@ if (!function_exists('poMyRepValue')) {
                                                         <td class="text-center"><?= !empty($termin['payment_date']) ? htmlspecialchars((string) $termin['payment_date']) : '-' ?></td>
                                                         <td><?= !empty($termin['remark_termin']) ? htmlspecialchars((string) $termin['remark_termin']) : '-' ?></td>
                                                         <td class="text-center">
-                                                            <button
-                                                                type="button"
-                                                                class="btn btn-sm btn-outline-primary js-open-termin-modal"
-                                                                data-toggle="modal"
-                                                                data-target="#modal-termin"
-                                                                data-termin-id="<?= (int) ($termin['id_po_termin'] ?? 0) ?>"
-                                                                data-po-number="<?= htmlspecialchars((string) ($header['po_number'] ?? ''), ENT_QUOTES) ?>"
-                                                                data-termin-no="<?= (int) ($termin['termin_no'] ?? 0) ?>"
-                                                                data-status="<?= htmlspecialchars((string) ($termin['status_termin'] ?? ''), ENT_QUOTES) ?>"
-                                                                data-invoice-number="<?= htmlspecialchars((string) ($termin['invoice_number'] ?? ''), ENT_QUOTES) ?>"
-                                                                data-invoice-date="<?= htmlspecialchars((string) ($termin['invoice_date'] ?? ''), ENT_QUOTES) ?>"
-                                                                data-bast-date="<?= htmlspecialchars((string) ($termin['bast_date'] ?? ''), ENT_QUOTES) ?>"
-                                                                data-payment-date="<?= htmlspecialchars((string) ($termin['payment_date'] ?? ''), ENT_QUOTES) ?>"
-                                                                data-remark="<?= htmlspecialchars((string) ($termin['remark_termin'] ?? ''), ENT_QUOTES) ?>">
-                                                                Update
-                                                            </button>
+                                                            <?php if ($canEdit): ?>
+                                                                <button
+                                                                    type="button"
+                                                                    class="btn btn-sm btn-outline-primary js-open-termin-modal"
+                                                                    data-toggle="modal"
+                                                                    data-target="#modal-termin"
+                                                                    data-termin-id="<?= (int) ($termin['id_po_termin'] ?? 0) ?>"
+                                                                    data-po-number="<?= htmlspecialchars((string) ($header['po_number'] ?? ''), ENT_QUOTES) ?>"
+                                                                    data-termin-no="<?= (int) ($termin['termin_no'] ?? 0) ?>"
+                                                                    data-status="<?= htmlspecialchars((string) ($termin['status_termin'] ?? ''), ENT_QUOTES) ?>"
+                                                                    data-invoice-number="<?= htmlspecialchars((string) ($termin['invoice_number'] ?? ''), ENT_QUOTES) ?>"
+                                                                    data-invoice-date="<?= htmlspecialchars((string) ($termin['invoice_date'] ?? ''), ENT_QUOTES) ?>"
+                                                                    data-bast-date="<?= htmlspecialchars((string) ($termin['bast_date'] ?? ''), ENT_QUOTES) ?>"
+                                                                    data-payment-date="<?= htmlspecialchars((string) ($termin['payment_date'] ?? ''), ENT_QUOTES) ?>"
+                                                                    data-remark="<?= htmlspecialchars((string) ($termin['remark_termin'] ?? ''), ENT_QUOTES) ?>">
+                                                                    Update
+                                                                </button>
+                                                            <?php endif; ?>
                                                         </td>
                                                     </tr>
                                                 <?php endforeach; ?>
@@ -236,6 +242,7 @@ if (!function_exists('poMyRepValue')) {
     </section>
 </div>
 
+<?php if ($canTambah): ?>
 <div class="modal fade" id="modal-create-po" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -268,7 +275,9 @@ if (!function_exists('poMyRepValue')) {
         </div>
     </div>
 </div>
+<?php endif; ?>
 
+<?php if ($canEdit): ?>
 <div class="modal fade" id="modal-termin" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -296,6 +305,7 @@ if (!function_exists('poMyRepValue')) {
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <script>
     (function () {
