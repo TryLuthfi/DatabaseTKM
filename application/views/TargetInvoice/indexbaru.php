@@ -26,125 +26,55 @@ $total = 1;
         <section class="content">
             <div class="container-fluid">
                 <!-- Info boxes -->
-                <div class="row">
-                    <!-- /.col -->
-
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3">
-                            <span class="info-box-icon bg-grey elevation-1"><i
-                                    class="fas fa-file-invoice-dollar"></i></span>
+                <div class="row billing-summary-row billing-summary-row--detail">
+                    <div class="col-12 col-sm-6 col-xl-3 billing-summary-col">
+                        <div class="info-box mb-3 premium-summary-card premium-total">
+                            <span class="info-box-icon premium-summary-icon"><i
+                                    class="fas fa-bullseye"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">TARGET INVOICE</span>
-                                <span class="info-box-number" id="dashboardTargetInvoice">
-                                </span>
+                                <h4 class="info-box-number" id="dashboardTargetInvoice"></h4>
                             </div>
-                            <!-- /.info-box-content -->
                         </div>
-                        </a>
-                        <!-- /.info-box -->
                     </div>
 
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3 glow-green">
-                            <span class="info-box-icon bg-grey elevation-1"><i
-                                    class="fas fa-file-invoice-dollar"></i></span>
+                    <div class="col-12 col-sm-6 col-xl-3 billing-summary-col">
+                        <div class="info-box mb-3 premium-summary-card premium-p1">
+                            <span class="info-box-icon premium-summary-icon"><i
+                                    class="fas fa-check-circle"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">ACHIEVED INVOICE</span>
-                                <h4 class="info-box-number" style="color: #33cc33;" id="dashboardAchievInvoice">
+                                <h4 class="info-box-number" id="dashboardAchievInvoice">
                                     Rp. 0
                                 </h4>
                             </div>
-                            <!-- /.info-box-content -->
                         </div>
-                        </a>
-                        <!-- /.info-box -->
                     </div>
 
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3 glow-red">
-                            <span class="info-box-icon bg-grey elevation-1"><i
-                                    class="fas fa-money-check-alt"></i></span>
+                    <div class="col-12 col-sm-6 col-xl-3 billing-summary-col">
+                        <div class="info-box mb-3 premium-summary-card premium-p2">
+                            <span class="info-box-icon premium-summary-icon"><i
+                                    class="fas fa-hourglass-half"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">SISA INVOICE</span>
-                                <h4 class="info-box-number" style="color: #ce0808ff;" id="dashboardSisaInvoice">
+                                <h4 class="info-box-number" id="dashboardSisaInvoice">
                                     Rp. 0
                                 </h4>
                             </div>
-                            <!-- /.info-box-content -->
                         </div>
-                        </a>
-                        <!-- /.info-box -->
                     </div>
 
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3">
-                            <span class="info-box-icon bg-grey elevation-1"><i
-                                    class="fas fa-money-check-alt"></i></span>
+                    <div class="col-12 col-sm-6 col-xl-3 billing-summary-col">
+                        <div class="info-box mb-3 premium-summary-card premium-bjt">
+                            <span class="info-box-icon premium-summary-icon"><i
+                                    class="fas fa-percentage"></i></span>
                             <div class="info-box-content">
                                 <span class="info-box-text">PERSENTASE INVOICE</span>
                                 <h4 class="info-box-number" id="dashboardPersentaseInvoice">
                                     Rp. 0
                                 </h4>
                             </div>
-                            <!-- /.info-box-content -->
                         </div>
-                        </a>
-                        <!-- /.info-box -->
-                    </div>
-                </div>
-
-                <div class="content-header">
-                    <div class="container-fluid">
-                        <div class="row mb-2">
-                            <div class="col-sm-12 ">
-                                <h3 class="m-0 text-dark" style="text-align: center;">DAILY TARGET TO ACHIEV INVOICE
-                                </h3>
-                            </div><!-- /.col -->
-                        </div><!-- /.row -->
-                    </div><!-- /.container-fluid -->
-                </div>
-
-                <div class="row">
-                    <!-- /.col -->
-
-                    <div class="col-12 col-sm-6 col-md-3" style="visibility: hidden;">
-                        <div class="info-box mb-3">
-                        </div>
-                        <!-- /.info-box -->
-                    </div>
-
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3 glow-yellow">
-                            <span class="info-box-icon bg-grey elevation-1"><i
-                                    class="fas fa-file-invoice-dollar"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">DAILY TARGET INVOICE</span>
-                                <h4 class="info-box-number" style="color: #33cc33;" id="dashboardTargetInvoiceHarian">
-                                    Rp. 0
-                                </h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-sm-6 col-md-3">
-                        <div class="info-box mb-3 glow-yellow">
-                            <span class="info-box-icon bg-grey elevation-1"><i
-                                    class="fas fa-money-check-alt"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">PERSENTASE TARGET INVOICE</span>
-                                <h4 class="info-box-number" style="color: #ce0808ff;"
-                                    id="dashboardPersentaseTargetHarian">
-                                    Rp. 0
-                                </h4>
-                            </div>
-                        </div>
-                        </a>
-                    </div>
-
-                    <div class="col-12 col-sm-6 col-md-3" style="visibility: hidden;">
-                        <div class="info-box mb-3">
-                        </div>
-                        <!-- /.info-box -->
                     </div>
                 </div>
 
@@ -9289,18 +9219,22 @@ $total = 1;
 
                 const sisaHariKerja = hitungSisaHariKerja();
 
-                if (sisaHariKerja === 0 || totalSisaInvoiceBowheer <= 0) {
-                    document.getElementById('dashboardTargetInvoiceHarian').innerText = "-";
-                    document.getElementById('dashboardPersentaseTargetHarian').innerText = "-";
-                } else {
-                    const targetHarian = totalSisaInvoiceBowheer / sisaHariKerja;
-                    const persentaseHarian = ((100 - persen) / sisaHariKerja).toFixed(1);
+                const targetInvoiceHarianEl = document.getElementById('dashboardTargetInvoiceHarian');
+                const persentaseTargetHarianEl = document.getElementById('dashboardPersentaseTargetHarian');
+                if (targetInvoiceHarianEl && persentaseTargetHarianEl) {
+                    if (sisaHariKerja === 0 || totalSisaInvoiceBowheer <= 0) {
+                        targetInvoiceHarianEl.innerText = "-";
+                        persentaseTargetHarianEl.innerText = "-";
+                    } else {
+                        const targetHarian = totalSisaInvoiceBowheer / sisaHariKerja;
+                        const persentaseHarian = ((100 - persen) / sisaHariKerja).toFixed(1);
 
-                    document.getElementById('dashboardTargetInvoiceHarian').innerText =
-                        "Rp. " + Math.round(targetHarian).toLocaleString('id-ID');
+                        targetInvoiceHarianEl.innerText =
+                            "Rp. " + Math.round(targetHarian).toLocaleString('id-ID');
 
-                    document.getElementById('dashboardPersentaseTargetHarian').innerText =
-                        persentaseHarian + " %";
+                        persentaseTargetHarianEl.innerText =
+                            persentaseHarian + " %";
+                    }
                 }
             }
 
@@ -12735,6 +12669,138 @@ $total = 1;
             /* efek sedikit mengangkat saat hover */
         }
 
+        .billing-summary-row {
+            margin-bottom: 1rem;
+        }
+
+        .billing-summary-col {
+            display: flex;
+        }
+
+        .premium-summary-card {
+            position: relative;
+            width: 100%;
+            border: 1px solid var(--summary-border, rgba(29, 78, 216, 0.28));
+            border-radius: 18px;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at top right, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 35%),
+                linear-gradient(145deg, #ffffff 0%, #f5f8ff 100%);
+            box-shadow: 0 16px 35px rgba(15, 23, 42, 0.12);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        .premium-summary-card::before {
+            content: "";
+            position: absolute;
+            inset: 0 auto auto 0;
+            width: 100%;
+            height: 5px;
+            background: var(--summary-accent, #1d4ed8);
+        }
+
+        .premium-summary-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--summary-border, rgba(29, 78, 216, 0.35));
+            box-shadow: 0 22px 44px rgba(15, 23, 42, 0.16);
+        }
+
+        .premium-summary-card .info-box-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 0.2rem;
+            padding: 0.2rem 0;
+        }
+
+        .premium-summary-icon {
+            width: 62px;
+            min-width: 62px;
+            height: 62px;
+            border-radius: 18px;
+            margin: 0.8rem 1rem;
+            background: linear-gradient(145deg, var(--summary-light, #60a5fa), var(--summary-accent, #1d4ed8));
+            color: #ffffff;
+            box-shadow: 0 14px 28px var(--summary-shadow, rgba(29, 78, 216, 0.24));
+        }
+
+        .premium-summary-card .info-box-text {
+            font-size: 0.95rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: #475569;
+            text-transform: uppercase;
+            white-space: normal;
+        }
+
+        .premium-summary-card .summary-caption {
+            font-size: 0.74rem;
+            font-weight: 600;
+            color: #94a3b8;
+            line-height: 1.3;
+            min-height: 1.95em;
+        }
+
+        .premium-summary-card .info-box-number {
+            margin-top: 0.3rem;
+            font-size: 1.35rem;
+            font-weight: 800;
+            line-height: 1.1;
+            color: #0f172a;
+            white-space: normal;
+            word-break: break-word;
+            display: block;
+        }
+
+        #dashboardTargetInvoice,
+        #dashboardPersentaseInvoice {
+            font-size: 1.1rem !important;
+        }
+
+        #dashboardAchievInvoice,
+        #dashboardSisaInvoice {
+            font-size: 1.6rem !important;
+        }
+
+        #dashboardAchievInvoice {
+            color: #16a34a;
+        }
+
+        #dashboardSisaInvoice {
+            color: #dc2626;
+        }
+
+        .premium-total {
+            --summary-accent: #1d4ed8;
+            --summary-light: #60a5fa;
+            --summary-soft: rgba(29, 78, 216, 0.12);
+            --summary-border: rgba(29, 78, 216, 0.28);
+            --summary-shadow: rgba(29, 78, 216, 0.24);
+        }
+
+        .premium-p1 {
+            --summary-accent: #16a34a;
+            --summary-light: #4ade80;
+            --summary-soft: rgba(22, 163, 74, 0.12);
+            --summary-border: rgba(22, 163, 74, 0.28);
+            --summary-shadow: rgba(22, 163, 74, 0.24);
+        }
+
+        .premium-p2 {
+            --summary-accent: #dc2626;
+            --summary-light: #f87171;
+            --summary-soft: rgba(220, 38, 38, 0.12);
+            --summary-border: rgba(220, 38, 38, 0.28);
+            --summary-shadow: rgba(220, 38, 38, 0.24);
+        }
+
+        .premium-bjt {
+            --summary-accent: #1d4ed8;
+            --summary-light: #60a5fa;
+            --summary-soft: rgba(29, 78, 216, 0.12);
+            --summary-border: rgba(29, 78, 216, 0.28);
+            --summary-shadow: rgba(29, 78, 216, 0.24);
+        }
 
         /* upgrade warna table */
 
