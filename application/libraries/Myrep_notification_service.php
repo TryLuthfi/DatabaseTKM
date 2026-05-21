@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class Myrep_notification_service
@@ -259,11 +259,11 @@ class Myrep_notification_service
         $lines = [
             $title,
             '',
-            'ðŸ“„ ' . $this->escapeTelegramText($docLine),
-            'ðŸ— ' . $this->escapeTelegramText($metaLine),
+            '📄 ' . $this->escapeTelegramText($docLine),
+            '🏗 ' . $this->escapeTelegramText($metaLine),
             '',
-            'ðŸ‘¤ ' . $senderLine,
-            'ðŸ•’ ' . $this->escapeTelegramText($timeLine),
+            '👤 ' . $senderLine,
+            '🕒 ' . $this->escapeTelegramText($timeLine),
         ];
 
         if (!empty($supplementalLines)) {
@@ -282,14 +282,14 @@ class Myrep_notification_service
     {
         switch (strtolower(trim((string) $eventName))) {
             case 'cluster_masuk':
-                return 'ðŸŸ¢ <b>NEW CLUSTER</b>';
+                return '✅ <b>NEW CLUSTER</b>';
             case 'document_revised':
-                return 'ðŸ”µ <b>REVISED DOCUMENT</b>';
+                return '🔵 <b>REVISED DOCUMENT</b>';
             case 'claim_rfs_approved':
-                return 'ðŸš€ <b>CLAIM RFS</b>';
+                return '🚀 <b>CLAIM RFS</b>';
             case 'document_masuk':
             default:
-                return 'ðŸŸ¡ <b>NEW DOCUMENT</b>';
+                return '📍 <b>NEW DOCUMENT</b>';
         }
     }
 
@@ -301,19 +301,19 @@ class Myrep_notification_service
         $moduleLabel = trim((string) ($payload['module_label'] ?? $moduleName));
 
         if ($normalizedEvent === 'full_upload' && in_array($normalizedModule, ['batch_approval_myrep', 'drm_myrep'], true)) {
-            return 'âœ… <b>FULL UPLOAD - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+            return '✅ <b>FULL UPLOAD - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
         }
 
         if ($normalizedEvent === 'batch_revised' && $normalizedModule === 'batch_approval_myrep') {
-            return 'ðŸ”µ <b>REVISED - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+            return '🔵 <b>REVISED - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
         }
 
         if ($normalizedEvent === 'cluster_masuk' && in_array($normalizedModule, ['bak_myrep', 'valsal_myrep', 'batch_approval_myrep'], true)) {
-            return 'âœ… <b>NEW CLUSTER - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+            return '🏠 <b>NEW CLUSTER - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
         }
 
         if ($normalizedEvent === 'document_revised' && in_array($normalizedModule, ['bak_myrep', 'valsal_myrep'], true) && $documentLabel !== '') {
-            return 'ðŸ”µ <b>REVISED - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
+            return '🔵 <b>REVISED - ' . $this->escapeTelegramText($moduleLabel) . '</b>';
         }
 
         return $this->resolveTitle($eventName);
@@ -375,8 +375,8 @@ class Myrep_notification_service
             $nominalPerHomepass = (float) ($payload['nominal_per_homepass'] ?? 0);
 
             return [
-                'ðŸ’² ' . $this->escapeTelegramText('Total Pengajuan Donasi: ' . $this->formatRupiah($donationTotal)),
-                'ðŸ  ' . $this->escapeTelegramText('Nominal per Homepass: ' . $this->formatRupiah($nominalPerHomepass)),
+                '💲 ' . $this->escapeTelegramText('Total Pengajuan Donasi: ' . $this->formatRupiah($donationTotal)),
+                '🏠 ' . $this->escapeTelegramText('Nominal per Homepass: ' . $this->formatRupiah($nominalPerHomepass)),
                 '',
             ];
         }

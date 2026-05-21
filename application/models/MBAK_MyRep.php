@@ -1,8 +1,11 @@
-﻿<?php
+<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MBAK_MyRep extends CI_Model
 {
+    /** @var array<string,bool>|null */
+    private $currentUserAllowedCitySet = null;
+
     private $defaultBakDocumentItems = [
         ['doc_name' => 'Surat Ijin', 'sort_no' => 1],
         ['doc_name' => 'Form Survey', 'sort_no' => 2],
@@ -76,7 +79,7 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
+        $rows = $this->db
             ->select('id_target, year_num, month_num, regional_name, province_name, city_name, team_name, chief, rpm, sm, spv')
             ->from('tb_rfs_myrep_monthly_target')
             ->order_by('year_num', 'DESC')
@@ -84,6 +87,8 @@ class MBAK_MyRep extends CI_Model
             ->order_by('city_name', 'ASC')
             ->get()
             ->result_array();
+
+        return $this->filterRowsByCurrentUserAllowedCities($rows, 'city_name');
     }
 
     public function getCreateTargetOptions()
@@ -181,9 +186,13 @@ class MBAK_MyRep extends CI_Model
             ->result_array();
 
         $cities = [];
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if ($this->shouldRestrictCityByUser() && empty($allowedCitySet)) {
+            return [];
+        }
         foreach ($rows as $row) {
             $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
-            if ($cityName !== '') {
+            if ($cityName !== '' && (empty($allowedCitySet) || isset($allowedCitySet[$cityName]))) {
                 $cities[] = $cityName;
             }
         }
@@ -215,6 +224,9 @@ class MBAK_MyRep extends CI_Model
                 c.sm,
                 c.spv,
                 c.hp_plan,
+                c.ntp_name,
+                c.ntp_date,
+                c.ntp_year,
                 c.status_current,
                 c.outstanding_progress,
                 c.remark_general,
@@ -408,7 +420,27 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
+        $row = $this->getTargetByIdRaw((int) $targetId);
+        if (empty($row)) {
+            return [];
+        }
+
+        $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if ($this->shouldRestrictCityByUser() && (empty($allowedCitySet) || $cityName === '' || !isset($allowedCitySet[$cityName]))) {
+            return [];
+        }
+
+        return $row;
+    }
+
+    private function getTargetByIdRaw($targetId)
+    {
+        if (!$this->db->table_exists('tb_rfs_myrep_monthly_target')) {
+            return [];
+        }
+
+        return (array) $this->db
             ->get_where('tb_rfs_myrep_monthly_target', ['id_target' => (int) $targetId])
             ->row_array();
     }
@@ -424,6 +456,11 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if ($this->shouldRestrictCityByUser() && (empty($allowedCitySet) || !isset($allowedCitySet[$cityName]))) {
+            return [];
+        }
+
         return $this->db
             ->from('tb_rfs_myrep_monthly_target')
             ->where('UPPER(city_name)', $cityName)
@@ -433,6 +470,116 @@ class MBAK_MyRep extends CI_Model
             ->limit(1)
             ->get()
             ->row_array();
+    }
+
+    private function filterRowsByCurrentUserAllowedCities(array $rows, $cityKey)
+    {
+        if (!$this->shouldRestrictCityByUser()) {
+            return $rows;
+        }
+
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if (empty($allowedCitySet)) {
+            return [];
+        }
+
+        $filtered = [];
+        foreach ($rows as $row) {
+            $cityName = strtoupper(trim((string) ($row[$cityKey] ?? '')));
+            if ($cityName === '' || !isset($allowedCitySet[$cityName])) {
+                continue;
+            }
+            $filtered[] = $row;
+        }
+
+        return $filtered;
+    }
+
+    private function getCurrentUserAllowedCitySet()
+    {
+        if ($this->currentUserAllowedCitySet !== null) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $this->currentUserAllowedCitySet = [];
+        $userId = (int) $this->session->userdata('id_user');
+        if ($userId <= 0) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        if ((string) $this->session->userdata('nama_level') === 'Super Admin') {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        if (!$this->db->table_exists('tb_master_user_new') || !$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $user = (array) $this->db
+            ->select('nik')
+            ->from('tb_master_user_new')
+            ->where('id', $userId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        $nik = trim((string) ($user['nik'] ?? ''));
+        if ($nik === '') {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $roleColumns = [
+            'rpm_area',
+            'sm_area',
+            'spv_area',
+            'snd_area',
+            'admin_area',
+            'snd_ho',
+            'atp_ho',
+            'rfs_ho',
+            'sitac_ho',
+            'dc_ho',
+            'qa_ho',
+        ];
+
+        $hasCondition = false;
+        $this->db->select('city_name')->from('tb_myrep_pic_mapping_city');
+        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+            $this->db->where('is_active', 1);
+        }
+        foreach ($roleColumns as $columnName) {
+            if (!$this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+                continue;
+            }
+            if (!$hasCondition) {
+                $this->db->group_start();
+            }
+            $this->db->or_where($columnName, $nik);
+            $hasCondition = true;
+        }
+        if (!$hasCondition) {
+            return $this->currentUserAllowedCitySet;
+        }
+        $this->db->group_end();
+
+        $rows = (array) $this->db->get()->result_array();
+        foreach ($rows as $row) {
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($cityName !== '') {
+                $this->currentUserAllowedCitySet[$cityName] = true;
+            }
+        }
+
+        return $this->currentUserAllowedCitySet;
+    }
+
+    private function shouldRestrictCityByUser()
+    {
+        $userId = (int) $this->session->userdata('id_user');
+        if ($userId <= 0) {
+            return false;
+        }
+
+        return (string) $this->session->userdata('nama_level') !== 'Super Admin';
     }
 
     public function clusterExists($clusterName, $targetId)
@@ -691,12 +838,23 @@ class MBAK_MyRep extends CI_Model
 
     public function searchDistrictOptionsByTarget($targetId, $keyword = '', $limit = 50, $cityNameOverride = '')
     {
-        $target = $this->getTargetById((int) $targetId);
+        $target = $this->getTargetByIdRaw((int) $targetId);
         if (!$this->wilayahTablesReady() || empty($target)) {
             return [];
         }
 
         $cityNameOverride = trim((string) $cityNameOverride);
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if ($this->shouldRestrictCityByUser() && !empty($allowedCitySet)) {
+            $baseCity = strtoupper(trim((string) ($target['city_name'] ?? '')));
+            $overrideCity = strtoupper($cityNameOverride);
+            $isAllowed = ($baseCity !== '' && isset($allowedCitySet[$baseCity]))
+                || ($overrideCity !== '' && isset($allowedCitySet[$overrideCity]));
+            if (!$isAllowed) {
+                return [];
+            }
+        }
+
         if ($cityNameOverride !== '') {
             $target['city_name'] = $cityNameOverride;
         }

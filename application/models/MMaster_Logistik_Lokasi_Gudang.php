@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
 class MMaster_Logistik_Lokasi_Gudang extends CI_Model

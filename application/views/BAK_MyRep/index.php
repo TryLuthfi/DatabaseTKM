@@ -1638,6 +1638,39 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 .replace(/'/g, '&#039;');
         }
 
+        function normalizeAjaxJsonResponse(payload) {
+            if (payload && typeof payload === 'object') {
+                return payload;
+            }
+
+            if (typeof payload !== 'string') {
+                return null;
+            }
+
+            var cleaned = payload.replace(/^\uFEFF/, '').trim();
+            if (!cleaned) {
+                return null;
+            }
+
+            try {
+                return JSON.parse(cleaned);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function getAjaxJsonFromXhr(xhr) {
+            if (!xhr) {
+                return null;
+            }
+
+            if (xhr.responseJSON && typeof xhr.responseJSON === 'object') {
+                return xhr.responseJSON;
+            }
+
+            return normalizeAjaxJsonResponse(xhr.responseText || '');
+        }
+
         function renderBakDocDetailRows(documents) {
             if (!documents || !documents.length) {
                 return '<tr><td colspan="6" class="text-center text-muted">Belum ada dokumen.</td></tr>';
@@ -1751,7 +1784,8 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 width: '100%',
                 placeholder: 'Pilih Kecamatan',
                 allowClear: true,
-                dropdownParent: $modal,
+                dropdownParent: $modal.find('.modal-content'),
+                minimumInputLength: 0,
                 ajax: {
                     url: bakDistrictOptionsUrl,
                     dataType: 'json',
@@ -1770,7 +1804,26 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         };
                     },
                     processResults: function (data) {
-                        return { results: data && data.results ? data.results : [] };
+                        var raw = [];
+                        if ($.isArray(data)) {
+                            raw = data;
+                        } else if (data && $.isArray(data.results)) {
+                            raw = data.results;
+                        }
+
+                        var mapped = $.map(raw, function (item) {
+                            var id = item && item.id !== undefined && item.id !== null ? String(item.id) : '';
+                            var text = item && item.text !== undefined && item.text !== null ? String(item.text) : '';
+                            if (text === '' && item && item.name !== undefined && item.name !== null) {
+                                text = String(item.name);
+                            }
+                            if (id === '' || text === '') {
+                                return null;
+                            }
+                            return { id: id, text: text };
+                        });
+
+                        return { results: mapped };
                     }
                 }
             });
@@ -1790,7 +1843,8 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                 width: '100%',
                 placeholder: 'Pilih Desa / Kelurahan',
                 allowClear: true,
-                dropdownParent: $modal,
+                dropdownParent: $modal.find('.modal-content'),
+                minimumInputLength: 0,
                 ajax: {
                     url: bakVillageOptionsUrl,
                     dataType: 'json',
@@ -1803,7 +1857,26 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         };
                     },
                     processResults: function (data) {
-                        return { results: data && data.results ? data.results : [] };
+                        var raw = [];
+                        if ($.isArray(data)) {
+                            raw = data;
+                        } else if (data && $.isArray(data.results)) {
+                            raw = data.results;
+                        }
+
+                        var mapped = $.map(raw, function (item) {
+                            var id = item && item.id !== undefined && item.id !== null ? String(item.id) : '';
+                            var text = item && item.text !== undefined && item.text !== null ? String(item.text) : '';
+                            if (text === '' && item && item.name !== undefined && item.name !== null) {
+                                text = String(item.name);
+                            }
+                            if (id === '' || text === '') {
+                                return null;
+                            }
+                            return { id: id, text: text };
+                        });
+
+                        return { results: mapped };
                     }
                 }
             });
@@ -2251,19 +2324,29 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     success: function (response) {
-                        if (response && response.status && response.data) {
-                            currentBakDetailClusterId = Number(response.data.cluster_id || clusterId);
-                            $('#bak-doc-detail-cluster-name').text(response.data.cluster_name || '-');
-                            $('#bak-doc-detail-body').html(renderBakDocDetailRows(response.data.documents || []));
-                            syncBakDetailFooterButtons(currentBakDetailClusterId, response.data.documents || []);
+                        var normalizedResponse = normalizeAjaxJsonResponse(response);
+                        if (normalizedResponse && normalizedResponse.status && normalizedResponse.data) {
+                            currentBakDetailClusterId = Number(normalizedResponse.data.cluster_id || clusterId);
+                            $('#bak-doc-detail-cluster-name').text(normalizedResponse.data.cluster_name || '-');
+                            $('#bak-doc-detail-body').html(renderBakDocDetailRows(normalizedResponse.data.documents || []));
+                            syncBakDetailFooterButtons(currentBakDetailClusterId, normalizedResponse.data.documents || []);
                             return;
                         }
 
-                        alert(response && response.message ? response.message : 'Approve semua dokumen gagal.');
+                        alert(normalizedResponse && normalizedResponse.message ? normalizedResponse.message : 'Approve semua dokumen gagal.');
                         $button.prop('disabled', false).html('<i class="fas fa-check-double mr-1"></i> Approve All');
                     },
-                    error: function () {
-                        alert('Approve semua dokumen gagal. Silakan coba lagi.');
+                    error: function (xhr) {
+                        var normalizedResponse = getAjaxJsonFromXhr(xhr);
+                        if (normalizedResponse && normalizedResponse.status && normalizedResponse.data) {
+                            currentBakDetailClusterId = Number(normalizedResponse.data.cluster_id || clusterId);
+                            $('#bak-doc-detail-cluster-name').text(normalizedResponse.data.cluster_name || '-');
+                            $('#bak-doc-detail-body').html(renderBakDocDetailRows(normalizedResponse.data.documents || []));
+                            syncBakDetailFooterButtons(currentBakDetailClusterId, normalizedResponse.data.documents || []);
+                            return;
+                        }
+
+                        alert(normalizedResponse && normalizedResponse.message ? normalizedResponse.message : 'Approve semua dokumen gagal. Silakan coba lagi.');
                         $button.prop('disabled', false).html('<i class="fas fa-check-double mr-1"></i> Approve All');
                     }
                 });
@@ -2391,19 +2474,29 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     success: function (response) {
-                        if (response && response.status && response.data) {
-                            currentBakDetailClusterId = Number(response.data.cluster_id || currentBakDetailClusterId || 0);
-                            $('#bak-doc-detail-cluster-name').text(response.data.cluster_name || '-');
-                            $('#bak-doc-detail-body').html(renderBakDocDetailRows(response.data.documents || []));
-                            syncBakDetailFooterButtons(currentBakDetailClusterId, response.data.documents || []);
+                        var normalizedResponse = normalizeAjaxJsonResponse(response);
+                        if (normalizedResponse && normalizedResponse.status && normalizedResponse.data) {
+                            currentBakDetailClusterId = Number(normalizedResponse.data.cluster_id || currentBakDetailClusterId || 0);
+                            $('#bak-doc-detail-cluster-name').text(normalizedResponse.data.cluster_name || '-');
+                            $('#bak-doc-detail-body').html(renderBakDocDetailRows(normalizedResponse.data.documents || []));
+                            syncBakDetailFooterButtons(currentBakDetailClusterId, normalizedResponse.data.documents || []);
                             return;
                         }
 
-                        alert(response && response.message ? response.message : 'Proses dokumen gagal.');
+                        alert(normalizedResponse && normalizedResponse.message ? normalizedResponse.message : 'Proses dokumen gagal.');
                         $submitButton.prop('disabled', false).text(isReject ? 'Reject' : 'Approve');
                     },
-                    error: function () {
-                        alert('Proses dokumen gagal. Silakan coba lagi.');
+                    error: function (xhr) {
+                        var normalizedResponse = getAjaxJsonFromXhr(xhr);
+                        if (normalizedResponse && normalizedResponse.status && normalizedResponse.data) {
+                            currentBakDetailClusterId = Number(normalizedResponse.data.cluster_id || currentBakDetailClusterId || 0);
+                            $('#bak-doc-detail-cluster-name').text(normalizedResponse.data.cluster_name || '-');
+                            $('#bak-doc-detail-body').html(renderBakDocDetailRows(normalizedResponse.data.documents || []));
+                            syncBakDetailFooterButtons(currentBakDetailClusterId, normalizedResponse.data.documents || []);
+                            return;
+                        }
+
+                        alert(normalizedResponse && normalizedResponse.message ? normalizedResponse.message : 'Proses dokumen gagal. Silakan coba lagi.');
                         $submitButton.prop('disabled', false).text(isReject ? 'Reject' : 'Approve');
                     }
                 });
