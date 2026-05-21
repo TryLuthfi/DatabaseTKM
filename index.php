@@ -307,6 +307,118 @@ switch (ENVIRONMENT)
 
 /*
  * --------------------------------------------------------------------
+ * SIMPLE MAINTENANCE GATE (ENV + SUPER ADMIN BYPASS)
+ * --------------------------------------------------------------------
+ */
+if (!function_exists('read_env_value'))
+{
+	function read_env_value($key, $default = null)
+	{
+		$val = getenv($key);
+		if ($val !== false)
+		{
+			return $val;
+		}
+
+		$envFile = FCPATH.'.env';
+		if (!is_file($envFile))
+		{
+			return $default;
+		}
+
+		$lines = @file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+		if ($lines === false)
+		{
+			return $default;
+		}
+
+		foreach ($lines as $line)
+		{
+			$line = trim($line);
+			if ($line === '' || $line[0] === '#')
+			{
+				continue;
+			}
+
+			$parts = explode('=', $line, 2);
+			if (count($parts) !== 2)
+			{
+				continue;
+			}
+
+			$envKey = trim($parts[0]);
+			if ($envKey !== $key)
+			{
+				continue;
+			}
+
+			$envVal = trim($parts[1]);
+			$first = substr($envVal, 0, 1);
+			$last = substr($envVal, -1);
+			if (($first === '"' && $last === '"') || ($first === "'" && $last === "'"))
+			{
+				$envVal = substr($envVal, 1, -1);
+			}
+
+			return $envVal;
+		}
+
+		return $default;
+	}
+}
+
+$maintenanceRaw = strtolower(trim((string) read_env_value('MAINTENANCE_MODE', 'false')));
+$isMaintenanceOn = in_array($maintenanceRaw, array('1', 'true', 'on', 'yes'), true);
+
+if ($isMaintenanceOn && PHP_SAPI !== 'cli')
+{
+	$uriPath = '/';
+	if (!empty($_SERVER['REQUEST_URI']))
+	{
+		$parsedPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+		if (is_string($parsedPath) && $parsedPath !== '')
+		{
+			$uriPath = strtolower($parsedPath);
+		}
+	}
+
+	$isAuthRoute = (strpos($uriPath, '/auth') !== false);
+
+	if (session_status() === PHP_SESSION_NONE)
+	{
+		@session_start();
+	}
+
+	$currentLevel = '';
+	if (isset($_SESSION['nama_level']))
+	{
+		$currentLevel = trim((string) $_SESSION['nama_level']);
+	}
+	elseif (isset($_SESSION['__ci_vars']) && isset($_SESSION['id_user']) && isset($_SESSION['username_user']))
+	{
+		// Keep this fallback for CI session variants where userdata is still in $_SESSION.
+		$currentLevel = trim((string) ($_SESSION['nama_level'] ?? ''));
+	}
+
+	$allowedRole = trim((string) read_env_value('MAINTENANCE_ALLOWED_ROLE', 'Super Admin'));
+	$isAllowedRole = ($allowedRole !== '' && strcasecmp($currentLevel, $allowedRole) === 0);
+
+	if (!$isAllowedRole && !$isAuthRoute)
+	{
+		header('HTTP/1.1 503 Service Unavailable', true, 503);
+		header('Retry-After: 3600');
+		header('Content-Type: text/html; charset=UTF-8');
+		echo '<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
+		echo '<title>Maintenance</title><style>body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;min-height:100vh;align-items:center;justify-content:center}';
+		echo '.box{max-width:640px;padding:28px 24px;border-radius:12px;background:#111827;border:1px solid #1f2937;box-shadow:0 18px 46px rgba(0,0,0,.35)}h1{margin:0 0 10px;font-size:28px;color:#f8fafc}';
+		echo 'p{margin:0 0 8px;line-height:1.55;color:#cbd5e1}.muted{font-size:13px;color:#94a3b8}</style></head><body><div class="box">';
+		echo '<h1>Sedang Maintenance</h1><p>Sistem sedang dalam proses pembaruan. Silakan coba lagi beberapa saat.</p><p class="muted">HTTP 503 Service Unavailable</p></div></body></html>';
+		exit;
+	}
+}
+
+/*
+ * --------------------------------------------------------------------
  * LOAD THE BOOTSTRAP FILE
  * --------------------------------------------------------------------
  *
