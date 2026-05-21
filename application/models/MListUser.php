@@ -6,7 +6,25 @@ class MListUser extends CI_Model
 
     public function getData()
     {
-        $data = $this->db->query('SELECT tb_master_user_new.id AS id_user, tb_master_user_new.nama_karyawan AS nama_user, tb_master_user_new.username_user, tb_master_user_new.password_user, tb_master_user_new.id_level, tb_master_user_new.status_user, tb_master_user_new.telegram_user_id, tb_master_user_new.jabatan AS nama_jabatan, tb_level.* from tb_master_user_new left join tb_level on tb_master_user_new.id_level = tb_level.id_level order by tb_master_user_new.id ASC;')->result_array();
+        $data = $this->db->query("
+            SELECT
+                u.id AS id_user,
+                u.nik,
+                u.nama_karyawan AS nama_user,
+                u.username_user,
+                u.password_user,
+                u.id_level,
+                u.status_user,
+                u.jenis_kelamin,
+                u.divisi,
+                u.departemen,
+                u.telegram_user_id,
+                u.jabatan AS nama_jabatan,
+                l.nama_level
+            FROM tb_master_user_new u
+            LEFT JOIN tb_level l ON u.id_level = l.id_level
+            ORDER BY u.id ASC
+        ")->result_array();
         return $data;
     }
 

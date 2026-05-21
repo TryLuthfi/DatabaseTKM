@@ -4,6 +4,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
 class MChecklist_Dokument_MyRep extends CI_Model
 {
     private $maxWhereInChunk = 500;
+    private $cityPicMappingCache = [];
 
     private function sanitizeIdList(array $ids)
     {
@@ -473,7 +474,11 @@ class MChecklist_Dokument_MyRep extends CI_Model
             );
             $row['verification_by'] = $this->resolveVerificationDisplayName(
                 (string) ($row['verification_team'] ?? ''),
-                (string) ($row['ho_pic_name'] ?? '')
+                (string) ($row['ho_pic_name'] ?? ''),
+                [
+                    'city_name' => (string) ($row['city_name'] ?? ''),
+                    'regional_name' => (string) ($row['regional_name'] ?? ''),
+                ]
             );
         }
         unset($row);
@@ -629,7 +634,12 @@ class MChecklist_Dokument_MyRep extends CI_Model
                         ) ? 1 : 0,
                         'verification_by' => $this->resolveVerificationDisplayName(
                             (string) ($item['verification_team'] ?? ''),
-                            (string) ($clusterDetail['ho_pic_name'] ?? '')
+                            (string) ($clusterDetail['ho_pic_name'] ?? ''),
+                            [
+                                'city_name' => (string) ($clusterDetail['city_name'] ?? ''),
+                                'province_name' => (string) ($clusterDetail['province_name'] ?? ''),
+                                'regional_name' => (string) ($clusterDetail['regional_name'] ?? ''),
+                            ]
                         ),
                         'linked_source_flow_type' => (string) ($linkedSource['linked_source_flow_type'] ?? ''),
                         'linked_source_group_label' => (string) ($linkedSource['linked_source_group_label'] ?? ''),
@@ -1898,9 +1908,36 @@ class MChecklist_Dokument_MyRep extends CI_Model
         return !empty($user) ? $user : [];
     }
 
-    private function resolveVerificationDisplayName($verificationTeam, $hoPicName)
+    private function resolveVerificationDisplayName($verificationTeam, $hoPicName, array $locationContext = [])
     {
         $verificationTeam = strtoupper(trim((string) $verificationTeam));
+        $cityPicMapping = $this->getCityPicMapping($locationContext);
+
+        // Role mapping berbasis master kota.
+        $roleColumnMap = [
+            'RPM' => 'rpm_area',
+            'SM' => 'sm_area',
+            'SPV' => 'spv_area',
+            'SND' => 'snd_area',
+            'ADMIN' => 'admin_area',
+            'SND HO' => 'snd_ho',
+            'RFS HO' => 'rfs_ho',
+            'SITAC HO' => 'sitac_ho',
+            'DC HO' => 'dc_ho',
+        ];
+
+        if (isset($roleColumnMap[$verificationTeam])) {
+            $mappedNik = trim((string) ($cityPicMapping[$roleColumnMap[$verificationTeam]] ?? ''));
+            if ($mappedNik !== '') {
+                $mappedUser = $this->getUserByNik($mappedNik);
+                if (!empty($mappedUser['nama_user'])) {
+                    return (string) $mappedUser['nama_user'];
+                }
+
+                return $mappedNik;
+            }
+        }
+
         if ($verificationTeam === 'SITAC') {
             $sitacUser = $this->getSitacApproverUser();
             if (!empty($sitacUser['nama_user'])) {
@@ -1911,6 +1948,63 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         return $hoPicName !== '' ? (string) $hoPicName : 'PIC HO BELUM DISET';
+    }
+
+    private function getCityPicMapping(array $locationContext = [])
+    {
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return [];
+        }
+
+        $city = strtoupper(trim((string) ($locationContext['city_name'] ?? '')));
+        $province = strtoupper(trim((string) ($locationContext['province_name'] ?? '')));
+        $regional = strtoupper(trim((string) ($locationContext['regional_name'] ?? '')));
+
+        if ($city === '') {
+            return [];
+        }
+
+        $cacheKey = $regional . '|' . $province . '|' . $city;
+        if (isset($this->cityPicMappingCache[$cacheKey])) {
+            return $this->cityPicMappingCache[$cacheKey];
+        }
+
+        $this->db->from('tb_myrep_pic_mapping_city');
+        $this->db->where('UPPER(city_name)', $city);
+        if ($province !== '') {
+            $this->db->where('UPPER(province_name)', $province);
+        }
+        if ($regional !== '') {
+            $this->db->where('UPPER(regional_name)', $regional);
+        }
+        $row = $this->db->limit(1)->get()->row_array();
+        if (empty($row)) {
+            $row = $this->db
+                ->from('tb_myrep_pic_mapping_city')
+                ->where('UPPER(city_name)', $city)
+                ->limit(1)
+                ->get()
+                ->row_array();
+        }
+
+        $this->cityPicMappingCache[$cacheKey] = !empty($row) ? $row : [];
+        return $this->cityPicMappingCache[$cacheKey];
+    }
+
+    private function getUserByNik($nik)
+    {
+        $nik = trim((string) $nik);
+        if ($nik === '') {
+            return [];
+        }
+
+        return (array) $this->db
+            ->select('id AS id_user, nik, nama_karyawan AS nama_user, telegram_user_id')
+            ->from('tb_master_user_new')
+            ->where('nik', $nik)
+            ->limit(1)
+            ->get()
+            ->row_array();
     }
 
     public function getDocumentItemFormatById($itemId)

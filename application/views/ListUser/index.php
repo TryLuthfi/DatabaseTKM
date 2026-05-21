@@ -1,788 +1,390 @@
 <?php
-      $status = $this->session->flashdata('status');
-      $error_log = $this->session->flashdata('error_log');
-      $nilai_po = 0;
-      $rkap = 345000000000;
-      $persentase_po = 0;
-      $nilai_invoice = 0;
-      $sisa_invoice = 0;
-      $total = 1;
-      $total_nilai_invoice = 0;
-      $total_sisa_invoice = 0;
+$status = $this->session->flashdata('status');
+$totalUsers = count($rincian_user ?? []);
 ?>
 
-<!-- <?php $now = date('Y-m-d') . " 00:00:00"; ?> -->
-<!-- Content Wrapper. Contains page content -->
 <div class="content-wrapper">
-
-    <section class="content">
-      <div class="content-header">
-          <div class="container-fluid">
-              <div class="row mb-2">
-                  <div class="col-sm-6">
-                      <h1 class="m-0 text-dark"><?= $judul ?></h1>
-                  </div>
-              </div>
-          </div>
-      </div>
-
-      <div class="container-fluid">
+    <div class="content-header">
         <div class="container-fluid">
             <div class="row mb-2">
-                <div class="col-sm-12">
-                    <h5 class="m-0 text-dark">List Jabatan</h5>
+                <div class="col-sm-8">
+                    <h1 class="m-0 text-dark"><?= htmlspecialchars((string) ($judul ?? 'List User TKM'), ENT_QUOTES) ?></h1>
+                    <p class="text-muted mb-0">Kelola data pengguna sesuai struktur database terbaru.</p>
                 </div>
             </div>
         </div>
-
-        <div class="row">
-          <?php foreach ($count_jabatan as $countJabatan) : ?>
-            <div class="col-12 col-sm-6 col-md-3">
-              <a>
-                <div class="info-box">
-                  <span class="info-box-icon bg-info elevation-1"><i class="fas fa-money-bill-wave"></i></span>
-                  <div class="info-box-content">
-                    <span style="color:blue" class="info-box-text"><?= $countJabatan['nama_jabatan'] ?></span>
-                    <span style="color:blue" class="info-box-number">
-                      <?= number_format($countJabatan['jumlah_jabatan'],0,".")." Person" ?>
-                    </span>
-                  </div>
-                </div>
-              </a>
-            </div>
-          <?php endforeach ?>
-
-        </div>
-
-        <div class="row">
-          <div class="col-lg-6">
-            <div class="card">
-              <div class="card-header border-0">
-                <div class="d-flex justify-content-between">
-                  <h1 class="card-title">Persentase Jabatan</h1>
-                  <a href="javascript:void(0);">View Report</a>
-                </div>
-              </div>
-              <div class="card-body">
-                <div class="d-flex">
-                  <p class="d-flex flex-column">
-                    <span class="text-bold text-lg">20 Users</span>
-                    <span>Jumlah User</span>
-                  </p>
-                </div>
-                <!-- /.d-flex -->
-
-                <div class="position-relative mb-4">
-                  <canvas id="user_chart_bar" height="200"></canvas>
-                </div>
-
-                <div class="d-flex flex-row justify-content-end">
-                  <span class="mr-2">
-                    <i class="fas fa-square text-primary"></i> Jumlah User
-                  </span>
-                  <span class="mr-2">
-                    <i class="fas fa-square text-gray"></i> Jumlah Active User
-                  </span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-12">
-                    <h5 class="m-0 text-dark">List Active User</h5>
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-          <?php foreach ($count_active_user as $countActiveUser) : ?>
-            <div class="col-12 col-sm-6 col-md-3">
-              <a>
-                <div class="info-box">
-                  <span class="info-box-icon bg-info elevsation-1"><i class="fas fa-money-bill-wave"></i></span>
-                  <div class="info-box-content">
-                    <span style="color:blue" class="info-box-text"><?= $countActiveUser['status_user'] ?></span>
-                    <span style="color:blue" class="info-box-number">
-                      <?= number_format($countActiveUser['jumlahActiveUser'],0,".")." Person" ?>
-                    </span>
-                  </div>
-                </div>
-              </a>
-            </div>
-          <?php endforeach ?>
-        </div>
-
-      </div>
-    </section>
+    </div>
 
     <section class="content">
-      <div class="content-header">
-          <div class="container-fluid">
-              <div class="row mb-2">
-                  <div class="col-sm-6">
-                      <h1 class="m-0 text-dark">Manage User</h1>
-                  </div>
-              </div>
-          </div>
-      </div>
-    </section>
-
-    <!-- Main content -->
-    <section class="content">
         <div class="container-fluid">
-            <!-- Info boxes -->
-            <div class="row">
-                <!-- fix for small devices only -->
-                <div class="clearfix hidden-md-up"></div>
-
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="row">
-                            <div  class="col-6">
-                                <h3 class="card-title">List User Dashboard </h3>
-                            </div>
-                                <div class="col-6">
-                                    <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i class="fas fa-plus"></i> </a>
-                                </div>
-                            </div>
+            <div class="card card-outline card-primary shadow-sm user-card mb-3">
+                <div class="card-header user-card__header">
+                    <h3 class="card-title mb-0">Filter List User</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-end">
+                        <div class="col-md-6">
+                            <label class="user-field-label">Pencarian Cepat</label>
+                            <input type="text" class="form-control user-input" id="user_quick_search"
+                                placeholder="Cari NIK, nama, username, level, jabatan, divisi, departemen, atau status">
                         </div>
-                        <!-- /.card-header -->
-                        <div class="card-body table-scrollable">
-                            <table id="tabel_pemasukan" class="table table-bordered table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>No</th>
-                                        <th>Nama</th>
-                                        <th>Username</th>
-                                        <th>Level</th>
-                                        <th>Jabatan</th>
-                                        <th>Status User</th>
-                                        <th>Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php
-                                    foreach ($rincian_user as $data) :
-                                     ?>
-                                        <tr>
-                                            <td><?= $total++ ?></td>
-                                            <td><?= $data['nama_user'] ?></td>
-                                            <td><?= $data['username_user']?></td>
-                                            <td><?= $data['nama_level'] ?></td>
-                                            <td><?= $data['nama_jabatan'] ?></td>
-                                            <td><?= $data['status_user'] ?></td>
-                                            <td>
-                                                <a href="<?php echo site_url('ListUser/delete/' . $data['id_user']); ?>" id="tombol_hapus" class="btn btn-danger tombol_hapus"><i class=" fas fa-trash"></i></a>
-                                                <a href="#" class="btn btn-warning" data-target="#modal-lg-edit<?= $data['id_user'] ?>" data-toggle="modal"><i class="fas fa-edit"></i></a>
-                                            </td>
-                                        </tr>
-
-                                    <?php endforeach; ?>
-
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="1">Total</th>
-                                        <th colspan="6"><?= number_format($total-1, 0, ',', '.') ?></th>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                        <!-- /.card-body -->
-                    </div>
-                    <!-- /.card -->
-
-            <!-- modal untuk tambah data -->
-            <form action=" <?php echo base_url('ListUser/add') ?>" method="post">
-                <div class="modal fade" id="modal-lg-tambah">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h4 class="modal-title">Tambah List User</h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
+                        <div class="col-md-6">
+                            <div class="d-flex flex-wrap justify-content-md-end user-toolbar">
+                                <button type="button" class="btn user-btn user-btn--ghost" id="user_reset_search">
+                                    <i class="fas fa-redo-alt mr-1"></i> Reset
+                                </button>
+                                <button type="button" class="btn user-btn user-btn--success" id="btnTambahUser">
+                                    <i class="fas fa-plus-circle mr-1"></i> Tambah User
                                 </button>
                             </div>
-                            <div class="modal-body">
-                                <div class="form-group">
-                                    <label class="col-form-label">Nama User</label>
-                                    <input type="text" class="form-control" name="nama_user" autocomplete="off" placeholder="Nama User">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Username</label>
-                                    <input type="text" class="form-control" name="username_user" autocomplete="off" placeholder="Username">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Password</label>
-                                    <input type="password" class="form-control" name="password_user" autocomplete="off" placeholder="Password">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Level</label>
-                                    <select name="id_level" class="form-control" >
-                                    <?php foreach ($rincian_level as $level) : ?>
-                                      <option value="<?php echo $level['id_level']?>" > <?php echo $level['nama_level']?></option>
-                                    <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Level</label>
-                                    <select name="id_jabatan" class="form-control" >
-                                    <?php foreach ($rincian_jabatan as $jabatan) : ?>
-                                      <option value="<?php echo $jabatan['id_jabatan']?>" > <?php echo $jabatan['nama_jabatan']?></option>
-                                    <?php endforeach; ?>
-                                    </select>
-                                    </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Status</label>
-                                    <select name="status_user" class="form-control" >
-                                      <option value="Active">Active</option>
-                                      <option value="Non Active">Non Active</option>
-                                    </select>
-                                </div>
-
-
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-
-                                    <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i> Tambah</button>
-                                </div>
-                            </div>
                         </div>
-                        <!-- /.modal-content -->
                     </div>
-                    <!-- /.modal-dialog -->
                 </div>
-            </form>
-
-            <!-- modal untuk edit data -->
-            <?php $tgl = date('Y-m-d'); ?>
-            <?php foreach ($rincian_user as $data) : ?>
-                <form action="<?php echo site_url('ListUser/edit/'.$data['id_user']); ?>" method="post">
-                    <div class="modal fade" id="modal-lg-edit<?= $data['id_user'] ?>">
-                        <div class="modal-dialog modal-lg">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h4 class="modal-title">Edit Rincian</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="form-group">
-                                        <label class="col-form-label">Nama User</label>
-                                        <input type="text" class="form-control" name="nama_user" autocomplete="off" value="<?= $data['nama_user'] ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Username</label>
-                                        <input type="text" class="form-control" name="username_user" autocomplete="off" value="<?= $data['username_user'] ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Password</label>
-                                        <input type="password" class="form-control" name="password_user" autocomplete="off" value="<?= $data['password_user'] ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Person In Control</label>
-                                        <select name="id_level" class="form-control" >
-                                          <?php foreach ($rincian_level as $data2) : ?>
-                                            <option value="<?php echo $data2['id_level']?>" <?php if ($data['id_level'] == $data2['id_level']) { ?>selected <?php } ?> > <?php echo $data2['nama_level']?></option>
-                                          <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Jabatan</label>
-                                        <select name="id_jabatan" class="form-control" >
-                                          <?php foreach ($rincian_jabatan as $data3) : ?>
-                                            <option value="<?php echo $data3['id_jabatan']?>" <?php if ($data['id_jabatan'] == $data3['id_jabatan']) { ?>selected <?php } ?> > <?php echo $data3['nama_jabatan']?></option>
-                                          <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="col-form-label">Status</label>
-                                        <select name="status_user" class="form-control" >
-                                          <option value="Active" <?php if ($data['status_user'] == 'Active') { ?>selected <?php } ?> >Active</option>
-                                          <option value="Non Active" <?php if ($data['status_user'] == 'Non Active') { ?>selected <?php } ?> >Non Active</option>
-                                        </select>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-
-                                        <button type="submit" name="btnEdit" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i> Simpan</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            <?php endforeach; ?>
-
-
-
-            <!-- COBA PANGGIL DATA MSQL -->
-            <div class="row">
-                <!-- ISI -->
             </div>
-        </div>
-    </section>
 
-    <section class="content">
-      <div class="content-header">
-          <div class="container-fluid">
-              <div class="row mb-2">
-                  <div class="col-sm-6">
-                      <h1 class="m-0 text-dark">Manage Level</h1>
-                  </div>
-              </div>
-          </div>
-      </div>
-    </section>
-
-    <section class="content">
-        <div class="container-fluid">
-            <!-- Info boxes -->
-            <div class="row">
-                <!-- fix for small devices only -->
-                <div class="clearfix hidden-md-up"></div>
-
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="row">
-                            <div  class="col-6">
-                                <h3 class="card-title">List Level </h3>
-                            </div>
-                                <div class="col-6">
-                                    <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i class="fas fa-plus"></i> </a>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /.card-header -->
-                        <div class="card-body table-scrollable">
-                            <table id="tabel_pemasukan" class="table table-bordered table-striped">
-                                <thead>
+            <div class="card shadow-sm user-card">
+                <div class="card-header user-card__header d-flex align-items-center justify-content-between">
+                    <h3 class="card-title mb-0">Daftar User</h3>
+                    <span class="badge badge-light"><?= number_format((float) $totalUsers, 0, ',', '.') ?> user</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="listUserTable" class="table table-bordered table-hover table-striped js-user-table">
+                            <thead class="bg-info">
+                                <tr>
+                                    <th style="width: 60px;">No</th>
+                                    <th>NIK</th>
+                                    <th>Nama</th>
+                                    <th>Username</th>
+                                    <th>Level</th>
+                                    <th>Jabatan</th>
+                                    <th>Jenis Kelamin</th>
+                                    <th>Divisi</th>
+                                    <th>Departemen</th>
+                                    <th>Status User</th>
+                                    <th style="width: 180px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($rincian_user)): ?>
                                     <tr>
-                                        <th>No</th>
-                                        <th>Level</th>
-                                        <th>Aksi</th>
+                                        <td colspan="11" class="text-center text-muted">Belum ada data user.</td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <?php
-                                    $total = 1;
-                                    foreach ($rincian_level as $data) :
-                                     ?>
+                                <?php else: ?>
+                                    <?php $no = 1; ?>
+                                    <?php foreach ($rincian_user as $data): ?>
                                         <tr>
-                                            <td><?= $total++ ?></td>
-                                            <td><?= $data['nama_level'] ?></td>
+                                            <td><?= $no++ ?></td>
+                                            <td><?= htmlspecialchars((string) ($data['nik'] ?? '-'), ENT_QUOTES) ?></td>
+                                            <td><?= htmlspecialchars((string) ($data['nama_user'] ?? '-'), ENT_QUOTES) ?></td>
+                                            <td><?= htmlspecialchars((string) ($data['username_user'] ?? '-'), ENT_QUOTES) ?></td>
+                                            <td><?= htmlspecialchars((string) ($data['nama_level'] ?? '-'), ENT_QUOTES) ?></td>
+                                            <td><?= htmlspecialchars((string) ($data['nama_jabatan'] ?? '-'), ENT_QUOTES) ?></td>
+                                            <td><?= htmlspecialchars((string) ($data['jenis_kelamin'] ?? '-'), ENT_QUOTES) ?></td>
+                                            <td><?= htmlspecialchars((string) ($data['divisi'] ?? '-'), ENT_QUOTES) ?></td>
+                                            <td><?= htmlspecialchars((string) ($data['departemen'] ?? '-'), ENT_QUOTES) ?></td>
+                                            <td><?= htmlspecialchars((string) ($data['status_user'] ?? '-'), ENT_QUOTES) ?></td>
                                             <td>
-                                                <a href="<?php echo site_url('ListUser/delete/' . $data['id_level']); ?>" id="tombol_hapus" class="btn btn-danger tombol_hapus"><i class=" fas fa-trash"></i></a>
-                                                <a href="#" class="btn btn-warning" data-target="#modal-lg-edit<?= $data['id_level'] ?>" data-toggle="modal"><i class="fas fa-edit"></i></a>
+                                                <div class="user-action-inline">
+                                                    <button type="button"
+                                                        class="btn btn-sm user-btn user-btn--table-primary js-open-user-modal"
+                                                        data-id="<?= (int) ($data['id_user'] ?? 0) ?>"
+                                                        data-nik="<?= htmlspecialchars((string) ($data['nik'] ?? ''), ENT_QUOTES) ?>"
+                                                        data-nama="<?= htmlspecialchars((string) ($data['nama_user'] ?? ''), ENT_QUOTES) ?>"
+                                                        data-username="<?= htmlspecialchars((string) ($data['username_user'] ?? ''), ENT_QUOTES) ?>"
+                                                        data-password="<?= htmlspecialchars((string) ($data['password_user'] ?? ''), ENT_QUOTES) ?>"
+                                                        data-id-level="<?= (int) ($data['id_level'] ?? 3) ?>"
+                                                        data-jabatan-name="<?= htmlspecialchars((string) ($data['nama_jabatan'] ?? ''), ENT_QUOTES) ?>"
+                                                        data-jenis-kelamin="<?= htmlspecialchars((string) ($data['jenis_kelamin'] ?? ''), ENT_QUOTES) ?>"
+                                                        data-divisi="<?= htmlspecialchars((string) ($data['divisi'] ?? ''), ENT_QUOTES) ?>"
+                                                        data-departemen="<?= htmlspecialchars((string) ($data['departemen'] ?? ''), ENT_QUOTES) ?>"
+                                                        data-status="<?= htmlspecialchars((string) ($data['status_user'] ?? 'ACTIVE'), ENT_QUOTES) ?>">
+                                                        <i class="fas fa-pen mr-1"></i> Edit
+                                                    </button>
+                                                    <a href="<?= site_url('ListUser/delete/' . (int) ($data['id_user'] ?? 0)) ?>"
+                                                        class="btn btn-sm user-btn user-btn--table-danger js-delete-user"
+                                                        data-user="<?= htmlspecialchars((string) ($data['nama_user'] ?? 'user ini'), ENT_QUOTES) ?>">
+                                                        <i class="fas fa-trash-alt mr-1"></i> Hapus
+                                                    </a>
+                                                </div>
                                             </td>
                                         </tr>
-
                                     <?php endforeach; ?>
-
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="1">Total</th>
-                                        <th colspan="1"><?= number_format($total-1, 0, ',', '.') ?></th>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                        <!-- /.card-body -->
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
                     </div>
-                    <!-- /.card -->
-
-            <!-- modal untuk tambah data -->
-            <form action=" <?php echo base_url('ListUser/add') ?>" method="post">
-                <div class="modal fade" id="modal-lg-tambah">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h4 class="modal-title">Tambah List User</h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="form-group">
-                                    <label class="col-form-label">Nama User</label>
-                                    <input type="text" class="form-control" name="nama_user" autocomplete="off" placeholder="Nama User">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Username</label>
-                                    <input type="text" class="form-control" name="username_user" autocomplete="off" placeholder="Username">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Password</label>
-                                    <input type="password" class="form-control" name="password_user" autocomplete="off" placeholder="Password">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Level</label>
-                                    <select name="id_level" class="form-control" >
-                                      <option value="1">Super Admin</option>
-                                      <option value="2">Admin</option>
-                                      <option value="3" selected>User</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Jabatan</label>
-                                    <select name="jabatan_user" class="form-control" >
-                                      <option value="Project Manager">Project Manager</option>
-                                      <option value="Site Manager">Site Manager</option>
-                                      <option value="Supervisor">Supervisor</option>
-                                      <option value="Admin Project">Admin Project</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Status</label>
-                                    <select name="status_user" class="form-control" >
-                                      <option value="Active">Active</option>
-                                      <option value="Non Active">Non Active</option>
-                                    </select>
-                                </div>
-
-
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-
-                                    <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i> Tambah</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /.modal-content -->
-                    </div>
-                    <!-- /.modal-dialog -->
                 </div>
-            </form>
-
-            
-
-
-
-            <!-- COBA PANGGIL DATA MSQL -->
-            <div class="row">
-                <!-- ISI -->
             </div>
         </div>
     </section>
-
-    <section class="content">
-      <div class="content-header">
-          <div class="container-fluid">
-              <div class="row mb-2">
-                  <div class="col-sm-6">
-                      <h1 class="m-0 text-dark">Manage Jabatan</h1>
-                  </div>
-              </div>
-          </div>
-      </div>
-    </section>
-
-    <section class="content">
-        <div class="container-fluid">
-            <!-- Info boxes -->
-            <div class="row">
-                <!-- fix for small devices only -->
-                <div class="clearfix hidden-md-up"></div>
-
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="row">
-                            <div  class="col-6">
-                                <h3 class="card-title">List Jabatan </h3>
-                            </div>
-                                <div class="col-6">
-                                    <a href="#" class="btn btn-success float-right text-bold" data-target="#modal-lg-tambah" data-toggle="modal">Tambah &nbsp;<i class="fas fa-plus"></i> </a>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /.card-header -->
-                        <div class="card-body table-scrollable">
-                            <table id="tabel_pemasukan" class="table table-bordered table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>No</th>
-                                        <th>Level</th>
-                                        <th>Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php
-                                    $total = 1;
-                                    foreach ($rincian_jabatan as $data) :
-                                     ?>
-                                        <tr>
-                                            <td><?= $total++ ?></td>
-                                            <td><?= $data['nama_jabatan'] ?></td>
-                                            <td>
-                                                <a href="<?php echo site_url('ListUser/delete/' . $data['id_jabatan']); ?>" id="tombol_hapus" class="btn btn-danger tombol_hapus"><i class=" fas fa-trash"></i></a>
-                                                <a href="#" class="btn btn-warning" data-target="#modal-lg-edit<?= $data['id_jabatan'] ?>" data-toggle="modal"><i class="fas fa-edit"></i></a>
-                                            </td>
-                                        </tr>
-
-                                    <?php endforeach; ?>
-
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="1">Total</th>
-                                        <th colspan="1"><?= number_format($total-1, 0, ',', '.') ?></th>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                        <!-- /.card-body -->
-                    </div>
-                    <!-- /.card -->
-
-            <!-- modal untuk tambah data -->
-            <form action=" <?php echo base_url('ListUser/add') ?>" method="post">
-                <div class="modal fade" id="modal-lg-tambah">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h4 class="modal-title">Tambah List User</h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="form-group">
-                                    <label class="col-form-label">Nama User</label>
-                                    <input type="text" class="form-control" name="nama_user" autocomplete="off" placeholder="Nama User">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Username</label>
-                                    <input type="text" class="form-control" name="username_user" autocomplete="off" placeholder="Username">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Password</label>
-                                    <input type="password" class="form-control" name="password_user" autocomplete="off" placeholder="Password">
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Level</label>
-                                    <select name="id_level" class="form-control" >
-                                      <option value="1">Super Admin</option>
-                                      <option value="2">Admin</option>
-                                      <option value="3" selected>User</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Jabatan</label>
-                                    <select name="jabatan_user" class="form-control" >
-                                      <option value="Project Manager">Project Manager</option>
-                                      <option value="Site Manager">Site Manager</option>
-                                      <option value="Supervisor">Supervisor</option>
-                                      <option value="Admin Project">Admin Project</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-form-label">Status</label>
-                                    <select name="status_user" class="form-control" >
-                                      <option value="Active">Active</option>
-                                      <option value="Non Active">Non Active</option>
-                                    </select>
-                                </div>
-
-
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Batal</button>
-
-                                    <button type="submit" name="btnSubmitPOFiberstar" class="btn btn-primary"><i class="fa fa-spinner fa-spin loading" style="display:none"></i> Tambah</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /.modal-content -->
-                    </div>
-                    <!-- /.modal-dialog -->
-                </div>
-            </form>
-
-
-
-            <!-- COBA PANGGIL DATA MSQL -->
-            <div class="row">
-                <!-- ISI -->
-            </div>
-        </div>
-    </section>
-
 </div>
-<!-- /.content-wrapper -->
 
-<?php $this->session->set_flashdata('status', 'kosong'); ?>
+<div class="modal fade" id="listUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content user-modal">
+            <form method="post" action="<?= base_url('ListUser/add') ?>" id="listUserForm">
+                <div class="modal-header user-modal__header">
+                    <div>
+                        <span class="user-modal__eyebrow">List User</span>
+                        <h5 class="modal-title mb-1" id="listUserModalTitle">Tambah User</h5>
+                        <p class="mb-0 user-modal__subtitle" id="listUserModalSubtitle">Lengkapi data user sesuai master terbaru.</p>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="user-form-section">
+                        <div class="user-form-section__title">Informasi User</div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="user-field-label">NIK</label>
+                                    <input type="text" class="form-control user-input" name="nik" id="nik" autocomplete="off" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="user-field-label">Nama User</label>
+                                    <input type="text" class="form-control user-input" name="nama_user" id="nama_user" autocomplete="off" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="user-field-label">Username</label>
+                                    <input type="text" class="form-control user-input" name="username_user" id="username_user" autocomplete="off" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="user-field-label">Password</label>
+                                    <input type="text" class="form-control user-input" name="password_user" id="password_user" autocomplete="off" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="user-field-label">Jenis Kelamin</label>
+                                    <select name="jenis_kelamin" id="jenis_kelamin" class="form-control user-input">
+                                        <option value="">- Pilih -</option>
+                                        <option value="Laki-laki">Laki-laki</option>
+                                        <option value="Perempuan">Perempuan</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="user-field-label">Status User</label>
+                                    <select name="status_user" id="status_user" class="form-control user-input" required>
+                                        <option value="ACTIVE">ACTIVE</option>
+                                        <option value="INACTIVE">INACTIVE</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-<!-- Control Sidebar -->
-<aside class="control-sidebar control-sidebar-dark">
-    <!-- Control sidebar content goes here -->
-</aside>
-<!-- /.control-sidebar -->
-<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-<script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/progressbar.js@1.1.0/dist/progressbar.min.js"></script>
-
+                    <div class="user-form-section mb-0">
+                        <div class="user-form-section__title">Hak Akses & Struktur</div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="user-field-label">Level</label>
+                                    <select name="id_level" id="id_level" class="form-control user-input" required>
+                                        <?php foreach ($rincian_level as $level): ?>
+                                            <option value="<?= (int) ($level['id_level'] ?? 0) ?>">
+                                                <?= htmlspecialchars((string) ($level['nama_level'] ?? '-'), ENT_QUOTES) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="user-field-label">Jabatan</label>
+                                    <select name="jabatan_name" id="jabatan_name" class="form-control user-input" required>
+                                        <?php foreach ($rincian_jabatan as $jabatan): ?>
+                                            <option value="<?= htmlspecialchars((string) ($jabatan['nama_jabatan'] ?? ''), ENT_QUOTES) ?>">
+                                                <?= htmlspecialchars((string) ($jabatan['nama_jabatan'] ?? '-'), ENT_QUOTES) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-md-0">
+                                    <label class="user-field-label">Divisi</label>
+                                    <input type="text" class="form-control user-input" name="divisi" id="divisi" autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-0">
+                                    <label class="user-field-label">Departemen</label>
+                                    <input type="text" class="form-control user-input" name="departemen" id="departemen" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer user-modal__footer">
+                    <button type="button" class="btn user-btn user-btn--ghost" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn user-btn user-btn--primary" id="listUserSubmitBtn">
+                        <i class="fas fa-save mr-1"></i> Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script>
-    $('#1').datepicker({
-        inputs: $('input[name=tanggal_berangkat]'),
-        format: 'dd/mm/yyyy'
-    })
-    $('#2').datepicker({
-        inputs: $('input[name=utanggal_berangkat]'),
-        format: 'dd/mm/yyyy'
-    })
-</script>
-<script type="text/javascript">
-    $(function() {
+    (function () {
+        function openListUserModal(data) {
+            var isEdit = !!(data && data.id);
+            var form = document.getElementById('listUserForm');
 
-        // format angka rupiah
-        $('[data-mask]').inputmask("currency", {
-            prefix: " Rp. ",
-            digitsOptional: true
-        })
+            document.getElementById('listUserModalTitle').textContent = isEdit ? 'Edit User' : 'Tambah User';
+            document.getElementById('listUserModalSubtitle').textContent = isEdit
+                ? 'Perbarui data user, lalu simpan perubahan jika sudah sesuai.'
+                : 'Lengkapi data user sesuai master terbaru.';
+            document.getElementById('listUserSubmitBtn').innerHTML = isEdit
+                ? '<i class="fas fa-save mr-1"></i> Simpan Perubahan'
+                : '<i class="fas fa-save mr-1"></i> Simpan';
 
-        // notifikasi allert sukses atau tidak
-        <?php if ($status == 'sukses_tambah') { ?>
-            swal("Success!", "Berhasil Ditambah!", "success");
-        <?php } else if ($status == 'sukses_hapus') { ?>
-            swal("Success!", "Berhasil Dihapus!", "success");
-        <?php } else if ($status == 'sukses_edit') { ?>
-            swal("Success!", "Berhasil Edit Data!", "success");
-        <?php } else if ($status == 'gagal_tambah') { ?>
-            swal("Gagal!", "Gagal Menambah Data!", "warning");
-        <?php } else if ($status == 'gagal_edit') { ?>
-            swal("Gagal!", "Gagal Mengedit Data!", "warning");
-        <?php } else if ($status == 'gagal_hapus') { ?>
-            swal("Gagal!", "Gagal Menghapus Data!", "warning");
-        <?php } else { ?>
-        <?php } ?>
+            form.setAttribute('action', isEdit ? '<?= base_url('ListUser/edit/') ?>' + data.id : '<?= base_url('ListUser/add') ?>');
 
-    });
+            document.getElementById('nik').value = isEdit ? (data.nik || '') : '';
+            document.getElementById('nama_user').value = isEdit ? (data.nama || '') : '';
+            document.getElementById('username_user').value = isEdit ? (data.username || '') : '';
+            document.getElementById('password_user').value = isEdit ? (data.password || '') : '';
+            document.getElementById('id_level').value = isEdit ? (data.idLevel || '') : (document.getElementById('id_level').options[0] ? document.getElementById('id_level').options[0].value : '');
+            document.getElementById('jenis_kelamin').value = isEdit ? (data.jenisKelamin || '') : '';
+            document.getElementById('divisi').value = isEdit ? (data.divisi || '') : '';
+            document.getElementById('departemen').value = isEdit ? (data.departemen || '') : '';
+            document.getElementById('status_user').value = isEdit ? (data.status || 'ACTIVE') : 'ACTIVE';
 
-    $('.tombol_hapus').on('click', function (e) {
-    e.preventDefault();
-    const href = $(this).attr('href');
-    swal({
-        title: 'Apakah anda yakin',
-        text: "data akan dihapus!",
-        type: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#e74c3c',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Delete'
-    }).then((result) => {
-        if (result.value) {
-            document.location.href = href;
+            var jabatanSelect = document.getElementById('jabatan_name');
+            if (isEdit && data.jabatanName) {
+                var selected = jabatanSelect.options[0] ? jabatanSelect.options[0].value : '';
+                for (var i = 0; i < jabatanSelect.options.length; i++) {
+                    if (String(jabatanSelect.options[i].value).toLowerCase() === String(data.jabatanName).toLowerCase()) {
+                        selected = jabatanSelect.options[i].value;
+                        break;
+                    }
+                }
+                jabatanSelect.value = selected;
+            } else {
+                jabatanSelect.value = jabatanSelect.options[0] ? jabatanSelect.options[0].value : '';
+            }
+
+            $('#listUserModal').modal('show');
         }
-    })
 
-});
+        $(function () {
+            var table = null;
+            if ($.fn.DataTable) {
+                table = $('#listUserTable').DataTable({
+                    paging: true,
+                    searching: true,
+                    info: true,
+                    ordering: true,
+                    responsive: false,
+                    autoWidth: false,
+                    scrollX: true,
+                    pageLength: 10,
+                    language: {
+                        search: 'Search:',
+                        lengthMenu: 'Tampilkan _MENU_ data',
+                        info: 'Menampilkan _START_ - _END_ dari _TOTAL_ data',
+                        paginate: { previous: 'Prev', next: 'Next' },
+                        zeroRecords: 'Tidak ada data yang cocok'
+                    }
+                });
+            }
+
+            $('#btnTambahUser').on('click', function () { openListUserModal(null); });
+            $(document).on('click', '.js-open-user-modal', function () {
+                openListUserModal({
+                    id: $(this).data('id'),
+                    nik: $(this).data('nik'),
+                    nama: $(this).data('nama'),
+                    username: $(this).data('username'),
+                    password: $(this).data('password'),
+                    idLevel: $(this).data('id-level'),
+                    jabatanName: $(this).data('jabatan-name'),
+                    jenisKelamin: $(this).data('jenis-kelamin'),
+                    divisi: $(this).data('divisi'),
+                    departemen: $(this).data('departemen'),
+                    status: $(this).data('status')
+                });
+            });
+
+            $('#user_quick_search').on('keyup', function () { if (table) { table.search($(this).val()).draw(); } });
+            $('#user_reset_search').on('click', function () { $('#user_quick_search').val(''); if (table) { table.search('').draw(); } });
+
+            $(document).on('click', '.js-delete-user', function (e) {
+                e.preventDefault();
+                var href = $(this).attr('href');
+                var user = $(this).data('user') || 'user ini';
+                Swal.fire({
+                    title: 'Hapus user?',
+                    text: 'Data "' + user + '" akan dihapus dari sistem.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d9534f',
+                    cancelButtonColor: '#9aa9b8',
+                    confirmButtonText: 'Ya, hapus',
+                    cancelButtonText: 'Batal'
+                }).then(function (result) { if (result.value || result.isConfirmed) { window.location.href = href; } });
+            });
+
+            <?php if (!empty($status)): ?>
+            if (!window.__listUserStatusShown) {
+                window.__listUserStatusShown = true;
+                <?php if ($status === 'sukses_tambah'): ?>
+                Swal.fire('Success', 'User berhasil ditambahkan.', 'success');
+                <?php elseif ($status === 'sukses_edit'): ?>
+                Swal.fire('Success', 'User berhasil diperbarui.', 'success');
+                <?php elseif ($status === 'sukses_hapus'): ?>
+                Swal.fire('Success', 'User berhasil dihapus.', 'success');
+                <?php elseif ($status === 'gagal_tambah' || $status === 'gagal_edit' || $status === 'gagal_hapus'): ?>
+                Swal.fire('Gagal', 'Proses user gagal dilakukan.', 'error');
+                <?php endif; ?>
+            }
+            <?php endif; ?>
+        });
+    })();
 </script>
-<script type="text/javascript">
-            $(document).ready(function(){
 
-                // Format mata uang.
-                $( '.nilai_po2' ).mask('000.000.000', {reverse: true});
-
-            })
-        </script>
-
-        <script>
-    // Membuat circle progress bar
-    var bar = new ProgressBar.Circle('#progress-bar-container', {
-        color: '#FF5733', // Warna progress bar
-        strokeWidth: 10, // Ketebalan garis
-        trailWidth: 10,  // Ketebalan garis latar belakang
-        easing: 'easeInOut',  // Animasi progress bar
-        duration: 1400,  // Durasi animasi dalam milidetik
-        from: { color: '#ddd', width: 10 },
-        to: { color: '#FF5733', width: 10 },
-        step: function(state, circle) {
-            circle.path.setAttribute('stroke', state.color);
-            circle.path.setAttribute('stroke-width', state.width);
-            var value = Math.round(circle.value() * 100);
-            circle.setText(value + '%');
-        }
-    });
-
-    // Mengatur nilai progress bar
-    bar.animate(<?= $persentase_po ?>);  // Nilai antara 0.0 hingga 1.0 (70% dalam contoh ini)
-</script>
-<script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-<script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@7.12.15/dist/sweetalert2.all.min.js"></script>
-
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/fontawesome-free/css/all.min.css">
-<!-- overlayScrollbars -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-<!-- Theme style -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/dist/css/adminlte.min.css">
-<!-- Google Font: Source Sans Pro -->
-<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-<!-- DataTables -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
-<!-- daterange picker -->
-<!-- <link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/daterangepicker/daterangepicker.css"> -->
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/select2/css/select2.min.css">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
-<!-- jQuery UI 1.11.4 -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jquery-ui/jquery-ui.min.js"></script>
-<!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
-<script>
-  $.widget.bridge('uibutton', $.ui.button)
-</script>
-<!-- Bootstrap 4 -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js">
-<!-- ChartJS -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js">
-<!-- Sparkline -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/sparklines/sparkline.js">
-<!-- JQVMap -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jqvmap/jquery.vmap.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jqvmap/maps/jquery.vmap.usa.js">
-<!-- jQuery Knob Chart -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/jquery-knob/jquery.knob.min.js">
-<!-- daterangepicker -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/moment/moment.min.js">
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/daterangepicker/daterangepicker.js">
-<!-- Tempusdominus Bootstrap 4 -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js">
-<!-- Summernote -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/summernote/summernote-bs4.min.js">
-<!-- overlayScrollbars -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js">
-<!-- AdminLTE for demo purposes -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/dist/js/demo.js">
-<!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-<link rel="stylesheet" href="<?= base_url('assets') ?>/dist/js/pages/dashboard.js">
-
-<script src="<?= base_url('assets') ?>/plugins/jquery/jquery.min.js"></script>
-<!-- Bootstrap -->
-<script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-
-<!-- OPTIONAL SCRIPTS -->
-<script src="<?= base_url('assets') ?>/plugins/chart.js/Chart.min.js"></script>
-<!-- AdminLTE for demo purposes -->
-<script src="<?= base_url('assets') ?>/dist/js/demo.js"></script>
-<!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-<script src="<?= base_url('assets') ?>/dist/js/pages/dashboardlistuser.js"></script>
-
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-<!-- Font Awesome Icons -->
-<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+<style>
+    .user-toolbar { gap: 10px; }
+    .user-field-label { display: inline-block; margin-bottom: 8px; font-size: 0.84rem; font-weight: 700; letter-spacing: 0.04em; color: #48657f; text-transform: uppercase; }
+    .user-card { border: 0; border-radius: 18px; overflow: hidden; box-shadow: 0 18px 42px rgba(14, 41, 64, 0.08); background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%); }
+    .user-card__header { background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 30%), linear-gradient(135deg, #103b5a, #1f6da1 55%, #53a9d8); color: #fff; }
+    .user-card .card-title { font-weight: 700; }
+    .user-btn { border: 0; border-radius: 12px; padding: 0.68rem 1.15rem; font-weight: 700; letter-spacing: 0.01em; transition: all 0.2s ease; box-shadow: 0 12px 22px rgba(16, 59, 90, 0.12); }
+    .user-btn:hover, .user-btn:focus { transform: translateY(-1px); box-shadow: 0 16px 28px rgba(16, 59, 90, 0.16); }
+    .user-btn--primary { background: linear-gradient(135deg, #103b5a 0%, #1f6da1 100%); color: #fff; }
+    .user-btn--success { background: linear-gradient(135deg, #0f8b72 0%, #24b18f 100%); color: #fff; }
+    .user-btn--ghost { background: #fff; color: #315d7f; border: 1px solid #d7e6f2; box-shadow: 0 10px 22px rgba(112, 141, 165, 0.12); }
+    .user-btn--table-primary, .user-btn--table-danger { padding: 0.52rem 0.9rem; box-shadow: none; }
+    .user-btn--table-primary { background: linear-gradient(135deg, #eaf4fb 0%, #d8ecfa 100%); color: #1d5f8d; border: 1px solid #c9e1f3; }
+    .user-btn--table-danger { background: linear-gradient(135deg, #fff1f0 0%, #ffdedd 100%); color: #b93d38; border: 1px solid #f5c8c5; }
+    .user-action-inline { display: inline-flex; align-items: center; gap: 8px; }
+    .user-btn--table-danger:hover, .user-btn--table-danger:focus { color: #fff; background: linear-gradient(135deg, #d9534f 0%, #b93d38 100%); border-color: #b93d38; }
+    .user-modal { border: 0; border-radius: 24px; overflow: hidden; box-shadow: 0 30px 50px rgba(8, 35, 55, 0.22); }
+    .user-modal__header { border-bottom: 0; padding: 1.4rem 1.5rem 1.1rem; background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 30%), linear-gradient(135deg, #103b5a 0%, #1f6da1 55%, #53a9d8 100%); color: #fff; }
+    .user-modal__eyebrow { display: inline-block; margin-bottom: 6px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.76); }
+    .user-modal__subtitle { max-width: 85%; color: rgba(255, 255, 255, 0.84); font-size: 0.92rem; }
+    .user-modal .modal-body { padding: 1.5rem; background: linear-gradient(180deg, #fbfdff 0%, #f2f8fc 100%); }
+    .user-modal__footer { border-top: 0; padding: 0 1.5rem 1.5rem; background: linear-gradient(180deg, #fbfdff 0%, #f2f8fc 100%); }
+    .user-form-section { margin-bottom: 1rem; padding: 1rem 1rem 0.2rem; border: 1px solid #dbe9f4; border-radius: 18px; background: rgba(255, 255, 255, 0.92); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+    .user-form-section__title { margin-bottom: 0.9rem; font-size: 0.86rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #2d6287; }
+    .user-input { border-radius: 12px; border: 1px solid #cfe0ee; min-height: 44px; box-shadow: none; }
+    .user-input:focus { border-color: #55a7d5; box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18); }
+    .js-user-table thead th { white-space: nowrap; }
+    .dataTables_wrapper .dataTables_filter input, .dataTables_wrapper .dataTables_length select { border-radius: 10px; border: 1px solid #cfe0ee; box-shadow: none; }
+    @media (max-width: 767.98px) {
+        .user-toolbar { margin-top: 1rem; justify-content: flex-start !important; }
+        .user-btn { width: 100%; }
+        .user-modal__subtitle { max-width: 100%; }
+    }
+</style>

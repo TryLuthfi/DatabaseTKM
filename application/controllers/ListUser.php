@@ -38,19 +38,23 @@ class ListUser extends CI_Controller
 
     public function add()
     {
-        // echo ("<pre>");
-        // print_r($_POST);
-        // echo ("</pre>");
-
-        $rincian_user = $this->db->get('tb_master_user_new')->row_array();
+        $jabatanName = (string) $this->input->post('jabatan_name');
+        $statusUser = strtoupper((string) $this->input->post('status_user'));
+        if ($statusUser !== 'ACTIVE' && $statusUser !== 'INACTIVE') {
+            $statusUser = 'ACTIVE';
+        }
 
         $hasil_data = array(
-            'nama_karyawan' => $_POST['nama_user'],
-            'username_user' => $_POST['username_user'],
-            'password_user' => $_POST['password_user'],
-            'id_level' => $_POST['id_level'],
-            'jabatan' => $_POST['id_jabatan'],
-            'status_user' => $_POST['status_user']
+            'nik' => trim((string) $this->input->post('nik')),
+            'nama_karyawan' => trim((string) $this->input->post('nama_user')),
+            'username_user' => trim((string) $this->input->post('username_user')),
+            'password_user' => (string) $this->input->post('password_user'),
+            'id_level' => (int) $this->input->post('id_level'),
+            'jabatan' => trim($jabatanName),
+            'status_user' => $statusUser,
+            'jenis_kelamin' => trim((string) $this->input->post('jenis_kelamin')),
+            'divisi' => trim((string) $this->input->post('divisi')),
+            'departemen' => trim((string) $this->input->post('departemen'))
         );
 
         $res = $this->MListUser->addUser($hasil_data);
@@ -67,14 +71,23 @@ class ListUser extends CI_Controller
 
     public function edit($id)
     {
+        $jabatanName = (string) $this->input->post('jabatan_name');
+        $statusUser = strtoupper((string) $this->input->post('status_user'));
+        if ($statusUser !== 'ACTIVE' && $statusUser !== 'INACTIVE') {
+            $statusUser = 'ACTIVE';
+        }
 
         $data_array = array(
-            'nama_karyawan' => $_POST['nama_user'],
-            'username_user' => $_POST['username_user'],
-            'password_user' => $_POST['password_user'],
-            'id_level' => $_POST['id_level'],
-            'jabatan' => $_POST['id_jabatan'],
-            'status_user' => $_POST['status_user']
+            'nik' => trim((string) $this->input->post('nik')),
+            'nama_karyawan' => trim((string) $this->input->post('nama_user')),
+            'username_user' => trim((string) $this->input->post('username_user')),
+            'password_user' => (string) $this->input->post('password_user'),
+            'id_level' => (int) $this->input->post('id_level'),
+            'jabatan' => trim($jabatanName),
+            'status_user' => $statusUser,
+            'jenis_kelamin' => trim((string) $this->input->post('jenis_kelamin')),
+            'divisi' => trim((string) $this->input->post('divisi')),
+            'departemen' => trim((string) $this->input->post('departemen'))
         );
 
         $where = array('id' => $id);
