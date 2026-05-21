@@ -120,7 +120,7 @@ class Myrep_access_service
             }
 
             $found = (array) $this->ci->db
-                ->select('id_map')
+                ->select('1 AS hit', false)
                 ->from('tb_myrep_pic_mapping_city')
                 ->where($columnName, $nik)
                 ->limit(1)

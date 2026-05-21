@@ -189,7 +189,7 @@ sort($provinceOptions);
                 return;
             }
             setTimeout(function () {
-                cityTable.columns.adjust().draw(false);
+                cityTable.columns.adjust();
             }, 60);
         }
 
@@ -201,7 +201,7 @@ sort($provinceOptions);
             $targets.each(function () {
                 var $select = $(this);
                 if ($select.hasClass('select2-hidden-accessible')) {
-                    $select.select2('destroy');
+                    return;
                 }
                 $select.select2({
                     theme: 'bootstrap4',
@@ -212,6 +212,17 @@ sort($provinceOptions);
             });
         }
 
+        function applyModeToVisibleRows() {
+            var $table = $('#table_myrep_city_mapping_edit');
+            if (isEditMode) {
+                $table.find('.js-view-only').addClass('d-none');
+                $table.find('.js-edit-only').removeClass('d-none');
+            } else {
+                $table.find('.js-edit-only').addClass('d-none');
+                $table.find('.js-view-only').removeClass('d-none');
+            }
+        }
+
         if (window.jQuery && $.fn.DataTable) {
             cityTable = $('#table_myrep_city_mapping_edit').DataTable({
                 pageLength: 10,
@@ -220,6 +231,7 @@ sort($provinceOptions);
                 autoWidth: false
             });
             $('#table_myrep_city_mapping_edit').on('draw.dt', function () {
+                applyModeToVisibleRows();
                 if (isEditMode) {
                     initPicSelect($('#table_myrep_city_mapping_edit'));
                 }
@@ -242,8 +254,7 @@ sort($provinceOptions);
         function setEditMode(enabled) {
             isEditMode = !!enabled;
             if (isEditMode) {
-                $('.js-view-only').addClass('d-none');
-                $('.js-edit-only').removeClass('d-none');
+                applyModeToVisibleRows();
                 $('#btn_enable_edit_city_mapping').addClass('d-none');
                 $('#btn_save_city_mapping, #btn_cancel_edit_city_mapping').removeClass('d-none');
                 initPicSelect($('#table_myrep_city_mapping_edit'));
@@ -251,8 +262,7 @@ sort($provinceOptions);
                 return;
             }
 
-            $('.js-edit-only').addClass('d-none');
-            $('.js-view-only').removeClass('d-none');
+            applyModeToVisibleRows();
             $('#btn_save_city_mapping, #btn_cancel_edit_city_mapping').addClass('d-none');
             $('#btn_enable_edit_city_mapping').removeClass('d-none');
             syncTableLayout();
