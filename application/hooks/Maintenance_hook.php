@@ -27,7 +27,24 @@ class Maintenance_hook
 			}
 		}
 
-		$isAuthRoute = (strpos($uriPath, '/auth') !== false);
+		$ciUriString = '';
+		$CI =& get_instance();
+		if (isset($CI->uri) && method_exists($CI->uri, 'uri_string'))
+		{
+			$ciUriString = strtolower(trim((string) $CI->uri->uri_string(), '/'));
+		}
+
+		// Allow only explicit auth path access during maintenance.
+		$isAuthRoute = false;
+		if ($ciUriString !== '')
+		{
+			$isAuthRoute = (strpos($ciUriString, 'auth') === 0);
+		}
+		elseif (strpos($uriPath, '/auth') !== false)
+		{
+			$isAuthRoute = true;
+		}
+
 		if ($isAuthRoute)
 		{
 			return;
@@ -36,7 +53,6 @@ class Maintenance_hook
 		$allowedRole = trim((string) $this->readEnvValue('MAINTENANCE_ALLOWED_ROLE', 'Super Admin'));
 		$currentLevel = '';
 
-		$CI =& get_instance();
 		if (isset($CI->session))
 		{
 			$currentLevel = trim((string) $CI->session->userdata('nama_level'));
