@@ -234,6 +234,14 @@ $isHoRole = static function ($roleKey) {
                                 <option value="0">Inactive</option>
                             </select>
                         </div>
+                        <div class="col-md-3">
+                            <label>Urutkan</label>
+                            <select id="filter_notif_sort" class="form-control form-control-sm">
+                                <option value="stage">Tahap (Module > Event)</option>
+                                <option value="id_desc">ID Terbaru</option>
+                                <option value="id_asc">ID Terlama</option>
+                            </select>
+                        </div>
                         <div class="col-md-3 d-flex align-items-end">
                             <button type="button" class="btn btn-success btn-sm" id="btn_update_all_notif">Update All</button>
                         </div>
@@ -245,7 +253,7 @@ $isHoRole = static function ($roleKey) {
                         <table class="table table-bordered table-striped table-sm" id="table_myrep_notification">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
+                                    <th>No</th>
                                     <th>Module</th>
                                     <th>Event</th>
                                     <th>Target Type</th>
@@ -257,10 +265,11 @@ $isHoRole = static function ($roleKey) {
                                 </tr>
                             </thead>
                             <tbody>
+                                <?php $notifNo = 1; ?>
                                 <?php foreach ($notificationRows as $row): ?>
                                     <tr>
                                         <form method="post" action="<?= base_url('SuperAdmin_MyRep_Config/saveNotificationRoute') ?>" class="js-notif-row-form">
-                                            <td><?= (int) ($row['id_route'] ?? 0) ?></td>
+                                            <td data-order="<?= (int) ($row['id_route'] ?? 0) ?>"><?= $notifNo++ ?></td>
                                             <td>
                                                 <input type="hidden" name="module_name" value="<?= htmlspecialchars((string) ($row['module_name'] ?? '')) ?>">
                                                 <?= htmlspecialchars((string) ($row['module_name'] ?? '')) ?>
@@ -327,12 +336,13 @@ $isHoRole = static function ($roleKey) {
                     </div>
                 </div>
             </div>
+
         </div>
     </section>
 </div>
 
 <script>
-    (function () {
+    $(function () {
         function initTargetUserSearch($scope) {
             if (!window.jQuery || !$.fn.select2) {
                 return;
@@ -396,6 +406,24 @@ $isHoRole = static function ($roleKey) {
             });
         }
 
+        function applyNotifSort(table) {
+            if (!table) {
+                return;
+            }
+
+            var mode = String($('#filter_notif_sort').val() || 'stage');
+            if (mode === 'id_desc') {
+                table.order([[0, 'desc']]).draw();
+                return;
+            }
+            if (mode === 'id_asc') {
+                table.order([[0, 'asc']]).draw();
+                return;
+            }
+
+            table.order([]).draw();
+        }
+
         $('#filter_matrix_page').on('change', applyPageFilter);
         applyPageFilter();
 
@@ -456,16 +484,21 @@ $isHoRole = static function ($roleKey) {
 
             var notifTable = $('#table_myrep_notification').DataTable({
                 pageLength: 25,
-                order: [[1, 'asc'], [2, 'asc']]
+                order: []
             });
 
             $('#filter_notif_module, #filter_notif_event, #filter_notif_type, #filter_notif_active').on('change', function () {
                 notifTable.draw();
             });
+            $('#filter_notif_sort').on('change', function () {
+                applyNotifSort(notifTable);
+            });
 
             $('#table_myrep_notification').on('draw.dt', function () {
                 initTargetUserSearch($('#table_myrep_notification'));
             });
+
+            applyNotifSort(notifTable);
         }
 
         $('#btn_update_all_notif').on('click', function () {
@@ -499,7 +532,7 @@ $isHoRole = static function ($roleKey) {
             $bulkForm.html(html);
             $bulkForm.trigger('submit');
         });
-    })();
+    });
 </script>
 
 <style>

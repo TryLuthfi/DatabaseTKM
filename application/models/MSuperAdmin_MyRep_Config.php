@@ -3,6 +3,18 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MSuperAdmin_MyRep_Config extends CI_Model
 {
+    private $cityPicRoleColumns = [
+        'rpm_area',
+        'sm_area',
+        'spv_area',
+        'snd_area',
+        'admin_area',
+        'snd_ho',
+        'rfs_ho',
+        'sitac_ho',
+        'dc_ho',
+    ];
+
     private $defaultPageOptions = [
         'BAK_MyRep',
         'VALSAL_MyRep',
@@ -69,6 +81,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
             'role_permission' => $this->db->table_exists('tb_myrep_role_permission'),
             'notification_route' => $this->db->table_exists('tb_myrep_notification_route'),
             'master_user' => $this->db->table_exists('tb_master_user_new'),
+            'city_mapping' => $this->db->table_exists('tb_myrep_pic_mapping_city'),
         ];
     }
 
@@ -139,8 +152,116 @@ class MSuperAdmin_MyRep_Config extends CI_Model
                     u.nama_karyawan AS target_user_name, u.telegram_user_id AS target_user_telegram
              FROM tb_myrep_notification_route r
              LEFT JOIN tb_master_user_new u ON u.id = r.target_user_id
-             ORDER BY r.module_name ASC, r.event_name ASC"
+             ORDER BY FIELD(
+                    r.module_name,
+                    'BAK_MyRep',
+                    'VALSAL_MyRep',
+                    'Batch_Approval_MyRep',
+                    'DRM_MyRep',
+                    'Monitoring_RFS_MyRep',
+                    'Checklist_Dokument_MyRep'
+                ) ASC,
+                r.event_name ASC,
+                r." . $idColumn . " ASC"
         )->result_array();
+    }
+
+    public function getCityPicMappings()
+    {
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return [];
+        }
+
+        return (array) $this->db->query(
+            "SELECT
+                m.id,
+                m.regional_name,
+                m.province_name,
+                m.city_name,
+                m.team_name,
+                m.chief,
+                m.rpm_area,
+                m.sm_area,
+                m.spv_area,
+                m.snd_area,
+                m.admin_area,
+                m.snd_ho,
+                m.rfs_ho,
+                m.sitac_ho,
+                m.dc_ho,
+                m.is_active,
+                u_rpm.nama_karyawan AS rpm_area_name,
+                u_sm.nama_karyawan AS sm_area_name,
+                u_spv.nama_karyawan AS spv_area_name,
+                u_snd.nama_karyawan AS snd_area_name,
+                u_admin.nama_karyawan AS admin_area_name,
+                u_snd_ho.nama_karyawan AS snd_ho_name,
+                u_rfs_ho.nama_karyawan AS rfs_ho_name,
+                u_sitac_ho.nama_karyawan AS sitac_ho_name,
+                u_dc_ho.nama_karyawan AS dc_ho_name
+            FROM tb_myrep_pic_mapping_city m
+            LEFT JOIN tb_master_user_new u_rpm ON u_rpm.nik = m.rpm_area
+            LEFT JOIN tb_master_user_new u_sm ON u_sm.nik = m.sm_area
+            LEFT JOIN tb_master_user_new u_spv ON u_spv.nik = m.spv_area
+            LEFT JOIN tb_master_user_new u_snd ON u_snd.nik = m.snd_area
+            LEFT JOIN tb_master_user_new u_admin ON u_admin.nik = m.admin_area
+            LEFT JOIN tb_master_user_new u_snd_ho ON u_snd_ho.nik = m.snd_ho
+            LEFT JOIN tb_master_user_new u_rfs_ho ON u_rfs_ho.nik = m.rfs_ho
+            LEFT JOIN tb_master_user_new u_sitac_ho ON u_sitac_ho.nik = m.sitac_ho
+            LEFT JOIN tb_master_user_new u_dc_ho ON u_dc_ho.nik = m.dc_ho
+            ORDER BY
+                m.regional_name ASC,
+                m.province_name ASC,
+                m.city_name ASC"
+        )->result_array();
+    }
+
+    public function getCityPicRoleColumns()
+    {
+        return $this->cityPicRoleColumns;
+    }
+
+    public function saveCityPicMappingsBulk(array $rows)
+    {
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return ['ok' => false, 'updated' => 0, 'failed' => []];
+        }
+
+        $this->db->trans_begin();
+        $updated = 0;
+        $failed = [];
+
+        foreach ($rows as $idx => $row) {
+            $id = (int) ($row['id'] ?? 0);
+            if ($id <= 0) {
+                $failed[] = (int) $idx + 1;
+                continue;
+            }
+
+            $data = [];
+            foreach ($this->cityPicRoleColumns as $column) {
+                $value = trim((string) ($row[$column] ?? ''));
+                $data[$column] = $value === '' ? null : $value;
+            }
+
+            $ok = (bool) $this->db
+                ->where('id', $id)
+                ->update('tb_myrep_pic_mapping_city', $data);
+
+            if ($ok) {
+                $updated++;
+            } else {
+                $failed[] = (int) $idx + 1;
+            }
+        }
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return ['ok' => false, 'updated' => 0, 'failed' => $failed];
+        }
+
+        $this->db->trans_commit();
+        return ['ok' => empty($failed), 'updated' => $updated, 'failed' => $failed];
     }
 
     public function getUserOptions()
