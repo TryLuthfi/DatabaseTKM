@@ -75,4 +75,5 @@ $route['StockOpname/uploadSignedBA'] = 'StockOpname/uploadSignedBA';
 $route['StockOpname/approveBA'] = 'StockOpname/approveBA';
 $route['Dashboard_Logistik_Stok/getReportStokByData'] = 'Dashboard_Logistik_Stok/getReportStokByData';
 $route['Dashboard_Logistik_Stok/revamp'] = 'Dashboard_Logistik_Stok/revamp';
+$route['maintenance-preview'] = 'MaintenancePreview/index';
 
