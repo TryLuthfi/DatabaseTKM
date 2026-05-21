@@ -198,7 +198,7 @@ $total = 1;
                                                         if ($data['area_target'] == $decoded_url_area):
                                                             $target = $data['GRAND TOTAL TARGET'];
                                                             $achiev = $data['GRAND TOTAL ACHIEVED'];
-                                                            $deviasi = max(0, $target - $achiev);
+                                                            $deviasi = $target - $achiev;
                                                             ?>
                                                             <tr>
                                                                 <td><?= $no++ ?></td>
@@ -313,7 +313,7 @@ $total = 1;
                                                         if ($data['area_target'] == $decoded_url_area):
                                                             $target = $data['TOTAL TARGET OKTOBER'];
                                                             $achiev = $data['TOTAL ACHIEVED OKTOBER'];
-                                                            $deviasi = max(0, $target - $achiev);
+                                                            $deviasi = $target - $achiev;
                                                             ?>
                                                             <tr>
                                                                 <td><?= $no++ ?></td>
@@ -432,7 +432,7 @@ $total = 1;
                                                 if ($data['area_target'] == $decoded_url_area):
                                                     $target = $data['TOTAL TARGET NOVEMBER'];
                                                     $achiev = $data['TOTAL ACHIEVED NOVEMBER'];
-                                                    $deviasi = max(0, $target - $achiev);
+                                                    $deviasi = $target - $achiev;
 
                                                     ?>
                                                     <tr>
@@ -533,7 +533,7 @@ $total = 1;
                                                 if ($data['area_target'] == $decoded_url_area):
                                                     $target = $data['TOTAL TARGET DESEMBER'];
                                                     $achiev = $data['TOTAL ACHIEVED DESEMBER'];
-                                                    $deviasi = max(0, $target - $achiev);
+                                                    $deviasi = $target - $achiev;
                                                     ?>
                                                     <tr>
                                                         <td><?= $no++ ?></td>

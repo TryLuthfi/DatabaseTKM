@@ -21,7 +21,7 @@ class MTargetInvoice extends CI_Model
     tmb.pic_user,
     SUM(tti.qty_target) AS total_target,
     SUM(tti.qty_achiev_target) AS total_achiev,
-    GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) AS deviasi,
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi,
 
     ROUND(
         CASE 
@@ -34,7 +34,7 @@ class MTargetInvoice extends CI_Model
     ROUND(
         CASE 
             WHEN SUM(tti.qty_target) = 0 THEN 0
-            ELSE (GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) / SUM(tti.qty_target)) * 100
+            ELSE ((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) / SUM(tti.qty_target)) * 100
         END, 2
     ) AS persen_deviasi
 FROM tb_target_invoice tti
@@ -54,7 +54,7 @@ ORDER BY total_target DESC;')
     tmb.pic_user,
     SUM(tti.qty_target) AS total_target,
     SUM(tti.qty_achiev_target) AS total_achiev,
-    GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) AS deviasi,
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi,
 
     -- Persentase Achiev (berapa % dari target yang sudah tercapai)
     ROUND(
@@ -68,7 +68,7 @@ ORDER BY total_target DESC;')
     ROUND(
         CASE 
             WHEN SUM(tti.qty_target) = 0 THEN 0
-            ELSE (GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) / SUM(tti.qty_target)) * 100
+            ELSE ((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) / SUM(tti.qty_target)) * 100
         END, 2
     ) AS persen_deviasi
 FROM tb_target_invoice tti
@@ -90,7 +90,7 @@ GROUP BY tti.id_bowheer ORDER BY total_target DESC')
     tmb.pic_user,
     SUM(tti.qty_target) AS total_target,
     SUM(tti.qty_achiev_target) AS total_achiev,
-    GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) AS deviasi,
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi,
 
     ROUND(
         CASE 
@@ -103,7 +103,7 @@ GROUP BY tti.id_bowheer ORDER BY total_target DESC')
     ROUND(
         CASE 
             WHEN SUM(tti.qty_target) = 0 THEN 0
-            ELSE (GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) / SUM(tti.qty_target)) * 100
+            ELSE ((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) / SUM(tti.qty_target)) * 100
         END, 2
     ) AS persen_deviasi
 FROM tb_target_invoice tti
@@ -125,7 +125,7 @@ ORDER BY total_target DESC;')
     tmb.pic_user,
     SUM(tti.qty_target) AS total_target,
     SUM(tti.qty_achiev_target) AS total_achiev,
-    GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) AS deviasi,
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi,
 
     ROUND(
         CASE 
@@ -138,7 +138,7 @@ ORDER BY total_target DESC;')
     ROUND(
         CASE 
             WHEN SUM(tti.qty_target) = 0 THEN 0
-            ELSE (GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) / SUM(tti.qty_target)) * 100
+            ELSE ((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) / SUM(tti.qty_target)) * 100
         END, 2
     ) AS persen_deviasi
 FROM tb_target_invoice tti
@@ -157,7 +157,7 @@ ORDER BY tti.regional_target ASC;')
 	*,
 	SUM(tti.qty_target) AS total_target,
     SUM(tti.qty_achiev_target) AS total_achiev,
-    GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) AS deviasi
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi
 FROM tb_target_invoice tti
 JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
@@ -174,7 +174,7 @@ JOIN tb_master_bowheer_invoice tmb
 	*,
 	SUM(tti.qty_target) AS total_target,
     SUM(tti.qty_achiev_target) AS total_achiev,
-    GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) AS deviasi,
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi,
     ROUND(
         CASE 
             WHEN SUM(tti.qty_target) = 0 THEN 0
@@ -186,7 +186,7 @@ JOIN tb_master_bowheer_invoice tmb
     ROUND(
         CASE 
             WHEN SUM(tti.qty_target) = 0 THEN 0
-            ELSE (GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) / SUM(tti.qty_target)) * 100
+            ELSE ((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) / SUM(tti.qty_target)) * 100
         END, 2
     ) AS persen_deviasi
 FROM tb_target_invoice tti
@@ -210,7 +210,7 @@ JOIN tb_master_bowheer_invoice tmb
 	*,
 	SUM(tti.qty_target) AS total_target,
     SUM(tti.qty_achiev_target) AS total_achiev,
-    GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) AS deviasi
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi
 FROM tb_target_invoice tti
 JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
@@ -233,7 +233,7 @@ JOIN tb_master_bowheer_invoice tmb
 	*,
 	SUM(tti.qty_target) AS total_target,
     SUM(tti.qty_achiev_target) AS total_achiev,
-    GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) AS deviasi
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi
 FROM tb_target_invoice tti
 JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
@@ -256,7 +256,7 @@ JOIN tb_master_bowheer_invoice tmb
 	*,
 	SUM(tti.qty_target) AS total_target,
     SUM(tti.qty_achiev_target) AS total_achiev,
-    GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) AS deviasi
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi
 FROM tb_target_invoice tti
 JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
@@ -278,7 +278,7 @@ JOIN tb_master_bowheer_invoice tmb
 	*,
 	SUM(tti.qty_target) AS total_target,
     SUM(tti.qty_achiev_target) AS total_achiev,
-    GREATEST((SUM(tti.qty_target) - SUM(tti.qty_achiev_target)), 0) AS deviasi
+    (SUM(tti.qty_target) - SUM(tti.qty_achiev_target)) AS deviasi
 FROM tb_target_invoice tti
 JOIN tb_master_bowheer_invoice tmb
     ON tti.id_bowheer = tmb.id_bowheer
