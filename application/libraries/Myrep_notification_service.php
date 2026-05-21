@@ -5,6 +5,7 @@ class Myrep_notification_service
 {
     private $ci;
     private $config;
+    private $cityPicMappingCache = [];
 
     public function __construct()
     {
@@ -95,11 +96,24 @@ class Myrep_notification_service
         }
 
         if ($targetType === 'CLUSTER_PIC') {
+            $targetRole = strtoupper(trim((string) ($route['target_role'] ?? '')));
+            if ($targetRole !== '') {
+                $byRole = $this->getUserByCityRole($targetRole, $payload);
+                if (!empty($byRole['name'])) {
+                    return $byRole;
+                }
+            }
+
             return [
                 'id_user' => (int) ($payload['target_user_id'] ?? 0),
                 'name' => (string) ($payload['target_name'] ?? ''),
                 'telegram_user_id' => (string) ($payload['target_telegram_user_id'] ?? ''),
             ];
+        }
+
+        if ($targetType === 'CITY_ROLE') {
+            $targetRole = strtoupper(trim((string) ($route['target_role'] ?? '')));
+            return $this->getUserByCityRole($targetRole, $payload);
         }
 
         return [];
@@ -127,6 +141,109 @@ class Myrep_notification_service
             'name' => (string) ($row['nama_user'] ?? ''),
             'telegram_user_id' => (string) ($row['telegram_user_id'] ?? ''),
         ];
+    }
+
+    private function getUserByNik($nik)
+    {
+        $nik = trim((string) $nik);
+        if ($nik === '') {
+            return [];
+        }
+
+        $row = $this->ci->db
+            ->select('id AS id_user, nama_karyawan AS nama_user, telegram_user_id')
+            ->from('tb_master_user_new')
+            ->where('nik', $nik)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        return [
+            'id_user' => (int) ($row['id_user'] ?? 0),
+            'name' => (string) ($row['nama_user'] ?? ''),
+            'telegram_user_id' => (string) ($row['telegram_user_id'] ?? ''),
+        ];
+    }
+
+    private function getUserByCityRole($targetRole, array $payload = [])
+    {
+        $targetRole = strtoupper(trim((string) $targetRole));
+        if ($targetRole === '') {
+            return [];
+        }
+
+        $roleColumnMap = [
+            'RPM_AREA' => 'rpm_area',
+            'SM_AREA' => 'sm_area',
+            'SPV_AREA' => 'spv_area',
+            'SND_AREA' => 'snd_area',
+            'ADMIN_AREA' => 'admin_area',
+            'SND_HO' => 'snd_ho',
+            'RFS_HO' => 'rfs_ho',
+            'SITAC_HO' => 'sitac_ho',
+            'DC_HO' => 'dc_ho',
+        ];
+
+        if (!isset($roleColumnMap[$targetRole])) {
+            return [];
+        }
+
+        $mapping = $this->getCityPicMapping($payload);
+        if (empty($mapping)) {
+            return [];
+        }
+
+        $nik = trim((string) ($mapping[$roleColumnMap[$targetRole]] ?? ''));
+        if ($nik === '') {
+            return [];
+        }
+
+        return $this->getUserByNik($nik);
+    }
+
+    private function getCityPicMapping(array $payload = [])
+    {
+        if (!$this->ci->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return [];
+        }
+
+        $city = strtoupper(trim((string) ($payload['city_name'] ?? '')));
+        $province = strtoupper(trim((string) ($payload['province_name'] ?? '')));
+        $regional = strtoupper(trim((string) ($payload['regional_name'] ?? '')));
+        if ($city === '') {
+            return [];
+        }
+
+        $cacheKey = $regional . '|' . $province . '|' . $city;
+        if (isset($this->cityPicMappingCache[$cacheKey])) {
+            return $this->cityPicMappingCache[$cacheKey];
+        }
+
+        $this->ci->db->from('tb_myrep_pic_mapping_city');
+        $this->ci->db->where('UPPER(city_name)', $city);
+        if ($province !== '') {
+            $this->ci->db->where('UPPER(province_name)', $province);
+        }
+        if ($regional !== '') {
+            $this->ci->db->where('UPPER(regional_name)', $regional);
+        }
+        $row = $this->ci->db->limit(1)->get()->row_array();
+
+        if (empty($row)) {
+            $row = $this->ci->db
+                ->from('tb_myrep_pic_mapping_city')
+                ->where('UPPER(city_name)', $city)
+                ->limit(1)
+                ->get()
+                ->row_array();
+        }
+
+        $this->cityPicMappingCache[$cacheKey] = !empty($row) ? $row : [];
+        return $this->cityPicMappingCache[$cacheKey];
     }
 
     private function buildMessage($moduleName, $eventName, array $payload, array $recipient)
