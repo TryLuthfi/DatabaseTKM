@@ -81,6 +81,7 @@ $route['SuperAdmin_MyRep_Config/saveAccessMatrix'] = 'SuperAdmin_MyRep_Config/sa
 $route['SuperAdmin_MyRep_Config/saveApprovalMatrix'] = 'SuperAdmin_MyRep_Config/saveAccessMatrix';
 $route['SuperAdmin_MyRep_Config/savePermission'] = 'SuperAdmin_MyRep_Config/savePermission';
 $route['SuperAdmin_MyRep_Config/saveNotificationRoute'] = 'SuperAdmin_MyRep_Config/saveNotificationRoute';
+$route['SuperAdmin_MyRep_Config/saveNotificationRouteBulk'] = 'SuperAdmin_MyRep_Config/saveNotificationRouteBulk';
 $route['SuperAdmin_MyRep_Config/deletePermission/(:num)'] = 'SuperAdmin_MyRep_Config/deletePermission/$1';
 $route['SuperAdmin_MyRep_Config/deleteNotificationRoute/(:num)'] = 'SuperAdmin_MyRep_Config/deleteNotificationRoute/$1';
 

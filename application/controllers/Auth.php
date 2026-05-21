@@ -30,6 +30,7 @@ class Auth extends CI_Controller
     public function logout()
     {
         $this->session->sess_destroy();
+        setcookie('mtk_maintenance_bypass', '', time() - 3600, '/');
         redirect('Auth');
     }
 }

@@ -51,15 +51,73 @@ class Maintenance_hook
 		}
 
 		$allowedRole = trim((string) $this->readEnvValue('MAINTENANCE_ALLOWED_ROLE', 'Super Admin'));
+		$allowedLevelIdRaw = trim((string) $this->readEnvValue('MAINTENANCE_ALLOWED_LEVEL_ID', '1'));
+		$allowedLevelId = ctype_digit($allowedLevelIdRaw) ? (int) $allowedLevelIdRaw : 1;
 		$currentLevel = '';
+		$currentLevelId = 0;
+		$currentUserId = 0;
+		$currentUsername = '';
 
 		if (isset($CI->session))
 		{
 			$currentLevel = trim((string) $CI->session->userdata('nama_level'));
+			$currentLevelId = (int) $CI->session->userdata('id_level');
+			$currentUserId = (int) $CI->session->userdata('id_user');
+			$currentUsername = trim((string) $CI->session->userdata('username_user'));
 		}
 
+		// Fallback: fetch role/level from DB when session keys are incomplete.
+		if (($currentLevelId <= 0 || $currentLevel === '') && isset($CI->db))
+		{
+			$query = $CI->db
+				->select('a.id_level, tl.nama_level')
+				->from('tb_master_user_new a')
+				->join('tb_level tl', 'a.id_level = tl.id_level', 'left');
+
+			if ($currentUserId > 0)
+			{
+				$query->where('a.id', $currentUserId);
+			}
+			elseif ($currentUsername !== '')
+			{
+				$query->where('a.username_user', $currentUsername);
+			}
+
+			$userRow = $query->limit(1)->get()->row_array();
+
+			if (!empty($userRow))
+			{
+				if ($currentLevelId <= 0)
+				{
+					$currentLevelId = (int) ($userRow['id_level'] ?? 0);
+				}
+				if ($currentLevel === '')
+				{
+					$currentLevel = trim((string) ($userRow['nama_level'] ?? ''));
+				}
+			}
+		}
+
+		log_message(
+			'debug',
+			'Maintenance guard: uri='.$uriPath
+			.' ci_uri='.$ciUriString
+			.' id_user='.$currentUserId
+			.' username='.$currentUsername
+			.' id_level='.$currentLevelId
+			.' nama_level='.$currentLevel
+			.' allowed_role='.$allowedRole
+			.' allowed_level='.$allowedLevelId
+		);
+
 		$isAllowedRole = ($allowedRole !== '' && strcasecmp($currentLevel, $allowedRole) === 0);
-		if ($isAllowedRole)
+		$isAllowedLevelId = ($allowedLevelId > 0 && $currentLevelId === $allowedLevelId);
+		if ($isAllowedRole || $isAllowedLevelId)
+		{
+			return;
+		}
+
+		if ($this->hasValidBypassCookie($CI, $allowedRole, $allowedLevelId))
 		{
 			return;
 		}
@@ -154,5 +212,67 @@ class Maintenance_hook
 		}
 
 		return $default;
+	}
+
+	private function hasValidBypassCookie($CI, $allowedRole, $allowedLevelId)
+	{
+		$cookie = isset($_COOKIE['mtk_maintenance_bypass']) ? (string) $_COOKIE['mtk_maintenance_bypass'] : '';
+		if ($cookie === '')
+		{
+			return false;
+		}
+
+		$parts = explode('|', $cookie);
+		if (count($parts) !== 3)
+		{
+			return false;
+		}
+
+		$userId = ctype_digit($parts[0]) ? (int) $parts[0] : 0;
+		$exp = ctype_digit($parts[1]) ? (int) $parts[1] : 0;
+		$sig = $parts[2];
+		if ($userId <= 0 || $exp <= time() || $sig === '')
+		{
+			return false;
+		}
+
+		$secret = (string) $this->readEnvValue('MAINTENANCE_BYPASS_SECRET', config_item('encryption_key'));
+		if ($secret === '')
+		{
+			$secret = 'database_tkm_maintenance_secret';
+		}
+
+		$payload = $userId.'|'.$exp;
+		$expectedSig = hash_hmac('sha256', $payload, $secret);
+		if (!hash_equals($expectedSig, $sig))
+		{
+			return false;
+		}
+
+		if (!isset($CI->db))
+		{
+			return false;
+		}
+
+		$userRow = $CI->db
+			->select('a.id_level, tl.nama_level')
+			->from('tb_master_user_new a')
+			->join('tb_level tl', 'a.id_level = tl.id_level', 'left')
+			->where('a.id', $userId)
+			->where('a.status_user', 'ACTIVE')
+			->limit(1)
+			->get()
+			->row_array();
+		if (empty($userRow))
+		{
+			return false;
+		}
+
+		$userLevelId = (int) ($userRow['id_level'] ?? 0);
+		$userLevelName = trim((string) ($userRow['nama_level'] ?? ''));
+		$isAllowedRole = ($allowedRole !== '' && strcasecmp($userLevelName, $allowedRole) === 0);
+		$isAllowedLevel = ($allowedLevelId > 0 && $userLevelId === $allowedLevelId);
+
+		return ($isAllowedRole || $isAllowedLevel);
 	}
 }

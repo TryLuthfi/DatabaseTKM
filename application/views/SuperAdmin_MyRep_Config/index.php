@@ -174,7 +174,7 @@ $isHoRole = static function ($roleKey) {
                             </div>
                             <div class="col-md-3">
                                 <label>Target User (FIXED_USER)</label>
-                                <select name="target_user_id" class="form-control" id="create_target_user">
+                                <select name="target_user_id" class="form-control js-target-user-select" id="create_target_user">
                                     <option value="0">-</option>
                                     <?php foreach ($userOptions as $user): ?>
                                         <option value="<?= (int) ($user['id'] ?? 0) ?>">
@@ -234,7 +234,12 @@ $isHoRole = static function ($roleKey) {
                                 <option value="0">Inactive</option>
                             </select>
                         </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="button" class="btn btn-success btn-sm" id="btn_update_all_notif">Update All</button>
+                        </div>
                     </div>
+
+                    <form method="post" action="<?= base_url('SuperAdmin_MyRep_Config/saveNotificationRouteBulk') ?>" id="form_bulk_notification_route" style="display:none;"></form>
 
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped table-sm" id="table_myrep_notification">
@@ -293,7 +298,7 @@ $isHoRole = static function ($roleKey) {
                                                 </select>
                                             </td>
                                             <td>
-                                                <select name="target_user_id" class="form-control form-control-sm js-target-user">
+                                                <select name="target_user_id" class="form-control form-control-sm js-target-user js-target-user-select">
                                                     <option value="0">-</option>
                                                     <?php foreach ($userOptions as $user): ?>
                                                         <?php $idUser = (int) ($user['id'] ?? 0); ?>
@@ -328,6 +333,30 @@ $isHoRole = static function ($roleKey) {
 
 <script>
     (function () {
+        function initTargetUserSearch($scope) {
+            if (!window.jQuery || !$.fn.select2) {
+                return;
+            }
+
+            var $targets = $scope && $scope.length
+                ? $scope.find('.js-target-user-select')
+                : $('.js-target-user-select');
+
+            $targets.each(function () {
+                var $select = $(this);
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+
+                $select.select2({
+                    theme: 'bootstrap4',
+                    width: '100%',
+                    placeholder: 'Cari nama / NIK user',
+                    allowClear: false
+                });
+            });
+        }
+
         function setRoleClass($select) {
             if (!$select || !$select.length) {
                 return;
@@ -352,6 +381,10 @@ $isHoRole = static function ($roleKey) {
                 $userSelect.val('0');
             }
             setRoleClass($roleSelect);
+            if ($.fn.select2) {
+                $roleSelect.trigger('change.select2');
+                $userSelect.trigger('change.select2');
+            }
         }
 
         function applyPageFilter() {
@@ -388,6 +421,8 @@ $isHoRole = static function ($roleKey) {
                 setRoleClass($roleSelect);
             });
         });
+
+        initTargetUserSearch($(document));
 
         if (window.jQuery && $.fn.DataTable) {
             $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
@@ -427,7 +462,43 @@ $isHoRole = static function ($roleKey) {
             $('#filter_notif_module, #filter_notif_event, #filter_notif_type, #filter_notif_active').on('change', function () {
                 notifTable.draw();
             });
+
+            $('#table_myrep_notification').on('draw.dt', function () {
+                initTargetUserSearch($('#table_myrep_notification'));
+            });
         }
+
+        $('#btn_update_all_notif').on('click', function () {
+            var $bulkForm = $('#form_bulk_notification_route');
+            var html = '';
+            var idx = 0;
+
+            $('.js-notif-row-form').each(function () {
+                var $rowForm = $(this);
+                var moduleName = String($rowForm.find('input[name="module_name"]').val() || '');
+                var eventName = String($rowForm.find('input[name="event_name"]').val() || '');
+                var targetType = String($rowForm.find('select[name="target_type"]').val() || '');
+                var targetRole = String($rowForm.find('select[name="target_role"]').val() || '');
+                var targetUserId = String($rowForm.find('select[name="target_user_id"]').val() || '0');
+                var isActive = String($rowForm.find('select[name="is_active"]').val() || '0');
+
+                html += '<input type="hidden" name="rows[' + idx + '][module_name]" value="' + $('<div>').text(moduleName).html() + '">';
+                html += '<input type="hidden" name="rows[' + idx + '][event_name]" value="' + $('<div>').text(eventName).html() + '">';
+                html += '<input type="hidden" name="rows[' + idx + '][target_type]" value="' + $('<div>').text(targetType).html() + '">';
+                html += '<input type="hidden" name="rows[' + idx + '][target_role]" value="' + $('<div>').text(targetRole).html() + '">';
+                html += '<input type="hidden" name="rows[' + idx + '][target_user_id]" value="' + $('<div>').text(targetUserId).html() + '">';
+                html += '<input type="hidden" name="rows[' + idx + '][is_active]" value="' + $('<div>').text(isActive).html() + '">';
+                idx++;
+            });
+
+            if (idx === 0) {
+                alert('Tidak ada data route untuk diupdate.');
+                return;
+            }
+
+            $bulkForm.html(html);
+            $bulkForm.trigger('submit');
+        });
     })();
 </script>
 

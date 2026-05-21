@@ -164,6 +164,71 @@ class SuperAdmin_MyRep_Config extends CI_Controller
         redirect('SuperAdmin_MyRep_Config');
     }
 
+    public function saveNotificationRouteBulk()
+    {
+        if (!$this->validateSuperAdminSession()) {
+            return;
+        }
+
+        $rows = (array) $this->input->post('rows');
+        if (empty($rows)) {
+            $this->session->set_flashdata('status', 'gagal_edit');
+            $this->session->set_flashdata('error_log', 'Tidak ada data route yang dikirim.');
+            redirect('SuperAdmin_MyRep_Config');
+            return;
+        }
+
+        $successCount = 0;
+        $failedRows = [];
+
+        foreach ($rows as $index => $row) {
+            $moduleName = trim((string) ($row['module_name'] ?? ''));
+            $eventName = trim((string) ($row['event_name'] ?? ''));
+            $targetType = strtoupper(trim((string) ($row['target_type'] ?? '')));
+            $targetUserId = (int) ($row['target_user_id'] ?? 0);
+            $targetRole = strtoupper(trim((string) ($row['target_role'] ?? '')));
+            $isActive = (int) ($row['is_active'] ?? 0) === 1 ? 1 : 0;
+
+            if ($moduleName === '' || $eventName === '' || $targetType === '') {
+                $failedRows[] = (int) $index + 1;
+                continue;
+            }
+            if ($targetType === 'FIXED_USER' && $targetUserId <= 0) {
+                $failedRows[] = (int) $index + 1;
+                continue;
+            }
+            if (in_array($targetType, ['CITY_ROLE', 'CLUSTER_PIC'], true) && $targetRole === '') {
+                $failedRows[] = (int) $index + 1;
+                continue;
+            }
+
+            $ok = $this->MSuperAdmin_MyRep_Config->upsertNotificationRoute([
+                'module_name' => $moduleName,
+                'event_name' => $eventName,
+                'target_type' => $targetType,
+                'target_user_id' => $targetType === 'FIXED_USER' ? $targetUserId : null,
+                'target_role' => in_array($targetType, ['CITY_ROLE', 'CLUSTER_PIC'], true) ? $targetRole : null,
+                'is_active' => $isActive,
+            ]);
+
+            if ($ok) {
+                $successCount++;
+            } else {
+                $failedRows[] = (int) $index + 1;
+            }
+        }
+
+        if (empty($failedRows)) {
+            $this->session->set_flashdata('status', 'sukses_edit');
+            $this->session->set_flashdata('error_log', $successCount . ' route berhasil diupdate.');
+        } else {
+            $this->session->set_flashdata('status', 'gagal_edit');
+            $this->session->set_flashdata('error_log', 'Sebagian gagal diupdate. Baris bermasalah: ' . implode(', ', $failedRows));
+        }
+
+        redirect('SuperAdmin_MyRep_Config');
+    }
+
     public function deleteNotificationRoute($id = 0)
     {
         if (!$this->validateSuperAdminSession()) {

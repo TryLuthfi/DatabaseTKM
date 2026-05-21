@@ -46,7 +46,7 @@
             <div class="card-body login-card-body">
                 <p class="login-box-msg">Silahkan masuk</p>
 
-                <form action="<?= base_url('') ?>" method="post">
+                <form action="<?= site_url('Auth') ?>" method="post">
                     <span class="text text-danger"><?= form_error('username') ?></span>
                     <div class="input-group mb-3">
                         <input type="text" class="form-control" placeholder="Username" name="username">
