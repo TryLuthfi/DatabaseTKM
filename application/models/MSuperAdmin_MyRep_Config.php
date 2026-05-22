@@ -10,9 +10,11 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         'snd_area',
         'admin_area',
         'snd_ho',
+        'atp_ho',
         'rfs_ho',
         'sitac_ho',
         'dc_ho',
+        'qa_ho',
     ];
 
     private $defaultPageOptions = [
@@ -172,53 +174,71 @@ class MSuperAdmin_MyRep_Config extends CI_Model
             return [];
         }
 
-        return (array) $this->db->query(
-            "SELECT
-                m.id,
-                m.regional_name,
-                m.province_name,
-                m.city_name,
-                m.team_name,
-                m.chief,
-                m.rpm_area,
-                m.sm_area,
-                m.spv_area,
-                m.snd_area,
-                m.admin_area,
-                m.snd_ho,
-                m.rfs_ho,
-                m.sitac_ho,
-                m.dc_ho,
-                m.is_active,
-                u_rpm.nama_karyawan AS rpm_area_name,
-                u_sm.nama_karyawan AS sm_area_name,
-                u_spv.nama_karyawan AS spv_area_name,
-                u_snd.nama_karyawan AS snd_area_name,
-                u_admin.nama_karyawan AS admin_area_name,
-                u_snd_ho.nama_karyawan AS snd_ho_name,
-                u_rfs_ho.nama_karyawan AS rfs_ho_name,
-                u_sitac_ho.nama_karyawan AS sitac_ho_name,
-                u_dc_ho.nama_karyawan AS dc_ho_name
-            FROM tb_myrep_pic_mapping_city m
-            LEFT JOIN tb_master_user_new u_rpm ON u_rpm.nik = m.rpm_area
-            LEFT JOIN tb_master_user_new u_sm ON u_sm.nik = m.sm_area
-            LEFT JOIN tb_master_user_new u_spv ON u_spv.nik = m.spv_area
-            LEFT JOIN tb_master_user_new u_snd ON u_snd.nik = m.snd_area
-            LEFT JOIN tb_master_user_new u_admin ON u_admin.nik = m.admin_area
-            LEFT JOIN tb_master_user_new u_snd_ho ON u_snd_ho.nik = m.snd_ho
-            LEFT JOIN tb_master_user_new u_rfs_ho ON u_rfs_ho.nik = m.rfs_ho
-            LEFT JOIN tb_master_user_new u_sitac_ho ON u_sitac_ho.nik = m.sitac_ho
-            LEFT JOIN tb_master_user_new u_dc_ho ON u_dc_ho.nik = m.dc_ho
-            ORDER BY
-                m.regional_name ASC,
-                m.province_name ASC,
-                m.city_name ASC"
-        )->result_array();
+        $tableName = 'tb_myrep_pic_mapping_city';
+        $hasMasterUser = $this->db->table_exists('tb_master_user_new');
+        $aliasByRoleColumn = [
+            'rpm_area' => 'u_rpm',
+            'sm_area' => 'u_sm',
+            'spv_area' => 'u_spv',
+            'snd_area' => 'u_snd',
+            'admin_area' => 'u_admin',
+            'snd_ho' => 'u_snd_ho',
+            'atp_ho' => 'u_atp_ho',
+            'rfs_ho' => 'u_rfs_ho',
+            'sitac_ho' => 'u_sitac_ho',
+            'dc_ho' => 'u_dc_ho',
+            'qa_ho' => 'u_qa_ho',
+        ];
+
+        $this->db
+            ->from($tableName . ' m')
+            ->select('m.id, m.regional_name, m.province_name, m.city_name, m.team_name, m.chief');
+
+        if ($this->db->field_exists('is_active', $tableName)) {
+            $this->db->select('m.is_active');
+        } else {
+            $this->db->select('1 AS is_active', false);
+        }
+
+        foreach ($this->cityPicRoleColumns as $columnName) {
+            $nameFieldAlias = $columnName . '_name';
+            if ($this->db->field_exists($columnName, $tableName)) {
+                $this->db->select('m.' . $columnName);
+                if ($hasMasterUser) {
+                    $joinAlias = (string) ($aliasByRoleColumn[$columnName] ?? ('u_' . $columnName));
+                    $this->db->select($joinAlias . '.nama_karyawan AS ' . $nameFieldAlias);
+                    $this->db->join('tb_master_user_new ' . $joinAlias, $joinAlias . '.nik = m.' . $columnName, 'left');
+                } else {
+                    $this->db->select('NULL AS ' . $nameFieldAlias, false);
+                }
+            } else {
+                $this->db->select('NULL AS ' . $columnName, false);
+                $this->db->select('NULL AS ' . $nameFieldAlias, false);
+            }
+        }
+
+        return (array) $this->db
+            ->order_by('m.regional_name', 'ASC')
+            ->order_by('m.province_name', 'ASC')
+            ->order_by('m.city_name', 'ASC')
+            ->get()
+            ->result_array();
     }
 
     public function getCityPicRoleColumns()
     {
-        return $this->cityPicRoleColumns;
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return $this->cityPicRoleColumns;
+        }
+
+        $availableColumns = [];
+        foreach ($this->cityPicRoleColumns as $columnName) {
+            if ($this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+                $availableColumns[] = $columnName;
+            }
+        }
+
+        return empty($availableColumns) ? $this->cityPicRoleColumns : $availableColumns;
     }
 
     public function saveCityPicMappingsBulk(array $rows)
@@ -230,6 +250,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         $this->db->trans_begin();
         $updated = 0;
         $failed = [];
+        $roleColumns = $this->getCityPicRoleColumns();
 
         foreach ($rows as $idx => $row) {
             $id = (int) ($row['id'] ?? 0);
@@ -239,7 +260,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
             }
 
             $data = [];
-            foreach ($this->cityPicRoleColumns as $column) {
+            foreach ($roleColumns as $column) {
                 $value = trim((string) ($row[$column] ?? ''));
                 $data[$column] = $value === '' ? null : $value;
             }

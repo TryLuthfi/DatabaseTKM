@@ -29,6 +29,13 @@ class MyRepublik_Project extends CI_Controller
         $this->load->model('MMyRep_Cleanup');
         $this->load->model('MPO_MyRep');
         $this->load->model('MChecklist_Dokument_MyRep');
+        $this->load->library('Myrep_access_service', null, 'myrepAccess');
+        if (!empty($this->session->userdata('id_user'))) {
+            $this->myrepAccess->enforceView('MyRepublik_Project');
+            $this->myrepAccess->enforceByMethod('MyRepublik_Project', (string) $this->router->fetch_method(), [
+                'previewCutoffImport' => 'TAMBAH',
+            ]);
+        }
     }
 
     public function index()

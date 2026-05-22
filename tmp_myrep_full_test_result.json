@@ -1,0 +1,3116 @@
+{
+    "summary": {
+        "suite_started_at": "2026-05-22T04:23:47+07:00",
+        "suite_finished_at": "2026-05-22T04:24:38+07:00",
+        "base_url": "http://localhost/DatabaseTKM/",
+        "db_name": "u305047112_databasetkm",
+        "total_users_tested": 10,
+        "users_login_ok": 10,
+        "total_page_checks": 100,
+        "page_passed": 100,
+        "total_action_checks": 170,
+        "action_passed": 170,
+        "total_json_checks": 20,
+        "json_passed": 20,
+        "total_permission_mismatches": 0,
+        "total_server_errors": 0,
+        "total_city_leak_findings": 0,
+        "missing_role_columns_on_mapping_table": [
+            "atp_ho",
+            "qa_ho"
+        ]
+    },
+    "available_role_columns": {
+        "rpm_area": "RPM_AREA",
+        "sm_area": "SM_AREA",
+        "spv_area": "SPV_AREA",
+        "snd_area": "SND_AREA",
+        "admin_area": "ADMIN_AREA",
+        "snd_ho": "SND_HO",
+        "rfs_ho": "RFS_HO",
+        "sitac_ho": "SITAC_HO",
+        "dc_ho": "DC_HO"
+    },
+    "results": [
+        {
+            "user": {
+                "id": 41,
+                "nik": "8209326",
+                "nama_karyawan": "Ronny Napitupulu",
+                "username_user": "8209326",
+                "seeded_role": "RPM_AREA",
+                "effective_roles": [
+                    "RPM_AREA"
+                ],
+                "effective_cities": [
+                    "PRABUMULIH",
+                    "PALEMBANG",
+                    "ACEH",
+                    "LANGSA",
+                    "LHOKSEUMAWE",
+                    "LAMPUNG",
+                    "JAMBI",
+                    "LUBUKLINGGAU"
+                ],
+                "is_super_admin": false
+            },
+            "login": {
+                "ok": true,
+                "login_status": 200,
+                "dashboard_status": 200,
+                "login_error": "",
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Batch_Approval_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "DRM_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Implementasi_BOQ_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Monitoring_RFS_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "ATP_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "action_checks": [
+                {
+                    "module": "BAK_MyRep",
+                    "action": "TAMBAH",
+                    "path": "BAK_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "BAK_MyRep",
+                    "action": "APPROVAL",
+                    "path": "BAK_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "TAMBAH",
+                    "path": "VALSAL_MyRep/saveValsal",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "APPROVAL",
+                    "path": "VALSAL_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Batch_Approval_MyRep/saveBatchApproval",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Batch_Approval_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "TAMBAH",
+                    "path": "DRM_MyRep/saveDrm",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "APPROVAL",
+                    "path": "DRM_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Implementasi_BOQ_MyRep/saveProgress",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_DAILY",
+                    "path": "Implementasi_BOQ_MyRep/saveDailyActivity",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_FOTO_COMPLY",
+                    "path": "Implementasi_BOQ_MyRep/approveComplyPhoto",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "PO_MyRep",
+                    "action": "TAMBAH",
+                    "path": "PO_MyRep/savePo",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Monitoring_RFS_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Monitoring_RFS_MyRep/updateClaimStatus",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "ATP_MyRep",
+                    "action": "EDIT",
+                    "path": "ATP_MyRep/save",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Checklist_Dokument_MyRep/uploadDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Checklist_Dokument_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "server_errors": [],
+            "city_leak_findings": []
+        },
+        {
+            "user": {
+                "id": 32,
+                "nik": "7504021",
+                "nama_karyawan": "Fadli Wahyu Wibowo",
+                "username_user": "7504021",
+                "seeded_role": "SM_AREA",
+                "effective_roles": [
+                    "SM_AREA"
+                ],
+                "effective_cities": [
+                    "PRABUMULIH",
+                    "PALEMBANG",
+                    "LUBUKLINGGAU"
+                ],
+                "is_super_admin": false
+            },
+            "login": {
+                "ok": true,
+                "login_status": 200,
+                "dashboard_status": 200,
+                "login_error": "",
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Batch_Approval_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "DRM_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Implementasi_BOQ_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Monitoring_RFS_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "ATP_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "action_checks": [
+                {
+                    "module": "BAK_MyRep",
+                    "action": "TAMBAH",
+                    "path": "BAK_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "BAK_MyRep",
+                    "action": "APPROVAL",
+                    "path": "BAK_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "TAMBAH",
+                    "path": "VALSAL_MyRep/saveValsal",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "APPROVAL",
+                    "path": "VALSAL_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Batch_Approval_MyRep/saveBatchApproval",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Batch_Approval_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "TAMBAH",
+                    "path": "DRM_MyRep/saveDrm",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "APPROVAL",
+                    "path": "DRM_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Implementasi_BOQ_MyRep/saveProgress",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_DAILY",
+                    "path": "Implementasi_BOQ_MyRep/saveDailyActivity",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_FOTO_COMPLY",
+                    "path": "Implementasi_BOQ_MyRep/approveComplyPhoto",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "PO_MyRep",
+                    "action": "TAMBAH",
+                    "path": "PO_MyRep/savePo",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Monitoring_RFS_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Monitoring_RFS_MyRep/updateClaimStatus",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "ATP_MyRep",
+                    "action": "EDIT",
+                    "path": "ATP_MyRep/save",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Checklist_Dokument_MyRep/uploadDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Checklist_Dokument_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "server_errors": [],
+            "city_leak_findings": []
+        },
+        {
+            "user": {
+                "id": 60,
+                "nik": "9314325",
+                "nama_karyawan": "Ulil Azmi",
+                "username_user": "9314325",
+                "seeded_role": "SPV_AREA",
+                "effective_roles": [
+                    "SPV_AREA"
+                ],
+                "effective_cities": [
+                    "LANGSA"
+                ],
+                "is_super_admin": false
+            },
+            "login": {
+                "ok": true,
+                "login_status": 200,
+                "dashboard_status": 200,
+                "login_error": "",
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Batch_Approval_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "DRM_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Implementasi_BOQ_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "Monitoring_RFS_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "ATP_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "action_checks": [
+                {
+                    "module": "BAK_MyRep",
+                    "action": "TAMBAH",
+                    "path": "BAK_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "BAK_MyRep",
+                    "action": "APPROVAL",
+                    "path": "BAK_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "TAMBAH",
+                    "path": "VALSAL_MyRep/saveValsal",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "APPROVAL",
+                    "path": "VALSAL_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Batch_Approval_MyRep/saveBatchApproval",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Batch_Approval_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "TAMBAH",
+                    "path": "DRM_MyRep/saveDrm",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "APPROVAL",
+                    "path": "DRM_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Implementasi_BOQ_MyRep/saveProgress",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_DAILY",
+                    "path": "Implementasi_BOQ_MyRep/saveDailyActivity",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_FOTO_COMPLY",
+                    "path": "Implementasi_BOQ_MyRep/approveComplyPhoto",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "PO_MyRep",
+                    "action": "TAMBAH",
+                    "path": "PO_MyRep/savePo",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Monitoring_RFS_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Monitoring_RFS_MyRep/updateClaimStatus",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "ATP_MyRep",
+                    "action": "EDIT",
+                    "path": "ATP_MyRep/save",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Checklist_Dokument_MyRep/uploadDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Checklist_Dokument_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "server_errors": [],
+            "city_leak_findings": []
+        },
+        {
+            "user": {
+                "id": 93,
+                "nik": "8814624",
+                "nama_karyawan": "M. Fredy Namara",
+                "username_user": "8814624",
+                "seeded_role": "SND_AREA",
+                "effective_roles": [
+                    "ADMIN_AREA",
+                    "SND_AREA"
+                ],
+                "effective_cities": [
+                    "LAMPUNG",
+                    "LUBUKLINGGAU"
+                ],
+                "is_super_admin": false
+            },
+            "login": {
+                "ok": true,
+                "login_status": 200,
+                "dashboard_status": 200,
+                "login_error": "",
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Batch_Approval_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "DRM_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Implementasi_BOQ_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Monitoring_RFS_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "ATP_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "action_checks": [
+                {
+                    "module": "BAK_MyRep",
+                    "action": "TAMBAH",
+                    "path": "BAK_MyRep/saveCluster",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "BAK_MyRep",
+                    "action": "APPROVAL",
+                    "path": "BAK_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "TAMBAH",
+                    "path": "VALSAL_MyRep/saveValsal",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "APPROVAL",
+                    "path": "VALSAL_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Batch_Approval_MyRep/saveBatchApproval",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Batch_Approval_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "TAMBAH",
+                    "path": "DRM_MyRep/saveDrm",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "APPROVAL",
+                    "path": "DRM_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Implementasi_BOQ_MyRep/saveProgress",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_DAILY",
+                    "path": "Implementasi_BOQ_MyRep/saveDailyActivity",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_FOTO_COMPLY",
+                    "path": "Implementasi_BOQ_MyRep/approveComplyPhoto",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "PO_MyRep",
+                    "action": "TAMBAH",
+                    "path": "PO_MyRep/savePo",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Monitoring_RFS_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Monitoring_RFS_MyRep/updateClaimStatus",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "ATP_MyRep",
+                    "action": "EDIT",
+                    "path": "ATP_MyRep/save",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Checklist_Dokument_MyRep/uploadDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Checklist_Dokument_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "server_errors": [],
+            "city_leak_findings": []
+        },
+        {
+            "user": {
+                "id": 74,
+                "nik": "9807922",
+                "nama_karyawan": "Dandi Ibnu Sutowo",
+                "username_user": "9807922",
+                "seeded_role": "ADMIN_AREA",
+                "effective_roles": [
+                    "ADMIN_AREA"
+                ],
+                "effective_cities": [
+                    "PRABUMULIH",
+                    "PALEMBANG"
+                ],
+                "is_super_admin": false
+            },
+            "login": {
+                "ok": true,
+                "login_status": 200,
+                "dashboard_status": 200,
+                "login_error": "",
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Batch_Approval_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "DRM_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Implementasi_BOQ_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Monitoring_RFS_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "ATP_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "action_checks": [
+                {
+                    "module": "BAK_MyRep",
+                    "action": "TAMBAH",
+                    "path": "BAK_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "BAK_MyRep",
+                    "action": "APPROVAL",
+                    "path": "BAK_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "TAMBAH",
+                    "path": "VALSAL_MyRep/saveValsal",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "APPROVAL",
+                    "path": "VALSAL_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Batch_Approval_MyRep/saveBatchApproval",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Batch_Approval_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "TAMBAH",
+                    "path": "DRM_MyRep/saveDrm",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "APPROVAL",
+                    "path": "DRM_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Implementasi_BOQ_MyRep/saveProgress",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_DAILY",
+                    "path": "Implementasi_BOQ_MyRep/saveDailyActivity",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_FOTO_COMPLY",
+                    "path": "Implementasi_BOQ_MyRep/approveComplyPhoto",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "PO_MyRep",
+                    "action": "TAMBAH",
+                    "path": "PO_MyRep/savePo",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Monitoring_RFS_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Monitoring_RFS_MyRep/updateClaimStatus",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "ATP_MyRep",
+                    "action": "EDIT",
+                    "path": "ATP_MyRep/save",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Checklist_Dokument_MyRep/uploadDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Checklist_Dokument_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "server_errors": [],
+            "city_leak_findings": []
+        },
+        {
+            "user": {
+                "id": 84,
+                "nik": "0011223",
+                "nama_karyawan": "Muhammad Rifqi Kasim",
+                "username_user": "0011223",
+                "seeded_role": "SND_HO",
+                "effective_roles": [
+                    "SND_HO"
+                ],
+                "effective_cities": [
+                    "PRABUMULIH",
+                    "TEBING TINGGI",
+                    "PALEMBANG",
+                    "PAYAKUMBUH",
+                    "PEKANBARU",
+                    "BENGKULU",
+                    "ACEH",
+                    "LANGSA",
+                    "LHOKSEUMAWE",
+                    "LAMPUNG",
+                    "JAMBI",
+                    "PADANG",
+                    "LUBUKLINGGAU",
+                    "BUKITTINGGI",
+                    "MUSI BANYUASIN",
+                    "MUARA ENIM",
+                    "MEDAN",
+                    "PEMATANG SIANTAR",
+                    "BATAM",
+                    "DUMAI",
+                    "OGAN KOMERING ILIR",
+                    "LAHAT",
+                    "SIAK",
+                    "BENGKALIS",
+                    "KARO",
+                    "LANGKAT",
+                    "PADANG PARIAMAN",
+                    "CILEGON",
+                    "RANGKASBITUNG",
+                    "CIBUBUR",
+                    "PURWAKARTA",
+                    "DEPOK",
+                    "SUBANG",
+                    "BEKASI",
+                    "CIREBON",
+                    "SUMEDANG",
+                    "TANGERANG",
+                    "GARUT",
+                    "MAJALENGKA",
+                    "BANDUNG",
+                    "SERANG",
+                    "BOGOR",
+                    "JAKARTA UTARA",
+                    "JAKARTA BARAT",
+                    "CIANJUR",
+                    "JAKARTA PUSAT",
+                    "JAKARTA SELATAN",
+                    "SUKABUMI",
+                    "JAKARTA TIMUR",
+                    "PANDEGLANG",
+                    "CIAMIS",
+                    "TASIKMALAYA",
+                    "JEPARA",
+                    "SIDOARJO",
+                    "BOYOLALI",
+                    "TEGAL",
+                    "KENDAL",
+                    "MOJOKERTO",
+                    "SALATIGA",
+                    "PEKALONGAN",
+                    "GRESIK",
+                    "GORONTALO",
+                    "CILACAP",
+                    "MAGELANG",
+                    "KLATEN",
+                    "SOLO",
+                    "PURWOKERTO",
+                    "KUPANG",
+                    "TEMANGGUNG",
+                    "BALI",
+                    "BREBES",
+                    "SURABAYA",
+                    "KEBUMEN",
+                    "SEMARANG",
+                    "MATARAM",
+                    "PURWOREJO",
+                    "WONOSOBO",
+                    "BOJONEGORO",
+                    "MALANG",
+                    "PEMALANG",
+                    "TUBAN",
+                    "BANJARNEGARA",
+                    "PROBOLINGGO",
+                    "SLEMAN",
+                    "BANGKALAN",
+                    "BANYUWANGI",
+                    "BLITAR",
+                    "DEMAK",
+                    "JEMBER",
+                    "JOMBANG",
+                    "KEDIRI",
+                    "KUDUS",
+                    "MADIUN",
+                    "NGANJUK",
+                    "NGAWI",
+                    "PASURUAN",
+                    "PATI",
+                    "PONOROGO",
+                    "SRAGEN",
+                    "TULUNGAGUNG",
+                    "CEPU",
+                    "BELU (ATAMBUA)",
+                    "SINGKAWANG",
+                    "PALANGKARAYA",
+                    "BALIKPAPAN",
+                    "BANJARMASIN",
+                    "SAMARINDA",
+                    "PONTIANAK",
+                    "KUTAI KARTANEGARA",
+                    "BONTANG",
+                    "KOTAWARINGIN BARAT",
+                    "PALU",
+                    "MAKASSAR",
+                    "KENDARI",
+                    "MANADO",
+                    "BITUNG",
+                    "BONE",
+                    "PAREPARE",
+                    "KOTA KOTAMOBAGU",
+                    "POLEWALI MANDAR"
+                ],
+                "is_super_admin": false
+            },
+            "login": {
+                "ok": true,
+                "login_status": 200,
+                "dashboard_status": 200,
+                "login_error": "",
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Batch_Approval_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "DRM_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Implementasi_BOQ_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Monitoring_RFS_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "ATP_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "action_checks": [
+                {
+                    "module": "BAK_MyRep",
+                    "action": "TAMBAH",
+                    "path": "BAK_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "BAK_MyRep",
+                    "action": "APPROVAL",
+                    "path": "BAK_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "TAMBAH",
+                    "path": "VALSAL_MyRep/saveValsal",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "APPROVAL",
+                    "path": "VALSAL_MyRep/approveDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Batch_Approval_MyRep/saveBatchApproval",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Batch_Approval_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "TAMBAH",
+                    "path": "DRM_MyRep/saveDrm",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "APPROVAL",
+                    "path": "DRM_MyRep/approveDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Implementasi_BOQ_MyRep/saveProgress",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_DAILY",
+                    "path": "Implementasi_BOQ_MyRep/saveDailyActivity",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_FOTO_COMPLY",
+                    "path": "Implementasi_BOQ_MyRep/approveComplyPhoto",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "PO_MyRep",
+                    "action": "TAMBAH",
+                    "path": "PO_MyRep/savePo",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Monitoring_RFS_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Monitoring_RFS_MyRep/updateClaimStatus",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "ATP_MyRep",
+                    "action": "EDIT",
+                    "path": "ATP_MyRep/save",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Checklist_Dokument_MyRep/uploadDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Checklist_Dokument_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "server_errors": [],
+            "city_leak_findings": []
+        },
+        {
+            "user": {
+                "id": 58,
+                "nik": "8413723",
+                "nama_karyawan": "Didi Royadi",
+                "username_user": "8413723",
+                "seeded_role": "RFS_HO",
+                "effective_roles": [
+                    "DC_HO",
+                    "RFS_HO"
+                ],
+                "effective_cities": [
+                    "PRABUMULIH",
+                    "TEBING TINGGI",
+                    "PALEMBANG",
+                    "PAYAKUMBUH",
+                    "PEKANBARU",
+                    "BENGKULU",
+                    "ACEH",
+                    "LANGSA",
+                    "LHOKSEUMAWE",
+                    "LAMPUNG",
+                    "JAMBI",
+                    "PADANG",
+                    "LUBUKLINGGAU",
+                    "BUKITTINGGI",
+                    "MUSI BANYUASIN",
+                    "MUARA ENIM",
+                    "MEDAN",
+                    "PEMATANG SIANTAR",
+                    "BATAM",
+                    "DUMAI",
+                    "OGAN KOMERING ILIR",
+                    "LAHAT",
+                    "SIAK",
+                    "BENGKALIS",
+                    "KARO",
+                    "LANGKAT",
+                    "PADANG PARIAMAN",
+                    "CILEGON",
+                    "RANGKASBITUNG",
+                    "CIBUBUR",
+                    "PURWAKARTA",
+                    "DEPOK",
+                    "SUBANG",
+                    "BEKASI",
+                    "CIREBON",
+                    "SUMEDANG",
+                    "TANGERANG",
+                    "GARUT",
+                    "MAJALENGKA",
+                    "BANDUNG",
+                    "SERANG",
+                    "BOGOR",
+                    "JAKARTA UTARA",
+                    "JAKARTA BARAT",
+                    "CIANJUR",
+                    "JAKARTA PUSAT",
+                    "JAKARTA SELATAN",
+                    "SUKABUMI",
+                    "JAKARTA TIMUR",
+                    "PANDEGLANG",
+                    "CIAMIS",
+                    "TASIKMALAYA",
+                    "JEPARA",
+                    "SIDOARJO",
+                    "BOYOLALI",
+                    "TEGAL",
+                    "KENDAL",
+                    "MOJOKERTO",
+                    "SALATIGA",
+                    "PEKALONGAN",
+                    "GRESIK",
+                    "GORONTALO",
+                    "CILACAP",
+                    "MAGELANG",
+                    "KLATEN",
+                    "SOLO",
+                    "PURWOKERTO",
+                    "KUPANG",
+                    "TEMANGGUNG",
+                    "BALI",
+                    "BREBES",
+                    "SURABAYA",
+                    "KEBUMEN",
+                    "SEMARANG",
+                    "MATARAM",
+                    "PURWOREJO",
+                    "WONOSOBO",
+                    "BOJONEGORO",
+                    "MALANG",
+                    "PEMALANG",
+                    "TUBAN",
+                    "BANJARNEGARA",
+                    "PROBOLINGGO",
+                    "SLEMAN",
+                    "BANGKALAN",
+                    "BANYUWANGI",
+                    "BLITAR",
+                    "DEMAK",
+                    "JEMBER",
+                    "JOMBANG",
+                    "KEDIRI",
+                    "KUDUS",
+                    "MADIUN",
+                    "NGANJUK",
+                    "NGAWI",
+                    "PASURUAN",
+                    "PATI",
+                    "PONOROGO",
+                    "SRAGEN",
+                    "TULUNGAGUNG",
+                    "CEPU",
+                    "BELU (ATAMBUA)",
+                    "SINGKAWANG",
+                    "PALANGKARAYA",
+                    "BALIKPAPAN",
+                    "BANJARMASIN",
+                    "SAMARINDA",
+                    "PONTIANAK",
+                    "KUTAI KARTANEGARA",
+                    "BONTANG",
+                    "KOTAWARINGIN BARAT",
+                    "PALU",
+                    "MAKASSAR",
+                    "KENDARI",
+                    "MANADO",
+                    "BITUNG",
+                    "BONE",
+                    "PAREPARE",
+                    "KOTA KOTAMOBAGU",
+                    "POLEWALI MANDAR"
+                ],
+                "is_super_admin": false
+            },
+            "login": {
+                "ok": true,
+                "login_status": 200,
+                "dashboard_status": 200,
+                "login_error": "",
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Batch_Approval_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "DRM_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Implementasi_BOQ_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Monitoring_RFS_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "ATP_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "action_checks": [
+                {
+                    "module": "BAK_MyRep",
+                    "action": "TAMBAH",
+                    "path": "BAK_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "BAK_MyRep",
+                    "action": "APPROVAL",
+                    "path": "BAK_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "TAMBAH",
+                    "path": "VALSAL_MyRep/saveValsal",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "APPROVAL",
+                    "path": "VALSAL_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Batch_Approval_MyRep/saveBatchApproval",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Batch_Approval_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "TAMBAH",
+                    "path": "DRM_MyRep/saveDrm",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "APPROVAL",
+                    "path": "DRM_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Implementasi_BOQ_MyRep/saveProgress",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_DAILY",
+                    "path": "Implementasi_BOQ_MyRep/saveDailyActivity",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_FOTO_COMPLY",
+                    "path": "Implementasi_BOQ_MyRep/approveComplyPhoto",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "PO_MyRep",
+                    "action": "TAMBAH",
+                    "path": "PO_MyRep/savePo",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Monitoring_RFS_MyRep/saveCluster",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Monitoring_RFS_MyRep/updateClaimStatus",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "ATP_MyRep",
+                    "action": "EDIT",
+                    "path": "ATP_MyRep/save",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Checklist_Dokument_MyRep/uploadDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Checklist_Dokument_MyRep/approveDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "server_errors": [],
+            "city_leak_findings": []
+        },
+        {
+            "user": {
+                "id": 78,
+                "nik": "9209823",
+                "nama_karyawan": "Fringga Ima Cahyo Saputro",
+                "username_user": "9209823",
+                "seeded_role": "SITAC_HO",
+                "effective_roles": [
+                    "SITAC_HO"
+                ],
+                "effective_cities": [
+                    "PRABUMULIH",
+                    "TEBING TINGGI",
+                    "PALEMBANG",
+                    "PAYAKUMBUH",
+                    "PEKANBARU",
+                    "BENGKULU",
+                    "ACEH",
+                    "LANGSA",
+                    "LHOKSEUMAWE",
+                    "LAMPUNG",
+                    "JAMBI",
+                    "PADANG",
+                    "LUBUKLINGGAU",
+                    "BUKITTINGGI",
+                    "MUSI BANYUASIN",
+                    "MUARA ENIM",
+                    "MEDAN",
+                    "PEMATANG SIANTAR",
+                    "BATAM",
+                    "DUMAI",
+                    "OGAN KOMERING ILIR",
+                    "LAHAT",
+                    "SIAK",
+                    "BENGKALIS",
+                    "KARO",
+                    "LANGKAT",
+                    "PADANG PARIAMAN",
+                    "CILEGON",
+                    "RANGKASBITUNG",
+                    "CIBUBUR",
+                    "PURWAKARTA",
+                    "DEPOK",
+                    "SUBANG",
+                    "BEKASI",
+                    "CIREBON",
+                    "SUMEDANG",
+                    "TANGERANG",
+                    "GARUT",
+                    "MAJALENGKA",
+                    "BANDUNG",
+                    "SERANG",
+                    "BOGOR",
+                    "JAKARTA UTARA",
+                    "JAKARTA BARAT",
+                    "CIANJUR",
+                    "JAKARTA PUSAT",
+                    "JAKARTA SELATAN",
+                    "SUKABUMI",
+                    "JAKARTA TIMUR",
+                    "PANDEGLANG",
+                    "CIAMIS",
+                    "TASIKMALAYA",
+                    "JEPARA",
+                    "SIDOARJO",
+                    "BOYOLALI",
+                    "TEGAL",
+                    "KENDAL",
+                    "MOJOKERTO",
+                    "SALATIGA",
+                    "PEKALONGAN",
+                    "GRESIK",
+                    "GORONTALO",
+                    "CILACAP",
+                    "MAGELANG",
+                    "KLATEN",
+                    "SOLO",
+                    "PURWOKERTO",
+                    "KUPANG",
+                    "TEMANGGUNG",
+                    "BALI",
+                    "BREBES",
+                    "SURABAYA",
+                    "KEBUMEN",
+                    "SEMARANG",
+                    "MATARAM",
+                    "PURWOREJO",
+                    "WONOSOBO",
+                    "BOJONEGORO",
+                    "MALANG",
+                    "PEMALANG",
+                    "TUBAN",
+                    "BANJARNEGARA",
+                    "PROBOLINGGO",
+                    "SLEMAN",
+                    "BANGKALAN",
+                    "BANYUWANGI",
+                    "BLITAR",
+                    "DEMAK",
+                    "JEMBER",
+                    "JOMBANG",
+                    "KEDIRI",
+                    "KUDUS",
+                    "MADIUN",
+                    "NGANJUK",
+                    "NGAWI",
+                    "PASURUAN",
+                    "PATI",
+                    "PONOROGO",
+                    "SRAGEN",
+                    "TULUNGAGUNG",
+                    "CEPU",
+                    "BELU (ATAMBUA)",
+                    "SINGKAWANG",
+                    "PALANGKARAYA",
+                    "BALIKPAPAN",
+                    "BANJARMASIN",
+                    "SAMARINDA",
+                    "PONTIANAK",
+                    "KUTAI KARTANEGARA",
+                    "BONTANG",
+                    "KOTAWARINGIN BARAT",
+                    "PALU",
+                    "MAKASSAR",
+                    "KENDARI",
+                    "MANADO",
+                    "BITUNG",
+                    "BONE",
+                    "PAREPARE",
+                    "KOTA KOTAMOBAGU",
+                    "POLEWALI MANDAR"
+                ],
+                "is_super_admin": false
+            },
+            "login": {
+                "ok": true,
+                "login_status": 200,
+                "dashboard_status": 200,
+                "login_error": "",
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Batch_Approval_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "DRM_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Implementasi_BOQ_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Monitoring_RFS_MyRep",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "ATP_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "action_checks": [
+                {
+                    "module": "BAK_MyRep",
+                    "action": "TAMBAH",
+                    "path": "BAK_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "BAK_MyRep",
+                    "action": "APPROVAL",
+                    "path": "BAK_MyRep/approveDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "TAMBAH",
+                    "path": "VALSAL_MyRep/saveValsal",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "APPROVAL",
+                    "path": "VALSAL_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Batch_Approval_MyRep/saveBatchApproval",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Batch_Approval_MyRep/approveDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "TAMBAH",
+                    "path": "DRM_MyRep/saveDrm",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "APPROVAL",
+                    "path": "DRM_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Implementasi_BOQ_MyRep/saveProgress",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_DAILY",
+                    "path": "Implementasi_BOQ_MyRep/saveDailyActivity",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_FOTO_COMPLY",
+                    "path": "Implementasi_BOQ_MyRep/approveComplyPhoto",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "PO_MyRep",
+                    "action": "TAMBAH",
+                    "path": "PO_MyRep/savePo",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Monitoring_RFS_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Monitoring_RFS_MyRep/updateClaimStatus",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "ATP_MyRep",
+                    "action": "EDIT",
+                    "path": "ATP_MyRep/save",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Checklist_Dokument_MyRep/uploadDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Checklist_Dokument_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "server_errors": [],
+            "city_leak_findings": []
+        },
+        {
+            "user": {
+                "id": 109,
+                "nik": "8818124",
+                "nama_karyawan": "Benito Constantino",
+                "username_user": "8818124",
+                "seeded_role": "DC_HO",
+                "effective_roles": [
+                    "DC_HO"
+                ],
+                "effective_cities": [
+                    "PRABUMULIH",
+                    "PALEMBANG",
+                    "LUBUKLINGGAU"
+                ],
+                "is_super_admin": false
+            },
+            "login": {
+                "ok": true,
+                "login_status": 200,
+                "dashboard_status": 200,
+                "login_error": "",
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Batch_Approval_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "DRM_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Implementasi_BOQ_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Monitoring_RFS_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "ATP_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "action_checks": [
+                {
+                    "module": "BAK_MyRep",
+                    "action": "TAMBAH",
+                    "path": "BAK_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "BAK_MyRep",
+                    "action": "APPROVAL",
+                    "path": "BAK_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "TAMBAH",
+                    "path": "VALSAL_MyRep/saveValsal",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "APPROVAL",
+                    "path": "VALSAL_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Batch_Approval_MyRep/saveBatchApproval",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Batch_Approval_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "TAMBAH",
+                    "path": "DRM_MyRep/saveDrm",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "APPROVAL",
+                    "path": "DRM_MyRep/approveDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Implementasi_BOQ_MyRep/saveProgress",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_DAILY",
+                    "path": "Implementasi_BOQ_MyRep/saveDailyActivity",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_FOTO_COMPLY",
+                    "path": "Implementasi_BOQ_MyRep/approveComplyPhoto",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "PO_MyRep",
+                    "action": "TAMBAH",
+                    "path": "PO_MyRep/savePo",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Monitoring_RFS_MyRep/saveCluster",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Monitoring_RFS_MyRep/updateClaimStatus",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "ATP_MyRep",
+                    "action": "EDIT",
+                    "path": "ATP_MyRep/save",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Checklist_Dokument_MyRep/uploadDocument",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Checklist_Dokument_MyRep/approveDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "server_errors": [],
+            "city_leak_findings": []
+        },
+        {
+            "user": {
+                "id": 154,
+                "nik": "9999",
+                "nama_karyawan": "SUPER ADMIN",
+                "username_user": "admin",
+                "seeded_role": "SUPER_ADMIN",
+                "effective_roles": [
+                    "SUPER_ADMIN"
+                ],
+                "effective_cities": [],
+                "is_super_admin": true
+            },
+            "login": {
+                "ok": true,
+                "login_status": 200,
+                "dashboard_status": 200,
+                "login_error": "",
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Batch_Approval_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "DRM_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Implementasi_BOQ_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Monitoring_RFS_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "ATP_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "action_checks": [
+                {
+                    "module": "BAK_MyRep",
+                    "action": "TAMBAH",
+                    "path": "BAK_MyRep/saveCluster",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "BAK_MyRep",
+                    "action": "APPROVAL",
+                    "path": "BAK_MyRep/approveDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "TAMBAH",
+                    "path": "VALSAL_MyRep/saveValsal",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "VALSAL_MyRep",
+                    "action": "APPROVAL",
+                    "path": "VALSAL_MyRep/approveDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Batch_Approval_MyRep/saveBatchApproval",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Batch_Approval_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Batch_Approval_MyRep/approveDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "TAMBAH",
+                    "path": "DRM_MyRep/saveDrm",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "DRM_MyRep",
+                    "action": "APPROVAL",
+                    "path": "DRM_MyRep/approveDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Implementasi_BOQ_MyRep/saveProgress",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_DAILY",
+                    "path": "Implementasi_BOQ_MyRep/saveDailyActivity",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Implementasi_BOQ_MyRep",
+                    "action": "APPROVAL_FOTO_COMPLY",
+                    "path": "Implementasi_BOQ_MyRep/approveComplyPhoto",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "PO_MyRep",
+                    "action": "TAMBAH",
+                    "path": "PO_MyRep/savePo",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Monitoring_RFS_MyRep/saveCluster",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Monitoring_RFS_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Monitoring_RFS_MyRep/updateClaimStatus",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "ATP_MyRep",
+                    "action": "EDIT",
+                    "path": "ATP_MyRep/save",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "TAMBAH",
+                    "path": "Checklist_Dokument_MyRep/uploadDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "module": "Checklist_Dokument_MyRep",
+                    "action": "APPROVAL",
+                    "path": "Checklist_Dokument_MyRep/approveDocument",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "json_valid": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "server_errors": [],
+            "city_leak_findings": []
+        }
+    ]
+}

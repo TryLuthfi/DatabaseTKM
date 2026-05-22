@@ -16,6 +16,7 @@ class DRM_MyRep extends CI_Controller
             $this->myrepAccess->enforceByMethod('DRM_MyRep', (string) $this->router->fetch_method(), [
                 'approveBoq' => 'APPROVAL',
                 'rejectBoq' => 'APPROVAL',
+                'previewDrmImport' => 'TAMBAH',
             ]);
         }
     }

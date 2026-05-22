@@ -14,7 +14,9 @@ class Batch_Approval_MyRep extends CI_Controller
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('Batch_Approval_MyRep');
-            $this->myrepAccess->enforceByMethod('Batch_Approval_MyRep', (string) $this->router->fetch_method());
+            $this->myrepAccess->enforceByMethod('Batch_Approval_MyRep', (string) $this->router->fetch_method(), [
+                'previewBatchImport' => 'TAMBAH',
+            ]);
         }
     }
 

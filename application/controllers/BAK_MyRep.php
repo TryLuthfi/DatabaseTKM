@@ -13,7 +13,9 @@ class BAK_MyRep extends CI_Controller
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('BAK_MyRep');
-            $this->myrepAccess->enforceByMethod('BAK_MyRep', (string) $this->router->fetch_method());
+            $this->myrepAccess->enforceByMethod('BAK_MyRep', (string) $this->router->fetch_method(), [
+                'previewClusterImport' => 'TAMBAH',
+            ]);
         }
     }
 
@@ -1652,6 +1654,14 @@ class BAK_MyRep extends CI_Controller
 
     private function isApprover()
     {
+        if (empty($this->session->userdata('id_user'))) {
+            return false;
+        }
+
+        if (isset($this->myrepAccess) && is_object($this->myrepAccess) && method_exists($this->myrepAccess, 'hasPermission')) {
+            return (bool) $this->myrepAccess->hasPermission('BAK_MyRep', 'APPROVAL');
+        }
+
         return $this->session->userdata('lokasi_user') === 'HO'
             || $this->session->userdata('nama_level') === 'Super Admin';
     }

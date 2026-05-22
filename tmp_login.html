@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+
+  <title>Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+
+  <link rel="stylesheet" href="http://localhost/DatabaseTKM/assets/plugins/fontawesome-free/css/all.min.css">
+  <link rel="stylesheet" href="http://localhost/DatabaseTKM/assets/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+  <link rel="stylesheet" href="http://localhost/DatabaseTKM/assets/dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="http://localhost/DatabaseTKM/assets/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
+  <link rel="stylesheet" href="http://localhost/DatabaseTKM/assets/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+  <link rel="stylesheet" href="http://localhost/DatabaseTKM/assets/plugins/select2/css/select2.min.css">
+  <link rel="stylesheet" href="http://localhost/DatabaseTKM/assets/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
+  <link rel="stylesheet" href="http://localhost/DatabaseTKM/assets/plugins/jquery-ui/jquery-ui.min.css">
+
+  <script src="http://localhost/DatabaseTKM/assets/plugins/jquery/jquery.min.js"></script>
+  <script src="http://localhost/DatabaseTKM/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="http://localhost/DatabaseTKM/assets/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+  <script src="http://localhost/DatabaseTKM/assets/dist/js/adminlte.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    :root {
+      --shell-bg: #eef4f8;
+      --shell-surface: #ffffff;
+      --shell-line: rgba(148, 163, 184, 0.18);
+      --shell-text: #0f172a;
+      --shell-muted: #64748b;
+      --shell-primary: #1d4ed8;
+      --shell-primary-soft: rgba(29, 78, 216, 0.12);
+      --shell-shadow: 0 22px 44px rgba(15, 23, 42, 0.08);
+    }
+
+    html {
+      font-size: 15px;
+    }
+
+    body {
+      font-family: "Plus Jakarta Sans", "Source Sans Pro", sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(96, 165, 250, 0.12), transparent 18%),
+        linear-gradient(180deg, #f5f8fc 0%, #edf3f8 100%);
+      color: var(--shell-text);
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .content-wrapper,
+    .main-footer {
+      background: transparent;
+    }
+
+    .card,
+    .small-box,
+    .info-box,
+    .modal-content,
+    .dropdown-menu {
+      border-radius: 18px;
+    }
+
+    .card,
+    .small-box,
+    .info-box {
+      border: 1px solid var(--shell-line);
+      box-shadow: var(--shell-shadow);
+    }
+
+    .content-header h1,
+    h1, h2, h3, h4, h5, h6 {
+      letter-spacing: -0.02em;
+    }
+
+    .table thead th {
+      vertical-align: middle;
+    }
+
+    .btn:focus,
+    .form-control:focus,
+    .custom-select:focus,
+    .select2-container--bootstrap4.select2-container--focus .select2-selection {
+      box-shadow: 0 0 0 0.18rem rgba(29, 78, 216, 0.16) !important;
+    }
+
+    .select2-container--bootstrap4 .select2-selection {
+      border-radius: 12px;
+      min-height: 42px;
+      border-color: rgba(148, 163, 184, 0.32);
+    }
+
+    .select2-container--bootstrap4 .select2-selection--single {
+      min-height: 42px;
+      padding: .375rem .75rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+      color: var(--shell-text);
+      padding-left: 0;
+      line-height: 1.4;
+    }
+
+    .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+      height: 40px;
+      top: 0;
+      right: 6px;
+    }
+
+    .select2-container--bootstrap4 .select2-selection--multiple {
+      min-height: 42px;
+      padding: .2rem .45rem;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: .25rem;
+    }
+
+    .select2-container--bootstrap4 .select2-selection--multiple .select2-search__field {
+      margin-top: 0 !important;
+    }
+
+    .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice {
+      margin-top: 0;
+      border-radius: 999px;
+      padding: .2rem .5rem;
+    }
+
+    .form-control,
+    .custom-select {
+      border-radius: 12px;
+      min-height: 42px;
+      border-color: rgba(148, 163, 184, 0.32);
+    }
+
+    .modal-dialog.modal-xxl {
+      width: 78vw;
+      max-width: 78vw;
+    }
+
+    @media (max-width: 767.98px) {
+      .modal-dialog.modal-xxl {
+        width: calc(100vw - 1rem);
+        max-width: calc(100vw - 1rem);
+        margin: .5rem auto;
+      }
+    }
+  </style>
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
+<div class="wrapper premium-shell">
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-dark premium-topbar">
+        <!-- Left navbar links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block" style="pointer-events: none">
+                <a href="http://localhost/DatabaseTKM/Dashboard" class="nav-link">Dashboard</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block" style="pointer-events: none">
+                <a href="http://localhost/DatabaseTKM/Fiberstar_Project" class="nav-link">Fiberstars</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block" style="pointer-events: none">
+                <a href="http://localhost/DatabaseTKM/MyRepublik_Project" class="nav-link">My Republik</a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="http://localhost/DatabaseTKM/Dashboard_Logistik_Stok/revamp" class="nav-link">Logistik</a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                    <div class="dropdown-divider"></div>
+                    <a href="http://localhost/DatabaseTKM/Auth/logout" class="dropdown-item dropdown-footer">Logout</a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+    <!-- /.navbar -->
+
+    <!-- Main Sidebar Container -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4 premium-sidebar">
+        <!-- Brand Logo -->
+        <a href="http://localhost/DatabaseTKM/Dashboard" class="brand-link premium-brand-link">
+            <img src="http://localhost/DatabaseTKM/assets/dist/img/logotkmsolid.png" alt="AdminLTE Logo"
+                class="brand-image img-circle elevation-3 premium-brand-image" style="opacity: .9">
+            <span class="brand-text font-weight-light premium-brand-text">PT. TKM</span>
+        </a>
+
+        <!-- Sidebar -->
+        <div class="sidebar" style="padding-top: 20px;">
+            <!-- Sidebar user panel (optional) -->
+            <div class="user-panel mt-3 pb-3 mb-3 d-flex premium-user-panel">
+                <div class="image">
+                    <img src="http://localhost/DatabaseTKM/assets/dist/img/avatar5.png" class="img-circle elevation-2"
+                        alt="User Image">
+                </div>
+                <div class="info">
+                    <a href="#" class="d-block">SUPER ADMIN</a>
+                </div>
+            </div>
+
+
+            <!-- Sidebar Menu -->
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
+                    data-accordion="false">
+                    <!-- Add icons to the links using the .nav-icon class
+               with font-awesome or any other icon font library -->
+                    <li class="nav-item">
+                        <a href="http://localhost/DatabaseTKM/Dashboard" class="nav-link active">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>
+                                Dashboard
+                            </p>
+                        </a>
+                    </li>
+
+                                            <li class="nav-item has-treeview ">
+                            <a href="#" class="nav-link ">
+                                <i class="nav-icon fas fa-money-check-alt"></i>
+                                <p>
+                                    Super Admin
+                                    <i class="fas fa-angle-left right"></i>
+                                    <span class="badge badge-info right">5</span>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="http://localhost/DatabaseTKM/ListArea" class="nav-link ">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>List Area</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="http://localhost/DatabaseTKM/ListUser" class="nav-link ">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>List User</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="http://localhost/DatabaseTKM/ListBowheer" class="nav-link ">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>List Bowheer</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="http://localhost/DatabaseTKM/SuperAdmin_MyRep_Config" class="nav-link ">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>MyRep Role & Notif</p>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="http://localhost/DatabaseTKM/SuperAdmin_MyRep_CityMapping" class="nav-link ">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>MyRep City Mapping</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                                        <li class="nav-header">Logistik</li>
+                    <li class="nav-item has-treeview ">
+
+                        <a href="#" class="nav-link ">
+                            <i class="nav-icon fas fa-boxes"></i>
+                            <p>
+                                Logistik
+                                <i class="right fas fa-angle-left"></i>
+                                <span class="badge badge-info right">4</span>
+                            </p>
+                        </a>
+
+                        <ul class="nav nav-treeview">
+                            <!-- Master Logistik -->
+                            <li class="nav-item has-treeview ">
+                                <a href="#" class="nav-link ">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>Master Logistik
+                                        <i class="right fas fa-angle-left"></i>
+                                        <span class="badge badge-info right">4</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Master_Logistik_Lokasi_Gudang" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Lokasi Gudang</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Master_Logistik_Kode_Item" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Kode Item</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Master_Logistik_Sumber_Material" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Sumber Material</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Master_Logistik_Pabrik" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Pabrik</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <!-- PR / PO -->
+                            <li class="nav-item has-treeview ">
+                                <a href="#" class="nav-link ">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>PR / PO
+                                        <i class="right fas fa-angle-left"></i>
+                                        <span class="badge badge-info right">3</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Logistik_Purchase_Request" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Purchase Request</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Logistik_Nota_Dinas_Po" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Nota Dinas</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Logistik_Pesanan_Pabrik" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Purchase Order</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <!-- Stok Material -->
+                            <li class="nav-item has-treeview ">
+                                <a href="#" class="nav-link ">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>Stok Material
+                                        <i class="right fas fa-angle-left"></i>
+                                        <span class="badge badge-info right">2</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Dashboard_Logistik_Stok/revamp" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Stok On Hand</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Dashboard_Logistik_Stok/transit_history" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Stok Pengiriman</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <!-- Stock Opname -->
+                            <li class="nav-item">
+                                <a href="http://localhost/DatabaseTKM/StockOpname/revamp" class="nav-link ">
+                                    <i class="far fa-star nav-icon"></i>
+                                    <p>Stok Opname</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-header">General Affair</li>
+                    <li class="nav-item has-treeview ">
+                        <a href="#" class="nav-link ">
+                            <i class="nav-icon fas fa-building"></i>
+                            <p>
+                                General Affair
+                                <i class="fas fa-angle-left right"></i>
+                                <span class="badge badge-info right">6</span>
+                            </p>
+                        </a>
+
+                        <ul class="nav nav-treeview">
+                            <!-- MASTER GA -->
+                            <li class="nav-item has-treeview ">
+                                <a href="#" class="nav-link ">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>
+                                        Master GA
+                                        <i class="fas fa-angle-left right"></i>
+                                        <span class="badge badge-info right">2</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Master_GA_Aset"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Kode Aset</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <!-- ASEt KENDARAAN -->
+                            <li class="nav-item">
+                                <a href="http://localhost/DatabaseTKM/GA_Aset_Kendaraan"
+                                    class="nav-link ">
+                                    <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                                    <p>Aset Kendaraan</p>
+                                </a>
+                            </li>
+
+                            <li
+                                class="nav-item has-treeview ">
+                                <a href="#" class="nav-link ">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>
+                                        Alker Saker
+                                        <i class="fas fa-angle-left right"></i>
+                                        <span class="badge badge-info right">2</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/GA_Aset_Kantor"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Alat Kerja Kantor</p>
+                                        </a>
+                                    </li>
+                                </ul>
+
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/GA_Alat_Terminasi"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Alat Terminasi</p>
+                                        </a>
+                                    </li>
+                                </ul>
+
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/GA_Sarana_Kerja"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Sarana Kerja</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <li
+                                class="nav-item has-treeview ">
+                                <a href="#" class="nav-link ">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>
+                                        Inventaris Kantor
+                                        <i class="fas fa-angle-left right"></i>
+                                        <span class="badge badge-info right">2</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item" style="pointer-events: none">
+                                        <a href="http://localhost/DatabaseTKM/GA_Aset_Terminasi"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Perlengkapan Kantor</p>
+                                        </a>
+                                    </li>
+                                </ul>
+
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/GA_Seragam_Kantor"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Seragam Kantor</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <!-- GUDANG -->
+                            <li
+                                class="nav-item has-treeview ">
+                                <a href="#"
+                                    class="nav-link ">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>
+                                        Gudang
+                                        <i class="fas fa-angle-left right"></i>
+                                        <span class="badge badge-info right">2</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item" style="pointer-events: none;">
+                                        <a href="http://localhost/DatabaseTKM/inhouse"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Inhouse</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" style="pointer-events: none;">
+                                        <a href="http://localhost/DatabaseTKM/Subcon"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Subcon</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                        </ul>
+                    </li>
+                    <li class="nav-header">Control Project</li>
+                    <li class="nav-item has-treeview ">
+                        <a href="#" class="nav-link ">
+                            <i class="nav-icon fas fa-project-diagram"></i>
+                            <p>
+                                Project
+                                <i class="fas fa-angle-left right"></i>
+                                <span class="badge badge-info right">2</span>
+                            </p>
+                        </a>
+
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item has-treeview ">
+                                <a href="#" class="nav-link ">
+                                    <i class="nav-icon fas fa-file-signature"></i>
+                                    <p>
+                                        Kontrak & SPK
+                                        <i class="fas fa-angle-left right"></i>
+                                        <span class="badge badge-info right">2</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Kontrak_Payung"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Kontrak Payung (PKS)</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/SPK"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>SPK</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <!-- Fiberstar -->
+                            <li class="nav-item has-treeview ">
+                                <a href="#" class="nav-link " style="pointer-events: none">
+                                    <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                                    <p>
+                                        Fiberstar
+                                        <i class="fas fa-angle-left right"></i>
+                                        <span class="badge badge-info right">3</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Fiberstar_Project"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>List Project</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Fiberstar_PO"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>PO & Invoice</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" style="pointer-events: none;">
+                                        <a href="http://localhost/DatabaseTKM/Fiberstar_Kompensasi"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Kompensasi</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            
+
+                            <!-- My Republik -->
+                            <li class="nav-item has-treeview ">
+                                <a href="#" class="nav-link ">
+                                    <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                                    <p>
+                                        My Republik
+                                        <i class="fas fa-angle-left right"></i>
+                                        <span class="badge badge-info right">12</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/MyRepublik_Project"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>List Project</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/BAK_MyRep"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>BAK</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/VALSAL_MyRep"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>VALSAL</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Batch_Approval_MyRep"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Batch Approval</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/DRM_MyRep"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>DRM</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Implementasi_BOQ_MyRep"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Implementasi BOQ</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/PO_MyRep"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>PO MyRep</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Monitoring_RFS_MyRep"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Monitoring RFS MYREP</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/ATP_MyRep"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>ATP</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Checklist_Dokument_MyRep"
+                                            class="nav-link ">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Checklist Dokument</p>
+                                        </a>
+                                    </li>
+                                                                    </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-header">TARGET 110 M</li>
+                    <li class="nav-item">
+                        <a href="http://localhost/DatabaseTKM/TargetInvoice" class="nav-link ">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Target Invoice
+                            </p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="http://localhost/DatabaseTKM/RincianInvoice" class="nav-link ">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Rincian Invoice
+                            </p>
+                        </a>
+                    </li>
+
+                    <li class="nav-header">Development</li>
+                    <li class="nav-item" style="pointer-events: none">
+                        <a href="http://localhost/DatabaseTKM/Backup" class="nav-link ">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Database
+                            </p>
+                        </a>
+                    </li>
+                    <li class="nav-header">Gul House</li>
+                    <li class="nav-item has-treeview " style="pointer-events: none">
+
+                        <a href="#" class="nav-link ">
+                            <i class="nav-icon fas fa-boxes"></i>
+                            <p>
+                                Gul House
+                                <i class="right fas fa-angle-left"></i>
+                                <span class="badge badge-info right">5</span>
+                            </p>
+                        </a>
+
+                        <ul class="nav nav-treeview">
+
+                            <li class="nav-item">
+                                <a href="http://localhost/DatabaseTKM/GHDashboard" class="nav-link ">
+                                    <i class="far fa-file nav-icon"></i>
+                                    <p>Dashboard Gull House</p>
+                                </a>
+                            </li>
+                            <!-- Master Logistik -->
+                            <li class="nav-item has-treeview ">
+                                <a href="#" class="nav-link ">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>Master Data
+                                        <i class="right fas fa-angle-left"></i>
+                                        <span class="badge badge-info right">3</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/GHRooms" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master Rooms</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/GHTenants" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master Tenants
+                                            </p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/GHAssets" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master Asets</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item">
+                                <a href="http://localhost/DatabaseTKM/GHRoomsAssets" class="nav-link ">
+                                    <i class="far fa-file nav-icon"></i>
+                                    <p>List Rooms - Assets</p>
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a href="http://localhost/DatabaseTKM/GHTenantsRooms" class="nav-link ">
+                                    <i class="far fa-file nav-icon"></i>
+                                    <p>List Tenants - Rooms</p>
+                                </a>
+                            </li>
+
+                            <!-- Purchase Order -->
+                            <li class="nav-item" style="pointer-events: none">
+                                <a href="http://localhost/DatabaseTKM/aLogistik_Pesanan_Pabrik" class="nav-link ">
+                                    <i class="far fa-file nav-icon"></i>
+                                    <p>Pembayaran Kos</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-header">Budgeting</li>
+                    <li class="nav-item has-treeview ">
+
+                        <a href="#" class="nav-link ">
+                            <i class="nav-icon fas fa-boxes"></i>
+                            <p>
+                                Budget Ops
+                                <i class="right fas fa-angle-left"></i>
+                                <span class="badge badge-info right">6</span>
+                            </p>
+                        </a>
+
+                        <ul class="nav nav-treeview">
+
+                            <li class="nav-item has-treeview ">
+                                <a href="#" class="nav-link ">
+                                    <i class="far fa-folder nav-icon"></i>
+                                    <p>Master Budgeting
+                                        <i class="right fas fa-angle-left"></i>
+                                        <span class="badge badge-info right">4</span>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Budget_MasterAkunBiaya" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master Item</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Budget_MasterPic" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master PIC</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="http://localhost/DatabaseTKM/Budget_MasterBudgetYears" class="nav-link ">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Master Budget
+                                            </p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            <li class="nav-item">
+                                <a href="http://localhost/DatabaseTKM/Budget_Cashflow" class="nav-link ">
+                                    <i class="far fa-file nav-icon"></i>
+                                    <p>Cashflow</p>
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a href="http://localhost/DatabaseTKM/Budget_Report" class="nav-link ">
+                                    <i class="far fa-file nav-icon"></i>
+                                    <p>Dashboard Budget</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-header">Billing & Collection</li>
+                    <li class="nav-item">
+                        <a href="http://localhost/DatabaseTKM/BillingPayment" class="nav-link ">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>
+                                Account Receivable
+                            </p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="http://localhost/DatabaseTKM/PO_Monitor" class="nav-link ">
+                            <i class="nav-icon fas fa-clipboard-list"></i>
+                            <p>
+                                PO Monitor
+                            </p>
+                        </a>
+                    </li>
+
+                </ul>
+            </nav>
+            <!-- /.sidebar-menu -->
+        </div>
+        <!-- /.sidebar -->
+    </aside>
+
+    <style>
+        .premium-shell .main-header,
+        .premium-shell .main-sidebar,
+        .premium-shell .brand-link,
+        .premium-shell .user-panel,
+        .premium-shell .nav-link,
+        .premium-shell .nav-header,
+        .premium-shell .badge {
+            font-family: "Plus Jakarta Sans", "Source Sans Pro", sans-serif;
+        }
+
+        .premium-topbar {
+            border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+            background:
+                radial-gradient(circle at top right, rgba(96, 165, 250, 0.14), transparent 26%),
+                linear-gradient(135deg, rgba(8, 23, 39, 0.97), rgba(15, 61, 96, 0.95));
+            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.14);
+            backdrop-filter: blur(12px);
+        }
+
+        .premium-topbar .nav-link {
+            color: rgba(241, 245, 249, 0.88) !important;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .premium-topbar .nav-link:hover,
+        .premium-topbar .nav-link:focus {
+            color: #ffffff !important;
+        }
+
+        .premium-sidebar {
+            border-right: 1px solid rgba(148, 163, 184, 0.14);
+            background:
+                radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 18%),
+                linear-gradient(180deg, #081423 0%, #0d2237 46%, #102d46 100%);
+            box-shadow: 16px 0 36px rgba(15, 23, 42, 0.12);
+        }
+
+        .premium-brand-link {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            min-height: 72px;
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .premium-brand-image {
+            float: none !important;
+            margin: 0 !important;
+            width: 40px;
+            height: 40px;
+            padding: 0.16rem;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.22);
+        }
+
+        .premium-brand-text {
+            font-size: 1.02rem;
+            font-weight: 800 !important;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #f8fafc !important;
+        }
+
+        .premium-sidebar .sidebar {
+            padding: 0 0.8rem 1rem;
+        }
+
+        .premium-user-panel {
+            margin: 1rem 0.25rem 1rem !important;
+            padding: 0.85rem 0.9rem !important;
+            align-items: center;
+            gap: 0.78rem;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 16px;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.035));
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .premium-user-panel .image img {
+            width: 38px;
+            height: 38px;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .premium-user-panel .info {
+            padding: 0 !important;
+        }
+
+        .premium-user-panel .info a {
+            color: #f8fafc !important;
+            font-weight: 700;
+            font-size: 0.94rem;
+        }
+
+        .premium-sidebar .nav-header {
+            padding: 1rem 0.9rem 0.45rem;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: rgba(191, 219, 254, 0.72);
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link {
+            display: flex;
+            align-items: center;
+            min-height: 46px;
+            margin-bottom: 0.18rem;
+            padding: 0.74rem 0.88rem;
+            border-radius: 14px;
+            color: rgba(226, 232, 240, 0.9);
+            font-size: 0.94rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link .nav-icon {
+            margin-right: 0.7rem;
+            font-size: 0.98rem !important;
+            color: rgba(147, 197, 253, 0.84);
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link p {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link p .right {
+            margin-left: auto;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link:hover,
+        .premium-sidebar .nav-sidebar .nav-link:focus {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.075);
+            transform: translateX(2px);
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link:hover .nav-icon,
+        .premium-sidebar .nav-sidebar .nav-link:focus .nav-icon {
+            color: #ffffff;
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link.active {
+            color: #ffffff !important;
+            background:
+                radial-gradient(circle at top right, rgba(255, 255, 255, 0.16), transparent 34%),
+                linear-gradient(135deg, #2563eb 0%, #3b82f6 45%, #38bdf8 100%);
+            box-shadow: 0 14px 28px rgba(37, 99, 235, 0.24);
+        }
+
+        .premium-sidebar .nav-sidebar .nav-link.active .nav-icon {
+            color: #ffffff !important;
+        }
+
+        .premium-sidebar .nav-treeview {
+            margin-left: 0.5rem;
+            padding-left: 0.75rem;
+            border-left: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .premium-sidebar .nav-treeview .nav-link {
+            min-height: 42px;
+            padding: 0.64rem 0.8rem;
+            font-size: 0.91rem;
+            border-radius: 12px;
+        }
+
+        .premium-sidebar .nav-sidebar .badge.badge-info {
+            min-width: 24px;
+            padding: 0.24rem 0.42rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.16);
+            color: #e0f2fe;
+            font-size: 0.68rem;
+            font-weight: 700;
+        }
+
+        .menu-access-disabled {
+            opacity: 0.58;
+            cursor: not-allowed;
+        }
+
+        .menu-access-disabled:hover,
+        .menu-access-disabled:focus {
+            background-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        @media (max-width: 991.98px) {
+            .premium-sidebar .sidebar {
+                padding: 0 0.65rem 1rem;
+            }
+
+            .premium-user-panel {
+                margin-left: 0;
+                margin-right: 0;
+            }
+
+            .premium-brand-text {
+                letter-spacing: 0.12em;
+            }
+        }
+    </style>
+
+<div class="content-wrapper dashboard-premium">
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="dashboard-hero">
+                <div class="dashboard-hero__copy">
+                    <span class="dashboard-hero__eyebrow">Executive Dashboard</span>
+                    <h1 class="dashboard-hero__title">Project Summary EMR, BILCO, dan Budgeting</h1>
+                    <p class="dashboard-hero__subtitle">Satu halaman ringkas untuk membaca performa invoice, approval EMR, serta penyerapan budget tahun 2026.</p>
+                </div>
+                <div class="dashboard-hero__panel">
+                    <div class="hero-kpi-label">Target Invoice Utama</div>
+                    <div class="hero-kpi-value">Rp 110,0 Jt</div>
+                    <div class="hero-kpi-meta">Progress saat ini 100,0%</div>
+                    <div class="hero-progress">
+                        <div class="hero-progress__bar" style="width: 100%;"></div>
+                    </div>
+                    <div class="hero-kpi-grid">
+                        <div>
+                            <span class="hero-kpi-grid__label">Actual</span>
+                            <strong>Rp 35,7 M</strong>
+                        </div>
+                        <div>
+                            <span class="hero-kpi-grid__label">Gap</span>
+                            <strong>Rp 0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12 col-xl-8">
+                    <div class="dashboard-card dashboard-card--spotlight">
+                        <div class="dashboard-card__header">
+                            <div>
+                                <span class="dashboard-card__eyebrow">Portfolio Pulse</span>
+                                <h3 class="dashboard-card__title">Cross Project Snapshot</h3>
+                            </div>
+                        </div>
+                        <div class="spotlight-grid">
+                            <div class="spotlight-item spotlight-item--invoice">
+                                <span class="spotlight-item__label">Invoice Progress</span>
+                                <strong>100,0%</strong>
+                                <small>Terhadap target Rp 110,0 Jt</small>
+                            </div>
+                            <div class="spotlight-item spotlight-item--budget">
+                                <span class="spotlight-item__label">Budget Absorption</span>
+                                <strong>0,0%</strong>
+                                <small>Realisasi vs annual budget</small>
+                            </div>
+                            <div class="spotlight-item spotlight-item--emr">
+                                <span class="spotlight-item__label">EMR Release Ratio</span>
+                                <strong>0,0%</strong>
+                                <small>Release finance vs nominal EMR</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-xl-4">
+                    <div class="dashboard-card dashboard-card--target">
+                        <div class="dashboard-card__header">
+                            <div>
+                                <span class="dashboard-card__eyebrow">Quick Target</span>
+                                <h3 class="dashboard-card__title">110M Invoice Tracker</h3>
+                            </div>
+                        </div>
+                        <div class="target-ring">
+                            <div class="target-ring__inner">
+                                <span>100,0%</span>
+                            </div>
+                        </div>
+                        <div class="target-meta">
+                            <div><span>Outstanding BILCO</span><strong>Rp 35,7 M</strong></div>
+                            <div><span>Sisa ke Target</span><strong>Rp 0</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12 col-lg-4">
+                    <a href="http://localhost/DatabaseTKM/Batch_Approval_MyRep" class="dashboard-link-card">
+                        <div class="dashboard-card summary-card summary-card--emr">
+                            <div class="summary-card__icon"><i class="fas fa-network-wired"></i></div>
+                            <div class="summary-card__body">
+                                <span class="summary-card__eyebrow">Project EMR</span>
+                                <h3 class="summary-card__title">Approval & Release</h3>
+                                <div class="summary-card__value">Rp 0</div>
+                                <p class="summary-card__desc">Nominal approval EMR dari 0 cluster batch.</p>
+                                <div class="summary-mini-grid">
+                                    <div><span>Released</span><strong>Rp 0</strong></div>
+                                    <div><span>HP Donasi</span><strong>0</strong></div>
+                                    <div><span>Waiting</span><strong>0</strong></div>
+                                    <div><span>Released Batch</span><strong>0</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-12 col-lg-4">
+                    <a href="http://localhost/DatabaseTKM/BillingPayment" class="dashboard-link-card">
+                        <div class="dashboard-card summary-card summary-card--bilco">
+                            <div class="summary-card__icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                            <div class="summary-card__body">
+                                <span class="summary-card__eyebrow">Project BILCO</span>
+                                <h3 class="summary-card__title">Outstanding Invoice</h3>
+                                <div class="summary-card__value">Rp 35,7 M</div>
+                                <p class="summary-card__desc">Akumulasi invoice open dan partial yang masih perlu dimonitor.</p>
+                                <div class="summary-mini-grid">
+                                    <div><span>P1</span><strong>Rp 15,0 M</strong></div>
+                                    <div><span>P2</span><strong>Rp 4,2 M</strong></div>
+                                    <div><span>P3</span><strong>Rp 3,0 M</strong></div>
+                                    <div><span>BJT</span><strong>Rp 13,6 M</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-12 col-lg-4">
+                    <a href="http://localhost/DatabaseTKM/Budget_Report" class="dashboard-link-card">
+                        <div class="dashboard-card summary-card summary-card--budgeting">
+                            <div class="summary-card__icon"><i class="fas fa-wallet"></i></div>
+                            <div class="summary-card__body">
+                                <span class="summary-card__eyebrow">Budgeting</span>
+                                <h3 class="summary-card__title">Annual Budget Summary</h3>
+                                <div class="summary-card__value">Rp 0</div>
+                                <p class="summary-card__desc">Ringkasan budget tahunan dan realisasi cashflow aktif.</p>
+                                <div class="summary-mini-grid">
+                                    <div><span>Realisasi</span><strong>Rp 2,9 M</strong></div>
+                                    <div><span>Sisa</span><strong>Rp -2,9 M</strong></div>
+                                    <div><span>Total Project</span><strong>15</strong></div>
+                                    <div><span>TEC</span><strong>114</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12 col-xl-7">
+                    <div class="dashboard-card dashboard-card--table">
+                        <div class="dashboard-card__header">
+                            <div>
+                                <span class="dashboard-card__eyebrow">Priority Lens</span>
+                                <h3 class="dashboard-card__title">Fokus Operasional Hari Ini</h3>
+                            </div>
+                        </div>
+                        <div class="priority-list">
+                            <div class="priority-list__item">
+                                <div>
+                                    <span class="priority-list__label">Urgent BILCO</span>
+                                    <strong>Rp 19,1 M</strong>
+                                </div>
+                                <small>P1 + P2 outstanding yang perlu percepatan follow up.</small>
+                            </div>
+                            <div class="priority-list__item">
+                                <div>
+                                    <span class="priority-list__label">Healthy Pipeline</span>
+                                    <strong>Rp 16,6 M</strong>
+                                </div>
+                                <small>P3 + BJT yang masih dalam jendela monitor aman.</small>
+                            </div>
+                            <div class="priority-list__item">
+                                <div>
+                                    <span class="priority-list__label">Budget Items Overrun</span>
+                                    <strong>14</strong>
+                                </div>
+                                <small>Jumlah item annual budget yang sudah melewati pagu.</small>
+                            </div>
+                            <div class="priority-list__item">
+                                <div>
+                                    <span class="priority-list__label">EMR Pending Approval</span>
+                                    <strong>0</strong>
+                                </div>
+                                <small>Cluster yang masih berada di waiting HO, EMR, atau finance.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-xl-5">
+                    <div class="dashboard-card dashboard-card--actions">
+                        <div class="dashboard-card__header">
+                            <div>
+                                <span class="dashboard-card__eyebrow">Shortcut</span>
+                                <h3 class="dashboard-card__title">Akses Cepat Modul</h3>
+                            </div>
+                        </div>
+                        <div class="dashboard-action-grid">
+                            <a href="http://localhost/DatabaseTKM/BillingPayment" class="dashboard-action-tile">
+                                <i class="fas fa-arrow-right"></i>
+                                <span>Billing Payment</span>
+                            </a>
+                            <a href="http://localhost/DatabaseTKM/Batch_Approval_MyRep" class="dashboard-action-tile">
+                                <i class="fas fa-arrow-right"></i>
+                                <span>Batch Approval EMR</span>
+                            </a>
+                            <a href="http://localhost/DatabaseTKM/Budget_Report" class="dashboard-action-tile">
+                                <i class="fas fa-arrow-right"></i>
+                                <span>Budget Report</span>
+                            </a>
+                            <a href="http://localhost/DatabaseTKM/Budget_Cashflow" class="dashboard-action-tile">
+                                <i class="fas fa-arrow-right"></i>
+                                <span>Budget Cashflow</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+    .dashboard-premium {
+        background:
+            radial-gradient(circle at top left, rgba(115, 170, 214, 0.18), transparent 28%),
+            linear-gradient(180deg, #f5f9fc 0%, #ecf4f9 100%);
+    }
+
+    .dashboard-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.9fr);
+        gap: 20px;
+        padding: 1.5rem 0 1rem;
+        align-items: stretch;
+    }
+
+    .dashboard-hero__copy,
+    .dashboard-hero__panel,
+    .dashboard-card {
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 22px 46px rgba(15, 40, 61, 0.08);
+        border: 1px solid rgba(205, 225, 238, 0.9);
+    }
+
+    .dashboard-hero__copy {
+        padding: 2rem 2.1rem;
+        background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 30%),
+            linear-gradient(135deg, #103b5a 0%, #1e678f 55%, #5eb1dc 100%);
+        color: #fff;
+    }
+
+    .dashboard-hero__eyebrow,
+    .dashboard-card__eyebrow {
+        display: inline-block;
+        margin-bottom: 0.6rem;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .dashboard-hero__eyebrow {
+        color: rgba(255, 255, 255, 0.78);
+    }
+
+    .dashboard-hero__title {
+        margin: 0;
+        font-size: 2.15rem;
+        line-height: 1.15;
+        font-weight: 800;
+    }
+
+    .dashboard-hero__subtitle {
+        max-width: 760px;
+        margin: 0.95rem 0 0;
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.86);
+    }
+
+    .dashboard-hero__panel {
+        padding: 1.6rem;
+    }
+
+    .hero-kpi-label {
+        color: #67839b;
+        font-size: 0.84rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .hero-kpi-value {
+        margin-top: 0.5rem;
+        font-size: 2rem;
+        font-weight: 800;
+        color: #113c59;
+    }
+
+    .hero-kpi-meta {
+        margin-top: 0.35rem;
+        color: #6d879b;
+        font-weight: 600;
+    }
+
+    .hero-progress {
+        height: 12px;
+        margin: 1rem 0 1.1rem;
+        border-radius: 999px;
+        background: #e6f0f7;
+        overflow: hidden;
+    }
+
+    .hero-progress__bar {
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(135deg, #0f8b72 0%, #30c29e 100%);
+    }
+
+    .hero-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .hero-kpi-grid div {
+        padding: 0.95rem 1rem;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #f6fbff 0%, #edf5fb 100%);
+        border: 1px solid #dceaf4;
+    }
+
+    .hero-kpi-grid__label {
+        display: block;
+        margin-bottom: 0.3rem;
+        color: #6d879b;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .hero-kpi-grid strong {
+        color: #163f5b;
+        font-size: 1rem;
+    }
+
+    .dashboard-card {
+        padding: 1.3rem 1.35rem;
+        margin-bottom: 20px;
+    }
+
+    .dashboard-card__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 1rem;
+    }
+
+    .dashboard-card__eyebrow {
+        color: #6b879d;
+    }
+
+    .dashboard-card__title {
+        margin: 0;
+        font-size: 1.18rem;
+        font-weight: 800;
+        color: #133f5d;
+    }
+
+    .spotlight-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .spotlight-item {
+        padding: 1.1rem 1rem;
+        border-radius: 18px;
+        color: #fff;
+    }
+
+    .spotlight-item--invoice {
+        background: linear-gradient(135deg, #0f766e 0%, #22a79c 100%);
+    }
+
+    .spotlight-item--budget {
+        background: linear-gradient(135deg, #9a3412 0%, #ea580c 100%);
+    }
+
+    .spotlight-item--emr {
+        background: linear-gradient(135deg, #1d4ed8 0%, #4f8ef7 100%);
+    }
+
+    .spotlight-item__label {
+        display: block;
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        opacity: 0.85;
+    }
+
+    .spotlight-item strong {
+        display: block;
+        margin: 0.6rem 0 0.2rem;
+        font-size: 1.55rem;
+        line-height: 1.1;
+    }
+
+    .spotlight-item small {
+        font-size: 0.88rem;
+        opacity: 0.92;
+    }
+
+    .dashboard-card--target {
+        text-align: center;
+    }
+
+    .target-ring {
+        width: 190px;
+        height: 190px;
+        margin: 0.6rem auto 1rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+            radial-gradient(circle at center, #fff 56%, transparent 57%),
+            conic-gradient(#103b5a 0deg, #26b190 360deg, #e5eff6 360deg 360deg);
+        box-shadow: inset 0 0 0 12px rgba(255, 255, 255, 0.75);
+    }
+
+    .target-ring__inner {
+        width: 116px;
+        height: 116px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(180deg, #f9fcff 0%, #eff6fb 100%);
+        color: #123d59;
+        font-size: 1.45rem;
+        font-weight: 800;
+    }
+
+    .target-meta {
+        display: grid;
+        gap: 10px;
+    }
+
+    .target-meta div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 0.85rem 1rem;
+        border-radius: 14px;
+        background: #f5f9fc;
+        border: 1px solid #dceaf4;
+    }
+
+    .target-meta span {
+        color: #6d879b;
+        font-weight: 700;
+    }
+
+    .target-meta strong {
+        color: #173e5b;
+    }
+
+    .dashboard-link-card {
+        display: block;
+        color: inherit;
+    }
+
+    .dashboard-link-card:hover {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .summary-card {
+        display: flex;
+        gap: 16px;
+        min-height: 100%;
+        transition: transform 0.24s ease, box-shadow 0.24s ease;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 26px 52px rgba(15, 40, 61, 0.12);
+    }
+
+    .summary-card__icon {
+        width: 64px;
+        min-width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.35rem;
+    }
+
+    .summary-card--emr .summary-card__icon {
+        background: linear-gradient(135deg, #1d4ed8 0%, #5c8fff 100%);
+    }
+
+    .summary-card--bilco .summary-card__icon {
+        background: linear-gradient(135deg, #0f766e 0%, #22a79c 100%);
+    }
+
+    .summary-card--budgeting .summary-card__icon {
+        background: linear-gradient(135deg, #c2410c 0%, #fb923c 100%);
+    }
+
+    .summary-card__body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .summary-card__eyebrow {
+        display: block;
+        color: #688299;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .summary-card__title {
+        margin: 0.3rem 0 0;
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #143d58;
+    }
+
+    .summary-card__value {
+        margin-top: 0.9rem;
+        font-size: 1.7rem;
+        line-height: 1.1;
+        font-weight: 800;
+        color: #123c58;
+    }
+
+    .summary-card__desc {
+        margin: 0.7rem 0 1rem;
+        color: #698399;
+        font-size: 0.92rem;
+    }
+
+    .summary-mini-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .summary-mini-grid div {
+        padding: 0.82rem 0.9rem;
+        border-radius: 14px;
+        background: linear-gradient(180deg, #f8fbfe 0%, #edf5fb 100%);
+        border: 1px solid #dceaf4;
+    }
+
+    .summary-mini-grid span {
+        display: block;
+        margin-bottom: 0.25rem;
+        color: #6c879b;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .summary-mini-grid strong {
+        color: #173e5b;
+        font-size: 0.94rem;
+    }
+
+    .priority-list {
+        display: grid;
+        gap: 12px;
+    }
+
+    .priority-list__item {
+        padding: 1rem 1.05rem;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #f9fcff 0%, #edf5fb 100%);
+        border: 1px solid #dceaf4;
+    }
+
+    .priority-list__item > div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 0.35rem;
+    }
+
+    .priority-list__label {
+        color: #173e5b;
+        font-weight: 800;
+    }
+
+    .priority-list__item strong {
+        color: #0d6d64;
+        font-size: 1rem;
+    }
+
+    .priority-list__item small {
+        color: #6d879b;
+        font-size: 0.88rem;
+    }
+
+    .dashboard-action-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .dashboard-action-tile {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 1rem 1.05rem;
+        border-radius: 16px;
+        border: 1px solid #dceaf4;
+        background: linear-gradient(180deg, #f9fcff 0%, #edf5fb 100%);
+        color: #173e5b;
+        font-weight: 800;
+    }
+
+    .dashboard-action-tile:hover {
+        color: #173e5b;
+        text-decoration: none;
+        transform: translateY(-2px);
+        box-shadow: 0 16px 30px rgba(15, 40, 61, 0.08);
+    }
+
+    .dashboard-action-tile i {
+        color: #0d6d64;
+    }
+
+    @media (max-width: 1199.98px) {
+        .dashboard-hero {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .dashboard-hero__copy,
+        .dashboard-hero__panel,
+        .dashboard-card {
+            border-radius: 20px;
+        }
+
+        .dashboard-hero__copy,
+        .dashboard-hero__panel,
+        .dashboard-card {
+            padding-left: 1.1rem;
+            padding-right: 1.1rem;
+        }
+
+        .dashboard-hero__title {
+            font-size: 1.75rem;
+        }
+
+        .spotlight-grid,
+        .summary-mini-grid,
+        .dashboard-action-grid,
+        .hero-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .target-ring {
+            width: 160px;
+            height: 160px;
+        }
+
+        .target-ring__inner {
+            width: 100px;
+            height: 100px;
+            font-size: 1.2rem;
+        }
+    }
+</style>
+<!-- Main Footer -->
+<footer class="main-footer">
+  <strong>Copyright &copy; 2025 <a href="https://tkm.co.id/">PT. TKM</a>.</strong>
+  All rights reserved.
+  <div class="float-right d-none d-sm-inline-block">
+    <b>Version</b> 1.0.2
+  </div>
+</footer>
+</div>
+<!-- ./wrapper -->
+<!-- OPTIONAL SCRIPTS -->
+<script src="http://localhost/DatabaseTKM/assets/dist/js/demo.js"></script>
+
+<!-- PAGE PLUGINS -->
+<!-- jQuery Mapael -->
+<script src="http://localhost/DatabaseTKM/assets/plugins/jquery-mousewheel/jquery.mousewheel.js"></script>
+<script src="http://localhost/DatabaseTKM/assets/plugins/raphael/raphael.min.js"></script>
+<script src="http://localhost/DatabaseTKM/assets/plugins/jquery-mapael/jquery.mapael.min.js"></script>
+<script src="http://localhost/DatabaseTKM/assets/plugins/jquery-mapael/maps/usa_states.min.js"></script>
+<!-- Input Mask -->
+<!-- <script src="http://localhost/DatabaseTKM/assets/plugins/moment/moment.min.js"></script> -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script src="http://localhost/DatabaseTKM/assets/plugins/inputmask/min/jquery.inputmask.bundle.min.js"></script>
+<!-- ChartJS -->
+<script src="http://localhost/DatabaseTKM/assets/plugins/chart.js/Chart.min.js"></script>
+<!-- DataTables -->
+<script src="http://localhost/DatabaseTKM/assets/plugins/datatables/jquery.dataTables.min.js"></script>
+<script src="http://localhost/DatabaseTKM/assets/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
+<script src="http://localhost/DatabaseTKM/assets/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
+<script src="http://localhost/DatabaseTKM/assets/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
+<!-- PAGE SCRIPTS -->
+<script src="http://localhost/DatabaseTKM/assets/dist/js/pages/dashboard2.js"></script>
+<!-- date-range-picker -->
+<!-- <script src="http://localhost/DatabaseTKM/assets/plugins/daterangepicker/daterangepicker.js"></script> -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script src="http://localhost/DatabaseTKM/assets/plugins/select2/js/select2.full.min.js"></script>
+
+
+<script>
+    $(function() {
+        if ($("#tabel_pemasukan").length) {
+            $("#tabel_pemasukan").DataTable({
+                "responsive": true,
+                "autoWidth": true
+            });
+        }
+
+        if ($('#example2').length) {
+            $('#example2').DataTable({
+                "paging": true,
+                "lengthChange": false,
+                "searching": false,
+                "ordering": true,
+                "info": true,
+                "autoWidth": false,
+                "responsive": true,
+            });
+        }
+    });
+</script>
+<script>
+    $(function() {
+        if ($('input[name="date"]').length) {
+            $('input[name="date"]').daterangepicker({
+                opens: 'left'
+            }, function(start, end, label) {
+                console.log("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+            });
+        }
+    });
+</script>
+
+</body>
+
+</html>

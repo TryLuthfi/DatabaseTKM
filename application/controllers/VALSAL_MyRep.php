@@ -13,7 +13,9 @@ class VALSAL_MyRep extends CI_Controller
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('VALSAL_MyRep');
-            $this->myrepAccess->enforceByMethod('VALSAL_MyRep', (string) $this->router->fetch_method());
+            $this->myrepAccess->enforceByMethod('VALSAL_MyRep', (string) $this->router->fetch_method(), [
+                'previewValsalImport' => 'TAMBAH',
+            ]);
         }
     }
 

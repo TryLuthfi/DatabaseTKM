@@ -1,0 +1,385 @@
+{
+    "summary": {
+        "suite_started_at": "2026-05-22T04:32:34+07:00",
+        "suite_finished_at": "2026-05-22T04:32:39+07:00",
+        "base_url": "http://localhost/DatabaseTKM/",
+        "db_name": "u305047112_databasetkm",
+        "tested_users": 3,
+        "tested_role_columns": [
+            "rpm_area",
+            "admin_area",
+            "snd_ho"
+        ],
+        "missing_role_columns_on_mapping_table": [
+            "atp_ho",
+            "qa_ho"
+        ],
+        "page_total": 15,
+        "page_passed": 15,
+        "json_total": 6,
+        "json_passed": 6,
+        "login_ok": 3,
+        "permission_mismatches": 0,
+        "city_leak_findings": 0
+    },
+    "results": [
+        {
+            "user": {
+                "id": 41,
+                "nama_karyawan": "Ronny Napitupulu",
+                "username_user": "8209326",
+                "seeded_role": "RPM_AREA",
+                "effective_roles": [
+                    "RPM_AREA"
+                ],
+                "effective_cities": [
+                    "PRABUMULIH",
+                    "PALEMBANG",
+                    "ACEH",
+                    "LANGSA",
+                    "LHOKSEUMAWE",
+                    "LAMPUNG",
+                    "JAMBI",
+                    "LUBUKLINGGAU"
+                ],
+                "is_super_admin": false
+            },
+            "login": {
+                "ok": true,
+                "dashboard_status": 200,
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "json_valid": true,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "json_valid": true,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "city_leak_findings": []
+        },
+        {
+            "user": {
+                "id": 74,
+                "nama_karyawan": "Dandi Ibnu Sutowo",
+                "username_user": "9807922",
+                "seeded_role": "ADMIN_AREA",
+                "effective_roles": [
+                    "ADMIN_AREA"
+                ],
+                "effective_cities": [
+                    "PRABUMULIH",
+                    "PALEMBANG"
+                ],
+                "is_super_admin": false
+            },
+            "login": {
+                "ok": true,
+                "dashboard_status": 200,
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "json_valid": true,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "json_valid": true,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "city_leak_findings": []
+        },
+        {
+            "user": {
+                "id": 84,
+                "nama_karyawan": "Muhammad Rifqi Kasim",
+                "username_user": "0011223",
+                "seeded_role": "SND_HO",
+                "effective_roles": [
+                    "SND_HO"
+                ],
+                "effective_cities": [
+                    "PRABUMULIH",
+                    "TEBING TINGGI",
+                    "PALEMBANG",
+                    "PAYAKUMBUH",
+                    "PEKANBARU",
+                    "BENGKULU",
+                    "ACEH",
+                    "LANGSA",
+                    "LHOKSEUMAWE",
+                    "LAMPUNG",
+                    "JAMBI",
+                    "PADANG",
+                    "LUBUKLINGGAU",
+                    "BUKITTINGGI",
+                    "MUSI BANYUASIN",
+                    "MUARA ENIM",
+                    "MEDAN",
+                    "PEMATANG SIANTAR",
+                    "BATAM",
+                    "DUMAI",
+                    "OGAN KOMERING ILIR",
+                    "LAHAT",
+                    "SIAK",
+                    "BENGKALIS",
+                    "KARO",
+                    "LANGKAT",
+                    "PADANG PARIAMAN",
+                    "CILEGON",
+                    "RANGKASBITUNG",
+                    "CIBUBUR",
+                    "PURWAKARTA",
+                    "DEPOK",
+                    "SUBANG",
+                    "BEKASI",
+                    "CIREBON",
+                    "SUMEDANG",
+                    "TANGERANG",
+                    "GARUT",
+                    "MAJALENGKA",
+                    "BANDUNG",
+                    "SERANG",
+                    "BOGOR",
+                    "JAKARTA UTARA",
+                    "JAKARTA BARAT",
+                    "CIANJUR",
+                    "JAKARTA PUSAT",
+                    "JAKARTA SELATAN",
+                    "SUKABUMI",
+                    "JAKARTA TIMUR",
+                    "PANDEGLANG",
+                    "CIAMIS",
+                    "TASIKMALAYA",
+                    "JEPARA",
+                    "SIDOARJO",
+                    "BOYOLALI",
+                    "TEGAL",
+                    "KENDAL",
+                    "MOJOKERTO",
+                    "SALATIGA",
+                    "PEKALONGAN",
+                    "GRESIK",
+                    "GORONTALO",
+                    "CILACAP",
+                    "MAGELANG",
+                    "KLATEN",
+                    "SOLO",
+                    "PURWOKERTO",
+                    "KUPANG",
+                    "TEMANGGUNG",
+                    "BALI",
+                    "BREBES",
+                    "SURABAYA",
+                    "KEBUMEN",
+                    "SEMARANG",
+                    "MATARAM",
+                    "PURWOREJO",
+                    "WONOSOBO",
+                    "BOJONEGORO",
+                    "MALANG",
+                    "PEMALANG",
+                    "TUBAN",
+                    "BANJARNEGARA",
+                    "PROBOLINGGO",
+                    "SLEMAN",
+                    "BANGKALAN",
+                    "BANYUWANGI",
+                    "BLITAR",
+                    "DEMAK",
+                    "JEMBER",
+                    "JOMBANG",
+                    "KEDIRI",
+                    "KUDUS",
+                    "MADIUN",
+                    "NGANJUK",
+                    "NGAWI",
+                    "PASURUAN",
+                    "PATI",
+                    "PONOROGO",
+                    "SRAGEN",
+                    "TULUNGAGUNG",
+                    "CEPU",
+                    "BELU (ATAMBUA)",
+                    "SINGKAWANG",
+                    "PALANGKARAYA",
+                    "BALIKPAPAN",
+                    "BANJARMASIN",
+                    "SAMARINDA",
+                    "PONTIANAK",
+                    "KUTAI KARTANEGARA",
+                    "BONTANG",
+                    "KOTAWARINGIN BARAT",
+                    "PALU",
+                    "MAKASSAR",
+                    "KENDARI",
+                    "MANADO",
+                    "BITUNG",
+                    "BONE",
+                    "PAREPARE",
+                    "KOTA KOTAMOBAGU",
+                    "POLEWALI MANDAR"
+                ],
+                "is_super_admin": false
+            },
+            "login": {
+                "ok": true,
+                "dashboard_status": 200,
+                "dashboard_error": ""
+            },
+            "page_checks": [
+                {
+                    "page": "MyRepublik_Project",
+                    "status": 403,
+                    "expected_allowed": false,
+                    "actual_allowed": false,
+                    "pass": true
+                },
+                {
+                    "page": "BAK_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "VALSAL_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "PO_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "page": "Checklist_Dokument_MyRep",
+                    "status": 200,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "json_checks": [
+                {
+                    "endpoint": "Checklist_Dokument_MyRep/itemTableData",
+                    "status": 200,
+                    "json_valid": true,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                },
+                {
+                    "endpoint": "BAK_MyRep/getDistrictOptions",
+                    "status": 200,
+                    "json_valid": true,
+                    "expected_allowed": true,
+                    "actual_allowed": true,
+                    "pass": true
+                }
+            ],
+            "permission_mismatches": [],
+            "city_leak_findings": []
+        }
+    ]
+}

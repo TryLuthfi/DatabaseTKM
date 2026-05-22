@@ -19,6 +19,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
             $this->myrepAccess->enforceByMethod('Monitoring_RFS_MyRep', (string) $this->router->fetch_method(), [
                 'submitClaim' => 'TAMBAH',
                 'updateClaimStatus' => 'APPROVAL',
+                'previewClusterImport' => 'TAMBAH',
             ]);
         }
     }

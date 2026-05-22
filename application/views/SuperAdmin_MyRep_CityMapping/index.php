@@ -8,9 +8,11 @@ $roleHeader = [
     'snd_area' => 'SND AREA',
     'admin_area' => 'ADMIN AREA',
     'snd_ho' => 'SND HO',
+    'atp_ho' => 'ATP HO',
     'rfs_ho' => 'RFS HO',
     'sitac_ho' => 'SITAC HO',
     'dc_ho' => 'DC HO',
+    'qa_ho' => 'QA HO',
 ];
 $roleNameField = [
     'rpm_area' => 'rpm_area_name',
@@ -19,9 +21,11 @@ $roleNameField = [
     'snd_area' => 'snd_area_name',
     'admin_area' => 'admin_area_name',
     'snd_ho' => 'snd_ho_name',
+    'atp_ho' => 'atp_ho_name',
     'rfs_ho' => 'rfs_ho_name',
     'sitac_ho' => 'sitac_ho_name',
     'dc_ho' => 'dc_ho_name',
+    'qa_ho' => 'qa_ho_name',
 ];
 $regionalOptions = [];
 $provinceOptions = [];

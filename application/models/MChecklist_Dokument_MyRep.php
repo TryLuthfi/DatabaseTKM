@@ -5,6 +5,16 @@ class MChecklist_Dokument_MyRep extends CI_Model
 {
     private $maxWhereInChunk = 500;
     private $cityPicMappingCache = [];
+    /** @var array<string,bool>|null */
+    private $currentUserAllowedCitySet = null;
+
+    public function __construct()
+    {
+        parent::__construct();
+        if ($this->shouldRestrictCityByUser()) {
+            $this->getCurrentUserAllowedCitySet();
+        }
+    }
 
     private function sanitizeIdList(array $ids)
     {
@@ -275,6 +285,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 ->where('atp_summary.actual_atp_date IS NOT NULL', null, false);
         }
 
+        if (!$this->applyAllowedCityRestriction('mt.city_name')) {
+            return [];
+        }
+
         $rows = $query
             ->order_by('mt.city_name', 'ASC')
             ->get()
@@ -309,6 +323,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 ) atp_summary', 'atp_summary.cluster_id = c.id_cluster', 'left')
                 ->where("UPPER(COALESCE(c.status_atp, '')) = 'DONE'", null, false)
                 ->where('atp_summary.actual_atp_date IS NOT NULL', null, false);
+        }
+
+        if (!$this->applyAllowedCityRestriction('mt.city_name')) {
+            return [];
         }
 
         $rows = $query
@@ -369,6 +387,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 ) atp_summary', 'atp_summary.cluster_id = c.id_cluster', 'left')
                 ->where("UPPER(COALESCE(c.status_atp, '')) = 'DONE'", null, false)
                 ->where('atp_summary.actual_atp_date IS NOT NULL', null, false);
+        }
+
+        if (!$this->applyAllowedCityRestriction('mt.city_name')) {
+            return [];
         }
 
         if ($city !== '') {
@@ -444,6 +466,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 ) atp_summary', 'atp_summary.cluster_id = c.id_cluster', 'left')
                 ->where("UPPER(COALESCE(c.status_atp, '')) = 'DONE'", null, false)
                 ->where('atp_summary.actual_atp_date IS NOT NULL', null, false);
+        }
+
+        if (!$this->applyAllowedCityRestriction('mt.city_name')) {
+            return [];
         }
 
         if ($city !== '') {
@@ -525,6 +551,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->row_array();
 
         if (!$row) {
+            return [];
+        }
+
+        if (!$this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? ''))) {
             return [];
         }
 
@@ -806,6 +836,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function saveFileUpload($data)
     {
+        if (!$this->isRfsPackageAllowed((int) ($data['id_doc_package'] ?? 0))) {
+            return 0;
+        }
+
         $existing = $this->db->get_where('tb_rfs_myrep_doc_file', [
             'id_doc_package' => (int) $data['id_doc_package'],
             'id_doc_item' => (int) $data['id_doc_item'],
@@ -863,11 +897,18 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function updateFileStatus($fileId, $data)
     {
-        $file = $this->db->get_where('tb_rfs_myrep_doc_file', [
-            'id_doc_file' => (int) $fileId,
-        ])->row_array();
+        $file = $this->db
+            ->select('f.*, mt.city_name')
+            ->from('tb_rfs_myrep_doc_file f')
+            ->join('tb_rfs_myrep_doc_package p', 'p.id_doc_package = f.id_doc_package', 'left')
+            ->join('tb_rfs_myrep_cluster c', 'c.id_cluster = p.cluster_id', 'left')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'left')
+            ->where('f.id_doc_file', (int) $fileId)
+            ->limit(1)
+            ->get()
+            ->row_array();
 
-        if (!$file) {
+        if (!$file || !$this->isCityAllowedForCurrentUser((string) ($file['city_name'] ?? ''))) {
             return false;
         }
 
@@ -905,11 +946,18 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function updateAstriStatus($fileId, $data)
     {
-        $file = $this->db->get_where('tb_rfs_myrep_doc_file', [
-            'id_doc_file' => (int) $fileId,
-        ])->row_array();
+        $file = $this->db
+            ->select('f.id_doc_file, mt.city_name')
+            ->from('tb_rfs_myrep_doc_file f')
+            ->join('tb_rfs_myrep_doc_package p', 'p.id_doc_package = f.id_doc_package', 'left')
+            ->join('tb_rfs_myrep_cluster c', 'c.id_cluster = p.cluster_id', 'left')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'left')
+            ->where('f.id_doc_file', (int) $fileId)
+            ->limit(1)
+            ->get()
+            ->row_array();
 
-        if (!$file) {
+        if (!$file || !$this->isCityAllowedForCurrentUser((string) ($file['city_name'] ?? ''))) {
             return false;
         }
 
@@ -936,17 +984,24 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 p.actual_atp_date,
                 g.scope_type,
                 g.sow_type,
-                i.doc_name
+                i.doc_name,
+                mt.city_name
             ')
             ->from('tb_rfs_myrep_doc_file f')
             ->join('tb_rfs_myrep_doc_package p', 'p.id_doc_package = f.id_doc_package', 'left')
             ->join('md_rfs_myrep_doc_item i', 'i.id_doc_item = f.id_doc_item', 'left')
             ->join('md_rfs_myrep_doc_group g', 'g.id_doc_group = i.id_doc_group', 'left')
+            ->join('tb_rfs_myrep_cluster c', 'c.id_cluster = p.cluster_id', 'left')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'left')
             ->where('f.id_doc_file', (int) $fileId)
             ->get()
             ->row_array();
 
         if (!$row) {
+            return [];
+        }
+
+        if (!$this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? ''))) {
             return [];
         }
 
@@ -1059,6 +1114,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->select('MAX(id_target) AS id_target, city_name, regional_name, province_name', false)
             ->from('tb_rfs_myrep_monthly_target');
 
+        if (!$this->applyAllowedCityRestriction('city_name')) {
+            return [];
+        }
+
         if ($city !== '') {
             $query->where('UPPER(city_name)', strtoupper($city));
         }
@@ -1108,6 +1167,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->from('tb_rfs_myrep_mainfeeder mf')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'inner');
 
+        if (!$this->applyAllowedCityRestriction('mt.city_name')) {
+            return [];
+        }
+
         if ($city !== '') {
             $query->where('UPPER(mt.city_name)', strtoupper($city));
         }
@@ -1149,6 +1212,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->row_array();
 
         if (!$row) {
+            return [];
+        }
+
+        if (!$this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? ''))) {
             return [];
         }
 
@@ -1280,6 +1347,10 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function saveMainfeederFileUpload($data)
     {
+        if (!$this->isMainfeederPackageAllowed((int) ($data['id_doc_package_mainfeeder'] ?? 0))) {
+            return 0;
+        }
+
         $existing = $this->db->get_where('tb_rfs_myrep_mainfeeder_doc_file', [
             'id_doc_package_mainfeeder' => (int) $data['id_doc_package_mainfeeder'],
             'id_doc_item_mainfeeder' => (int) $data['id_doc_item_mainfeeder'],
@@ -1330,11 +1401,18 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function updateMainfeederFileStatus($fileId, $data)
     {
-        $file = $this->db->get_where('tb_rfs_myrep_mainfeeder_doc_file', [
-            'id_doc_file_mainfeeder' => (int) $fileId,
-        ])->row_array();
+        $file = $this->db
+            ->select('f.*, mt.city_name')
+            ->from('tb_rfs_myrep_mainfeeder_doc_file f')
+            ->join('tb_rfs_myrep_mainfeeder_doc_package p', 'p.id_doc_package_mainfeeder = f.id_doc_package_mainfeeder', 'left')
+            ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'left')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
+            ->where('f.id_doc_file_mainfeeder', (int) $fileId)
+            ->limit(1)
+            ->get()
+            ->row_array();
 
-        if (!$file) {
+        if (!$file || !$this->isCityAllowedForCurrentUser((string) ($file['city_name'] ?? ''))) {
             return false;
         }
 
@@ -1365,6 +1443,20 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function updateMainfeederAstriStatus($fileId, $data)
     {
+        $file = $this->db
+            ->select('f.id_doc_file_mainfeeder, mt.city_name')
+            ->from('tb_rfs_myrep_mainfeeder_doc_file f')
+            ->join('tb_rfs_myrep_mainfeeder_doc_package p', 'p.id_doc_package_mainfeeder = f.id_doc_package_mainfeeder', 'left')
+            ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'left')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
+            ->where('f.id_doc_file_mainfeeder', (int) $fileId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (empty($file) || !$this->isCityAllowedForCurrentUser((string) ($file['city_name'] ?? ''))) {
+            return false;
+        }
+
         return $this->db
             ->where('id_doc_file_mainfeeder', (int) $fileId)
             ->update('tb_rfs_myrep_mainfeeder_doc_file', [
@@ -1377,9 +1469,22 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function getMainfeederFileById($fileId)
     {
-        return $this->db->get_where('tb_rfs_myrep_mainfeeder_doc_file', [
-            'id_doc_file_mainfeeder' => (int) $fileId,
-        ])->row_array();
+        $row = $this->db
+            ->select('f.*, mt.city_name')
+            ->from('tb_rfs_myrep_mainfeeder_doc_file f')
+            ->join('tb_rfs_myrep_mainfeeder_doc_package p', 'p.id_doc_package_mainfeeder = f.id_doc_package_mainfeeder', 'left')
+            ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'left')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
+            ->where('f.id_doc_file_mainfeeder', (int) $fileId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        return $this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? '')) ? $row : [];
     }
 
     public function getMainfeederFileLogsByFileIds($fileIds)
@@ -1948,6 +2053,176 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         return $hoPicName !== '' ? (string) $hoPicName : 'PIC HO BELUM DISET';
+    }
+
+    private function applyAllowedCityRestriction($columnName = 'mt.city_name')
+    {
+        if (!$this->shouldRestrictCityByUser()) {
+            return true;
+        }
+
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if (empty($allowedCitySet)) {
+            return false;
+        }
+
+        $escapedCities = array_map([$this->db, 'escape'], array_keys($allowedCitySet));
+        $this->db->where('UPPER(' . $columnName . ') IN (' . implode(',', $escapedCities) . ')', null, false);
+
+        return true;
+    }
+
+    private function isCityAllowedForCurrentUser($cityName)
+    {
+        if (!$this->shouldRestrictCityByUser()) {
+            return true;
+        }
+
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if (empty($allowedCitySet)) {
+            return false;
+        }
+
+        $cityName = strtoupper(trim((string) $cityName));
+        return $cityName !== '' && isset($allowedCitySet[$cityName]);
+    }
+
+    private function getCurrentUserAllowedCitySet()
+    {
+        if ($this->currentUserAllowedCitySet !== null) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $this->currentUserAllowedCitySet = [];
+        $userId = (int) $this->session->userdata('id_user');
+        if ($userId <= 0) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        if ((string) $this->session->userdata('nama_level') === 'Super Admin') {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        if (!$this->db->table_exists('tb_master_user_new') || !$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $user = (array) $this->db
+            ->select('nik')
+            ->from('tb_master_user_new')
+            ->where('id', $userId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        $nik = trim((string) ($user['nik'] ?? ''));
+        if ($nik === '') {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $roleColumns = [
+            'rpm_area',
+            'sm_area',
+            'spv_area',
+            'snd_area',
+            'admin_area',
+            'snd_ho',
+            'atp_ho',
+            'rfs_ho',
+            'sitac_ho',
+            'dc_ho',
+            'qa_ho',
+        ];
+
+        $existingRoleColumns = [];
+        foreach ($roleColumns as $columnName) {
+            if ($this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+                $existingRoleColumns[] = $columnName;
+            }
+        }
+        if (empty($existingRoleColumns)) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $whereParts = [];
+        $params = [];
+        foreach ($existingRoleColumns as $columnName) {
+            $whereParts[] = '`' . $columnName . '` = ?';
+            $params[] = $nik;
+        }
+
+        $sql = 'SELECT city_name FROM tb_myrep_pic_mapping_city WHERE ';
+        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+            $sql .= 'is_active = 1 AND ';
+        }
+        $sql .= '(' . implode(' OR ', $whereParts) . ')';
+
+        $rows = (array) $this->db->query($sql, $params)->result_array();
+        foreach ($rows as $row) {
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($cityName !== '') {
+                $this->currentUserAllowedCitySet[$cityName] = true;
+            }
+        }
+
+        return $this->currentUserAllowedCitySet;
+    }
+
+    private function shouldRestrictCityByUser()
+    {
+        $userId = (int) $this->session->userdata('id_user');
+        if ($userId <= 0) {
+            return false;
+        }
+
+        return (string) $this->session->userdata('nama_level') !== 'Super Admin';
+    }
+
+    private function isRfsPackageAllowed($packageId)
+    {
+        $packageId = (int) $packageId;
+        if ($packageId <= 0) {
+            return false;
+        }
+
+        if (!$this->shouldRestrictCityByUser()) {
+            return true;
+        }
+
+        $row = $this->db
+            ->select('mt.city_name')
+            ->from('tb_rfs_myrep_doc_package p')
+            ->join('tb_rfs_myrep_cluster c', 'c.id_cluster = p.cluster_id', 'left')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'left')
+            ->where('p.id_doc_package', $packageId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return !empty($row) && $this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? ''));
+    }
+
+    private function isMainfeederPackageAllowed($packageId)
+    {
+        $packageId = (int) $packageId;
+        if ($packageId <= 0) {
+            return false;
+        }
+
+        if (!$this->shouldRestrictCityByUser()) {
+            return true;
+        }
+
+        $row = $this->db
+            ->select('mt.city_name')
+            ->from('tb_rfs_myrep_mainfeeder_doc_package p')
+            ->join('tb_rfs_myrep_mainfeeder mf', 'mf.id_mainfeeder = p.id_mainfeeder', 'left')
+            ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = mf.id_target', 'left')
+            ->where('p.id_doc_package_mainfeeder', $packageId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        return !empty($row) && $this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? ''));
     }
 
     private function getCityPicMapping(array $locationContext = [])

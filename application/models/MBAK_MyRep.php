@@ -12,6 +12,14 @@ class MBAK_MyRep extends CI_Model
         ['doc_name' => 'BA Open', 'sort_no' => 3],
     ];
 
+    public function __construct()
+    {
+        parent::__construct();
+        if ($this->shouldRestrictCityByUser()) {
+            $this->getCurrentUserAllowedCitySet();
+        }
+    }
+
     private function getDefaultBakDocumentNames()
     {
         return array_map(static function ($item) {
@@ -244,6 +252,15 @@ class MBAK_MyRep extends CI_Model
             ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left');
 
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if ($this->shouldRestrictCityByUser()) {
+            if (empty($allowedCitySet)) {
+                return [];
+            }
+            $escapedCities = array_map([$this->db, 'escape'], array_keys($allowedCitySet));
+            $this->db->where('UPPER(c.city_name) IN (' . implode(',', $escapedCities) . ')', null, false);
+        }
+
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
         }
@@ -356,10 +373,20 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
+        if ($this->shouldRestrictCityByUser()) {
+            $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+            if (empty($allowedCitySet)) {
+                return [];
+            }
+            $escapedCities = array_map([$this->db, 'escape'], array_keys($allowedCitySet));
+            $this->db->where('UPPER(c.city_name) IN (' . implode(',', $escapedCities) . ')', null, false);
+        }
+
         $rows = $this->db
             ->select('
                 c.id_myrep_cluster,
                 c.cluster_name,
+                c.city_name,
                 doc_group.id_doc_group,
                 doc_item.id_doc_item,
                 doc_item.doc_name,
@@ -405,13 +432,19 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
+        $row = $this->db
             ->select('c.*, b.id_bak, b.ba_open_date, b.bak_date, b.homepass_bak, b.status_bak, b.remark_bak')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->where('c.id_myrep_cluster', (int) $clusterId)
             ->get()
             ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        return $this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? '')) ? $row : [];
     }
 
     public function getTargetById($targetId)
@@ -541,27 +574,30 @@ class MBAK_MyRep extends CI_Model
             'qa_ho',
         ];
 
-        $hasCondition = false;
-        $this->db->select('city_name')->from('tb_myrep_pic_mapping_city');
-        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
-            $this->db->where('is_active', 1);
-        }
+        $existingRoleColumns = [];
         foreach ($roleColumns as $columnName) {
-            if (!$this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
-                continue;
+            if ($this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+                $existingRoleColumns[] = $columnName;
             }
-            if (!$hasCondition) {
-                $this->db->group_start();
-            }
-            $this->db->or_where($columnName, $nik);
-            $hasCondition = true;
         }
-        if (!$hasCondition) {
+        if (empty($existingRoleColumns)) {
             return $this->currentUserAllowedCitySet;
         }
-        $this->db->group_end();
 
-        $rows = (array) $this->db->get()->result_array();
+        $whereParts = [];
+        $params = [];
+        foreach ($existingRoleColumns as $columnName) {
+            $whereParts[] = '`' . $columnName . '` = ?';
+            $params[] = $nik;
+        }
+
+        $sql = 'SELECT city_name FROM tb_myrep_pic_mapping_city WHERE ';
+        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+            $sql .= 'is_active = 1 AND ';
+        }
+        $sql .= '(' . implode(' OR ', $whereParts) . ')';
+
+        $rows = (array) $this->db->query($sql, $params)->result_array();
         foreach ($rows as $row) {
             $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
             if ($cityName !== '') {
@@ -671,10 +707,11 @@ class MBAK_MyRep extends CI_Model
             $this->db->where('doc_item.id_doc_item', (int) $docItemId);
         }
 
-        return $this->db
+        $row = $this->db
             ->select('
                 c.id_myrep_cluster,
                 c.cluster_name,
+                c.city_name,
                 doc_group.id_doc_group,
                 doc_item.id_doc_item,
                 doc_item.doc_name,
@@ -701,6 +738,12 @@ class MBAK_MyRep extends CI_Model
             ->order_by('doc_item.id_doc_item', 'ASC')
             ->get()
             ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        return $this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? '')) ? $row : [];
     }
 
     public function saveBakFileUpload($clusterId, $docItemId, $data)
@@ -1057,17 +1100,38 @@ class MBAK_MyRep extends CI_Model
         return ', ' . implode(', ', $selectParts);
     }
 
+    private function isCityAllowedForCurrentUser($cityName)
+    {
+        if (!$this->shouldRestrictCityByUser()) {
+            return true;
+        }
+
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if (empty($allowedCitySet)) {
+            return false;
+        }
+
+        $cityName = strtoupper(trim((string) $cityName));
+        return $cityName !== '' && isset($allowedCitySet[$cityName]);
+    }
+
     public function updateBakFileStatus($fileId, $data)
     {
         if (!$this->bakDocumentTablesReady()) {
             return false;
         }
 
-        $file = $this->db->get_where('tb_myrep_flow_doc_file', [
-            'id_doc_file' => (int) $fileId,
-        ])->row_array();
+        $file = $this->db
+            ->select('f.*, c.city_name')
+            ->from('tb_myrep_flow_doc_file f')
+            ->join('tb_myrep_flow_doc_package p', 'p.id_doc_package = f.id_doc_package', 'left')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'left')
+            ->where('f.id_doc_file', (int) $fileId)
+            ->limit(1)
+            ->get()
+            ->row_array();
 
-        if (!$file) {
+        if (!$file || !$this->isCityAllowedForCurrentUser((string) ($file['city_name'] ?? ''))) {
             return false;
         }
 
@@ -1106,11 +1170,12 @@ class MBAK_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
+        $row = $this->db
             ->select('
                 f.*,
                 p.id_myrep_cluster,
                 c.cluster_name,
+                c.city_name,
                 i.doc_name
             ')
             ->from('tb_myrep_flow_doc_file f')
@@ -1120,6 +1185,12 @@ class MBAK_MyRep extends CI_Model
             ->where('f.id_doc_file', (int) $fileId)
             ->get()
             ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        return $this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? '')) ? $row : [];
     }
 
     public function getBakFileLogs($fileId)

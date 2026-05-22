@@ -161,6 +161,9 @@ class Myrep_access_service
         if (strpos($lower, 'save') === 0 || strpos($lower, 'create') === 0 || strpos($lower, 'upload') === 0 || strpos($lower, 'import') === 0) {
             return $this->enforcePermission($pageKey, 'TAMBAH');
         }
+        if (strpos($lower, 'preview') === 0 && strpos($lower, 'import') !== false) {
+            return $this->enforcePermission($pageKey, 'TAMBAH');
+        }
 
         return true;
     }

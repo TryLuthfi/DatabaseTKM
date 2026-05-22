@@ -183,9 +183,11 @@ class Myrep_notification_service
             'SND_AREA' => 'snd_area',
             'ADMIN_AREA' => 'admin_area',
             'SND_HO' => 'snd_ho',
+            'ATP_HO' => 'atp_ho',
             'RFS_HO' => 'rfs_ho',
             'SITAC_HO' => 'sitac_ho',
             'DC_HO' => 'dc_ho',
+            'QA_HO' => 'qa_ho',
         ];
 
         if (!isset($roleColumnMap[$targetRole])) {
@@ -496,4 +498,3 @@ class Myrep_notification_service
         return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
     }
 }
-

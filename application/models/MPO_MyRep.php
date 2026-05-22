@@ -3,7 +3,18 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MPO_MyRep extends CI_Model
 {
+    /** @var array<string,bool>|null */
+    private $currentUserAllowedCitySet = null;
+
     private $defaultTerminPercents = [20, 25, 15, 30, 10];
+
+    public function __construct()
+    {
+        parent::__construct();
+        if ($this->shouldRestrictCityByUser()) {
+            $this->getCurrentUserAllowedCitySet();
+        }
+    }
 
     public function tablesReady()
     {
@@ -35,9 +46,13 @@ class MPO_MyRep extends CI_Model
             ->join('tb_myrep_po_header p', 'p.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->where('c.city_name IS NOT NULL', null, false)
             ->where("TRIM(c.city_name) !=", '')
-            ->order_by('c.city_name', 'ASC')
-            ->get()
-            ->result_array();
+            ->order_by('c.city_name', 'ASC');
+
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
+
+        $rows = $this->db->get()->result_array();
 
         $cities = [];
         foreach ($rows as $row) {
@@ -56,7 +71,7 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
+        $this->db
             ->select('
                 c.id_myrep_cluster,
                 c.cluster_name,
@@ -80,9 +95,13 @@ class MPO_MyRep extends CI_Model
                 ->or_where('d.id_drm IS NOT NULL', null, false)
             ->group_end()
             ->order_by('c.city_name', 'ASC')
-            ->order_by('c.cluster_name', 'ASC')
-            ->get()
-            ->result_array();
+            ->order_by('c.cluster_name', 'ASC');
+
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
+
+        return $this->db->get()->result_array();
     }
 
     public function getRows($city = '', $status = '')
@@ -111,6 +130,10 @@ class MPO_MyRep extends CI_Model
             ')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left');
+
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
 
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
@@ -164,6 +187,10 @@ class MPO_MyRep extends CI_Model
             ')
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner');
+
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
 
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
@@ -293,6 +320,10 @@ class MPO_MyRep extends CI_Model
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner');
 
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
+
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
         }
@@ -401,6 +432,10 @@ class MPO_MyRep extends CI_Model
             ->from('tb_myrep_po_header p')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
             ->where('UPPER(p.po_type)', $poType);
+
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
 
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
@@ -553,13 +588,17 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
-        $row = $this->db
+        $this->db
             ->select('c.*, d.id_drm, d.drm_date, d.homepass_drm, d.status_drm')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
-            ->where('c.id_myrep_cluster', (int) $clusterId)
-            ->get()
-            ->row_array();
+            ->where('c.id_myrep_cluster', (int) $clusterId);
+
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
+
+        $row = $this->db->get()->row_array();
 
         if (empty($row)) {
             return [];
@@ -571,6 +610,10 @@ class MPO_MyRep extends CI_Model
     public function getPoHeadersByClusterId($clusterId)
     {
         if (!$this->tablesReady()) {
+            return [];
+        }
+
+        if (empty($this->getClusterById((int) $clusterId))) {
             return [];
         }
 
@@ -605,13 +648,18 @@ class MPO_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
+        $this->db
             ->select('t.*, p.id_myrep_cluster, p.po_number, p.po_type, p.po_category')
             ->from('tb_myrep_po_termin t')
             ->join('tb_myrep_po_header p', 'p.id_po_header = t.id_po_header', 'inner')
-            ->where('t.id_po_termin', (int) $terminId)
-            ->get()
-            ->row_array();
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'inner')
+            ->where('t.id_po_termin', (int) $terminId);
+
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
+
+        return $this->db->get()->row_array();
     }
 
     public function createPoHeader($clusterId, $payload)
@@ -622,6 +670,10 @@ class MPO_MyRep extends CI_Model
 
         $clusterId = (int) $clusterId;
         if ($clusterId <= 0) {
+            return 0;
+        }
+
+        if (empty($this->getClusterById($clusterId))) {
             return 0;
         }
 
@@ -874,5 +926,112 @@ class MPO_MyRep extends CI_Model
         }
 
         return 'FAC';
+    }
+
+    private function applyAllowedCityRestriction($columnName = 'c.city_name')
+    {
+        if (!$this->shouldRestrictCityByUser()) {
+            return true;
+        }
+
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if (empty($allowedCitySet)) {
+            return false;
+        }
+
+        $escapedCities = array_map([$this->db, 'escape'], array_keys($allowedCitySet));
+        $this->db->where('UPPER(' . $columnName . ') IN (' . implode(',', $escapedCities) . ')', null, false);
+
+        return true;
+    }
+
+    private function getCurrentUserAllowedCitySet()
+    {
+        if ($this->currentUserAllowedCitySet !== null) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $this->currentUserAllowedCitySet = [];
+        $userId = (int) $this->session->userdata('id_user');
+        if ($userId <= 0) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        if ((string) $this->session->userdata('nama_level') === 'Super Admin') {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        if (!$this->db->table_exists('tb_master_user_new') || !$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $user = (array) $this->db
+            ->select('nik')
+            ->from('tb_master_user_new')
+            ->where('id', $userId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        $nik = trim((string) ($user['nik'] ?? ''));
+        if ($nik === '') {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $roleColumns = [
+            'rpm_area',
+            'sm_area',
+            'spv_area',
+            'snd_area',
+            'admin_area',
+            'snd_ho',
+            'atp_ho',
+            'rfs_ho',
+            'sitac_ho',
+            'dc_ho',
+            'qa_ho',
+        ];
+
+        $existingRoleColumns = [];
+        foreach ($roleColumns as $columnName) {
+            if ($this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+                $existingRoleColumns[] = $columnName;
+            }
+        }
+        if (empty($existingRoleColumns)) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $whereParts = [];
+        $params = [];
+        foreach ($existingRoleColumns as $columnName) {
+            $whereParts[] = '`' . $columnName . '` = ?';
+            $params[] = $nik;
+        }
+
+        $sql = 'SELECT city_name FROM tb_myrep_pic_mapping_city WHERE ';
+        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+            $sql .= 'is_active = 1 AND ';
+        }
+        $sql .= '(' . implode(' OR ', $whereParts) . ')';
+
+        $rows = (array) $this->db->query($sql, $params)->result_array();
+        foreach ($rows as $row) {
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($cityName !== '') {
+                $this->currentUserAllowedCitySet[$cityName] = true;
+            }
+        }
+
+        return $this->currentUserAllowedCitySet;
+    }
+
+    private function shouldRestrictCityByUser()
+    {
+        $userId = (int) $this->session->userdata('id_user');
+        if ($userId <= 0) {
+            return false;
+        }
+
+        return (string) $this->session->userdata('nama_level') !== 'Super Admin';
     }
 }

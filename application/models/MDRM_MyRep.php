@@ -3,6 +3,17 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MDRM_MyRep extends CI_Model
 {
+    /** @var array<string,bool>|null */
+    private $currentUserAllowedCitySet = null;
+
+    public function __construct()
+    {
+        parent::__construct();
+        if ($this->shouldRestrictCityByUser()) {
+            $this->getCurrentUserAllowedCitySet();
+        }
+    }
+
     public function drmTablesReady()
     {
         $requiredTables = ['tb_myrep_cluster', 'tb_myrep_batch_approval', 'tb_myrep_drm', 'tb_rfs_myrep_monthly_target'];
@@ -60,6 +71,10 @@ class MDRM_MyRep extends CI_Model
             return [];
         }
 
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
+
         $rows = $this->db
             ->distinct()
             ->select('c.city_name')
@@ -90,7 +105,7 @@ class MDRM_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
+        $query = $this->db
             ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ba.hp_donasi, ba.released_at, v.homepass_valsal, d.id_drm, t.year_num, t.month_num')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
@@ -100,9 +115,13 @@ class MDRM_MyRep extends CI_Model
             ->where('UPPER(ba.staging_status)', 'RELEASED')
             ->where('d.id_drm IS NULL', null, false)
             ->order_by('c.city_name', 'ASC')
-            ->order_by('c.cluster_name', 'ASC')
-            ->get()
-            ->result_array();
+            ->order_by('c.cluster_name', 'ASC');
+
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
+
+        return $query->get()->result_array();
     }
 
     public function getDrmRows($city = '', $status = '')
@@ -119,6 +138,10 @@ class MDRM_MyRep extends CI_Model
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
             ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'])
             ->where('UPPER(ba.staging_status)', 'RELEASED');
+
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
 
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
@@ -165,7 +188,7 @@ class MDRM_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
+        $row = $this->db
             ->select('c.*, ba.id_batch_approval, ba.hp_donasi, ba.released_at, d.id_drm')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
@@ -174,6 +197,12 @@ class MDRM_MyRep extends CI_Model
             ->where('UPPER(ba.staging_status)', 'RELEASED')
             ->get()
             ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        return $this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? '')) ? $row : [];
     }
 
     public function getDrmByClusterId($clusterId)
@@ -209,6 +238,10 @@ class MDRM_MyRep extends CI_Model
             ->row_array();
 
         if (!$row) {
+            return [];
+        }
+
+        if (!$this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? ''))) {
             return [];
         }
 
@@ -391,7 +424,7 @@ class MDRM_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
+        $row = $this->db
             ->select('c.*, b.id_bak, b.status_bak, v.id_valsal, v.status_valsal, ba.id_batch_approval, ba.staging_status, d.id_drm')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
@@ -401,6 +434,12 @@ class MDRM_MyRep extends CI_Model
             ->where('c.id_myrep_cluster', (int) $clusterId)
             ->get()
             ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        return $this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? '')) ? $row : [];
     }
 
     public function getClusterForDrmImportByName($clusterName, $cityName = '', $targetId = 0)
@@ -432,7 +471,12 @@ class MDRM_MyRep extends CI_Model
             $this->db->where('c.id_target', $targetId);
         }
 
-        return $this->db->order_by('c.created_at', 'DESC')->limit(1)->get()->row_array();
+        $row = $this->db->order_by('c.created_at', 'DESC')->limit(1)->get()->row_array();
+        if (empty($row)) {
+            return [];
+        }
+
+        return $this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? '')) ? $row : [];
     }
 
     public function createClusterForDrmImport($targetId, $clusterName, $clusterCode, $homepassPlan, $userId)
@@ -591,6 +635,10 @@ class MDRM_MyRep extends CI_Model
             return [];
         }
 
+        if (empty($this->getDrmByClusterId((int) $clusterId))) {
+            return [];
+        }
+
         $flowType = $this->resolveDrmDocumentFlowType($scopeType);
         return $this->db
             ->select('doc_group.group_label, doc_item.id_doc_item, doc_item.doc_name, doc_item.doc_requirement_note, doc_item.verification_team, doc_package.id_doc_package, doc_package.status_package, doc_file.id_doc_file, doc_file.file_name, doc_file.file_path, doc_file.status_file, doc_file.is_document_not_required, doc_file.remark, doc_file.uploaded_at, doc_file.reviewed_at, doc_file.approved_at')
@@ -612,6 +660,10 @@ class MDRM_MyRep extends CI_Model
             return [];
         }
 
+        if (empty($this->getDrmByClusterId((int) $clusterId))) {
+            return [];
+        }
+
         $flowType = $this->resolveDrmDocumentFlowType($scopeType);
         return $this->db
             ->select('doc_group.id_doc_group, doc_group.group_label, doc_item.id_doc_item, doc_item.doc_name, doc_package.id_doc_package, doc_file.id_doc_file, doc_file.file_path')
@@ -629,6 +681,10 @@ class MDRM_MyRep extends CI_Model
     public function getDrmDocumentDetailByName($clusterId, $docName, $scopeType = 'CLUSTER')
     {
         if (!$this->drmDocumentTablesReady()) {
+            return [];
+        }
+
+        if (empty($this->getDrmByClusterId((int) $clusterId))) {
             return [];
         }
 
@@ -706,8 +762,16 @@ class MDRM_MyRep extends CI_Model
             return false;
         }
 
-        $file = $this->db->get_where('tb_myrep_flow_doc_file', ['id_doc_file' => (int) $fileId])->row_array();
-        if (!$file) {
+        $file = $this->db
+            ->select('f.*, c.city_name')
+            ->from('tb_myrep_flow_doc_file f')
+            ->join('tb_myrep_flow_doc_package p', 'p.id_doc_package = f.id_doc_package', 'left')
+            ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'left')
+            ->where('f.id_doc_file', (int) $fileId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!$file || !$this->isCityAllowedForCurrentUser((string) ($file['city_name'] ?? ''))) {
             return false;
         }
 
@@ -760,13 +824,19 @@ class MDRM_MyRep extends CI_Model
         $this->db->trans_start();
 
         if (!empty($existing['id_drm_boq'])) {
+            $submittedAt = !empty($existing['submitted_at'])
+                ? (string) $existing['submitted_at']
+                : date('Y-m-d H:i:s');
+            if ($submitToHo) {
+                $submittedAt = date('Y-m-d H:i:s');
+            }
             $this->db
                 ->where('id_drm_boq', (int) $existing['id_drm_boq'])
                 ->update('tb_myrep_drm_boq', [
                     'id_drm' => $drmId > 0 ? $drmId : null,
                     'source_doc_file_id' => $sourceDocFileId > 0 ? (int) $sourceDocFileId : null,
                     'review_status' => $reviewStatus,
-                    'submitted_at' => $submitToHo ? date('Y-m-d H:i:s') : ($existing['submitted_at'] ?? null),
+                    'submitted_at' => $submittedAt,
                     'updated_by' => $userId,
                     'approved_at' => null,
                     'rejected_at' => null,
@@ -780,7 +850,7 @@ class MDRM_MyRep extends CI_Model
                 'id_drm' => $drmId > 0 ? $drmId : null,
                 'source_doc_file_id' => $sourceDocFileId > 0 ? (int) $sourceDocFileId : null,
                 'review_status' => $reviewStatus,
-                'submitted_at' => $submitToHo ? date('Y-m-d H:i:s') : null,
+                'submitted_at' => date('Y-m-d H:i:s'),
                 'created_by' => $userId,
                 'updated_by' => $userId,
             ];
@@ -1080,8 +1150,8 @@ class MDRM_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
-            ->select('f.*, p.id_myrep_cluster, c.cluster_name, i.doc_name')
+        $row = $this->db
+            ->select('f.*, p.id_myrep_cluster, c.cluster_name, c.city_name, i.doc_name')
             ->from('tb_myrep_flow_doc_file f')
             ->join('tb_myrep_flow_doc_package p', 'p.id_doc_package = f.id_doc_package', 'left')
             ->join('tb_myrep_cluster c', 'c.id_myrep_cluster = p.id_myrep_cluster', 'left')
@@ -1089,6 +1159,12 @@ class MDRM_MyRep extends CI_Model
             ->where('f.id_doc_file', (int) $fileId)
             ->get()
             ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        return $this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? '')) ? $row : [];
     }
 
     public function getDrmFileLogs($fileId)
@@ -1211,6 +1287,129 @@ class MDRM_MyRep extends CI_Model
         if (is_file($fullPath)) {
             @unlink($fullPath);
         }
+    }
+
+    private function applyAllowedCityRestriction($columnName = 'c.city_name')
+    {
+        if (!$this->shouldRestrictCityByUser()) {
+            return true;
+        }
+
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if (empty($allowedCitySet)) {
+            return false;
+        }
+
+        $escapedCities = array_map([$this->db, 'escape'], array_keys($allowedCitySet));
+        $this->db->where('UPPER(' . $columnName . ') IN (' . implode(',', $escapedCities) . ')', null, false);
+
+        return true;
+    }
+
+    private function isCityAllowedForCurrentUser($cityName)
+    {
+        if (!$this->shouldRestrictCityByUser()) {
+            return true;
+        }
+
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if (empty($allowedCitySet)) {
+            return false;
+        }
+
+        $cityName = strtoupper(trim((string) $cityName));
+        return $cityName !== '' && isset($allowedCitySet[$cityName]);
+    }
+
+    private function getCurrentUserAllowedCitySet()
+    {
+        if ($this->currentUserAllowedCitySet !== null) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $this->currentUserAllowedCitySet = [];
+        $userId = (int) $this->session->userdata('id_user');
+        if ($userId <= 0) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        if ((string) $this->session->userdata('nama_level') === 'Super Admin') {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        if (!$this->db->table_exists('tb_master_user_new') || !$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $user = (array) $this->db
+            ->select('nik')
+            ->from('tb_master_user_new')
+            ->where('id', $userId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        $nik = trim((string) ($user['nik'] ?? ''));
+        if ($nik === '') {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $roleColumns = [
+            'rpm_area',
+            'sm_area',
+            'spv_area',
+            'snd_area',
+            'admin_area',
+            'snd_ho',
+            'atp_ho',
+            'rfs_ho',
+            'sitac_ho',
+            'dc_ho',
+            'qa_ho',
+        ];
+
+        $existingRoleColumns = [];
+        foreach ($roleColumns as $columnName) {
+            if ($this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+                $existingRoleColumns[] = $columnName;
+            }
+        }
+
+        if (empty($existingRoleColumns)) {
+            return $this->currentUserAllowedCitySet;
+        }
+
+        $whereParts = [];
+        $params = [];
+        foreach ($existingRoleColumns as $columnName) {
+            $whereParts[] = '`' . $columnName . '` = ?';
+            $params[] = $nik;
+        }
+
+        $sql = 'SELECT city_name FROM tb_myrep_pic_mapping_city WHERE ';
+        if ($this->db->field_exists('is_active', 'tb_myrep_pic_mapping_city')) {
+            $sql .= 'is_active = 1 AND ';
+        }
+        $sql .= '(' . implode(' OR ', $whereParts) . ')';
+
+        $rows = (array) $this->db->query($sql, $params)->result_array();
+        foreach ($rows as $row) {
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($cityName !== '') {
+                $this->currentUserAllowedCitySet[$cityName] = true;
+            }
+        }
+
+        return $this->currentUserAllowedCitySet;
+    }
+
+    private function shouldRestrictCityByUser()
+    {
+        $userId = (int) $this->session->userdata('id_user');
+        if ($userId <= 0) {
+            return false;
+        }
+
+        return (string) $this->session->userdata('nama_level') !== 'Super Admin';
     }
 
     private function normalizeDrmScopeType($scopeType)

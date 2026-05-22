@@ -1,0 +1,2 @@
+﻿<?php
+$ch=curl_init();curl_setopt_array($ch,[CURLOPT_URL=>'http://localhost/DatabaseTKM/Auth',CURLOPT_RETURNTRANSFER=>true,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_HEADER=>true,CURLOPT_SSL_VERIFYPEER=>false,CURLOPT_SSL_VERIFYHOST=>false,CURLOPT_ENCODING=>'',CURLOPT_COOKIEFILE=>'']);$resp=curl_exec($ch);$status=curl_getinfo($ch,CURLINFO_RESPONSE_CODE);$cookies=curl_getinfo($ch,CURLINFO_COOKIELIST);curl_close($ch);echo "status=$status\n";echo "cookies=".print_r($cookies,true)."\n";
