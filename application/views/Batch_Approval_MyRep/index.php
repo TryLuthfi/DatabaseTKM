@@ -152,7 +152,7 @@ if (!function_exists('batchAgingBadgeClass')) {
     }
 }
 
-$renderBatchTableRows = static function (array $rows, $docReady, $batchModel) {
+$renderBatchTableRows = static function (array $rows, $docReady, $batchModel) use ($canTambah, $canEdit, $canHapus) {
     foreach ($rows as $index => $row) {
         $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
         $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
