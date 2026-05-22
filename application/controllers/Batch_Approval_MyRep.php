@@ -157,7 +157,7 @@ class Batch_Approval_MyRep extends CI_Controller
 
         $cluster = $this->MBatch_Approval_MyRep->getBatchCandidateById($clusterId);
         if (empty($cluster)) {
-            $this->session->set_flashdata('error', 'Cluster belum memenuhi syarat untuk proses Batch Approval.');
+            $this->session->set_flashdata('error', 'Cluster belum memenuhi syarat (VALSAL DONE/APPROVED) atau tidak termasuk city mapping user.');
             redirect('Batch_Approval_MyRep');
             return;
         }
@@ -207,7 +207,7 @@ class Batch_Approval_MyRep extends CI_Controller
         ], [
             'status_current' => $this->mapClusterStatusFromStaging($stagingStatus),
             'updated_by' => $userId,
-        ], $pics);
+        ], $pics, $cluster);
 
         if ($batchId <= 0) {
             $errorDetail = trim((string) $this->MBatch_Approval_MyRep->getLastErrorMessage());

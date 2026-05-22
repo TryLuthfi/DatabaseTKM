@@ -623,11 +623,18 @@ class MBatch_Approval_MyRep extends CI_Model
             ->result_array();
     }
 
-    public function createBatchApproval($clusterId, $batchPayload, $clusterPayload, $pics = [])
+    public function createBatchApproval($clusterId, $batchPayload, $clusterPayload, $pics = [], $clusterContext = [])
     {
         $this->lastErrorMessage = '';
         $clusterId = (int) $clusterId;
-        $cluster = $this->getBatchByClusterId($clusterId);
+        $clusterContext = (array) $clusterContext;
+
+        if (!empty($clusterContext['id_myrep_cluster']) && (int) $clusterContext['id_myrep_cluster'] === $clusterId) {
+            $cluster = $clusterContext;
+        } else {
+            $cluster = $this->getBatchByClusterId($clusterId);
+        }
+
         if (empty($cluster['id_myrep_cluster'])) {
             $this->setLastError('Cluster tidak ditemukan atau tidak termasuk city mapping user.');
             return 0;
