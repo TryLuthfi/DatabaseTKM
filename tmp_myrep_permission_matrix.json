@@ -1,0 +1,227 @@
+[
+    {
+        "page_key": "BAK_MyRep",
+        "action_key": "APPROVAL",
+        "roles": "SITAC_HO"
+    },
+    {
+        "page_key": "BAK_MyRep",
+        "action_key": "EDIT",
+        "roles": "SND_AREA"
+    },
+    {
+        "page_key": "BAK_MyRep",
+        "action_key": "HAPUS",
+        "roles": "SITAC_HO"
+    },
+    {
+        "page_key": "BAK_MyRep",
+        "action_key": "TAMBAH",
+        "roles": "SND_AREA"
+    },
+    {
+        "page_key": "BAK_MyRep",
+        "action_key": "VIEW",
+        "roles": "ADMIN_AREA, ATP_HO, DC_HO, QA_HO, RFS_HO, RPM_AREA, SITAC_HO, SM_AREA, SND_AREA, SND_HO, SPV_AREA"
+    },
+    {
+        "page_key": "VALSAL_MyRep",
+        "action_key": "APPROVAL",
+        "roles": "SND_HO"
+    },
+    {
+        "page_key": "VALSAL_MyRep",
+        "action_key": "EDIT",
+        "roles": "SND_AREA"
+    },
+    {
+        "page_key": "VALSAL_MyRep",
+        "action_key": "HAPUS",
+        "roles": "SND_HO"
+    },
+    {
+        "page_key": "VALSAL_MyRep",
+        "action_key": "TAMBAH",
+        "roles": "SND_AREA"
+    },
+    {
+        "page_key": "VALSAL_MyRep",
+        "action_key": "VIEW",
+        "roles": "ADMIN_AREA, DC_HO, QA_HO, RFS_HO, RPM_AREA, SITAC_HO, SM_AREA, SND_AREA, SND_HO, SPV_AREA"
+    },
+    {
+        "page_key": "Batch_Approval_MyRep",
+        "action_key": "APPROVAL",
+        "roles": "SITAC_HO"
+    },
+    {
+        "page_key": "Batch_Approval_MyRep",
+        "action_key": "EDIT",
+        "roles": "SND_AREA"
+    },
+    {
+        "page_key": "Batch_Approval_MyRep",
+        "action_key": "HAPUS",
+        "roles": "SITAC_HO"
+    },
+    {
+        "page_key": "Batch_Approval_MyRep",
+        "action_key": "TAMBAH",
+        "roles": "SND_AREA"
+    },
+    {
+        "page_key": "Batch_Approval_MyRep",
+        "action_key": "VIEW",
+        "roles": "ADMIN_AREA, DC_HO, QA_HO, RFS_HO, RPM_AREA, SITAC_HO, SM_AREA, SND_AREA, SND_HO, SPV_AREA"
+    },
+    {
+        "page_key": "DRM_MyRep",
+        "action_key": "APPROVAL",
+        "roles": "SND_HO"
+    },
+    {
+        "page_key": "DRM_MyRep",
+        "action_key": "EDIT",
+        "roles": "SND_AREA"
+    },
+    {
+        "page_key": "DRM_MyRep",
+        "action_key": "HAPUS",
+        "roles": "SND_HO"
+    },
+    {
+        "page_key": "DRM_MyRep",
+        "action_key": "TAMBAH",
+        "roles": "SND_AREA"
+    },
+    {
+        "page_key": "DRM_MyRep",
+        "action_key": "VIEW",
+        "roles": "ADMIN_AREA, DC_HO, QA_HO, RFS_HO, RPM_AREA, SITAC_HO, SM_AREA, SND_AREA, SND_HO, SPV_AREA"
+    },
+    {
+        "page_key": "Implementasi_BOQ_MyRep",
+        "action_key": "APPROVAL_DAILY",
+        "roles": "RPM_AREA"
+    },
+    {
+        "page_key": "Implementasi_BOQ_MyRep",
+        "action_key": "APPROVAL_FOTO_COMPLY",
+        "roles": "ATP_HO"
+    },
+    {
+        "page_key": "Implementasi_BOQ_MyRep",
+        "action_key": "EDIT",
+        "roles": "SM_AREA"
+    },
+    {
+        "page_key": "Implementasi_BOQ_MyRep",
+        "action_key": "TAMBAH",
+        "roles": "SM_AREA"
+    },
+    {
+        "page_key": "Implementasi_BOQ_MyRep",
+        "action_key": "VIEW",
+        "roles": "ADMIN_AREA, ATP_HO, DC_HO, QA_HO, RFS_HO, RPM_AREA, SITAC_HO, SM_AREA, SND_AREA, SND_HO, SPV_AREA"
+    },
+    {
+        "page_key": "PO_MyRep",
+        "action_key": "APPROVAL",
+        "roles": "QA_HO"
+    },
+    {
+        "page_key": "PO_MyRep",
+        "action_key": "EDIT",
+        "roles": "QA_HO"
+    },
+    {
+        "page_key": "PO_MyRep",
+        "action_key": "HAPUS",
+        "roles": "QA_HO"
+    },
+    {
+        "page_key": "PO_MyRep",
+        "action_key": "TAMBAH",
+        "roles": "QA_HO"
+    },
+    {
+        "page_key": "PO_MyRep",
+        "action_key": "VIEW",
+        "roles": "ADMIN_AREA, ATP_HO, DC_HO, QA_HO, RFS_HO, RPM_AREA, SITAC_HO, SM_AREA, SND_HO"
+    },
+    {
+        "page_key": "Monitoring_RFS_MyRep",
+        "action_key": "APPROVAL",
+        "roles": "RFS_HO"
+    },
+    {
+        "page_key": "Monitoring_RFS_MyRep",
+        "action_key": "EDIT",
+        "roles": "RFS_HO"
+    },
+    {
+        "page_key": "Monitoring_RFS_MyRep",
+        "action_key": "HAPUS",
+        "roles": "RFS_HO"
+    },
+    {
+        "page_key": "Monitoring_RFS_MyRep",
+        "action_key": "TAMBAH",
+        "roles": "RFS_HO"
+    },
+    {
+        "page_key": "Monitoring_RFS_MyRep",
+        "action_key": "VIEW",
+        "roles": "ADMIN_AREA, DC_HO, QA_HO, RFS_HO, RPM_AREA, SM_AREA, SND_AREA, SND_HO, SPV_AREA"
+    },
+    {
+        "page_key": "ATP_MyRep",
+        "action_key": "APPROVAL",
+        "roles": "ADMIN_AREA, ATP_HO"
+    },
+    {
+        "page_key": "ATP_MyRep",
+        "action_key": "EDIT",
+        "roles": "ATP_HO"
+    },
+    {
+        "page_key": "ATP_MyRep",
+        "action_key": "HAPUS",
+        "roles": "ATP_HO"
+    },
+    {
+        "page_key": "ATP_MyRep",
+        "action_key": "TAMBAH",
+        "roles": "ATP_HO"
+    },
+    {
+        "page_key": "ATP_MyRep",
+        "action_key": "VIEW",
+        "roles": "ADMIN_AREA, ATP_HO, DC_HO, QA_HO, RFS_HO, RPM_AREA, SITAC_HO, SM_AREA, SND_AREA, SND_HO, SPV_AREA"
+    },
+    {
+        "page_key": "Checklist_Dokument_MyRep",
+        "action_key": "APPROVAL",
+        "roles": "DC_HO"
+    },
+    {
+        "page_key": "Checklist_Dokument_MyRep",
+        "action_key": "EDIT",
+        "roles": "ADMIN_AREA"
+    },
+    {
+        "page_key": "Checklist_Dokument_MyRep",
+        "action_key": "HAPUS",
+        "roles": "DC_HO"
+    },
+    {
+        "page_key": "Checklist_Dokument_MyRep",
+        "action_key": "TAMBAH",
+        "roles": "ADMIN_AREA"
+    },
+    {
+        "page_key": "Checklist_Dokument_MyRep",
+        "action_key": "VIEW",
+        "roles": "ADMIN_AREA, ATP_HO, DC_HO, QA_HO, RFS_HO, RPM_AREA, SITAC_HO, SM_AREA, SND_AREA, SND_HO, SPV_AREA"
+    }
+]

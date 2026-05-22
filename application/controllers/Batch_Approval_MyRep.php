@@ -210,7 +210,12 @@ class Batch_Approval_MyRep extends CI_Controller
         ], $pics);
 
         if ($batchId <= 0) {
-            $this->session->set_flashdata('error', 'Gagal menyimpan data Batch Approval.');
+            $errorDetail = trim((string) $this->MBatch_Approval_MyRep->getLastErrorMessage());
+            $this->session->set_flashdata(
+                'error',
+                'Gagal menyimpan data Batch Approval.'
+                . ($errorDetail !== '' ? ' Detail: ' . $errorDetail : '')
+            );
             redirect('Batch_Approval_MyRep');
             return;
         }
@@ -979,7 +984,12 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         if ($inserted <= 0) {
-            $this->jsonResponse(false, 'Gagal menyimpan hasil import Batch Approval.');
+            $errorDetail = trim((string) $this->MBatch_Approval_MyRep->getLastErrorMessage());
+            $this->jsonResponse(
+                false,
+                'Gagal menyimpan hasil import Batch Approval.'
+                . ($errorDetail !== '' ? ' Detail: ' . $errorDetail : '')
+            );
             return;
         }
 

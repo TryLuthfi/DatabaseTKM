@@ -5,6 +5,10 @@ class MBatch_Approval_MyRep extends CI_Model
 {
     /** @var array<string,bool>|null */
     private $currentUserAllowedCitySet = null;
+    /** @var string */
+    private $lastErrorMessage = '';
+    /** @var array<string,array<string,bool>> */
+    private $tableFieldSetCache = [];
 
     private $autoLinkedPostDonasiDocuments = [
         'SURAT IJIN RT / RW' => [
@@ -49,6 +53,11 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         return true;
+    }
+
+    public function getLastErrorMessage()
+    {
+        return (string) $this->lastErrorMessage;
     }
 
     public function batchDocumentTablesReady()
@@ -309,7 +318,7 @@ class MBatch_Approval_MyRep extends CI_Model
             return [];
         }
 
-        return $this->db
+        $row = $this->db
             ->select('c.*, v.id_valsal, v.valsal_date, v.homepass_valsal, v.status_valsal, ba.id_batch_approval')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
@@ -318,6 +327,12 @@ class MBatch_Approval_MyRep extends CI_Model
             ->where_in('UPPER(v.status_valsal)', ['DONE', 'APPROVED'])
             ->get()
             ->row_array();
+
+        if (empty($row)) {
+            return [];
+        }
+
+        return $this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? '')) ? $row : [];
     }
 
     public function getTargetByCity($cityName)
@@ -610,25 +625,79 @@ class MBatch_Approval_MyRep extends CI_Model
 
     public function createBatchApproval($clusterId, $batchPayload, $clusterPayload, $pics = [])
     {
-        $cluster = $this->getBatchByClusterId((int) $clusterId);
+        $this->lastErrorMessage = '';
+        $clusterId = (int) $clusterId;
+        $cluster = $this->getBatchByClusterId($clusterId);
         if (empty($cluster['id_myrep_cluster'])) {
+            $this->setLastError('Cluster tidak ditemukan atau tidak termasuk city mapping user.');
             return 0;
         }
 
-        $this->db->trans_start();
-
-        $this->db->where('id_myrep_cluster', (int) $clusterId)->update('tb_myrep_cluster', $clusterPayload);
-        $batchPayload['id_myrep_cluster'] = (int) $clusterId;
-        $this->db->insert('tb_myrep_batch_approval', $batchPayload);
-        $batchId = (int) $this->db->insert_id();
-
-        foreach ($pics as $pic) {
-            $pic['id_batch_approval'] = $batchId;
-            $this->db->insert('tb_myrep_batch_approval_pic', $pic);
+        if (!empty($cluster['id_batch_approval'])) {
+            $this->setLastError('Cluster sudah memiliki data Batch Approval.');
+            return 0;
         }
 
-        $this->db->trans_complete();
-        return $this->db->trans_status() ? $batchId : 0;
+        $clusterPayload = $this->sanitizePayloadForTable('tb_myrep_cluster', (array) $clusterPayload);
+        $batchPayload = $this->sanitizePayloadForTable('tb_myrep_batch_approval', (array) $batchPayload);
+        if ($this->tableHasField('tb_myrep_batch_approval', 'id_myrep_cluster')) {
+            $batchPayload['id_myrep_cluster'] = $clusterId;
+        } else {
+            $this->setLastError('Kolom id_myrep_cluster tidak ditemukan pada tb_myrep_batch_approval.');
+            return 0;
+        }
+
+        $this->db->trans_begin();
+
+        if (!empty($clusterPayload)) {
+            $this->db->where('id_myrep_cluster', $clusterId)->update('tb_myrep_cluster', $clusterPayload);
+            if ($this->hasDbError('update tb_myrep_cluster saat create batch approval')) {
+                $this->db->trans_rollback();
+                return 0;
+            }
+        }
+
+        $this->db->insert('tb_myrep_batch_approval', $batchPayload);
+        if ($this->hasDbError('insert tb_myrep_batch_approval')) {
+            $this->db->trans_rollback();
+            return 0;
+        }
+
+        $batchId = (int) $this->db->insert_id();
+        if ($batchId <= 0) {
+            $this->setLastError('Insert tb_myrep_batch_approval tidak menghasilkan ID baru.');
+            $this->db->trans_rollback();
+            return 0;
+        }
+
+        foreach ((array) $pics as $index => $picRow) {
+            $pic = $this->sanitizePayloadForTable('tb_myrep_batch_approval_pic', (array) $picRow);
+            if ($this->tableHasField('tb_myrep_batch_approval_pic', 'id_batch_approval')) {
+                $pic['id_batch_approval'] = $batchId;
+            }
+            if ($this->tableHasField('tb_myrep_batch_approval_pic', 'pic_no') && !isset($pic['pic_no'])) {
+                $pic['pic_no'] = ((int) $index) + 1;
+            }
+
+            if (empty($pic)) {
+                continue;
+            }
+
+            $this->db->insert('tb_myrep_batch_approval_pic', $pic);
+            if ($this->hasDbError('insert tb_myrep_batch_approval_pic')) {
+                $this->db->trans_rollback();
+                return 0;
+            }
+        }
+
+        if (!$this->db->trans_status()) {
+            $this->setLastError('Transaksi Batch Approval gagal saat commit.');
+            $this->db->trans_rollback();
+            return 0;
+        }
+
+        $this->db->trans_commit();
+        return $batchId;
     }
 
     public function updateBatchApproval($clusterId, $batchId, $batchPayload, $clusterPayload, $pics = [])
@@ -1351,6 +1420,96 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         return (string) $this->session->userdata('nama_level') !== 'Super Admin';
+    }
+
+    private function getTableFieldSet($tableName)
+    {
+        $tableName = trim((string) $tableName);
+        if ($tableName === '') {
+            return [];
+        }
+
+        if (isset($this->tableFieldSetCache[$tableName])) {
+            return $this->tableFieldSetCache[$tableName];
+        }
+
+        if (!$this->db->table_exists($tableName)) {
+            $this->tableFieldSetCache[$tableName] = [];
+            return $this->tableFieldSetCache[$tableName];
+        }
+
+        $fieldSet = [];
+        foreach ($this->db->list_fields($tableName) as $fieldName) {
+            $fieldSet[(string) $fieldName] = true;
+        }
+
+        $this->tableFieldSetCache[$tableName] = $fieldSet;
+        return $this->tableFieldSetCache[$tableName];
+    }
+
+    private function tableHasField($tableName, $fieldName)
+    {
+        $fieldName = trim((string) $fieldName);
+        if ($fieldName === '') {
+            return false;
+        }
+
+        $fieldSet = $this->getTableFieldSet($tableName);
+        return isset($fieldSet[$fieldName]);
+    }
+
+    private function sanitizePayloadForTable($tableName, array $payload)
+    {
+        if (empty($payload)) {
+            return [];
+        }
+
+        $fieldSet = $this->getTableFieldSet($tableName);
+        if (empty($fieldSet)) {
+            return [];
+        }
+
+        $sanitized = [];
+        $dropped = [];
+        foreach ($payload as $key => $value) {
+            $columnName = (string) $key;
+            if (isset($fieldSet[$columnName])) {
+                $sanitized[$columnName] = $value;
+            } else {
+                $dropped[] = $columnName;
+            }
+        }
+
+        if (!empty($dropped)) {
+            log_message(
+                'debug',
+                'MBatch_Approval_MyRep: kolom payload diabaikan karena tidak ada di '
+                . $tableName . ' => ' . implode(', ', $dropped)
+            );
+        }
+
+        return $sanitized;
+    }
+
+    private function hasDbError($contextMessage)
+    {
+        $dbError = (array) $this->db->error();
+        $errorCode = (int) ($dbError['code'] ?? 0);
+        if ($errorCode === 0) {
+            return false;
+        }
+
+        $errorText = trim((string) ($dbError['message'] ?? 'Unknown database error'));
+        $this->setLastError($contextMessage . ' [' . $errorCode . ']: ' . $errorText);
+        return true;
+    }
+
+    private function setLastError($message)
+    {
+        $this->lastErrorMessage = trim((string) $message);
+        if ($this->lastErrorMessage !== '') {
+            log_message('error', 'MBatch_Approval_MyRep: ' . $this->lastErrorMessage);
+        }
     }
 
     private function resolveDisplayStagingStatus($stagingStatus, $postDocTotal, $postDocApproved)

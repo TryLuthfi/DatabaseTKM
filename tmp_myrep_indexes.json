@@ -1,0 +1,662 @@
+[
+    {
+        "table_name": "tb_myrep_approval_line",
+        "index_name": "idx_myrep_approval_line_active",
+        "cols": "is_active",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_approval_line",
+        "index_name": "idx_myrep_approval_line_target_role",
+        "cols": "target_role",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_approval_line",
+        "index_name": "PRIMARY",
+        "cols": "id_line",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_approval_line",
+        "index_name": "uniq_myrep_approval_line",
+        "cols": "page_key,action_key,step_no",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_bak",
+        "index_name": "idx_myrep_bak_status",
+        "cols": "status_bak",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_bak",
+        "index_name": "PRIMARY",
+        "cols": "id_bak",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_bak",
+        "index_name": "uniq_myrep_bak_cluster",
+        "cols": "id_myrep_cluster",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_batch_approval",
+        "index_name": "idx_myrep_batch_cluster",
+        "cols": "id_myrep_cluster",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_batch_approval",
+        "index_name": "idx_myrep_batch_status",
+        "cols": "staging_status",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_batch_approval",
+        "index_name": "PRIMARY",
+        "cols": "id_batch_approval",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_batch_approval_pic",
+        "index_name": "PRIMARY",
+        "cols": "id_batch_pic",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_batch_approval_pic",
+        "index_name": "uniq_myrep_batch_pic_no",
+        "cols": "id_batch_approval,pic_no",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_boq_baseline",
+        "index_name": "idx_myrep_boq_baseline_drm_boq",
+        "cols": "id_drm_boq",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_boq_baseline",
+        "index_name": "idx_myrep_boq_baseline_scope",
+        "cols": "scope_type",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_boq_baseline",
+        "index_name": "PRIMARY",
+        "cols": "id_boq_baseline",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_boq_baseline",
+        "index_name": "uniq_myrep_boq_baseline_cluster_scope",
+        "cols": "id_myrep_cluster,scope_type,status_baseline",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_boq_baseline_item",
+        "index_name": "idx_myrep_boq_baseline_item_master",
+        "cols": "id_boq_item",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_boq_baseline_item",
+        "index_name": "PRIMARY",
+        "cols": "id_boq_baseline_item",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_boq_baseline_item",
+        "index_name": "uniq_myrep_boq_baseline_item",
+        "cols": "id_boq_baseline,id_boq_item",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_boq_progress_item",
+        "index_name": "idx_myrep_boq_progress_baseline",
+        "cols": "id_boq_baseline",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_boq_progress_item",
+        "index_name": "idx_myrep_boq_progress_baseline_item",
+        "cols": "id_boq_baseline_item",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_boq_progress_item",
+        "index_name": "idx_myrep_boq_progress_cluster",
+        "cols": "id_myrep_cluster",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_boq_progress_item",
+        "index_name": "idx_myrep_boq_progress_date",
+        "cols": "progress_date",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_boq_progress_item",
+        "index_name": "PRIMARY",
+        "cols": "id_progress_item",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_boq_progress_photo",
+        "index_name": "idx_myrep_boq_progress_photo_item",
+        "cols": "id_progress_item",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_boq_progress_photo",
+        "index_name": "PRIMARY",
+        "cols": "id_progress_photo",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_cluster",
+        "index_name": "idx_myrep_cluster_city",
+        "cols": "city_name",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_cluster",
+        "index_name": "idx_myrep_cluster_rfs_cluster",
+        "cols": "rfs_cluster_id",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_cluster",
+        "index_name": "idx_myrep_cluster_status_current",
+        "cols": "status_current",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_cluster",
+        "index_name": "idx_myrep_cluster_target",
+        "cols": "id_target",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_cluster",
+        "index_name": "PRIMARY",
+        "cols": "id_myrep_cluster",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_drm",
+        "index_name": "idx_myrep_drm_status",
+        "cols": "status_drm",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_drm",
+        "index_name": "PRIMARY",
+        "cols": "id_drm",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_drm",
+        "index_name": "uniq_myrep_drm_cluster",
+        "cols": "id_myrep_cluster",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq",
+        "index_name": "idx_myrep_drm_boq_doc",
+        "cols": "source_doc_file_id",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq",
+        "index_name": "idx_myrep_drm_boq_drm",
+        "cols": "id_drm",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq",
+        "index_name": "idx_myrep_drm_boq_scope",
+        "cols": "scope_type",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq",
+        "index_name": "idx_myrep_drm_boq_status",
+        "cols": "review_status",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq",
+        "index_name": "PRIMARY",
+        "cols": "id_drm_boq",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq",
+        "index_name": "uniq_myrep_drm_boq_cluster_scope",
+        "cols": "id_myrep_cluster,scope_type",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq_item",
+        "index_name": "idx_myrep_drm_boq_item_master",
+        "cols": "id_boq_item",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq_item",
+        "index_name": "PRIMARY",
+        "cols": "id_drm_boq_item",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq_item",
+        "index_name": "uniq_myrep_drm_boq_item",
+        "cols": "id_drm_boq,id_boq_item",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file",
+        "index_name": "idx_myrep_flow_doc_file_item",
+        "cols": "id_doc_item",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file",
+        "index_name": "idx_myrep_flow_doc_file_package",
+        "cols": "id_doc_package",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file",
+        "index_name": "PRIMARY",
+        "cols": "id_doc_file",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file",
+        "index_name": "uniq_myrep_flow_doc_file",
+        "cols": "id_doc_package,id_doc_item",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file_log",
+        "index_name": "idx_myrep_flow_doc_log_file",
+        "cols": "id_doc_file",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file_log",
+        "index_name": "idx_myrep_flow_doc_log_item",
+        "cols": "id_doc_item",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file_log",
+        "index_name": "idx_myrep_flow_doc_log_package",
+        "cols": "id_doc_package",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file_log",
+        "index_name": "PRIMARY",
+        "cols": "id_doc_file_log",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_package",
+        "index_name": "idx_myrep_flow_doc_package_cluster",
+        "cols": "id_myrep_cluster",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_package",
+        "index_name": "idx_myrep_flow_doc_package_group",
+        "cols": "id_doc_group",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_package",
+        "index_name": "PRIMARY",
+        "cols": "id_doc_package",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_package",
+        "index_name": "uniq_myrep_flow_doc_package",
+        "cols": "flow_type,ref_process_id,id_doc_group",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_impl_daily_activity",
+        "index_name": "idx_impl_daily_activity_cluster",
+        "cols": "id_myrep_cluster",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_impl_daily_activity",
+        "index_name": "idx_impl_daily_activity_date",
+        "cols": "activity_date",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_impl_daily_activity",
+        "index_name": "idx_impl_daily_activity_scope",
+        "cols": "scope_type",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_impl_daily_activity",
+        "index_name": "PRIMARY",
+        "cols": "id_daily_activity",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_impl_daily_activity_photo",
+        "index_name": "idx_impl_activity_photo_activity",
+        "cols": "id_daily_activity",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_impl_daily_activity_photo",
+        "index_name": "PRIMARY",
+        "cols": "id_activity_photo",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_notification_route",
+        "index_name": "idx_myrep_notification_target_role",
+        "cols": "target_role",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_notification_route",
+        "index_name": "PRIMARY",
+        "cols": "id_route",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_notification_route",
+        "index_name": "uniq_myrep_notification_route",
+        "cols": "module_name,event_name",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_pic_mapping_city",
+        "index_name": "idx_myrep_city_lookup",
+        "cols": "city_name,province_name",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_pic_mapping_city",
+        "index_name": "idx_myrep_region",
+        "cols": "regional_name",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_pic_mapping_city",
+        "index_name": "PRIMARY",
+        "cols": "id",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_pic_mapping_city",
+        "index_name": "uk_myrep_city",
+        "cols": "regional_name,province_name,city_name",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_po_header",
+        "index_name": "idx_myrep_po_cluster",
+        "cols": "id_myrep_cluster",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_po_header",
+        "index_name": "idx_myrep_po_parent",
+        "cols": "parent_po_header_id",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_po_header",
+        "index_name": "idx_myrep_po_status",
+        "cols": "status_po",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_po_header",
+        "index_name": "idx_myrep_po_type",
+        "cols": "po_type",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_po_header",
+        "index_name": "PRIMARY",
+        "cols": "id_po_header",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_po_termin",
+        "index_name": "idx_myrep_po_termin_status",
+        "cols": "status_termin",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_po_termin",
+        "index_name": "PRIMARY",
+        "cols": "id_po_termin",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_po_termin",
+        "index_name": "uniq_myrep_po_termin",
+        "cols": "id_po_header,termin_no",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_role_permission",
+        "index_name": "idx_myrep_role_permission_page",
+        "cols": "page_key",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_role_permission",
+        "index_name": "idx_myrep_role_permission_role",
+        "cols": "role_key",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_role_permission",
+        "index_name": "PRIMARY",
+        "cols": "id_permission",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_role_permission",
+        "index_name": "uniq_myrep_role_permission",
+        "cols": "page_key,action_key,role_key",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_valsal",
+        "index_name": "idx_myrep_valsal_status",
+        "cols": "status_valsal",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_myrep_valsal",
+        "index_name": "PRIMARY",
+        "cols": "id_valsal",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_myrep_valsal",
+        "index_name": "uniq_myrep_valsal_cluster",
+        "cols": "id_myrep_cluster",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_atp_file",
+        "index_name": "idx_myrep_atp_file_cluster",
+        "cols": "cluster_id",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_rfs_myrep_atp_file",
+        "index_name": "idx_myrep_atp_file_type",
+        "cols": "doc_type",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_rfs_myrep_atp_file",
+        "index_name": "PRIMARY",
+        "cols": "id_atp_file",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_claim",
+        "index_name": "idx_rfs_myrep_claim_cluster",
+        "cols": "cluster_id",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_rfs_myrep_claim",
+        "index_name": "idx_rfs_myrep_claim_period",
+        "cols": "claim_year,claim_month,status_claim",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_rfs_myrep_claim",
+        "index_name": "PRIMARY",
+        "cols": "id_claim",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_cluster",
+        "index_name": "PRIMARY",
+        "cols": "id_cluster",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_cluster_plan",
+        "index_name": "PRIMARY",
+        "cols": "id_plan",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_cluster_plan",
+        "index_name": "uniq_rfs_myrep_cluster_plan",
+        "cols": "cluster_id,year_num,month_num",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file",
+        "index_name": "fk_myrep_doc_file_item",
+        "cols": "id_doc_item",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file",
+        "index_name": "idx_myrep_doc_file_package",
+        "cols": "id_doc_package",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file",
+        "index_name": "PRIMARY",
+        "cols": "id_doc_file",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file",
+        "index_name": "uniq_myrep_doc_file",
+        "cols": "id_doc_package,id_doc_item",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file_log",
+        "index_name": "idx_myrep_doc_log_file",
+        "cols": "id_doc_file",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file_log",
+        "index_name": "idx_myrep_doc_log_item",
+        "cols": "id_doc_item",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file_log",
+        "index_name": "idx_myrep_doc_log_package",
+        "cols": "id_doc_package",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file_log",
+        "index_name": "PRIMARY",
+        "cols": "id_doc_file_log",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_package",
+        "index_name": "fk_myrep_doc_package_group",
+        "cols": "id_doc_group",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_package",
+        "index_name": "idx_myrep_doc_package_cluster",
+        "cols": "cluster_id",
+        "non_unique": "1"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_package",
+        "index_name": "PRIMARY",
+        "cols": "id_doc_package",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_package",
+        "index_name": "uniq_myrep_doc_package",
+        "cols": "cluster_id,id_doc_group",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_mainfeeder",
+        "index_name": "PRIMARY",
+        "cols": "id_mainfeeder",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_mainfeeder_doc_file",
+        "index_name": "PRIMARY",
+        "cols": "id_doc_file_mainfeeder",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_mainfeeder_doc_file_log",
+        "index_name": "PRIMARY",
+        "cols": "id_doc_file_log_mainfeeder",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_mainfeeder_doc_package",
+        "index_name": "PRIMARY",
+        "cols": "id_doc_package_mainfeeder",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_monthly_target",
+        "index_name": "PRIMARY",
+        "cols": "id_target",
+        "non_unique": "0"
+    },
+    {
+        "table_name": "tb_rfs_myrep_monthly_target",
+        "index_name": "uniq_rfs_myrep_target_period_city",
+        "cols": "year_num,month_num,city_name",
+        "non_unique": "0"
+    }
+]

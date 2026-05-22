@@ -1,0 +1,34 @@
+[
+    {
+        "k": "mapping_city_blank",
+        "c": "0"
+    },
+    {
+        "k": "mapping_inactive",
+        "c": "0"
+    },
+    {
+        "k": "user_active_blank_username",
+        "c": "0"
+    },
+    {
+        "k": "cluster_city_blank",
+        "c": "0"
+    },
+    {
+        "k": "target_city_blank",
+        "c": "0"
+    },
+    {
+        "k": "notif_route_city_role_missing_role",
+        "c": "0"
+    },
+    {
+        "k": "notif_route_fixed_missing_user",
+        "c": "0"
+    },
+    {
+        "k": "notif_route_cluster_pic_missing",
+        "c": "0"
+    }
+]

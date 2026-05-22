@@ -1,0 +1,26 @@
+{
+    "BAK_MyRep/previewClusterImport": {
+        "status": 403,
+        "head": "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"robot-error\" viewBox=\"0 0 260 118.9\""
+    },
+    "VALSAL_MyRep/previewValsalImport": {
+        "status": 403,
+        "head": "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"robot-error\" viewBox=\"0 0 260 118.9\""
+    },
+    "Batch_Approval_MyRep/previewBatchImport": {
+        "status": 403,
+        "head": "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"robot-error\" viewBox=\"0 0 260 118.9\""
+    },
+    "DRM_MyRep/previewDrmImport": {
+        "status": 403,
+        "head": "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"robot-error\" viewBox=\"0 0 260 118.9\""
+    },
+    "Monitoring_RFS_MyRep/previewClusterImport": {
+        "status": 403,
+        "head": "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"robot-error\" viewBox=\"0 0 260 118.9\""
+    },
+    "MyRepublik_Project/previewCutoffImport": {
+        "status": 403,
+        "head": "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"robot-error\" viewBox=\"0 0 260 118.9\""
+    }
+}

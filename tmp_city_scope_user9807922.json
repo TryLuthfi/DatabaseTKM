@@ -1,0 +1,109 @@
+{
+    "login_ok": true,
+    "checks": [
+        {
+            "type": "page",
+            "path": "MyRepublik_Project",
+            "status": 403,
+            "contains_cluster": false,
+            "contains_city": false,
+            "no_access": true
+        },
+        {
+            "type": "page",
+            "path": "BAK_MyRep",
+            "status": 200,
+            "contains_cluster": false,
+            "contains_city": false,
+            "no_access": false
+        },
+        {
+            "type": "page",
+            "path": "VALSAL_MyRep",
+            "status": 200,
+            "contains_cluster": false,
+            "contains_city": false,
+            "no_access": false
+        },
+        {
+            "type": "page",
+            "path": "Batch_Approval_MyRep",
+            "status": 200,
+            "contains_cluster": false,
+            "contains_city": false,
+            "no_access": false
+        },
+        {
+            "type": "page",
+            "path": "DRM_MyRep",
+            "status": 200,
+            "contains_cluster": false,
+            "contains_city": false,
+            "no_access": false
+        },
+        {
+            "type": "page",
+            "path": "Implementasi_BOQ_MyRep",
+            "status": 200,
+            "contains_cluster": false,
+            "contains_city": false,
+            "no_access": false
+        },
+        {
+            "type": "page",
+            "path": "PO_MyRep",
+            "status": 200,
+            "contains_cluster": false,
+            "contains_city": false,
+            "no_access": false
+        },
+        {
+            "type": "page",
+            "path": "Monitoring_RFS_MyRep",
+            "status": 200,
+            "contains_cluster": false,
+            "contains_city": true,
+            "no_access": false
+        },
+        {
+            "type": "page",
+            "path": "ATP_MyRep",
+            "status": 200,
+            "contains_cluster": false,
+            "contains_city": false,
+            "no_access": false
+        },
+        {
+            "type": "page",
+            "path": "Checklist_Dokument_MyRep",
+            "status": 200,
+            "contains_cluster": false,
+            "contains_city": false,
+            "no_access": false
+        },
+        {
+            "type": "api",
+            "path": "Checklist_Dokument_MyRep/itemTableData",
+            "status": 200,
+            "contains_cluster": false,
+            "contains_city": false,
+            "body_head": "{\"draw\":1,\"recordsTotal\":0,\"recordsFiltered\":0,\"data\":[]}"
+        },
+        {
+            "type": "api",
+            "path": "BAK_MyRep/getDistrictOptions?city_name=BLITAR",
+            "status": 200,
+            "contains_cluster": false,
+            "contains_city": false,
+            "body_head": "{\"results\":[]}"
+        },
+        {
+            "type": "api",
+            "path": "BAK_MyRep/getVillageOptions?city_name=BLITAR&district_name=BAKUNG",
+            "status": 200,
+            "contains_cluster": false,
+            "contains_city": false,
+            "body_head": "{\"results\":[]}"
+        }
+    ]
+}

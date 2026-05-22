@@ -1,0 +1,142 @@
+[
+    {
+        "user": "admin",
+        "path": "MyRepublik_Project",
+        "status": 200,
+        "ms": 124.4,
+        "size": 100149
+    },
+    {
+        "user": "admin",
+        "path": "BAK_MyRep",
+        "status": 200,
+        "ms": 275.72,
+        "size": 351631
+    },
+    {
+        "user": "admin",
+        "path": "VALSAL_MyRep",
+        "status": 200,
+        "ms": 114.92,
+        "size": 169831
+    },
+    {
+        "user": "admin",
+        "path": "Batch_Approval_MyRep",
+        "status": 200,
+        "ms": 178.55,
+        "size": 172044
+    },
+    {
+        "user": "admin",
+        "path": "DRM_MyRep",
+        "status": 200,
+        "ms": 98.19,
+        "size": 105031
+    },
+    {
+        "user": "admin",
+        "path": "Implementasi_BOQ_MyRep",
+        "status": 200,
+        "ms": 136.69,
+        "size": 64574
+    },
+    {
+        "user": "admin",
+        "path": "PO_MyRep",
+        "status": 200,
+        "ms": 85.03,
+        "size": 93493
+    },
+    {
+        "user": "admin",
+        "path": "Monitoring_RFS_MyRep",
+        "status": 200,
+        "ms": 189.99,
+        "size": 1142974
+    },
+    {
+        "user": "admin",
+        "path": "ATP_MyRep",
+        "status": 200,
+        "ms": 167.06,
+        "size": 82204
+    },
+    {
+        "user": "admin",
+        "path": "Checklist_Dokument_MyRep",
+        "status": 200,
+        "ms": 171.18,
+        "size": 91413
+    },
+    {
+        "user": 9807922,
+        "path": "MyRepublik_Project",
+        "status": 403,
+        "ms": 295.28,
+        "size": 2805
+    },
+    {
+        "user": 9807922,
+        "path": "BAK_MyRep",
+        "status": 200,
+        "ms": 256.38,
+        "size": 167166
+    },
+    {
+        "user": 9807922,
+        "path": "VALSAL_MyRep",
+        "status": 200,
+        "ms": 332.27,
+        "size": 158954
+    },
+    {
+        "user": 9807922,
+        "path": "Batch_Approval_MyRep",
+        "status": 200,
+        "ms": 390.26,
+        "size": 163408
+    },
+    {
+        "user": 9807922,
+        "path": "DRM_MyRep",
+        "status": 200,
+        "ms": 308.73,
+        "size": 101900
+    },
+    {
+        "user": 9807922,
+        "path": "Implementasi_BOQ_MyRep",
+        "status": 200,
+        "ms": 272.07,
+        "size": 61996
+    },
+    {
+        "user": 9807922,
+        "path": "PO_MyRep",
+        "status": 200,
+        "ms": 307.51,
+        "size": 88130
+    },
+    {
+        "user": 9807922,
+        "path": "Monitoring_RFS_MyRep",
+        "status": 200,
+        "ms": 420.99,
+        "size": 1139596
+    },
+    {
+        "user": 9807922,
+        "path": "ATP_MyRep",
+        "status": 200,
+        "ms": 458.61,
+        "size": 73931
+    },
+    {
+        "user": 9807922,
+        "path": "Checklist_Dokument_MyRep",
+        "status": 200,
+        "ms": 365.07,
+        "size": 88835
+    }
+]

@@ -1,0 +1,186 @@
+[
+    {
+        "table": "import_cutoff_myrep_from_csv",
+        "rows": 60
+    },
+    {
+        "table": "md_myrep_boq_item",
+        "rows": 15
+    },
+    {
+        "table": "md_myrep_flow_doc_group",
+        "rows": 6
+    },
+    {
+        "table": "md_myrep_flow_doc_item",
+        "rows": 31
+    },
+    {
+        "table": "md_rfs_myrep_doc_group",
+        "rows": 6
+    },
+    {
+        "table": "md_rfs_myrep_doc_item",
+        "rows": 22
+    },
+    {
+        "table": "md_rfs_myrep_mainfeeder_doc_group",
+        "rows": 3
+    },
+    {
+        "table": "md_rfs_myrep_mainfeeder_doc_item",
+        "rows": 12
+    },
+    {
+        "table": "stg_myrep_cutoff_import_full",
+        "rows": 295
+    },
+    {
+        "table": "tb_myrep_approval_line",
+        "rows": 14
+    },
+    {
+        "table": "tb_myrep_bak",
+        "rows": 1
+    },
+    {
+        "table": "tb_myrep_batch_approval",
+        "rows": 0
+    },
+    {
+        "table": "tb_myrep_batch_approval_pic",
+        "rows": 0
+    },
+    {
+        "table": "tb_myrep_boq_baseline",
+        "rows": 0
+    },
+    {
+        "table": "tb_myrep_boq_baseline_item",
+        "rows": 0
+    },
+    {
+        "table": "tb_myrep_boq_progress_item",
+        "rows": 0
+    },
+    {
+        "table": "tb_myrep_boq_progress_photo",
+        "rows": 0
+    },
+    {
+        "table": "tb_myrep_cluster",
+        "rows": 1
+    },
+    {
+        "table": "tb_myrep_drm",
+        "rows": 0
+    },
+    {
+        "table": "tb_myrep_drm_boq",
+        "rows": 0
+    },
+    {
+        "table": "tb_myrep_drm_boq_item",
+        "rows": 0
+    },
+    {
+        "table": "tb_myrep_flow_doc_file",
+        "rows": 3
+    },
+    {
+        "table": "tb_myrep_flow_doc_file_log",
+        "rows": 13
+    },
+    {
+        "table": "tb_myrep_flow_doc_package",
+        "rows": 1
+    },
+    {
+        "table": "tb_myrep_impl_daily_activity",
+        "rows": 19
+    },
+    {
+        "table": "tb_myrep_impl_daily_activity_photo",
+        "rows": 44
+    },
+    {
+        "table": "tb_myrep_notification_route",
+        "rows": 15
+    },
+    {
+        "table": "tb_myrep_pic_mapping_city",
+        "rows": 120
+    },
+    {
+        "table": "tb_myrep_po_header",
+        "rows": 0
+    },
+    {
+        "table": "tb_myrep_po_termin",
+        "rows": 0
+    },
+    {
+        "table": "tb_myrep_role_permission",
+        "rows": 129
+    },
+    {
+        "table": "tb_myrep_valsal",
+        "rows": 0
+    },
+    {
+        "table": "tb_project_progress_myrep",
+        "rows": 2585
+    },
+    {
+        "table": "tb_rfs_myrep_atp_file",
+        "rows": 0
+    },
+    {
+        "table": "tb_rfs_myrep_claim",
+        "rows": 0
+    },
+    {
+        "table": "tb_rfs_myrep_cluster",
+        "rows": 0
+    },
+    {
+        "table": "tb_rfs_myrep_cluster_plan",
+        "rows": 0
+    },
+    {
+        "table": "tb_rfs_myrep_doc_file",
+        "rows": 0
+    },
+    {
+        "table": "tb_rfs_myrep_doc_file_log",
+        "rows": 0
+    },
+    {
+        "table": "tb_rfs_myrep_doc_package",
+        "rows": 0
+    },
+    {
+        "table": "tb_rfs_myrep_mainfeeder",
+        "rows": 1
+    },
+    {
+        "table": "tb_rfs_myrep_mainfeeder_doc_file",
+        "rows": 0
+    },
+    {
+        "table": "tb_rfs_myrep_mainfeeder_doc_file_log",
+        "rows": 0
+    },
+    {
+        "table": "tb_rfs_myrep_mainfeeder_doc_package",
+        "rows": 3
+    },
+    {
+        "table": "tb_rfs_myrep_monthly_target",
+        "rows": 1440
+    },
+    {
+        "table": "tb_master_user_new",
+        "rows": 157
+    }
+]

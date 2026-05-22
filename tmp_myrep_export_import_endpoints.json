@@ -1,0 +1,47 @@
+{
+    "Checklist_Dokument_MyRep/exportItemExcel": {
+        "status": 200,
+        "content_type": "application/vnd.ms-excel",
+        "body_len": 329
+    },
+    "BAK_MyRep/downloadReport": {
+        "status": 200,
+        "content_type": "text/csv; charset=UTF-8",
+        "body_len": 557
+    },
+    "VALSAL_MyRep/downloadReport": {
+        "status": 200,
+        "content_type": "text/csv; charset=UTF-8",
+        "body_len": 332
+    },
+    "MyRepublik_Project/downloadCutoffImportTemplate": {
+        "status": 200,
+        "content_type": "text/csv; charset=UTF-8",
+        "body_len": 9853
+    },
+    "Monitoring_RFS_MyRep/downloadClusterImportTemplate": {
+        "status": 200,
+        "content_type": "text/csv; charset=UTF-8",
+        "body_len": 59
+    },
+    "BAK_MyRep/downloadClusterImportTemplate": {
+        "status": 200,
+        "content_type": "text/csv; charset=UTF-8",
+        "body_len": 616
+    },
+    "VALSAL_MyRep/downloadValsalImportTemplate": {
+        "status": 200,
+        "content_type": "text/csv; charset=UTF-8",
+        "body_len": 480
+    },
+    "Batch_Approval_MyRep/downloadBatchImportTemplate": {
+        "status": 200,
+        "content_type": "text/csv; charset=utf-8",
+        "body_len": 2056
+    },
+    "DRM_MyRep/downloadDrmImportTemplate": {
+        "status": 200,
+        "content_type": "text/csv; charset=utf-8",
+        "body_len": 568
+    }
+}

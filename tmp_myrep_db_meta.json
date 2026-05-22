@@ -1,0 +1,388 @@
+{
+    "roles": [
+        {
+            "role_key": "ADMIN_AREA",
+            "total": "12"
+        },
+        {
+            "role_key": "ATP_HO",
+            "total": "10"
+        },
+        {
+            "role_key": "DC_HO",
+            "total": "11"
+        },
+        {
+            "role_key": "QA_HO",
+            "total": "13"
+        },
+        {
+            "role_key": "RFS_HO",
+            "total": "13"
+        },
+        {
+            "role_key": "RPM_AREA",
+            "total": "10"
+        },
+        {
+            "role_key": "SITAC_HO",
+            "total": "12"
+        },
+        {
+            "role_key": "SM_AREA",
+            "total": "11"
+        },
+        {
+            "role_key": "SND_AREA",
+            "total": "16"
+        },
+        {
+            "role_key": "SND_HO",
+            "total": "13"
+        },
+        {
+            "role_key": "SPV_AREA",
+            "total": "8"
+        }
+    ],
+    "page_action": [
+        {
+            "page_key": "ATP_MyRep",
+            "action_key": "APPROVAL",
+            "allowed_rows": "2",
+            "total_rows": "2"
+        },
+        {
+            "page_key": "ATP_MyRep",
+            "action_key": "EDIT",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "ATP_MyRep",
+            "action_key": "HAPUS",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "ATP_MyRep",
+            "action_key": "TAMBAH",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "ATP_MyRep",
+            "action_key": "VIEW",
+            "allowed_rows": "11",
+            "total_rows": "11"
+        },
+        {
+            "page_key": "BAK_MyRep",
+            "action_key": "APPROVAL",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "BAK_MyRep",
+            "action_key": "EDIT",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "BAK_MyRep",
+            "action_key": "HAPUS",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "BAK_MyRep",
+            "action_key": "TAMBAH",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "BAK_MyRep",
+            "action_key": "VIEW",
+            "allowed_rows": "11",
+            "total_rows": "11"
+        },
+        {
+            "page_key": "Batch_Approval_MyRep",
+            "action_key": "APPROVAL",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Batch_Approval_MyRep",
+            "action_key": "EDIT",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Batch_Approval_MyRep",
+            "action_key": "HAPUS",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Batch_Approval_MyRep",
+            "action_key": "TAMBAH",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Batch_Approval_MyRep",
+            "action_key": "VIEW",
+            "allowed_rows": "10",
+            "total_rows": "10"
+        },
+        {
+            "page_key": "Checklist_Dokument_MyRep",
+            "action_key": "APPROVAL",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Checklist_Dokument_MyRep",
+            "action_key": "EDIT",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Checklist_Dokument_MyRep",
+            "action_key": "HAPUS",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Checklist_Dokument_MyRep",
+            "action_key": "TAMBAH",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Checklist_Dokument_MyRep",
+            "action_key": "VIEW",
+            "allowed_rows": "11",
+            "total_rows": "11"
+        },
+        {
+            "page_key": "DRM_MyRep",
+            "action_key": "APPROVAL",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "DRM_MyRep",
+            "action_key": "EDIT",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "DRM_MyRep",
+            "action_key": "HAPUS",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "DRM_MyRep",
+            "action_key": "TAMBAH",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "DRM_MyRep",
+            "action_key": "VIEW",
+            "allowed_rows": "10",
+            "total_rows": "10"
+        },
+        {
+            "page_key": "Implementasi_BOQ_MyRep",
+            "action_key": "APPROVAL_DAILY",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Implementasi_BOQ_MyRep",
+            "action_key": "APPROVAL_FOTO_COMPLY",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Implementasi_BOQ_MyRep",
+            "action_key": "EDIT",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Implementasi_BOQ_MyRep",
+            "action_key": "TAMBAH",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Implementasi_BOQ_MyRep",
+            "action_key": "VIEW",
+            "allowed_rows": "11",
+            "total_rows": "11"
+        },
+        {
+            "page_key": "Monitoring_RFS_MyRep",
+            "action_key": "APPROVAL",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Monitoring_RFS_MyRep",
+            "action_key": "EDIT",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Monitoring_RFS_MyRep",
+            "action_key": "HAPUS",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Monitoring_RFS_MyRep",
+            "action_key": "TAMBAH",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "Monitoring_RFS_MyRep",
+            "action_key": "VIEW",
+            "allowed_rows": "9",
+            "total_rows": "9"
+        },
+        {
+            "page_key": "PO_MyRep",
+            "action_key": "APPROVAL",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "PO_MyRep",
+            "action_key": "EDIT",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "PO_MyRep",
+            "action_key": "HAPUS",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "PO_MyRep",
+            "action_key": "TAMBAH",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "PO_MyRep",
+            "action_key": "VIEW",
+            "allowed_rows": "9",
+            "total_rows": "9"
+        },
+        {
+            "page_key": "VALSAL_MyRep",
+            "action_key": "APPROVAL",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "VALSAL_MyRep",
+            "action_key": "EDIT",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "VALSAL_MyRep",
+            "action_key": "HAPUS",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "VALSAL_MyRep",
+            "action_key": "TAMBAH",
+            "allowed_rows": "1",
+            "total_rows": "1"
+        },
+        {
+            "page_key": "VALSAL_MyRep",
+            "action_key": "VIEW",
+            "allowed_rows": "10",
+            "total_rows": "10"
+        }
+    ],
+    "mapping_columns": [
+        "id",
+        "regional_name",
+        "province_name",
+        "city_name",
+        "team_name",
+        "chief",
+        "rpm_area",
+        "sm_area",
+        "spv_area",
+        "snd_area",
+        "admin_area",
+        "snd_ho",
+        "rfs_ho",
+        "sitac_ho",
+        "dc_ho",
+        "is_active",
+        "created_at",
+        "updated_at",
+        "submitted_at"
+    ],
+    "myrep_tables": [
+        "import_cutoff_myrep_from_csv",
+        "md_myrep_boq_item",
+        "md_myrep_flow_doc_group",
+        "md_myrep_flow_doc_item",
+        "md_rfs_myrep_doc_group",
+        "md_rfs_myrep_doc_item",
+        "md_rfs_myrep_mainfeeder_doc_group",
+        "md_rfs_myrep_mainfeeder_doc_item",
+        "stg_myrep_cutoff_import_full",
+        "tb_myrep_approval_line",
+        "tb_myrep_bak",
+        "tb_myrep_batch_approval",
+        "tb_myrep_batch_approval_pic",
+        "tb_myrep_boq_baseline",
+        "tb_myrep_boq_baseline_item",
+        "tb_myrep_boq_progress_item",
+        "tb_myrep_boq_progress_photo",
+        "tb_myrep_cluster",
+        "tb_myrep_drm",
+        "tb_myrep_drm_boq",
+        "tb_myrep_drm_boq_item",
+        "tb_myrep_flow_doc_file",
+        "tb_myrep_flow_doc_file_log",
+        "tb_myrep_flow_doc_package",
+        "tb_myrep_impl_daily_activity",
+        "tb_myrep_impl_daily_activity_photo",
+        "tb_myrep_notification_route",
+        "tb_myrep_pic_mapping_city",
+        "tb_myrep_po_header",
+        "tb_myrep_po_termin",
+        "tb_myrep_role_permission",
+        "tb_myrep_valsal",
+        "tb_project_progress_myrep",
+        "tb_rfs_myrep_atp_file",
+        "tb_rfs_myrep_claim",
+        "tb_rfs_myrep_cluster",
+        "tb_rfs_myrep_cluster_plan",
+        "tb_rfs_myrep_doc_file",
+        "tb_rfs_myrep_doc_file_log",
+        "tb_rfs_myrep_doc_package",
+        "tb_rfs_myrep_mainfeeder",
+        "tb_rfs_myrep_mainfeeder_doc_file",
+        "tb_rfs_myrep_mainfeeder_doc_file_log",
+        "tb_rfs_myrep_mainfeeder_doc_package",
+        "tb_rfs_myrep_monthly_target"
+    ]
+}

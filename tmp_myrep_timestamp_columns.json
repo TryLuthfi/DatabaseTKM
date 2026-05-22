@@ -1,0 +1,604 @@
+[
+    {
+        "TABLE_NAME": "md_myrep_boq_item",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_myrep_boq_item",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_myrep_flow_doc_group",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_myrep_flow_doc_group",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_myrep_flow_doc_item",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_myrep_flow_doc_item",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_rfs_myrep_doc_group",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_rfs_myrep_doc_group",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_rfs_myrep_doc_item",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_rfs_myrep_doc_item",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_rfs_myrep_mainfeeder_doc_group",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_rfs_myrep_mainfeeder_doc_group",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_rfs_myrep_mainfeeder_doc_item",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "md_rfs_myrep_mainfeeder_doc_item",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "stg_myrep_cutoff_import_full",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "stg_myrep_cutoff_import_full",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_approval_line",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "timestamp"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_approval_line",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_bak",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_bak",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_batch_approval",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_batch_approval",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_batch_approval_pic",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_batch_approval_pic",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_boq_baseline",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_boq_baseline",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_boq_baseline_item",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_boq_baseline_item",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_boq_progress_item",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_boq_progress_item",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_boq_progress_photo",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_boq_progress_photo",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_cluster",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_cluster",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_drm",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_drm",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_drm_boq",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_drm_boq",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_drm_boq_item",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_drm_boq_item",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_flow_doc_file",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_flow_doc_file",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_flow_doc_file_log",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_flow_doc_file_log",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_flow_doc_package",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_flow_doc_package",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_impl_daily_activity",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_impl_daily_activity",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_impl_daily_activity_photo",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_impl_daily_activity_photo",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_notification_route",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_notification_route",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_pic_mapping_city",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "timestamp"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_pic_mapping_city",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_po_header",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_po_header",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_po_termin",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_po_termin",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_role_permission",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "timestamp"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_role_permission",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_valsal",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_myrep_valsal",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_atp_file",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_atp_file",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_claim",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_claim",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_cluster",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_cluster",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_cluster_plan",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_cluster_plan",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_doc_file",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_doc_file",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_doc_file_log",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_doc_file_log",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_doc_package",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_doc_package",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_mainfeeder",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_mainfeeder",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_mainfeeder_doc_file",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_mainfeeder_doc_file",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_mainfeeder_doc_file_log",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_mainfeeder_doc_file_log",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_mainfeeder_doc_package",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_mainfeeder_doc_package",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_monthly_target",
+        "COLUMN_NAME": "created_at",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    },
+    {
+        "TABLE_NAME": "tb_rfs_myrep_monthly_target",
+        "COLUMN_NAME": "submitted_at",
+        "IS_NULLABLE": "YES",
+        "COLUMN_DEFAULT": "current_timestamp()",
+        "DATA_TYPE": "datetime"
+    }
+]

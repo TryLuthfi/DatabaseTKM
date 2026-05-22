@@ -1,0 +1,303 @@
+[
+    {
+        "table_name": "md_myrep_flow_doc_item",
+        "column_name": "id_doc_group",
+        "referenced_table_name": "md_myrep_flow_doc_group",
+        "referenced_column_name": "id_doc_group",
+        "constraint_name": "fk_myrep_flow_doc_item_group"
+    },
+    {
+        "table_name": "md_rfs_myrep_doc_item",
+        "column_name": "id_doc_group",
+        "referenced_table_name": "md_rfs_myrep_doc_group",
+        "referenced_column_name": "id_doc_group",
+        "constraint_name": "fk_myrep_doc_item_group"
+    },
+    {
+        "table_name": "tb_myrep_bak",
+        "column_name": "id_myrep_cluster",
+        "referenced_table_name": "tb_myrep_cluster",
+        "referenced_column_name": "id_myrep_cluster",
+        "constraint_name": "fk_myrep_bak_cluster"
+    },
+    {
+        "table_name": "tb_myrep_batch_approval",
+        "column_name": "id_myrep_cluster",
+        "referenced_table_name": "tb_myrep_cluster",
+        "referenced_column_name": "id_myrep_cluster",
+        "constraint_name": "fk_myrep_batch_cluster"
+    },
+    {
+        "table_name": "tb_myrep_batch_approval_pic",
+        "column_name": "id_batch_approval",
+        "referenced_table_name": "tb_myrep_batch_approval",
+        "referenced_column_name": "id_batch_approval",
+        "constraint_name": "fk_myrep_batch_pic_header"
+    },
+    {
+        "table_name": "tb_myrep_boq_baseline",
+        "column_name": "id_myrep_cluster",
+        "referenced_table_name": "tb_myrep_cluster",
+        "referenced_column_name": "id_myrep_cluster",
+        "constraint_name": "fk_myrep_boq_baseline_cluster"
+    },
+    {
+        "table_name": "tb_myrep_boq_baseline",
+        "column_name": "id_drm_boq",
+        "referenced_table_name": "tb_myrep_drm_boq",
+        "referenced_column_name": "id_drm_boq",
+        "constraint_name": "fk_myrep_boq_baseline_drm_boq"
+    },
+    {
+        "table_name": "tb_myrep_boq_baseline_item",
+        "column_name": "id_boq_baseline",
+        "referenced_table_name": "tb_myrep_boq_baseline",
+        "referenced_column_name": "id_boq_baseline",
+        "constraint_name": "fk_myrep_boq_baseline_item_header"
+    },
+    {
+        "table_name": "tb_myrep_boq_baseline_item",
+        "column_name": "id_boq_item",
+        "referenced_table_name": "md_myrep_boq_item",
+        "referenced_column_name": "id_boq_item",
+        "constraint_name": "fk_myrep_boq_baseline_item_master"
+    },
+    {
+        "table_name": "tb_myrep_boq_progress_item",
+        "column_name": "id_boq_baseline",
+        "referenced_table_name": "tb_myrep_boq_baseline",
+        "referenced_column_name": "id_boq_baseline",
+        "constraint_name": "fk_myrep_boq_progress_baseline"
+    },
+    {
+        "table_name": "tb_myrep_boq_progress_item",
+        "column_name": "id_boq_baseline_item",
+        "referenced_table_name": "tb_myrep_boq_baseline_item",
+        "referenced_column_name": "id_boq_baseline_item",
+        "constraint_name": "fk_myrep_boq_progress_baseline_item"
+    },
+    {
+        "table_name": "tb_myrep_boq_progress_item",
+        "column_name": "id_myrep_cluster",
+        "referenced_table_name": "tb_myrep_cluster",
+        "referenced_column_name": "id_myrep_cluster",
+        "constraint_name": "fk_myrep_boq_progress_cluster"
+    },
+    {
+        "table_name": "tb_myrep_boq_progress_photo",
+        "column_name": "id_progress_item",
+        "referenced_table_name": "tb_myrep_boq_progress_item",
+        "referenced_column_name": "id_progress_item",
+        "constraint_name": "fk_myrep_boq_progress_photo_item"
+    },
+    {
+        "table_name": "tb_myrep_cluster",
+        "column_name": "rfs_cluster_id",
+        "referenced_table_name": "tb_rfs_myrep_cluster",
+        "referenced_column_name": "id_cluster",
+        "constraint_name": "fk_myrep_cluster_rfs_cluster"
+    },
+    {
+        "table_name": "tb_myrep_cluster",
+        "column_name": "id_target",
+        "referenced_table_name": "tb_rfs_myrep_monthly_target",
+        "referenced_column_name": "id_target",
+        "constraint_name": "fk_myrep_cluster_target"
+    },
+    {
+        "table_name": "tb_myrep_drm",
+        "column_name": "id_myrep_cluster",
+        "referenced_table_name": "tb_myrep_cluster",
+        "referenced_column_name": "id_myrep_cluster",
+        "constraint_name": "fk_myrep_drm_cluster"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq",
+        "column_name": "id_myrep_cluster",
+        "referenced_table_name": "tb_myrep_cluster",
+        "referenced_column_name": "id_myrep_cluster",
+        "constraint_name": "fk_myrep_drm_boq_cluster"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq",
+        "column_name": "source_doc_file_id",
+        "referenced_table_name": "tb_myrep_flow_doc_file",
+        "referenced_column_name": "id_doc_file",
+        "constraint_name": "fk_myrep_drm_boq_doc"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq",
+        "column_name": "id_drm",
+        "referenced_table_name": "tb_myrep_drm",
+        "referenced_column_name": "id_drm",
+        "constraint_name": "fk_myrep_drm_boq_drm"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq_item",
+        "column_name": "id_drm_boq",
+        "referenced_table_name": "tb_myrep_drm_boq",
+        "referenced_column_name": "id_drm_boq",
+        "constraint_name": "fk_myrep_drm_boq_item_header"
+    },
+    {
+        "table_name": "tb_myrep_drm_boq_item",
+        "column_name": "id_boq_item",
+        "referenced_table_name": "md_myrep_boq_item",
+        "referenced_column_name": "id_boq_item",
+        "constraint_name": "fk_myrep_drm_boq_item_master"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file",
+        "column_name": "id_doc_item",
+        "referenced_table_name": "md_myrep_flow_doc_item",
+        "referenced_column_name": "id_doc_item",
+        "constraint_name": "fk_myrep_flow_doc_file_item"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file",
+        "column_name": "id_doc_package",
+        "referenced_table_name": "tb_myrep_flow_doc_package",
+        "referenced_column_name": "id_doc_package",
+        "constraint_name": "fk_myrep_flow_doc_file_package"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file_log",
+        "column_name": "id_doc_file",
+        "referenced_table_name": "tb_myrep_flow_doc_file",
+        "referenced_column_name": "id_doc_file",
+        "constraint_name": "fk_myrep_flow_doc_log_file"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file_log",
+        "column_name": "id_doc_item",
+        "referenced_table_name": "md_myrep_flow_doc_item",
+        "referenced_column_name": "id_doc_item",
+        "constraint_name": "fk_myrep_flow_doc_log_item"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_file_log",
+        "column_name": "id_doc_package",
+        "referenced_table_name": "tb_myrep_flow_doc_package",
+        "referenced_column_name": "id_doc_package",
+        "constraint_name": "fk_myrep_flow_doc_log_package"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_package",
+        "column_name": "id_myrep_cluster",
+        "referenced_table_name": "tb_myrep_cluster",
+        "referenced_column_name": "id_myrep_cluster",
+        "constraint_name": "fk_myrep_flow_doc_package_cluster"
+    },
+    {
+        "table_name": "tb_myrep_flow_doc_package",
+        "column_name": "id_doc_group",
+        "referenced_table_name": "md_myrep_flow_doc_group",
+        "referenced_column_name": "id_doc_group",
+        "constraint_name": "fk_myrep_flow_doc_package_group"
+    },
+    {
+        "table_name": "tb_myrep_impl_daily_activity_photo",
+        "column_name": "id_daily_activity",
+        "referenced_table_name": "tb_myrep_impl_daily_activity",
+        "referenced_column_name": "id_daily_activity",
+        "constraint_name": "fk_impl_activity_photo_activity"
+    },
+    {
+        "table_name": "tb_myrep_po_header",
+        "column_name": "id_myrep_cluster",
+        "referenced_table_name": "tb_myrep_cluster",
+        "referenced_column_name": "id_myrep_cluster",
+        "constraint_name": "fk_myrep_po_cluster"
+    },
+    {
+        "table_name": "tb_myrep_po_header",
+        "column_name": "parent_po_header_id",
+        "referenced_table_name": "tb_myrep_po_header",
+        "referenced_column_name": "id_po_header",
+        "constraint_name": "fk_myrep_po_parent"
+    },
+    {
+        "table_name": "tb_myrep_po_termin",
+        "column_name": "id_po_header",
+        "referenced_table_name": "tb_myrep_po_header",
+        "referenced_column_name": "id_po_header",
+        "constraint_name": "fk_myrep_po_termin_header"
+    },
+    {
+        "table_name": "tb_myrep_valsal",
+        "column_name": "id_myrep_cluster",
+        "referenced_table_name": "tb_myrep_cluster",
+        "referenced_column_name": "id_myrep_cluster",
+        "constraint_name": "fk_myrep_valsal_cluster"
+    },
+    {
+        "table_name": "tb_rfs_myrep_atp_file",
+        "column_name": "cluster_id",
+        "referenced_table_name": "tb_rfs_myrep_cluster",
+        "referenced_column_name": "id_cluster",
+        "constraint_name": "fk_myrep_atp_file_cluster"
+    },
+    {
+        "table_name": "tb_rfs_myrep_claim",
+        "column_name": "cluster_id",
+        "referenced_table_name": "tb_rfs_myrep_cluster",
+        "referenced_column_name": "id_cluster",
+        "constraint_name": "fk_rfs_myrep_claim_cluster"
+    },
+    {
+        "table_name": "tb_rfs_myrep_cluster_plan",
+        "column_name": "cluster_id",
+        "referenced_table_name": "tb_rfs_myrep_cluster",
+        "referenced_column_name": "id_cluster",
+        "constraint_name": "fk_rfs_myrep_cluster_plan_cluster"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file",
+        "column_name": "id_doc_item",
+        "referenced_table_name": "md_rfs_myrep_doc_item",
+        "referenced_column_name": "id_doc_item",
+        "constraint_name": "fk_myrep_doc_file_item"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file",
+        "column_name": "id_doc_package",
+        "referenced_table_name": "tb_rfs_myrep_doc_package",
+        "referenced_column_name": "id_doc_package",
+        "constraint_name": "fk_myrep_doc_file_package"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file_log",
+        "column_name": "id_doc_file",
+        "referenced_table_name": "tb_rfs_myrep_doc_file",
+        "referenced_column_name": "id_doc_file",
+        "constraint_name": "fk_myrep_doc_log_file"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file_log",
+        "column_name": "id_doc_item",
+        "referenced_table_name": "md_rfs_myrep_doc_item",
+        "referenced_column_name": "id_doc_item",
+        "constraint_name": "fk_myrep_doc_log_item"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_file_log",
+        "column_name": "id_doc_package",
+        "referenced_table_name": "tb_rfs_myrep_doc_package",
+        "referenced_column_name": "id_doc_package",
+        "constraint_name": "fk_myrep_doc_log_package"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_package",
+        "column_name": "cluster_id",
+        "referenced_table_name": "tb_rfs_myrep_cluster",
+        "referenced_column_name": "id_cluster",
+        "constraint_name": "fk_myrep_doc_package_cluster"
+    },
+    {
+        "table_name": "tb_rfs_myrep_doc_package",
+        "column_name": "id_doc_group",
+        "referenced_table_name": "md_rfs_myrep_doc_group",
+        "referenced_column_name": "id_doc_group",
+        "constraint_name": "fk_myrep_doc_package_group"
+    }
+]

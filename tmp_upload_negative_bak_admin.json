@@ -1,0 +1,12 @@
+{
+    "before_count": 1,
+    "after_count": 1,
+    "missing_file": {
+        "status": 200,
+        "has_error_msg": true
+    },
+    "invalid_extension": {
+        "status": 200,
+        "has_error_msg": true
+    }
+}

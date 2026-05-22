@@ -1,0 +1,217 @@
+[
+    {
+        "table": "md_myrep_boq_item",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "md_myrep_flow_doc_group",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "md_myrep_flow_doc_item",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "md_rfs_myrep_doc_group",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "md_rfs_myrep_doc_item",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "md_rfs_myrep_mainfeeder_doc_group",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "md_rfs_myrep_mainfeeder_doc_item",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "stg_myrep_cutoff_import_full",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_approval_line",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_bak",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_batch_approval",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_batch_approval_pic",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_boq_baseline",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_boq_baseline_item",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_boq_progress_item",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_boq_progress_photo",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_cluster",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_drm",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_drm_boq",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_drm_boq_item",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_flow_doc_file",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_flow_doc_file_log",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_flow_doc_package",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_impl_daily_activity",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_impl_daily_activity_photo",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_notification_route",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_pic_mapping_city",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_po_header",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_po_termin",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_role_permission",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_myrep_valsal",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_rfs_myrep_atp_file",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_rfs_myrep_claim",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_rfs_myrep_cluster",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_rfs_myrep_cluster_plan",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_rfs_myrep_doc_file",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_rfs_myrep_doc_file_log",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_rfs_myrep_doc_package",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_rfs_myrep_mainfeeder",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_rfs_myrep_mainfeeder_doc_file",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_rfs_myrep_mainfeeder_doc_file_log",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_rfs_myrep_mainfeeder_doc_package",
+        "has_created_at": true,
+        "has_submitted_at": true
+    },
+    {
+        "table": "tb_rfs_myrep_monthly_target",
+        "has_created_at": true,
+        "has_submitted_at": true
+    }
+]

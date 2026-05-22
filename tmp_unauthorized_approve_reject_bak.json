@@ -1,0 +1,23 @@
+{
+    "before": {
+        "status_file": "APPROVED",
+        "remark": "cancel",
+        "approved_by": "154",
+        "reviewed_at": "2026-05-21 19:38:13",
+        "approved_at": "2026-05-21 19:38:13",
+        "updated_at": "2026-05-21 12:38:13"
+    },
+    "after": {
+        "status_file": "APPROVED",
+        "remark": "cancel",
+        "approved_by": "154",
+        "reviewed_at": "2026-05-21 19:38:13",
+        "approved_at": "2026-05-21 19:38:13",
+        "updated_at": "2026-05-21 12:38:13"
+    },
+    "approve_http": 403,
+    "approve_contains_no_access": false,
+    "reject_http": 403,
+    "reject_contains_no_access": false,
+    "unchanged": true
+}

@@ -1,0 +1,137 @@
+[
+    {
+        "id_route": "29",
+        "module_name": "BAK_MyRep",
+        "event_name": "cluster_masuk",
+        "target_type": "FIXED_USER",
+        "target_role": null,
+        "target_user_id": "78",
+        "is_active": "1"
+    },
+    {
+        "id_route": "1",
+        "module_name": "BAK_MyRep",
+        "event_name": "document_masuk",
+        "target_type": "FIXED_USER",
+        "target_role": null,
+        "target_user_id": "78",
+        "is_active": "1"
+    },
+    {
+        "id_route": "2",
+        "module_name": "BAK_MyRep",
+        "event_name": "document_revised",
+        "target_type": "FIXED_USER",
+        "target_role": null,
+        "target_user_id": "78",
+        "is_active": "1"
+    },
+    {
+        "id_route": "5",
+        "module_name": "Batch_Approval_MyRep",
+        "event_name": "cluster_masuk",
+        "target_type": "FIXED_USER",
+        "target_role": null,
+        "target_user_id": "78",
+        "is_active": "1"
+    },
+    {
+        "id_route": "6",
+        "module_name": "Batch_Approval_MyRep",
+        "event_name": "document_masuk",
+        "target_type": "FIXED_USER",
+        "target_role": null,
+        "target_user_id": "78",
+        "is_active": "1"
+    },
+    {
+        "id_route": "7",
+        "module_name": "Batch_Approval_MyRep",
+        "event_name": "document_revised",
+        "target_type": "FIXED_USER",
+        "target_role": null,
+        "target_user_id": "78",
+        "is_active": "1"
+    },
+    {
+        "id_route": "12",
+        "module_name": "Checklist_Dokument_MyRep",
+        "event_name": "document_masuk",
+        "target_type": "CITY_ROLE",
+        "target_role": "DC_HO",
+        "target_user_id": null,
+        "is_active": "1"
+    },
+    {
+        "id_route": "13",
+        "module_name": "Checklist_Dokument_MyRep",
+        "event_name": "document_revised",
+        "target_type": "CITY_ROLE",
+        "target_role": "DC_HO",
+        "target_user_id": null,
+        "is_active": "1"
+    },
+    {
+        "id_route": "8",
+        "module_name": "DRM_MyRep",
+        "event_name": "cluster_masuk",
+        "target_type": "FIXED_USER",
+        "target_role": null,
+        "target_user_id": "84",
+        "is_active": "1"
+    },
+    {
+        "id_route": "9",
+        "module_name": "DRM_MyRep",
+        "event_name": "document_masuk",
+        "target_type": "FIXED_USER",
+        "target_role": null,
+        "target_user_id": "84",
+        "is_active": "1"
+    },
+    {
+        "id_route": "10",
+        "module_name": "DRM_MyRep",
+        "event_name": "document_revised",
+        "target_type": "FIXED_USER",
+        "target_role": null,
+        "target_user_id": "84",
+        "is_active": "1"
+    },
+    {
+        "id_route": "11",
+        "module_name": "Monitoring_RFS_MyRep",
+        "event_name": "claim_rfs_approved",
+        "target_type": "CITY_ROLE",
+        "target_role": "RFS_HO",
+        "target_user_id": null,
+        "is_active": "1"
+    },
+    {
+        "id_route": "30",
+        "module_name": "VALSAL_MyRep",
+        "event_name": "cluster_masuk",
+        "target_type": "FIXED_USER",
+        "target_role": null,
+        "target_user_id": "84",
+        "is_active": "1"
+    },
+    {
+        "id_route": "3",
+        "module_name": "VALSAL_MyRep",
+        "event_name": "document_masuk",
+        "target_type": "FIXED_USER",
+        "target_role": null,
+        "target_user_id": "84",
+        "is_active": "1"
+    },
+    {
+        "id_route": "4",
+        "module_name": "VALSAL_MyRep",
+        "event_name": "document_revised",
+        "target_type": "FIXED_USER",
+        "target_role": null,
+        "target_user_id": "84",
+        "is_active": "1"
+    }
+]

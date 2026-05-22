@@ -1,0 +1,38 @@
+[
+    {
+        "table": "tb_myrep_flow_doc_file",
+        "total": 3,
+        "empty_path": 2,
+        "missing_file": 0
+    },
+    {
+        "table": "tb_rfs_myrep_doc_file",
+        "total": 0,
+        "empty_path": 0,
+        "missing_file": 0
+    },
+    {
+        "table": "tb_rfs_myrep_mainfeeder_doc_file",
+        "total": 0,
+        "empty_path": 0,
+        "missing_file": 0
+    },
+    {
+        "table": "tb_rfs_myrep_atp_file",
+        "total": 0,
+        "empty_path": 0,
+        "missing_file": 0
+    },
+    {
+        "table": "tb_myrep_boq_progress_photo",
+        "total": 0,
+        "empty_path": 0,
+        "missing_file": 0
+    },
+    {
+        "table": "tb_myrep_impl_daily_activity_photo",
+        "total": 44,
+        "empty_path": 0,
+        "missing_file": 6
+    }
+]

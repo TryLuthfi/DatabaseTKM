@@ -1,0 +1,156 @@
+{
+    "summary": {
+        "total": 21,
+        "blocked": 19,
+        "unblocked": 2
+    },
+    "results": [
+        {
+            "method": "GET",
+            "path": "BAK_MyRep",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "GET",
+            "path": "VALSAL_MyRep",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "GET",
+            "path": "Batch_Approval_MyRep",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "GET",
+            "path": "DRM_MyRep",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "GET",
+            "path": "Implementasi_BOQ_MyRep",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "GET",
+            "path": "PO_MyRep",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "GET",
+            "path": "Monitoring_RFS_MyRep",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "GET",
+            "path": "ATP_MyRep",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "GET",
+            "path": "Checklist_Dokument_MyRep",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "POST",
+            "path": "Checklist_Dokument_MyRep/itemTableData",
+            "status": 200,
+            "blocked": false,
+            "body_head": "{\"draw\":1,\"recordsTotal\":0,\"recordsFiltered\":0,\"data\":[]}"
+        },
+        {
+            "method": "GET",
+            "path": "BAK_MyRep/getDistrictOptions?city_name=PRABUMULIH",
+            "status": 200,
+            "blocked": false,
+            "body_head": "{\"results\":[]}"
+        },
+        {
+            "method": "GET",
+            "path": "BAK_MyRep/previewDocument/313",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "GET",
+            "path": "VALSAL_MyRep/previewDocument/1",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "GET",
+            "path": "Batch_Approval_MyRep/previewDocument/1",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "GET",
+            "path": "DRM_MyRep/previewDocument/1",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "GET",
+            "path": "Checklist_Dokument_MyRep/previewDocument/1",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "POST",
+            "path": "BAK_MyRep/uploadDocument",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "POST",
+            "path": "VALSAL_MyRep/uploadDocument",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "POST",
+            "path": "Batch_Approval_MyRep/uploadDocument",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "POST",
+            "path": "DRM_MyRep/uploadDocument",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        },
+        {
+            "method": "POST",
+            "path": "Checklist_Dokument_MyRep/uploadDocument",
+            "status": 303,
+            "blocked": true,
+            "body_head": ""
+        }
+    ]
+}

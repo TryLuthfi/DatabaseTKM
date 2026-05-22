@@ -1,0 +1,37 @@
+{
+    "MyRepublik_Project/detail/10325": {
+        "status": 200,
+        "title_ok": true,
+        "len": 79794
+    },
+    "Batch_Approval_MyRep/detail/10325": {
+        "status": 200,
+        "title_ok": true,
+        "len": 172149
+    },
+    "DRM_MyRep/detail/10325": {
+        "status": 200,
+        "title_ok": true,
+        "len": 215754
+    },
+    "Implementasi_BOQ_MyRep/detail/10325": {
+        "status": 200,
+        "title_ok": true,
+        "len": 64683
+    },
+    "PO_MyRep/detail/10325": {
+        "status": 200,
+        "title_ok": true,
+        "len": 69622
+    },
+    "Checklist_Dokument_MyRep/detail/10325": {
+        "status": 200,
+        "title_ok": true,
+        "len": 91782
+    },
+    "Checklist_Dokument_MyRep/mainfeeder": {
+        "status": 200,
+        "title_ok": true,
+        "len": 101725
+    }
+}

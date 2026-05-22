@@ -1,0 +1,276 @@
+[
+    {
+        "table": "tb_myrep_cluster",
+        "column": "city_name",
+        "indexed": true,
+        "indexes": [
+            "idx_myrep_cluster_city"
+        ]
+    },
+    {
+        "table": "tb_myrep_cluster",
+        "column": "status_current",
+        "indexed": true,
+        "indexes": [
+            "idx_myrep_cluster_status_current"
+        ]
+    },
+    {
+        "table": "tb_myrep_cluster",
+        "column": "created_at",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_cluster",
+        "column": "regional_name",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_cluster",
+        "column": "province_name",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_flow_doc_file",
+        "column": "id_doc_package",
+        "indexed": true,
+        "indexes": [
+            "idx_myrep_flow_doc_file_package",
+            "uniq_myrep_flow_doc_file"
+        ]
+    },
+    {
+        "table": "tb_myrep_flow_doc_file",
+        "column": "id_doc_item",
+        "indexed": true,
+        "indexes": [
+            "idx_myrep_flow_doc_file_item",
+            "uniq_myrep_flow_doc_file"
+        ]
+    },
+    {
+        "table": "tb_myrep_flow_doc_file",
+        "column": "status_file",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_flow_doc_file",
+        "column": "uploaded_by",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_flow_doc_file",
+        "column": "approved_by",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_flow_doc_file",
+        "column": "created_at",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_flow_doc_package",
+        "column": "id_myrep_cluster",
+        "indexed": true,
+        "indexes": [
+            "idx_myrep_flow_doc_package_cluster"
+        ]
+    },
+    {
+        "table": "tb_myrep_flow_doc_package",
+        "column": "flow_type",
+        "indexed": true,
+        "indexes": [
+            "uniq_myrep_flow_doc_package"
+        ]
+    },
+    {
+        "table": "tb_myrep_flow_doc_package",
+        "column": "status_package",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_flow_doc_package",
+        "column": "id_doc_group",
+        "indexed": true,
+        "indexes": [
+            "idx_myrep_flow_doc_package_group",
+            "uniq_myrep_flow_doc_package"
+        ]
+    },
+    {
+        "table": "tb_rfs_myrep_cluster",
+        "column": "city_name",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_rfs_myrep_cluster",
+        "column": "status_cluster",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_rfs_myrep_cluster",
+        "column": "status_rfs",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_rfs_myrep_cluster",
+        "column": "created_at",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_rfs_myrep_doc_file",
+        "column": "id_doc_package",
+        "indexed": true,
+        "indexes": [
+            "idx_myrep_doc_file_package",
+            "uniq_myrep_doc_file"
+        ]
+    },
+    {
+        "table": "tb_rfs_myrep_doc_file",
+        "column": "id_doc_item",
+        "indexed": true,
+        "indexes": [
+            "fk_myrep_doc_file_item",
+            "uniq_myrep_doc_file"
+        ]
+    },
+    {
+        "table": "tb_rfs_myrep_doc_file",
+        "column": "status_file",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_rfs_myrep_doc_file",
+        "column": "uploaded_by",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_rfs_myrep_doc_file",
+        "column": "approved_by",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_rfs_myrep_doc_file",
+        "column": "created_at",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_pic_mapping_city",
+        "column": "city_name",
+        "indexed": true,
+        "indexes": [
+            "idx_myrep_city_lookup",
+            "uk_myrep_city"
+        ]
+    },
+    {
+        "table": "tb_myrep_pic_mapping_city",
+        "column": "rpm_area",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_pic_mapping_city",
+        "column": "sm_area",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_pic_mapping_city",
+        "column": "spv_area",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_pic_mapping_city",
+        "column": "snd_area",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_pic_mapping_city",
+        "column": "admin_area",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_pic_mapping_city",
+        "column": "snd_ho",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_pic_mapping_city",
+        "column": "rfs_ho",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_pic_mapping_city",
+        "column": "sitac_ho",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_pic_mapping_city",
+        "column": "dc_ho",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_role_permission",
+        "column": "page_key",
+        "indexed": true,
+        "indexes": [
+            "idx_myrep_role_permission_page",
+            "uniq_myrep_role_permission"
+        ]
+    },
+    {
+        "table": "tb_myrep_role_permission",
+        "column": "action_key",
+        "indexed": true,
+        "indexes": [
+            "uniq_myrep_role_permission"
+        ]
+    },
+    {
+        "table": "tb_myrep_role_permission",
+        "column": "role_key",
+        "indexed": true,
+        "indexes": [
+            "idx_myrep_role_permission_role",
+            "uniq_myrep_role_permission"
+        ]
+    },
+    {
+        "table": "tb_myrep_role_permission",
+        "column": "is_allowed",
+        "indexed": false,
+        "indexes": []
+    },
+    {
+        "table": "tb_myrep_role_permission",
+        "column": "is_active",
+        "indexed": false,
+        "indexes": []
+    }
+]
