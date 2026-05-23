@@ -113,7 +113,7 @@ class Budget_Cashflow extends CI_Controller
         if ($picProject !== '' && !$this->MBudget_Cashflow->findActivePicUserByName($picProject)) {
             $this->session->set_flashdata('status', 'gagal_simpan');
             $this->session->set_flashdata('validation_errors', [
-                'PIC Project harus dipilih dari master user aktif.',
+                'PIC Project harus dipilih dari Master PIC Budget.',
             ]);
             redirect('Budget_Cashflow');
         }
@@ -514,7 +514,7 @@ class Budget_Cashflow extends CI_Controller
         header('Content-Disposition: attachment; filename="' . $filename . '"');
 
         $output = fopen('php://output', 'w');
-        fputcsv($output, ['nama_user'], ';');
+        fputcsv($output, ['nama_pic'], ';');
         foreach ($this->MBudget_Cashflow->getActivePicUsers() as $row) {
             fputcsv($output, [$row['value'] ?? ''], ';');
         }

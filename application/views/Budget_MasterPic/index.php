@@ -1,5 +1,6 @@
 <?php
-$status = $this->session->flashdata('status');
+$status = (string) $this->session->flashdata('status');
+$validationErrors = (array) $this->session->flashdata('validation_errors');
 ?>
 
 <div class="content-wrapper">
@@ -20,15 +21,15 @@ $status = $this->session->flashdata('status');
                     <div>
                         <h3 class="card-title mb-1">Master PIC Workbench</h3>
                     </div>
-                    <span class="badge badge-light"><?= count($pics ?? []) ?> User Active</span>
+                    <span class="badge badge-light"><?= count($pics ?? []) ?> PIC</span>
                 </div>
                 <div class="card-body">
                     <div class="row align-items-end">
                         <div class="col-md-12">
                             <div class="d-flex flex-wrap justify-content-md-end budget-toolbar">
-                                <a href="<?= base_url('ListUser') ?>" class="btn budget-btn budget-btn--success">
-                                    <i class="fas fa-users-cog mr-1"></i> Kelola User
-                                </a>
+                                <button type="button" class="btn budget-btn budget-btn--primary" id="btnTambahPic">
+                                    <i class="fas fa-plus-circle mr-1"></i> Tambah PIC
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -38,7 +39,7 @@ $status = $this->session->flashdata('status');
             <div class="card shadow-sm budget-card">
                 <div class="card-header budget-card__header d-flex align-items-center justify-content-between">
                     <h3 class="card-title mb-0">Daftar Master PIC</h3>
-                    <span class="badge badge-light"><?= count($pics ?? []) ?> user aktif</span>
+                    <span class="badge badge-light"><?= count($pics ?? []) ?> PIC terdaftar</span>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -46,24 +47,43 @@ $status = $this->session->flashdata('status');
                             <thead class="bg-info">
                                 <tr>
                                     <th style="width: 60px;">No</th>
-                                    <th>Nama User</th>
-                                    <th>Status Master User</th>
+                                    <th>Nama PIC</th>
+                                    <th>Status</th>
+                                    <th style="width: 180px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (empty($pics)): ?>
                                     <tr>
-                                        <td colspan="3" class="text-center text-muted">Belum ada master PIC budget.</td>
+                                        <td colspan="4" class="text-center text-muted">Belum ada master PIC budget.</td>
                                     </tr>
                                 <?php else: ?>
-                                    <?php $no = 1; foreach ($pics as $pic): ?>
+                                    <?php $no = 1;
+                                    foreach ($pics as $pic): ?>
                                         <tr>
                                             <td><?= $no++ ?></td>
-                                            <td><?= htmlspecialchars($pic['nama_user'] ?? '-') ?></td>
+                                            <td><?= htmlspecialchars((string) ($pic['nama_user'] ?? '-'), ENT_QUOTES) ?></td>
                                             <td>
                                                 <span class="badge badge-success">
-                                                    <?= htmlspecialchars($pic['status_user'] ?? 'ACTIVE') ?>
+                                                    ACTIVE
                                                 </span>
+                                            </td>
+                                            <td>
+                                                <div class="budget-action-inline">
+                                                    <button
+                                                        type="button"
+                                                        class="btn btn-sm budget-btn budget-btn--table-primary js-open-pic-modal"
+                                                        data-id="<?= (int) ($pic['id_budget_pic'] ?? 0) ?>"
+                                                        data-name="<?= htmlspecialchars((string) ($pic['nama_user'] ?? ''), ENT_QUOTES) ?>">
+                                                        <i class="fas fa-pen mr-1"></i> Edit
+                                                    </button>
+                                                    <a
+                                                        href="<?= base_url('Budget_MasterPic/delete/' . (int) ($pic['id_budget_pic'] ?? 0)) ?>"
+                                                        class="btn btn-sm budget-btn budget-btn--table-danger js-delete-pic"
+                                                        data-pic-name="<?= htmlspecialchars((string) ($pic['nama_user'] ?? ''), ENT_QUOTES) ?>">
+                                                        <i class="fas fa-trash-alt mr-1"></i> Hapus
+                                                    </a>
+                                                </div>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -72,8 +92,9 @@ $status = $this->session->flashdata('status');
                             <tfoot>
                                 <tr>
                                     <th>No</th>
-                                    <th>Nama User</th>
-                                    <th>Status Master User</th>
+                                    <th>Nama PIC</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </tfoot>
                         </table>
@@ -84,7 +105,60 @@ $status = $this->session->flashdata('status');
     </section>
 </div>
 
+<div class="modal fade" id="picModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content budget-modal">
+            <form method="post" action="<?= base_url('Budget_MasterPic/save') ?>" id="budgetPicForm">
+                <div class="modal-header budget-modal__header">
+                    <div>
+                        <span class="budget-modal__eyebrow">Budget Master PIC</span>
+                        <h5 class="modal-title mb-1" id="picModalTitle">Tambah PIC Budget</h5>
+                        <p class="mb-0 budget-modal__subtitle" id="picModalSubtitle">Simpan PIC untuk kebutuhan budget (bisa user internal, kontraktor, bank, dan lain-lain).</p>
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="id_budget_pic" id="id_budget_pic">
+                    <div class="budget-form-section">
+                        <div class="budget-form-section__title">Informasi PIC</div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group mb-0">
+                                    <label class="budget-field-label">Nama PIC</label>
+                                    <input type="text" class="form-control budget-input" name="nama_user" id="nama_user" required placeholder="Masukkan nama PIC">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer budget-modal__footer">
+                    <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn budget-btn budget-btn--primary" id="budgetPicSubmitBtn">
+                        <i class="fas fa-save mr-1"></i> Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+    function openPicModal(pic) {
+        pic = pic || null;
+
+        document.getElementById('picModalTitle').textContent = pic ? 'Edit PIC Budget' : 'Tambah PIC Budget';
+        document.getElementById('picModalSubtitle').textContent = pic
+            ? 'Perbarui nama PIC lalu simpan perubahan.'
+            : 'Tambahkan PIC untuk kebutuhan budget project.';
+        document.getElementById('id_budget_pic').value = pic ? pic.id : '';
+        $('#nama_user').val(pic ? (pic.nama || '') : '');
+        document.getElementById('budgetPicSubmitBtn').innerHTML = pic
+            ? '<i class="fas fa-save mr-1"></i> Simpan Perubahan'
+            : '<i class="fas fa-save mr-1"></i> Simpan';
+
+        $('#picModal').modal('show');
+    }
+
     $(function () {
         if ($.fn.DataTable) {
             $('#masterPicTable').DataTable({
@@ -106,7 +180,8 @@ $status = $this->session->flashdata('status');
                 ],
                 order: [[1, 'asc']],
                 columnDefs: [
-                    { targets: [0], orderable: false }
+                    { targets: [0, 3], orderable: false },
+                    { targets: [3], searchable: false }
                 ],
                 language: {
                     search: 'Cari:',
@@ -121,9 +196,82 @@ $status = $this->session->flashdata('status');
                 }
             });
         }
-        <?php if (!empty($status)): ?>
-        <?php if ($status === 'fitur_dipindahkan'): ?>
-        Swal.fire('Info', 'Edit/hapus user dipindahkan ke menu List User dan hanya untuk Super Admin.', 'info');
+
+        $('#btnTambahPic').on('click', function () {
+            openPicModal(null);
+        });
+
+        $(document).on('click', '.js-open-pic-modal', function () {
+            openPicModal({
+                id: parseInt($(this).attr('data-id') || '0', 10),
+                nama: String($(this).attr('data-name') || '')
+            });
+        });
+
+        $('#budgetPicForm').on('submit', function (e) {
+            var form = this;
+            if (form.dataset.confirmed === 'true') {
+                return true;
+            }
+
+            e.preventDefault();
+            var isEdit = $.trim($('#id_budget_pic').val()) !== '';
+            Swal.fire({
+                title: isEdit ? 'Simpan perubahan PIC?' : 'Tambah PIC baru?',
+                text: isEdit
+                    ? 'Perubahan akan langsung memperbarui master PIC budget.'
+                    : 'PIC baru akan ditambahkan ke master PIC budget.',
+                type: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#1f6da1',
+                cancelButtonColor: '#9aa9b8',
+                confirmButtonText: isEdit ? 'Ya, simpan' : 'Ya, tambah',
+                cancelButtonText: 'Batal'
+            }).then(function (result) {
+                if (result.value) {
+                    form.dataset.confirmed = 'true';
+                    form.submit();
+                }
+            });
+        });
+
+        $(document).on('click', '.js-delete-pic', function (e) {
+            e.preventDefault();
+
+            var href = $(this).attr('href');
+            var picName = $(this).data('pic-name') || 'PIC ini';
+
+            Swal.fire({
+                title: 'Hapus PIC?',
+                text: 'Data "' + picName + '" akan dihapus dari master PIC budget.',
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d9534f',
+                cancelButtonColor: '#9aa9b8',
+                confirmButtonText: 'Ya, hapus',
+                cancelButtonText: 'Batal'
+            }).then(function (result) {
+                if (result.value) {
+                    window.location.href = href;
+                }
+            });
+        });
+
+        <?php if (!empty($validationErrors)): ?>
+        Swal.fire({
+            title: 'Validasi gagal',
+            html: '<?= htmlspecialchars(implode("<br>", $validationErrors), ENT_QUOTES) ?>',
+            type: 'error'
+        });
+        <?php elseif (!empty($status)): ?>
+        <?php if ($status === 'sukses_tambah'): ?>
+        Swal.fire('Success', 'PIC budget berhasil ditambahkan.', 'success');
+        <?php elseif ($status === 'sukses_edit'): ?>
+        Swal.fire('Success', 'PIC budget berhasil diperbarui.', 'success');
+        <?php elseif ($status === 'sukses_hapus'): ?>
+        Swal.fire('Success', 'PIC budget berhasil dihapus.', 'success');
+        <?php elseif ($status === 'gagal_hapus' || $status === 'gagal_simpan'): ?>
+        Swal.fire('Gagal', 'Proses master PIC gagal dilakukan.', 'error');
         <?php endif; ?>
         <?php endif; ?>
     });
@@ -132,12 +280,6 @@ $status = $this->session->flashdata('status');
 <style>
     .budget-toolbar {
         gap: 10px;
-    }
-
-    .budget-header-subtitle {
-        margin: 0;
-        font-size: 0.92rem;
-        color: rgba(255, 255, 255, 0.84);
     }
 
     .budget-field-label {
@@ -167,30 +309,6 @@ $status = $this->session->flashdata('status');
 
     .budget-card .card-title {
         font-weight: 700;
-    }
-
-    .budget-note-card {
-        padding: 1rem 1.1rem;
-        border-radius: 18px;
-        border: 1px solid #d9e7f3;
-        background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(236, 246, 253, 0.95));
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    }
-
-    .budget-note-card__eyebrow {
-        margin-bottom: 0.35rem;
-        font-size: 0.76rem;
-        font-weight: 800;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #5b7d98;
-    }
-
-    .budget-note-card__title {
-        margin-bottom: 0.4rem;
-        font-size: 1.02rem;
-        font-weight: 800;
-        color: #163f5f;
     }
 
     .budget-btn {

@@ -8,6 +8,8 @@ class Myrep_access_service
 
     /** @var array<string,array<int,string>> */
     protected $roleCache = [];
+    /** @var array<string,mixed> */
+    protected $userPermissionCache = [];
 
     public function __construct()
     {
@@ -41,13 +43,19 @@ class Myrep_access_service
             return true;
         }
 
-        if (!$this->ci->db->table_exists('tb_myrep_role_permission')) {
-            return true;
-        }
-
         $pageKey = trim((string) $pageKey);
         $actionKey = strtoupper(trim((string) $actionKey));
         if ($pageKey === '' || $actionKey === '') {
+            return true;
+        }
+
+        $userId = (int) $this->ci->session->userdata('id_user');
+        $userOverride = $this->getUserPermissionOverride($userId, $pageKey, $actionKey);
+        if ($userOverride !== null) {
+            return (bool) $userOverride;
+        }
+
+        if (!$this->ci->db->table_exists('tb_myrep_role_permission')) {
             return true;
         }
 
@@ -72,6 +80,42 @@ class Myrep_access_service
             ->row_array();
 
         return !empty($row);
+    }
+
+    private function getUserPermissionOverride($userId, $pageKey, $actionKey)
+    {
+        $userId = (int) $userId;
+        if ($userId <= 0 || !$this->ci->db->table_exists('tb_myrep_user_permission')) {
+            return null;
+        }
+
+        $cacheKey = $userId . '|' . $pageKey . '|' . $actionKey;
+        if (array_key_exists($cacheKey, $this->userPermissionCache)) {
+            return $this->userPermissionCache[$cacheKey];
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $row = (array) $this->ci->db
+            ->select('is_allowed')
+            ->from('tb_myrep_user_permission')
+            ->where('id_user', $userId)
+            ->where('page_key', $pageKey)
+            ->where('action_key', $actionKey)
+            ->where('is_active', 1)
+            ->where("(effective_start IS NULL OR effective_start <= " . $this->ci->db->escape($now) . ")", null, false)
+            ->where("(effective_end IS NULL OR effective_end >= " . $this->ci->db->escape($now) . ")", null, false)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($row)) {
+            $this->userPermissionCache[$cacheKey] = null;
+            return null;
+        }
+
+        $allowed = (int) ($row['is_allowed'] ?? 0) === 1;
+        $this->userPermissionCache[$cacheKey] = $allowed;
+        return $allowed;
     }
 
     public function getCurrentRoleKeys()

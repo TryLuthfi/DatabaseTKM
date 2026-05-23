@@ -70,11 +70,27 @@ class MBudget_Cashflow extends CI_Model
 
     public function getActivePicUsers()
     {
+        if ($this->db->table_exists('tb_budget_master_pic')) {
+            $rows = (array) $this->db
+                ->distinct()
+                ->select('nama_user AS value, nama_user AS label')
+                ->from('tb_budget_master_pic')
+                ->where('nama_user IS NOT NULL', null, false)
+                ->where('TRIM(nama_user) !=', '')
+                ->order_by('nama_user', 'ASC')
+                ->get()
+                ->result_array();
+            if (!empty($rows)) {
+                return $rows;
+            }
+        }
+
+        // fallback transisi lama jika master PIC budget belum terisi
         if (!$this->db->table_exists('tb_master_user_new')) {
             return [];
         }
 
-        return $this->db
+        return (array) $this->db
             ->distinct()
             ->select('nama_karyawan AS value, nama_karyawan AS label')
             ->from('tb_master_user_new')
@@ -89,15 +105,40 @@ class MBudget_Cashflow extends CI_Model
     public function findActivePicUserByName($namaUser)
     {
         $namaUser = trim((string) $namaUser);
-        if ($namaUser === '' || !$this->db->table_exists('tb_master_user_new')) {
+        if ($namaUser === '') {
             return [];
         }
 
-        return $this->db
+        if ($this->db->table_exists('tb_budget_master_pic')) {
+            $totalPic = (int) $this->db->count_all('tb_budget_master_pic');
+            $row = (array) $this->db
+                ->select('nama_user')
+                ->from('tb_budget_master_pic')
+                ->where('LOWER(TRIM(nama_user)) =', strtolower($namaUser))
+                ->limit(1)
+                ->get()
+                ->row_array();
+            if (!empty($row)) {
+                return ['nama_user' => (string) ($row['nama_user'] ?? '')];
+            }
+
+            // Jika master PIC budget sudah terisi, validasi hanya dari master PIC
+            if ($totalPic > 0) {
+                return [];
+            }
+        }
+
+        // fallback transisi lama jika master PIC budget belum terisi
+        if (!$this->db->table_exists('tb_master_user_new')) {
+            return [];
+        }
+
+        return (array) $this->db
             ->select('nama_karyawan AS nama_user')
             ->from('tb_master_user_new')
             ->where('nama_karyawan', $namaUser)
             ->where('status_user', 'ACTIVE')
+            ->limit(1)
             ->get()
             ->row_array();
     }

@@ -3,7 +3,8 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MBudget_MasterPic extends CI_Model
 {
-    private $table = 'tb_master_user_new';
+    private $table = 'tb_budget_master_pic';
+    private $legacyUserTable = 'tb_master_user_new';
 
     public function getAvailableUsers()
     {
@@ -17,19 +18,18 @@ class MBudget_MasterPic extends CI_Model
         }
 
         $this->db
-            ->select('id AS id_user, nama_karyawan AS nama_user, status_user')
+            ->select('id_budget_pic, nama_user, "ACTIVE" AS status_user', false)
             ->from($this->table)
-            ->where('status_user', 'ACTIVE')
-            ->where('nama_karyawan IS NOT NULL', null, false)
-            ->where('TRIM(nama_karyawan) !=', '');
+            ->where('nama_user IS NOT NULL', null, false)
+            ->where('TRIM(nama_user) !=', '');
 
         if ($keyword !== '') {
-            $this->db->like('nama_karyawan', $keyword);
+            $this->db->like('nama_user', $keyword);
         }
 
-        $this->db->order_by('nama_karyawan', 'ASC');
+        $this->db->order_by('nama_user', 'ASC');
 
-        return $this->db->get()->result_array();
+        return (array) $this->db->get()->result_array();
     }
 
     public function existsByName($namaUser, $excludeId = 0)
@@ -38,11 +38,15 @@ class MBudget_MasterPic extends CI_Model
             return false;
         }
 
+        $normalizedName = trim((string) $namaUser);
+        if ($normalizedName === '') {
+            return false;
+        }
+
         $this->db->from($this->table);
-        $this->db->where('nama_karyawan', trim((string) $namaUser));
-        $this->db->where('status_user', 'ACTIVE');
+        $this->db->where('LOWER(TRIM(nama_user)) =', strtolower($normalizedName));
         if ((int) $excludeId > 0) {
-            $this->db->where('id !=', (int) $excludeId);
+            $this->db->where('id_budget_pic !=', (int) $excludeId);
         }
 
         return $this->db->count_all_results() > 0;
@@ -57,8 +61,7 @@ class MBudget_MasterPic extends CI_Model
 
         return $this->db
             ->from($this->table)
-            ->where('nama_karyawan', $namaUser)
-            ->where('status_user', 'ACTIVE')
+            ->where('LOWER(TRIM(nama_user)) =', strtolower($namaUser))
             ->count_all_results() > 0;
     }
 
@@ -69,8 +72,7 @@ class MBudget_MasterPic extends CI_Model
         }
 
         $payload = [
-            'nama_karyawan' => trim((string) $namaUser),
-            'status_user' => 'ACTIVE',
+            'nama_user' => trim((string) $namaUser),
         ];
 
         $this->db->insert($this->table, $payload);
@@ -84,9 +86,9 @@ class MBudget_MasterPic extends CI_Model
         }
 
         $this->db
-            ->where('id', (int) $id)
+            ->where('id_budget_pic', (int) $id)
             ->update($this->table, [
-                'nama_karyawan' => trim((string) $namaUser),
+                'nama_user' => trim((string) $namaUser),
             ]);
 
         return $this->db->affected_rows() >= 0;
@@ -98,20 +100,36 @@ class MBudget_MasterPic extends CI_Model
             return false;
         }
 
-        $this->db->delete($this->table, ['id' => (int) $id]);
+        $this->db->delete($this->table, ['id_budget_pic' => (int) $id]);
         return $this->db->affected_rows() > 0;
     }
 
     public function getPicOptions()
     {
-        if (!$this->db->table_exists($this->table)) {
+        if ($this->db->table_exists($this->table)) {
+            $rows = (array) $this->db
+                ->distinct()
+                ->select('nama_user AS value, nama_user AS label')
+                ->from($this->table)
+                ->where('nama_user IS NOT NULL', null, false)
+                ->where('TRIM(nama_user) !=', '')
+                ->order_by('nama_user', 'ASC')
+                ->get()
+                ->result_array();
+            if (!empty($rows)) {
+                return $rows;
+            }
+        }
+
+        // fallback transisi lama agar data existing tidak langsung putus
+        if (!$this->db->table_exists($this->legacyUserTable)) {
             return [];
         }
 
-        return $this->db
+        return (array) $this->db
             ->distinct()
             ->select('nama_karyawan AS value, nama_karyawan AS label')
-            ->from($this->table)
+            ->from($this->legacyUserTable)
             ->where('status_user', 'ACTIVE')
             ->where('nama_karyawan IS NOT NULL', null, false)
             ->where('TRIM(nama_karyawan) !=', '')
