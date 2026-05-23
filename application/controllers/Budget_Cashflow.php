@@ -367,7 +367,7 @@ class Budget_Cashflow extends CI_Controller
             }
 
             $nomorTec = trim((string) ($row['A'] ?? ''));
-            $tanggal = trim((string) ($row['B'] ?? ''));
+            $tanggalCashflow = $this->normalizeImportDate($row['B'] ?? '');
             $idBowheer = trim((string) ($row['C'] ?? ''));
             $projectName = trim((string) ($row['D'] ?? ''));
             $picProject = trim((string) ($row['E'] ?? ''));
@@ -375,9 +375,9 @@ class Budget_Cashflow extends CI_Controller
             $kota = trim((string) ($row['G'] ?? ''));
             $itemCode = trim((string) ($row['H'] ?? ''));
             $direction = strtoupper(trim((string) ($row['I'] ?? 'DEBIT')));
-            $qty = (float) ($row['J'] ?? 1);
-            $unitPrice = (float) ($row['K'] ?? 0);
-            $nominal = (float) ($row['L'] ?? 0);
+            $qty = $this->parseImportNumber($row['J'] ?? 1, 1);
+            $unitPrice = $this->parseImportNumber($row['K'] ?? 0, 0);
+            $nominal = $this->parseImportNumber($row['L'] ?? 0, 0);
             $remarksHeader = trim((string) ($row['M'] ?? ''));
             $remarksItem = trim((string) ($row['N'] ?? ''));
 
@@ -390,7 +390,7 @@ class Budget_Cashflow extends CI_Controller
             $item = $this->MBudget_Cashflow->findItemByCode($itemCode);
             if (
                 !$item ||
-                $tanggal === '' ||
+                $tanggalCashflow === '' ||
                 $projectName === '' ||
                 $nomorTec === '' ||
                 ($picProject !== '' && !$this->MBudget_Cashflow->findActivePicUserByName($picProject)) ||
@@ -404,12 +404,12 @@ class Budget_Cashflow extends CI_Controller
                 continue;
             }
 
-            $headerKey = implode('|', [$nomorTec, $tanggal, $projectName, $picProject, $regional, $kota, $idBowheer]);
+            $headerKey = implode('|', [$nomorTec, $tanggalCashflow, $projectName, $picProject, $regional, $kota, $idBowheer]);
             if (!isset($headers[$headerKey])) {
                 $headers[$headerKey] = [
                     'header' => [
                         'nomor_tec' => $nomorTec,
-                        'tanggal_cashflow' => date('Y-m-d', strtotime($tanggal)),
+                        'tanggal_cashflow' => $tanggalCashflow,
                         'id_bowheer' => $idBowheer !== '' ? (int) $idBowheer : null,
                         'project_name' => $projectName,
                         'pic_project' => $picProject,
@@ -444,6 +444,115 @@ class Budget_Cashflow extends CI_Controller
             : implode(' ', array_slice($errors, 0, 10));
 
         return $result;
+    }
+
+    private function parseImportNumber($value, $default = 0.0)
+    {
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return (float) $default;
+        }
+
+        $raw = preg_replace('/[\s\x{00A0}]+/u', '', $raw);
+        $hasComma = strpos($raw, ',') !== false;
+        $hasDot = strpos($raw, '.') !== false;
+
+        if ($hasComma && $hasDot) {
+            if (strrpos($raw, ',') > strrpos($raw, '.')) {
+                $raw = str_replace('.', '', $raw);
+                $raw = str_replace(',', '.', $raw);
+            } else {
+                $raw = str_replace(',', '', $raw);
+            }
+        } elseif ($hasComma) {
+            if (preg_match('/,\d{1,4}$/', $raw)) {
+                $raw = str_replace('.', '', $raw);
+                $raw = str_replace(',', '.', $raw);
+            } else {
+                $raw = str_replace(',', '', $raw);
+            }
+        } elseif ($hasDot) {
+            if (!preg_match('/\.\d{1,4}$/', $raw)) {
+                $raw = str_replace('.', '', $raw);
+            }
+        }
+
+        $raw = preg_replace('/[^0-9.\-]/', '', $raw);
+        if ($raw === '' || $raw === '-' || $raw === '.' || $raw === '-.') {
+            return (float) $default;
+        }
+
+        $parsed = (float) $raw;
+        return is_finite($parsed) ? $parsed : (float) $default;
+    }
+
+    private function normalizeImportDate($value)
+    {
+        if ($value instanceof DateTime) {
+            return $value->format('Y-m-d');
+        }
+
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return '';
+        }
+
+        if (is_numeric($raw)) {
+            if (preg_match('/^\d{8}$/', $raw)) {
+                $year = substr($raw, 0, 4);
+                $month = substr($raw, 4, 2);
+                $day = substr($raw, 6, 2);
+                if (checkdate((int) $month, (int) $day, (int) $year)) {
+                    return $year . '-' . $month . '-' . $day;
+                }
+            }
+
+            $excelSerial = (float) $raw;
+            if ($excelSerial > 0 && class_exists('PHPExcel_Shared_Date')) {
+                try {
+                    $timestamp = PHPExcel_Shared_Date::ExcelToPHP($excelSerial);
+                    if ($timestamp > 0) {
+                        return date('Y-m-d', $timestamp);
+                    }
+                } catch (Exception $e) {
+                    // fallback ke parser format biasa
+                }
+            }
+        }
+
+        $normalized = str_replace(['.', '/'], '-', $raw);
+        $formats = [
+            'Y-m-d',
+            'd-m-Y',
+            'm-d-Y',
+            'd-m-y',
+            'm-d-y',
+            'd M Y',
+            'd F Y',
+        ];
+
+        foreach ($formats as $format) {
+            $date = DateTime::createFromFormat($format, $normalized);
+            if ($date instanceof DateTime) {
+                $errors = DateTime::getLastErrors();
+                $warningCount = is_array($errors) ? (int) ($errors['warning_count'] ?? 0) : 0;
+                $errorCount = is_array($errors) ? (int) ($errors['error_count'] ?? 0) : 0;
+                if ($warningCount === 0 && $errorCount === 0) {
+                    return $date->format('Y-m-d');
+                }
+            }
+        }
+
+        $timestamp = strtotime($raw);
+        if ($timestamp !== false) {
+            return date('Y-m-d', $timestamp);
+        }
+
+        return '';
     }
 
     public function downloadCashflowTemplateCsv()

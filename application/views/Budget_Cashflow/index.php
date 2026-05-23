@@ -377,10 +377,12 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                     <table class="table table-bordered table-sm table-striped" id="importPreviewTable">
                                         <thead>
                                             <tr>
+                                                <th>Status</th>
                                                 <th>No</th>
                                                 <th>Nomor TEC</th>
                                                 <th>Tanggal</th>
                                                 <th>Project</th>
+                                                <th>PIC Project</th>
                                                 <th>Item Code</th>
                                                 <th>Direction</th>
                                                 <th>Qty</th>
@@ -390,7 +392,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                         </thead>
                                         <tbody id="importPreviewBody">
                                             <tr>
-                                                <td colspan="9" class="text-center text-muted">Preview file akan muncul di sini.</td>
+                                                <td colspan="11" class="text-center text-muted">Preview file akan muncul di sini.</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -655,6 +657,14 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
     const cashflowReportOptions = <?= json_encode($reportFilterOptions ?? []) ?>;
     const currentCashflowYear = <?= (int) $selectedYear ?>;
     const currentCashflowMonth = <?= (int) $selectedMonth ?>;
+    const masterPicOptions = <?= json_encode(array_values(array_map(static function ($picUser) {
+        return (string) ($picUser['value'] ?? '');
+    }, (array) ($picUsers ?? [])))) ?>;
+    const masterPicLookup = new Set(masterPicOptions.map(function (name) {
+        return String(name || '').trim().toLowerCase();
+    }).filter(function (name) {
+        return name !== '';
+    }));
 
     function formatBudgetNumber(value) {
         return new Intl.NumberFormat('id-ID', {
@@ -1177,24 +1187,232 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         });
     }
 
+    function escapeHtml(value) {
+        return $('<div/>').text(value == null ? '' : String(value)).html();
+    }
+
+    function formatPreviewDate(value) {
+        const raw = String(value || '').trim();
+        if (raw === '') {
+            return '';
+        }
+
+        const normalized = raw.replace(/\./g, '-').replace(/\//g, '-');
+        const isoMatch = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (isoMatch) {
+            const year = isoMatch[1];
+            const month = String(isoMatch[2]).padStart(2, '0');
+            const day = String(isoMatch[3]).padStart(2, '0');
+            return day + ' - ' + month + ' - ' + year;
+        }
+
+        const dmyMatch = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
+        if (dmyMatch) {
+            const day = String(dmyMatch[1]).padStart(2, '0');
+            const month = String(dmyMatch[2]).padStart(2, '0');
+            let year = String(dmyMatch[3]);
+            if (year.length === 2) {
+                year = (parseInt(year, 10) >= 70 ? '19' : '20') + year;
+            }
+            return day + ' - ' + month + ' - ' + year;
+        }
+
+        const parsed = new Date(raw);
+        if (!isNaN(parsed.getTime())) {
+            const day = String(parsed.getDate()).padStart(2, '0');
+            const month = String(parsed.getMonth() + 1).padStart(2, '0');
+            const year = parsed.getFullYear();
+            return day + ' - ' + month + ' - ' + year;
+        }
+
+        return raw;
+    }
+
+    function normalizePreviewDateToIso(value) {
+        const raw = String(value || '').trim();
+        if (raw === '') {
+            return '';
+        }
+
+        const normalized = raw.replace(/\./g, '-').replace(/\//g, '-');
+        const isoMatch = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (isoMatch) {
+            const year = isoMatch[1];
+            const month = String(isoMatch[2]).padStart(2, '0');
+            const day = String(isoMatch[3]).padStart(2, '0');
+            return year + '-' + month + '-' + day;
+        }
+
+        const dmyMatch = normalized.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
+        if (dmyMatch) {
+            const day = String(dmyMatch[1]).padStart(2, '0');
+            const month = String(dmyMatch[2]).padStart(2, '0');
+            let year = String(dmyMatch[3]);
+            if (year.length === 2) {
+                year = (parseInt(year, 10) >= 70 ? '19' : '20') + year;
+            }
+            return year + '-' + month + '-' + day;
+        }
+
+        const parsed = new Date(raw);
+        if (!isNaN(parsed.getTime())) {
+            const day = String(parsed.getDate()).padStart(2, '0');
+            const month = String(parsed.getMonth() + 1).padStart(2, '0');
+            const year = parsed.getFullYear();
+            return year + '-' + month + '-' + day;
+        }
+
+        return '';
+    }
+
+    function parsePreviewNumber(value) {
+        if (typeof value === 'number') {
+            return value;
+        }
+
+        let raw = String(value || '').trim();
+        if (raw === '') {
+            return 0;
+        }
+
+        raw = raw.replace(/\s+/g, '');
+        const hasComma = raw.indexOf(',') !== -1;
+        const hasDot = raw.indexOf('.') !== -1;
+
+        if (hasComma && hasDot) {
+            if (raw.lastIndexOf(',') > raw.lastIndexOf('.')) {
+                raw = raw.replace(/\./g, '').replace(',', '.');
+            } else {
+                raw = raw.replace(/,/g, '');
+            }
+        } else if (hasComma) {
+            if (/,\d{1,4}$/.test(raw)) {
+                raw = raw.replace(/\./g, '').replace(',', '.');
+            } else {
+                raw = raw.replace(/,/g, '');
+            }
+        } else if (hasDot) {
+            if (!/\.\d{1,4}$/.test(raw)) {
+                raw = raw.replace(/\./g, '');
+            }
+        }
+
+        raw = raw.replace(/[^\d.-]/g, '');
+        const parsed = parseFloat(raw);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+
+    function formatPreviewRupiah(value) {
+        return new Intl.NumberFormat('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }).format(parsePreviewNumber(value));
+    }
+
+    function parseCsvLine(line, delimiter) {
+        const cols = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+            const ch = line.charAt(i);
+
+            if (ch === '"') {
+                if (inQuotes && line.charAt(i + 1) === '"') {
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+                continue;
+            }
+
+            if (ch === delimiter && !inQuotes) {
+                cols.push(current);
+                current = '';
+                continue;
+            }
+
+            current += ch;
+        }
+
+        cols.push(current);
+        return cols;
+    }
+
+    function evaluateImportPreviewRow(row) {
+        const nomorTec = String(row.A || '').trim();
+        const tanggalIso = normalizePreviewDateToIso(row.B || '');
+        const projectName = String(row.D || '').trim();
+        const picProject = String(row.E || '').trim();
+        const itemCode = String(row.H || '').trim();
+        const direction = String(row.I || '').trim().toUpperCase();
+        const qty = parsePreviewNumber(row.J || 0);
+        const unitPrice = parsePreviewNumber(row.K || 0);
+        const nominal = parsePreviewNumber(row.L || 0);
+
+        if (nomorTec === '' && projectName === '' && itemCode === '') {
+            return {
+                valid: false,
+                reason: 'Row kosong (Nomor TEC, Project, Item Code tidak terisi).'
+            };
+        }
+
+        if (nomorTec === '') {
+            return { valid: false, reason: 'Nomor TEC wajib diisi.' };
+        }
+        if (tanggalIso === '') {
+            return { valid: false, reason: 'Tanggal tidak valid atau kosong.' };
+        }
+        if (projectName === '') {
+            return { valid: false, reason: 'Project wajib diisi.' };
+        }
+        if (itemCode === '') {
+            return { valid: false, reason: 'Item Code wajib diisi.' };
+        }
+        if (direction !== 'DEBIT' && direction !== 'KREDIT') {
+            return { valid: false, reason: 'Direction harus DEBIT atau KREDIT.' };
+        }
+        if (qty <= 0) {
+            return { valid: false, reason: 'Qty harus lebih besar dari 0.' };
+        }
+        if (nominal <= 0) {
+            return { valid: false, reason: 'Nominal harus lebih besar dari 0.' };
+        }
+        if (unitPrice > 0 && Math.abs((qty * unitPrice) - nominal) > 0.01) {
+            return { valid: false, reason: 'Nominal tidak sama dengan Qty x Unit Price.' };
+        }
+        if (picProject !== '' && !masterPicLookup.has(picProject.toLowerCase())) {
+            return { valid: false, reason: 'PIC Project tidak ditemukan di Master PIC Budget.' };
+        }
+
+        return { valid: true, reason: 'Data valid untuk import.' };
+    }
+
     function renderImportPreview(rows) {
-        const previewRows = rows.slice(0, 20);
         let html = '';
 
-        if (!previewRows.length) {
-            html = '<tr><td colspan="9" class="text-center text-muted">Tidak ada data untuk dipreview.</td></tr>';
+        if (!rows.length) {
+            html = '<tr><td colspan="11" class="text-center text-muted">Tidak ada data untuk dipreview.</td></tr>';
         } else {
-            previewRows.forEach(function (row, index) {
+            rows.forEach(function (row, index) {
+                const validation = evaluateImportPreviewRow(row);
+                const statusBadge = validation.valid
+                    ? '<span class="badge badge-success" title="' + escapeHtml(validation.reason) + '">VALID</span>'
+                    : '<span class="badge badge-danger" title="' + escapeHtml(validation.reason) + '">INVALID</span>';
+
                 html += '<tr>' +
+                    '<td class="text-center">' + statusBadge + '</td>' +
                     '<td>' + (index + 1) + '</td>' +
-                    '<td>' + (row.A || '') + '</td>' +
-                    '<td>' + (row.B || '') + '</td>' +
-                    '<td>' + (row.D || '') + '</td>' +
-                    '<td>' + (row.H || '') + '</td>' +
-                    '<td>' + (row.I || '') + '</td>' +
-                    '<td class="text-right">' + (row.J || '') + '</td>' +
-                    '<td class="text-right">' + (row.K || '') + '</td>' +
-                    '<td class="text-right">' + (row.L || '') + '</td>' +
+                    '<td>' + escapeHtml(row.A || '') + '</td>' +
+                    '<td>' + escapeHtml(formatPreviewDate(row.B || '')) + '</td>' +
+                    '<td>' + escapeHtml(row.D || '') + '</td>' +
+                    '<td>' + escapeHtml(row.E || '') + '</td>' +
+                    '<td>' + escapeHtml(row.H || '') + '</td>' +
+                    '<td>' + escapeHtml(row.I || '') + '</td>' +
+                    '<td class="text-right">' + escapeHtml(row.J || '') + '</td>' +
+                    '<td class="text-right">' + escapeHtml(formatPreviewRupiah(row.K || 0)) + '</td>' +
+                    '<td class="text-right">' + escapeHtml(formatPreviewRupiah(row.L || 0)) + '</td>' +
                 '</tr>';
             });
         }
@@ -1218,12 +1436,30 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         if (extension === 'csv') {
             reader.onload = function (e) {
                 const text = e.target.result || '';
-                const rows = text.split(/\r?\n/).filter(Boolean).slice(1).map(function (line) {
-                    const cols = line.split(',');
+                const lines = text
+                    .split(/\r?\n/)
+                    .map(function (line) {
+                        return String(line || '').replace(/\s+$/, '');
+                    })
+                    .filter(function (line) {
+                        return line !== '';
+                    });
+
+                if (!lines.length) {
+                    renderImportPreview([]);
+                    $('#importPreviewHint').text('File kosong atau tidak ada baris data.');
+                    return;
+                }
+
+                const headerLine = String(lines[0] || '').replace(/^\uFEFF/, '');
+                const delimiter = headerLine.indexOf(';') !== -1 ? ';' : ',';
+                const rows = lines.slice(1).map(function (line) {
+                    const cols = parseCsvLine(line, delimiter);
                     return {
                         A: cols[0] || '',
                         B: cols[1] || '',
                         D: cols[3] || '',
+                        E: cols[4] || '',
                         H: cols[7] || '',
                         I: cols[8] || '',
                         J: cols[9] || '',
@@ -1232,7 +1468,7 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                     };
                 });
                 renderImportPreview(rows);
-                $('#importPreviewHint').text('Preview diambil dari 20 baris pertama file.');
+                $('#importPreviewHint').text('Preview menampilkan semua baris data pada file.');
             };
             reader.readAsText(file);
             return;
@@ -1247,13 +1483,13 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                     raw: false
                 }).slice(1);
                 renderImportPreview(rows);
-                $('#importPreviewHint').text('Preview diambil dari sheet pertama, maksimal 20 baris.');
+                $('#importPreviewHint').text('Preview menampilkan semua baris data pada sheet pertama.');
             };
             reader.readAsArrayBuffer(file);
             return;
         }
 
-        $('#importPreviewBody').html('<tr><td colspan="9" class="text-center text-muted">Preview tidak tersedia untuk file ini, tetapi file tetap bisa diimport.</td></tr>');
+        $('#importPreviewBody').html('<tr><td colspan="11" class="text-center text-muted">Preview tidak tersedia untuk file ini, tetapi file tetap bisa diimport.</td></tr>');
         $('#importPreviewCount').text('0');
         $('#importPreviewHint').text('Preview browser saat ini mendukung CSV dan XLSX. File tetap akan dikirim ke server saat import.');
     }
