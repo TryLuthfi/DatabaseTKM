@@ -157,6 +157,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
         $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
         $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
         $batchStageLabel = $hasBatch ? batchStatusLabel($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT') : 'WAITING INPUT';
+        $canStartBatchInput = !$hasBatch && strtoupper($batchStageLabel) === 'WAITING INPUT';
         $batchDocStatusRaw = strtoupper(trim((string) ($row['batch_doc_status'] ?? '')));
         $showUploadButton = $docReady && $hasBatch && in_array($batchDocStatusRaw, ['', 'REJECTED'], true);
         $agingDays = null;
@@ -223,44 +224,46 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
             </td>
             <td><span class="badge badge-<?= batchBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
             <td>
-                <?php if ($hasBatch && $canHapus): ?>
-                    <button
-                        type="button"
-                        class="btn btn-sm btn-outline-primary js-edit-batch"
-                        data-toggle="modal"
-                        data-target="#modal-batch-edit"
-                        data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
-                        data-id_batch_approval="<?= (int) ($row['id_batch_approval'] ?? 0) ?>"
-                        data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                        data-regional_name="<?= htmlspecialchars((string) ($row['regional_name'] ?? ''), ENT_QUOTES) ?>"
-                        data-province_name="<?= htmlspecialchars((string) ($row['province_name'] ?? ''), ENT_QUOTES) ?>"
-                        data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>"
-                        data-district_name="<?= htmlspecialchars((string) ($row['district_name'] ?? ''), ENT_QUOTES) ?>"
-                        data-village_name="<?= htmlspecialchars((string) ($row['village_name'] ?? ''), ENT_QUOTES) ?>"
-                        data-submission_date="<?= htmlspecialchars((string) ($row['submission_date'] ?? ''), ENT_QUOTES) ?>"
-                        data-homepass_valsal="<?= (int) ($row['homepass_valsal'] ?? 0) ?>"
-                        data-hp_donasi="<?= (int) ($row['hp_donasi'] ?? 0) ?>"
-                        data-nominal_pengajuan_area="<?= htmlspecialchars((string) ($row['nominal_pengajuan_area'] ?? ''), ENT_QUOTES) ?>"
-                        data-nominal_nego_emr="<?= htmlspecialchars((string) ($row['nominal_nego_emr'] ?? ''), ENT_QUOTES) ?>"
-                        data-nominal_release_finance="<?= htmlspecialchars((string) ($row['nominal_release_finance'] ?? ''), ENT_QUOTES) ?>"
-                        data-bank_name="<?= htmlspecialchars((string) ($row['bank_name'] ?? ''), ENT_QUOTES) ?>"
-                        data-bank_account_number="<?= htmlspecialchars((string) ($row['bank_account_number'] ?? ''), ENT_QUOTES) ?>"
-                        data-recipient_name="<?= htmlspecialchars((string) ($row['recipient_name'] ?? ''), ENT_QUOTES) ?>"
-                        data-recipient_phone="<?= htmlspecialchars((string) ($row['recipient_phone'] ?? ''), ENT_QUOTES) ?>"
-                        data-recipient_position="<?= htmlspecialchars((string) ($row['recipient_position'] ?? ''), ENT_QUOTES) ?>"
-                        data-recipient_period="<?= htmlspecialchars((string) ($row['recipient_period'] ?? ''), ENT_QUOTES) ?>"
-                        data-free_wifi_qty="<?= htmlspecialchars((string) ($row['free_wifi_qty'] ?? ''), ENT_QUOTES) ?>"
-                        data-free_wifi_period_month="<?= htmlspecialchars((string) ($row['free_wifi_period_month'] ?? ''), ENT_QUOTES) ?>"
-                        data-astri_batch_number="<?= htmlspecialchars((string) ($row['astri_batch_number'] ?? ''), ENT_QUOTES) ?>"
-                        data-staging_status="<?= htmlspecialchars((string) ($row['staging_status'] ?? 'DRAFT'), ENT_QUOTES) ?>"
-                        data-remark_batch_approval="<?= htmlspecialchars((string) ($row['remark_batch_approval'] ?? ''), ENT_QUOTES) ?>"
-                        data-pics='<?= htmlspecialchars(json_encode($batchModel->getBatchPics((int) ($row["id_batch_approval"] ?? 0))), ENT_QUOTES) ?>'>
-                        Edit
-                    </button>
+                <?php if ($hasBatch): ?>
+                    <?php if ($canEdit): ?>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary js-edit-batch"
+                            data-toggle="modal"
+                            data-target="#modal-batch-edit"
+                            data-id_myrep_cluster="<?= (int) $row['id_myrep_cluster'] ?>"
+                            data-id_batch_approval="<?= (int) ($row['id_batch_approval'] ?? 0) ?>"
+                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                            data-regional_name="<?= htmlspecialchars((string) ($row['regional_name'] ?? ''), ENT_QUOTES) ?>"
+                            data-province_name="<?= htmlspecialchars((string) ($row['province_name'] ?? ''), ENT_QUOTES) ?>"
+                            data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>"
+                            data-district_name="<?= htmlspecialchars((string) ($row['district_name'] ?? ''), ENT_QUOTES) ?>"
+                            data-village_name="<?= htmlspecialchars((string) ($row['village_name'] ?? ''), ENT_QUOTES) ?>"
+                            data-submission_date="<?= htmlspecialchars((string) ($row['submission_date'] ?? ''), ENT_QUOTES) ?>"
+                            data-homepass_valsal="<?= (int) ($row['homepass_valsal'] ?? 0) ?>"
+                            data-hp_donasi="<?= (int) ($row['hp_donasi'] ?? 0) ?>"
+                            data-nominal_pengajuan_area="<?= htmlspecialchars((string) ($row['nominal_pengajuan_area'] ?? ''), ENT_QUOTES) ?>"
+                            data-nominal_nego_emr="<?= htmlspecialchars((string) ($row['nominal_nego_emr'] ?? ''), ENT_QUOTES) ?>"
+                            data-nominal_release_finance="<?= htmlspecialchars((string) ($row['nominal_release_finance'] ?? ''), ENT_QUOTES) ?>"
+                            data-bank_name="<?= htmlspecialchars((string) ($row['bank_name'] ?? ''), ENT_QUOTES) ?>"
+                            data-bank_account_number="<?= htmlspecialchars((string) ($row['bank_account_number'] ?? ''), ENT_QUOTES) ?>"
+                            data-recipient_name="<?= htmlspecialchars((string) ($row['recipient_name'] ?? ''), ENT_QUOTES) ?>"
+                            data-recipient_phone="<?= htmlspecialchars((string) ($row['recipient_phone'] ?? ''), ENT_QUOTES) ?>"
+                            data-recipient_position="<?= htmlspecialchars((string) ($row['recipient_position'] ?? ''), ENT_QUOTES) ?>"
+                            data-recipient_period="<?= htmlspecialchars((string) ($row['recipient_period'] ?? ''), ENT_QUOTES) ?>"
+                            data-free_wifi_qty="<?= htmlspecialchars((string) ($row['free_wifi_qty'] ?? ''), ENT_QUOTES) ?>"
+                            data-free_wifi_period_month="<?= htmlspecialchars((string) ($row['free_wifi_period_month'] ?? ''), ENT_QUOTES) ?>"
+                            data-astri_batch_number="<?= htmlspecialchars((string) ($row['astri_batch_number'] ?? ''), ENT_QUOTES) ?>"
+                            data-staging_status="<?= htmlspecialchars((string) ($row['staging_status'] ?? 'DRAFT'), ENT_QUOTES) ?>"
+                            data-remark_batch_approval="<?= htmlspecialchars((string) ($row['remark_batch_approval'] ?? ''), ENT_QUOTES) ?>"
+                            data-pics='<?= htmlspecialchars(json_encode($batchModel->getBatchPics((int) ($row["id_batch_approval"] ?? 0))), ENT_QUOTES) ?>'>
+                            Edit
+                        </button>
+                    <?php endif; ?>
                     <a href="<?= base_url('Batch_Approval_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="btn btn-sm btn-outline-secondary mt-1">
                         Detail
                     </a>
-                <?php else: ?>
+                <?php elseif ($canStartBatchInput): ?>
                     <button
                         type="button"
                         class="btn btn-sm btn-outline-primary js-start-batch"
@@ -270,23 +273,25 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                         data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>">
                         Input Batch
                     </button>
+                <?php else: ?>
+                    <span class="text-muted small">Menunggu proses tahap berikutnya</span>
                 <?php endif; ?>
-                <?php if ($docReady && $hasBatch): ?>
-                    <?php if ($showUploadButton): ?>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-info js-upload-doc mt-1"
-                            data-toggle="modal"
-                            data-target="#modal-batch-upload-doc"
-                            data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
-                            data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                            data-doc_status="<?= htmlspecialchars((string) batchDocLabel($row), ENT_QUOTES) ?>"
-                            data-doc_remark="<?= htmlspecialchars((string) ($row['batch_doc_remark'] ?? ''), ENT_QUOTES) ?>">
-                            <?= $batchDocStatusRaw === 'REJECTED' ? 'Re-Upload Doc' : 'Upload Doc' ?>
-                        </button>
-                    <?php endif; ?>
+
+                <?php if ($docReady && $hasBatch && $showUploadButton): ?>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-info js-upload-doc mt-1"
+                        data-toggle="modal"
+                        data-target="#modal-batch-upload-doc"
+                        data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
+                        data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
+                        data-doc_status="<?= htmlspecialchars((string) batchDocLabel($row), ENT_QUOTES) ?>"
+                        data-doc_remark="<?= htmlspecialchars((string) ($row['batch_doc_remark'] ?? ''), ENT_QUOTES) ?>">
+                        <?= $batchDocStatusRaw === 'REJECTED' ? 'Re-Upload Doc' : 'Upload Doc' ?>
+                    </button>
                 <?php endif; ?>
-                <?php if ($hasBatch): ?>
+
+                <?php if ($hasBatch && $canHapus): ?>
                     <form method="post" action="<?= base_url('Batch_Approval_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta Batch Approval dan seluruh flow MyRep terkait?');">
                         <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
                         <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>

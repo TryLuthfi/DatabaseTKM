@@ -1,6 +1,8 @@
 <?php
 $status = $this->session->flashdata('status');
+$validationErrors = (array) $this->session->flashdata('validation_errors');
 $totalUsers = count($rincian_user ?? []);
+$isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
 ?>
 
 <div class="content-wrapper">
@@ -34,7 +36,7 @@ $totalUsers = count($rincian_user ?? []);
                                     <i class="fas fa-redo-alt mr-1"></i> Reset
                                 </button>
                                 <button type="button" class="btn user-btn user-btn--success" id="btnTambahUser">
-                                    <i class="fas fa-plus-circle mr-1"></i> Tambah User
+                                    <i class="fas fa-plus-circle mr-1"></i> Tambah <?= $isSuperAdmin ? 'User' : 'NIK + Nama' ?>
                                 </button>
                             </div>
                         </div>
@@ -85,28 +87,32 @@ $totalUsers = count($rincian_user ?? []);
                                             <td><?= htmlspecialchars((string) ($data['departemen'] ?? '-'), ENT_QUOTES) ?></td>
                                             <td><?= htmlspecialchars((string) ($data['status_user'] ?? '-'), ENT_QUOTES) ?></td>
                                             <td>
-                                                <div class="user-action-inline">
-                                                    <button type="button"
-                                                        class="btn btn-sm user-btn user-btn--table-primary js-open-user-modal"
-                                                        data-id="<?= (int) ($data['id_user'] ?? 0) ?>"
-                                                        data-nik="<?= htmlspecialchars((string) ($data['nik'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-nama="<?= htmlspecialchars((string) ($data['nama_user'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-username="<?= htmlspecialchars((string) ($data['username_user'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-password="<?= htmlspecialchars((string) ($data['password_user'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-id-level="<?= (int) ($data['id_level'] ?? 3) ?>"
-                                                        data-jabatan-name="<?= htmlspecialchars((string) ($data['nama_jabatan'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-jenis-kelamin="<?= htmlspecialchars((string) ($data['jenis_kelamin'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-divisi="<?= htmlspecialchars((string) ($data['divisi'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-departemen="<?= htmlspecialchars((string) ($data['departemen'] ?? ''), ENT_QUOTES) ?>"
-                                                        data-status="<?= htmlspecialchars((string) ($data['status_user'] ?? 'ACTIVE'), ENT_QUOTES) ?>">
-                                                        <i class="fas fa-pen mr-1"></i> Edit
-                                                    </button>
-                                                    <a href="<?= site_url('ListUser/delete/' . (int) ($data['id_user'] ?? 0)) ?>"
-                                                        class="btn btn-sm user-btn user-btn--table-danger js-delete-user"
-                                                        data-user="<?= htmlspecialchars((string) ($data['nama_user'] ?? 'user ini'), ENT_QUOTES) ?>">
-                                                        <i class="fas fa-trash-alt mr-1"></i> Hapus
-                                                    </a>
-                                                </div>
+                                                <?php if ($isSuperAdmin): ?>
+                                                    <div class="user-action-inline">
+                                                        <button type="button"
+                                                            class="btn btn-sm user-btn user-btn--table-primary js-open-user-modal"
+                                                            data-id="<?= (int) ($data['id_user'] ?? 0) ?>"
+                                                            data-nik="<?= htmlspecialchars((string) ($data['nik'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-nama="<?= htmlspecialchars((string) ($data['nama_user'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-username="<?= htmlspecialchars((string) ($data['username_user'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-password="<?= htmlspecialchars((string) ($data['password_user'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-id-level="<?= (int) ($data['id_level'] ?? 3) ?>"
+                                                            data-jabatan-name="<?= htmlspecialchars((string) ($data['nama_jabatan'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-jenis-kelamin="<?= htmlspecialchars((string) ($data['jenis_kelamin'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-divisi="<?= htmlspecialchars((string) ($data['divisi'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-departemen="<?= htmlspecialchars((string) ($data['departemen'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-status="<?= htmlspecialchars((string) ($data['status_user'] ?? 'ACTIVE'), ENT_QUOTES) ?>">
+                                                            <i class="fas fa-pen mr-1"></i> Edit
+                                                        </button>
+                                                        <a href="<?= site_url('ListUser/delete/' . (int) ($data['id_user'] ?? 0)) ?>"
+                                                            class="btn btn-sm user-btn user-btn--table-danger js-delete-user"
+                                                            data-user="<?= htmlspecialchars((string) ($data['nama_user'] ?? 'user ini'), ENT_QUOTES) ?>">
+                                                            <i class="fas fa-trash-alt mr-1"></i> Hapus
+                                                        </a>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="text-muted small">Tidak tersedia</span>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -128,7 +134,9 @@ $totalUsers = count($rincian_user ?? []);
                     <div>
                         <span class="user-modal__eyebrow">List User</span>
                         <h5 class="modal-title mb-1" id="listUserModalTitle">Tambah User</h5>
-                        <p class="mb-0 user-modal__subtitle" id="listUserModalSubtitle">Lengkapi data user sesuai master terbaru.</p>
+                        <p class="mb-0 user-modal__subtitle" id="listUserModalSubtitle">
+                            <?= $isSuperAdmin ? 'Lengkapi data user sesuai master terbaru.' : 'Isi NIK dan Nama. Data lain akan mengikuti default sistem.' ?>
+                        </p>
                     </div>
                     <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                 </div>
@@ -148,6 +156,7 @@ $totalUsers = count($rincian_user ?? []);
                                     <input type="text" class="form-control user-input" name="nama_user" id="nama_user" autocomplete="off" required>
                                 </div>
                             </div>
+                            <?php if ($isSuperAdmin): ?>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label class="user-field-label">Username</label>
@@ -179,9 +188,10 @@ $totalUsers = count($rincian_user ?? []);
                                     </select>
                                 </div>
                             </div>
+                            <?php endif; ?>
                         </div>
                     </div>
-
+                    <?php if ($isSuperAdmin): ?>
                     <div class="user-form-section mb-0">
                         <div class="user-form-section__title">Hak Akses & Struktur</div>
                         <div class="row">
@@ -223,6 +233,7 @@ $totalUsers = count($rincian_user ?? []);
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
                 </div>
                 <div class="modal-footer user-modal__footer">
                     <button type="button" class="btn user-btn user-btn--ghost" data-dismiss="modal">Batal</button>
@@ -237,14 +248,16 @@ $totalUsers = count($rincian_user ?? []);
 
 <script>
     (function () {
+        var isSuperAdmin = <?= $isSuperAdmin ? 'true' : 'false' ?>;
+
         function openListUserModal(data) {
-            var isEdit = !!(data && data.id);
+            var isEdit = isSuperAdmin && !!(data && data.id);
             var form = document.getElementById('listUserForm');
 
             document.getElementById('listUserModalTitle').textContent = isEdit ? 'Edit User' : 'Tambah User';
             document.getElementById('listUserModalSubtitle').textContent = isEdit
                 ? 'Perbarui data user, lalu simpan perubahan jika sudah sesuai.'
-                : 'Lengkapi data user sesuai master terbaru.';
+                : (isSuperAdmin ? 'Lengkapi data user sesuai master terbaru.' : 'Isi NIK dan Nama. Data lain akan mengikuti default sistem.');
             document.getElementById('listUserSubmitBtn').innerHTML = isEdit
                 ? '<i class="fas fa-save mr-1"></i> Simpan Perubahan'
                 : '<i class="fas fa-save mr-1"></i> Simpan';
@@ -253,26 +266,53 @@ $totalUsers = count($rincian_user ?? []);
 
             document.getElementById('nik').value = isEdit ? (data.nik || '') : '';
             document.getElementById('nama_user').value = isEdit ? (data.nama || '') : '';
-            document.getElementById('username_user').value = isEdit ? (data.username || '') : '';
-            document.getElementById('password_user').value = isEdit ? (data.password || '') : '';
-            document.getElementById('id_level').value = isEdit ? (data.idLevel || '') : (document.getElementById('id_level').options[0] ? document.getElementById('id_level').options[0].value : '');
-            document.getElementById('jenis_kelamin').value = isEdit ? (data.jenisKelamin || '') : '';
-            document.getElementById('divisi').value = isEdit ? (data.divisi || '') : '';
-            document.getElementById('departemen').value = isEdit ? (data.departemen || '') : '';
-            document.getElementById('status_user').value = isEdit ? (data.status || 'ACTIVE') : 'ACTIVE';
 
-            var jabatanSelect = document.getElementById('jabatan_name');
-            if (isEdit && data.jabatanName) {
-                var selected = jabatanSelect.options[0] ? jabatanSelect.options[0].value : '';
-                for (var i = 0; i < jabatanSelect.options.length; i++) {
-                    if (String(jabatanSelect.options[i].value).toLowerCase() === String(data.jabatanName).toLowerCase()) {
-                        selected = jabatanSelect.options[i].value;
-                        break;
+            if (isSuperAdmin) {
+                var usernameInput = document.getElementById('username_user');
+                var passwordInput = document.getElementById('password_user');
+                var levelSelect = document.getElementById('id_level');
+                var genderSelect = document.getElementById('jenis_kelamin');
+                var divisionInput = document.getElementById('divisi');
+                var departementInput = document.getElementById('departemen');
+                var statusSelect = document.getElementById('status_user');
+                var jabatanSelect = document.getElementById('jabatan_name');
+
+                if (usernameInput) {
+                    usernameInput.value = isEdit ? (data.username || '') : '';
+                }
+                if (passwordInput) {
+                    passwordInput.value = isEdit ? (data.password || '') : '';
+                }
+                if (levelSelect) {
+                    levelSelect.value = isEdit ? (data.idLevel || '') : (levelSelect.options[0] ? levelSelect.options[0].value : '');
+                }
+                if (genderSelect) {
+                    genderSelect.value = isEdit ? (data.jenisKelamin || '') : '';
+                }
+                if (divisionInput) {
+                    divisionInput.value = isEdit ? (data.divisi || '') : '';
+                }
+                if (departementInput) {
+                    departementInput.value = isEdit ? (data.departemen || '') : '';
+                }
+                if (statusSelect) {
+                    statusSelect.value = isEdit ? (data.status || 'ACTIVE') : 'ACTIVE';
+                }
+
+                if (jabatanSelect) {
+                    if (isEdit && data.jabatanName) {
+                        var selected = jabatanSelect.options[0] ? jabatanSelect.options[0].value : '';
+                        for (var i = 0; i < jabatanSelect.options.length; i++) {
+                            if (String(jabatanSelect.options[i].value).toLowerCase() === String(data.jabatanName).toLowerCase()) {
+                                selected = jabatanSelect.options[i].value;
+                                break;
+                            }
+                        }
+                        jabatanSelect.value = selected;
+                    } else {
+                        jabatanSelect.value = jabatanSelect.options[0] ? jabatanSelect.options[0].value : '';
                     }
                 }
-                jabatanSelect.value = selected;
-            } else {
-                jabatanSelect.value = jabatanSelect.options[0] ? jabatanSelect.options[0].value : '';
             }
 
             $('#listUserModal').modal('show');
@@ -302,6 +342,10 @@ $totalUsers = count($rincian_user ?? []);
 
             $('#btnTambahUser').on('click', function () { openListUserModal(null); });
             $(document).on('click', '.js-open-user-modal', function () {
+                if (!isSuperAdmin) {
+                    return;
+                }
+
                 openListUserModal({
                     id: $(this).data('id'),
                     nik: $(this).data('nik'),
@@ -345,9 +389,22 @@ $totalUsers = count($rincian_user ?? []);
                 Swal.fire('Success', 'User berhasil diperbarui.', 'success');
                 <?php elseif ($status === 'sukses_hapus'): ?>
                 Swal.fire('Success', 'User berhasil dihapus.', 'success');
+                <?php elseif ($status === 'akses_ditolak'): ?>
+                Swal.fire('Akses ditolak', 'Hanya Super Admin yang dapat edit atau hapus user.', 'warning');
                 <?php elseif ($status === 'gagal_tambah' || $status === 'gagal_edit' || $status === 'gagal_hapus'): ?>
                 Swal.fire('Gagal', 'Proses user gagal dilakukan.', 'error');
                 <?php endif; ?>
+            }
+            <?php endif; ?>
+
+            <?php if (!empty($validationErrors)): ?>
+            if (!window.__listUserValidationShown) {
+                window.__listUserValidationShown = true;
+                Swal.fire({
+                    title: 'Validasi gagal',
+                    html: '<?= htmlspecialchars(implode("<br>", $validationErrors), ENT_QUOTES) ?>',
+                    icon: 'error'
+                });
             }
             <?php endif; ?>
         });
