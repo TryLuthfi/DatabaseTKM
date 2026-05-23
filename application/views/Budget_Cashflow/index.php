@@ -377,8 +377,9 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                     <table class="table table-bordered table-sm table-striped" id="importPreviewTable">
                                         <thead>
                                             <tr>
-                                                <th>Status</th>
                                                 <th>No</th>
+                                                <th>Status</th>
+                                                <th>Remarks</th>
                                                 <th>Nomor TEC</th>
                                                 <th>Tanggal</th>
                                                 <th>Project</th>
@@ -386,15 +387,23 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
                                                 <th>Item Code</th>
                                                 <th>Direction</th>
                                                 <th>Qty</th>
-                                                <th>Unit Price</th>
-                                                <th>Nominal</th>
+                                                <th>Debit</th>
+                                                <th>Kredit</th>
                                             </tr>
                                         </thead>
                                         <tbody id="importPreviewBody">
                                             <tr>
-                                                <td colspan="11" class="text-center text-muted">Preview file akan muncul di sini.</td>
+                                                <td colspan="12" class="text-center text-muted">Preview file akan muncul di sini.</td>
                                             </tr>
                                         </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="9" class="text-right">Total</th>
+                                                <th class="text-right" id="importPreviewFooterQty">0</th>
+                                                <th class="text-right" id="importPreviewFooterDebit">0</th>
+                                                <th class="text-right" id="importPreviewFooterKredit">0</th>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                                 <small class="text-muted d-block mt-2" id="importPreviewHint">Preview browser mendukung CSV dan XLSX. Untuk XLS lama (`.xls`), file tetap bisa diupload, tetapi preview mungkin tidak tersedia.</small>
@@ -1309,6 +1318,13 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
         }).format(parsePreviewNumber(value));
     }
 
+    function formatPreviewQty(value) {
+        return new Intl.NumberFormat('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 4
+        }).format(parsePreviewNumber(value));
+    }
+
     function parseCsvLine(line, delimiter) {
         const cols = [];
         let current = '';
@@ -1386,39 +1402,56 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
             return { valid: false, reason: 'PIC Project tidak ditemukan di Master PIC Budget.' };
         }
 
-        return { valid: true, reason: 'Data valid untuk import.' };
+        return { valid: true, reason: 'OK' };
     }
 
     function renderImportPreview(rows) {
         let html = '';
+        let totalQty = 0;
+        let totalDebit = 0;
+        let totalKredit = 0;
 
         if (!rows.length) {
-            html = '<tr><td colspan="11" class="text-center text-muted">Tidak ada data untuk dipreview.</td></tr>';
+            html = '<tr><td colspan="12" class="text-center text-muted">Tidak ada data untuk dipreview.</td></tr>';
         } else {
             rows.forEach(function (row, index) {
                 const validation = evaluateImportPreviewRow(row);
+                const normalizedDirection = String(row.I || '').trim().toUpperCase();
+                const qtyValue = parsePreviewNumber(row.J || 0);
+                const nominalValue = parsePreviewNumber(row.L || 0);
+                const debitValue = normalizedDirection === 'DEBIT' ? nominalValue : 0;
+                const kreditValue = normalizedDirection === 'KREDIT' ? nominalValue : 0;
+                const remarksText = validation.valid ? 'OK' : validation.reason;
                 const statusBadge = validation.valid
                     ? '<span class="badge badge-success" title="' + escapeHtml(validation.reason) + '">VALID</span>'
                     : '<span class="badge badge-danger" title="' + escapeHtml(validation.reason) + '">INVALID</span>';
 
+                totalQty += qtyValue;
+                totalDebit += debitValue;
+                totalKredit += kreditValue;
+
                 html += '<tr>' +
-                    '<td class="text-center">' + statusBadge + '</td>' +
                     '<td>' + (index + 1) + '</td>' +
+                    '<td class="text-center">' + statusBadge + '</td>' +
+                    '<td>' + escapeHtml(remarksText) + '</td>' +
                     '<td>' + escapeHtml(row.A || '') + '</td>' +
                     '<td>' + escapeHtml(formatPreviewDate(row.B || '')) + '</td>' +
                     '<td>' + escapeHtml(row.D || '') + '</td>' +
                     '<td>' + escapeHtml(row.E || '') + '</td>' +
                     '<td>' + escapeHtml(row.H || '') + '</td>' +
                     '<td>' + escapeHtml(row.I || '') + '</td>' +
-                    '<td class="text-right">' + escapeHtml(row.J || '') + '</td>' +
-                    '<td class="text-right">' + escapeHtml(formatPreviewRupiah(row.K || 0)) + '</td>' +
-                    '<td class="text-right">' + escapeHtml(formatPreviewRupiah(row.L || 0)) + '</td>' +
+                    '<td class="text-right">' + escapeHtml(formatPreviewQty(qtyValue)) + '</td>' +
+                    '<td class="text-right">' + escapeHtml(formatPreviewRupiah(debitValue)) + '</td>' +
+                    '<td class="text-right">' + escapeHtml(formatPreviewRupiah(kreditValue)) + '</td>' +
                 '</tr>';
             });
         }
 
         $('#importPreviewBody').html(html);
         $('#importPreviewCount').text(rows.length);
+        $('#importPreviewFooterQty').text(formatPreviewQty(totalQty));
+        $('#importPreviewFooterDebit').text(formatPreviewRupiah(totalDebit));
+        $('#importPreviewFooterKredit').text(formatPreviewRupiah(totalKredit));
     }
 
     function handleImportFile(file) {
@@ -1489,8 +1522,11 @@ $validationWarnings = $this->session->flashdata('validation_warnings');
             return;
         }
 
-        $('#importPreviewBody').html('<tr><td colspan="11" class="text-center text-muted">Preview tidak tersedia untuk file ini, tetapi file tetap bisa diimport.</td></tr>');
+        $('#importPreviewBody').html('<tr><td colspan="12" class="text-center text-muted">Preview tidak tersedia untuk file ini, tetapi file tetap bisa diimport.</td></tr>');
         $('#importPreviewCount').text('0');
+        $('#importPreviewFooterQty').text('0');
+        $('#importPreviewFooterDebit').text('0');
+        $('#importPreviewFooterKredit').text('0');
         $('#importPreviewHint').text('Preview browser saat ini mendukung CSV dan XLSX. File tetap akan dikirim ke server saat import.');
     }
 
