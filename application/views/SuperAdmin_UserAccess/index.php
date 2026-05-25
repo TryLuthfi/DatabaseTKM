@@ -7,6 +7,16 @@ $accessMatrix = (array) ($accessMatrix ?? []);
 $generalPageModuleOptions = (array) ($generalPageModuleOptions ?? []);
 $generalPageOptions = (array) ($generalPageOptions ?? []);
 $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
+$homebaseOptions = [];
+foreach ($userRows as $userRow) {
+    $homebase = strtoupper(trim((string) ($userRow['homebase'] ?? '')));
+    if ($homebase === '') {
+        $homebase = '-';
+    }
+    $homebaseOptions[$homebase] = true;
+}
+$homebaseOptions = array_keys($homebaseOptions);
+sort($homebaseOptions, SORT_NATURAL | SORT_FLAG_CASE);
 ?>
 
 <div class="content-wrapper">
@@ -72,6 +82,15 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
                                 <option value="">Semua Status</option>
                                 <option value="ACTIVE">ACTIVE</option>
                                 <option value="INACTIVE">INACTIVE</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label>Filter Homebase</label>
+                            <select id="filter_user_homebase" class="form-control form-control-sm">
+                                <option value="">Semua Homebase</option>
+                                <?php foreach ($homebaseOptions as $homebaseOption): ?>
+                                    <option value="<?= htmlspecialchars((string) $homebaseOption, ENT_QUOTES) ?>"><?= htmlspecialchars((string) $homebaseOption) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
@@ -235,18 +254,71 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
         var currentGeneralModuleFilter = '';
         var currentGeneralPageFilter = '';
 
+        if ($.fn.DataTable && $.fn.dataTable && $.fn.dataTable.ext && $.fn.dataTable.ext.order) {
+            $.fn.dataTable.ext.order['dom-checkbox'] = function (settings, col) {
+                return this.api().column(col, { order: 'index' }).nodes().map(function (td) {
+                    var input = $(td).find('input[type="checkbox"]').get(0);
+                    if (!input) {
+                        return -1;
+                    }
+                    return input.checked ? 1 : 0;
+                });
+            };
+        }
+
+        function buildIndexRange(start, end) {
+            var arr = [];
+            for (var i = start; i <= end; i++) {
+                arr.push(i);
+            }
+            return arr;
+        }
+
         if ($.fn.DataTable) {
+            var matrixHeaderCount = $('#table_super_admin_user_access_matrix thead th').length;
+            var matrixCheckboxCols = matrixHeaderCount > 5 ? buildIndexRange(5, matrixHeaderCount - 1) : [];
             matrixTable = $('#table_super_admin_user_access_matrix').DataTable({
                 pageLength: 10,
                 order: [[2, 'asc']],
                 scrollX: true,
-                autoWidth: false
+                autoWidth: false,
+                columnDefs: matrixCheckboxCols.length ? [{
+                    targets: matrixCheckboxCols,
+                    orderDataType: 'dom-checkbox',
+                    type: 'num'
+                }] : []
             });
         }
 
-        $(document).on('click mousedown', '.js-toggle-module-col, .js-general-col-toggle, .js-no-sort-toggle', function (event) {
-            event.stopPropagation();
-        });
+        function blockSortEventOnToggle(tableSelector) {
+            var table = document.querySelector(tableSelector);
+            if (!table) {
+                return;
+            }
+            var thead = table.querySelector('thead');
+            if (!thead) {
+                return;
+            }
+
+            var handler = function (event) {
+                var target = event.target;
+                if (!target || !target.closest) {
+                    return;
+                }
+                if (target.closest('.js-no-sort-toggle, .js-toggle-module-col, .js-general-col-toggle')) {
+                    event.stopPropagation();
+                    if (typeof event.stopImmediatePropagation === 'function') {
+                        event.stopImmediatePropagation();
+                    }
+                }
+            };
+
+            thead.addEventListener('mousedown', handler, true);
+            thead.addEventListener('click', handler, true);
+        }
+
+        blockSortEventOnToggle('#table_super_admin_user_access_matrix');
+        blockSortEventOnToggle('#table_general_page_access');
 
         function initGeneralSelectSearch() {
             if (!$.fn.select2) {
@@ -285,6 +357,13 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
                 return;
             }
             matrixTable.column(3).search(String($(this).val() || ''), false, false).draw();
+        });
+
+        $('#filter_user_homebase').on('change', function () {
+            if (!matrixTable) {
+                return;
+            }
+            matrixTable.column(4).search(String($(this).val() || ''), false, false).draw();
         });
 
         function getVisibleRowNodes() {
@@ -436,13 +515,20 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
             });
 
             $('#table_general_page_access tbody').html(html);
+            var generalHeaderCount = $('#table_general_page_access thead th').length;
+            var generalCheckboxCols = generalHeaderCount > 3 ? buildIndexRange(3, generalHeaderCount - 1) : [];
             generalTable = $('#table_general_page_access').DataTable({
                 destroy: true,
                 pageLength: 10,
                 order: [[1, 'asc'], [2, 'asc']],
                 scrollX: true,
                 autoWidth: false,
-                searching: true
+                searching: true,
+                columnDefs: generalCheckboxCols.length ? [{
+                    targets: generalCheckboxCols,
+                    orderDataType: 'dom-checkbox',
+                    type: 'num'
+                }] : []
             });
             syncGeneralHeaderToggles();
             if (generalTable) {

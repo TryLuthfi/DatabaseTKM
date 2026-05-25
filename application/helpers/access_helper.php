@@ -4,6 +4,8 @@ defined('BASEPATH') or exit('No direct script access allowed');
 if (!function_exists('get_validation_user_list')) {
     function get_validation_user_list()
     {
+        sync_current_user_access_session();
+
         $CI = &get_instance();
         $raw = $CI->session->userdata('validation_user');
 
@@ -19,6 +21,83 @@ if (!function_exists('get_validation_user_list')) {
         });
 
         return array_values(array_unique($items));
+    }
+}
+
+if (!function_exists('sync_current_user_access_session')) {
+    function sync_current_user_access_session($force = false)
+    {
+        static $syncedInRequest = false;
+        if ($syncedInRequest && !$force) {
+            return;
+        }
+
+        $CI = &get_instance();
+        if (!isset($CI->session) || !isset($CI->db)) {
+            return;
+        }
+
+        $userId = (int) $CI->session->userdata('id_user');
+        if ($userId <= 0) {
+            return;
+        }
+
+        $now = time();
+        $lastSyncAt = (int) $CI->session->userdata('access_sync_at');
+        $syncIntervalSeconds = 60;
+        if (!$force && $lastSyncAt > 0 && ($now - $lastSyncAt) < $syncIntervalSeconds) {
+            $syncedInRequest = true;
+            return;
+        }
+
+        $hasValidationUserColumn = $CI->db->field_exists('validation_user', 'tb_master_user_new');
+        $selectValidation = $hasValidationUserColumn ? ', a.validation_user' : ', NULL AS validation_user';
+
+        $akun = (array) $CI->db
+            ->select('a.id, a.id_level, a.nama_karyawan, a.username_user, a.password_user' . $selectValidation . ', COALESCE(a.lokasi_kantor, a.homebase, \'HO\') as lokasi_user, tl.nama_level', false)
+            ->from('tb_master_user_new a')
+            ->join('tb_level tl', 'a.id_level = tl.id_level', 'left')
+            ->where('a.id', $userId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($akun)) {
+            return;
+        }
+
+        $validationRows = $CI->db
+            ->select('validation_user')
+            ->from('tb_master_user_child')
+            ->where('id_master_user', $userId)
+            ->get()
+            ->result_array();
+
+        $validationList = [];
+        if (!empty($akun['validation_user'])) {
+            $validationList[] = trim((string) $akun['validation_user']);
+        }
+        foreach ($validationRows as $row) {
+            $value = trim((string) ($row['validation_user'] ?? ''));
+            if ($value !== '') {
+                $validationList[] = $value;
+            }
+        }
+        $validationList = array_values(array_unique(array_filter($validationList)));
+
+        $CI->session->set_userdata([
+            'id_level' => (int) ($akun['id_level'] ?? 0),
+            'nama_user' => (string) ($akun['nama_karyawan'] ?? ''),
+            'username_user' => (string) ($akun['username_user'] ?? ''),
+            'password_user' => (string) ($akun['password_user'] ?? ''),
+            'lokasi_user' => (string) ($akun['lokasi_user'] ?? 'HO'),
+            'nama_level' => (string) ($akun['nama_level'] ?? ''),
+            'validation' => !empty($validationList) ? implode(', ', $validationList) : 'non',
+            'validation_user' => $validationList,
+            'access_sync_at' => $now,
+        ]);
+
+        $syncedInRequest = true;
     }
 }
 
@@ -145,6 +224,8 @@ if (!function_exists('enforce_module_access')) {
 if (!function_exists('enforce_current_page_action_access')) {
     function enforce_current_page_action_access()
     {
+        sync_current_user_access_session();
+
         $CI = &get_instance();
 
         if (!$CI->session->userdata('id_user')) {
@@ -428,6 +509,8 @@ if (!function_exists('get_user_page_access_override')) {
 if (!function_exists('has_user_page_access')) {
     function has_user_page_access($moduleKey, $pageKey, $actionKey = 'VIEW', $userId = 0)
     {
+        sync_current_user_access_session();
+
         $CI = &get_instance();
 
         if ((string) $CI->session->userdata('nama_level') === 'Super Admin') {
