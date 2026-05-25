@@ -69,7 +69,18 @@ class MAuth extends CI_Model
                     ];
                 $this->session->set_userdata($data);
                 $this->setMaintenanceBypassCookie($akun);
-                
+
+                $isBypassUser = $this->isFirstLoginBypassUser((string) ($akun['username_user'] ?? ''));
+                $isFirstLogin = !$isBypassUser
+                    && trim((string) ($akun['nik'] ?? '')) !== ''
+                    && trim((string) $akun['password_user']) === trim((string) $akun['nik']);
+
+                if ($isFirstLogin) {
+                    $this->session->set_userdata('first_login_required', 1);
+                    redirect('Auth/firstLoginEmail');
+                }
+
+                $this->session->unset_userdata('first_login_required');
                 redirect('Dashboard');
             } else {
                 $this->session->set_flashdata('error_log', 'salah');
@@ -174,6 +185,28 @@ class MAuth extends CI_Model
         }
 
         return $default;
+    }
+
+    private function isFirstLoginBypassUser($username)
+    {
+        $username = strtolower(trim((string) $username));
+        if ($username === '') {
+            return false;
+        }
+
+        $raw = (string) $this->readEnvValue('FIRST_LOGIN_BYPASS_USERS', '');
+        if ($raw === '') {
+            return false;
+        }
+
+        $items = array_filter(array_map('trim', explode(',', $raw)));
+        foreach ($items as $item) {
+            if ($username === strtolower($item)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 

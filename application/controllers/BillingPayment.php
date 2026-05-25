@@ -3,6 +3,41 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class BillingPayment extends CI_Controller
 {
+    private function hasBillingActionAccess($actionKey)
+    {
+        $actionKey = strtoupper(trim((string) $actionKey));
+        if ($actionKey === '') {
+            $actionKey = 'VIEW';
+        }
+
+        return has_user_page_access('BILCO', 'BillingPayment', $actionKey);
+    }
+
+    private function enforceBillingActionAccess()
+    {
+        $method = (string) $this->router->fetch_method();
+        $actionKey = resolve_user_page_access_action($method);
+
+        if ($this->hasBillingActionAccess($actionKey)) {
+            return;
+        }
+
+        $isAjax = $this->input->is_ajax_request();
+        if ($isAjax) {
+            $this->output
+                ->set_status_header(403)
+                ->set_content_type('application/json', 'utf-8')
+                ->set_output(json_encode([
+                    'status' => false,
+                    'message' => 'Anda tidak memiliki izin untuk aksi ini.'
+                ]));
+            $this->output->_display();
+            exit;
+        }
+
+        render_no_access('Anda tidak memiliki izin untuk aksi ini.');
+    }
+
     private function normalizeAmount($value)
     {
         if ($value === null || $value === '') {
@@ -44,6 +79,7 @@ class BillingPayment extends CI_Controller
     {
         parent::__construct();
         enforce_bilco_access();
+        $this->enforceBillingActionAccess();
         $this->load->library('form_validation');
         $this->load->library('upload');
         $this->load->model('MBillingPayment');
@@ -451,6 +487,10 @@ class BillingPayment extends CI_Controller
                 ->order_by('nama_bowheer', 'ASC')
                 ->get()
                 ->result_array();
+            $data['canTambahBillingPayment'] = $this->hasBillingActionAccess('TAMBAH');
+            $data['canEditBillingPayment'] = $this->hasBillingActionAccess('EDIT');
+            $data['canDeleteBillingPayment'] = $this->hasBillingActionAccess('HAPUS');
+            $data['canApprovalBillingPayment'] = $this->hasBillingActionAccess('APPROVAL');
 
             $this->load->view('Templates/01_Header', $data);
             $this->load->view('Templates/02_Menu');

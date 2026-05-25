@@ -19,3 +19,11 @@ $hook['post_controller_constructor'][] = array(
 	'filepath' => 'hooks',
 	'params'   => array()
 );
+
+$hook['post_controller_constructor'][] = array(
+	'class'    => 'ModuleAccess_hook',
+	'function' => 'enforce',
+	'filename' => 'ModuleAccess_hook.php',
+	'filepath' => 'hooks',
+	'params'   => array()
+);

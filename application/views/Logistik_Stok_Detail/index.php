@@ -684,7 +684,7 @@ $total_tiang = 0;
                                             <td><?= $data['nama_item'] ?></td>
                                             <td><?= $data['nama_sumber_material'] ?></td>
                                             <td><?= $data['jumlah_stok'] ?></td>
-                                            <td><?= $data['nama_user'] ?></td>
+                                            <td><?= htmlspecialchars((string) ($data['nama_user'] ?? '-'), ENT_QUOTES) ?></td>
                                             <td class="d-flex">
                                                 <?php if ($this->session->userdata('nama_level') == "Super Admin") { ?>
                                                     <a href="<?php echo site_url('Dashboard_Logistik_Stok/hapusReportStokLogistik/' . urlencode($data['no_surat_jalan']) . '?id_lokasi_gudang=' . urlencode($data['id_lokasi_gudang']) . '&lokasi=' . urlencode(get_instance()->uri->segment(get_instance()->uri->total_segments())) ); ?>"

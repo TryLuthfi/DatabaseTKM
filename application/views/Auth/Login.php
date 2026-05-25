@@ -43,6 +43,14 @@
                     </button>
                 </div>
             <?php endif; ?>
+            <?php if ($this->session->flashdata('reset_password_success')): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>Sukses</strong> <?= htmlspecialchars((string) $this->session->flashdata('reset_password_success'), ENT_QUOTES) ?>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            <?php endif; ?>
             <div class="card-body login-card-body">
                 <p class="login-box-msg">Silahkan masuk</p>
 

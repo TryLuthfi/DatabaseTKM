@@ -584,12 +584,17 @@ class Logistik_Purchase_Request extends CI_Controller
 
     private function get_validation_key()
     {
+        $keys = function_exists('get_validation_key_list') ? get_validation_key_list() : [];
+        if (!empty($keys)) {
+            return (string) $keys[0];
+        }
+
         return strtolower(str_replace(' ', '_', trim((string) $this->session->userdata('validation'))));
     }
 
     private function can_manage_planning()
     {
-        return $this->is_super_admin() || $this->get_validation_key() === 'planning';
+        return $this->is_super_admin() || (function_exists('has_validation_key') ? has_validation_key('planning') : $this->get_validation_key() === 'planning');
     }
 
     private function can_manage_nodin()
@@ -603,7 +608,16 @@ class Logistik_Purchase_Request extends CI_Controller
             return true;
         }
 
-        return $this->get_validation_key() === strtolower(trim((string) $stageKey));
+        $normalizedStageKey = strtolower(trim((string) $stageKey));
+        if ($normalizedStageKey === '') {
+            return false;
+        }
+
+        if (function_exists('has_validation_key')) {
+            return has_validation_key($normalizedStageKey);
+        }
+
+        return $this->get_validation_key() === $normalizedStageKey;
     }
 
     private function can_approve_nodin_stage($stageKey)
@@ -612,7 +626,16 @@ class Logistik_Purchase_Request extends CI_Controller
             return true;
         }
 
-        return $this->get_validation_key() === strtolower(trim((string) $stageKey));
+        $normalizedStageKey = strtolower(trim((string) $stageKey));
+        if ($normalizedStageKey === '') {
+            return false;
+        }
+
+        if (function_exists('has_validation_key')) {
+            return has_validation_key($normalizedStageKey);
+        }
+
+        return $this->get_validation_key() === $normalizedStageKey;
     }
 
     private function buildNodinContext($idPurchaseRequest, $purchaseRequestMeta)

@@ -625,6 +625,11 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
 
     private function get_validation_key()
     {
+        $keys = function_exists('get_validation_key_list') ? get_validation_key_list() : [];
+        if (!empty($keys)) {
+            return (string) $keys[0];
+        }
+
         return strtolower(str_replace(' ', '_', trim((string) $this->session->userdata('validation'))));
     }
 
@@ -639,7 +644,16 @@ class Logistik_Nota_Dinas_Po extends CI_Controller
             return true;
         }
 
-        return $this->get_validation_key() === strtolower(trim((string) $stageKey));
+        $normalizedStageKey = strtolower(trim((string) $stageKey));
+        if ($normalizedStageKey === '') {
+            return false;
+        }
+
+        if (function_exists('has_validation_key')) {
+            return has_validation_key($normalizedStageKey);
+        }
+
+        return $this->get_validation_key() === $normalizedStageKey;
     }
 
     private function normalizeNumberValue($value)

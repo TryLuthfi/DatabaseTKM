@@ -62,7 +62,7 @@ class MBudget_Report extends CI_Model
         $items = $this->db
             ->select('id_budget_item, item_code, item_name')
             ->from('tb_budget_items')
-            ->where('is_active', 1)
+            ->where('tb_budget_items.is_active', 1)
             ->order_by('item_name', 'ASC')
             ->get()
             ->result_array();

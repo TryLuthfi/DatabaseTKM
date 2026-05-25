@@ -2,6 +2,10 @@
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
 $userValidation = (string) $this->session->userdata('validation');
+$validationKeys = function_exists('get_validation_key_list')
+    ? get_validation_key_list()
+    : [strtolower(str_replace(' ', '_', trim($userValidation)))];
+$canPlanningRole = in_array('planning', $validationKeys, true);
 $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
 $isHoUser = $this->session->userdata('lokasi_user') == 'HO';
 
@@ -736,7 +740,7 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                                                         <i class="fas fa-print"></i>
                                                     </a>
                                                 <?php endif; ?>
-                                                <a class="pr-action-btn pr-action-btn--planning" href="<?= base_url('Logistik_Purchase_Request/edit_purchase_request') . '/' . $value['id_purchase_request'] ?>" <?= ((!$isSuperAdmin && $userValidation != 'Planning') || (int) ($value['approved_planning'] ?? 0) === 1) ? 'hidden' : '' ?>>
+                                                <a class="pr-action-btn pr-action-btn--planning" href="<?= base_url('Logistik_Purchase_Request/edit_purchase_request') . '/' . $value['id_purchase_request'] ?>" <?= ((!$isSuperAdmin && !$canPlanningRole) || (int) ($value['approved_planning'] ?? 0) === 1) ? 'hidden' : '' ?>>
                                                     Planning
                                                 </a>
                                             </div>
@@ -805,7 +809,7 @@ foreach (array_merge($list_purchase_request_area, $list_purchase_request_ho) as 
                                                             <i class="fas fa-print"></i>
                                                         </a>
                                                     <?php endif; ?>
-                                                    <a class="pr-action-btn pr-action-btn--planning" href="<?= base_url('Logistik_Purchase_Request/edit_purchase_request') . '/' . $value['id_purchase_request'] ?>" <?= ((!$isSuperAdmin && $userValidation != 'Planning') || (int) ($value['approved_planning'] ?? 0) === 1) ? 'hidden' : '' ?>>
+                                                    <a class="pr-action-btn pr-action-btn--planning" href="<?= base_url('Logistik_Purchase_Request/edit_purchase_request') . '/' . $value['id_purchase_request'] ?>" <?= ((!$isSuperAdmin && !$canPlanningRole) || (int) ($value['approved_planning'] ?? 0) === 1) ? 'hidden' : '' ?>>
                                                         Planning
                                                     </a>
                                                 </div>

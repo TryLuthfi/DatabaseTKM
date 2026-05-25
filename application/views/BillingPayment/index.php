@@ -35,6 +35,9 @@ $unique_regional = array_unique(array_column($getAllData, 'regional_payment'));
 $unique_city = array_unique(array_column($getAllData, 'area_payment'));
 $unique_priority = array_unique(array_column($getAllData, 'priority'));
 $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
+$canTambahBillingPayment = !empty($canTambahBillingPayment);
+$canEditBillingPayment = !empty($canEditBillingPayment);
+$canDeleteBillingPayment = !empty($canDeleteBillingPayment);
 
 ?>
 
@@ -330,13 +333,13 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             <div class="row mb-2 justify-content-center">
                 <div class="billing-detail-toolbar">
 
-                    <button type="button" class="btn budget-btn budget-btn--primary billing-detail-toolbar__btn" data-toggle="modal"
-                        data-target="#modal-download-report">
+                    <button type="button" class="btn budget-btn budget-btn--primary billing-detail-toolbar__btn<?= !$canTambahBillingPayment ? ' disabled' : '' ?>"
+                        <?= !$canTambahBillingPayment ? 'disabled aria-disabled="true" title="Akses view only"' : 'data-toggle="modal" data-target="#modal-download-report"' ?>>
                         <i class="fas fa-plus-circle mr-2"></i> Add Invoice
                     </button>
 
-                    <button type="button" class="btn budget-btn budget-btn--success billing-detail-toolbar__btn" data-toggle="modal"
-                        data-target="#modal-payment">
+                    <button type="button" class="btn budget-btn budget-btn--success billing-detail-toolbar__btn<?= !$canTambahBillingPayment ? ' disabled' : '' ?>"
+                        <?= !$canTambahBillingPayment ? 'disabled aria-disabled="true" title="Akses view only"' : 'data-toggle="modal" data-target="#modal-payment"' ?>>
                         <i class="fas fa-money-bill-wave mr-2"></i> Add Payment
                     </button>
 
@@ -1134,6 +1137,9 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
     let activeStatus = 'open';
     let latestBillingRows = {};
     const bowheerOptions = <?= json_encode($bowheer_options) ?>;
+    const canTambahBillingPayment = <?= $canTambahBillingPayment ? 'true' : 'false' ?>;
+    const canEditBillingPayment = <?= $canEditBillingPayment ? 'true' : 'false' ?>;
+    const canDeleteBillingPayment = <?= $canDeleteBillingPayment ? 'true' : 'false' ?>;
 
     $(document).on('click', '.tab-status-invoice', function () {
         $('.tab-status-invoice').removeClass('active');
@@ -1990,25 +1996,48 @@ $unique_status = array_unique(array_column($getAllData, 'status_invoice'));
             const buttons = [];
 
             if (activeStatus === 'open') {
-                buttons.push(`<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`);
-                buttons.push(`<button type="button" class="btn btn-success payment-item" data-id="${id}" title="Add Payment"><i class="fas fa-dollar-sign"></i></button>`);
-                buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
+                buttons.push(canEditBillingPayment
+                    ? `<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`
+                    : `<button type="button" class="btn btn-warning" disabled aria-disabled="true" title="Akses view only"><i class="fa fa-edit"></i></button>`);
+                buttons.push(canTambahBillingPayment
+                    ? `<button type="button" class="btn btn-success payment-item" data-id="${id}" title="Add Payment"><i class="fas fa-dollar-sign"></i></button>`
+                    : `<button type="button" class="btn btn-success" disabled aria-disabled="true" title="Akses view only"><i class="fas fa-dollar-sign"></i></button>`);
+                buttons.push(canDeleteBillingPayment
+                    ? `<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`
+                    : `<button type="button" class="btn btn-danger" disabled aria-disabled="true" title="Akses view only"><i class="fa fa-trash"></i></button>`);
             } else if (activeStatus === 'partial') {
                 buttons.push(`<button type="button" class="btn btn-info detail-partial-item" data-id="${id}" title="Detail Partial"><i class="fa fa-list-alt"></i></button>`);
-                buttons.push(`<button type="button" class="btn btn-warning edit-partial-item" data-id="${id}" title="Edit Partial"><i class="fa fa-edit"></i></button>`);
-                buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
+                buttons.push(canEditBillingPayment
+                    ? `<button type="button" class="btn btn-warning edit-partial-item" data-id="${id}" title="Edit Partial"><i class="fa fa-edit"></i></button>`
+                    : `<button type="button" class="btn btn-warning" disabled aria-disabled="true" title="Akses view only"><i class="fa fa-edit"></i></button>`);
+                buttons.push(canDeleteBillingPayment
+                    ? `<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`
+                    : `<button type="button" class="btn btn-danger" disabled aria-disabled="true" title="Akses view only"><i class="fa fa-trash"></i></button>`);
             } else if (activeStatus === 'all') {
-                buttons.push(`<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`);
-                buttons.push(`<button type="button" class="btn btn-success payment-item" data-id="${id}" title="Payment"><i class="fas fa-dollar-sign"></i></button>`);
-                buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
+                buttons.push(canEditBillingPayment
+                    ? `<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`
+                    : `<button type="button" class="btn btn-warning" disabled aria-disabled="true" title="Akses view only"><i class="fa fa-edit"></i></button>`);
+                buttons.push(canTambahBillingPayment
+                    ? `<button type="button" class="btn btn-success payment-item" data-id="${id}" title="Payment"><i class="fas fa-dollar-sign"></i></button>`
+                    : `<button type="button" class="btn btn-success" disabled aria-disabled="true" title="Akses view only"><i class="fas fa-dollar-sign"></i></button>`);
+                buttons.push(canDeleteBillingPayment
+                    ? `<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`
+                    : `<button type="button" class="btn btn-danger" disabled aria-disabled="true" title="Akses view only"><i class="fa fa-trash"></i></button>`);
             } else if (activeStatus === 'reject') {
-                buttons.push(`<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`);
-                buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
+                buttons.push(canEditBillingPayment
+                    ? `<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`
+                    : `<button type="button" class="btn btn-warning" disabled aria-disabled="true" title="Akses view only"><i class="fa fa-edit"></i></button>`);
+                buttons.push(canDeleteBillingPayment
+                    ? `<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`
+                    : `<button type="button" class="btn btn-danger" disabled aria-disabled="true" title="Akses view only"><i class="fa fa-trash"></i></button>`);
             } else {
-                buttons.push(`<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`);
-                buttons.push(`<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`);
+                buttons.push(canEditBillingPayment
+                    ? `<button type="button" class="btn btn-warning edit-billing-item" data-id="${id}" title="Edit Invoice"><i class="fa fa-edit"></i></button>`
+                    : `<button type="button" class="btn btn-warning" disabled aria-disabled="true" title="Akses view only"><i class="fa fa-edit"></i></button>`);
+                buttons.push(canDeleteBillingPayment
+                    ? `<button type="button" class="btn btn-danger hapus-item" data-id="${id}" title="Hapus Invoice"><i class="fa fa-trash"></i></button>`
+                    : `<button type="button" class="btn btn-danger" disabled aria-disabled="true" title="Akses view only"><i class="fa fa-trash"></i></button>`);
             }
-
             return `<td class="text-center action-buttons"><div class="btn-group btn-group-sm" role="group">${buttons.join('')}</div></td>`;
         };
 

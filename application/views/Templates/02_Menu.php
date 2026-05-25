@@ -1,11 +1,47 @@
 <?php
 $id_menu = $this->uri->segment('1');
+$hasLegacyProjectAccess = has_validation_access('Project');
 $canAccessBudgeting = $this->session->userdata('nama_level') == "Super Admin" || has_validation_access('Budgeting');
+$canAccessKontrak = $this->session->userdata('nama_level') == "Super Admin" || has_validation_access('Kontrak') || $hasLegacyProjectAccess;
+$canAccessMyRepublik = $this->session->userdata('nama_level') == "Super Admin" || has_validation_access('MyRepublik');
+$canAccessFiberstar = $this->session->userdata('nama_level') == "Super Admin" || has_validation_access('Fiberstar');
+$canAccessProjectGroup = $canAccessKontrak || $canAccessMyRepublik || $canAccessFiberstar;
 $canAccessBilco = $this->session->userdata('nama_level') == "Super Admin" || has_validation_access('BILCO');
+$currentUserId = (int) $this->session->userdata('id_user');
+$pageAccessControllerMap = [];
+if (function_exists('get_user_page_access_controller_map') && function_exists('has_user_page_access')) {
+    foreach ((array) get_user_page_access_controller_map() as $controllerKey => $meta) {
+        $controllerName = strtoupper(trim((string) $controllerKey));
+        $moduleKey = (string) ($meta['module_key'] ?? '');
+        $pageKey = (string) ($meta['page_key'] ?? '');
+        if ($controllerName === '' || $pageKey === '') {
+            continue;
+        }
+        $pageAccessControllerMap[$controllerName] = has_user_page_access($moduleKey, $pageKey, 'VIEW', $currentUserId);
+    }
+}
+$canAccessTargetInvoicePage = function_exists('has_user_page_access')
+    ? has_user_page_access('TargetInvoice', 'TargetInvoice', 'VIEW', $currentUserId)
+    : true;
+$canAccessRincianInvoicePage = function_exists('has_user_page_access')
+    ? has_user_page_access('RincianInvoice', 'RincianInvoice', 'VIEW', $currentUserId)
+    : true;
 $disabledBudgetLinkClass = $canAccessBudgeting ? '' : ' menu-access-disabled';
 $disabledBudgetLinkAttr = $canAccessBudgeting ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
+$disabledProjectLinkClass = $canAccessProjectGroup ? '' : ' menu-access-disabled';
+$disabledProjectLinkAttr = $canAccessProjectGroup ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
+$disabledKontrakLinkClass = $canAccessKontrak ? '' : ' menu-access-disabled';
+$disabledKontrakLinkAttr = $canAccessKontrak ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
+$disabledMyRepublikLinkClass = $canAccessMyRepublik ? '' : ' menu-access-disabled';
+$disabledMyRepublikLinkAttr = $canAccessMyRepublik ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
+$disabledFiberstarLinkClass = $canAccessFiberstar ? '' : ' menu-access-disabled';
+$disabledFiberstarLinkAttr = $canAccessFiberstar ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
 $disabledBilcoLinkClass = $canAccessBilco ? '' : ' menu-access-disabled';
 $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
+$disabledTargetInvoiceLinkClass = $canAccessTargetInvoicePage ? '' : ' menu-access-disabled';
+$disabledTargetInvoiceLinkAttr = $canAccessTargetInvoicePage ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
+$disabledRincianInvoiceLinkClass = $canAccessRincianInvoicePage ? '' : ' menu-access-disabled';
+$disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex="-1" aria-disabled="true" onclick="return false;"';
 ?>
 <div class="wrapper premium-shell">
     <!-- Navbar -->
@@ -459,9 +495,10 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                     </p>
                                 </a>
                                 <ul class="nav nav-treeview">
-                                    <li class="nav-item" style="pointer-events: none">
+                                    <li class="nav-item">
                                         <a href="<?= base_url('GA_Aset_Terminasi') ?>"
-                                            class="nav-link <?= ($id_menu == 'GA_Aset_Terminasi') ? 'active' : '' ?>">
+                                            class="nav-link menu-access-disabled <?= ($id_menu == 'GA_Aset_Terminasi') ? 'active' : '' ?>"
+                                            tabindex="-1" aria-disabled="true" onclick="return false;">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Perlengkapan Kantor</p>
                                         </a>
@@ -492,16 +529,18 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                     </p>
                                 </a>
                                 <ul class="nav nav-treeview">
-                                    <li class="nav-item" style="pointer-events: none;">
+                                    <li class="nav-item">
                                         <a href="<?= base_url('inhouse') ?>"
-                                            class="nav-link <?= ($id_menu == 'inhouse') ? 'act ive' : '' ?>">
+                                            class="nav-link menu-access-disabled <?= ($id_menu == 'inhouse') ? 'active' : '' ?>"
+                                            tabindex="-1" aria-disabled="true" onclick="return false;">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Inhouse</p>
                                         </a>
                                     </li>
-                                    <li class="nav-item" style="pointer-events: none;">
+                                    <li class="nav-item">
                                         <a href="<?= base_url('Subcon') ?>"
-                                            class="nav-link <?= ($id_menu == 'Subcon') ? 'active' : '' ?>">
+                                            class="nav-link menu-access-disabled <?= ($id_menu == 'Subcon') ? 'active' : '' ?>"
+                                            tabindex="-1" aria-disabled="true" onclick="return false;">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Subcon</p>
                                         </a>
@@ -512,7 +551,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                         </ul>
                     </li>
                     <li class="nav-header">Control Project</li>
-                    <li class="nav-item has-treeview <?= (
+                    <li class="nav-item has-treeview<?= $disabledProjectLinkClass ?> <?= (
                         $id_menu == 'Fiberstar_PO' ||
                         $id_menu == 'Fiberstar_Project' ||
                         $id_menu == 'Fiberstar_Project_Detail' ||
@@ -532,7 +571,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                         $id_menu == 'Kontrak_Payung' ||
                         $id_menu == 'SPK'
                     ) ? 'menu-open' : '' ?>">
-                        <a href="#" class="nav-link <?= (
+                        <a href="#" class="nav-link<?= $disabledProjectLinkClass ?> <?= (
                             $id_menu == 'Fiberstar_PO' ||
                             $id_menu == 'Fiberstar_Project' ||
                             $id_menu == 'Fiberstar_Project_Detail' ||
@@ -551,7 +590,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                             $id_menu == 'DRM_MyRep' ||
                             $id_menu == 'Kontrak_Payung' ||
                             $id_menu == 'SPK'
-                        ) ? 'active' : '' ?>">
+                        ) ? 'active' : '' ?>"<?= $disabledProjectLinkAttr ?>>
                             <i class="nav-icon fas fa-project-diagram"></i>
                             <p>
                                 Project
@@ -561,8 +600,8 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                         </a>
 
                         <ul class="nav nav-treeview">
-                            <li class="nav-item has-treeview <?= ($id_menu == 'Kontrak_Payung' || $id_menu == 'SPK') ? 'menu-open' : '' ?>">
-                                <a href="#" class="nav-link <?= ($id_menu == 'Kontrak_Payung' || $id_menu == 'SPK') ? 'active' : '' ?>">
+                            <li class="nav-item has-treeview<?= $disabledKontrakLinkClass ?> <?= ($id_menu == 'Kontrak_Payung' || $id_menu == 'SPK') ? 'menu-open' : '' ?>">
+                                <a href="#" class="nav-link<?= $disabledKontrakLinkClass ?> <?= ($id_menu == 'Kontrak_Payung' || $id_menu == 'SPK') ? 'active' : '' ?>"<?= $disabledKontrakLinkAttr ?>>
                                     <i class="nav-icon fas fa-file-signature"></i>
                                     <p>
                                         Kontrak & SPK
@@ -573,14 +612,14 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item">
                                         <a href="<?= base_url('Kontrak_Payung') ?>"
-                                            class="nav-link <?= ($id_menu == 'Kontrak_Payung') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledKontrakLinkClass ?> <?= ($id_menu == 'Kontrak_Payung') ? 'active' : '' ?>"<?= $disabledKontrakLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Kontrak Payung (PKS)</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a href="<?= base_url('SPK') ?>"
-                                            class="nav-link <?= ($id_menu == 'SPK') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledKontrakLinkClass ?> <?= ($id_menu == 'SPK') ? 'active' : '' ?>"<?= $disabledKontrakLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>SPK</p>
                                         </a>
@@ -588,18 +627,18 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                 </ul>
                             </li>
                             <!-- Fiberstar -->
-                            <li class="nav-item has-treeview <?= (
+                            <li class="nav-item has-treeview<?= $disabledFiberstarLinkClass ?> <?= (
                                 $id_menu == 'Fiberstar_PO' ||
                                 $id_menu == 'Fiberstar_Project' ||
                                 $id_menu == 'Fiberstar_Project_Detail' ||
                                 $id_menu == 'Fiberstar_Kompensasi'
                             ) ? 'menu-open' : '' ?>">
-                                <a href="#" class="nav-link <?= (
+                                <a href="#" class="nav-link<?= $disabledFiberstarLinkClass ?> <?= (
                                     $id_menu == 'Fiberstar_PO' ||
                                     $id_menu == 'Fiberstar_Project' ||
                                     $id_menu == 'Fiberstar_Project_Detail' ||
                                     $id_menu == 'Fiberstar_Kompensasi'
-                                ) ? 'active' : '' ?>" style="pointer-events: none">
+                                ) ? 'active' : '' ?>"<?= $disabledFiberstarLinkAttr ?> style="pointer-events: none">
                                     <i class="nav-icon fas fa-file-invoice-dollar"></i>
                                     <p>
                                         Fiberstar
@@ -610,21 +649,22 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item">
                                         <a href="<?= base_url('Fiberstar_Project') ?>"
-                                            class="nav-link <?= ($id_menu == 'Fiberstar_Project' || $id_menu == 'Fiberstar_Project_Detail') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledFiberstarLinkClass ?> <?= ($id_menu == 'Fiberstar_Project' || $id_menu == 'Fiberstar_Project_Detail') ? 'active' : '' ?>"<?= $disabledFiberstarLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>List Project</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a href="<?= base_url('Fiberstar_PO') ?>"
-                                            class="nav-link <?= ($id_menu == 'Fiberstar_PO') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledFiberstarLinkClass ?> <?= ($id_menu == 'Fiberstar_PO') ? 'active' : '' ?>"<?= $disabledFiberstarLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>PO & Invoice</p>
                                         </a>
                                     </li>
-                                    <li class="nav-item" style="pointer-events: none;">
+                                    <li class="nav-item">
                                         <a href="<?= base_url('Fiberstar_Kompensasi') ?>"
-                                            class="nav-link <?= ($id_menu == 'Fiberstar_Kompensasi') ? 'active' : '' ?>">
+                                            class="nav-link menu-access-disabled<?= $disabledFiberstarLinkClass ?> <?= ($id_menu == 'Fiberstar_Kompensasi') ? 'active' : '' ?>"
+                                            tabindex="-1" aria-disabled="true" onclick="return false;">
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Kompensasi</p>
                                         </a>
@@ -634,7 +674,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                             
 
                             <!-- My Republik -->
-                            <li class="nav-item has-treeview <?= (
+                            <li class="nav-item has-treeview<?= $disabledMyRepublikLinkClass ?> <?= (
                                 $id_menu == 'MyRepublik_Project' ||
                                 $id_menu == 'MyRepublik_PO' ||
                                 $id_menu == 'BAK_MyRep' ||
@@ -651,7 +691,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                 $id_menu == 'Batch_Approval_MyRep' ||
                                 $id_menu == 'DRM_MyRep'
                             ) ? 'menu-open' : '' ?>">
-                                <a href="#" class="nav-link <?= (
+                                <a href="#" class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= (
                                     $id_menu == 'MyRepublik_Project' ||
                                     $id_menu == 'MyRepublik_PO' ||
                                     $id_menu == 'BAK_MyRep' ||
@@ -667,7 +707,7 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                     $id_menu == 'VALSAL_MyRep' ||
                                     $id_menu == 'Batch_Approval_MyRep' ||
                                     $id_menu == 'DRM_MyRep'
-                                ) ? 'active' : '' ?>">
+                                ) ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                     <i class="nav-icon fas fa-file-invoice-dollar"></i>
                                     <p>
                                         My Republik
@@ -678,70 +718,70 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item">
                                         <a href="<?= base_url('MyRepublik_Project') ?>"
-                                            class="nav-link <?= ($id_menu == 'MyRepublik_Project') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'MyRepublik_Project') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>List Project</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a href="<?= base_url('BAK_MyRep') ?>"
-                                            class="nav-link <?= ($id_menu == 'BAK_MyRep') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'BAK_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>BAK</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a href="<?= base_url('VALSAL_MyRep') ?>"
-                                            class="nav-link <?= ($id_menu == 'VALSAL_MyRep') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'VALSAL_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>VALSAL</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a href="<?= base_url('Batch_Approval_MyRep') ?>"
-                                            class="nav-link <?= ($id_menu == 'Batch_Approval_MyRep') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'Batch_Approval_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Batch Approval</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a href="<?= base_url('DRM_MyRep') ?>"
-                                            class="nav-link <?= ($id_menu == 'DRM_MyRep') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'DRM_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>DRM</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a href="<?= base_url('Implementasi_BOQ_MyRep') ?>"
-                                            class="nav-link <?= ($id_menu == 'Implementasi_BOQ_MyRep') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'Implementasi_BOQ_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Implementasi BOQ</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a href="<?= base_url('PO_MyRep') ?>"
-                                            class="nav-link <?= ($id_menu == 'PO_MyRep') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'PO_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>PO MyRep</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a href="<?= base_url('Monitoring_RFS_MyRep') ?>"
-                                            class="nav-link <?= ($id_menu == 'Monitoring_RFS_MyRep') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'Monitoring_RFS_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Monitoring RFS MYREP</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a href="<?= base_url('ATP_MyRep') ?>"
-                                            class="nav-link <?= ($id_menu == 'ATP_MyRep') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'ATP_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>ATP</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a href="<?= base_url('Checklist_Dokument_MyRep') ?>"
-                                            class="nav-link <?= ($id_menu == 'Checklist_Dokument_MyRep') ? 'active' : '' ?>">
+                                            class="nav-link<?= $disabledMyRepublikLinkClass ?> <?= ($id_menu == 'Checklist_Dokument_MyRep') ? 'active' : '' ?>"<?= $disabledMyRepublikLinkAttr ?>>
                                             <i class="far fa-dot-circle nav-icon"></i>
                                             <p>Checklist Dokument</p>
                                         </a>
@@ -761,9 +801,9 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                     </li>
                     <li class="nav-header">TARGET 110 M</li>
                     <li class="nav-item">
-                        <a href="<?= base_url('TargetInvoice') ?>" class="nav-link <?php if ($id_menu == 'TargetInvoice') {
+                        <a href="<?= base_url('TargetInvoice') ?>" class="nav-link<?= $disabledTargetInvoiceLinkClass ?> <?php if ($id_menu == 'TargetInvoice') {
                               echo "active";
-                          } ?>">
+                          } ?>"<?= $disabledTargetInvoiceLinkAttr ?>>
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
                                 Target Invoice
@@ -771,9 +811,9 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="<?= base_url('RincianInvoice') ?>" class="nav-link <?php if ($id_menu == 'RincianInvoice') {
+                        <a href="<?= base_url('RincianInvoice') ?>" class="nav-link<?= $disabledRincianInvoiceLinkClass ?> <?php if ($id_menu == 'RincianInvoice') {
                               echo "active";
-                          } ?>">
+                          } ?>"<?= $disabledRincianInvoiceLinkAttr ?>>
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>
                                 Rincian Invoice
@@ -1030,6 +1070,107 @@ $disabledBilcoLinkAttr = $canAccessBilco ? '' : ' tabindex="-1" aria-disabled="t
         </div>
         <!-- /.sidebar -->
     </aside>
+
+    <script>
+        (function () {
+            var baseUrl = <?= json_encode(base_url()) ?>;
+            var controllerAccess = <?= json_encode($pageAccessControllerMap) ?>;
+            if (!controllerAccess || typeof controllerAccess !== 'object') {
+                return;
+            }
+
+            function disableLink(linkEl) {
+                if (!linkEl || linkEl.classList.contains('menu-access-disabled')) {
+                    return;
+                }
+                linkEl.classList.add('menu-access-disabled');
+                linkEl.classList.remove('active');
+                linkEl.setAttribute('tabindex', '-1');
+                linkEl.setAttribute('aria-disabled', 'true');
+                linkEl.dataset.pageAccessDisabled = '1';
+                linkEl.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    return false;
+                });
+            }
+
+            function extractControllerFromHref(href) {
+                if (!href || href === '#') {
+                    return '';
+                }
+                var normalizedHref = String(href);
+                var normalizedBase = String(baseUrl || '');
+                if (normalizedBase !== '' && normalizedHref.indexOf(normalizedBase) === 0) {
+                    normalizedHref = normalizedHref.substring(normalizedBase.length);
+                } else {
+                    try {
+                        var parsed = new URL(normalizedHref, window.location.origin);
+                        normalizedHref = parsed.pathname || '';
+                    } catch (e) {
+                        return '';
+                    }
+                }
+                normalizedHref = normalizedHref.replace(/^\/+/, '');
+                if (normalizedHref === '') {
+                    return '';
+                }
+                var firstSegment = normalizedHref.split('/')[0] || '';
+                return firstSegment ? firstSegment.toUpperCase() : '';
+            }
+
+            var sidebarLinks = document.querySelectorAll('.main-sidebar .nav-sidebar a.nav-link[href]');
+            sidebarLinks.forEach(function (linkEl) {
+                var href = linkEl.getAttribute('href') || '';
+                var controllerName = extractControllerFromHref(href);
+                if (!controllerName) {
+                    return;
+                }
+                if (!Object.prototype.hasOwnProperty.call(controllerAccess, controllerName)) {
+                    return;
+                }
+                if (controllerAccess[controllerName] !== true) {
+                    disableLink(linkEl);
+                }
+            });
+
+            var treeItems = document.querySelectorAll('.main-sidebar .nav-sidebar li.nav-item.has-treeview');
+            treeItems.forEach(function (itemEl) {
+                var childPageLinks = itemEl.querySelectorAll('ul.nav-treeview a.nav-link[data-page-access-disabled]');
+                if (!childPageLinks.length) {
+                    return;
+                }
+                var allChildrenDisabled = true;
+                var allChildLinks = itemEl.querySelectorAll('ul.nav-treeview a.nav-link[href]');
+                allChildLinks.forEach(function (childLink) {
+                    if (!childLink.dataset.pageAccessDisabled) {
+                        allChildrenDisabled = false;
+                    }
+                });
+                if (!allChildrenDisabled) {
+                    return;
+                }
+                var parentLink = null;
+                for (var i = 0; i < itemEl.children.length; i++) {
+                    var childNode = itemEl.children[i];
+                    if (childNode && childNode.tagName === 'A' && childNode.classList.contains('nav-link')) {
+                        parentLink = childNode;
+                        break;
+                    }
+                }
+                disableLink(parentLink);
+                if (parentLink) {
+                    parentLink.classList.remove('active');
+                }
+                itemEl.classList.remove('menu-open');
+            });
+
+            // Normalisasi visual: link disabled tidak boleh terlihat "active".
+            var allDisabledLinks = document.querySelectorAll('.main-sidebar .nav-sidebar a.nav-link.menu-access-disabled');
+            allDisabledLinks.forEach(function (linkEl) {
+                linkEl.classList.remove('active');
+            });
+        })();
+    </script>
 
     <style>
         .premium-shell .main-header,

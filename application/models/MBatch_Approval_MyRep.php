@@ -217,18 +217,6 @@ class MBatch_Approval_MyRep extends CI_Model
                 ba.transfer_proof_file_name,
                 ba.transfer_proof_file_path,
                 ba.remark_batch_approval,
-                doc_group.id_doc_group AS batch_doc_group_id,
-                doc_item.id_doc_item AS batch_doc_item_id,
-                doc_package.id_doc_package AS batch_doc_package_id,
-                doc_package.status_package AS batch_doc_package_status,
-                doc_file.id_doc_file AS batch_doc_file_id,
-                doc_file.file_name AS batch_doc_file_name,
-                doc_file.file_path AS batch_doc_file_path,
-                doc_file.status_file AS batch_doc_status,
-                doc_file.is_document_not_required AS batch_doc_not_required,
-                doc_file.remark AS batch_doc_remark,
-                doc_file.approved_at AS batch_doc_approved_at,
-                doc_file.reviewed_at AS batch_doc_reviewed_at,
                 t.year_num,
                 t.month_num
             ')
@@ -249,6 +237,20 @@ class MBatch_Approval_MyRep extends CI_Model
             ->group_end();
 
         if ($this->batchDocumentTablesReady()) {
+            $this->db->select("
+                doc_group.id_doc_group AS batch_doc_group_id,
+                doc_item.id_doc_item AS batch_doc_item_id,
+                doc_package.id_doc_package AS batch_doc_package_id,
+                doc_package.status_package AS batch_doc_package_status,
+                doc_file.id_doc_file AS batch_doc_file_id,
+                doc_file.file_name AS batch_doc_file_name,
+                doc_file.file_path AS batch_doc_file_path,
+                doc_file.status_file AS batch_doc_status,
+                doc_file.is_document_not_required AS batch_doc_not_required,
+                doc_file.remark AS batch_doc_remark,
+                doc_file.approved_at AS batch_doc_approved_at,
+                doc_file.reviewed_at AS batch_doc_reviewed_at
+            ", false);
             $this->db
                 ->join("md_myrep_flow_doc_group doc_group", "doc_group.flow_type = 'BATCH_APPROVAL' AND doc_group.group_label = 'RAR' AND doc_group.is_active = 1", 'left', false)
                 ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'left')
@@ -265,7 +267,9 @@ class MBatch_Approval_MyRep extends CI_Model
                 NULL AS batch_doc_file_path,
                 NULL AS batch_doc_status,
                 NULL AS batch_doc_not_required,
-                NULL AS batch_doc_remark
+                NULL AS batch_doc_remark,
+                NULL AS batch_doc_approved_at,
+                NULL AS batch_doc_reviewed_at
             ", false);
         }
 
@@ -1426,7 +1430,16 @@ class MBatch_Approval_MyRep extends CI_Model
             return false;
         }
 
-        return (string) $this->session->userdata('nama_level') !== 'Super Admin';
+        $idLevel = (int) $this->session->userdata('id_level');
+        $levelName = strtolower(trim((string) $this->session->userdata('nama_level')));
+        if ($idLevel === 1 || $levelName === 'super admin') {
+            return false;
+        }
+        if ($idLevel === 2 || $levelName === 'admin') {
+            return false;
+        }
+
+        return true;
     }
 
     private function getTableFieldSet($tableName)

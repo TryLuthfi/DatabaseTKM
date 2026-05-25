@@ -615,7 +615,16 @@ class MBAK_MyRep extends CI_Model
             return false;
         }
 
-        return (string) $this->session->userdata('nama_level') !== 'Super Admin';
+        $idLevel = (int) $this->session->userdata('id_level');
+        $levelName = strtolower(trim((string) $this->session->userdata('nama_level')));
+        if ($idLevel === 1 || $levelName === 'super admin') {
+            return false;
+        }
+        if ($idLevel === 2 || $levelName === 'admin') {
+            return false;
+        }
+
+        return true;
     }
 
     public function clusterExists($clusterName, $targetId)

@@ -50,36 +50,11 @@ class Myrep_access_service
         }
 
         $userId = (int) $this->ci->session->userdata('id_user');
-        $userOverride = $this->getUserPermissionOverride($userId, $pageKey, $actionKey);
-        if ($userOverride !== null) {
-            return (bool) $userOverride;
+        if (function_exists('has_user_page_access')) {
+            return (bool) has_user_page_access('MyRepublik', $pageKey, $actionKey, $userId);
         }
 
-        if (!$this->ci->db->table_exists('tb_myrep_role_permission')) {
-            return true;
-        }
-
-        $roles = $this->getCurrentRoleKeys();
-        if (empty($roles)) {
-            return false;
-        }
-
-        $now = date('Y-m-d H:i:s');
-        $row = $this->ci->db
-            ->select('id_permission')
-            ->from('tb_myrep_role_permission')
-            ->where('page_key', $pageKey)
-            ->where('action_key', $actionKey)
-            ->where('is_allowed', 1)
-            ->where('is_active', 1)
-            ->where_in('role_key', $roles)
-            ->where("(effective_start IS NULL OR effective_start <= " . $this->ci->db->escape($now) . ")", null, false)
-            ->where("(effective_end IS NULL OR effective_end >= " . $this->ci->db->escape($now) . ")", null, false)
-            ->limit(1)
-            ->get()
-            ->row_array();
-
-        return !empty($row);
+        return true;
     }
 
     private function getUserPermissionOverride($userId, $pageKey, $actionKey)

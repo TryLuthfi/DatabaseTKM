@@ -487,7 +487,7 @@ foreach ($distributionRows as $row) {
                                         <td><?= $data['nama_sumber_material'] ?></td>
                                         <td><?= $data['status_sumber_material'] ?></td>
                                         <td><?= number_format((float) $data['jumlah_stok'], 0, ',', '.') ?></td>
-                                        <td><?= $data['nama_user'] ?></td>
+                                        <td><?= htmlspecialchars((string) ($data['nama_user'] ?? '-'), ENT_QUOTES) ?></td>
                                         <td><?= $data['tanggal_upload_stok'] ?></td>
                                     </tr>
                                 <?php endforeach; ?>

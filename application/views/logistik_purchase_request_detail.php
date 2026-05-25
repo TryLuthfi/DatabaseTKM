@@ -2,6 +2,10 @@
 $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
 $userValidation = (string) $this->session->userdata('validation');
+$validationKeys = function_exists('get_validation_key_list')
+    ? get_validation_key_list()
+    : [strtolower(str_replace(' ', '_', trim($userValidation)))];
+$canPlanningRole = in_array('planning', $validationKeys, true);
 $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
 $purchaseRequest = isset($purchase_request_meta) ? $purchase_request_meta : $detail_purchase_request[0];
 $isEditMode = $type !== 'view';
@@ -52,8 +56,7 @@ foreach ($approvalStages as $stage) {
         break;
     }
 }
-$normalizedValidation = strtolower(str_replace(' ', '_', trim($userValidation)));
-$canApproveCurrentStage = !$isEditMode && $currentApprovalKey !== '' && ($isSuperAdmin || ($normalizedValidation !== '' && $currentApprovalKey === $normalizedValidation));
+$canApproveCurrentStage = !$isEditMode && $currentApprovalKey !== '' && ($isSuperAdmin || in_array($currentApprovalKey, $validationKeys, true));
 $showSeparateApproveButton = !$isEditMode && $currentApprovalKey !== '' && $currentApprovalKey !== 'planning';
 $savePlanningLabel = ($currentApprovalKey === 'planning' || (int) ($purchaseRequest['approved_planning'] ?? 0) === 0)
     ? 'Simpan Review Planning'
@@ -741,7 +744,7 @@ foreach (($masterPabrikOptions ?? []) as $pabrikOption) {
                                 <a href="#" class="btn btn-outline-primary btn-upload-hardcopy" data-target="#modal-upload-hardcopy" data-toggle="modal">
                                     <i class="fas fa-upload"></i> Upload Hardcopy
                                 </a>
-                                <a href="#" class="btn btn-success btn-save-planning <?= (!$isSuperAdmin && $userValidation != 'Planning') ? 'disabled' : '' ?>" <?= $isEditMode ? '' : 'hidden' ?>>
+                                <a href="#" class="btn btn-success btn-save-planning <?= (!$isSuperAdmin && !$canPlanningRole) ? 'disabled' : '' ?>" <?= $isEditMode ? '' : 'hidden' ?>>
                                     <i class="fa fa-save mr-1"></i> <?= $savePlanningLabel ?>
                                 </a>
                             </div>
