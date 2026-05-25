@@ -26,6 +26,14 @@ class Myrep_access_service
     public function enforcePermission($pageKey, $actionKey, $message = '')
     {
         if (!$this->hasPermission($pageKey, $actionKey)) {
+            $normalizedAction = strtoupper(trim((string) $actionKey));
+            if ($normalizedAction === 'VIEW') {
+                if (isset($this->ci->session)) {
+                    $this->ci->session->set_flashdata('error', 'Akses modul My Republik sudah dinonaktifkan.');
+                }
+                redirect('Dashboard');
+                return false;
+            }
             render_no_access($message !== '' ? $message : 'Anda tidak memiliki akses ke menu ini.');
             return false;
         }

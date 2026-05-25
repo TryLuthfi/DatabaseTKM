@@ -44,8 +44,8 @@ if (!function_exists('sync_current_user_access_session')) {
 
         $now = time();
         $lastSyncAt = (int) $CI->session->userdata('access_sync_at');
-        $syncIntervalSeconds = 60;
-        if (!$force && $lastSyncAt > 0 && ($now - $lastSyncAt) < $syncIntervalSeconds) {
+        $syncIntervalSeconds = 0;
+        if (!$force && $syncIntervalSeconds > 0 && $lastSyncAt > 0 && ($now - $lastSyncAt) < $syncIntervalSeconds) {
             $syncedInRequest = true;
             return;
         }
