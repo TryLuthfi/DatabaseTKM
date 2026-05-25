@@ -97,6 +97,17 @@ $query_builder = TRUE;
 
 $env = parse_ini_file(__DIR__ . '/../../.env');
 
+$envPconnectRaw = isset($env['DB_PCONNECT']) ? strtolower(trim((string) $env['DB_PCONNECT'])) : '';
+$envSaveQueriesRaw = isset($env['DB_SAVE_QUERIES']) ? strtolower(trim((string) $env['DB_SAVE_QUERIES'])) : '';
+
+$pconnect = ($envPconnectRaw === '')
+    ? (ENVIRONMENT === 'production')
+    : in_array($envPconnectRaw, ['1', 'true', 'yes', 'on'], true);
+
+$saveQueries = ($envSaveQueriesRaw === '')
+    ? (ENVIRONMENT !== 'production')
+    : in_array($envSaveQueriesRaw, ['1', 'true', 'yes', 'on'], true);
+
 
 $db['default'] = array(
 	'dsn'	=> '',
@@ -106,7 +117,7 @@ $db['default'] = array(
 	'database' => $env['DATABASE'],
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
-	'pconnect' => FALSE,
+	'pconnect' => $pconnect,
 	'db_debug' => (ENVIRONMENT !== 'production'),
 	'cache_on' => FALSE,
 	'cachedir' => '',
@@ -117,5 +128,5 @@ $db['default'] = array(
 	'compress' => FALSE,
 	'stricton' => FALSE,
 	'failover' => array(),
-	'save_queries' => TRUE
+	'save_queries' => $saveQueries
 );
