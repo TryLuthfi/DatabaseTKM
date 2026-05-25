@@ -398,9 +398,9 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                             <button type="button" class="btn budget-btn budget-btn--ghost ml-2" data-toggle="modal" data-target="#modal-bak-import">
                                 <i class="fas fa-file-import mr-1"></i> Import Cluster Batch
                             </button>
-                            <a href="<?= base_url('BAK_MyRep/downloadReport?city=' . urlencode((string) $selectedCity) . '&status=' . urlencode((string) $selectedStatus)) ?>" class="btn budget-btn budget-btn--success">
+                            <button type="button" class="btn budget-btn budget-btn--success" data-toggle="modal" data-target="#modal-bak-download-report">
                                 <i class="fas fa-download mr-1"></i> Download Report BAK
-                            </a>
+                            </button>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1051,6 +1051,76 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
     <?php endif; ?>
 <?php endif; ?>
 
+<?php
+$regionalOptions = isset($regionalOptions) && is_array($regionalOptions) ? $regionalOptions : [];
+$cityOptionsByRegional = isset($cityOptionsByRegional) && is_array($cityOptionsByRegional) ? $cityOptionsByRegional : [];
+$regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOptionsByCity) ? $regionalOptionsByCity : [];
+?>
+<div class="modal fade" id="modal-bak-download-report" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="modalBakDownloadReportLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content budget-modal bak-modal-shell">
+            <div class="modal-header budget-modal__header">
+                <div>
+                    <span class="budget-modal__eyebrow">BAK MyRep</span>
+                    <h5 class="modal-title mb-1" id="modalBakDownloadReportLabel">Download Report BAK</h5>
+                    <p class="mb-0 budget-modal__subtitle">Ekspor report BAK dengan filter regional, kota, dan rentang tanggal BAK.</p>
+                </div>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="doc-modal-panel mb-3">
+                    <div class="doc-modal-title mb-1">Report BAK</div>
+                    <p class="doc-modal-subtitle mb-0">Jika regional dan kota tidak dipilih, sistem akan download semua data sesuai filter status di halaman.</p>
+                </div>
+                <div class="budget-form-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Regional</label>
+                                <select id="bak_download_regional" class="form-control" multiple>
+                                    <?php foreach ($regionalOptions as $regionalOption): ?>
+                                        <option value="<?= htmlspecialchars((string) $regionalOption, ENT_QUOTES) ?>"><?= htmlspecialchars((string) $regionalOption) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Kota</label>
+                                <select id="bak_download_city" class="form-control" multiple>
+                                    <?php foreach ($cityOptions as $cityOption): ?>
+                                        <option value="<?= htmlspecialchars((string) $cityOption, ENT_QUOTES) ?>"><?= htmlspecialchars((string) $cityOption) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Tanggal BAK Start</label>
+                                <input type="date" id="bak_download_date_start" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-0">
+                                <label>Tanggal BAK End</label>
+                                <input type="date" id="bak_download_date_end" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer budget-modal__footer">
+                <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn budget-btn budget-btn--success" id="bak-download-report-submit-btn">
+                    <i class="fas fa-download mr-1"></i> Download Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .bak-filter-card,
     .bak-table-card {
@@ -1319,6 +1389,42 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
         box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
     }
 
+    .bak-modal-shell .select2-container--default .select2-selection--multiple {
+        min-height: 44px;
+        border-radius: 12px;
+        border: 1px solid #cfe0ee;
+        background: #fff;
+        padding: 4px .9rem;
+        box-shadow: none;
+    }
+
+    .bak-modal-shell .select2-container--default .select2-selection--multiple .select2-search--inline .select2-search__field {
+        margin-top: 4px;
+        font-size: 0.95rem;
+        height: 28px;
+    }
+
+    .bak-modal-shell .select2-container--default .select2-selection--multiple .select2-search__field::placeholder {
+        color: #7b8794;
+    }
+
+    .bak-modal-shell .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        margin-top: 4px;
+        background: #e8f3fb;
+        border: 1px solid #bdd8ea;
+        color: #1d4f73;
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    .bak-modal-shell .select2-container--default.select2-container--focus .select2-selection--multiple,
+    .bak-modal-shell .select2-container--default.select2-container--open .select2-selection--multiple {
+        border-color: #55a7d5;
+        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
     .bak-modal-shell .form-control[readonly],
     .bak-modal-shell .form-control:disabled,
     .doc-modal .form-control[readonly],
@@ -1579,6 +1685,7 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
         z-index: 1065;
     }
 
+
     @media (max-width: 991.98px) {
         .modal-xxl {
             max-width: 94vw;
@@ -1616,6 +1723,10 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
         var bakVillageOptionsUrl = '<?= base_url('BAK_MyRep/getVillageOptions') ?>';
         var bakPreviewImportUrl = '<?= base_url('BAK_MyRep/previewClusterImport') ?>';
         var bakSaveImportUrl = '<?= base_url('BAK_MyRep/saveImportedClusters') ?>';
+        var bakDownloadReportUrl = '<?= base_url('BAK_MyRep/downloadReport') ?>';
+        var bakCityOptionsByRegional = <?= json_encode($cityOptionsByRegional, JSON_UNESCAPED_UNICODE) ?>;
+        var bakRegionalOptionsByCity = <?= json_encode($regionalOptionsByCity, JSON_UNESCAPED_UNICODE) ?>;
+        var bakSelectedStatus = '<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>';
         var currentBakDetailClusterId = 0;
         var importedBakRows = [];
 
@@ -2581,6 +2692,143 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         alert('Terjadi kesalahan saat menyimpan import cluster BAK.');
                     }
                 });
+            });
+
+            function getSelectedArray($el) {
+                var values = $el.val();
+                return Array.isArray(values) ? values.filter(Boolean) : [];
+            }
+
+            function toUpperUnique(values) {
+                return Array.from(new Set((values || []).map(function (v) { return String(v || '').toUpperCase().trim(); }).filter(Boolean)));
+            }
+
+            function allRegionalOptions() {
+                return toUpperUnique(Object.keys(bakCityOptionsByRegional || {}));
+            }
+
+            function allCityOptions() {
+                var cities = [];
+                Object.keys(bakCityOptionsByRegional || {}).forEach(function (regional) {
+                    cities = cities.concat(bakCityOptionsByRegional[regional] || []);
+                });
+                return toUpperUnique(cities);
+            }
+
+            function allowedCitiesByRegionals(regionals) {
+                if (!regionals.length) return allCityOptions();
+                var cities = [];
+                regionals.forEach(function (regional) {
+                    cities = cities.concat(bakCityOptionsByRegional[regional] || []);
+                });
+                return toUpperUnique(cities);
+            }
+
+            function allowedRegionalsByCities(cities) {
+                if (!cities.length) return allRegionalOptions();
+                var regionals = [];
+                cities.forEach(function (city) {
+                    regionals = regionals.concat(bakRegionalOptionsByCity[city] || []);
+                });
+                return toUpperUnique(regionals);
+            }
+
+            function renderSelectOptions($el, availableValues, selectedValues) {
+                var selectedSet = {};
+                selectedValues.forEach(function (v) { selectedSet[String(v).toUpperCase()] = true; });
+                var html = '';
+                availableValues.forEach(function (value) {
+                    var selectedAttr = selectedSet[String(value).toUpperCase()] ? ' selected' : '';
+                    html += '<option value="' + escapeHtml(value) + '"' + selectedAttr + '>' + escapeHtml(value) + '</option>';
+                });
+                $el.html(html).trigger('change.select2');
+            }
+
+            function syncBakRegionCityFilters(changedFrom) {
+                var $regional = $('#bak_download_regional');
+                var $city = $('#bak_download_city');
+                var selectedRegionals = toUpperUnique(getSelectedArray($regional));
+                var selectedCities = toUpperUnique(getSelectedArray($city));
+                var changed = true;
+                var guard = 0;
+
+                while (changed && guard < 5) {
+                    guard++;
+                    changed = false;
+
+                    var allowedCities = allowedCitiesByRegionals(selectedRegionals);
+                    var nextSelectedCities = selectedCities.filter(function (city) { return allowedCities.indexOf(city) !== -1; });
+                    if (nextSelectedCities.length !== selectedCities.length) {
+                        selectedCities = nextSelectedCities;
+                        changed = true;
+                    }
+
+                    var allowedRegionals = allowedRegionalsByCities(selectedCities);
+                    var nextSelectedRegionals = selectedRegionals.filter(function (regional) { return allowedRegionals.indexOf(regional) !== -1; });
+                    if (nextSelectedRegionals.length !== selectedRegionals.length) {
+                        selectedRegionals = nextSelectedRegionals;
+                        changed = true;
+                    }
+                }
+
+                var finalAllowedRegionals = allowedRegionalsByCities(selectedCities);
+                var finalAllowedCities = allowedCitiesByRegionals(selectedRegionals);
+
+                if (changedFrom === 'regional' && selectedRegionals.length) {
+                    finalAllowedCities = allowedCitiesByRegionals(selectedRegionals);
+                }
+                if (changedFrom === 'city' && selectedCities.length) {
+                    finalAllowedRegionals = allowedRegionalsByCities(selectedCities);
+                }
+
+                renderSelectOptions($regional, finalAllowedRegionals, selectedRegionals);
+                renderSelectOptions($city, finalAllowedCities, selectedCities);
+            }
+
+            $('#modal-bak-download-report').on('shown.bs.modal', function () {
+                $('#bak_download_date_start').val('');
+                $('#bak_download_date_end').val('');
+
+                $('#bak_download_regional, #bak_download_city').select2({
+                    width: '100%',
+                    dropdownParent: $('#modal-bak-download-report'),
+                    placeholder: 'Pilih satu atau lebih',
+                    allowClear: true
+                });
+
+                renderSelectOptions($('#bak_download_regional'), allRegionalOptions(), []);
+                renderSelectOptions($('#bak_download_city'), allCityOptions(), []);
+            });
+
+            $('#bak_download_regional').on('change', function () {
+                syncBakRegionCityFilters('regional');
+            });
+
+            $('#bak_download_city').on('change', function () {
+                syncBakRegionCityFilters('city');
+            });
+
+            $('#bak-download-report-submit-btn').on('click', function () {
+                var regionalValues = getSelectedArray($('#bak_download_regional'));
+                var cityValues = getSelectedArray($('#bak_download_city'));
+                var bakDateStart = ($('#bak_download_date_start').val() || '').trim();
+                var bakDateEnd = ($('#bak_download_date_end').val() || '').trim();
+
+                if (bakDateStart && bakDateEnd && bakDateStart > bakDateEnd) {
+                    alert('Tanggal BAK start tidak boleh lebih besar dari end.');
+                    return;
+                }
+
+                var params = new URLSearchParams();
+                if (bakSelectedStatus) {
+                    params.set('status', bakSelectedStatus);
+                }
+                regionalValues.forEach(function (regional) { params.append('regional[]', regional); });
+                cityValues.forEach(function (city) { params.append('city[]', city); });
+                if (bakDateStart) params.set('bak_date_start', bakDateStart);
+                if (bakDateEnd) params.set('bak_date_end', bakDateEnd);
+
+                window.location.href = bakDownloadReportUrl + '?' + params.toString();
             });
         });
     })();

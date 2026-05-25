@@ -208,7 +208,7 @@ class MBAK_MyRep extends CI_Model
         return $cities;
     }
 
-    public function getBakRows($city = '', $status = '')
+    public function getBakRows($city = '', $status = '', $regional = '', array $cityList = [], array $regionalList = [], $bakDateStart = '', $bakDateEnd = '')
     {
         if (!$this->bakTablesReady()) {
             return [];
@@ -261,8 +261,37 @@ class MBAK_MyRep extends CI_Model
             $this->db->where('UPPER(c.city_name) IN (' . implode(',', $escapedCities) . ')', null, false);
         }
 
+        if ($regional !== '') {
+            $this->db->where('UPPER(c.regional_name)', strtoupper($regional));
+        }
+        if (!empty($regionalList)) {
+            $normalizedRegionals = array_values(array_unique(array_filter(array_map(static function ($value) {
+                return strtoupper(trim((string) $value));
+            }, $regionalList))));
+            if (!empty($normalizedRegionals)) {
+                $escapedRegionals = array_map([$this->db, 'escape'], $normalizedRegionals);
+                $this->db->where('UPPER(c.regional_name) IN (' . implode(',', $escapedRegionals) . ')', null, false);
+            }
+        }
+
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
+        }
+        if (!empty($cityList)) {
+            $normalizedCities = array_values(array_unique(array_filter(array_map(static function ($value) {
+                return strtoupper(trim((string) $value));
+            }, $cityList))));
+            if (!empty($normalizedCities)) {
+                $escapedCities = array_map([$this->db, 'escape'], $normalizedCities);
+                $this->db->where('UPPER(c.city_name) IN (' . implode(',', $escapedCities) . ')', null, false);
+            }
+        }
+
+        if ($bakDateStart !== '') {
+            $this->db->where('b.bak_date >=', $bakDateStart);
+        }
+        if ($bakDateEnd !== '') {
+            $this->db->where('b.bak_date <=', $bakDateEnd);
         }
 
         if ($status !== '') {
@@ -279,6 +308,158 @@ class MBAK_MyRep extends CI_Model
             ->order_by('c.cluster_name', 'ASC')
             ->get()
             ->result_array();
+    }
+
+    public function getRegionalOptions()
+    {
+        if (!$this->bakTablesReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->distinct()
+            ->select('regional_name')
+            ->from('tb_myrep_cluster')
+            ->where('regional_name IS NOT NULL', null, false)
+            ->where("TRIM(regional_name) !=", '')
+            ->order_by('regional_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if ($this->shouldRestrictCityByUser() && empty($allowedCitySet)) {
+            return [];
+        }
+
+        $regionals = [];
+        foreach ($rows as $row) {
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            if ($regionalName === '') {
+                continue;
+            }
+
+            if (!$this->shouldRestrictCityByUser()) {
+                $regionals[] = $regionalName;
+                continue;
+            }
+
+            $hasAllowedCity = $this->db
+                ->select('id_myrep_cluster')
+                ->from('tb_myrep_cluster')
+                ->where('UPPER(regional_name)', $regionalName)
+                ->where_in('UPPER(city_name)', array_keys($allowedCitySet))
+                ->limit(1)
+                ->get()
+                ->num_rows() > 0;
+
+            if ($hasAllowedCity) {
+                $regionals[] = $regionalName;
+            }
+        }
+
+        return array_values(array_unique($regionals));
+    }
+
+    public function getCityOptionsByRegional()
+    {
+        if (!$this->bakTablesReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->distinct()
+            ->select('regional_name, city_name')
+            ->from('tb_myrep_cluster')
+            ->where('regional_name IS NOT NULL', null, false)
+            ->where('city_name IS NOT NULL', null, false)
+            ->where("TRIM(regional_name) !=", '')
+            ->where("TRIM(city_name) !=", '')
+            ->order_by('regional_name', 'ASC')
+            ->order_by('city_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if ($this->shouldRestrictCityByUser() && empty($allowedCitySet)) {
+            return [];
+        }
+
+        $map = [];
+        foreach ($rows as $row) {
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($regionalName === '' || $cityName === '') {
+                continue;
+            }
+
+            if ($this->shouldRestrictCityByUser() && !isset($allowedCitySet[$cityName])) {
+                continue;
+            }
+
+            if (!isset($map[$regionalName])) {
+                $map[$regionalName] = [];
+            }
+            $map[$regionalName][] = $cityName;
+        }
+
+        foreach ($map as $regional => $cities) {
+            $cities = array_values(array_unique($cities));
+            sort($cities);
+            $map[$regional] = $cities;
+        }
+
+        return $map;
+    }
+
+    public function getRegionalOptionsByCity()
+    {
+        if (!$this->bakTablesReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->distinct()
+            ->select('regional_name, city_name')
+            ->from('tb_myrep_cluster')
+            ->where('regional_name IS NOT NULL', null, false)
+            ->where('city_name IS NOT NULL', null, false)
+            ->where("TRIM(regional_name) !=", '')
+            ->where("TRIM(city_name) !=", '')
+            ->order_by('city_name', 'ASC')
+            ->order_by('regional_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if ($this->shouldRestrictCityByUser() && empty($allowedCitySet)) {
+            return [];
+        }
+
+        $map = [];
+        foreach ($rows as $row) {
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($regionalName === '' || $cityName === '') {
+                continue;
+            }
+
+            if ($this->shouldRestrictCityByUser() && !isset($allowedCitySet[$cityName])) {
+                continue;
+            }
+
+            if (!isset($map[$cityName])) {
+                $map[$cityName] = [];
+            }
+            $map[$cityName][] = $regionalName;
+        }
+
+        foreach ($map as $city => $regionals) {
+            $regionals = array_values(array_unique($regionals));
+            sort($regionals);
+            $map[$city] = $regionals;
+        }
+
+        return $map;
     }
 
     public function ensureBakDocumentSetup()

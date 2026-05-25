@@ -39,6 +39,9 @@ class BAK_MyRep extends CI_Controller
         }
         $data['canApprove'] = $this->isApprover();
         $data['cityOptions'] = $this->MBAK_MyRep->getCityOptions();
+        $data['regionalOptions'] = $this->MBAK_MyRep->getRegionalOptions();
+        $data['cityOptionsByRegional'] = $this->MBAK_MyRep->getCityOptionsByRegional();
+        $data['regionalOptionsByCity'] = $this->MBAK_MyRep->getRegionalOptionsByCity();
         $data['targetOptions'] = $this->MBAK_MyRep->getTargetOptions();
         $data['createTargetOptions'] = $this->MBAK_MyRep->getCreateTargetOptions();
         $data['clusterRows'] = $data['isReady']
@@ -671,9 +674,17 @@ class BAK_MyRep extends CI_Controller
             return;
         }
 
-        $selectedCity = strtoupper(trim((string) $this->input->get('city')));
+        $rawCity = $this->input->get('city');
+        $selectedCity = is_array($rawCity) ? '' : strtoupper(trim((string) $rawCity));
         $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
-        $rows = $this->MBAK_MyRep->getBakRows($selectedCity, $selectedStatus);
+        $rawRegional = $this->input->get('regional');
+        $selectedRegional = is_array($rawRegional) ? '' : strtoupper(trim((string) $rawRegional));
+        $regionalList = $this->normalizeUpperList($this->input->get('regional'));
+        $cityList = $this->normalizeUpperList($this->input->get('city'));
+        $bakDateStart = $this->normalizeDate($this->input->get('bak_date_start')) ?: '';
+        $bakDateEnd = $this->normalizeDate($this->input->get('bak_date_end')) ?: '';
+
+        $rows = $this->MBAK_MyRep->getBakRows($selectedCity, $selectedStatus, $selectedRegional, $cityList, $regionalList, $bakDateStart, $bakDateEnd);
 
         $documentDefinitions = [];
         $documentMap = [];
@@ -1412,6 +1423,20 @@ class BAK_MyRep extends CI_Controller
         $normalized = str_replace(',', '.', $normalized);
 
         return (float) $normalized;
+    }
+
+    private function normalizeUpperList($value)
+    {
+        $items = is_array($value) ? $value : [$value];
+        $normalized = [];
+        foreach ($items as $item) {
+            $label = strtoupper(trim((string) $item));
+            if ($label !== '') {
+                $normalized[] = $label;
+            }
+        }
+
+        return array_values(array_unique($normalized));
     }
 
     private function parseBakImportHeader($header)
