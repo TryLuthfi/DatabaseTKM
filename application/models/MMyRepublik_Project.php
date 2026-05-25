@@ -824,7 +824,11 @@ class MMyRepublik_Project extends CI_Model
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'left');
 
         if ($selectedCity !== '') {
-            $this->db->where('UPPER(COALESCE(mt.city_name, c.city_name))', strtoupper($selectedCity));
+            $this->db->where(
+                'UPPER(COALESCE(mt.city_name, c.city_name)) = ' . $this->db->escape(strtoupper($selectedCity)),
+                null,
+                false
+            );
         }
 
         $rows = $this->db->get()->result_array();
