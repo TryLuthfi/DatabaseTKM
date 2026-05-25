@@ -99,6 +99,14 @@ $env = parse_ini_file(__DIR__ . '/../../.env');
 
 $envPconnectRaw = isset($env['DB_PCONNECT']) ? strtolower(trim((string) $env['DB_PCONNECT'])) : '';
 $envSaveQueriesRaw = isset($env['DB_SAVE_QUERIES']) ? strtolower(trim((string) $env['DB_SAVE_QUERIES'])) : '';
+$envPortRaw = isset($env['DB_PORT']) ? trim((string) $env['DB_PORT']) : '';
+
+$hostname = isset($env['HOSTNAME']) ? trim((string) $env['HOSTNAME']) : '127.0.0.1';
+$dbPort = ctype_digit($envPortRaw) ? (int) $envPortRaw : 3306;
+$hostnameWithPort = $hostname;
+if (strpos($hostname, ':') === false && $dbPort > 0) {
+	$hostnameWithPort = $hostname . ':' . $dbPort;
+}
 
 $pconnect = ($envPconnectRaw === '')
     ? (ENVIRONMENT === 'production')
@@ -111,10 +119,10 @@ $saveQueries = ($envSaveQueriesRaw === '')
 
 $db['default'] = array(
 	'dsn'	=> '',
-	'hostname' => $env['HOSTNAME'],
-	'username' => $env['USERNAME'],
-	'password' => $env['PASSWORD'],
-	'database' => $env['DATABASE'],
+	'hostname' => $hostnameWithPort,
+	'username' => isset($env['USERNAME']) ? $env['USERNAME'] : '',
+	'password' => isset($env['PASSWORD']) ? $env['PASSWORD'] : '',
+	'database' => isset($env['DATABASE']) ? $env['DATABASE'] : '',
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => $pconnect,

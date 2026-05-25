@@ -796,6 +796,13 @@ class Monitoring_RFS_MyRep extends CI_Controller
             return;
         }
 
+        $rpmApprovalStatus = strtoupper(trim((string) ($claim['rpm_approval_status'] ?? '')));
+        if ($rpmApprovalStatus === 'REJECTED') {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Claim sudah direject RPM, approval HO tidak dapat dilakukan.');
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));
+            return;
+        }
+
         if (($claim['status_claim'] ?? '') !== 'WAITING APPROVAL HO') {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Claim ini belum siap untuk approval HO.');
             redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity));

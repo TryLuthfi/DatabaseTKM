@@ -10,7 +10,6 @@ class Myrep_notification_service
     public function __construct()
     {
         $this->ci =& get_instance();
-        $this->ci->load->database();
         $this->config = $this->loadConfig();
     }
 

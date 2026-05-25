@@ -14,7 +14,6 @@ class Myrep_access_service
     public function __construct()
     {
         $this->ci = &get_instance();
-        $this->ci->load->database();
         $this->ci->load->helper('access');
     }
 

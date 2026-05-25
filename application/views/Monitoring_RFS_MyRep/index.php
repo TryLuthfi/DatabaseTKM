@@ -2144,7 +2144,15 @@ if (!empty($kpiDetailRowMap)) {
                                             <?php } ?>
                                         </td>
                                         <td style="min-width: 280px;">
-                                            <?php if ($canApprove && $canApprovalAction && in_array(($claim['status_claim'] ?? ''), ['WAITING APPROVAL HO', 'APPROVED', 'REJECTED'], true)) { ?>
+                                            <?php
+                                            $rpmApprovalStatusUpper = strtoupper(trim((string) ($claim['rpm_approval_status'] ?? '')));
+                                            $isRejectedByRpm = $rpmApprovalStatusUpper === 'REJECTED';
+                                            $canUpdateHoClaim = $canApprove
+                                                && $canApprovalAction
+                                                && in_array(($claim['status_claim'] ?? ''), ['WAITING APPROVAL HO', 'APPROVED', 'REJECTED'], true)
+                                                && !$isRejectedByRpm;
+                                            ?>
+                                            <?php if ($canUpdateHoClaim) { ?>
                                                 <form method="post"
                                                     action="<?= base_url('Monitoring_RFS_MyRep/updateClaimStatus') ?>">
                                                     <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
@@ -2175,7 +2183,11 @@ if (!empty($kpiDetailRowMap)) {
                                                 </form>
                                             <?php } else { ?>
                                                 <small>
-                                                    <?= !empty($claim['approved_name']) ? 'By: ' . htmlspecialchars($claim['approved_name'] ?? '') : (($claim['status_claim'] ?? '') === 'WAITING APPROVAL RPM' ? 'Menunggu approval RPM' : 'Menunggu PIC HO') ?><br>
+                                                    <?php if ($isRejectedByRpm) { ?>
+                                                        Ditolak RPM, approval HO tidak tersedia.
+                                                    <?php } else { ?>
+                                                        <?= !empty($claim['approved_name']) ? 'By: ' . htmlspecialchars($claim['approved_name'] ?? '') : (($claim['status_claim'] ?? '') === 'WAITING APPROVAL RPM' ? 'Menunggu approval RPM' : 'Menunggu PIC HO') ?><br>
+                                                    <?php } ?>
                                                     <?= htmlspecialchars((string) $claim['approval_note']) ?>
                                                 </small>
                                             <?php } ?>

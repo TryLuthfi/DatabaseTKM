@@ -7,7 +7,6 @@ class Backup extends CI_Controller
     public function __construct()
     {
         parent::__construct();
-        $this->load->database();
         $this->load->dbutil();
         $this->load->helper(array('file', 'download', 'url'));
     }
