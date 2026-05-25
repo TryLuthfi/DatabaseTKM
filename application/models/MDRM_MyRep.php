@@ -1097,18 +1097,22 @@ class MDRM_MyRep extends CI_Model
     {
         $clusterHeader = $this->getDrmBoqHeader($clusterId, 'CLUSTER');
         $subfeederHeader = $this->getDrmBoqHeader($clusterId, 'SUBFEEDER');
-        if (empty($clusterHeader['id_drm_boq']) || empty($subfeederHeader['id_drm_boq'])) {
+        if (empty($clusterHeader['id_drm_boq'])) {
             return;
         }
 
         $clusterStatus = strtoupper(trim((string) ($clusterHeader['review_status'] ?? '')));
-        $subfeederStatus = strtoupper(trim((string) ($subfeederHeader['review_status'] ?? '')));
-        if ($clusterStatus !== 'APPROVED' || $subfeederStatus !== 'APPROVED') {
+        if ($clusterStatus !== 'APPROVED') {
             return;
         }
 
         $clusterItems = $this->getDrmBoqItems($clusterId, 'CLUSTER');
-        $subfeederItems = $this->getDrmBoqItems($clusterId, 'SUBFEEDER');
+        $subfeederStatus = strtoupper(trim((string) ($subfeederHeader['review_status'] ?? '')));
+        $subfeederItems = [];
+        if (!empty($subfeederHeader['id_drm_boq']) && $subfeederStatus === 'APPROVED') {
+            $subfeederItems = $this->getDrmBoqItems($clusterId, 'SUBFEEDER');
+        }
+
         $mergedItems = $this->mergeBoqItemsForBaseline($clusterItems, $subfeederItems);
         if (empty($mergedItems)) {
             return;
@@ -1130,7 +1134,8 @@ class MDRM_MyRep extends CI_Model
             'approved_by' => (int) $userId,
         ];
         if ($this->db->field_exists('scope_type', 'tb_myrep_boq_baseline')) {
-            // Implementasi currently reads CLUSTER scope; combined baseline is stored in this scope.
+            // Implementasi reads CLUSTER scope. This can be CLUSTER-only first, then auto-merged
+            // with SUBFEEDER when SUBFEEDER BOQ is approved later.
             $baselinePayload['scope_type'] = 'CLUSTER';
         }
         $this->db->insert('tb_myrep_boq_baseline', $baselinePayload);

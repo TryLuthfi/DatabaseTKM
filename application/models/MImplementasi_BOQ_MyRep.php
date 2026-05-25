@@ -623,12 +623,42 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             }
         }
 
+        $activeBaselineClusterMap = $this->getActiveBaselineClusterMap($clusterIds);
         $eligibilityMap = [];
         foreach ($clusterIds as $clusterId) {
-            $eligibilityMap[$clusterId] = !empty($statusMap[$clusterId]['DRM']) && !empty($statusMap[$clusterId]['DRM_SUBFEEDER']);
+            $hasDrmDoc = !empty($statusMap[$clusterId]['DRM']);
+            $hasSubfeederDoc = !empty($statusMap[$clusterId]['DRM_SUBFEEDER']);
+            $hasActiveBaseline = !empty($activeBaselineClusterMap[$clusterId]);
+            $eligibilityMap[$clusterId] = $hasDrmDoc && ($hasSubfeederDoc || $hasActiveBaseline);
         }
 
         return $eligibilityMap;
+    }
+
+    private function getActiveBaselineClusterMap(array $clusterIds)
+    {
+        $clusterIds = array_values(array_filter(array_map('intval', $clusterIds)));
+        if (empty($clusterIds) || !$this->db->table_exists('tb_myrep_boq_baseline')) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('id_myrep_cluster')
+            ->from('tb_myrep_boq_baseline')
+            ->where_in('id_myrep_cluster', $clusterIds)
+            ->where('status_baseline', 'ACTIVE')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            if ($clusterId > 0) {
+                $map[$clusterId] = true;
+            }
+        }
+
+        return $map;
     }
 
     public function getBaselineCompareRows($clusterId)
