@@ -2063,6 +2063,9 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
         $allowedCitySet = $this->getCurrentUserAllowedCitySet();
         if (empty($allowedCitySet)) {
+            if (method_exists($this->db, 'reset_query')) {
+                $this->db->reset_query();
+            }
             return false;
         }
 

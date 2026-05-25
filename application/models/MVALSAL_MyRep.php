@@ -1246,6 +1246,11 @@ class MVALSAL_MyRep extends CI_Model
 
         $allowedCitySet = $this->getCurrentUserAllowedCitySet();
         if (empty($allowedCitySet)) {
+            // Prevent leaking partial query-builder state to the next query
+            // when caller exits early (return []).
+            if (method_exists($this->db, 'reset_query')) {
+                $this->db->reset_query();
+            }
             return false;
         }
 
