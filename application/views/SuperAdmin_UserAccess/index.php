@@ -90,7 +90,7 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
                                             <?php $moduleKey = (string) $moduleOption; ?>
                                             <th class="text-center" style="min-width: 140px;" data-module-col="<?= htmlspecialchars($moduleKey, ENT_QUOTES) ?>">
                                                 <div class="font-weight-bold"><?= htmlspecialchars($moduleKey) ?></div>
-                                                <label class="mb-0 small mt-1 d-inline-flex align-items-center">
+                                                <label class="mb-0 small mt-1 d-inline-flex align-items-center js-no-sort-toggle">
                                                     <input type="checkbox" class="mr-1 js-toggle-module-col" data-module="<?= htmlspecialchars($moduleKey, ENT_QUOTES) ?>">
                                                     all
                                                 </label>
@@ -199,7 +199,7 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
                                         <?php foreach ($generalActionOptions as $actionKey): ?>
                                             <th class="text-center" style="min-width: 110px;">
                                                 <div class="font-weight-bold"><?= htmlspecialchars((string) $actionKey) ?></div>
-                                                <label class="mb-0 small mt-1 d-inline-flex align-items-center">
+                                                <label class="mb-0 small mt-1 d-inline-flex align-items-center js-no-sort-toggle">
                                                     <input
                                                         type="checkbox"
                                                         class="mr-1 js-general-col-toggle"
@@ -243,6 +243,10 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
                 autoWidth: false
             });
         }
+
+        $(document).on('click mousedown', '.js-toggle-module-col, .js-general-col-toggle, .js-no-sort-toggle', function (event) {
+            event.stopPropagation();
+        });
 
         function initGeneralSelectSearch() {
             if (!$.fn.select2) {
