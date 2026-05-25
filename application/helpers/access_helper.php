@@ -482,6 +482,11 @@ if (!function_exists('get_user_page_access_override')) {
             return null;
         }
 
+        // Ensure this helper query is isolated from any previous query builder state.
+        if (method_exists($CI->db, 'reset_query')) {
+            $CI->db->reset_query();
+        }
+
         $now = date('Y-m-d H:i:s');
         $row = (array) $CI->db
             ->select('is_allowed')
@@ -495,6 +500,10 @@ if (!function_exists('get_user_page_access_override')) {
             ->limit(1)
             ->get()
             ->row_array();
+
+        if (method_exists($CI->db, 'reset_query')) {
+            $CI->db->reset_query();
+        }
 
         if (empty($row)) {
             $cache[$cacheKey] = null;
