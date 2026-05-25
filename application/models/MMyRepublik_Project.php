@@ -824,8 +824,13 @@ class MMyRepublik_Project extends CI_Model
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'left');
 
         if ($selectedCity !== '') {
+            $legacyCityExpr = 'mt.city_name';
+            if ($this->db->field_exists('city_name', 'tb_rfs_myrep_cluster')) {
+                $legacyCityExpr = 'COALESCE(mt.city_name, c.city_name)';
+            }
+
             $this->db->where(
-                'UPPER(COALESCE(mt.city_name, c.city_name)) = ' . $this->db->escape(strtoupper($selectedCity)),
+                'UPPER(' . $legacyCityExpr . ') = ' . $this->db->escape(strtoupper($selectedCity)),
                 null,
                 false
             );
