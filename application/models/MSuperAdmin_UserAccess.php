@@ -380,7 +380,7 @@ class MSuperAdmin_UserAccess extends CI_Model
 
         $this->db
             ->from('tb_master_user_new u')
-            ->select('u.id, u.nik, u.nama_karyawan, u.username_user, u.status_user, u.id_level');
+            ->select('u.id, u.nik, u.nama_karyawan, u.homebase, u.username_user, u.status_user, u.id_level');
 
         if ($hasLevelTable) {
             $this->db
@@ -394,6 +394,7 @@ class MSuperAdmin_UserAccess extends CI_Model
             ->group_by('u.id')
             ->group_by('u.nik')
             ->group_by('u.nama_karyawan')
+            ->group_by('u.homebase')
             ->group_by('u.username_user')
             ->group_by('u.status_user')
             ->group_by('u.id_level');

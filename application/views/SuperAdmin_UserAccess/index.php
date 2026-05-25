@@ -85,6 +85,7 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
                                         <th style="min-width: 120px;">NIK</th>
                                         <th style="min-width: 220px;">Nama</th>
                                         <th style="min-width: 120px;">Status</th>
+                                        <th style="min-width: 140px;">Homebase</th>
                                         <?php foreach ($menuModuleOptions as $moduleOption): ?>
                                             <?php $moduleKey = (string) $moduleOption; ?>
                                             <th class="text-center" style="min-width: 140px;" data-module-col="<?= htmlspecialchars($moduleKey, ENT_QUOTES) ?>">
@@ -106,6 +107,7 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
                                             <td><?= htmlspecialchars((string) ($row['nik'] ?? '-')) ?></td>
                                             <td><?= htmlspecialchars((string) ($row['nama_karyawan'] ?? '-')) ?></td>
                                             <td><?= htmlspecialchars((string) ($row['status_user'] ?? '-')) ?></td>
+                                            <td><?= htmlspecialchars((string) ($row['homebase'] ?? '-')) ?></td>
                                             <?php foreach ($menuModuleOptions as $moduleOption): ?>
                                                 <?php
                                                 $moduleKey = (string) $moduleOption;
