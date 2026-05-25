@@ -478,9 +478,9 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                             <button type="button" class="btn budget-btn budget-btn--ghost ml-2" data-toggle="modal" data-target="#modal-valsal-import">
                                 <i class="fas fa-file-import mr-1"></i> Import VALSAL Batch
                             </button>
-                            <a href="<?= base_url('VALSAL_MyRep/downloadReport?city=' . urlencode((string) $selectedCity) . '&status=' . urlencode((string) $selectedStatus)) ?>" class="btn budget-btn budget-btn--success">
+                            <button type="button" class="btn budget-btn budget-btn--success" data-toggle="modal" data-target="#modal-valsal-download-report">
                                 <i class="fas fa-download mr-1"></i> Download Report Valsal
-                            </a>
+                            </button>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1112,6 +1112,76 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
     <?php endif; ?>
 <?php endif; ?>
 
+<?php
+$regionalOptions = isset($regionalOptions) && is_array($regionalOptions) ? $regionalOptions : [];
+$cityOptionsByRegional = isset($cityOptionsByRegional) && is_array($cityOptionsByRegional) ? $cityOptionsByRegional : [];
+$regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOptionsByCity) ? $regionalOptionsByCity : [];
+?>
+<div class="modal fade" id="modal-valsal-download-report" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="modalValsalDownloadReportLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content budget-modal valsal-modal-shell">
+            <div class="modal-header budget-modal__header">
+                <div>
+                    <span class="budget-modal__eyebrow">VALSAL MyRep</span>
+                    <h5 class="modal-title mb-1" id="modalValsalDownloadReportLabel">Download Report VALSAL</h5>
+                    <p class="mb-0 budget-modal__subtitle">Ekspor report VALSAL dengan filter regional, kota, dan rentang tanggal VALSAL.</p>
+                </div>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="doc-modal-panel mb-3">
+                    <div class="doc-modal-title mb-1">Report VALSAL</div>
+                    <p class="doc-modal-subtitle mb-0">Jika regional dan kota tidak dipilih, sistem akan download semua data sesuai filter status di halaman.</p>
+                </div>
+                <div class="budget-form-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Regional</label>
+                                <select id="valsal_download_regional" class="form-control" multiple>
+                                    <?php foreach ($regionalOptions as $regionalOption): ?>
+                                        <option value="<?= htmlspecialchars((string) $regionalOption, ENT_QUOTES) ?>"><?= htmlspecialchars((string) $regionalOption) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Kota</label>
+                                <select id="valsal_download_city" class="form-control" multiple>
+                                    <?php foreach ($cityOptions as $cityOption): ?>
+                                        <option value="<?= htmlspecialchars((string) $cityOption, ENT_QUOTES) ?>"><?= htmlspecialchars((string) $cityOption) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Tanggal VALSAL Start</label>
+                                <input type="date" id="valsal_download_date_start" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-0">
+                                <label>Tanggal VALSAL End</label>
+                                <input type="date" id="valsal_download_date_end" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer budget-modal__footer">
+                <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn budget-btn budget-btn--success" id="valsal-download-report-submit-btn">
+                    <i class="fas fa-download mr-1"></i> Download Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .valsal-filter-card,
     .valsal-table-card {
@@ -1568,6 +1638,42 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
         box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
     }
 
+    .valsal-modal-shell .select2-container--default .select2-selection--multiple {
+        min-height: 44px;
+        border-radius: 12px;
+        border: 1px solid #cfe0ee;
+        background: #fff;
+        padding: 4px .9rem;
+        box-shadow: none;
+    }
+
+    .valsal-modal-shell .select2-container--default .select2-selection--multiple .select2-search--inline .select2-search__field {
+        margin-top: 4px;
+        font-size: 0.95rem;
+        height: 28px;
+    }
+
+    .valsal-modal-shell .select2-container--default .select2-selection--multiple .select2-search__field::placeholder {
+        color: #7b8794;
+    }
+
+    .valsal-modal-shell .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        margin-top: 4px;
+        background: #e8f3fb;
+        border: 1px solid #bdd8ea;
+        color: #1d4f73;
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    .valsal-modal-shell .select2-container--default.select2-container--focus .select2-selection--multiple,
+    .valsal-modal-shell .select2-container--default.select2-container--open .select2-selection--multiple {
+        border-color: #55a7d5;
+        box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
+    }
+
     .valsal-monitor-tabs {
         border-bottom: 0;
         gap: .75rem;
@@ -1664,6 +1770,10 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
         var valsalDownloadBundleBaseUrl = '<?= base_url('VALSAL_MyRep/downloadDocumentBundle/') ?>';
         var valsalPreviewImportUrl = '<?= base_url('VALSAL_MyRep/previewValsalImport') ?>';
         var valsalSaveImportUrl = '<?= base_url('VALSAL_MyRep/saveImportedValsal') ?>';
+        var valsalDownloadReportUrl = '<?= base_url('VALSAL_MyRep/downloadReport') ?>';
+        var valsalCityOptionsByRegional = <?= json_encode($cityOptionsByRegional, JSON_UNESCAPED_UNICODE) ?>;
+        var valsalRegionalOptionsByCity = <?= json_encode($regionalOptionsByCity, JSON_UNESCAPED_UNICODE) ?>;
+        var valsalSelectedStatus = '<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>';
         var currentValsalDetailClusterId = 0;
         var importedValsalRows = [];
         var valsalSyncingSelection = false;
@@ -2528,6 +2638,143 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                         alert('Terjadi kesalahan saat menyimpan import VALSAL.');
                     }
                 });
+            });
+
+            function getSelectedArray($el) {
+                var values = $el.val();
+                return Array.isArray(values) ? values.filter(Boolean) : [];
+            }
+
+            function toUpperUnique(values) {
+                return Array.from(new Set((values || []).map(function (v) { return String(v || '').toUpperCase().trim(); }).filter(Boolean)));
+            }
+
+            function allRegionalOptions() {
+                return toUpperUnique(Object.keys(valsalCityOptionsByRegional || {}));
+            }
+
+            function allCityOptions() {
+                var cities = [];
+                Object.keys(valsalCityOptionsByRegional || {}).forEach(function (regional) {
+                    cities = cities.concat(valsalCityOptionsByRegional[regional] || []);
+                });
+                return toUpperUnique(cities);
+            }
+
+            function allowedCitiesByRegionals(regionals) {
+                if (!regionals.length) return allCityOptions();
+                var cities = [];
+                regionals.forEach(function (regional) {
+                    cities = cities.concat(valsalCityOptionsByRegional[regional] || []);
+                });
+                return toUpperUnique(cities);
+            }
+
+            function allowedRegionalsByCities(cities) {
+                if (!cities.length) return allRegionalOptions();
+                var regionals = [];
+                cities.forEach(function (city) {
+                    regionals = regionals.concat(valsalRegionalOptionsByCity[city] || []);
+                });
+                return toUpperUnique(regionals);
+            }
+
+            function renderSelectOptions($el, availableValues, selectedValues) {
+                var selectedSet = {};
+                selectedValues.forEach(function (v) { selectedSet[String(v).toUpperCase()] = true; });
+                var html = '';
+                availableValues.forEach(function (value) {
+                    var selectedAttr = selectedSet[String(value).toUpperCase()] ? ' selected' : '';
+                    html += '<option value="' + escapeHtml(value) + '"' + selectedAttr + '>' + escapeHtml(value) + '</option>';
+                });
+                $el.html(html).trigger('change.select2');
+            }
+
+            function syncValsalRegionCityFilters(changedFrom) {
+                var $regional = $('#valsal_download_regional');
+                var $city = $('#valsal_download_city');
+                var selectedRegionals = toUpperUnique(getSelectedArray($regional));
+                var selectedCities = toUpperUnique(getSelectedArray($city));
+                var changed = true;
+                var guard = 0;
+
+                while (changed && guard < 5) {
+                    guard++;
+                    changed = false;
+
+                    var allowedCities = allowedCitiesByRegionals(selectedRegionals);
+                    var nextSelectedCities = selectedCities.filter(function (city) { return allowedCities.indexOf(city) !== -1; });
+                    if (nextSelectedCities.length !== selectedCities.length) {
+                        selectedCities = nextSelectedCities;
+                        changed = true;
+                    }
+
+                    var allowedRegionals = allowedRegionalsByCities(selectedCities);
+                    var nextSelectedRegionals = selectedRegionals.filter(function (regional) { return allowedRegionals.indexOf(regional) !== -1; });
+                    if (nextSelectedRegionals.length !== selectedRegionals.length) {
+                        selectedRegionals = nextSelectedRegionals;
+                        changed = true;
+                    }
+                }
+
+                var finalAllowedRegionals = allowedRegionalsByCities(selectedCities);
+                var finalAllowedCities = allowedCitiesByRegionals(selectedRegionals);
+
+                if (changedFrom === 'regional' && selectedRegionals.length) {
+                    finalAllowedCities = allowedCitiesByRegionals(selectedRegionals);
+                }
+                if (changedFrom === 'city' && selectedCities.length) {
+                    finalAllowedRegionals = allowedRegionalsByCities(selectedCities);
+                }
+
+                renderSelectOptions($regional, finalAllowedRegionals, selectedRegionals);
+                renderSelectOptions($city, finalAllowedCities, selectedCities);
+            }
+
+            $('#modal-valsal-download-report').on('shown.bs.modal', function () {
+                $('#valsal_download_date_start').val('');
+                $('#valsal_download_date_end').val('');
+
+                $('#valsal_download_regional, #valsal_download_city').select2({
+                    width: '100%',
+                    dropdownParent: $('#modal-valsal-download-report'),
+                    placeholder: 'Pilih satu atau lebih',
+                    allowClear: true
+                });
+
+                renderSelectOptions($('#valsal_download_regional'), allRegionalOptions(), []);
+                renderSelectOptions($('#valsal_download_city'), allCityOptions(), []);
+            });
+
+            $('#valsal_download_regional').on('change', function () {
+                syncValsalRegionCityFilters('regional');
+            });
+
+            $('#valsal_download_city').on('change', function () {
+                syncValsalRegionCityFilters('city');
+            });
+
+            $('#valsal-download-report-submit-btn').on('click', function () {
+                var regionalValues = getSelectedArray($('#valsal_download_regional'));
+                var cityValues = getSelectedArray($('#valsal_download_city'));
+                var valsalDateStart = ($('#valsal_download_date_start').val() || '').trim();
+                var valsalDateEnd = ($('#valsal_download_date_end').val() || '').trim();
+
+                if (valsalDateStart && valsalDateEnd && valsalDateStart > valsalDateEnd) {
+                    alert('Tanggal VALSAL start tidak boleh lebih besar dari end.');
+                    return;
+                }
+
+                var params = new URLSearchParams();
+                if (valsalSelectedStatus) {
+                    params.set('status', valsalSelectedStatus);
+                }
+                regionalValues.forEach(function (regional) { params.append('regional[]', regional); });
+                cityValues.forEach(function (city) { params.append('city[]', city); });
+                if (valsalDateStart) params.set('valsal_date_start', valsalDateStart);
+                if (valsalDateEnd) params.set('valsal_date_end', valsalDateEnd);
+
+                window.location.href = valsalDownloadReportUrl + '?' + params.toString();
             });
         });
     })();

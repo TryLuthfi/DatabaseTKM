@@ -148,7 +148,7 @@ class MVALSAL_MyRep extends CI_Model
         return $this->db->get()->result_array();
     }
 
-    public function getValsalRows($city = '', $status = '')
+    public function getValsalRows($city = '', $status = '', $regional = '', array $cityList = [], array $regionalList = [], $valsalDateStart = '', $valsalDateEnd = '')
     {
         if (!$this->valsalTablesReady()) {
             return [];
@@ -201,6 +201,33 @@ class MVALSAL_MyRep extends CI_Model
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
         }
+        if ($regional !== '') {
+            $this->db->where('UPPER(c.regional_name)', strtoupper($regional));
+        }
+        if (!empty($cityList)) {
+            $normalizedCities = array_values(array_unique(array_filter(array_map(static function ($value) {
+                return strtoupper(trim((string) $value));
+            }, $cityList))));
+            if (!empty($normalizedCities)) {
+                $escapedCities = array_map([$this->db, 'escape'], $normalizedCities);
+                $this->db->where('UPPER(c.city_name) IN (' . implode(',', $escapedCities) . ')', null, false);
+            }
+        }
+        if (!empty($regionalList)) {
+            $normalizedRegionals = array_values(array_unique(array_filter(array_map(static function ($value) {
+                return strtoupper(trim((string) $value));
+            }, $regionalList))));
+            if (!empty($normalizedRegionals)) {
+                $escapedRegionals = array_map([$this->db, 'escape'], $normalizedRegionals);
+                $this->db->where('UPPER(c.regional_name) IN (' . implode(',', $escapedRegionals) . ')', null, false);
+            }
+        }
+        if ($valsalDateStart !== '') {
+            $this->db->where('v.valsal_date >=', $valsalDateStart);
+        }
+        if ($valsalDateEnd !== '') {
+            $this->db->where('v.valsal_date <=', $valsalDateEnd);
+        }
 
         if ($status !== '') {
             $normalizedStatus = strtoupper($status);
@@ -216,6 +243,89 @@ class MVALSAL_MyRep extends CI_Model
             ->order_by('c.cluster_name', 'ASC')
             ->get()
             ->result_array();
+    }
+
+    public function getRegionalOptions()
+    {
+        if (!$this->valsalTablesReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->distinct()
+            ->select('c.regional_name')
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->where('c.regional_name IS NOT NULL', null, false)
+            ->where("TRIM(c.regional_name) !=", '')
+            ->where_in('UPPER(b.status_bak)', ['DONE', 'APPROVED'])
+            ->order_by('c.regional_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $regionals = [];
+        foreach ($rows as $row) {
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            if ($regionalName !== '') {
+                $regionals[] = $regionalName;
+            }
+        }
+        return array_values(array_unique($regionals));
+    }
+
+    public function getCityOptionsByRegional()
+    {
+        if (!$this->valsalTablesReady()) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->distinct()
+            ->select('c.regional_name, c.city_name')
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->where('c.regional_name IS NOT NULL', null, false)
+            ->where('c.city_name IS NOT NULL', null, false)
+            ->where("TRIM(c.regional_name) !=", '')
+            ->where("TRIM(c.city_name) !=", '')
+            ->where_in('UPPER(b.status_bak)', ['DONE', 'APPROVED'])
+            ->order_by('c.regional_name', 'ASC')
+            ->order_by('c.city_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($regionalName === '' || $cityName === '') continue;
+            if (!isset($map[$regionalName])) $map[$regionalName] = [];
+            $map[$regionalName][] = $cityName;
+        }
+        foreach ($map as $regional => $cities) {
+            $cities = array_values(array_unique($cities));
+            sort($cities);
+            $map[$regional] = $cities;
+        }
+        return $map;
+    }
+
+    public function getRegionalOptionsByCity()
+    {
+        $byRegional = $this->getCityOptionsByRegional();
+        $map = [];
+        foreach ($byRegional as $regional => $cities) {
+            foreach ($cities as $city) {
+                if (!isset($map[$city])) $map[$city] = [];
+                $map[$city][] = $regional;
+            }
+        }
+        foreach ($map as $city => $regionals) {
+            $regionals = array_values(array_unique($regionals));
+            sort($regionals);
+            $map[$city] = $regionals;
+        }
+        return $map;
     }
 
     public function ensureValsalDocumentSetup()

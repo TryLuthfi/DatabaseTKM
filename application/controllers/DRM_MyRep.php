@@ -38,6 +38,9 @@ class DRM_MyRep extends CI_Controller
         $data['docReady'] = $this->MDRM_MyRep->drmDocumentTablesReady();
         $data['boqReady'] = $this->MDRM_MyRep->drmBoqTablesReady();
         $data['cityOptions'] = $this->MDRM_MyRep->getCityOptions();
+        $data['regionalOptions'] = $this->MDRM_MyRep->getRegionalOptions();
+        $data['cityOptionsByRegional'] = $this->MDRM_MyRep->getCityOptionsByRegional();
+        $data['regionalOptionsByCity'] = $this->MDRM_MyRep->getRegionalOptionsByCity();
         $data['eligibleClusterOptions'] = $this->MDRM_MyRep->getEligibleClusterOptions();
         $data['clusterRows'] = $data['isReady']
             ? $this->MDRM_MyRep->getDrmRows($selectedCity, $selectedStatus)
@@ -48,6 +51,77 @@ class DRM_MyRep extends CI_Controller
         $this->load->view('DRM_MyRep/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function downloadReport()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MDRM_MyRep->drmTablesReady()) {
+            show_404();
+            return;
+        }
+
+        $rawCity = $this->input->get('city');
+        $selectedCity = is_array($rawCity) ? '' : strtoupper(trim((string) $rawCity));
+        $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
+        $rawRegional = $this->input->get('regional');
+        $selectedRegional = is_array($rawRegional) ? '' : strtoupper(trim((string) $rawRegional));
+        $regionalList = $this->normalizeUpperList($this->input->get('regional'));
+        $cityList = $this->normalizeUpperList($this->input->get('city'));
+        $drmDateStart = $this->normalizeDate($this->input->get('drm_date_start')) ?: '';
+        $drmDateEnd = $this->normalizeDate($this->input->get('drm_date_end')) ?: '';
+
+        $rows = $this->MDRM_MyRep->getDrmRows($selectedCity, $selectedStatus, $selectedRegional, $cityList, $regionalList, $drmDateStart, $drmDateEnd);
+
+        $filename = 'report_drm_myrep_' . date('Ymd_His') . '.csv';
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $output = fopen('php://output', 'w');
+        fputcsv($output, [
+            'Cluster',
+            'Kode Cluster',
+            'Regional',
+            'Kota',
+            'Periode Target',
+            'HP Donasi',
+            'HP DRM',
+            'Tanggal Released',
+            'Tanggal DRM',
+            'Status DRM',
+            'Status Flow',
+            'Nama OLT',
+            'Remark DRM',
+        ]);
+
+        foreach ($rows as $row) {
+            $periodLabel = !empty($row['year_num']) && !empty($row['month_num'])
+                ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num'])
+                : '-';
+
+            fputcsv($output, [
+                (string) ($row['cluster_name'] ?? ''),
+                (string) ($row['cluster_code'] ?? ''),
+                (string) ($row['regional_name'] ?? ''),
+                (string) ($row['city_name'] ?? ''),
+                $periodLabel,
+                (string) (int) ($row['hp_donasi'] ?? 0),
+                (string) (int) ($row['homepass_drm'] ?? 0),
+                (string) ($row['released_at'] ?? ''),
+                (string) ($row['drm_date'] ?? ''),
+                (string) ($row['display_status_drm'] ?? $row['status_drm'] ?? ''),
+                (string) ($row['status_current'] ?? ''),
+                (string) ($row['nama_olt'] ?? ''),
+                (string) ($row['remark_drm'] ?? ''),
+            ]);
+        }
+
+        fclose($output);
+        exit;
     }
 
     public function detail($clusterId = 0)
@@ -1798,6 +1872,19 @@ class DRM_MyRep extends CI_Controller
         $normalized = str_replace(',', '.', $normalized);
 
         return (float) $normalized;
+    }
+
+    private function normalizeUpperList($value)
+    {
+        $items = is_array($value) ? $value : [$value];
+        $normalized = [];
+        foreach ($items as $item) {
+            $label = strtoupper(trim((string) $item));
+            if ($label !== '') {
+                $normalized[] = $label;
+            }
+        }
+        return array_values(array_unique($normalized));
     }
 
     private function collectBoqItemsFromPost()

@@ -39,6 +39,9 @@ class VALSAL_MyRep extends CI_Controller
         }
         $data['canApprove'] = $this->isApprover();
         $data['cityOptions'] = $this->MVALSAL_MyRep->getCityOptions();
+        $data['regionalOptions'] = $this->MVALSAL_MyRep->getRegionalOptions();
+        $data['cityOptionsByRegional'] = $this->MVALSAL_MyRep->getCityOptionsByRegional();
+        $data['regionalOptionsByCity'] = $this->MVALSAL_MyRep->getRegionalOptionsByCity();
         $data['eligibleClusterOptions'] = $this->MVALSAL_MyRep->getEligibleClusterOptions();
         $data['clusterRows'] = $data['isReady']
             ? $this->MVALSAL_MyRep->getValsalRows($selectedCity, $selectedStatus)
@@ -605,9 +608,17 @@ class VALSAL_MyRep extends CI_Controller
             return;
         }
 
-        $selectedCity = strtoupper(trim((string) $this->input->get('city')));
+        $rawCity = $this->input->get('city');
+        $selectedCity = is_array($rawCity) ? '' : strtoupper(trim((string) $rawCity));
         $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
-        $rows = $this->MVALSAL_MyRep->getValsalRows($selectedCity, $selectedStatus);
+        $rawRegional = $this->input->get('regional');
+        $selectedRegional = is_array($rawRegional) ? '' : strtoupper(trim((string) $rawRegional));
+        $regionalList = $this->normalizeUpperList($this->input->get('regional'));
+        $cityList = $this->normalizeUpperList($this->input->get('city'));
+        $valsalDateStart = $this->normalizeDate($this->input->get('valsal_date_start')) ?: '';
+        $valsalDateEnd = $this->normalizeDate($this->input->get('valsal_date_end')) ?: '';
+
+        $rows = $this->MVALSAL_MyRep->getValsalRows($selectedCity, $selectedStatus, $selectedRegional, $cityList, $regionalList, $valsalDateStart, $valsalDateEnd);
 
         $documentDefinitions = [];
         $documentMap = [];
@@ -1243,6 +1254,20 @@ class VALSAL_MyRep extends CI_Controller
         $normalized = str_replace(',', '.', $normalized);
 
         return (float) $normalized;
+    }
+
+    private function normalizeUpperList($value)
+    {
+        $items = is_array($value) ? $value : [$value];
+        $normalized = [];
+        foreach ($items as $item) {
+            $label = strtoupper(trim((string) $item));
+            if ($label !== '') {
+                $normalized[] = $label;
+            }
+        }
+
+        return array_values(array_unique($normalized));
     }
 
     private function parseValsalImportHeader($header)

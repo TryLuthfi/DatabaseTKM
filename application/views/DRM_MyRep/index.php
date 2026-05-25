@@ -210,6 +210,9 @@ if (!function_exists('drmBadgeClass')) {
                             <button type="button" class="btn budget-btn budget-btn--ghost ml-2" data-toggle="modal" data-target="#modal-drm-import">
                                 <i class="fas fa-file-import mr-1"></i> Import DRM
                             </button>
+                            <button type="button" class="btn budget-btn budget-btn--success ml-2" data-toggle="modal" data-target="#modal-drm-download-report">
+                                <i class="fas fa-download mr-1"></i> Download Report DRM
+                            </button>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -491,6 +494,73 @@ if (!function_exists('drmBadgeClass')) {
         </div>
     </div>
 <?php endif; ?>
+
+<?php
+$regionalOptions = isset($regionalOptions) && is_array($regionalOptions) ? $regionalOptions : [];
+$cityOptionsByRegional = isset($cityOptionsByRegional) && is_array($cityOptionsByRegional) ? $cityOptionsByRegional : [];
+$regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOptionsByCity) ? $regionalOptionsByCity : [];
+?>
+<div class="modal fade" id="modal-drm-download-report" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="modalDrmDownloadReportLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content budget-modal drm-modal-shell">
+            <div class="modal-header budget-modal__header">
+                <div>
+                    <span class="budget-modal__eyebrow">DRM MyRep</span>
+                    <h5 class="modal-title mb-1" id="modalDrmDownloadReportLabel">Download Report DRM</h5>
+                    <p class="mb-0 budget-modal__subtitle">Ekspor report DRM dengan filter regional, kota, dan rentang tanggal DRM.</p>
+                </div>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="drm-form-section">
+                    <div class="drm-form-section__title">Report DRM</div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Regional</label>
+                                <select id="drm_download_regional" class="form-control" multiple>
+                                    <?php foreach ($regionalOptions as $regionalOption): ?>
+                                        <option value="<?= htmlspecialchars((string) $regionalOption, ENT_QUOTES) ?>"><?= htmlspecialchars((string) $regionalOption) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Kota</label>
+                                <select id="drm_download_city" class="form-control" multiple>
+                                    <?php foreach ($cityOptions as $cityOption): ?>
+                                        <option value="<?= htmlspecialchars((string) $cityOption, ENT_QUOTES) ?>"><?= htmlspecialchars((string) $cityOption) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Tanggal DRM Start</label>
+                                <input type="date" id="drm_download_date_start" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-0">
+                                <label>Tanggal DRM End</label>
+                                <input type="date" id="drm_download_date_end" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer budget-modal__footer">
+                <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn budget-btn budget-btn--success" id="drm-download-report-submit-btn">
+                    <i class="fas fa-download mr-1"></i> Download Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
     .drm-filter-card,
@@ -790,6 +860,10 @@ if (!function_exists('drmBadgeClass')) {
     (function () {
         var drmPreviewImportUrl = '<?= base_url('DRM_MyRep/previewDrmImport') ?>';
         var drmSaveImportUrl = '<?= base_url('DRM_MyRep/saveImportedDrm') ?>';
+        var drmDownloadReportUrl = '<?= base_url('DRM_MyRep/downloadReport') ?>';
+        var drmCityOptionsByRegional = <?= json_encode($cityOptionsByRegional, JSON_UNESCAPED_UNICODE) ?>;
+        var drmRegionalOptionsByCity = <?= json_encode($regionalOptionsByCity, JSON_UNESCAPED_UNICODE) ?>;
+        var drmSelectedStatus = '<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>';
         var importedDrmRows = [];
 
         function initDrmSelects() {
@@ -1028,6 +1102,15 @@ if (!function_exists('drmBadgeClass')) {
             return isNaN(parsed) ? 0 : parsed;
         }
 
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         $(function () {
             if ($.fn.DataTable) {
                 $('#table_drm_myrep').DataTable({
@@ -1212,6 +1295,143 @@ if (!function_exists('drmBadgeClass')) {
                         alert('Terjadi kesalahan saat menyimpan import DRM.');
                     }
                 });
+            });
+
+            function getSelectedArray($el) {
+                var values = $el.val();
+                return Array.isArray(values) ? values.filter(Boolean) : [];
+            }
+
+            function toUpperUnique(values) {
+                return Array.from(new Set((values || []).map(function (v) { return String(v || '').toUpperCase().trim(); }).filter(Boolean)));
+            }
+
+            function allRegionalOptions() {
+                return toUpperUnique(Object.keys(drmCityOptionsByRegional || {}));
+            }
+
+            function allCityOptions() {
+                var cities = [];
+                Object.keys(drmCityOptionsByRegional || {}).forEach(function (regional) {
+                    cities = cities.concat(drmCityOptionsByRegional[regional] || []);
+                });
+                return toUpperUnique(cities);
+            }
+
+            function allowedCitiesByRegionals(regionals) {
+                if (!regionals.length) return allCityOptions();
+                var cities = [];
+                regionals.forEach(function (regional) {
+                    cities = cities.concat(drmCityOptionsByRegional[regional] || []);
+                });
+                return toUpperUnique(cities);
+            }
+
+            function allowedRegionalsByCities(cities) {
+                if (!cities.length) return allRegionalOptions();
+                var regionals = [];
+                cities.forEach(function (city) {
+                    regionals = regionals.concat(drmRegionalOptionsByCity[city] || []);
+                });
+                return toUpperUnique(regionals);
+            }
+
+            function renderSelectOptions($el, availableValues, selectedValues) {
+                var selectedSet = {};
+                selectedValues.forEach(function (v) { selectedSet[String(v).toUpperCase()] = true; });
+                var html = '';
+                availableValues.forEach(function (value) {
+                    var selectedAttr = selectedSet[String(value).toUpperCase()] ? ' selected' : '';
+                    html += '<option value="' + escapeHtml(value) + '"' + selectedAttr + '>' + escapeHtml(value) + '</option>';
+                });
+                $el.html(html).trigger('change.select2');
+            }
+
+            function syncDrmRegionCityFilters(changedFrom) {
+                var $regional = $('#drm_download_regional');
+                var $city = $('#drm_download_city');
+                var selectedRegionals = toUpperUnique(getSelectedArray($regional));
+                var selectedCities = toUpperUnique(getSelectedArray($city));
+                var changed = true;
+                var guard = 0;
+
+                while (changed && guard < 5) {
+                    guard++;
+                    changed = false;
+
+                    var allowedCities = allowedCitiesByRegionals(selectedRegionals);
+                    var nextSelectedCities = selectedCities.filter(function (city) { return allowedCities.indexOf(city) !== -1; });
+                    if (nextSelectedCities.length !== selectedCities.length) {
+                        selectedCities = nextSelectedCities;
+                        changed = true;
+                    }
+
+                    var allowedRegionals = allowedRegionalsByCities(selectedCities);
+                    var nextSelectedRegionals = selectedRegionals.filter(function (regional) { return allowedRegionals.indexOf(regional) !== -1; });
+                    if (nextSelectedRegionals.length !== selectedRegionals.length) {
+                        selectedRegionals = nextSelectedRegionals;
+                        changed = true;
+                    }
+                }
+
+                var finalAllowedRegionals = allowedRegionalsByCities(selectedCities);
+                var finalAllowedCities = allowedCitiesByRegionals(selectedRegionals);
+
+                if (changedFrom === 'regional' && selectedRegionals.length) {
+                    finalAllowedCities = allowedCitiesByRegionals(selectedRegionals);
+                }
+                if (changedFrom === 'city' && selectedCities.length) {
+                    finalAllowedRegionals = allowedRegionalsByCities(selectedCities);
+                }
+
+                renderSelectOptions($regional, finalAllowedRegionals, selectedRegionals);
+                renderSelectOptions($city, finalAllowedCities, selectedCities);
+            }
+
+            $('#modal-drm-download-report').on('shown.bs.modal', function () {
+                $('#drm_download_date_start').val('');
+                $('#drm_download_date_end').val('');
+
+                $('#drm_download_regional, #drm_download_city').select2({
+                    width: '100%',
+                    dropdownParent: $('#modal-drm-download-report'),
+                    placeholder: 'Pilih satu atau lebih',
+                    allowClear: true
+                });
+
+                renderSelectOptions($('#drm_download_regional'), allRegionalOptions(), []);
+                renderSelectOptions($('#drm_download_city'), allCityOptions(), []);
+            });
+
+            $('#drm_download_regional').on('change', function () {
+                syncDrmRegionCityFilters('regional');
+            });
+
+            $('#drm_download_city').on('change', function () {
+                syncDrmRegionCityFilters('city');
+            });
+
+            $('#drm-download-report-submit-btn').on('click', function () {
+                var regionalValues = getSelectedArray($('#drm_download_regional'));
+                var cityValues = getSelectedArray($('#drm_download_city'));
+                var drmDateStart = ($('#drm_download_date_start').val() || '').trim();
+                var drmDateEnd = ($('#drm_download_date_end').val() || '').trim();
+
+                if (drmDateStart && drmDateEnd && drmDateStart > drmDateEnd) {
+                    alert('Tanggal DRM start tidak boleh lebih besar dari end.');
+                    return;
+                }
+
+                var params = new URLSearchParams();
+                if (drmSelectedStatus) {
+                    params.set('status', drmSelectedStatus);
+                }
+                regionalValues.forEach(function (regional) { params.append('regional[]', regional); });
+                cityValues.forEach(function (city) { params.append('city[]', city); });
+                if (drmDateStart) params.set('drm_date_start', drmDateStart);
+                if (drmDateEnd) params.set('drm_date_end', drmDateEnd);
+
+                window.location.href = drmDownloadReportUrl + '?' + params.toString();
             });
 
             bindDropzone('#drm-import-dropzone', '#drm-import-file-input', '#drm-import-file-name');

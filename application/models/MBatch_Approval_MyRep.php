@@ -165,7 +165,7 @@ class MBatch_Approval_MyRep extends CI_Model
         return $query->get()->result_array();
     }
 
-    public function getBatchRows($city = '', $status = '')
+    public function getBatchRows($city = '', $status = '', $regional = '', array $cityList = [], array $regionalList = [], $submissionDateStart = '', $submissionDateEnd = '')
     {
         if (!$this->batchTablesReady()) {
             return [];
@@ -276,6 +276,33 @@ class MBatch_Approval_MyRep extends CI_Model
         if ($city !== '') {
             $this->db->where('UPPER(c.city_name)', strtoupper($city));
         }
+        if ($regional !== '') {
+            $this->db->where('UPPER(c.regional_name)', strtoupper($regional));
+        }
+        if (!empty($cityList)) {
+            $normalizedCities = array_values(array_unique(array_filter(array_map(static function ($value) {
+                return strtoupper(trim((string) $value));
+            }, $cityList))));
+            if (!empty($normalizedCities)) {
+                $escapedCities = array_map([$this->db, 'escape'], $normalizedCities);
+                $this->db->where('UPPER(c.city_name) IN (' . implode(',', $escapedCities) . ')', null, false);
+            }
+        }
+        if (!empty($regionalList)) {
+            $normalizedRegionals = array_values(array_unique(array_filter(array_map(static function ($value) {
+                return strtoupper(trim((string) $value));
+            }, $regionalList))));
+            if (!empty($normalizedRegionals)) {
+                $escapedRegionals = array_map([$this->db, 'escape'], $normalizedRegionals);
+                $this->db->where('UPPER(c.regional_name) IN (' . implode(',', $escapedRegionals) . ')', null, false);
+            }
+        }
+        if ($submissionDateStart !== '') {
+            $this->db->where('ba.submission_date >=', $submissionDateStart);
+        }
+        if ($submissionDateEnd !== '') {
+            $this->db->where('ba.submission_date <=', $submissionDateEnd);
+        }
 
         if ($status !== '') {
             $normalizedStatus = strtoupper($status);
@@ -314,6 +341,99 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         return $rows;
+    }
+
+    public function getRegionalOptions()
+    {
+        if (!$this->batchTablesReady()) {
+            return [];
+        }
+        if (!$this->applyAllowedCityRestriction('c.city_name')) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->distinct()
+            ->select('c.regional_name')
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->where_in('UPPER(v.status_valsal)', ['DONE', 'APPROVED'])
+            ->group_start()
+                ->where('ba.id_batch_approval IS NOT NULL', null, false)
+                ->or_where('UPPER(c.status_current)', 'VALSAL')
+            ->group_end()
+            ->where('c.regional_name IS NOT NULL', null, false)
+            ->where("TRIM(c.regional_name) !=", '')
+            ->order_by('c.regional_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $regionals = [];
+        foreach ($rows as $row) {
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            if ($regionalName !== '') $regionals[] = $regionalName;
+        }
+        return array_values(array_unique($regionals));
+    }
+
+    public function getCityOptionsByRegional()
+    {
+        if (!$this->batchTablesReady()) return [];
+        if (!$this->applyAllowedCityRestriction('c.city_name')) return [];
+
+        $rows = $this->db
+            ->distinct()
+            ->select('c.regional_name, c.city_name')
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'inner')
+            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->where_in('UPPER(v.status_valsal)', ['DONE', 'APPROVED'])
+            ->group_start()
+                ->where('ba.id_batch_approval IS NOT NULL', null, false)
+                ->or_where('UPPER(c.status_current)', 'VALSAL')
+            ->group_end()
+            ->where('c.regional_name IS NOT NULL', null, false)
+            ->where('c.city_name IS NOT NULL', null, false)
+            ->where("TRIM(c.regional_name) !=", '')
+            ->where("TRIM(c.city_name) !=", '')
+            ->order_by('c.regional_name', 'ASC')
+            ->order_by('c.city_name', 'ASC')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $regionalName = strtoupper(trim((string) ($row['regional_name'] ?? '')));
+            $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            if ($regionalName === '' || $cityName === '') continue;
+            if (!isset($map[$regionalName])) $map[$regionalName] = [];
+            $map[$regionalName][] = $cityName;
+        }
+        foreach ($map as $regional => $cities) {
+            $cities = array_values(array_unique($cities));
+            sort($cities);
+            $map[$regional] = $cities;
+        }
+        return $map;
+    }
+
+    public function getRegionalOptionsByCity()
+    {
+        $byRegional = $this->getCityOptionsByRegional();
+        $map = [];
+        foreach ($byRegional as $regional => $cities) {
+            foreach ($cities as $city) {
+                if (!isset($map[$city])) $map[$city] = [];
+                $map[$city][] = $regional;
+            }
+        }
+        foreach ($map as $city => $regionals) {
+            $regionals = array_values(array_unique($regionals));
+            sort($regionals);
+            $map[$city] = $regionals;
+        }
+        return $map;
     }
 
     public function getBatchCandidateById($clusterId)

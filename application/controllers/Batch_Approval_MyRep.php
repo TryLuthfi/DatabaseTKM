@@ -37,6 +37,9 @@ class Batch_Approval_MyRep extends CI_Controller
         $data['docReady'] = $this->MBatch_Approval_MyRep->batchDocumentTablesReady();
         $data['canApprove'] = $this->isApprover();
         $data['cityOptions'] = $this->MBatch_Approval_MyRep->getCityOptions();
+        $data['regionalOptions'] = $this->MBatch_Approval_MyRep->getRegionalOptions();
+        $data['cityOptionsByRegional'] = $this->MBatch_Approval_MyRep->getCityOptionsByRegional();
+        $data['regionalOptionsByCity'] = $this->MBatch_Approval_MyRep->getRegionalOptionsByCity();
         $data['eligibleClusterOptions'] = $this->MBatch_Approval_MyRep->getEligibleClusterOptions();
         $data['clusterRows'] = $data['isReady']
             ? $this->MBatch_Approval_MyRep->getBatchRows($selectedCity, $selectedStatus)
@@ -47,6 +50,79 @@ class Batch_Approval_MyRep extends CI_Controller
         $this->load->view('Batch_Approval_MyRep/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function downloadReport()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        if (!$this->MBatch_Approval_MyRep->batchTablesReady()) {
+            show_404();
+            return;
+        }
+
+        $rawCity = $this->input->get('city');
+        $selectedCity = is_array($rawCity) ? '' : strtoupper(trim((string) $rawCity));
+        $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
+        $rawRegional = $this->input->get('regional');
+        $selectedRegional = is_array($rawRegional) ? '' : strtoupper(trim((string) $rawRegional));
+        $regionalList = $this->normalizeUpperList($this->input->get('regional'));
+        $cityList = $this->normalizeUpperList($this->input->get('city'));
+        $submissionDateStart = $this->normalizeDate($this->input->get('submission_date_start')) ?: '';
+        $submissionDateEnd = $this->normalizeDate($this->input->get('submission_date_end')) ?: '';
+
+        $rows = $this->MBatch_Approval_MyRep->getBatchRows($selectedCity, $selectedStatus, $selectedRegional, $cityList, $regionalList, $submissionDateStart, $submissionDateEnd);
+
+        $filename = 'report_batch_approval_myrep_' . date('Ymd_His') . '.csv';
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+        $output = fopen('php://output', 'w');
+        fputcsv($output, [
+            'Cluster',
+            'Kode Cluster',
+            'Regional',
+            'Kota',
+            'Periode Target',
+            'Tanggal Submission',
+            'HP Donasi',
+            'Nominal Pengajuan Area',
+            'Nominal Nego EMR',
+            'Nominal Release Finance',
+            'Staging Status',
+            'Status Flow',
+            'Nomor Batch Astri',
+            'Remark Batch Approval',
+        ]);
+
+        foreach ($rows as $row) {
+            $periodLabel = !empty($row['year_num']) && !empty($row['month_num'])
+                ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num'])
+                : '-';
+
+            fputcsv($output, [
+                (string) ($row['cluster_name'] ?? ''),
+                (string) ($row['cluster_code'] ?? ''),
+                (string) ($row['regional_name'] ?? ''),
+                (string) ($row['city_name'] ?? ''),
+                $periodLabel,
+                (string) ($row['submission_date'] ?? ''),
+                (string) (int) ($row['hp_donasi'] ?? 0),
+                (string) (float) ($row['nominal_pengajuan_area'] ?? 0),
+                (string) (float) ($row['nominal_nego_emr'] ?? 0),
+                (string) (float) ($row['nominal_release_finance'] ?? 0),
+                (string) ($row['staging_status'] ?? ''),
+                (string) ($row['status_current'] ?? ''),
+                (string) ($row['astri_batch_number'] ?? ''),
+                (string) ($row['remark_batch_approval'] ?? ''),
+            ]);
+        }
+
+        fclose($output);
+        exit;
     }
 
     public function detail($clusterId = 0)
@@ -1288,6 +1364,19 @@ class Batch_Approval_MyRep extends CI_Controller
         }
 
         return (float) $normalized;
+    }
+
+    private function normalizeUpperList($value)
+    {
+        $items = is_array($value) ? $value : [$value];
+        $normalized = [];
+        foreach ($items as $item) {
+            $label = strtoupper(trim((string) $item));
+            if ($label !== '') {
+                $normalized[] = $label;
+            }
+        }
+        return array_values(array_unique($normalized));
     }
 
     private function normalizeNullableNumber($value)

@@ -438,6 +438,9 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                             <button type="button" class="btn budget-btn budget-btn--ghost ml-2" data-toggle="modal" data-target="#modal-batch-import">
                                 <i class="fas fa-file-import mr-1"></i> Import Batch Approval
                             </button>
+                            <button type="button" class="btn budget-btn budget-btn--success ml-2" data-toggle="modal" data-target="#modal-batch-download-report">
+                                <i class="fas fa-download mr-1"></i> Download Report Batch
+                            </button>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1126,6 +1129,72 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
     <?php endif; ?>
 <?php endif; ?>
 
+<?php
+$regionalOptions = isset($regionalOptions) && is_array($regionalOptions) ? $regionalOptions : [];
+$cityOptionsByRegional = isset($cityOptionsByRegional) && is_array($cityOptionsByRegional) ? $cityOptionsByRegional : [];
+$regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOptionsByCity) ? $regionalOptionsByCity : [];
+?>
+<div class="modal fade" id="modal-batch-download-report" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="modalBatchDownloadReportLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content budget-modal batch-modal-shell">
+            <div class="modal-header budget-modal__header">
+                <div>
+                    <span class="budget-modal__eyebrow">Batch Approval MyRep</span>
+                    <h5 class="modal-title mb-1" id="modalBatchDownloadReportLabel">Download Report Batch Approval</h5>
+                    <p class="mb-0 budget-modal__subtitle">Ekspor report batch approval dengan filter regional, kota, dan tanggal submission.</p>
+                </div>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="budget-form-section">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Regional</label>
+                                <select id="batch_download_regional" class="form-control" multiple>
+                                    <?php foreach ($regionalOptions as $regionalOption): ?>
+                                        <option value="<?= htmlspecialchars((string) $regionalOption, ENT_QUOTES) ?>"><?= htmlspecialchars((string) $regionalOption) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Kota</label>
+                                <select id="batch_download_city" class="form-control" multiple>
+                                    <?php foreach ($cityOptions as $cityOption): ?>
+                                        <option value="<?= htmlspecialchars((string) $cityOption, ENT_QUOTES) ?>"><?= htmlspecialchars((string) $cityOption) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Tanggal Submission Start</label>
+                                <input type="date" id="batch_download_date_start" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-0">
+                                <label>Tanggal Submission End</label>
+                                <input type="date" id="batch_download_date_end" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer budget-modal__footer">
+                <button type="button" class="btn budget-btn budget-btn--ghost" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn budget-btn budget-btn--success" id="batch-download-report-submit-btn">
+                    <i class="fas fa-download mr-1"></i> Download Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .doc-modal .modal-content {
         border: 0;
@@ -1749,6 +1818,10 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
         var MAX_PIC_ROWS = 5;
         var batchPreviewImportUrl = '<?= base_url('Batch_Approval_MyRep/previewBatchImport') ?>';
         var batchSaveImportUrl = '<?= base_url('Batch_Approval_MyRep/saveImportedBatch') ?>';
+        var batchDownloadReportUrl = '<?= base_url('Batch_Approval_MyRep/downloadReport') ?>';
+        var batchCityOptionsByRegional = <?= json_encode($cityOptionsByRegional, JSON_UNESCAPED_UNICODE) ?>;
+        var batchRegionalOptionsByCity = <?= json_encode($regionalOptionsByCity, JSON_UNESCAPED_UNICODE) ?>;
+        var batchSelectedStatus = '<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>';
         var importedBatchRows = [];
 
         function initBatchCreateSelects() {
@@ -2553,6 +2626,134 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                         alert('Terjadi kesalahan saat menyimpan import Batch.');
                     }
                 });
+            });
+
+            function getSelectedArray($el) {
+                var values = $el.val();
+                return Array.isArray(values) ? values.filter(Boolean) : [];
+            }
+
+            function toUpperUnique(values) {
+                return Array.from(new Set((values || []).map(function (v) { return String(v || '').toUpperCase().trim(); }).filter(Boolean)));
+            }
+
+            function allRegionalOptions() {
+                return toUpperUnique(Object.keys(batchCityOptionsByRegional || {}));
+            }
+
+            function allCityOptions() {
+                var cities = [];
+                Object.keys(batchCityOptionsByRegional || {}).forEach(function (regional) {
+                    cities = cities.concat(batchCityOptionsByRegional[regional] || []);
+                });
+                return toUpperUnique(cities);
+            }
+
+            function allowedCitiesByRegionals(regionals) {
+                if (!regionals.length) return allCityOptions();
+                var cities = [];
+                regionals.forEach(function (regional) {
+                    cities = cities.concat(batchCityOptionsByRegional[regional] || []);
+                });
+                return toUpperUnique(cities);
+            }
+
+            function allowedRegionalsByCities(cities) {
+                if (!cities.length) return allRegionalOptions();
+                var regionals = [];
+                cities.forEach(function (city) {
+                    regionals = regionals.concat(batchRegionalOptionsByCity[city] || []);
+                });
+                return toUpperUnique(regionals);
+            }
+
+            function renderSelectOptions($el, availableValues, selectedValues) {
+                var selectedSet = {};
+                selectedValues.forEach(function (v) { selectedSet[String(v).toUpperCase()] = true; });
+                var html = '';
+                availableValues.forEach(function (value) {
+                    var selectedAttr = selectedSet[String(value).toUpperCase()] ? ' selected' : '';
+                    html += '<option value="' + escapeHtml(value) + '"' + selectedAttr + '>' + escapeHtml(value) + '</option>';
+                });
+                $el.html(html).trigger('change.select2');
+            }
+
+            function syncBatchRegionCityFilters(changedFrom) {
+                var $regional = $('#batch_download_regional');
+                var $city = $('#batch_download_city');
+                var selectedRegionals = toUpperUnique(getSelectedArray($regional));
+                var selectedCities = toUpperUnique(getSelectedArray($city));
+                var changed = true;
+                var guard = 0;
+
+                while (changed && guard < 5) {
+                    guard++;
+                    changed = false;
+
+                    var allowedCities = allowedCitiesByRegionals(selectedRegionals);
+                    var nextSelectedCities = selectedCities.filter(function (city) { return allowedCities.indexOf(city) !== -1; });
+                    if (nextSelectedCities.length !== selectedCities.length) {
+                        selectedCities = nextSelectedCities;
+                        changed = true;
+                    }
+
+                    var allowedRegionals = allowedRegionalsByCities(selectedCities);
+                    var nextSelectedRegionals = selectedRegionals.filter(function (regional) { return allowedRegionals.indexOf(regional) !== -1; });
+                    if (nextSelectedRegionals.length !== selectedRegionals.length) {
+                        selectedRegionals = nextSelectedRegionals;
+                        changed = true;
+                    }
+                }
+
+                var finalAllowedRegionals = allowedRegionalsByCities(selectedCities);
+                var finalAllowedCities = allowedCitiesByRegionals(selectedRegionals);
+                if (changedFrom === 'regional' && selectedRegionals.length) finalAllowedCities = allowedCitiesByRegionals(selectedRegionals);
+                if (changedFrom === 'city' && selectedCities.length) finalAllowedRegionals = allowedRegionalsByCities(selectedCities);
+
+                renderSelectOptions($regional, finalAllowedRegionals, selectedRegionals);
+                renderSelectOptions($city, finalAllowedCities, selectedCities);
+            }
+
+            $('#modal-batch-download-report').on('shown.bs.modal', function () {
+                $('#batch_download_date_start').val('');
+                $('#batch_download_date_end').val('');
+
+                $('#batch_download_regional, #batch_download_city').select2({
+                    width: '100%',
+                    dropdownParent: $('#modal-batch-download-report'),
+                    placeholder: 'Pilih satu atau lebih',
+                    allowClear: true
+                });
+
+                renderSelectOptions($('#batch_download_regional'), allRegionalOptions(), []);
+                renderSelectOptions($('#batch_download_city'), allCityOptions(), []);
+            });
+
+            $('#batch_download_regional').on('change', function () {
+                syncBatchRegionCityFilters('regional');
+            });
+            $('#batch_download_city').on('change', function () {
+                syncBatchRegionCityFilters('city');
+            });
+
+            $('#batch-download-report-submit-btn').on('click', function () {
+                var regionalValues = getSelectedArray($('#batch_download_regional'));
+                var cityValues = getSelectedArray($('#batch_download_city'));
+                var dateStart = ($('#batch_download_date_start').val() || '').trim();
+                var dateEnd = ($('#batch_download_date_end').val() || '').trim();
+
+                if (dateStart && dateEnd && dateStart > dateEnd) {
+                    alert('Tanggal submission start tidak boleh lebih besar dari end.');
+                    return;
+                }
+
+                var params = new URLSearchParams();
+                if (batchSelectedStatus) params.set('status', batchSelectedStatus);
+                regionalValues.forEach(function (regional) { params.append('regional[]', regional); });
+                cityValues.forEach(function (city) { params.append('city[]', city); });
+                if (dateStart) params.set('submission_date_start', dateStart);
+                if (dateEnd) params.set('submission_date_end', dateEnd);
+                window.location.href = batchDownloadReportUrl + '?' + params.toString();
             });
 
             bindDropzone('#batch-upload-dropzone', '#batch-upload-file-input', '#batch-upload-file-name');
