@@ -197,7 +197,16 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
                                         <th style="min-width: 140px;">Modul</th>
                                         <th style="min-width: 220px;">Halaman</th>
                                         <?php foreach ($generalActionOptions as $actionKey): ?>
-                                            <th class="text-center" style="min-width: 100px;"><?= htmlspecialchars((string) $actionKey) ?></th>
+                                            <th class="text-center" style="min-width: 110px;">
+                                                <div class="font-weight-bold"><?= htmlspecialchars((string) $actionKey) ?></div>
+                                                <label class="mb-0 small mt-1 d-inline-flex align-items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        class="mr-1 js-general-col-toggle"
+                                                        data-action-key="<?= htmlspecialchars((string) $actionKey, ENT_QUOTES) ?>">
+                                                    all
+                                                </label>
+                                            </th>
                                         <?php endforeach; ?>
                                     </tr>
                                 </thead>
@@ -353,6 +362,25 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
             return $(generalTable.rows({ search: 'applied' }).nodes());
         }
 
+        function syncGeneralHeaderToggles() {
+            $('.js-general-col-toggle').each(function () {
+                var actionKey = String($(this).attr('data-action-key') || '');
+                if (actionKey === '') {
+                    $(this).prop('checked', false);
+                    return;
+                }
+
+                var $cells = getGeneralVisibleRows().find('.js-general-action-cell[name*="[' + actionKey + ']"]');
+                if ($cells.length === 0) {
+                    $(this).prop('checked', false);
+                    return;
+                }
+
+                var allChecked = $cells.filter(':checked').length === $cells.length;
+                $(this).prop('checked', allChecked);
+            });
+        }
+
         function resetGeneralTableInstance() {
             if ($.fn.DataTable && $.fn.DataTable.isDataTable('#table_general_page_access')) {
                 $('#table_general_page_access').DataTable().clear().destroy();
@@ -412,6 +440,12 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
                 autoWidth: false,
                 searching: true
             });
+            syncGeneralHeaderToggles();
+            if (generalTable) {
+                generalTable.on('draw', function () {
+                    syncGeneralHeaderToggles();
+                });
+            }
         }
 
         function applyGeneralClientFilter(rows, moduleKey, pageKey) {
@@ -530,10 +564,28 @@ $generalActionOptions = ['VIEW', 'TAMBAH', 'EDIT', 'HAPUS', 'APPROVAL'];
 
         $('#btn_general_check_all').on('click', function () {
             getGeneralVisibleRows().find('.js-general-action-cell').prop('checked', true);
+            syncGeneralHeaderToggles();
         });
 
         $('#btn_general_uncheck_all').on('click', function () {
             getGeneralVisibleRows().find('.js-general-action-cell').prop('checked', false);
+            syncGeneralHeaderToggles();
+        });
+
+        $(document).on('change', '.js-general-col-toggle', function () {
+            var actionKey = String($(this).attr('data-action-key') || '');
+            var isChecked = $(this).is(':checked');
+            if (actionKey === '') {
+                return;
+            }
+
+            getGeneralVisibleRows()
+                .find('.js-general-action-cell[name*="[' + actionKey + ']"]')
+                .prop('checked', isChecked);
+        });
+
+        $(document).on('change', '.js-general-action-cell', function () {
+            syncGeneralHeaderToggles();
         });
 
         $('#btn_general_save').on('click', function () {
