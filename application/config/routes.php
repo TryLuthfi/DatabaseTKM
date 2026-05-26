@@ -86,4 +86,5 @@ $route['SuperAdmin_MyRep_Config/deletePermission/(:num)'] = 'SuperAdmin_MyRep_Co
 $route['SuperAdmin_MyRep_Config/deleteNotificationRoute/(:num)'] = 'SuperAdmin_MyRep_Config/deleteNotificationRoute/$1';
 $route['SuperAdmin_MyRep_CityMapping'] = 'SuperAdmin_MyRep_CityMapping/index';
 $route['SuperAdmin_MyRep_CityMapping/saveBulk'] = 'SuperAdmin_MyRep_CityMapping/saveBulk';
+$route['SuperAdmin_MyRep_CityMapping/userOptions'] = 'SuperAdmin_MyRep_CityMapping/userOptions';
 

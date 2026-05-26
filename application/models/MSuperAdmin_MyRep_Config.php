@@ -300,6 +300,37 @@ class MSuperAdmin_MyRep_Config extends CI_Model
             ->result_array();
     }
 
+    public function searchUserOptions($term = '', $limit = 20, $offset = 0)
+    {
+        if (!$this->db->table_exists('tb_master_user_new')) {
+            return [];
+        }
+
+        $term = trim((string) $term);
+        $limit = max(1, min(100, (int) $limit));
+        $offset = max(0, (int) $offset);
+
+        $this->db
+            ->select('nik, nama_karyawan, status_user')
+            ->from('tb_master_user_new')
+            ->where('nik IS NOT NULL', null, false)
+            ->where("TRIM(nik) <> ''", null, false);
+
+        if ($term !== '') {
+            $this->db->group_start()
+                ->like('nama_karyawan', $term)
+                ->or_like('nik', $term)
+                ->group_end();
+        }
+
+        return (array) $this->db
+            ->order_by('status_user', 'DESC')
+            ->order_by('nama_karyawan', 'ASC')
+            ->limit($limit, $offset)
+            ->get()
+            ->result_array();
+    }
+
     public function getPageOptions()
     {
         return $this->mergeDistinctColumnOptions('tb_myrep_role_permission', 'page_key', $this->defaultPageOptions);

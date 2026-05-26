@@ -151,21 +151,11 @@ sort($provinceOptions);
                                                 <div class="js-edit-only d-none">
                                                     <select class="form-control form-control-sm js-city-pic-select" name="<?= htmlspecialchars($roleCol) ?>" data-original="<?= htmlspecialchars($selectedNik, ENT_QUOTES) ?>">
                                                         <option value="">-</option>
-                                                        <?php foreach ($userOptions as $user): ?>
-                                                            <?php
-                                                            $nik = trim((string) ($user['nik'] ?? ''));
-                                                            if ($nik === '') {
-                                                                continue;
-                                                            }
-                                                            $label = trim((string) ($user['nama_karyawan'] ?? ''));
-                                                            if ($label === '') {
-                                                                $label = '-';
-                                                            }
-                                                            ?>
-                                                            <option value="<?= htmlspecialchars($nik) ?>" <?= $selectedNik === $nik ? 'selected' : '' ?>>
-                                                                <?= htmlspecialchars($label) ?>
+                                                        <?php if ($selectedNik !== ''): ?>
+                                                            <option value="<?= htmlspecialchars($selectedNik) ?>" selected>
+                                                                <?= htmlspecialchars($currentName !== '' ? $currentName : $selectedNik) ?>
                                                             </option>
-                                                        <?php endforeach; ?>
+                                                        <?php endif; ?>
                                                     </select>
                                                 </div>
                                             </td>
@@ -185,6 +175,7 @@ sort($provinceOptions);
 <script>
     $(function () {
         var roleColumns = <?= json_encode(array_values($roleColumns)) ?>;
+        var userOptionsUrl = <?= json_encode(base_url('SuperAdmin_MyRep_CityMapping/userOptions')) ?>;
         var isEditMode = false;
         var cityTable = null;
 
@@ -211,7 +202,28 @@ sort($provinceOptions);
                     theme: 'bootstrap4',
                     width: '100%',
                     placeholder: 'Pilih user',
-                    allowClear: false
+                    allowClear: true,
+                    ajax: {
+                        url: userOptionsUrl,
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return {
+                                q: params.term || '',
+                                page: params.page || 1
+                            };
+                        },
+                        processResults: function (data, params) {
+                            params.page = params.page || 1;
+                            return {
+                                results: data.results || [],
+                                pagination: {
+                                    more: !!(data.pagination && data.pagination.more)
+                                }
+                            };
+                        },
+                        cache: true
+                    }
                 });
             });
         }
@@ -288,8 +300,9 @@ sort($provinceOptions);
 
         $('#btn_save_city_mapping').on('click', function () {
             var changedRows = [];
+            var rowNodes = cityTable ? cityTable.rows().nodes().toArray() : $('#table_myrep_city_mapping_edit tbody tr').toArray();
 
-            $('#table_myrep_city_mapping_edit tbody tr').each(function () {
+            $(rowNodes).each(function () {
                 var $row = $(this);
                 var rowId = parseInt($row.data('row-id'), 10) || 0;
                 if (rowId <= 0) {

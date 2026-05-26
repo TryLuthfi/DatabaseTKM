@@ -19,7 +19,6 @@ class SuperAdmin_MyRep_CityMapping extends CI_Controller
         $data['judul'] = 'MyRep City PIC Mapping';
         $data['tablesReady'] = $this->MSuperAdmin_MyRep_Config->checkTablesReady();
         $data['cityPicRows'] = $this->MSuperAdmin_MyRep_Config->getCityPicMappings();
-        $data['userOptions'] = $this->MSuperAdmin_MyRep_Config->getUserOptions();
         $data['roleColumns'] = $this->MSuperAdmin_MyRep_Config->getCityPicRoleColumns();
 
         $this->load->view('Templates/01_Header', $data);
@@ -58,6 +57,44 @@ class SuperAdmin_MyRep_CityMapping extends CI_Controller
             'Sebagian gagal disimpan. Baris bermasalah: ' . (empty($failed) ? '-' : implode(', ', $failed))
         );
         redirect('SuperAdmin_MyRep_CityMapping');
+    }
+
+    public function userOptions()
+    {
+        if (!$this->validateSuperAdminSession()) {
+            return;
+        }
+
+        $term = trim((string) $this->input->get('q'));
+        $page = max(1, (int) $this->input->get('page'));
+        $limit = 20;
+        $offset = ($page - 1) * $limit;
+        $rows = $this->MSuperAdmin_MyRep_Config->searchUserOptions($term, $limit + 1, $offset);
+        $hasMore = count($rows) > $limit;
+        if ($hasMore) {
+            array_pop($rows);
+        }
+
+        $results = [];
+        foreach ($rows as $row) {
+            $nik = trim((string) ($row['nik'] ?? ''));
+            if ($nik === '') {
+                continue;
+            }
+
+            $name = trim((string) ($row['nama_karyawan'] ?? ''));
+            $results[] = [
+                'id' => $nik,
+                'text' => $name !== '' ? $name : $nik,
+            ];
+        }
+
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'results' => $results,
+                'pagination' => ['more' => $hasMore],
+            ]));
     }
 
     private function validateSuperAdminSession()
