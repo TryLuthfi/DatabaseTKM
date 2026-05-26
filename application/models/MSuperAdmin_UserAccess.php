@@ -137,6 +137,7 @@ class MSuperAdmin_UserAccess extends CI_Model
         if (!empty($moduleMap['Project']) && empty($moduleMap['Kontrak'])) {
             $moduleMap['Kontrak'] = true;
         }
+        $myRepBaselineMatrix = $this->buildMyRepBaselineMatrixForGeneralRows($userId, $registryRows);
 
         $overrideMap = [];
         if ($this->db->table_exists('tb_user_page_permission')) {
@@ -190,7 +191,14 @@ class MSuperAdmin_UserAccess extends CI_Model
                 if ($actionKey === '') {
                     continue;
                 }
-                $baseline = $isModuleAllowed ? 1 : 0;
+                $baseline = $this->resolveGeneralActionBaseline(
+                    $moduleKey,
+                    $pageKey,
+                    $actionKey,
+                    $isSuperAdmin,
+                    $isModuleAllowed,
+                    $myRepBaselineMatrix
+                );
                 $value = $baseline;
                 $source = 'default';
                 if (isset($overrideMap[$pageKey][$actionKey])) {
@@ -254,6 +262,7 @@ class MSuperAdmin_UserAccess extends CI_Model
         if (!empty($moduleMap['Project']) && empty($moduleMap['Kontrak'])) {
             $moduleMap['Kontrak'] = true;
         }
+        $myRepBaselineMatrix = $this->buildMyRepBaselineMatrixForGeneralRows($userId, $registryRows);
 
         $allActions = [];
         foreach ($registryRows as $registryRow) {
@@ -299,7 +308,14 @@ class MSuperAdmin_UserAccess extends CI_Model
                 if ($actionKey === '') {
                     continue;
                 }
-                $baseline = $isModuleAllowed ? 1 : 0;
+                $baseline = $this->resolveGeneralActionBaseline(
+                    $moduleKey,
+                    $pageKey,
+                    $actionKey,
+                    $isSuperAdmin,
+                    $isModuleAllowed,
+                    $myRepBaselineMatrix
+                );
                 $newValue = !empty($postedMatrix[$pageKey][$actionKey]) ? 1 : 0;
                 if ($actionKey === 'VIEW' && $newValue === 1) {
                     $modulesToGrant[$moduleKey] = true;
@@ -368,6 +384,55 @@ class MSuperAdmin_UserAccess extends CI_Model
 
         $this->db->trans_commit();
         return ['ok' => true, 'override_count' => $insertCount];
+    }
+
+    private function buildMyRepBaselineMatrixForGeneralRows($userId, array $registryRows)
+    {
+        $pages = [];
+        $actions = [];
+        foreach ($registryRows as $registryRow) {
+            $moduleKey = trim((string) ($registryRow['module_key'] ?? ''));
+            if (strcasecmp($moduleKey, 'MyRepublik') !== 0) {
+                continue;
+            }
+
+            $pageKey = trim((string) ($registryRow['page_key'] ?? ''));
+            if ($pageKey !== '' && !in_array($pageKey, $pages, true)) {
+                $pages[] = $pageKey;
+            }
+
+            foreach ((array) ($registryRow['actions'] ?? []) as $action) {
+                $actionKey = strtoupper(trim((string) $action));
+                if ($actionKey !== '' && !in_array($actionKey, $actions, true)) {
+                    $actions[] = $actionKey;
+                }
+            }
+        }
+
+        if (empty($pages) || empty($actions)) {
+            return [];
+        }
+
+        $result = $this->buildRoleBasedMatrixForUser((int) $userId, $pages, $actions);
+        return (array) ($result['matrix'] ?? []);
+    }
+
+    private function resolveGeneralActionBaseline($moduleKey, $pageKey, $actionKey, $isSuperAdmin, $isModuleAllowed, array $myRepBaselineMatrix)
+    {
+        if ($isSuperAdmin) {
+            return 1;
+        }
+        if (!$isModuleAllowed) {
+            return 0;
+        }
+        if (strcasecmp((string) $moduleKey, 'MyRepublik') === 0) {
+            if (in_array(strtoupper((string) $actionKey), ['VIEW', 'TAMBAH'], true)) {
+                return 1;
+            }
+            return !empty($myRepBaselineMatrix[(string) $pageKey][strtoupper((string) $actionKey)]) ? 1 : 0;
+        }
+
+        return 1;
     }
 
     public function getUserRows()
@@ -1409,7 +1474,7 @@ class MSuperAdmin_UserAccess extends CI_Model
 
         if ($hasLevelTable) {
             $this->db->join('tb_level l', 'l.id_level = u.id_level', 'left');
-            $this->db->where("(LOWER(TRIM(COALESCE(l.nama_level, ''))) = 'super admin' OR u.id_level = 1)", null, false);
+            $this->db->where("LOWER(TRIM(COALESCE(l.nama_level, ''))) = 'super admin'", null, false);
         } else {
             $this->db->where('u.id_level', 1);
         }

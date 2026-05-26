@@ -61,8 +61,8 @@ $openDetailId = (int) ($openDetailId ?? 0);
                                                 <td><span class="badge badge-primary"><?= htmlspecialchars((string) ($row['workflow_status'] ?? '-'), ENT_QUOTES) ?></span></td>
                                                 <td>
                                                     <button type="button" class="btn btn-sm btn-outline-primary js-open-detail" data-id="<?= (int) $row['id_pks'] ?>">Detail</button>
-                                                    <a class="btn btn-sm btn-outline-secondary" target="_blank" href="<?= base_url('Kontrak_Payung/print_doc/' . (int) $row['id_pks'] . '/doc1') ?>">Print 1</a>
-                                                    <a class="btn btn-sm btn-outline-secondary" target="_blank" href="<?= base_url('Kontrak_Payung/print_doc/' . (int) $row['id_pks'] . '/doc2') ?>">Print 2</a>
+                                                    <a class="btn btn-sm btn-outline-secondary" target="_blank" href="<?= base_url('Kontrak_Payung/print_doc/' . (int) $row['id_pks'] . '/doc1') ?>">Print Kontrak</a>
+                                                    <a class="btn btn-sm btn-outline-secondary" target="_blank" href="<?= base_url('Kontrak_Payung/print_doc/' . (int) $row['id_pks'] . '/doc2') ?>">Print Surat Pernyataan</a>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>

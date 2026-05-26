@@ -515,6 +515,104 @@ if (!function_exists('get_user_page_access_override')) {
     }
 }
 
+if (!function_exists('has_myrep_role_page_access')) {
+    function has_myrep_role_page_access($userId, $pageKey, $actionKey)
+    {
+        $userId = (int) $userId;
+        $pageKey = trim((string) $pageKey);
+        $actionKey = strtoupper(trim((string) $actionKey));
+        if ($userId <= 0 || $pageKey === '' || $actionKey === '') {
+            return false;
+        }
+
+        static $cache = [];
+        $cacheKey = $userId . '|' . $pageKey . '|' . $actionKey;
+        if (array_key_exists($cacheKey, $cache)) {
+            return $cache[$cacheKey];
+        }
+
+        $CI = &get_instance();
+        if (
+            !isset($CI->db) ||
+            !$CI->db->table_exists('tb_master_user_new') ||
+            !$CI->db->table_exists('tb_myrep_pic_mapping_city') ||
+            !$CI->db->table_exists('tb_myrep_role_permission')
+        ) {
+            $cache[$cacheKey] = false;
+            return false;
+        }
+
+        $user = (array) $CI->db
+            ->select('nik')
+            ->from('tb_master_user_new')
+            ->where('id', $userId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        $nik = trim((string) ($user['nik'] ?? ''));
+        if ($nik === '') {
+            $cache[$cacheKey] = false;
+            return false;
+        }
+
+        $roleColumnMap = [
+            'RPM_AREA' => 'rpm_area',
+            'SM_AREA' => 'sm_area',
+            'SPV_AREA' => 'spv_area',
+            'SND_AREA' => 'snd_area',
+            'ADMIN_AREA' => 'admin_area',
+            'SND_HO' => 'snd_ho',
+            'ATP_HO' => 'atp_ho',
+            'RFS_HO' => 'rfs_ho',
+            'SITAC_HO' => 'sitac_ho',
+            'DC_HO' => 'dc_ho',
+            'QA_HO' => 'qa_ho',
+        ];
+
+        $roleKeys = [];
+        foreach ($roleColumnMap as $roleKey => $columnName) {
+            if (!$CI->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+                continue;
+            }
+
+            $found = (array) $CI->db
+                ->select('1 AS hit', false)
+                ->from('tb_myrep_pic_mapping_city')
+                ->where($columnName, $nik)
+                ->limit(1)
+                ->get()
+                ->row_array();
+            if (!empty($found)) {
+                $roleKeys[] = $roleKey;
+            }
+        }
+
+        $roleKeys = array_values(array_unique($roleKeys));
+        if (empty($roleKeys)) {
+            $cache[$cacheKey] = false;
+            return false;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $allowed = (array) $CI->db
+            ->select('1 AS hit', false)
+            ->from('tb_myrep_role_permission')
+            ->where('page_key', $pageKey)
+            ->where('action_key', $actionKey)
+            ->where_in('role_key', $roleKeys)
+            ->where('is_allowed', 1)
+            ->where('is_active', 1)
+            ->where("(effective_start IS NULL OR effective_start <= " . $CI->db->escape($now) . ")", null, false)
+            ->where("(effective_end IS NULL OR effective_end >= " . $CI->db->escape($now) . ")", null, false)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        $cache[$cacheKey] = !empty($allowed);
+        return $cache[$cacheKey];
+    }
+}
+
 if (!function_exists('has_user_page_access')) {
     function has_user_page_access($moduleKey, $pageKey, $actionKey = 'VIEW', $userId = 0)
     {
@@ -546,6 +644,16 @@ if (!function_exists('has_user_page_access')) {
         $override = get_user_page_access_override($userId, $pageKey, $actionKey);
         if ($override !== null) {
             return (bool) $override;
+        }
+
+        if (strcasecmp($moduleKey, 'MyRepublik') === 0) {
+            if (!$baselineAllowed) {
+                return false;
+            }
+            if (in_array($actionKey, ['VIEW', 'TAMBAH'], true)) {
+                return true;
+            }
+            return has_myrep_role_page_access($userId, $pageKey, $actionKey);
         }
 
         return $baselineAllowed;

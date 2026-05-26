@@ -166,7 +166,7 @@ sort($homebaseOptions, SORT_NATURAL | SORT_FLAG_CASE);
                 </div>
                 <div class="card-body">
                     <div class="alert alert-light border py-2 px-3 mb-3">
-                        Matrix ini untuk modul umum (di luar konfigurasi MyRep). Default akses mengikuti centang modul user.
+                        Matrix ini untuk detail akses per halaman. Untuk MyRep, centang modul memberi akses dasar VIEW/TAMBAH; EDIT/HAPUS/APPROVAL mengikuti MyRep Config + City Mapping atau override manual.
                         Jika diubah di sini, sistem menyimpan override khusus per user + per page.
                     </div>
                     <div class="row">
