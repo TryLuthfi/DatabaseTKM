@@ -210,6 +210,53 @@ $clusterRegion = (string) ($cluster['regional_name'] ?? '-');
 $clusterOlt = (string) ($cluster['nama_olt'] ?? '-');
 $clusterName = (string) ($cluster['cluster_name'] ?? '-');
 $clusterCode = (string) (!empty($cluster['cluster_code']) ? $cluster['cluster_code'] : ($cluster['id_myrep_cluster'] ?? '-'));
+$printSections = [
+    [
+        'type' => 'daily',
+        'info_title' => 'Foto Daily Progress',
+        'groups' => (array) ($dailyGroups ?? []),
+    ],
+    [
+        'type' => 'comply',
+        'info_title' => 'Foto Comply Approved',
+        'groups' => (array) ($complyGroups ?? []),
+    ],
+];
+
+$resolvePreviewScopeTitle = static function ($fallbackScope, array $photos = []) {
+    $fallbackScope = strtoupper(trim((string) $fallbackScope));
+    if ($fallbackScope === 'SUBFEEDER') {
+        return 'SUBFEEDER';
+    }
+
+    foreach ($photos as $photo) {
+        $text = strtoupper(trim(implode(' ', [
+            (string) ($photo['caption'] ?? ''),
+            (string) ($photo['meta_line'] ?? ''),
+            (string) ($photo['comply_label'] ?? ''),
+            (string) ($photo['description'] ?? ''),
+        ])));
+        if (strpos($text, 'SUBFEEDER') !== false) {
+            return 'SUBFEEDER';
+        }
+    }
+
+    return 'CLUSTER';
+};
+
+$appendPreviewPhotoItemToRemark = static function ($remark, array $photo) {
+    $remark = trim((string) $remark);
+    $itemName = trim((string) ($photo['item_name'] ?? ''));
+    if ($remark === '' || $itemName === '') {
+        return $remark;
+    }
+
+    if (stripos($remark, $itemName) !== false) {
+        return $remark;
+    }
+
+    return $remark . ' - ' . $itemName;
+};
 ?>
 
 <div class="content-wrapper">
@@ -217,7 +264,7 @@ $clusterCode = (string) (!empty($cluster['cluster_code']) ? $cluster['cluster_co
         <div class="comply-preview-shell">
             <div class="comply-preview-toolbar">
                 <div>
-                    <div class="comply-preview-title">Preview Foto Comply</div>
+                    <div class="comply-preview-title">Preview Daily Progress & Foto Comply</div>
                     <div class="comply-preview-subtitle"><?= htmlspecialchars($clusterName) ?></div>
                 </div>
                 <div class="d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap; justify-content:flex-end;">
@@ -246,62 +293,75 @@ $clusterCode = (string) (!empty($cluster['cluster_code']) ? $cluster['cluster_co
                 </div>
             </div>
 
-            <?php foreach (($complyGroups ?? []) as $sectionTitle => $photos): ?>
-                <?php $photoChunks = array_chunk(array_values($photos), 8); ?>
-                <?php foreach ($photoChunks as $photoChunk): ?>
-                    <div class="comply-print-page">
-                        <table class="comply-print-header">
-                            <tr>
-                                <td class="comply-print-header__logos">
-                                    <img src="<?= htmlspecialchars($logoTkm) ?>" alt="TKM Logo">
-                                    <img src="<?= htmlspecialchars($logoMyrep) ?>" alt="MyRep Logo">
-                                    <div class="comply-print-header__project">EMR FTTH PROJECT</div>
-                                </td>
-                                <td class="comply-print-header__center">FOTO COMPLY</td>
-                                <td class="comply-print-header__meta">
-                                    <table>
-                                        <tr><td><strong>Region</strong></td><td><?= htmlspecialchars($clusterRegion) ?></td></tr>
-                                        <tr><td><strong>OLT Name</strong></td><td><?= htmlspecialchars($clusterOlt !== '' ? $clusterOlt : '-') ?></td></tr>
-                                        <tr><td><strong>Cluster Name</strong></td><td><?= htmlspecialchars($clusterName) ?></td></tr>
-                                        <tr><td><strong>Cluster ID</strong></td><td><?= htmlspecialchars($clusterCode) ?></td></tr>
-                                    </table>
-                                </td>
-                            </tr>
-                        </table>
+            <?php foreach ($printSections as $printSection): ?>
+                <?php foreach ((array) $printSection['groups'] as $sectionTitle => $photos): ?>
+                    <?php $photoChunks = array_chunk(array_values($photos), 8); ?>
+                    <?php foreach ($photoChunks as $photoChunk): ?>
+                        <?php
+                        $scopeTitle = $resolvePreviewScopeTitle((string) $sectionTitle, (array) $photoChunk);
+                        $documentTitle = (string) ($printSection['type'] ?? '') === 'daily'
+                            ? ('IMPLE ' . $scopeTitle)
+                            : (string) $sectionTitle;
+                        ?>
+                        <div class="comply-print-page">
+                            <table class="comply-print-header">
+                                <tr>
+                                    <td class="comply-print-header__logos">
+                                        <img src="<?= htmlspecialchars($logoTkm) ?>" alt="TKM Logo">
+                                        <img src="<?= htmlspecialchars($logoMyrep) ?>" alt="MyRep Logo">
+                                        <div class="comply-print-header__project">EMR FTTH PROJECT</div>
+                                    </td>
+                                    <td class="comply-print-header__center"><?= nl2br(htmlspecialchars(str_replace(' ', "\n", $documentTitle))) ?></td>
+                                    <td class="comply-print-header__meta">
+                                        <table>
+                                            <tr><td><strong>Region</strong></td><td><?= htmlspecialchars($clusterRegion) ?></td></tr>
+                                            <tr><td><strong>OLT Name</strong></td><td><?= htmlspecialchars($clusterOlt !== '' ? $clusterOlt : '-') ?></td></tr>
+                                            <tr><td><strong>Cluster Name</strong></td><td><?= htmlspecialchars($clusterName) ?></td></tr>
+                                            <tr><td><strong>Cluster ID</strong></td><td><?= htmlspecialchars($clusterCode) ?></td></tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
 
-                        <table class="comply-print-section-head">
-                            <tr>
-                                <td class="comply-print-section-head__title"><?= htmlspecialchars((string) $sectionTitle) ?></td>
-                                <td class="comply-print-section-head__info">
-                                    <strong>Foto Comply Approved</strong><br>
-                                    Cluster: <?= htmlspecialchars($clusterName) ?>
-                                </td>
-                            </tr>
-                        </table>
+                            <table class="comply-print-section-head">
+                                <tr>
+                                    <td class="comply-print-section-head__title"><?= htmlspecialchars($scopeTitle) ?></td>
+                                    <td class="comply-print-section-head__info">
+                                        <strong><?= htmlspecialchars((string) $printSection['info_title']) ?></strong><br>
+                                        Cluster: <?= htmlspecialchars($clusterName) ?>
+                                    </td>
+                                </tr>
+                            </table>
 
-                        <div class="comply-print-grid">
-                            <?php foreach ($photoChunk as $photo): ?>
-                                <?php
-                                $photoUrl = base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/');
-                                $description = trim((string) ($photo['comply_label'] ?? '')) !== '' ? (string) $photo['comply_label'] : (string) ($photo['file_name'] ?? 'Foto Comply');
-                                $caption = trim((string) ($photo['caption'] ?? ''));
-                                $metaLine = $caption !== '' ? $caption : ('Comply - ' . $description);
-                                ?>
-                                <div class="comply-print-tile">
-                                    <div class="comply-print-tile__image">
-                                        <img src="<?= htmlspecialchars($photoUrl) ?>" alt="<?= htmlspecialchars($description) ?>">
+                            <div class="comply-print-grid">
+                                <?php foreach ($photoChunk as $photo): ?>
+                                    <?php
+                                    $photoUrl = base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/');
+                                    $description = trim((string) ($photo['description'] ?? '')) !== ''
+                                        ? (string) $photo['description']
+                                        : (trim((string) ($photo['comply_label'] ?? '')) !== '' ? (string) $photo['comply_label'] : (string) ($photo['file_name'] ?? 'Foto'));
+                                    $caption = trim((string) ($photo['caption'] ?? ''));
+                                    $metaLine = trim((string) ($photo['meta_line'] ?? '')) !== ''
+                                        ? (string) $photo['meta_line']
+                                        : ($caption !== '' ? $caption : ((string) $printSection['info_title'] . ' - ' . $description));
+                                    $metaLine = $appendPreviewPhotoItemToRemark($metaLine, (array) $photo);
+                                    ?>
+                                    <div class="comply-print-tile">
+                                        <div class="comply-print-tile__image">
+                                            <img src="<?= htmlspecialchars($photoUrl) ?>" alt="<?= htmlspecialchars($description) ?>">
+                                        </div>
+                                        <div class="comply-print-tile__desc">Description: <?= htmlspecialchars($description) ?></div>
+                                        <div class="comply-print-tile__caption"><?= htmlspecialchars($metaLine) ?></div>
                                     </div>
-                                    <div class="comply-print-tile__desc">Description: <?= htmlspecialchars($description) ?></div>
-                                    <div class="comply-print-tile__caption"><?= htmlspecialchars($metaLine) ?></div>
-                                </div>
-                            <?php endforeach; ?>
+                                <?php endforeach; ?>
+                            </div>
                         </div>
-                    </div>
+                    <?php endforeach; ?>
                 <?php endforeach; ?>
             <?php endforeach; ?>
 
-            <?php if (empty($complyGroups)): ?>
-                <div class="comply-print-empty">Belum ada foto comply APPROVED yang bisa dipreview.</div>
+            <?php if (empty($dailyGroups) && empty($complyGroups)): ?>
+                <div class="comply-print-empty">Belum ada foto daily progress atau foto comply APPROVED yang bisa dipreview.</div>
             <?php endif; ?>
         </div>
     </div>

@@ -541,7 +541,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         $this->db
-            ->select('c.*, d.id_drm, d.drm_date, d.homepass_drm, d.status_drm, d.remark_drm, b.id_boq_baseline, b.approved_at AS boq_approved_at')
+            ->select('c.*, d.id_drm, d.drm_date, d.homepass_drm, d.nama_olt, d.status_drm, d.remark_drm, b.id_boq_baseline, b.approved_at AS boq_approved_at')
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_boq_baseline b', 'b.id_myrep_cluster = c.id_myrep_cluster AND b.status_baseline = \'ACTIVE\'', 'inner', false)
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left');
@@ -815,10 +815,11 @@ class MImplementasi_BOQ_MyRep extends CI_Model
                 $groups[$sectionTitle] = [];
             }
 
+            $isPoleExt = $this->isPoleExtComplyRow($row);
             $groups[$sectionTitle][] = [
                 'id_progress_photo' => (int) ($row['id_progress_photo'] ?? 0),
-                'item_name' => (string) ($row['item_name'] ?? '-'),
-                'item_type' => (string) ($row['item_type'] ?? '-'),
+                'item_name' => $isPoleExt ? 'Tiang Eksisting' : (string) ($row['item_name'] ?? '-'),
+                'item_type' => $isPoleExt ? 'TIANG EKSISTING' : (string) ($row['item_type'] ?? '-'),
                 'comply_label' => (string) ($row['comply_label'] ?? ''),
                 'caption' => (string) ($row['caption'] ?? ''),
                 'file_name' => (string) ($row['file_name'] ?? 'Foto Comply'),
@@ -1515,6 +1516,10 @@ class MImplementasi_BOQ_MyRep extends CI_Model
 
     private function resolveComplyPrintSectionTitle($row)
     {
+        if ($this->isPoleExtComplyRow($row)) {
+            return 'TIANG EKSISTING';
+        }
+
         $itemName = strtoupper(trim((string) ($row['item_name'] ?? '')));
         $excelItemName = strtoupper(trim((string) ($row['excel_item_name'] ?? '')));
         $complyLabel = strtoupper(trim((string) ($row['comply_label'] ?? '')));
@@ -1559,6 +1564,14 @@ class MImplementasi_BOQ_MyRep extends CI_Model
         }
 
         return $itemName !== '' ? $itemName : 'COMPLY';
+    }
+
+    private function isPoleExtComplyRow($row)
+    {
+        $label = strtoupper(trim((string) ($row['comply_label'] ?? '')));
+        $caption = strtoupper(trim((string) ($row['caption'] ?? '')));
+
+        return strpos($label, 'POLE EXT') === 0 || strpos($caption, 'POLE EXT') === 0;
     }
 }
 

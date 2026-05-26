@@ -247,6 +247,16 @@ if (!function_exists('implBuildTiangTanamBreakdownMap')) {
     }
 }
 
+if (!function_exists('implIsPoleExtComplyPhoto')) {
+    function implIsPoleExtComplyPhoto($photo)
+    {
+        $label = strtoupper(trim((string) ($photo['comply_label'] ?? '')));
+        $caption = strtoupper(trim((string) ($photo['caption'] ?? '')));
+
+        return strpos($label, 'POLE EXT') === 0 || strpos($caption, 'POLE EXT') === 0;
+    }
+}
+
 $historyTypePlan = [];
 $historyTypePlanCluster = [];
 $historyTypePlanSubfeeder = [];
@@ -450,9 +460,11 @@ foreach ($compareRows as $row) {
     $itemHistoryRows = $historyMap[$baselineItemId] ?? [];
     foreach ($itemHistoryRows as $entry) {
         foreach (($entry['photos'] ?? []) as $photo) {
+            $isPoleExtComply = strtoupper(trim((string) ($photo['photo_category'] ?? 'HARIAN'))) === 'COMPLY'
+                && implIsPoleExtComplyPhoto($photo);
             $galleryRows[] = [
-                'item_name' => (string) ($row['item_name'] ?? '-'),
-                'item_type' => (string) ($row['item_type'] ?? '-'),
+                'item_name' => $isPoleExtComply ? 'Tiang Eksisting' : (string) ($row['item_name'] ?? '-'),
+                'item_type' => $isPoleExtComply ? 'TIANG EKSISTING' : (string) ($row['item_type'] ?? '-'),
                 'photo_type' => (string) ($row['photo_type'] ?? ''),
                 'progress_date' => (string) ($entry['progress_date'] ?? '-'),
                 'remark_progress' => (string) ($entry['remark_progress'] ?? ''),
@@ -600,6 +612,35 @@ foreach ($galleryRows as $galleryRow) {
         $complyGalleryGroups = $targetGroups;
     } else {
         $implementationGalleryGroups = $targetGroups;
+    }
+}
+
+$poleExtLabelCounters = [
+    'CLUSTER' => 0,
+    'SUBFEEDER' => 0,
+];
+foreach ($galleryRows as $galleryRow) {
+    if (strtoupper(trim((string) ($galleryRow['photo_category'] ?? ''))) !== 'COMPLY') {
+        continue;
+    }
+
+    $captionText = strtoupper(trim((string) ($galleryRow['caption'] ?? '')));
+    $labelText = strtoupper(trim((string) ($galleryRow['comply_label'] ?? '')));
+    if (strpos($captionText, 'POLE EXT') !== 0 && strpos($labelText, 'POLE EXT') !== 0) {
+        continue;
+    }
+
+    $scopeText = strpos($captionText, 'SUBFEEDER') !== false ? 'SUBFEEDER' : 'CLUSTER';
+    $sequenceNumber = 0;
+    if (preg_match('/\b(\d{3,})\s*$/', $labelText, $matches)) {
+        $sequenceNumber = (int) $matches[1];
+    } elseif (preg_match('/\b(\d{3,})\s*$/', $captionText, $matches)) {
+        $sequenceNumber = (int) $matches[1];
+    }
+
+    $poleExtLabelCounters[$scopeText] = max((int) ($poleExtLabelCounters[$scopeText] ?? 0), $sequenceNumber);
+    if ($sequenceNumber <= 0) {
+        $poleExtLabelCounters[$scopeText]++;
     }
 }
 
@@ -2281,7 +2322,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                 </button>
                                             <?php endif; ?>
                                             <a href="<?= base_url('Implementasi_BOQ_MyRep/previewComplyPdf/' . (int) ($cluster['id_myrep_cluster'] ?? 0)) ?>" target="_blank" class="btn btn-outline-dark btn-sm">
-                                                <i class="fas fa-file-pdf mr-1"></i>Preview Foto Comply
+                                                <i class="fas fa-file-pdf mr-1"></i>Preview Daily & Comply
                                             </a>
                                         </div>
                                     </div>
@@ -2326,20 +2367,18 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                                                         $photoCaption = (string) (($photo['caption'] ?? '') !== '' ? $photo['caption'] : ($photo['file_name'] ?? 'Foto Comply'));
                                                                         $photoLabelForAction = (string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-') . ' - ' . $photoCaption);
                                                                         ?>
-                                                                        <div class="impl-gallery-photo-card--shell">
+                                                                        <div class="impl-gallery-photo-card--shell js-comply-photo-review-card" data-photo-id="<?= (int) ($photo['id_progress_photo'] ?? 0) ?>" data-photo-label="<?= htmlspecialchars($photoLabelForAction, ENT_QUOTES) ?>">
                                                                             <a href="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" class="impl-gallery-photo-card js-open-lightbox" data-image="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" data-title="<?= htmlspecialchars((string) (($galleryItem['item_name'] ?? '-') . ' - ' . ($galleryItem['comply_label'] ?? '-')), ENT_QUOTES) ?>" data-caption="<?= htmlspecialchars($photoCaption, ENT_QUOTES) ?>">
                                                                                 <img src="<?= base_url() . ltrim((string) ($photo['file_path'] ?? ''), '/') ?>" alt="<?= htmlspecialchars((string) ($photo['file_name'] ?? 'Foto Comply')) ?>">
                                                                             </a>
                                                                             <div class="impl-gallery-photo-card__meta">
                                                                                 <div class="small font-weight-bold text-dark mb-2"><?= htmlspecialchars($photoCaption) ?></div>
                                                                                 <div class="mb-2">
-                                                                                    <span class="badge badge-<?= $photoBadgeClass ?>"><?= htmlspecialchars($photoStatus) ?></span>
+                                                                                    <span class="badge badge-<?= $photoBadgeClass ?> js-comply-photo-status"><?= htmlspecialchars($photoStatus) ?></span>
                                                                                 </div>
-                                                                                <?php if (!empty($photo['review_remark'])): ?>
-                                                                                    <div class="small text-muted mb-2">Review: <?= htmlspecialchars((string) $photo['review_remark']) ?></div>
-                                                                                <?php endif; ?>
+                                                                                <div class="small text-muted mb-2 js-comply-review-remark <?= empty($photo['review_remark']) ? 'd-none' : '' ?>">Review: <span><?= htmlspecialchars((string) ($photo['review_remark'] ?? '')) ?></span></div>
                                                                                 <?php if (!empty($canApprove) && $canApprovalComplyAction): ?>
-                                                                                    <div>
+                                                                                    <div class="js-comply-photo-actions">
                                                                                         <?php if ($photoStatus === 'UPLOADED' || $photoStatus === 'REJECTED'): ?>
                                                                                             <button
                                                                                                 type="button"
@@ -2703,7 +2742,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
     <div class="modal fade" id="modal-comply-approve" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/approveComplyPhoto') ?>">
+                <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/approveComplyPhoto') ?>" class="js-comply-review-form" data-review-status="APPROVED">
                     <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                     <input type="hidden" name="photo_id" id="comply_approve_photo_id">
                     <div class="modal-header bg-success text-white">
@@ -2728,7 +2767,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
     <div class="modal fade" id="modal-comply-reject" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/rejectComplyPhoto') ?>">
+                <form method="post" action="<?= base_url('Implementasi_BOQ_MyRep/rejectComplyPhoto') ?>" class="js-comply-review-form" data-review-status="REJECTED">
                     <input type="hidden" name="cluster_id" value="<?= (int) ($cluster['id_myrep_cluster'] ?? 0) ?>">
                     <input type="hidden" name="photo_id" id="comply_reject_photo_id">
                     <div class="modal-header bg-danger text-white">
@@ -2815,6 +2854,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 'requirement' => (string) ($row['comply_requirement_text'] ?? ''),
             ];
         }, (array) $complyBuilderItems)) ?>;
+        complyOptionSource = buildComplyOptionSource(complyOptionSource);
+        var complyAutoLabelCounters = <?= json_encode($poleExtLabelCounters) ?>;
 
         function bindDropzones() {
             var dropzones = document.querySelectorAll('.js-dropzone');
@@ -2863,6 +2904,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         }
 
         function buildShortRequirement(itemData) {
+            if (itemData && itemData.short_requirement) {
+                return itemData.short_requirement;
+            }
+
             var requirement = String((itemData && itemData.requirement) || '').toUpperCase();
             if ((itemData && itemData.photo_per_label) === 2 && (String(itemData.item_type || '').indexOf('FAT') !== -1 || String(itemData.item_type || '').indexOf('FDT') !== -1)) {
                 return 'Wajib 2 foto: FAT/FDT terbuka & tertutup';
@@ -2874,6 +2919,44 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 return 'Wajib ' + itemData.photo_per_label + ' foto per entry';
             }
             return 'Wajib mengikuti aturan item';
+        }
+
+        function buildComplyOptionSource(source) {
+            var items = Array.isArray(source) ? source.slice() : [];
+            items.forEach(function (item) {
+                item.option_id = 'base:' + item.id;
+                item.display_name = item.item_name || '-';
+            });
+
+            var tiangSource = null;
+            items.forEach(function (item) {
+                var type = String(item.item_type || '').toUpperCase();
+                var name = String(item.item_name || '').toUpperCase();
+                if (type !== 'TIANG') {
+                    return;
+                }
+                if (!tiangSource || name.indexOf('EKSISTING') !== -1 || name.indexOf('EXISTING') !== -1) {
+                    tiangSource = item;
+                }
+            });
+
+            if (tiangSource) {
+                var synthetic = {};
+                Object.keys(tiangSource).forEach(function (key) {
+                    synthetic[key] = tiangSource[key];
+                });
+                synthetic.option_id = 'tiang-eksisting:' + tiangSource.id;
+                synthetic.item_type = 'TIANG';
+                synthetic.display_name = 'Eksisting';
+                synthetic.default_label_prefix = 'POLE EXT';
+                synthetic.default_remark_prefix = 'POLE EXT';
+                synthetic.short_requirement = 'Wajib 1 foto POLE EXT per entry';
+                synthetic.requirement = 'Foto comply pole existing cluster / subfeeder.';
+                synthetic.photo_per_label = 1;
+                items.push(synthetic);
+            }
+
+            return items;
         }
 
         function populateComplyCategory() {
@@ -2896,16 +2979,152 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             complyKindSelect.innerHTML = '<option value="">Pilih Jenis</option>';
             complyOptionSource.forEach(function (item) {
                 if (category && String(item.item_type).toUpperCase() !== category.toUpperCase()) return;
-                complyKindSelect.innerHTML += '<option value="' + item.id + '">' + item.item_name + '</option>';
+                complyKindSelect.innerHTML += '<option value="' + escapeAttr(item.option_id || item.id) + '">' + escapeAttr(item.display_name || item.item_name || '-') + '</option>';
             });
+            syncComplyBuilderDefaults();
         }
 
         function findComplyItemById(id) {
-            var target = parseInt(id || 0, 10);
+            var targetOption = String(id || '');
+            var target = parseInt(targetOption.replace(/^.*:/, '') || 0, 10);
             for (var i = 0; i < complyOptionSource.length; i++) {
-                if (parseInt(complyOptionSource[i].id, 10) === target) return complyOptionSource[i];
+                if (String(complyOptionSource[i].option_id || '') === targetOption) return complyOptionSource[i];
+            }
+            for (var j = 0; j < complyOptionSource.length; j++) {
+                if (parseInt(complyOptionSource[j].id, 10) === target) return complyOptionSource[j];
             }
             return null;
+        }
+
+        function syncComplyBuilderDefaults() {
+            if (!complyKindSelect || !complyLabelBuilder) {
+                return;
+            }
+
+            var itemData = findComplyItemById(complyKindSelect.value || '');
+            if (!itemData) {
+                complyLabelBuilder.placeholder = 'Contoh: FAT 01';
+                return;
+            }
+
+            if (itemData.default_label_prefix) {
+                complyLabelBuilder.value = buildNextAutoLabel(itemData.default_label_prefix, complyScopeSelect ? complyScopeSelect.value : 'CLUSTER');
+            } else if (complyLabelBuilder.value.indexOf('POLE EXT') === 0) {
+                complyLabelBuilder.value = '';
+            }
+            complyLabelBuilder.placeholder = itemData.placeholder || 'Nama / nomor comply';
+        }
+
+        function formatComplySequenceNumber(value) {
+            var number = parseInt(value || 0, 10) || 0;
+            return String(number).padStart(3, '0');
+        }
+
+        function buildNextAutoLabel(prefix, scopeValue) {
+            return prefix + ' ' + formatComplySequenceNumber(getNextAutoLabelStart(null, scopeValue));
+        }
+
+        function getAutoRemarkRowFileCount(row) {
+            var photoInput = row ? row.querySelector('.js-comply-photos') : null;
+            if (!photoInput || !photoInput.files || photoInput.files.length <= 0) {
+                return 1;
+            }
+
+            return photoInput.files.length;
+        }
+
+        function buildScopedComplyRemarks(prefix, scopeValue, count) {
+            var lines = [];
+            var scopeLabel = scopeValue === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+            var total = Math.max(parseInt(count || 0, 10) || 0, 1);
+            for (var i = 0; i < total; i++) {
+                lines.push(prefix + ' ' + scopeLabel);
+            }
+
+            return lines.join('\n');
+        }
+
+        function getNextAutoLabelStart(row, scopeValue) {
+            var scopeLabel = scopeValue === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+            var nextNumber = (parseInt(complyAutoLabelCounters[scopeLabel] || 0, 10) || 0) + 1;
+            if (!complyRowsBody) {
+                return nextNumber;
+            }
+
+            var rows = Array.prototype.slice.call(complyRowsBody.querySelectorAll('.js-comply-row'));
+            for (var i = 0; i < rows.length; i++) {
+                var currentRow = rows[i];
+                if (currentRow === row) {
+                    break;
+                }
+                if ((currentRow.getAttribute('data-auto-label-prefix') || '') === '' || (currentRow.getAttribute('data-auto-label-scope') || '') !== scopeLabel) {
+                    continue;
+                }
+                nextNumber++;
+            }
+
+            return nextNumber;
+        }
+
+        function syncAutoNumberedLabel(row) {
+            if (!row) {
+                return;
+            }
+
+            var prefix = row.getAttribute('data-auto-label-prefix') || '';
+            var scopeValue = row.getAttribute('data-auto-label-scope') || 'CLUSTER';
+            var labelInput = row.querySelector('.js-comply-label');
+            if (!prefix || !labelInput) {
+                return;
+            }
+
+            labelInput.value = prefix + ' ' + formatComplySequenceNumber(getNextAutoLabelStart(row, scopeValue));
+        }
+
+        function syncAutoScopedRemarks(row) {
+            if (!row) {
+                return;
+            }
+
+            var prefix = row.getAttribute('data-auto-remark-prefix') || '';
+            var scopeValue = row.getAttribute('data-auto-remark-scope') || 'CLUSTER';
+            var remarksInput = row.querySelector('.js-comply-remarks');
+            if (!prefix || !remarksInput) {
+                return;
+            }
+
+            remarksInput.value = buildScopedComplyRemarks(prefix, scopeValue, getAutoRemarkRowFileCount(row));
+        }
+
+        function syncAllAutoComplyFields() {
+            if (!complyRowsBody) {
+                return;
+            }
+
+            Array.prototype.forEach.call(complyRowsBody.querySelectorAll('.js-comply-row'), function (row) {
+                syncAutoNumberedLabel(row);
+                syncAutoScopedRemarks(row);
+            });
+        }
+
+        function buildDefaultComplyRemarks(itemData, scopeValue, row) {
+            if (!itemData) {
+                return '';
+            }
+
+            if (itemData.default_remark_prefix) {
+                return buildScopedComplyRemarks(
+                    itemData.default_remark_prefix,
+                    scopeValue,
+                    getAutoRemarkRowFileCount(row)
+                );
+            }
+
+            if ((itemData.photo_per_label || 1) === 2) {
+                return 'FAT terbuka\nFAT tertutup';
+            }
+
+            return '';
         }
 
         function previewComplyPhotos(row) {
@@ -2922,6 +3141,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             var files = photoInput.files ? Array.prototype.slice.call(photoInput.files) : [];
             if (!files.length) {
                 note.textContent = 'Belum ada foto dipilih';
+                syncAutoScopedRemarks(row);
                 return;
             }
             note.textContent = files.length + ' foto dipilih';
@@ -2942,6 +3162,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 };
                 reader.readAsDataURL(file);
             });
+            syncAllAutoComplyFields();
         }
 
         function reindexComplyRows() {
@@ -2984,18 +3205,29 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             row.querySelector('.js-comply-scope-text').value = scopeValue;
             row.querySelector('.js-comply-scope-hidden').value = scopeValue;
             row.querySelector('.js-comply-category-text').value = (complyCategorySelect ? complyCategorySelect.value : itemData.item_type) || '-';
-            row.querySelector('.js-comply-kind-text').value = itemData.item_name || '-';
+            row.querySelector('.js-comply-kind-text').value = itemData.display_name || itemData.item_name || '-';
             row.querySelector('.js-comply-label').value = labelText;
             row.querySelector('.js-comply-label').placeholder = itemData.placeholder || 'Nama / nomor comply';
             row.querySelector('.js-comply-short-note').textContent = buildShortRequirement(itemData);
-
-            if ((itemData.photo_per_label || 1) === 2) {
-                row.querySelector('.js-comply-remarks').value = 'FAT terbuka\nFAT tertutup';
+            if (itemData.default_label_prefix) {
+                row.setAttribute('data-auto-label-prefix', itemData.default_label_prefix);
+                row.setAttribute('data-auto-label-scope', scopeValue === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER');
             }
+            if (itemData.default_remark_prefix) {
+                row.setAttribute('data-auto-remark-prefix', itemData.default_remark_prefix);
+                row.setAttribute('data-auto-remark-scope', scopeValue === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER');
+            }
+
+            row.querySelector('.js-comply-remarks').value = buildDefaultComplyRemarks(itemData, scopeValue, row);
 
             complyRowsBody.appendChild(fragment);
             reindexComplyRows();
-            if (complyLabelBuilder) complyLabelBuilder.value = '';
+            syncAllAutoComplyFields();
+            if (complyLabelBuilder) {
+                complyLabelBuilder.value = itemData.default_label_prefix
+                    ? buildNextAutoLabel(itemData.default_label_prefix, scopeValue)
+                    : '';
+            }
         }
 
         function toggleProgressEmptyState() {
@@ -3046,6 +3278,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         }
 
         bindDropzones();
+        bindComplyReviewForms();
         toggleProgressEmptyState();
 
         if (progressAddButton && progressSelector) {
@@ -3079,6 +3312,174 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 .replace(/"/g, '&quot;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
+        }
+
+        function getComplyBadgeClass(status) {
+            status = String(status || '').toUpperCase();
+            if (status === 'APPROVED') {
+                return 'success';
+            }
+            if (status === 'REJECTED') {
+                return 'danger';
+            }
+            return 'warning';
+        }
+
+        function buildComplyReviewButtons(photoId, photoLabel, status) {
+            if (!canApproveComplyPhoto) {
+                return '';
+            }
+
+            status = String(status || 'UPLOADED').toUpperCase();
+            var safeId = escapeAttr(photoId);
+            var safeLabel = escapeAttr(photoLabel || '-');
+            var html = '';
+
+            if (status === 'UPLOADED' || status === 'REJECTED') {
+                html += '<button type="button" class="btn btn-sm btn-outline-success mr-1 js-open-comply-approve" data-toggle="modal" data-target="#modal-comply-approve" data-photo-id="' + safeId + '" data-photo-label="' + safeLabel + '">Approve</button>';
+            }
+            if (status === 'UPLOADED' || status === 'APPROVED') {
+                html += '<button type="button" class="btn btn-sm btn-outline-danger js-open-comply-reject" data-toggle="modal" data-target="#modal-comply-reject" data-photo-id="' + safeId + '" data-photo-label="' + safeLabel + '">Reject</button>';
+            }
+
+            return html;
+        }
+
+        function syncComplyPhotoReviewCard(photo) {
+            if (!photo || !photo.id_progress_photo) {
+                return;
+            }
+
+            var photoId = parseInt(photo.id_progress_photo, 10) || 0;
+            if (photoId <= 0) {
+                return;
+            }
+
+            var status = String(photo.status_photo || 'UPLOADED').toUpperCase();
+            var badgeClass = photo.badge_class || getComplyBadgeClass(status);
+            var remark = String(photo.review_remark || '');
+            var cards = document.querySelectorAll('.js-comply-photo-review-card[data-photo-id="' + photoId + '"]');
+
+            Array.prototype.forEach.call(cards, function (card) {
+                var label = card.getAttribute('data-photo-label') || '-';
+                var badge = card.querySelector('.js-comply-photo-status');
+                var remarkWrap = card.querySelector('.js-comply-review-remark');
+                var remarkText = remarkWrap ? remarkWrap.querySelector('span') : null;
+                var actions = card.querySelector('.js-comply-photo-actions');
+
+                if (badge) {
+                    badge.className = badge.className.replace(/\bbadge-(success|danger|warning|secondary|info|primary)\b/g, '').replace(/\s+/g, ' ').trim();
+                    badge.classList.add('badge-' + badgeClass);
+                    badge.textContent = status;
+                }
+
+                if (remarkWrap && remarkText) {
+                    remarkText.textContent = remark;
+                    remarkWrap.classList.toggle('d-none', remark === '');
+                }
+
+                if (actions) {
+                    actions.innerHTML = buildComplyReviewButtons(photoId, label, status);
+                }
+            });
+        }
+
+        function showComplyReviewMessage(message, isSuccess) {
+            var container = document.querySelector('.content .container-fluid');
+            if (!container) {
+                alert(message || (isSuccess ? 'Berhasil menyimpan review foto comply.' : 'Gagal menyimpan review foto comply.'));
+                return;
+            }
+
+            var oldAlert = container.querySelector('.js-comply-review-alert');
+            if (oldAlert) {
+                oldAlert.remove();
+            }
+
+            var alertNode = document.createElement('div');
+            alertNode.className = 'alert js-comply-review-alert ' + (isSuccess ? 'alert-success' : 'alert-danger');
+            alertNode.textContent = message || (isSuccess ? 'Berhasil menyimpan review foto comply.' : 'Gagal menyimpan review foto comply.');
+            container.insertBefore(alertNode, container.firstChild);
+
+            window.setTimeout(function () {
+                if (alertNode && alertNode.parentNode) {
+                    alertNode.parentNode.removeChild(alertNode);
+                }
+            }, 4500);
+        }
+
+        function setComplyReviewSubmitting(form, isSubmitting) {
+            var submitButton = form ? form.querySelector('button[type="submit"]') : null;
+            if (!submitButton) {
+                return;
+            }
+
+            if (isSubmitting) {
+                submitButton.dataset.originalText = submitButton.textContent;
+                submitButton.disabled = true;
+                submitButton.textContent = 'Memproses...';
+                return;
+            }
+
+            submitButton.disabled = false;
+            submitButton.textContent = submitButton.dataset.originalText || submitButton.textContent;
+        }
+
+        function bindComplyReviewForms() {
+            var forms = document.querySelectorAll('.js-comply-review-form');
+            Array.prototype.forEach.call(forms, function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!window.fetch || !window.FormData) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    setComplyReviewSubmitting(form, true);
+
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                        .then(function (response) {
+                            return response.text().then(function (text) {
+                                var data = {};
+                                try {
+                                    data = text ? JSON.parse(text) : {};
+                                } catch (e) {
+                                    data = { status: false, message: 'Response server tidak valid.' };
+                                }
+                                if (!response.ok && data.status !== true) {
+                                    data.status = false;
+                                }
+                                return data;
+                            });
+                        })
+                        .then(function (data) {
+                            if (!data.status) {
+                                showComplyReviewMessage(data.message || 'Gagal menyimpan review foto comply.', false);
+                                return;
+                            }
+
+                            syncComplyPhotoReviewCard(data.photo);
+                            showComplyReviewMessage(data.message || 'Review foto comply berhasil disimpan.', true);
+                            if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === 'function') {
+                                window.jQuery(form.closest('.modal')).modal('hide');
+                            }
+                            form.reset();
+                        })
+                        .catch(function () {
+                            showComplyReviewMessage('Gagal menyimpan review foto comply. Coba lagi beberapa saat.', false);
+                        })
+                        .finally(function () {
+                            setComplyReviewSubmitting(form, false);
+                        });
+                });
+            });
         }
 
         function formatDailyQty(value) {
@@ -3546,29 +3947,23 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                     entry.photos.forEach(function (photo) {
                         var photoCaption = photo.caption || photo.file_name || 'Foto Progress';
                         var photoCategory = (photo.photo_category || 'HARIAN').toUpperCase() === 'COMPLY' ? 'Foto Comply' : 'Foto Harian';
-                        var photoStatus = (photo.status_photo || ((photo.photo_category || 'HARIAN').toUpperCase() === 'COMPLY' ? 'UPLOADED' : 'APPROVED'));
+                        var photoStatus = String(photo.status_photo || ((photo.photo_category || 'HARIAN').toUpperCase() === 'COMPLY' ? 'UPLOADED' : 'APPROVED')).toUpperCase();
                         if (photo.comply_label) {
                             photoCaption = photoCategory + ' - ' + photo.comply_label;
                         } else {
                             photoCaption = photoCategory + ' - ' + photoCaption;
                         }
-                        html += '<div class="impl-history-modal-photo">';
+                        var isComplyPhoto = (photo.photo_category || '').toUpperCase() === 'COMPLY';
+                        html += '<div class="impl-history-modal-photo' + (isComplyPhoto ? ' js-comply-photo-review-card' : '') + '" data-photo-id="' + escapeAttr(photo.id_progress_photo || 0) + '" data-photo-label="' + escapeAttr(photoCaption) + '">';
                         html += '<a href="<?= base_url() ?>' + (photo.file_path || '') + '" class="js-open-lightbox d-block" data-image="<?= base_url() ?>' + (photo.file_path || '') + '" data-title="' + escapeAttr(historyButton.getAttribute('data-item-name') || 'Preview Foto') + '" data-caption="' + escapeAttr(photoCaption) + '">';
-                        html += '<img src="<?= base_url() ?>' + (photo.file_path || '') + '" alt="' + (photo.file_name || 'Foto Progress') + '">';
-                        html += '<div>' + photoCaption + '</div>';
+                        html += '<img src="<?= base_url() ?>' + (photo.file_path || '') + '" alt="' + escapeAttr(photo.file_name || 'Foto Progress') + '">';
+                        html += '<div>' + escapeAttr(photoCaption) + '</div>';
                         html += '</a>';
-                        html += '<div class="small mt-1"><span class="badge badge-' + (photoStatus === 'APPROVED' ? 'success' : (photoStatus === 'REJECTED' ? 'danger' : 'warning')) + '">' + photoStatus + '</span></div>';
-                        if (photo.review_remark) {
-                            html += '<div class="small text-muted mt-1">Review: ' + photo.review_remark + '</div>';
-                        }
-                        if (canApproveComplyPhoto && (photo.photo_category || '').toUpperCase() === 'COMPLY') {
-                            html += '<div class="mt-2">';
-                            if (photoStatus === 'UPLOADED' || photoStatus === 'REJECTED') {
-                                html += '<button type="button" class="btn btn-sm btn-outline-success mr-1 js-open-comply-approve" data-toggle="modal" data-target="#modal-comply-approve" data-photo-id="' + (photo.id_progress_photo || 0) + '" data-photo-label="' + escapeAttr(photoCaption) + '">Approve</button>';
-                            }
-                            if (photoStatus === 'UPLOADED' || photoStatus === 'APPROVED') {
-                                html += '<button type="button" class="btn btn-sm btn-outline-danger js-open-comply-reject" data-toggle="modal" data-target="#modal-comply-reject" data-photo-id="' + (photo.id_progress_photo || 0) + '" data-photo-label="' + escapeAttr(photoCaption) + '">Reject</button>';
-                            }
+                        html += '<div class="small mt-1"><span class="badge badge-' + getComplyBadgeClass(photoStatus) + (isComplyPhoto ? ' js-comply-photo-status' : '') + '">' + escapeAttr(photoStatus) + '</span></div>';
+                        html += '<div class="small text-muted mt-1 js-comply-review-remark' + (photo.review_remark ? '' : ' d-none') + '">Review: <span>' + escapeAttr(photo.review_remark || '') + '</span></div>';
+                        if (canApproveComplyPhoto && isComplyPhoto) {
+                            html += '<div class="mt-2 js-comply-photo-actions">';
+                            html += buildComplyReviewButtons(photo.id_progress_photo || 0, photoCaption, photoStatus);
                             html += '</div>';
                         }
                         html += '</div>';
@@ -3680,6 +4075,12 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             if (complyCategorySelect) {
                 complyCategorySelect.addEventListener('change', populateComplyKind);
             }
+            if (complyKindSelect) {
+                complyKindSelect.addEventListener('change', syncComplyBuilderDefaults);
+            }
+            if (complyScopeSelect) {
+                complyScopeSelect.addEventListener('change', syncComplyBuilderDefaults);
+            }
             if (complyAddButton) {
                 complyAddButton.addEventListener('click', addComplyRow);
             }
@@ -3701,6 +4102,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 if (row) {
                     row.remove();
                     reindexComplyRows();
+                    syncAllAutoComplyFields();
                 }
                 if (!complyRowsBody.querySelector('.js-comply-row')) {
                     addComplyRow();

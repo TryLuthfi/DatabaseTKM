@@ -234,14 +234,16 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             redirect('Implementasi_BOQ_MyRep');
             return;
         }
+        $cluster['nama_olt'] = $this->resolveClusterOltName($clusterId, $cluster);
 
+        $dailyGroups = $this->buildDailyProgressPrintGroups($clusterId);
         $complyGroups = $this->MImplementasi_BOQ_MyRep->getApprovedComplyPrintGroups($clusterId);
         $selectedCategory = trim((string) $this->input->get('category'));
         if ($selectedCategory !== '') {
             $complyGroups = $this->filterComplyGroupsByCategory($complyGroups, $selectedCategory);
         }
-        if (empty($complyGroups)) {
-            $this->session->set_flashdata('error', 'Belum ada foto comply APPROVED yang bisa dicetak.');
+        if (empty($dailyGroups) && empty($complyGroups)) {
+            $this->session->set_flashdata('error', 'Belum ada foto daily progress atau foto comply APPROVED yang bisa dicetak.');
             redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane');
             return;
         }
@@ -259,24 +261,35 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
         $pdf->SetCreator('DatabaseTKM');
         $pdf->SetAuthor('DatabaseTKM');
-        $pdf->SetTitle('Foto Comply - ' . (string) ($cluster['cluster_name'] ?? 'Cluster'));
-        $pdf->SetSubject('Foto Comply Implementasi BOQ MyRep');
+        $pdf->SetTitle('Daily Progress & Foto Comply - ' . (string) ($cluster['cluster_name'] ?? 'Cluster'));
+        $pdf->SetSubject('Daily Progress dan Foto Comply Implementasi BOQ MyRep');
         $pdf->SetPrintHeader(false);
         $pdf->SetPrintFooter(false);
         $pdf->SetMargins(8, 8, 8);
         $pdf->SetAutoPageBreak(true, 8);
         $pdf->SetFont('helvetica', '', 9);
 
-        foreach ($complyGroups as $sectionTitle => $photos) {
+        foreach ($dailyGroups as $sectionTitle => $photos) {
             $photoChunks = array_chunk(array_values($photos), 8);
             foreach ($photoChunks as $photoChunk) {
+                $scopeTitle = $this->resolvePrintScopeTitle($sectionTitle, $photoChunk);
                 $pdf->AddPage();
-                $this->renderComplyPdfHeader($pdf, $cluster, (string) $sectionTitle);
-                $this->renderComplyPdfPhotos($pdf, $photoChunk);
+                $this->renderComplyPdfHeader($pdf, $cluster, $scopeTitle, 'IMPLE ' . $scopeTitle, 'Foto Daily Progress');
+                $this->renderComplyPdfPhotos($pdf, $photoChunk, 'Daily Progress');
             }
         }
 
-        $fileName = 'Foto_Comply_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($cluster['cluster_name'] ?? ('Cluster_' . $clusterId))) . '.pdf';
+        foreach ($complyGroups as $sectionTitle => $photos) {
+            $photoChunks = array_chunk(array_values($photos), 8);
+            foreach ($photoChunks as $photoChunk) {
+                $scopeTitle = $this->resolvePrintScopeTitle('', $photoChunk);
+                $pdf->AddPage();
+                $this->renderComplyPdfHeader($pdf, $cluster, $scopeTitle, (string) $sectionTitle, 'Foto Comply Approved');
+                $this->renderComplyPdfPhotos($pdf, $photoChunk, 'Comply');
+            }
+        }
+
+        $fileName = 'Daily_Progress_Foto_Comply_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($cluster['cluster_name'] ?? ('Cluster_' . $clusterId))) . '.pdf';
         $pdf->Output($fileName, 'I');
     }
 
@@ -299,21 +312,24 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             redirect('Implementasi_BOQ_MyRep');
             return;
         }
+        $cluster['nama_olt'] = $this->resolveClusterOltName($clusterId, $cluster);
 
+        $dailyGroups = $this->buildDailyProgressPrintGroups($clusterId);
         $complyGroups = $this->MImplementasi_BOQ_MyRep->getApprovedComplyPrintGroups($clusterId);
         $allCategoryTitles = array_keys($complyGroups);
         $selectedCategory = trim((string) $this->input->get('category'));
         if ($selectedCategory !== '') {
             $complyGroups = $this->filterComplyGroupsByCategory($complyGroups, $selectedCategory);
         }
-        if (empty($complyGroups)) {
-            $this->session->set_flashdata('error', 'Belum ada foto comply APPROVED yang bisa dipreview.');
+        if (empty($dailyGroups) && empty($complyGroups)) {
+            $this->session->set_flashdata('error', 'Belum ada foto daily progress atau foto comply APPROVED yang bisa dipreview.');
             redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane');
             return;
         }
 
-        $data['title'] = 'Preview Foto Comply';
+        $data['title'] = 'Preview Daily Progress & Foto Comply';
         $data['cluster'] = $cluster;
+        $data['dailyGroups'] = $dailyGroups;
         $data['complyGroups'] = $complyGroups;
         $data['allCategoryTitles'] = $allCategoryTitles;
         $data['selectedCategory'] = $selectedCategory;
@@ -324,6 +340,132 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $this->load->view('Implementasi_BOQ_MyRep/preview_comply_pdf', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    private function buildDailyProgressPrintGroups($clusterId)
+    {
+        $dailyActivities = $this->MImplementasi_BOQ_MyRep->getDailyActivities((int) $clusterId);
+        if (empty($dailyActivities)) {
+            return [];
+        }
+
+        $groups = [];
+        foreach ($dailyActivities as $activity) {
+            $photos = (array) ($activity['photos'] ?? []);
+            if (empty($photos)) {
+                continue;
+            }
+
+            $activityDate = trim((string) ($activity['activity_date'] ?? ''));
+            $scopeType = strtoupper(trim((string) ($activity['scope_type'] ?? 'CLUSTER'))) === 'SUBFEEDER' ? 'SUBFEEDER' : 'CLUSTER';
+            $sectionTitle = $scopeType;
+            if (!isset($groups[$sectionTitle])) {
+                $groups[$sectionTitle] = [];
+            }
+
+            $activityName = trim((string) ($activity['activity_name'] ?? $activity['activity_code'] ?? 'Aktivitas'));
+            $activityDetail = trim((string) ($activity['activity_detail'] ?? ''));
+            $qty = (float) ($activity['qty_activity'] ?? 0);
+            $unit = trim((string) ($activity['unit_activity'] ?? ''));
+            $remark = trim((string) ($activity['remark_activity'] ?? ''));
+
+            foreach ($photos as $photo) {
+                $caption = trim((string) ($photo['caption'] ?? ''));
+                $descriptionParts = array_filter([$activityName, $activityDetail], static function ($value) {
+                    return trim((string) $value) !== '' && trim((string) $value) !== '-';
+                });
+                $description = !empty($descriptionParts) ? implode(' - ', $descriptionParts) : (string) ($photo['file_name'] ?? 'Foto Daily Progress');
+
+                $metaParts = [];
+                if ($activityDate !== '') {
+                    $metaParts[] = $this->formatPrintDate($activityDate);
+                }
+                if ($qty > 0) {
+                    $metaParts[] = rtrim(rtrim(number_format($qty, 2, ',', '.'), '0'), ',') . ($unit !== '' ? ' ' . $unit : '');
+                }
+                if ($scopeType !== '') {
+                    $metaParts[] = $scopeType;
+                }
+                if ($caption !== '') {
+                    $metaParts[] = $caption;
+                } elseif ($remark !== '') {
+                    $metaParts[] = $remark;
+                }
+
+                $groups[$sectionTitle][] = [
+                    'file_name' => (string) ($photo['file_name'] ?? 'Foto Daily Progress'),
+                    'file_path' => (string) ($photo['file_path'] ?? ''),
+                    'caption' => $caption,
+                    'description' => $description,
+                    'meta_line' => !empty($metaParts) ? implode(' | ', $metaParts) : 'Daily Progress',
+                ];
+            }
+        }
+
+        $orderedGroups = [];
+        foreach (['CLUSTER', 'SUBFEEDER'] as $scopeTitle) {
+            if (isset($groups[$scopeTitle])) {
+                $orderedGroups[$scopeTitle] = $groups[$scopeTitle];
+            }
+        }
+
+        return $orderedGroups;
+    }
+
+    private function formatPrintDate($date)
+    {
+        $timestamp = strtotime((string) $date);
+        if ($timestamp === false) {
+            return (string) $date;
+        }
+
+        return date('d/m/Y', $timestamp);
+    }
+
+    private function resolveClusterOltName($clusterId, array $cluster = [])
+    {
+        $currentOlt = trim((string) ($cluster['nama_olt'] ?? ''));
+        if ($currentOlt !== '') {
+            return $currentOlt;
+        }
+
+        if (!$this->db->table_exists('tb_myrep_drm') || !$this->db->field_exists('nama_olt', 'tb_myrep_drm')) {
+            return '-';
+        }
+
+        $row = $this->db
+            ->select('nama_olt')
+            ->from('tb_myrep_drm')
+            ->where('id_myrep_cluster', (int) $clusterId)
+            ->where("TRIM(COALESCE(nama_olt, '')) <>", '', false)
+            ->order_by('id_drm', 'DESC')
+            ->get()
+            ->row_array();
+
+        return !empty($row['nama_olt']) ? (string) $row['nama_olt'] : '-';
+    }
+
+    private function resolvePrintScopeTitle($fallbackScope, array $photos = [])
+    {
+        $fallbackScope = strtoupper(trim((string) $fallbackScope));
+        if ($fallbackScope === 'SUBFEEDER') {
+            return 'SUBFEEDER';
+        }
+
+        foreach ($photos as $photo) {
+            $text = strtoupper(trim(implode(' ', [
+                (string) ($photo['caption'] ?? ''),
+                (string) ($photo['meta_line'] ?? ''),
+                (string) ($photo['comply_label'] ?? ''),
+                (string) ($photo['description'] ?? ''),
+            ])));
+
+            if (strpos($text, 'SUBFEEDER') !== false) {
+                return 'SUBFEEDER';
+            }
+        }
+
+        return 'CLUSTER';
     }
 
     private function filterComplyGroupsByCategory(array $groups, $selectedCategory)
@@ -495,11 +637,19 @@ class Implementasi_BOQ_MyRep extends CI_Controller
     public function approveComplyPhoto()
     {
         if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.', ['redirect_url' => base_url('Auth')], 401);
+                return;
+            }
             redirect('Auth');
             return;
         }
 
         if (!$this->isApprover()) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Anda tidak memiliki akses approve foto comply.', [], 403);
+                return;
+            }
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses approve foto comply.');
             redirect('Implementasi_BOQ_MyRep');
             return;
@@ -511,30 +661,53 @@ class Implementasi_BOQ_MyRep extends CI_Controller
 
         $photo = $this->MImplementasi_BOQ_MyRep->getProgressPhotoById($photoId);
         if ($clusterId <= 0 || empty($photo) || (int) ($photo['id_myrep_cluster'] ?? 0) !== $clusterId) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Foto comply tidak ditemukan.', [], 404);
+                return;
+            }
             $this->session->set_flashdata('error', 'Foto comply tidak ditemukan.');
             redirect('Implementasi_BOQ_MyRep');
             return;
         }
 
         if (strtoupper(trim((string) ($photo['photo_category'] ?? 'HARIAN'))) !== 'COMPLY') {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Hanya foto comply yang bisa di-review HO.', [], 422);
+                return;
+            }
             $this->session->set_flashdata('error', 'Hanya foto comply yang bisa di-review HO.');
             redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
             return;
         }
 
         $result = $this->MImplementasi_BOQ_MyRep->updateProgressPhotoReviewStatus($photoId, 'APPROVED', (int) $this->session->userdata('id_user'), $remark);
+        if ($this->isAjaxRequest()) {
+            $this->jsonResponse((bool) $result, $result ? 'Foto comply berhasil di-approve.' : 'Gagal approve foto comply.', [
+                'photo' => $this->buildComplyPhotoReviewPayload($photoId, 'APPROVED', $remark),
+            ], $result ? 200 : 500);
+            return;
+        }
+
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Foto comply berhasil di-approve.' : 'Gagal approve foto comply.');
-        redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+        redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane');
     }
 
     public function rejectComplyPhoto()
     {
         if (empty($this->session->userdata('id_user'))) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Session habis. Silakan login ulang.', ['redirect_url' => base_url('Auth')], 401);
+                return;
+            }
             redirect('Auth');
             return;
         }
 
         if (!$this->isApprover()) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Anda tidak memiliki akses reject foto comply.', [], 403);
+                return;
+            }
             $this->session->set_flashdata('error', 'Anda tidak memiliki akses reject foto comply.');
             redirect('Implementasi_BOQ_MyRep');
             return;
@@ -546,26 +719,45 @@ class Implementasi_BOQ_MyRep extends CI_Controller
 
         $photo = $this->MImplementasi_BOQ_MyRep->getProgressPhotoById($photoId);
         if ($clusterId <= 0 || empty($photo) || (int) ($photo['id_myrep_cluster'] ?? 0) !== $clusterId) {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Foto comply tidak ditemukan.', [], 404);
+                return;
+            }
             $this->session->set_flashdata('error', 'Foto comply tidak ditemukan.');
             redirect('Implementasi_BOQ_MyRep');
             return;
         }
 
         if (strtoupper(trim((string) ($photo['photo_category'] ?? 'HARIAN'))) !== 'COMPLY') {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Hanya foto comply yang bisa di-review HO.', [], 422);
+                return;
+            }
             $this->session->set_flashdata('error', 'Hanya foto comply yang bisa di-review HO.');
             redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
             return;
         }
 
         if ($remark === '') {
+            if ($this->isAjaxRequest()) {
+                $this->jsonResponse(false, 'Alasan reject foto comply wajib diisi.', [], 422);
+                return;
+            }
             $this->session->set_flashdata('error', 'Alasan reject foto comply wajib diisi.');
             redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
             return;
         }
 
         $result = $this->MImplementasi_BOQ_MyRep->updateProgressPhotoReviewStatus($photoId, 'REJECTED', (int) $this->session->userdata('id_user'), $remark);
+        if ($this->isAjaxRequest()) {
+            $this->jsonResponse((bool) $result, $result ? 'Foto comply berhasil di-reject.' : 'Gagal reject foto comply.', [
+                'photo' => $this->buildComplyPhotoReviewPayload($photoId, 'REJECTED', $remark),
+            ], $result ? 200 : 500);
+            return;
+        }
+
         $this->session->set_flashdata($result ? 'success' : 'error', $result ? 'Foto comply berhasil di-reject.' : 'Gagal reject foto comply.');
-        redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId);
+        redirect('Implementasi_BOQ_MyRep/detail/' . $clusterId . '#impl-comply-pane');
     }
 
     public function uploadComplyPhoto()
@@ -898,7 +1090,35 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             || $this->session->userdata('nama_level') === 'Super Admin';
     }
 
-    private function renderComplyPdfHeader($pdf, $cluster, $sectionTitle)
+    private function isAjaxRequest()
+    {
+        return $this->input->is_ajax_request()
+            || strtolower((string) $this->input->server('HTTP_X_REQUESTED_WITH')) === 'xmlhttprequest';
+    }
+
+    private function jsonResponse($status, $message, array $payload = [], $httpStatus = 200)
+    {
+        $this->output
+            ->set_status_header((int) $httpStatus)
+            ->set_content_type('application/json')
+            ->set_output(json_encode(array_merge([
+                'status' => (bool) $status,
+                'message' => (string) $message,
+            ], $payload)));
+    }
+
+    private function buildComplyPhotoReviewPayload($photoId, $statusPhoto, $reviewRemark)
+    {
+        $statusPhoto = strtoupper(trim((string) $statusPhoto));
+        return [
+            'id_progress_photo' => (int) $photoId,
+            'status_photo' => $statusPhoto,
+            'badge_class' => $statusPhoto === 'APPROVED' ? 'success' : ($statusPhoto === 'REJECTED' ? 'danger' : 'warning'),
+            'review_remark' => trim((string) $reviewRemark),
+        ];
+    }
+
+    private function renderComplyPdfHeader($pdf, $cluster, $sectionTitle, $documentTitle = 'FOTO COMPLY', $infoTitle = 'Foto Comply Approved')
     {
         $tkmLogo = $this->resolvePdfLogoFile([
             'assets/dist/img/logotkmsolid.png',
@@ -938,7 +1158,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
 
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->SetXY($left + 72, $top + 8);
-        $pdf->MultiCell(20, 4, "FOTO\nCOMPLY", 0, 'C', false, 1);
+        $pdf->MultiCell(20, 4, str_replace(' ', "\n", strtoupper((string) $documentTitle)), 0, 'C', false, 1);
 
         $labels = ['Region', 'OLT Name', 'Cluster Name', 'Cluster ID'];
         $values = [$region, $oltName !== '' ? $oltName : '-', $clusterName, $clusterCode !== '' ? $clusterCode : (string) ($cluster['id_myrep_cluster'] ?? '-')];
@@ -961,13 +1181,13 @@ class Implementasi_BOQ_MyRep extends CI_Controller
         $pdf->Cell(24, 5, $sectionTitle, 0, 0, 'C');
         $pdf->SetFont('helvetica', 'B', 8);
         $pdf->SetXY($left + 26, $top + $headerHeight + 1);
-        $pdf->Cell(60, 3, 'Foto Comply Approved', 0, 0, 'L');
+        $pdf->Cell(60, 3, (string) $infoTitle, 0, 0, 'L');
         $pdf->SetFont('helvetica', '', 7);
         $pdf->SetXY($left + 26, $top + $headerHeight + 4.5);
         $pdf->Cell(120, 3, 'Cluster: ' . $clusterName, 0, 0, 'L');
     }
 
-    private function renderComplyPdfPhotos($pdf, $photos)
+    private function renderComplyPdfPhotos($pdf, $photos, $defaultPrefix = 'Comply')
     {
         $startY = 42;
         $leftX = 8;
@@ -983,9 +1203,14 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             $x = $column === 0 ? $leftX : $rightX;
             $y = $startY + ($row * ($tileHeight + $rowGap));
 
-            $description = trim((string) ($photo['comply_label'] ?? '')) !== '' ? (string) $photo['comply_label'] : (string) ($photo['file_name'] ?? 'Foto Comply');
+            $description = trim((string) ($photo['description'] ?? '')) !== ''
+                ? (string) $photo['description']
+                : (trim((string) ($photo['comply_label'] ?? '')) !== '' ? (string) $photo['comply_label'] : (string) ($photo['file_name'] ?? 'Foto'));
             $caption = trim((string) ($photo['caption'] ?? ''));
-            $metaLine = $caption !== '' ? $caption : ('Comply - ' . $description);
+            $metaLine = trim((string) ($photo['meta_line'] ?? '')) !== ''
+                ? (string) $photo['meta_line']
+                : ($caption !== '' ? $caption : ((string) $defaultPrefix . ' - ' . $description));
+            $metaLine = $this->appendPrintPhotoItemToRemark($metaLine, $photo);
             $imagePath = $this->resolvePdfImageFile((string) ($photo['file_path'] ?? ''));
 
             $pdf->Rect($x, $y, $tileWidth, $tileHeight);
@@ -1014,6 +1239,21 @@ class Implementasi_BOQ_MyRep extends CI_Controller
             $pdf->SetXY($x + 1, $y + $imageHeight + 6.1);
             $pdf->Cell($tileWidth - 2, 4, $metaLine, 0, 0, 'C');
         }
+    }
+
+    private function appendPrintPhotoItemToRemark($remark, array $photo)
+    {
+        $remark = trim((string) $remark);
+        $itemName = trim((string) ($photo['item_name'] ?? ''));
+        if ($remark === '' || $itemName === '') {
+            return $remark;
+        }
+
+        if (stripos($remark, $itemName) !== false) {
+            return $remark;
+        }
+
+        return $remark . ' - ' . $itemName;
     }
 
     private function resolvePdfImageFile($relativePath)
