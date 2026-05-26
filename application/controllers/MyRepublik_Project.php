@@ -445,6 +445,12 @@ class MyRepublik_Project extends CI_Controller
             'email_atp_date',
             'actual_atp_date',
             'status_atp',
+            'cluster_cwatp',
+            'cluster_fullopm',
+            'cluster_rfs',
+            'subfeeder_cwatp',
+            'subfeeder_fullopm',
+            'subfeeder_rfs',
             'po_cluster_category',
             'po_cluster_status',
             'po_cluster_number',
@@ -886,7 +892,8 @@ class MyRepublik_Project extends CI_Controller
         $this->upsertImportedBatch($clusterId, $row, $userId, $statusCurrent);
         $this->upsertImportedDrm($clusterId, $row, $userId);
         $this->upsertImportedPo($clusterId, $row, $userId);
-        $this->upsertImportedRfsAtp($clusterId, $row, $userId, $target, $statusCurrent);
+        $rfsClusterId = $this->upsertImportedRfsAtp($clusterId, $row, $userId, $target, $statusCurrent);
+        $this->applyImportedChecklistStatuses($rfsClusterId, $row, $userId);
 
         $this->db->trans_complete();
         if (!$this->db->trans_status()) {
@@ -963,7 +970,7 @@ class MyRepublik_Project extends CI_Controller
         $submissionDate = $this->normalizeDate((string) ($row['submission_date'] ?? ''));
         $releasedAt = $this->normalizeDateTime((string) ($row['released_at'] ?? ''));
         $hasBatchPayload = $hpDonasiFromRow > 0 || $submissionDate || $releasedAt;
-        $statusNeedsBatch = in_array($statusCurrent, ['WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'DONE'], true);
+        $statusNeedsBatch = in_array($statusCurrent, ['WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'], true);
 
         // Tahap BAK/VALSAL awal: jangan buat batch jika belum ada payload batch
         // dan status import tidak menuntut batch.
@@ -975,9 +982,9 @@ class MyRepublik_Project extends CI_Controller
         $allowedStaging = ['DRAFT', 'WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE', 'COMPLETED', 'REJECTED'];
 
         $stagingStatus = 'WAITING HO';
-        if (in_array($statusCurrent, ['WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'DONE'], true)) {
+        if (in_array($statusCurrent, ['WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
             $stagingStatus = $statusCurrent === 'DONE BATCH APPROVAL' ? 'DONE' : $statusCurrent;
-            if (in_array($statusCurrent, ['DRM', 'RFS', 'ATP', 'DONE'], true)) {
+            if (in_array($statusCurrent, ['DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
                 $stagingStatus = 'RELEASED';
             }
         }
@@ -1096,7 +1103,7 @@ class MyRepublik_Project extends CI_Controller
     private function upsertImportedRfsAtp($clusterId, array $row, $userId, array $target, $statusCurrent)
     {
         if (!$this->db->table_exists('tb_rfs_myrep_cluster')) {
-            return;
+            return 0;
         }
 
         $rfsDate = $this->normalizeDate((string) ($row['rfs_date'] ?? $row['tanggal_rfs'] ?? ''));
@@ -1104,10 +1111,11 @@ class MyRepublik_Project extends CI_Controller
         $atpDate = $this->normalizeDate((string) ($row['actual_atp_date'] ?? ''));
         $statusAtpInput = strtoupper(trim((string) ($row['status_atp'] ?? '')));
         $rfsClaims = $this->extractRfsClaimsFromRow($row);
-        $statusNeedsRfs = in_array($statusCurrent, ['RFS', 'ATP', 'DONE'], true);
+        $statusNeedsRfs = in_array($statusCurrent, ['RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'], true)
+            || $this->hasChecklistImportPayload($row);
 
         if (!$statusNeedsRfs && !$rfsDate && !$atpDate && empty($rfsClaims)) {
-            return;
+            return 0;
         }
 
         $homepass = (int) $this->normalizeNumber($row['homepass_drm'] ?? 0);
@@ -1132,7 +1140,7 @@ class MyRepublik_Project extends CI_Controller
 
         $statusRfsInput = strtoupper(trim((string) ($row['status_rfs'] ?? '')));
         $statusRfs = ($homepassRfs > 0 && $totalClaimQty >= $homepassRfs) ? 'FULL RFS' : 'NY RFS';
-        if (in_array($statusRfsInput, ['FULL RFS', 'FULL'], true)) {
+        if (in_array($statusCurrent, ['CHECKLIST DOKUMENT', 'DONE'], true) || in_array($statusRfsInput, ['FULL RFS', 'FULL'], true)) {
             // Explicit override from CSV: force full even if claim qty is still below DRM.
             $statusRfs = 'FULL RFS';
         } elseif (in_array($statusRfsInput, ['PARTIAL', 'PARTIAL RFS', 'NY RFS'], true)) {
@@ -1141,7 +1149,7 @@ class MyRepublik_Project extends CI_Controller
         $statusAtp = 'NOT STARTED';
         if (in_array($statusAtpInput, ['DONE', 'PUNCLIST', 'REJECT'], true)) {
             $statusAtp = $statusAtpInput;
-        } elseif (in_array($statusCurrent, ['ATP', 'DONE'], true)) {
+        } elseif (in_array($statusCurrent, ['ATP', 'CHECKLIST DOKUMENT', 'DONE'], true)) {
             $statusAtp = 'DONE';
         } elseif ($emailAtpDate !== null) {
             $statusAtp = 'WAITING';
@@ -1236,9 +1244,270 @@ class MyRepublik_Project extends CI_Controller
 
         $syncAtpDate = $atpDate;
         if ($syncAtpDate === null && $statusAtp === 'DONE') {
-            $syncAtpDate = $emailAtpDate;
+            $syncAtpDate = $emailAtpDate ?: $rfsDate;
         }
         $this->syncChecklistActualAtpDate($rfsClusterId, $syncAtpDate, $userId);
+
+        return $rfsClusterId;
+    }
+
+    private function getChecklistImportColumnMap()
+    {
+        return [
+            'cluster_cwatp' => ['scope_type' => 'CLUSTER', 'sow_type' => 'CW ATP'],
+            'cluster_fullopm' => ['scope_type' => 'CLUSTER', 'sow_type' => 'FULL OPM'],
+            'cluster_rfs' => ['scope_type' => 'CLUSTER', 'sow_type' => 'RFS'],
+            'subfeeder_cwatp' => ['scope_type' => 'SUBFEEDER', 'sow_type' => 'CW ATP'],
+            'subfeeder_fullopm' => ['scope_type' => 'SUBFEEDER', 'sow_type' => 'FULL OPM'],
+            'subfeeder_rfs' => ['scope_type' => 'SUBFEEDER', 'sow_type' => 'RFS'],
+        ];
+    }
+
+    private function getAllowedChecklistImportStatuses()
+    {
+        return ['AREA', 'HO', 'EMR', 'CLOSED'];
+    }
+
+    private function normalizeChecklistImportStatus($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        return in_array($status, $this->getAllowedChecklistImportStatuses(), true) ? $status : '';
+    }
+
+    private function hasChecklistImportPayload(array $row)
+    {
+        foreach (array_keys($this->getChecklistImportColumnMap()) as $column) {
+            if (trim((string) ($row[$column] ?? '')) !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function applyImportedChecklistStatuses($rfsClusterId, array $row, $userId)
+    {
+        $rfsClusterId = (int) $rfsClusterId;
+        if ($rfsClusterId <= 0 || !$this->hasChecklistImportPayload($row)) {
+            return;
+        }
+        if (
+            !$this->db->table_exists('tb_rfs_myrep_doc_package')
+            || !$this->db->table_exists('tb_rfs_myrep_doc_file')
+            || !$this->db->table_exists('md_rfs_myrep_doc_group')
+            || !$this->db->table_exists('md_rfs_myrep_doc_item')
+        ) {
+            return;
+        }
+
+        if (isset($this->MChecklist_Dokument_MyRep)) {
+            $rfsDate = $this->normalizeDate((string) ($row['rfs_date'] ?? $row['tanggal_rfs'] ?? ''));
+            $this->MChecklist_Dokument_MyRep->ensureClusterPackages($rfsClusterId, $rfsDate);
+        }
+
+        $packageRows = $this->db
+            ->select('p.id_doc_package, p.id_doc_group, g.scope_type, g.sow_type')
+            ->from('tb_rfs_myrep_doc_package p')
+            ->join('md_rfs_myrep_doc_group g', 'g.id_doc_group = p.id_doc_group', 'inner')
+            ->where('p.cluster_id', $rfsClusterId)
+            ->where('g.is_active', 1)
+            ->get()
+            ->result_array();
+
+        if (empty($packageRows)) {
+            return;
+        }
+
+        $packagesByKey = [];
+        $groupIds = [];
+        foreach ($packageRows as $package) {
+            $key = $this->buildChecklistGroupKey($package['scope_type'] ?? '', $package['sow_type'] ?? '');
+            $packagesByKey[$key] = $package;
+            $groupIds[] = (int) ($package['id_doc_group'] ?? 0);
+        }
+        $groupIds = array_values(array_unique(array_filter($groupIds)));
+        if (empty($groupIds)) {
+            return;
+        }
+
+        $itemRows = $this->db
+            ->select('id_doc_item, id_doc_group, doc_name')
+            ->from('md_rfs_myrep_doc_item')
+            ->where_in('id_doc_group', $groupIds)
+            ->where('is_active', 1)
+            ->where('is_required', 1)
+            ->order_by('sort_no', 'ASC')
+            ->order_by('id_doc_item', 'ASC')
+            ->get()
+            ->result_array();
+
+        $itemsByGroup = [];
+        foreach ($itemRows as $item) {
+            $itemsByGroup[(int) ($item['id_doc_group'] ?? 0)][] = $item;
+        }
+
+        foreach ($this->getChecklistImportColumnMap() as $column => $target) {
+            $status = $this->normalizeChecklistImportStatus($row[$column] ?? '');
+            if ($status === '') {
+                continue;
+            }
+
+            $key = $this->buildChecklistGroupKey($target['scope_type'], $target['sow_type']);
+            if (empty($packagesByKey[$key])) {
+                continue;
+            }
+
+            $package = $packagesByKey[$key];
+            $packageId = (int) ($package['id_doc_package'] ?? 0);
+            $groupId = (int) ($package['id_doc_group'] ?? 0);
+            if ($packageId <= 0 || $groupId <= 0) {
+                continue;
+            }
+
+            if ($status !== 'AREA') {
+                foreach ($itemsByGroup[$groupId] ?? [] as $item) {
+                    $this->upsertImportedChecklistFile($packageId, (int) $item['id_doc_item'], $status, $userId);
+                }
+            }
+
+            $this->refreshImportedChecklistPackageStatus($packageId, $userId);
+        }
+    }
+
+    private function buildChecklistGroupKey($scopeType, $sowType)
+    {
+        return strtoupper(trim((string) $scopeType)) . '|' . strtoupper(trim((string) $sowType));
+    }
+
+    private function upsertImportedChecklistFile($packageId, $itemId, $cutoffStatus, $userId)
+    {
+        $packageId = (int) $packageId;
+        $itemId = (int) $itemId;
+        $userId = (int) $userId;
+        $cutoffStatus = $this->normalizeChecklistImportStatus($cutoffStatus);
+        if ($packageId <= 0 || $itemId <= 0 || $cutoffStatus === '' || $cutoffStatus === 'AREA') {
+            return;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $today = date('Y-m-d');
+        $isHoReviewDone = in_array($cutoffStatus, ['EMR', 'CLOSED'], true);
+        $isAstriDone = $cutoffStatus === 'CLOSED';
+        $statusFile = $isHoReviewDone ? 'APPROVED' : 'UPLOADED';
+        $remark = 'Imported cutoff checklist status: ' . $cutoffStatus . '. File fisik tidak tersedia pada data cutoff.';
+
+        $payload = [
+            'id_doc_package' => $packageId,
+            'id_doc_item' => $itemId,
+            'file_name' => null,
+            'file_path' => null,
+            'is_document_not_required' => 1,
+            'status_file' => $statusFile,
+            'remark' => $remark,
+            'uploaded_by' => $userId,
+            'uploaded_at' => $now,
+            'reviewed_at' => $isHoReviewDone ? $now : null,
+            'approved_by' => $isHoReviewDone ? $userId : null,
+            'approved_at' => $isHoReviewDone ? $now : null,
+            'astri_submitted_date' => $isAstriDone ? $today : null,
+            'astri_status' => $isAstriDone ? 'APPROVED' : 'NY',
+            'astri_status_updated_at' => $isAstriDone ? $now : null,
+            'astri_remark' => $isAstriDone ? 'Imported cutoff ASTRI closed.' : null,
+        ];
+        if ($this->db->field_exists('submitted_at', 'tb_rfs_myrep_doc_file')) {
+            $payload['submitted_at'] = $now;
+        }
+
+        $existing = $this->db
+            ->from('tb_rfs_myrep_doc_file')
+            ->where('id_doc_package', $packageId)
+            ->where('id_doc_item', $itemId)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (!empty($existing['id_doc_file'])) {
+            $this->db
+                ->where('id_doc_file', (int) $existing['id_doc_file'])
+                ->update('tb_rfs_myrep_doc_file', $payload);
+            $fileId = (int) $existing['id_doc_file'];
+            $actionType = $statusFile === 'APPROVED' ? 'APPROVED' : 'REUPLOADED';
+        } else {
+            $this->db->insert('tb_rfs_myrep_doc_file', $payload);
+            $fileId = (int) $this->db->insert_id();
+            $actionType = $statusFile === 'APPROVED' ? 'APPROVED' : 'UPLOADED';
+        }
+
+        $this->createImportedChecklistFileLog($fileId, $packageId, $itemId, $actionType, $statusFile, $remark, $userId);
+    }
+
+    private function createImportedChecklistFileLog($fileId, $packageId, $itemId, $actionType, $statusAfter, $remark, $userId)
+    {
+        if ((int) $fileId <= 0 || !$this->db->table_exists('tb_rfs_myrep_doc_file_log')) {
+            return;
+        }
+
+        $payload = [
+            'id_doc_file' => (int) $fileId,
+            'id_doc_package' => (int) $packageId,
+            'id_doc_item' => (int) $itemId,
+            'action_type' => in_array($actionType, ['UPLOADED', 'REUPLOADED', 'REJECTED', 'APPROVED'], true) ? $actionType : 'UPLOADED',
+            'status_after' => (string) $statusAfter,
+            'file_name' => '[Imported Cutoff]',
+            'remark' => (string) $remark,
+            'action_by' => (int) $userId,
+            'action_at' => date('Y-m-d H:i:s'),
+        ];
+        if ($this->db->field_exists('submitted_at', 'tb_rfs_myrep_doc_file_log')) {
+            $payload['submitted_at'] = date('Y-m-d H:i:s');
+        }
+
+        $this->db->insert('tb_rfs_myrep_doc_file_log', $payload);
+    }
+
+    private function refreshImportedChecklistPackageStatus($packageId, $userId)
+    {
+        $package = $this->db->get_where('tb_rfs_myrep_doc_package', [
+            'id_doc_package' => (int) $packageId,
+        ])->row_array();
+        if (!$package) {
+            return;
+        }
+
+        $required = (int) $this->db
+            ->from('md_rfs_myrep_doc_item')
+            ->where('id_doc_group', (int) $package['id_doc_group'])
+            ->where('is_active', 1)
+            ->where('is_required', 1)
+            ->count_all_results();
+
+        $uploadedRow = $this->db->query(
+            "SELECT COUNT(*) AS total, MAX(uploaded_at) AS latest_uploaded
+             FROM tb_rfs_myrep_doc_file
+             WHERE id_doc_package = ?
+             AND ((file_path IS NOT NULL AND file_path <> '') OR is_document_not_required = 1)
+             AND status_file IN ('UPLOADED','APPROVED')",
+            [(int) $packageId]
+        )->row_array();
+
+        $uploaded = (int) ($uploadedRow['total'] ?? 0);
+        $statusPackage = 'NOT STARTED';
+        if ($required > 0 && $uploaded > 0) {
+            $statusPackage = $uploaded >= $required ? 'DONE' : 'ON PROGRESS';
+        }
+
+        $actualSubmit = null;
+        if ($required > 0 && $uploaded >= $required && !empty($uploadedRow['latest_uploaded'])) {
+            $actualSubmit = substr((string) $uploadedRow['latest_uploaded'], 0, 10);
+        }
+
+        $this->db
+            ->where('id_doc_package', (int) $packageId)
+            ->update('tb_rfs_myrep_doc_package', [
+                'status_package' => $statusPackage,
+                'actual_submit_doc_date' => $actualSubmit,
+                'updated_by' => (int) $userId,
+            ]);
     }
 
     private function syncChecklistActualAtpDate($rfsClusterId, $actualAtpDate, $userId)
@@ -1469,6 +1738,12 @@ class MyRepublik_Project extends CI_Controller
                 $errors[] = 'status_current tidak valid';
             }
         }
+        foreach ($this->getChecklistImportColumnMap() as $column => $target) {
+            $rawChecklistStatus = trim((string) ($row[$column] ?? ''));
+            if ($rawChecklistStatus !== '' && $this->normalizeChecklistImportStatus($rawChecklistStatus) === '') {
+                $errors[] = $column . ' harus AREA, HO, EMR, atau CLOSED';
+            }
+        }
         if ($this->resolveTargetByCity((string) ($row['city_name'] ?? '')) === []) {
             $errors[] = 'target kota tidak ditemukan di tb_rfs_myrep_monthly_target';
         }
@@ -1551,6 +1826,10 @@ class MyRepublik_Project extends CI_Controller
             || $this->normalizeDate((string) ($row['drm_date'] ?? '')) !== null;
         if ($hasDrm) {
             return 'DRM';
+        }
+
+        if ($this->hasChecklistImportPayload($row)) {
+            return 'CHECKLIST DOKUMENT';
         }
 
         $hasRfsAtp = $this->normalizeDate((string) ($row['rfs_date'] ?? $row['tanggal_rfs'] ?? '')) !== null
