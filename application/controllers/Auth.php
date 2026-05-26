@@ -166,7 +166,7 @@ class Auth extends CI_Controller
     {
         $token = trim((string) $this->input->get('token'));
         if ($token === '') {
-            show_error('Token tidak valid.', 400);
+            show_404();
             return;
         }
 
@@ -183,7 +183,7 @@ class Auth extends CI_Controller
             ->row_array();
 
         if (!$row) {
-            show_error('Link sudah digunakan atau tidak valid.', 400);
+            show_404();
             return;
         }
 

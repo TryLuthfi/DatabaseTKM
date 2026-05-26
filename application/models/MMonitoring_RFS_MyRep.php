@@ -570,7 +570,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
         $this->syncEligibleMyrepClustersToRfs($year, $month, $city);
     }
 
-    public function getClaims($year, $startMonth, $endMonth, $city = '')
+    public function getClaims($year, $startMonth, $endMonth, $city = '', $claimStartDate = '', $claimEndDate = '')
     {
         $sql = "SELECT
                 cl.*,
@@ -592,9 +592,33 @@ class MMonitoring_RFS_MyRep extends CI_Model
              LEFT JOIN tb_master_user_new su ON su.id = cl.submitted_by
              LEFT JOIN tb_master_user_new au ON au.id = cl.approved_by
              LEFT JOIN tb_master_user_new ru ON ru.id = cl.rpm_approved_by
-             WHERE cl.claim_year = ? AND cl.claim_month BETWEEN ? AND ?";
+             WHERE 1 = 1";
 
-        $params = [$year, $startMonth, $endMonth];
+        $params = [];
+
+        $claimStartDate = $this->normalizeDateFilter($claimStartDate);
+        $claimEndDate = $this->normalizeDateFilter($claimEndDate);
+        if ($claimStartDate !== '' && $claimEndDate === '') {
+            $claimEndDate = $claimStartDate;
+        }
+        if ($claimEndDate !== '' && $claimStartDate === '') {
+            $claimStartDate = $claimEndDate;
+        }
+        if ($claimStartDate !== '' && $claimEndDate !== '') {
+            if (strtotime($claimStartDate) > strtotime($claimEndDate)) {
+                $tempDate = $claimStartDate;
+                $claimStartDate = $claimEndDate;
+                $claimEndDate = $tempDate;
+            }
+            $sql .= " AND cl.claim_date BETWEEN ? AND ?";
+            $params[] = $claimStartDate;
+            $params[] = $claimEndDate;
+        } else {
+            $sql .= " AND cl.claim_year = ? AND cl.claim_month BETWEEN ? AND ?";
+            $params[] = $year;
+            $params[] = $startMonth;
+            $params[] = $endMonth;
+        }
 
         if ($city !== '') {
             $sql .= " AND UPPER(mt.city_name) = ? ";
@@ -604,6 +628,21 @@ class MMonitoring_RFS_MyRep extends CI_Model
         $sql .= " ORDER BY cl.id_claim DESC";
 
         return $this->db->query($sql, $params)->result_array();
+    }
+
+    private function normalizeDateFilter($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+
+        $date = DateTime::createFromFormat('Y-m-d', $value);
+        if (!$date || $date->format('Y-m-d') !== $value) {
+            return '';
+        }
+
+        return $value;
     }
 
     public function getCityOptions()

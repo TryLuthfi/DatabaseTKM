@@ -13,7 +13,16 @@ $claimWaitingRpmCount = 0;
 $claimWaitingHoCount = 0;
 $claimApprovedCount = 0;
 $claimRejectedCount = 0;
+$claimApprovalList = isset($claimApprovalList) ? (array) $claimApprovalList : (array) $claimList;
 $filterBadgeLabel = $selectedYear . ' | ' . $selectedPeriodLabel . ' | ' . ($selectedCity !== '' ? $selectedCity : 'Semua Kota');
+$selectedClaimStartDate = isset($selectedClaimStartDate) ? (string) $selectedClaimStartDate : '';
+$selectedClaimEndDate = isset($selectedClaimEndDate) ? (string) $selectedClaimEndDate : '';
+$claimDateRangeDisplay = ($selectedClaimStartDate !== '' && $selectedClaimEndDate !== '')
+    ? (date('m/d/Y', strtotime($selectedClaimStartDate)) . ' - ' . date('m/d/Y', strtotime($selectedClaimEndDate)))
+    : '';
+$claimDateRangeLabel = ($selectedClaimStartDate !== '' && $selectedClaimEndDate !== '')
+    ? (date('d M Y', strtotime($selectedClaimStartDate)) . ' - ' . date('d M Y', strtotime($selectedClaimEndDate)))
+    : 'Periode Bulan Aktif';
 
 if (!empty($targetOptions)) {
     foreach ($targetOptions as $targetOption) {
@@ -1946,6 +1955,10 @@ if (!empty($kpiDetailRowMap)) {
                                                             value="<?= (int) $selectedStartMonth ?>">
                                                         <input type="hidden" name="filter_end_month"
                                                             value="<?= (int) $selectedEndMonth ?>">
+                                                        <input type="hidden" name="filter_claim_start_date"
+                                                            value="<?= htmlspecialchars($selectedClaimStartDate) ?>">
+                                                        <input type="hidden" name="filter_claim_end_date"
+                                                            value="<?= htmlspecialchars($selectedClaimEndDate) ?>">
                                                         <input type="hidden" name="cluster_id"
                                                             value="<?= (int) $cluster['id_cluster'] ?>">
                                                         <div class="claim-summary-card">
@@ -2041,6 +2054,28 @@ if (!empty($kpiDetailRowMap)) {
                     </div>
                 </div>
                 <div class="card-body table-responsive">
+                    <form method="get" action="<?= base_url('Monitoring_RFS_MyRep') ?>" class="mb-3" id="claim_date_filter_form">
+                        <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
+                        <input type="hidden" name="start_month" value="<?= (int) $selectedStartMonth ?>">
+                        <input type="hidden" name="end_month" value="<?= (int) $selectedEndMonth ?>">
+                        <?php if ($selectedCity !== '') { ?>
+                            <input type="hidden" name="city" value="<?= htmlspecialchars($selectedCity) ?>">
+                        <?php } ?>
+                        <input type="hidden" id="claim_start_date" name="claim_start_date" value="<?= htmlspecialchars($selectedClaimStartDate) ?>">
+                        <input type="hidden" id="claim_end_date" name="claim_end_date" value="<?= htmlspecialchars($selectedClaimEndDate) ?>">
+                        <div class="row align-items-end">
+                            <div class="col-md-4 col-lg-3">
+                                <label for="claim_date_range" class="mb-1">Rentang Tanggal RFS</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="claim_date_range" value="<?= htmlspecialchars($claimDateRangeDisplay) ?>" placeholder="Semua tanggal periode">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+                                    </div>
+                                </div>
+                                <small class="text-muted">Aktif: <?= htmlspecialchars($claimDateRangeLabel) ?></small>
+                            </div>
+                        </div>
+                    </form>
                     <table id="table_rfs_claim_list" class="table table-bordered table-striped">
                         <thead class="text-center">
                             <tr>
@@ -2057,8 +2092,8 @@ if (!empty($kpiDetailRowMap)) {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (!empty($claimList)) { ?>
-                                <?php foreach ($claimList as $claim) { ?>
+                            <?php if (!empty($claimApprovalList)) { ?>
+                                <?php foreach ($claimApprovalList as $claim) { ?>
                                     <?php
                                     $claimStatusValue = strtoupper(trim((string) ($claim['status_claim'] ?? '')));
                                     $claimRowClass = $claimStatusValue === 'APPROVED'
@@ -2114,6 +2149,10 @@ if (!empty($kpiDetailRowMap)) {
                                                         value="<?= (int) $selectedStartMonth ?>">
                                                     <input type="hidden" name="filter_end_month"
                                                         value="<?= (int) $selectedEndMonth ?>">
+                                                    <input type="hidden" name="filter_claim_start_date"
+                                                        value="<?= htmlspecialchars($selectedClaimStartDate) ?>">
+                                                    <input type="hidden" name="filter_claim_end_date"
+                                                        value="<?= htmlspecialchars($selectedClaimEndDate) ?>">
                                                     <input type="hidden" name="claim_id" value="<?= (int) $claim['id_claim'] ?>">
                                                     <input type="hidden" name="approver_stage" value="RPM">
                                                     <div class="form-group mb-2">
@@ -2163,6 +2202,10 @@ if (!empty($kpiDetailRowMap)) {
                                                         value="<?= (int) $selectedStartMonth ?>">
                                                     <input type="hidden" name="filter_end_month"
                                                         value="<?= (int) $selectedEndMonth ?>">
+                                                    <input type="hidden" name="filter_claim_start_date"
+                                                        value="<?= htmlspecialchars($selectedClaimStartDate) ?>">
+                                                    <input type="hidden" name="filter_claim_end_date"
+                                                        value="<?= htmlspecialchars($selectedClaimEndDate) ?>">
                                                     <input type="hidden" name="claim_id" value="<?= (int) $claim['id_claim'] ?>">
                                                     <input type="hidden" name="approver_stage" value="HO">
                                                     <div class="form-group mb-2">
@@ -2315,6 +2358,8 @@ if (!empty($kpiDetailRowMap)) {
         var monthlyTargetCityMap = <?= json_encode($monthlyTargetCityMap) ?>;
         var monthlyTargetPeriodCityMap = <?= json_encode($monthlyTargetPeriodCityMap) ?>;
         var kpiDetailRows = <?= json_encode($kpiDetailRows) ?>;
+        var selectedClaimStartDate = <?= json_encode($selectedClaimStartDate) ?>;
+        var selectedClaimEndDate = <?= json_encode($selectedClaimEndDate) ?>;
         var importedClusterRows = [];
 
         if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.DataTable || !window.jQuery.fn.dataTable) {
@@ -2323,6 +2368,48 @@ if (!empty($kpiDetailRowMap)) {
         }
 
         var $ = window.jQuery;
+        function initClaimDateRangePicker() {
+            if (!$('#claim_date_range').length) {
+                return;
+            }
+            if (!window.moment || !$.fn.daterangepicker) {
+                window.setTimeout(initClaimDateRangePicker, 150);
+                return;
+            }
+
+            var claimStartMoment = selectedClaimStartDate !== '' ? moment(selectedClaimStartDate, 'YYYY-MM-DD') : moment();
+            var claimEndMoment = selectedClaimEndDate !== '' ? moment(selectedClaimEndDate, 'YYYY-MM-DD') : moment();
+
+            $('#claim_date_range').daterangepicker({
+                autoUpdateInput: false,
+                startDate: claimStartMoment,
+                endDate: claimEndMoment,
+                locale: {
+                    format: 'MM/DD/YYYY',
+                    cancelLabel: 'Clear',
+                    applyLabel: 'Apply'
+                }
+            });
+
+            if (selectedClaimStartDate !== '' && selectedClaimEndDate !== '') {
+                $('#claim_date_range').val(claimStartMoment.format('MM/DD/YYYY') + ' - ' + claimEndMoment.format('MM/DD/YYYY'));
+            }
+
+            $('#claim_date_range').on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+                $('#claim_start_date').val(picker.startDate.format('YYYY-MM-DD'));
+                $('#claim_end_date').val(picker.endDate.format('YYYY-MM-DD'));
+                $('#claim_date_filter_form').trigger('submit');
+            });
+
+            $('#claim_date_range').on('cancel.daterangepicker', function () {
+                $(this).val('');
+                $('#claim_start_date').val('');
+                $('#claim_end_date').val('');
+                $('#claim_date_filter_form').trigger('submit');
+            });
+        }
+        initClaimDateRangePicker();
         $.fn.dataTable.ext.type.detect.unshift(function (data) {
             var text = $('<div>').html(data === null || data === undefined ? '' : String(data)).text().trim();
 
