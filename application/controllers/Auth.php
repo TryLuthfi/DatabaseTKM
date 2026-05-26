@@ -3,6 +3,8 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Auth extends CI_Controller
 {
+    private $resetLinkCooldownSeconds = 60;
+
     public function __construct()
     {
         parent::__construct();
@@ -61,7 +63,8 @@ class Auth extends CI_Controller
             'nama_karyawan' => (string) ($user['nama_karyawan'] ?? ''),
             'email_kantor' => strtolower(trim((string) ($user['email_kantor'] ?? ''))),
             'reset_link_success' => (string) $this->session->userdata('reset_link_success_once'),
-            'reset_link_error' => (string) $this->session->userdata('reset_link_error_once')
+            'reset_link_error' => (string) $this->session->userdata('reset_link_error_once'),
+            'reset_link_cooldown_remaining' => $this->getResetLinkCooldownRemaining($userId)
         ];
 
         $this->session->unset_userdata('reset_link_success_once');
@@ -108,6 +111,14 @@ class Auth extends CI_Controller
             redirect('Auth/firstLoginEmail');
             return;
         }
+
+        $cooldownRemaining = $this->getResetLinkCooldownRemaining($userId);
+        if ($cooldownRemaining > 0) {
+            $this->session->set_userdata('reset_link_error_once', 'Link sudah terkirim. Silakan tunggu ' . $cooldownRemaining . ' detik sebelum kirim ulang.');
+            redirect('Auth/firstLoginEmail');
+            return;
+        }
+
         $token = bin2hex(random_bytes(32));
         $expiresAt = date('Y-m-d H:i:s', time() + 1800);
 
@@ -160,6 +171,35 @@ class Auth extends CI_Controller
 
         $this->session->set_userdata('reset_link_success_once', 'Link ganti password sudah dikirim ke email kantor Anda.');
         redirect('Auth/firstLoginEmail');
+    }
+
+    private function getResetLinkCooldownRemaining($userId)
+    {
+        $userId = (int) $userId;
+        if ($userId <= 0 || !$this->db->table_exists('tb_user_password_reset')) {
+            return 0;
+        }
+
+        $row = $this->db
+            ->select('created_at')
+            ->from('tb_user_password_reset')
+            ->where('user_id', $userId)
+            ->order_by('created_at', 'DESC')
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        if (empty($row['created_at'])) {
+            return 0;
+        }
+
+        $createdAt = strtotime((string) $row['created_at']);
+        if ($createdAt === false) {
+            return 0;
+        }
+
+        $remaining = $this->resetLinkCooldownSeconds - (time() - $createdAt);
+        return max((int) $remaining, 0);
     }
 
     public function resetPassword()

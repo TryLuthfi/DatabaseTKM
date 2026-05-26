@@ -18,6 +18,20 @@
     <link rel="stylesheet" href="<?= base_url('assets') ?>/dist/css/adminlte.min.css">
     <!-- Google Font: Source Sans Pro -->
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <style>
+        .password-toggle.input-group-text {
+            width: 40px;
+            justify-content: center;
+            color: #6c757d;
+            background-color: #fff;
+            cursor: pointer;
+        }
+
+        .password-toggle.input-group-text:focus {
+            box-shadow: none;
+            outline: 0;
+        }
+    </style>
 </head>
 
 <body class="hold-transition login-page" style="background: linear-gradient(rgba(0, 0, 0, 0.74), rgba(0, 0, 0, 0.41)), url('<?= base_url("assets/img/IMG_1247.JPG") ?>') no-repeat center center fixed; background-size: cover;">
@@ -66,11 +80,11 @@
                     </div>
                     <span class="text text-danger"><?= form_error('pass') ?></span>
                     <div class="input-group mb-3">
-                        <input type="password" class="form-control" placeholder="Password" name="pass">
+                        <input id="login_password" type="password" class="form-control" placeholder="Password" name="pass">
                         <div class="input-group-append">
-                            <div class="input-group-text">
-                                <span class="fas fa-lock"></span>
-                            </div>
+                            <button type="button" class="input-group-text password-toggle js-toggle-password" data-target="#login_password" aria-label="Tampilkan password">
+                                <i class="fas fa-eye-slash"></i>
+                            </button>
                         </div>
                     </div>
                     <div class="row">
@@ -89,5 +103,25 @@
 <script src="<?= base_url('assets') ?>/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <!-- AdminLTE App -->
 <script src="<?= base_url('assets') ?>/dist/js/adminlte.min.js"></script>
+<script>
+    (function () {
+        var buttons = document.querySelectorAll('.js-toggle-password');
+        buttons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                var target = document.querySelector(button.getAttribute('data-target'));
+                var icon = button.querySelector('i');
+                if (!target || !icon) {
+                    return;
+                }
+
+                var visible = target.getAttribute('type') === 'text';
+                target.setAttribute('type', visible ? 'password' : 'text');
+                icon.classList.toggle('fa-eye', !visible);
+                icon.classList.toggle('fa-eye-slash', visible);
+                button.setAttribute('aria-label', visible ? 'Tampilkan password' : 'Sembunyikan password');
+            });
+        });
+    })();
+</script>
 
 </html>
