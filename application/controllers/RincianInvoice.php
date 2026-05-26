@@ -97,7 +97,7 @@ class RincianInvoice extends CI_Controller
         if ($result['status'] === 'not_found') {
             echo json_encode([
                 'status' => 'not_found',
-                'message' => 'Project tidak memiliki area ini',
+                'message' => isset($result['message']) ? $result['message'] : 'Project tidak memiliki area ini',
                 'id_bowheer' => $result['id_bowheer'],
                 'area_target' => $result['area_target'],
                 'month' => $result['month'],

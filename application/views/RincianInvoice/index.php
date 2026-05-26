@@ -307,8 +307,9 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                             <div class="row">
                                 <div class="form-group col-md-12">
                                     <label>Bowheer / Project</label>
-                                    <select id="addfilter_bowheer" name="addfilter_bowheer" class="form-control"
-                                        style="width:100%;">
+                                    <select id="addfilter_bowheer" name="addfilter_bowheer"
+                                        class="form-control js-add-invoice-select"
+                                        data-placeholder="Pilih Bowheer" style="width:100%;">
                                         <option value="" selected disabled hidden>Pilih Bowheer</option>
                                         <?php foreach ($unique_bowheer as $bowheer): ?>
                                             <option value="<?= $bowheer ?>"><?= $bowheer ?></option>
@@ -320,7 +321,8 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                             <div class="row">
                                 <div class="form-group col-md-12">
                                     <label class="col-form-label">Area</label>
-                                    <select id="addfilter_area" name="addfilter_area" class="form-control area-dropdown"
+                                    <select id="addfilter_area" name="addfilter_area"
+                                        class="form-control area-dropdown js-add-invoice-select"
                                         data-placeholder="Pilih Area" style="width: 100%;">
                                         <option value="" selected disabled hidden>Pilih Area</option>
                                         <?php foreach ($unique_city as $area): ?>
@@ -440,6 +442,30 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
             $('.select2bs4').select2({
                 theme: 'bootstrap4'
             })
+
+            function initTambahInvoiceSelect2() {
+                if (!$.fn.select2) {
+                    return;
+                }
+
+                $('.js-add-invoice-select').each(function () {
+                    const $select = $(this);
+
+                    if ($select.hasClass('select2-hidden-accessible')) {
+                        return;
+                    }
+
+                    $select.select2({
+                        theme: 'bootstrap4',
+                        width: '100%',
+                        dropdownParent: $('#modal-lg-tambah-invoice'),
+                        placeholder: $select.data('placeholder') || 'Pilih',
+                        allowClear: false
+                    });
+                });
+            }
+
+            $('#modal-lg-tambah-invoice').on('shown.bs.modal', initTambahInvoiceSelect2);
 
             // notifikasi allert sukses atau tidak
             <?php if ($status == 'sukses_tambah') { ?>
@@ -795,74 +821,6 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
         }
 
         $(document).ready(function () {
-            function loadTargetInvoice() {
-                const bowheer = $('#addfilter_bowheer').val();
-                const area = $('#addfilter_area').val();
-                const month = $('#addfilter_month').val();
-                const week = $('#addfilter_week').val();
-
-                // Pastikan semua filter sudah dipilih
-                if (bowheer && area && month && week) {
-                    $.ajax({
-                        url: "<?= base_url('RincianInvoice/get_target_invoice') ?>",
-                        type: "POST",
-                        dataType: "json",
-                        data: {
-                            bowheer: $('#addfilter_bowheer').val(),
-                            area: $('#addfilter_area').val(),
-                            month: $('#addfilter_month').val(),
-                            week: $('#addfilter_week').val()
-                        },
-                        success: function (res) {
-                            console.log(res);
-                            let qtyTarget = res.qty_target ? parseFloat(res.qty_target) : 0;
-                            let qtyAchiev = res.qty_achiev_target ? parseFloat(res.qty_achiev_target) : 0;
-
-                            // Format angka ke Rupiah dengan titik
-                            const formatRupiah = (val) => "" + (parseFloat(val) || 0).toLocaleString('id-ID');
-
-                            // Masukkan nilai ke field
-                            $('[name="target_invoice"]').val(formatRupiah(qtyTarget));
-                            $('[name="achiev_invoice"]').val(formatRupiah(qtyAchiev));
-
-                            // === KONDISI: Jika qty_achiev_target tidak null dan tidak 0 ===
-                            if (qtyAchiev && qtyAchiev !== 0) {
-                                // Disable input achiev_invoice
-                                $('[name="achiev_invoice"]').prop('disabled', true);
-
-                                // Tampilkan field tambahan_invoice & total_invoice
-                                $('[name="tambahan_invoice"]').closest('.form-group').slideDown();
-                                $('[name="total_invoice"]').closest('.form-group').slideDown();
-
-                                // Tampilkan nilai awal total_invoice = qtyAchiev + 0
-                                $('[name="total_invoice"]').val(formatRupiah(qtyAchiev));
-
-                                // Format input tambahan_invoice hanya angka & auto Rupiah
-
-                            } else {
-                                // Jika qty_achiev_target kosong, reset ke mode input baru
-                                $('[name="achiev_invoice"]').prop('disabled', false);
-                                $('[name="tambahan_invoice"]').closest('.form-group').slideUp();
-                                $('[name="total_invoice"]').closest('.form-group').slideUp();
-                                $('[name="tambahan_invoice"]').val('');
-                                $('[name="total_invoice"]').val('');
-                            }
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error:", error);
-                            console.log(xhr.responseText);
-                        }
-                    });
-                }
-            }
-
-            // Jalankan ketika salah satu dropdown berubah
-            $('#addfilter_bowheer, #addfilter_area, #addfilter_month, #addfilter_week').on('change', function () {
-                loadTargetInvoice();
-            });
-        });
-
-        $(document).ready(function () {
 
             // === Format rupiah mendukung angka negatif ===
             function formatRupiah(angka) {
@@ -887,11 +845,37 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                 $("[name='total_invoice']").val(formattedTotal);
             }
 
+            function countDigitsBeforeCaret(value, caretPosition) {
+                return value.slice(0, caretPosition).replace(/\D/g, "").length;
+            }
+
+            function getCaretPositionByDigitCount(value, digitCount) {
+                if (digitCount <= 0) {
+                    return value.charAt(0) === '-' ? 1 : 0;
+                }
+
+                let seenDigits = 0;
+                for (let i = 0; i < value.length; i++) {
+                    if (/\d/.test(value.charAt(i))) {
+                        seenDigits++;
+                    }
+                    if (seenDigits >= digitCount) {
+                        return i + 1;
+                    }
+                }
+
+                return value.length;
+            }
+
             // === Event gabungan, tidak duplikat lagi ===
             $(document).on("input", "[name='achiev_invoice'], [name='tambahan_invoice']", function (e) {
-                const caretPos = e.target.selectionStart; // simpan posisi kursor agar tidak loncat
-                $(this).val(formatRupiah($(this).val()));
-                e.target.setSelectionRange(caretPos, caretPos);
+                const input = e.target;
+                const digitCount = countDigitsBeforeCaret(input.value, input.selectionStart || 0);
+                const formattedValue = formatRupiah(input.value);
+
+                $(input).val(formattedValue);
+                const caretPos = getCaretPositionByDigitCount(formattedValue, digitCount);
+                input.setSelectionRange(caretPos, caretPos);
                 updateTotalInvoice();
             });
 
@@ -958,11 +942,18 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                 let achiev = $("[name='achiev_invoice']").val().trim();
                 let tambahanVisible = $("[name='tambahan_invoice']").closest('.form-group').is(":visible");
                 let tambahan = $("[name='tambahan_invoice']").val().trim();
+                const isInputKotaBaru = inputKotaBaru.is(':visible');
+                const areaBaru = inputKotaBaru.val().trim();
 
                 // 🔹 Jika tambah kota baru aktif → pakai nilai input kota baru
+                $form.find('input[type="hidden"][name="addfilter_area"]').remove();
                 if (inputKotaBaru.is(':visible') && inputKotaBaru.val().trim() !== '') {
                     area = inputKotaBaru.val().trim(); // ✅ overwrite nilai area
-                    areaDropdown.val(area); // agar ikut terkirim via serialize
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: 'addfilter_area',
+                        value: area
+                    }).appendTo($form);
                 }
 
                 // 🔹 Validasi dropdown dan input wajib
@@ -971,6 +962,14 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                         icon: 'warning',
                         title: 'Data belum lengkap!',
                         text: 'Pastikan semua dropdown sudah dipilih.'
+                    });
+                    return;
+                }
+                if (isInputKotaBaru && (!regional || !pic)) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Data kota baru belum lengkap!',
+                        text: 'Regional baru dan PIC baru wajib diisi.'
                     });
                     return;
                 }
@@ -1015,7 +1014,7 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                                     Swal.fire({
                                         icon: 'question',
                                         title: 'Area belum terdaftar',
-                                        text: 'Project ini tidak memiliki area ini. Tambahkan area dan invoice?',
+                                        text: (res.message || 'Project ini tidak memiliki area ini') + '. Tambahkan/lengkapi area dan invoice?',
                                         showCancelButton: true,
                                         confirmButtonText: 'Ya, Tambahkan!',
                                         cancelButtonText: 'Batal'
@@ -1072,8 +1071,9 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                     $form[0].reset();
                 }
 
-                $('#addfilter_area').prop('disabled', false).val('');
-                $('#inputRegionalBaru').hide().val('');
+                $form.find('input[type="hidden"][name="addfilter_area"]').remove();
+                $('#addfilter_bowheer, #addfilter_area, #addfilter_month, #addfilter_week').prop('disabled', false).val('').trigger('change.select2');
+                $('#inputRegionalBaru').hide().val('').trigger('change.select2');
                 $('#inputKotaBaruContainer, #inputPICBaruContainer').hide();
                 $('#inputKotaBaru, #inputPICBaru').val('');
                 $('#btnTambahKota').text('+ Tambah Kota Baru');
@@ -1100,21 +1100,21 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
                     // Saat aktif → tampilkan input, disable dropdown
                     $('#inputKotaBaruContainer').slideDown();
                     $('#addfilter_area').prop('disabled', true);
-                    $('#addfilter_area').val('');
+                    $('#addfilter_area').val('').trigger('change.select2');
                     $(this).text('× Batalkan Tambah Kota');
 
-                    $('#inputRegionalBaru').slideDown();
+                    $('#inputRegionalBaru').slideDown().trigger('change.select2');
 
                     $('#inputPICBaruContainer').slideDown();
                 } else {
                     // Saat nonaktif → sembunyikan input, enable dropdown
                     $('#inputKotaBaruContainer').slideUp();
-                    $('#addfilter_area').prop('disabled', false);
+                    $('#addfilter_area').prop('disabled', false).trigger('change.select2');
                     $('#inputKotaBaru').val('');
                     $(this).text('+ Tambah Kota Baru');
 
                     $('#inputRegionalBaru').slideUp();
-                    $('#inputRegionalBaru').val('');
+                    $('#inputRegionalBaru').val('').trigger('change.select2');
 
                     $('#inputPICBaruContainer').slideUp();
                     $('#inputPICBaru').val('');
@@ -1317,6 +1317,31 @@ usort($unique_month, function ($a, $b) use ($bulan_order) {
             border-radius: 10px;
             border: 1px solid #ced4da;
             transition: all 0.2s ease-in-out;
+        }
+
+        #modal-lg-tambah-invoice .select2-container {
+            width: 100% !important;
+        }
+
+        #modal-lg-tambah-invoice .js-add-invoice-select {
+            display: none !important;
+        }
+
+        #modal-lg-tambah-invoice .select2-container--bootstrap4 .select2-selection {
+            border: 1px solid #ced4da;
+            border-radius: 10px;
+            min-height: calc(2.25rem + 2px);
+        }
+
+        #modal-lg-tambah-invoice select.select2-hidden-accessible {
+            border: 0 !important;
+            clip: rect(0 0 0 0) !important;
+            height: 1px !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            padding: 0 !important;
+            position: absolute !important;
+            width: 1px !important;
         }
 
         #modal-lg-tambah-invoice .form-control:focus {

@@ -3,6 +3,38 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class MRincianInvoice extends CI_Model
 {
+    private function getInvoiceWeeksByMonth()
+    {
+        return [
+            'OKTOBER' => ['W1', 'W2', 'W3', 'W4', 'W5'],
+            'NOVEMBER' => ['W1', 'W2', 'W3', 'W4'],
+            'DESEMBER' => ['W1', 'W2', 'W3', 'W4'],
+            'JANUARI' => ['W1', 'W2', 'W3', 'W4', 'W5'],
+            'FEBRUARI' => ['W1', 'W2', 'W3', 'W4', 'W5'],
+            'MARET' => ['W1', 'W2', 'W3', 'W4', 'W5'],
+            'APRIL' => ['W1', 'W2', 'W3', 'W4', 'W5'],
+            'MEI' => ['W1', 'W2', 'W3', 'W4', 'W5'],
+            'JUNI' => ['W1', 'W2', 'W3', 'W4', 'W5'],
+            'JULI' => ['W1', 'W2', 'W3', 'W4', 'W5'],
+            'AGUSTUS' => ['W1', 'W2', 'W3', 'W4', 'W5'],
+            'SEPTEMBER' => ['W1', 'W2', 'W3', 'W4', 'W5'],
+        ];
+    }
+
+    private function cleanRupiahValue($val)
+    {
+        if ($val === null || $val === '') {
+            return 0;
+        }
+
+        $val = trim(str_replace(['Rp', ' ', '.'], '', $val));
+        $val = str_replace(',', '', $val);
+        if (strpos($val, '-') === 0) {
+            return -1 * (float) str_replace('-', '', $val);
+        }
+
+        return (float) $val;
+    }
 
     public function getAllData()
     {
@@ -143,12 +175,12 @@ ORDER BY total_target DESC;')
 
     public function updateAchievInvoice($data)
     {
-        $bowheer = $data['addfilter_bowheer'];
-        $area = $data['addfilter_area'];
-        $month = $data['addfilter_month'];
-        $week = $data['addfilter_week'];
-        $regional = $data['inputRegionalBaru'];
-        $pic = $data['inputPICBaru'];
+        $bowheer = trim((string) ($data['addfilter_bowheer'] ?? ''));
+        $area = trim((string) ($data['addfilter_area'] ?? ''));
+        $month = strtoupper(trim((string) ($data['addfilter_month'] ?? '')));
+        $week = strtoupper(trim((string) ($data['addfilter_week'] ?? '')));
+        $regional = trim((string) ($data['inputRegionalBaru'] ?? ''));
+        $pic = trim((string) ($data['inputPICBaru'] ?? ''));
 
         // Cari ID Bowheer
         $row = $this->db->select('id_bowheer')
@@ -162,40 +194,40 @@ ORDER BY total_target DESC;')
 
         $id_bowheer = $row->id_bowheer;
 
-        // Cek apakah kombinasi sudah ada
-        $exists = $this->db->get_where('tb_target_invoice', [
+        $areaExists = $this->db->get_where('tb_target_invoice', [
             'id_bowheer' => $id_bowheer,
             'area_target' => $area
         ])->num_rows() > 0;
 
-        $cleanRupiah = function ($val) {
-            if ($val === null || $val === '')
-                return 0;
-            $val = trim(str_replace(['Rp', ' ', '.'], '', $val));
-            $val = str_replace(',', '', $val);
-            if (strpos($val, '-') === 0) {
-                return -1 * (float) str_replace('-', '', $val);
-            }
-            return (float) $val;
-        };
+        $periodExists = $this->db->get_where('tb_target_invoice', [
+            'id_bowheer' => $id_bowheer,
+            'area_target' => $area,
+            'month_target' => $month,
+            'week_target' => $week
+        ])->num_rows() > 0;
 
-        if (!$exists) {
-            return [
-                'status' => 'not_found',
-                'message' => 'Project tidak memiliki area ini',
-                'id_bowheer' => $id_bowheer,
-                'area_target' => $area,
-                'month' => $month,
-                'week' => $week,
-                'regional' => $regional,
-                'pic' => $pic,
-                'nilai_update' => $cleanRupiah($data['achiev_invoice'])
-            ];
+        if ($areaExists && ($regional === '' || $pic === '')) {
+            $areaMeta = $this->db
+                ->select('regional_target, pic_target')
+                ->where('id_bowheer', $id_bowheer)
+                ->where('area_target', $area)
+                ->order_by('id_target_invoice', 'ASC')
+                ->get('tb_target_invoice')
+                ->row_array();
+
+            if ($areaMeta) {
+                if ($regional === '') {
+                    $regional = trim((string) ($areaMeta['regional_target'] ?? ''));
+                }
+                if ($pic === '') {
+                    $pic = trim((string) ($areaMeta['pic_target'] ?? ''));
+                }
+            }
         }
 
-        $total_invoice = $cleanRupiah($data['total_invoice']);
-        $tambahan_invoice = $cleanRupiah($data['tambahan_invoice']);
-        $achiev_invoice = $cleanRupiah($data['achiev_invoice']);
+        $total_invoice = $this->cleanRupiahValue($data['total_invoice'] ?? '');
+        $tambahan_invoice = $this->cleanRupiahValue($data['tambahan_invoice'] ?? '');
+        $achiev_invoice = $this->cleanRupiahValue($data['achiev_invoice'] ?? '');
 
         $nilai_update = 0;
 
@@ -205,6 +237,22 @@ ORDER BY total_target DESC;')
             $nilai_update = $achiev_invoice + $tambahan_invoice;
         } elseif ($achiev_invoice !== 0) {
             $nilai_update = $achiev_invoice;
+        }
+
+        if (!$periodExists) {
+            return [
+                'status' => 'not_found',
+                'message' => $areaExists
+                    ? 'Project-area ini belum memiliki periode invoice yang dipilih'
+                    : 'Project tidak memiliki area ini',
+                'id_bowheer' => $id_bowheer,
+                'area_target' => $area,
+                'month' => $month,
+                'week' => $week,
+                'regional' => $regional,
+                'pic' => $pic,
+                'nilai_update' => $nilai_update
+            ];
         }
 
         // Update data di tb_target_invoice
@@ -229,29 +277,64 @@ ORDER BY total_target DESC;')
         // print_r($_POST);
         // echo ("</pre>");
 
-        $id_bowheer = $data['id_bowheer'];
-        $area = $data['area_target'];
-        $nilai_update = $data['nilai_update'];
-        $regional = $data['regional'];
-        $pic = $data['pic'];
-        $month_selected = strtoupper($data['month']);
-        $week_selected = strtoupper($data['week']);
+        $id_bowheer = (int) ($data['id_bowheer'] ?? 0);
+        $area = trim((string) ($data['area_target'] ?? ''));
+        $nilai_update = $this->cleanRupiahValue($data['nilai_update'] ?? '');
+        $regional = trim((string) ($data['regional'] ?? ''));
+        $pic = trim((string) ($data['pic'] ?? ''));
+        $month_selected = strtoupper(trim((string) ($data['month'] ?? '')));
+        $week_selected = strtoupper(trim((string) ($data['week'] ?? '')));
+
+        if ($id_bowheer <= 0 || $area === '' || $month_selected === '' || $week_selected === '') {
+            return [
+                'status' => false,
+                'message' => 'Data project, area, bulan, atau week belum lengkap.'
+            ];
+        }
 
         // Struktur minggu per bulan
-        $weeks_by_month = [
-            'OKTOBER' => ['W1', 'W2', 'W3', 'W4', 'W5'],
-            'NOVEMBER' => ['W1', 'W2', 'W3', 'W4'],
-            'DESEMBER' => ['W1', 'W2', 'W3', 'W4'],
-            'JANUARI' => ['W1', 'W2', 'W3', 'W4', 'W5'],
-            'FEBRUARI' => ['W1', 'W2', 'W3', 'W4', 'W5'],
-            'MARET' => ['W1', 'W2', 'W3', 'W4', 'W5']
-        ];
+        $weeks_by_month = $this->getInvoiceWeeksByMonth();
+        $existingRows = $this->db
+            ->select('month_target, week_target')
+            ->where('id_bowheer', $id_bowheer)
+            ->where('area_target', $area)
+            ->get('tb_target_invoice')
+            ->result_array();
+
+        $existingKeys = [];
+        foreach ($existingRows as $existingRow) {
+            $existingKeys[strtoupper(trim((string) $existingRow['month_target'])) . '|' . strtoupper(trim((string) $existingRow['week_target']))] = true;
+        }
+
+        if (!empty($existingRows) && ($regional === '' || $pic === '')) {
+            $areaMeta = $this->db
+                ->select('regional_target, pic_target')
+                ->where('id_bowheer', $id_bowheer)
+                ->where('area_target', $area)
+                ->order_by('id_target_invoice', 'ASC')
+                ->get('tb_target_invoice')
+                ->row_array();
+
+            if ($areaMeta) {
+                if ($regional === '') {
+                    $regional = trim((string) ($areaMeta['regional_target'] ?? ''));
+                }
+                if ($pic === '') {
+                    $pic = trim((string) ($areaMeta['pic_target'] ?? ''));
+                }
+            }
+        }
 
         $data_insert = [];
 
-        // Loop seluruh bulan & minggu → total 11 kombinasi
+        // Loop seluruh bulan & minggu -> total 58 kombinasi.
         foreach ($weeks_by_month as $month => $weeks) {
             foreach ($weeks as $week) {
+                $key = $month . '|' . $week;
+                if (isset($existingKeys[$key])) {
+                    continue;
+                }
+
                 $data_insert[] = [
                     'id_bowheer' => $id_bowheer,
                     'regional_target' => $regional,
@@ -267,20 +350,35 @@ ORDER BY total_target DESC;')
             }
         }
 
-        // Masukkan semua baris ke database
-        $this->db->insert_batch('tb_target_invoice', $data_insert);
+        // Masukkan baris yang belum ada, lalu set realisasi periode terpilih.
+        $this->db->trans_start();
 
-        if ($this->db->affected_rows() > 0) {
+        if (!empty($data_insert)) {
+            $this->db->insert_batch('tb_target_invoice', $data_insert);
+        }
+
+        $this->db
+            ->where('id_bowheer', $id_bowheer)
+            ->where('area_target', $area)
+            ->where('month_target', $month_selected)
+            ->where('week_target', $week_selected)
+            ->update('tb_target_invoice', ['qty_achiev_target' => $nilai_update]);
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === TRUE) {
             return [
                 'status' => true,
-                'message' => 'Area baru berhasil ditambahkan beserta seluruh kombinasi bulan & minggu.'
-            ];
-        } else {
-            return [
-                'status' => false,
-                'message' => 'Gagal menambahkan area baru.'
+                'message' => 'Area baru berhasil dilengkapi sampai 58 kombinasi bulan & minggu.',
+                'inserted_rows' => count($data_insert),
+                'nilai_update' => $nilai_update
             ];
         }
+
+        return [
+            'status' => false,
+            'message' => 'Gagal menambahkan area baru.'
+        ];
     }
 
 
