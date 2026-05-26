@@ -629,7 +629,7 @@ class MImplementasi_BOQ_MyRep extends CI_Model
             $hasDrmDoc = !empty($statusMap[$clusterId]['DRM']);
             $hasSubfeederDoc = !empty($statusMap[$clusterId]['DRM_SUBFEEDER']);
             $hasActiveBaseline = !empty($activeBaselineClusterMap[$clusterId]);
-            $eligibilityMap[$clusterId] = $hasDrmDoc && ($hasSubfeederDoc || $hasActiveBaseline);
+            $eligibilityMap[$clusterId] = $hasActiveBaseline || ($hasDrmDoc && $hasSubfeederDoc);
         }
 
         return $eligibilityMap;

@@ -1550,13 +1550,13 @@ class Checklist_Dokument_MyRep extends CI_Controller
         ]);
 
         $lines = [
-            'ðŸ“¥ <b>' . $this->escapeTelegramText($notificationTitle) . '</b>',
+            '✅ <b>' . $this->escapeTelegramText($notificationTitle) . '</b>',
             '',
-            'ðŸ“„ ' . $this->escapeTelegramText($displayDocLabel),
-            'ðŸ— ' . $this->escapeTelegramText($categoryLabel) . ' | ' . $this->escapeTelegramText($siteLabel) . ' | ' . $this->escapeTelegramText($clusterLabel),
+            '📄 ' . $this->escapeTelegramText($displayDocLabel),
+            '🏗 ' . $this->escapeTelegramText($categoryLabel) . ' | ' . $this->escapeTelegramText($siteLabel) . ' | ' . $this->escapeTelegramText($clusterLabel),
             '',
-            'ðŸ‘¤ ' . $senderLabel . ' -> HO (' . $picMention . ')',
-            'ðŸ•’ ' . $this->escapeTelegramText($this->formatTelegramDate(date('Y-m-d H:i:s'))),
+            '👤 ' . $senderLabel . ' -> HO (' . $picMention . ')',
+            '🕒 ' . $this->escapeTelegramText($this->formatTelegramDate(date('Y-m-d H:i:s'))),
         ];
 
         if ($detailUrl !== '') {

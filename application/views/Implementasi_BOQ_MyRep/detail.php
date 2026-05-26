@@ -537,6 +537,7 @@ $historyRowsCluster = (array) ($historyBuildCluster['rows'] ?? []);
 $historyRowsSubfeeder = (array) ($historyBuildSubfeeder['rows'] ?? []);
 $historyFinalAchieveCluster = (array) ($historyBuildCluster['final_achieve'] ?? array_fill_keys($historyTypeOrder, 0));
 $historyFinalAchieveSubfeeder = (array) ($historyBuildSubfeeder['final_achieve'] ?? array_fill_keys($historyTypeOrder, 0));
+$hasSubfeederBoqPlan = abs(array_sum((array) $historyTypePlanSubfeeder)) > 0.00001;
 
 // Backward compatibility for sections that still consume single history dataset.
 $historyRows = $historyRowsCluster;
@@ -2027,6 +2028,11 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
                                 <div class="font-weight-bold text-dark mb-2 px-3 pt-2 d-none js-history-scope-title" data-scope-title="SUBFEEDER">Scope: Subfeeder</div>
                                 <div class="table-responsive d-none js-history-scope-table" data-scope-table="SUBFEEDER" data-total-plan="<?= htmlspecialchars((string) round(array_sum((array) $historyTypePlanSubfeeder)), ENT_QUOTES) ?>" data-total-achiev="<?= htmlspecialchars((string) round(array_sum((array) $historyFinalAchieveSubfeeder)), ENT_QUOTES) ?>">
+                                    <?php if (!$hasSubfeederBoqPlan): ?>
+                                        <div class="alert alert-info mb-0">
+                                            Subfeeder belum proses upload DRM. BOQ Tracker Subfeeder akan tersedia setelah APD BOQ Subfeeder disubmit dan di-approve di DRM MyRep.
+                                        </div>
+                                    <?php else: ?>
                                     <table class="table table-bordered impl-history-table">
                                         <thead>
                                             <tr>
@@ -2086,6 +2092,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                                             </tfoot>
                                         <?php endif; ?>
                                     </table>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
