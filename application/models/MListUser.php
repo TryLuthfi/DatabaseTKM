@@ -13,9 +13,16 @@ class MListUser extends CI_Model
                 u.nama_karyawan AS nama_user,
                 u.username_user,
                 u.password_user,
+                CASE
+                    WHEN COALESCE(TRIM(u.nik), '') <> ''
+                        AND COALESCE(TRIM(u.password_user), '') = COALESCE(TRIM(u.nik), '')
+                    THEN 'NY LOGIN'
+                    ELSE 'DONE'
+                END AS status_login,
                 u.id_level,
                 u.status_user,
                 u.jenis_kelamin,
+                u.homebase,
                 u.divisi,
                 u.departemen,
                 u.telegram_user_id,

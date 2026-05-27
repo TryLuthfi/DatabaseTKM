@@ -3,6 +3,20 @@ $status = $this->session->flashdata('status');
 $validationErrors = (array) $this->session->flashdata('validation_errors');
 $totalUsers = count($rincian_user ?? []);
 $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
+$homebaseOptions = [];
+$levelOptions = [];
+foreach (($rincian_user ?? []) as $userRow) {
+    $homebase = trim((string) ($userRow['homebase'] ?? ''));
+    $level = trim((string) ($userRow['nama_level'] ?? ''));
+    if ($homebase !== '') {
+        $homebaseOptions[strtoupper($homebase)] = $homebase;
+    }
+    if ($level !== '') {
+        $levelOptions[strtoupper($level)] = $level;
+    }
+}
+ksort($homebaseOptions);
+ksort($levelOptions);
 ?>
 
 <div class="content-wrapper">
@@ -25,16 +39,36 @@ $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin
                 </div>
                 <div class="card-body">
                     <div class="row align-items-end">
-                        <div class="col-md-6">
-                            <label class="user-field-label">Pencarian Cepat</label>
-                            <input type="text" class="form-control user-input" id="user_quick_search"
-                                placeholder="Cari NIK, nama, username, level, jabatan, divisi, departemen, atau status">
+                        <div class="col-md-3">
+                            <label class="user-field-label" for="user_filter_homebase">Homebase</label>
+                            <select class="form-control user-input" id="user_filter_homebase">
+                                <option value="">Semua Homebase</option>
+                                <?php foreach ($homebaseOptions as $homebaseOption): ?>
+                                    <option value="<?= htmlspecialchars((string) $homebaseOption, ENT_QUOTES) ?>">
+                                        <?= htmlspecialchars((string) $homebaseOption, ENT_QUOTES) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="user-field-label" for="user_filter_level">Level</label>
+                            <select class="form-control user-input" id="user_filter_level">
+                                <option value="">Semua Level</option>
+                                <?php foreach ($levelOptions as $levelOption): ?>
+                                    <option value="<?= htmlspecialchars((string) $levelOption, ENT_QUOTES) ?>">
+                                        <?= htmlspecialchars((string) $levelOption, ENT_QUOTES) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <div class="d-flex flex-wrap justify-content-md-end user-toolbar">
                                 <button type="button" class="btn user-btn user-btn--ghost" id="user_reset_search">
                                     <i class="fas fa-redo-alt mr-1"></i> Reset
                                 </button>
+                                <a href="<?= base_url('ListUser/downloadReport') ?>" class="btn user-btn user-btn--primary" id="user_download_report">
+                                    <i class="fas fa-file-excel mr-1"></i> Download Report
+                                </a>
                                 <button type="button" class="btn user-btn user-btn--success" id="btnTambahUser">
                                     <i class="fas fa-plus-circle mr-1"></i> Tambah <?= $isSuperAdmin ? 'User' : 'NIK + Nama' ?>
                                 </button>
@@ -61,8 +95,10 @@ $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin
                                     <th>Level</th>
                                     <th>Jabatan</th>
                                     <th>Jenis Kelamin</th>
+                                    <th>Homebase</th>
                                     <th>Divisi</th>
                                     <th>Departemen</th>
+                                    <th>Status Login</th>
                                     <th>Status User</th>
                                     <th style="width: 180px;">Aksi</th>
                                 </tr>
@@ -70,7 +106,7 @@ $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin
                             <tbody>
                                 <?php if (empty($rincian_user)): ?>
                                     <tr>
-                                        <td colspan="11" class="text-center text-muted">Belum ada data user.</td>
+                                        <td colspan="13" class="text-center text-muted">Belum ada data user.</td>
                                     </tr>
                                 <?php else: ?>
                                     <?php $no = 1; ?>
@@ -83,8 +119,18 @@ $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin
                                             <td><?= htmlspecialchars((string) ($data['nama_level'] ?? '-'), ENT_QUOTES) ?></td>
                                             <td><?= htmlspecialchars((string) ($data['nama_jabatan'] ?? '-'), ENT_QUOTES) ?></td>
                                             <td><?= htmlspecialchars((string) ($data['jenis_kelamin'] ?? '-'), ENT_QUOTES) ?></td>
+                                            <td><?= htmlspecialchars((string) ($data['homebase'] ?? '-'), ENT_QUOTES) ?></td>
                                             <td><?= htmlspecialchars((string) ($data['divisi'] ?? '-'), ENT_QUOTES) ?></td>
                                             <td><?= htmlspecialchars((string) ($data['departemen'] ?? '-'), ENT_QUOTES) ?></td>
+                                            <td>
+                                                <?php
+                                                $statusLogin = strtoupper(trim((string) ($data['status_login'] ?? 'NY LOGIN')));
+                                                $statusLoginBadge = $statusLogin === 'DONE' ? 'success' : 'warning';
+                                                ?>
+                                                <span class="badge badge-<?= $statusLoginBadge ?>">
+                                                    <?= htmlspecialchars($statusLogin, ENT_QUOTES) ?>
+                                                </span>
+                                            </td>
                                             <td><?= htmlspecialchars((string) ($data['status_user'] ?? '-'), ENT_QUOTES) ?></td>
                                             <td>
                                                 <?php if ($isSuperAdmin): ?>
@@ -95,7 +141,6 @@ $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin
                                                             data-nik="<?= htmlspecialchars((string) ($data['nik'] ?? ''), ENT_QUOTES) ?>"
                                                             data-nama="<?= htmlspecialchars((string) ($data['nama_user'] ?? ''), ENT_QUOTES) ?>"
                                                             data-username="<?= htmlspecialchars((string) ($data['username_user'] ?? ''), ENT_QUOTES) ?>"
-                                                            data-password="<?= htmlspecialchars((string) ($data['password_user'] ?? ''), ENT_QUOTES) ?>"
                                                             data-id-level="<?= (int) ($data['id_level'] ?? 3) ?>"
                                                             data-jabatan-name="<?= htmlspecialchars((string) ($data['nama_jabatan'] ?? ''), ENT_QUOTES) ?>"
                                                             data-jenis-kelamin="<?= htmlspecialchars((string) ($data['jenis_kelamin'] ?? ''), ENT_QUOTES) ?>"
@@ -163,7 +208,7 @@ $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin
                                     <input type="text" class="form-control user-input" name="username_user" id="username_user" autocomplete="off" required>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6" id="passwordFieldGroup">
                                 <div class="form-group">
                                     <label class="user-field-label">Password</label>
                                     <input type="text" class="form-control user-input" name="password_user" id="password_user" autocomplete="off" required>
@@ -270,6 +315,7 @@ $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin
             if (isSuperAdmin) {
                 var usernameInput = document.getElementById('username_user');
                 var passwordInput = document.getElementById('password_user');
+                var passwordFieldGroup = document.getElementById('passwordFieldGroup');
                 var levelSelect = document.getElementById('id_level');
                 var genderSelect = document.getElementById('jenis_kelamin');
                 var divisionInput = document.getElementById('divisi');
@@ -281,7 +327,12 @@ $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin
                     usernameInput.value = isEdit ? (data.username || '') : '';
                 }
                 if (passwordInput) {
-                    passwordInput.value = isEdit ? (data.password || '') : '';
+                    passwordInput.value = '';
+                    passwordInput.required = !isEdit;
+                    passwordInput.disabled = isEdit;
+                }
+                if (passwordFieldGroup) {
+                    passwordFieldGroup.classList.toggle('d-none', isEdit);
                 }
                 if (levelSelect) {
                     levelSelect.value = isEdit ? (data.idLevel || '') : (levelSelect.options[0] ? levelSelect.options[0].value : '');
@@ -329,6 +380,7 @@ $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin
                     responsive: false,
                     autoWidth: false,
                     scrollX: true,
+                    dom: 'lrtip',
                     pageLength: 10,
                     language: {
                         search: 'Search:',
@@ -351,7 +403,6 @@ $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin
                     nik: $(this).data('nik'),
                     nama: $(this).data('nama'),
                     username: $(this).data('username'),
-                    password: $(this).data('password'),
                     idLevel: $(this).data('id-level'),
                     jabatanName: $(this).data('jabatan-name'),
                     jenisKelamin: $(this).data('jenis-kelamin'),
@@ -361,8 +412,43 @@ $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin
                 });
             });
 
-            $('#user_quick_search').on('keyup', function () { if (table) { table.search($(this).val()).draw(); } });
-            $('#user_reset_search').on('click', function () { $('#user_quick_search').val(''); if (table) { table.search('').draw(); } });
+            function applyUserTableFilters() {
+                if (!table) {
+                    return;
+                }
+
+                var homebase = $('#user_filter_homebase').val() || '';
+                var level = $('#user_filter_level').val() || '';
+                var escapeRegex = $.fn.dataTable.util.escapeRegex;
+
+                table
+                    .column(7).search(homebase ? '^' + escapeRegex(homebase) + '$' : '', true, false)
+                    .column(4).search(level ? '^' + escapeRegex(level) + '$' : '', true, false)
+                    .draw();
+            }
+
+            $('#user_filter_homebase, #user_filter_level').on('change', applyUserTableFilters);
+            $('#user_reset_search').on('click', function () {
+                $('#user_filter_homebase').val('');
+                $('#user_filter_level').val('');
+                if (table) {
+                    table.search('');
+                    table.columns().search('');
+                    table.draw();
+                }
+            });
+            $('#user_download_report').on('click', function (e) {
+                e.preventDefault();
+                var params = $.param({
+                    homebase: $('#user_filter_homebase').val() || '',
+                    level: $('#user_filter_level').val() || ''
+                });
+                var url = $(this).attr('href');
+                if (params !== 'homebase=&level=') {
+                    url += '?' + params;
+                }
+                window.location.href = url;
+            });
 
             $(document).on('click', '.js-delete-user', function (e) {
                 e.preventDefault();

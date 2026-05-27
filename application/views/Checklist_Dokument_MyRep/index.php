@@ -1173,9 +1173,30 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                             <label for="item-filter-city">Kota</label>
                             <select id="item-filter-city" class="form-control form-control-sm">
                                 <option value="">Semua Kota</option>
-                                <?php foreach ($cityOptions as $cityOption): ?>
-                                    <option value="<?= htmlspecialchars($cityOption, ENT_QUOTES) ?>"><?= htmlspecialchars($cityOption, ENT_QUOTES) ?></option>
-                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="item-filter-group">
+                            <label for="item-filter-cluster">Cluster</label>
+                            <select id="item-filter-cluster" class="form-control form-control-sm">
+                                <option value="">Semua Cluster</option>
+                            </select>
+                        </div>
+                        <div class="item-filter-group">
+                            <label for="item-filter-scope">Scope</label>
+                            <select id="item-filter-scope" class="form-control form-control-sm">
+                                <option value="">Semua Scope</option>
+                            </select>
+                        </div>
+                        <div class="item-filter-group">
+                            <label for="item-filter-sow">SOW</label>
+                            <select id="item-filter-sow" class="form-control form-control-sm">
+                                <option value="">Semua SOW</option>
+                            </select>
+                        </div>
+                        <div class="item-filter-group">
+                            <label for="item-filter-doc">Dokumen</label>
+                            <select id="item-filter-doc" class="form-control form-control-sm">
+                                <option value="">Semua Dokumen</option>
                             </select>
                         </div>
                         <div class="item-filter-group">
@@ -1272,6 +1293,100 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
             type: '',
             value: ''
         };
+        var itemFilterOptionRows = <?= json_encode(isset($itemFilterOptions) && is_array($itemFilterOptions) ? $itemFilterOptions : [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+        var itemCascadeLevels = ['regional', 'city', 'cluster', 'scope', 'sow', 'doc'];
+        var itemCascadeSelects = {
+            regional: $('#item-filter-regional'),
+            city: $('#item-filter-city'),
+            cluster: $('#item-filter-cluster'),
+            scope: $('#item-filter-scope'),
+            sow: $('#item-filter-sow'),
+            doc: $('#item-filter-doc')
+        };
+        var itemCascadePlaceholders = {
+            regional: 'Semua Regional',
+            city: 'Semua Kota',
+            cluster: 'Semua Cluster',
+            scope: 'Semua Scope',
+            sow: 'Semua SOW',
+            doc: 'Semua Dokumen'
+        };
+
+        function itemCascadeValue(value) {
+            return (value || '').toString().trim().toUpperCase();
+        }
+
+        function populateItemCascadeSelect(level, values, selectedValue) {
+            var select = itemCascadeSelects[level];
+            if (!select || !select.length) {
+                return;
+            }
+
+            selectedValue = itemCascadeValue(selectedValue);
+            select.empty().append($('<option>', {
+                value: '',
+                text: itemCascadePlaceholders[level] || 'Semua'
+            }));
+
+            values.forEach(function(value) {
+                select.append($('<option>', {
+                    value: value,
+                    text: value
+                }));
+            });
+
+            select.val(values.indexOf(selectedValue) !== -1 ? selectedValue : '');
+            select.prop('disabled', values.length === 0);
+        }
+
+        function collectItemCascadeOptions(level, selected) {
+            var values = {};
+            var levelIndex = itemCascadeLevels.indexOf(level);
+
+            itemFilterOptionRows.forEach(function(row) {
+                var match = true;
+                for (var i = 0; i < levelIndex; i++) {
+                    var parentLevel = itemCascadeLevels[i];
+                    if (selected[parentLevel] && itemCascadeValue(row[parentLevel]) !== selected[parentLevel]) {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (!match) {
+                    return;
+                }
+
+                var value = itemCascadeValue(row[level]);
+                if (value) {
+                    values[value] = true;
+                }
+            });
+
+            return Object.keys(values).sort();
+        }
+
+        function refreshItemCascadingFilters(changedLevel) {
+            var selected = {};
+            itemCascadeLevels.forEach(function(level) {
+                selected[level] = itemCascadeValue(itemCascadeSelects[level].val());
+            });
+
+            if (changedLevel) {
+                var changedIndex = itemCascadeLevels.indexOf(changedLevel);
+                itemCascadeLevels.forEach(function(level, index) {
+                    if (index > changedIndex) {
+                        selected[level] = '';
+                    }
+                });
+            }
+
+            itemCascadeLevels.forEach(function(level) {
+                var values = collectItemCascadeOptions(level, selected);
+                populateItemCascadeSelect(level, values, selected[level]);
+                selected[level] = itemCascadeValue(itemCascadeSelects[level].val());
+            });
+        }
 
         function setCardCollapsed(cardSelector, collapsed) {
             var card = $(cardSelector);
@@ -1312,10 +1427,10 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                 "autoWidth": false,
                 "responsive": false,
                 "scrollX": true,
-                "pageLength": 10,
+                "pageLength": 5,
                 "lengthMenu": [
-                    [10, 25, 50, 100],
-                    [10, 25, 50, 100]
+                    [5, 10, 25, 50, 100],
+                    [5, 10, 25, 50, 100]
                 ],
                 "language": {
                     "emptyTable": "Belum ada cluster ATP DONE."
@@ -1349,6 +1464,10 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                         d.selected_regional = "<?= htmlspecialchars($selectedRegional, ENT_QUOTES) ?>";
                         d.item_regional = $('#item-filter-regional').val() || '';
                         d.item_city = $('#item-filter-city').val() || '';
+                        d.item_cluster = $('#item-filter-cluster').val() || '';
+                        d.item_scope = $('#item-filter-scope').val() || '';
+                        d.item_sow = $('#item-filter-sow').val() || '';
+                        d.item_doc = $('#item-filter-doc').val() || '';
                         d.internal_status = $('#item-filter-internal-status').val() || '';
                         d.astri_status = $('#item-filter-astri-status').val() || '';
                         d.quick_type = activeQuickFilter.type || '';
@@ -1366,11 +1485,35 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
             return;
         }
 
+        refreshItemCascadingFilters();
+
         $('#item-filter-regional').on('change', function() {
+            refreshItemCascadingFilters('regional');
             itemTable.draw();
         });
 
         $('#item-filter-city').on('change', function() {
+            refreshItemCascadingFilters('city');
+            itemTable.draw();
+        });
+
+        $('#item-filter-cluster').on('change', function() {
+            refreshItemCascadingFilters('cluster');
+            itemTable.draw();
+        });
+
+        $('#item-filter-scope').on('change', function() {
+            refreshItemCascadingFilters('scope');
+            itemTable.draw();
+        });
+
+        $('#item-filter-sow').on('change', function() {
+            refreshItemCascadingFilters('sow');
+            itemTable.draw();
+        });
+
+        $('#item-filter-doc').on('change', function() {
+            refreshItemCascadingFilters('doc');
             itemTable.draw();
         });
 
@@ -1392,8 +1535,13 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
 
             $('#item-filter-regional').val('');
             $('#item-filter-city').val('');
+            $('#item-filter-cluster').val('');
+            $('#item-filter-scope').val('');
+            $('#item-filter-sow').val('');
+            $('#item-filter-doc').val('');
             $('#item-filter-internal-status').val('');
             $('#item-filter-astri-status').val('');
+            refreshItemCascadingFilters();
 
             activeQuickFilter.type = filterType;
             activeQuickFilter.value = filterValue;
@@ -1418,6 +1566,10 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                 selected_regional: "<?= htmlspecialchars($selectedRegional, ENT_QUOTES) ?>",
                 item_regional: $('#item-filter-regional').val() || '',
                 item_city: $('#item-filter-city').val() || '',
+                item_cluster: $('#item-filter-cluster').val() || '',
+                item_scope: $('#item-filter-scope').val() || '',
+                item_sow: $('#item-filter-sow').val() || '',
+                item_doc: $('#item-filter-doc').val() || '',
                 internal_status: $('#item-filter-internal-status').val() || '',
                 astri_status: $('#item-filter-astri-status').val() || '',
                 quick_type: activeQuickFilter.type || '',

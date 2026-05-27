@@ -139,7 +139,6 @@ class ListUser extends CI_Controller
             'nik' => trim((string) $this->input->post('nik')),
             'nama_karyawan' => trim((string) $this->input->post('nama_user')),
             'username_user' => trim((string) $this->input->post('username_user')),
-            'password_user' => (string) $this->input->post('password_user'),
             'id_level' => (int) $this->input->post('id_level'),
             'jabatan' => trim($jabatanName),
             'status_user' => $statusUser,
@@ -181,6 +180,75 @@ class ListUser extends CI_Controller
             $this->session->set_flashdata('status', 'gagal_hapus');
             redirect("ListUser");
         }
+    }
+
+    public function downloadReport()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $homebaseFilter = strtoupper(trim((string) $this->input->get('homebase')));
+        $levelFilter = strtoupper(trim((string) $this->input->get('level')));
+        $rows = $this->MListUser->getData();
+        if ($homebaseFilter !== '' || $levelFilter !== '') {
+            $rows = array_values(array_filter($rows, function ($row) use ($homebaseFilter, $levelFilter) {
+                $rowHomebase = strtoupper(trim((string) ($row['homebase'] ?? '')));
+                $rowLevel = strtoupper(trim((string) ($row['nama_level'] ?? '')));
+
+                if ($homebaseFilter !== '' && $rowHomebase !== $homebaseFilter) {
+                    return false;
+                }
+                if ($levelFilter !== '' && $rowLevel !== $levelFilter) {
+                    return false;
+                }
+
+                return true;
+            }));
+        }
+
+        header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+        header('Content-Disposition: attachment; filename="report_list_user_' . date('Y-m-d') . '.xls"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        echo '<table border="1">';
+        echo '<tr>';
+        echo '<th>No</th>';
+        echo '<th>NIK</th>';
+        echo '<th>Nama</th>';
+        echo '<th>Username</th>';
+        echo '<th>Level</th>';
+        echo '<th>Jabatan</th>';
+        echo '<th>Jenis Kelamin</th>';
+        echo '<th>Homebase</th>';
+        echo '<th>Divisi</th>';
+        echo '<th>Departemen</th>';
+        echo '<th>Status Login</th>';
+        echo '<th>Status User</th>';
+        echo '</tr>';
+
+        $no = 1;
+        foreach ($rows as $row) {
+            echo '<tr>';
+            echo '<td>' . $no++ . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($row['nik'] ?? '-'), ENT_QUOTES) . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($row['nama_user'] ?? '-'), ENT_QUOTES) . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($row['username_user'] ?? '-'), ENT_QUOTES) . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($row['nama_level'] ?? '-'), ENT_QUOTES) . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($row['nama_jabatan'] ?? '-'), ENT_QUOTES) . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($row['jenis_kelamin'] ?? '-'), ENT_QUOTES) . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($row['homebase'] ?? '-'), ENT_QUOTES) . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($row['divisi'] ?? '-'), ENT_QUOTES) . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($row['departemen'] ?? '-'), ENT_QUOTES) . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($row['status_login'] ?? '-'), ENT_QUOTES) . '</td>';
+            echo '<td>' . htmlspecialchars((string) ($row['status_user'] ?? '-'), ENT_QUOTES) . '</td>';
+            echo '</tr>';
+        }
+
+        echo '</table>';
+        exit;
     }
 
     private function isSuperAdmin()

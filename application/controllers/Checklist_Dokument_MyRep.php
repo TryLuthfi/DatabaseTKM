@@ -63,6 +63,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $data['dashboardSummary'] = isset($cachedPayload['dashboardSummary']) && is_array($cachedPayload['dashboardSummary'])
             ? $cachedPayload['dashboardSummary']
             : $this->buildDashboardSummary($data['clusterList'], $sourceDocumentItemList);
+        $data['itemFilterOptions'] = $this->buildItemFilterOptions($sourceDocumentItemList);
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
@@ -103,6 +104,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
         $itemRegional = strtoupper(trim((string) $this->input->post('item_regional')));
         $itemCity = strtoupper(trim((string) $this->input->post('item_city')));
+        $itemCluster = strtoupper(trim((string) $this->input->post('item_cluster')));
+        $itemScope = strtoupper(trim((string) $this->input->post('item_scope')));
+        $itemSow = strtoupper(trim((string) $this->input->post('item_sow')));
+        $itemDoc = strtoupper(trim((string) $this->input->post('item_doc')));
         $internalStatus = strtoupper(trim((string) $this->input->post('internal_status')));
         $astriStatus = strtoupper(trim((string) $this->input->post('astri_status')));
         $quickType = strtolower(trim((string) $this->input->post('quick_type')));
@@ -118,6 +123,9 @@ class Checklist_Dokument_MyRep extends CI_Controller
         foreach ($rows as $row) {
             $rowRegional = strtoupper(trim((string) ($row['regional_name'] ?? '')));
             $rowCity = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            $rowCluster = strtoupper(trim((string) ($row['cluster_name'] ?? '')));
+            $rowScope = strtoupper(trim((string) ($row['scope_type'] ?? '')));
+            $rowSow = strtoupper(trim((string) ($row['sow_type'] ?? '')));
             $rowInternal = $this->normalizeUiStatusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED'));
             $rowAstri = $this->normalizeUiStatusLabel((string) ($row['astri_status'] ?? 'NY'));
             $rowDoc = strtoupper(trim((string) ($row['doc_name'] ?? '')));
@@ -126,6 +134,18 @@ class Checklist_Dokument_MyRep extends CI_Controller
                 continue;
             }
             if ($itemCity !== '' && $rowCity !== $itemCity) {
+                continue;
+            }
+            if ($itemCluster !== '' && $rowCluster !== $itemCluster) {
+                continue;
+            }
+            if ($itemScope !== '' && $rowScope !== $itemScope) {
+                continue;
+            }
+            if ($itemSow !== '' && $rowSow !== $itemSow) {
+                continue;
+            }
+            if ($itemDoc !== '' && $rowDoc !== $itemDoc) {
                 continue;
             }
             if ($internalStatus !== '' && $rowInternal !== $internalStatus) {
@@ -263,6 +283,10 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
         $itemRegional = strtoupper(trim((string) $this->input->get('item_regional')));
         $itemCity = strtoupper(trim((string) $this->input->get('item_city')));
+        $itemCluster = strtoupper(trim((string) $this->input->get('item_cluster')));
+        $itemScope = strtoupper(trim((string) $this->input->get('item_scope')));
+        $itemSow = strtoupper(trim((string) $this->input->get('item_sow')));
+        $itemDoc = strtoupper(trim((string) $this->input->get('item_doc')));
         $internalStatus = strtoupper(trim((string) $this->input->get('internal_status')));
         $astriStatus = strtoupper(trim((string) $this->input->get('astri_status')));
         $quickType = strtolower(trim((string) $this->input->get('quick_type')));
@@ -273,12 +297,19 @@ class Checklist_Dokument_MyRep extends CI_Controller
         foreach ($rows as $row) {
             $rowRegional = strtoupper(trim((string) ($row['regional_name'] ?? '')));
             $rowCity = strtoupper(trim((string) ($row['city_name'] ?? '')));
+            $rowCluster = strtoupper(trim((string) ($row['cluster_name'] ?? '')));
+            $rowScope = strtoupper(trim((string) ($row['scope_type'] ?? '')));
+            $rowSow = strtoupper(trim((string) ($row['sow_type'] ?? '')));
             $rowInternal = $this->normalizeUiStatusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED'));
             $rowAstri = $this->normalizeUiStatusLabel((string) ($row['astri_status'] ?? 'NY'));
             $rowDoc = strtoupper(trim((string) ($row['doc_name'] ?? '')));
 
             if ($itemRegional !== '' && $rowRegional !== $itemRegional) continue;
             if ($itemCity !== '' && $rowCity !== $itemCity) continue;
+            if ($itemCluster !== '' && $rowCluster !== $itemCluster) continue;
+            if ($itemScope !== '' && $rowScope !== $itemScope) continue;
+            if ($itemSow !== '' && $rowSow !== $itemSow) continue;
+            if ($itemDoc !== '' && $rowDoc !== $itemDoc) continue;
             if ($internalStatus !== '' && $rowInternal !== $internalStatus) continue;
             if ($astriStatus !== '' && $rowAstri !== $astriStatus) continue;
 
@@ -487,6 +518,40 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
 
         return $summary;
+    }
+
+    private function buildItemFilterOptions(array $documentItemList)
+    {
+        $options = [];
+        $seen = [];
+
+        foreach ($documentItemList as $item) {
+            $row = [
+                'regional' => strtoupper(trim((string) ($item['regional_name'] ?? ''))),
+                'city' => strtoupper(trim((string) ($item['city_name'] ?? ''))),
+                'cluster' => strtoupper(trim((string) ($item['cluster_name'] ?? ''))),
+                'scope' => strtoupper(trim((string) ($item['scope_type'] ?? ''))),
+                'sow' => strtoupper(trim((string) ($item['sow_type'] ?? ''))),
+                'doc' => strtoupper(trim((string) ($item['doc_name'] ?? ''))),
+            ];
+
+            $key = implode('|', $row);
+            if ($key === '|||||' || isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $options[] = $row;
+        }
+
+        usort($options, static function ($a, $b) {
+            return strcmp(
+                implode('|', [$a['regional'], $a['city'], $a['cluster'], $a['scope'], $a['sow'], $a['doc']]),
+                implode('|', [$b['regional'], $b['city'], $b['cluster'], $b['scope'], $b['sow'], $b['doc']])
+            );
+        });
+
+        return $options;
     }
 
     public function detail($clusterId = 0)
