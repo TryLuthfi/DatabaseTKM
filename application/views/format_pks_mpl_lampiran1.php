@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <title>PKS MPL Lampiran 1</title>
+  <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
+  <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
   <style>
     @page { size: A4; margin: 16mm 14mm 14mm 14mm; }
     body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #000; line-height: 1.15; margin: 0; padding: 0; }

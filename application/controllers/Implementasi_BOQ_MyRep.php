@@ -1121,7 +1121,7 @@ class Implementasi_BOQ_MyRep extends CI_Controller
     private function renderComplyPdfHeader($pdf, $cluster, $sectionTitle, $documentTitle = 'FOTO COMPLY', $infoTitle = 'Foto Comply Approved')
     {
         $tkmLogo = $this->resolvePdfLogoFile([
-            'assets/dist/img/logotkmsolid.png',
+            'assets/dist/img/solid logo tkm landscape transparent.png',
             'assets/dist/img/logo_size.jpg',
             'assets/dist/img/logo_size_invert.jpg',
         ]);

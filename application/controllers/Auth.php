@@ -137,7 +137,7 @@ class Auth extends CI_Controller
 
         $resetLink = site_url('Auth/resetPassword?token=' . urlencode($token));
         $subject = 'Change Your Password Account - Database Project TKM';
-        $logoUrl = base_url('assets/dist/img/logotkmsolid.png');
+        $logoUrl = base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png');
 
         $messageHtml = ''
             . '<div style="font-family:Arial,Helvetica,sans-serif;color:#111827;line-height:1.6;">'

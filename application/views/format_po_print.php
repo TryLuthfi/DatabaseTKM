@@ -99,6 +99,8 @@ if ($bowheerName !== '') {
 <head>
     <meta charset="UTF-8">
     <title>Print PO <?= htmlspecialchars((string) ($poHeader['nomor_po_pabrik'] ?? ''), ENT_QUOTES) ?></title>
+    <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
+    <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
     <style>
         @page { size: A4 portrait; margin: 8mm; }
         body {
@@ -263,7 +265,7 @@ if ($bowheerName !== '') {
         <div class="po-content">
             <div class="po-header">
                 <div class="po-header__logo">
-                    <img src="<?= base_url('assets/dist/img/logotkmsolid.png') ?>" alt="PT TKM">
+                    <img src="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>" alt="PT TKM">
                 </div>
                 <div class="po-header__meta">
                     <h1>PT. TECHNOLOGY KARYA MANDIRI</h1>

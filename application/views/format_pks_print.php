@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <title>PKS - Kontrak Induk Mitra Pelaksana</title>
+  <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
+  <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
   <style>
     @page { size: A4; margin: 20mm; }
     body { font-family: "Times New Roman", serif; font-size: 12pt; color: #111; line-height: 1.45; }

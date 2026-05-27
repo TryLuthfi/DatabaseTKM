@@ -43,8 +43,48 @@ if (!function_exists('myrepStatusBadgeClass')) {
     }
 }
 
+if (!function_exists('myrepQuickValue')) {
+    function myrepQuickValue($row, $key)
+    {
+        return htmlspecialchars((string) ($row[$key] ?? ''), ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('myrepQuickDateValue')) {
+    function myrepQuickDateValue($row, $key)
+    {
+        $value = (string) ($row[$key] ?? '');
+        if ($value === '' || $value === '0000-00-00' || $value === '0000-00-00 00:00:00') {
+            return '';
+        }
+        $timestamp = strtotime($value);
+        return $timestamp ? date('Y-m-d', $timestamp) : htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('myrepQuickDateTimeValue')) {
+    function myrepQuickDateTimeValue($row, $key)
+    {
+        $value = (string) ($row[$key] ?? '');
+        if ($value === '' || $value === '0000-00-00' || $value === '0000-00-00 00:00:00') {
+            return '';
+        }
+        $timestamp = strtotime($value);
+        return $timestamp ? date('Y-m-d\TH:i', $timestamp) : htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('myrepQuickSelected')) {
+    function myrepQuickSelected($row, $key, $value)
+    {
+        return strtoupper(trim((string) ($row[$key] ?? ''))) === strtoupper(trim((string) $value)) ? 'selected' : '';
+    }
+}
+
 $myrepClusterId = (int) ($cluster['id_myrep_cluster'] ?? 0);
 $rfsClusterId = (int) ($cluster['rfs_cluster_id'] ?? $cluster['legacy_rfs_cluster_id'] ?? 0);
+$quickUpdateData = $quickUpdateData ?? [];
+$canQuickUpdate = !empty($canQuickUpdate);
 ?>
 
 <style>
@@ -138,6 +178,9 @@ $rfsClusterId = (int) ($cluster['rfs_cluster_id'] ?? $cluster['legacy_rfs_cluste
                     <h1 class="m-0 text-dark">Detail Project MyRep</h1>
                 </div>
                 <div class="col-sm-6 text-right">
+                    <?php if ($canQuickUpdate): ?>
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal-myrep-quick-update">Update Cluster</button>
+                    <?php endif; ?>
                     <a href="<?= base_url('MyRepublik_Project') ?>" class="btn btn-outline-secondary">Kembali ke Dashboard</a>
                 </div>
             </div>
@@ -486,3 +529,284 @@ $rfsClusterId = (int) ($cluster['rfs_cluster_id'] ?? $cluster['legacy_rfs_cluste
         </div>
     </section>
 </div>
+
+<?php if ($canQuickUpdate): ?>
+<?php
+$quickStatusOptions = ['DRAFT', 'BA OPEN', 'BAK', 'VALSAL', 'WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE', 'REJECTED', 'HOLD'];
+$quickStagingOptions = ['', 'DRAFT', 'WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE', 'COMPLETED', 'REJECTED'];
+$quickRfsOptions = ['', 'FULL RFS', 'PARTIAL RFS', 'NY RFS'];
+$quickAtpOptions = ['', 'DONE', 'PUNCLIST'];
+$quickChecklistOptions = ['', 'AREA', 'HO', 'EMR', 'NRO', 'CLOSED'];
+?>
+<div class="modal fade" id="modal-myrep-quick-update" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('MyRepublik_Project/updateQuick/' . $myrepClusterId) ?>" id="form-myrep-quick-update">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Cluster MyRep</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#quick-tab-cluster" role="tab">Cluster</a></li>
+                        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#quick-tab-bak" role="tab">BAK</a></li>
+                        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#quick-tab-batch" role="tab">Batch</a></li>
+                        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#quick-tab-drm" role="tab">DRM</a></li>
+                        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#quick-tab-rfs" role="tab">RFS / ATP</a></li>
+                        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#quick-tab-checklist" role="tab">Checklist</a></li>
+                    </ul>
+
+                    <div class="tab-content border-left border-right border-bottom p-3">
+                        <div class="tab-pane fade show active" id="quick-tab-cluster" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Status Current</label>
+                                        <select name="status_current" class="form-control" required>
+                                            <?php foreach ($quickStatusOptions as $option): ?>
+                                                <option value="<?= htmlspecialchars($option) ?>" <?= myrepQuickSelected($quickUpdateData, 'status_current', $option) ?>><?= htmlspecialchars($option) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>City Name</label>
+                                        <input type="text" name="city_name" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'city_name') ?>" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Cluster Code</label>
+                                        <input type="text" name="cluster_code" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'cluster_code') ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Cluster Name</label>
+                                        <input type="text" name="cluster_name" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'cluster_name') ?>" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>District Name</label>
+                                        <input type="text" name="district_name" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'district_name') ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Village Name</label>
+                                        <input type="text" name="village_name" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'village_name') ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>HP Plan</label>
+                                        <input type="number" name="hp_plan" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'hp_plan') ?>" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Nomor NTP</label>
+                                        <input type="text" name="nomor_ntp" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'nomor_ntp') ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Tanggal NTP</label>
+                                        <input type="date" name="tanggal_ntp" class="form-control" value="<?= myrepQuickDateValue($quickUpdateData, 'tanggal_ntp') ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label>Remark General</label>
+                                        <textarea name="remark_general" class="form-control" rows="2"><?= myrepQuickValue($quickUpdateData, 'remark_general') ?></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="quick-tab-bak" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Homepass BAK</label>
+                                        <input type="number" name="homepass_bak" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'homepass_bak') ?>" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>BA Open Date</label>
+                                        <input type="date" name="ba_open_date" class="form-control" value="<?= myrepQuickDateValue($quickUpdateData, 'ba_open_date') ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>BAK Date</label>
+                                        <input type="date" name="bak_date" class="form-control" value="<?= myrepQuickDateValue($quickUpdateData, 'bak_date') ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Homepass VALSAL</label>
+                                        <input type="number" name="homepass_valsal" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'homepass_valsal') ?>" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>VALSAL Date</label>
+                                        <input type="date" name="valsal_date" class="form-control" value="<?= myrepQuickDateValue($quickUpdateData, 'valsal_date') ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-group">
+                                        <label>Remark VALSAL</label>
+                                        <input type="text" name="remark_valsal" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'remark_valsal') ?>">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="quick-tab-batch" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-3"><div class="form-group"><label>HP Donasi</label><input type="number" name="hp_donasi" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'hp_donasi') ?>" min="0"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Submission Date</label><input type="date" name="submission_date" class="form-control" value="<?= myrepQuickDateValue($quickUpdateData, 'submission_date') ?>"></div></div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Staging Status</label>
+                                        <select name="staging_status" class="form-control">
+                                            <?php foreach ($quickStagingOptions as $option): ?>
+                                                <option value="<?= htmlspecialchars($option) ?>" <?= myrepQuickSelected($quickUpdateData, 'staging_status', $option) ?>><?= $option === '' ? '-' : htmlspecialchars($option) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3"><div class="form-group"><label>Released At</label><input type="datetime-local" name="released_at" class="form-control" value="<?= myrepQuickDateTimeValue($quickUpdateData, 'released_at') ?>"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Nominal Pengajuan Area</label><input type="number" name="nominal_pengajuan_area" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'nominal_pengajuan_area') ?>" step="0.01"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Nominal Nego EMR</label><input type="number" name="nominal_nego_emr" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'nominal_nego_emr') ?>" step="0.01"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Nominal Release Finance</label><input type="number" name="nominal_release_finance" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'nominal_release_finance') ?>" step="0.01"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Nominal per HP</label><input type="number" name="nominal_per_homepass" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'nominal_per_homepass') ?>" step="0.01"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Bank Name</label><input type="text" name="bank_name" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'bank_name') ?>"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Bank Account Number</label><input type="text" name="bank_account_number" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'bank_account_number') ?>"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Recipient Name</label><input type="text" name="recipient_name" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'recipient_name') ?>"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Recipient Phone</label><input type="text" name="recipient_phone" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'recipient_phone') ?>"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Recipient Position</label><input type="text" name="recipient_position" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'recipient_position') ?>"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Recipient Period</label><input type="text" name="recipient_period" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'recipient_period') ?>"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Free Wifi Qty</label><input type="number" name="free_wifi_qty" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'free_wifi_qty') ?>" min="0"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Free Wifi Period Month</label><input type="number" name="free_wifi_period_month" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'free_wifi_period_month') ?>" min="0"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>ASTRI Batch Number</label><input type="text" name="astri_batch_number" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'astri_batch_number') ?>"></div></div>
+                                <div class="col-md-9"><div class="form-group"><label>Remark Batch Approval</label><input type="text" name="remark_batch_approval" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'remark_batch_approval') ?>"></div></div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="quick-tab-drm" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-3"><div class="form-group"><label>Homepass DRM</label><input type="number" name="homepass_drm" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'homepass_drm') ?>" min="0"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>DRM Date</label><input type="date" name="drm_date" class="form-control" value="<?= myrepQuickDateValue($quickUpdateData, 'drm_date') ?>"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Nama OLT</label><input type="text" name="nama_olt" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'nama_olt') ?>"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Remark DRM</label><input type="text" name="remark_drm" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'remark_drm') ?>"></div></div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="quick-tab-rfs" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-3"><div class="form-group"><label>RFS Date</label><input type="date" name="rfs_date" class="form-control" value="<?= myrepQuickDateValue($quickUpdateData, 'rfs_date') ?>"></div></div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Status RFS</label>
+                                        <select name="status_rfs" class="form-control">
+                                            <?php foreach ($quickRfsOptions as $option): ?>
+                                                <option value="<?= htmlspecialchars($option) ?>" <?= myrepQuickSelected($quickUpdateData, 'status_rfs', $option) ?>><?= $option === '' ? '-' : htmlspecialchars($option) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3"><div class="form-group"><label>Email ATP Date</label><input type="date" name="email_atp_date" class="form-control" value="<?= myrepQuickDateValue($quickUpdateData, 'email_atp_date') ?>"></div></div>
+                                <div class="col-md-3"><div class="form-group"><label>Actual ATP Date</label><input type="date" name="actual_atp_date" class="form-control" value="<?= myrepQuickDateValue($quickUpdateData, 'actual_atp_date') ?>"></div></div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Status ATP</label>
+                                        <select name="status_atp" class="form-control">
+                                            <?php foreach ($quickAtpOptions as $option): ?>
+                                                <option value="<?= htmlspecialchars($option) ?>" <?= myrepQuickSelected($quickUpdateData, 'status_atp', $option) ?>><?= $option === '' ? '-' : htmlspecialchars($option) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                    <div class="col-md-3"><div class="form-group"><label>RFS <?= $i ?> Date</label><input type="date" name="rfs_<?= $i ?>_date" class="form-control" value="<?= myrepQuickDateValue($quickUpdateData, 'rfs_' . $i . '_date') ?>"></div></div>
+                                    <div class="col-md-3"><div class="form-group"><label>RFS <?= $i ?> Qty</label><input type="number" name="rfs_<?= $i ?>_qty" class="form-control" value="<?= myrepQuickValue($quickUpdateData, 'rfs_' . $i . '_qty') ?>" min="0"></div></div>
+                                <?php endfor; ?>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="quick-tab-checklist" role="tabpanel">
+                            <div class="row">
+                                <?php foreach ([
+                                    'cluster_cwatp' => 'Cluster CW ATP',
+                                    'cluster_fullopm' => 'Cluster Full OPM',
+                                    'cluster_rfs' => 'Cluster RFS',
+                                    'subfeeder_cwatp' => 'Subfeeder CW ATP',
+                                    'subfeeder_fullopm' => 'Subfeeder Full OPM',
+                                    'subfeeder_rfs' => 'Subfeeder RFS',
+                                ] as $key => $label): ?>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label><?= htmlspecialchars($label) ?></label>
+                                            <select name="<?= htmlspecialchars($key) ?>" class="form-control">
+                                                <?php foreach ($quickChecklistOptions as $option): ?>
+                                                    <?php if ($option === 'NRO' && $key !== 'cluster_rfs') continue; ?>
+                                                    <option value="<?= htmlspecialchars($option) ?>" <?= myrepQuickSelected($quickUpdateData, $key, $option) ?>><?= $option === '' ? '-' : htmlspecialchars($option) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var form = document.getElementById('form-myrep-quick-update');
+        if (!form) {
+            return;
+        }
+        form.addEventListener('submit', function (event) {
+            var status = (form.querySelector('[name="status_current"]') || {}).value || '';
+            var isRfsOrAfter = ['RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'].indexOf(status.toUpperCase()) !== -1;
+            var isAtpOrAfter = ['ATP', 'CHECKLIST DOKUMENT', 'DONE'].indexOf(status.toUpperCase()) !== -1;
+            var rfsDate = (form.querySelector('[name="rfs_date"]') || {}).value || '';
+            var statusRfs = (form.querySelector('[name="status_rfs"]') || {}).value || '';
+            var actualAtp = (form.querySelector('[name="actual_atp_date"]') || {}).value || '';
+            if (isRfsOrAfter && (!rfsDate || !statusRfs)) {
+                event.preventDefault();
+                alert('Kalau status sudah RFS/ATP/CHECKLIST/DONE, tanggal RFS dan status RFS wajib diisi.');
+                return false;
+            }
+            if (isAtpOrAfter && !actualAtp) {
+                event.preventDefault();
+                alert('Kalau status sudah ATP/CHECKLIST/DONE, actual ATP date wajib diisi.');
+                return false;
+            }
+            if (!confirm('Simpan quick update untuk cluster ini?')) {
+                event.preventDefault();
+                return false;
+            }
+        });
+    })();
+</script>
+<?php endif; ?>

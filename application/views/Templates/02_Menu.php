@@ -82,8 +82,8 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
     <aside class="main-sidebar sidebar-dark-primary elevation-4 premium-sidebar">
         <!-- Brand Logo -->
         <a href="<?= base_url('Dashboard') ?>" class="brand-link premium-brand-link">
-            <img src="<?= base_url('assets') ?>/dist/img/logotkmsolid.png" alt="AdminLTE Logo"
-                class="brand-image img-circle elevation-3 premium-brand-image" style="opacity: .9">
+            <img src="<?= base_url('assets') ?>/dist/img/solid%20logo%20tkm%20landscape%20transparent.png" alt="Logo PT. TKM"
+                class="brand-image premium-brand-image" style="opacity: .9">
             <span class="brand-text font-weight-light premium-brand-text">PT. TKM</span>
         </a>
 
@@ -1224,11 +1224,10 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
         .premium-brand-image {
             float: none !important;
             margin: 0 !important;
-            width: 40px;
-            height: 40px;
-            padding: 0.16rem;
-            background: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.22);
+            width: 110px;
+            height: 38px;
+            object-fit: contain;
+            padding: 0.1rem;
         }
 
         .premium-brand-text {
@@ -1237,6 +1236,17 @@ $disabledRincianInvoiceLinkAttr = $canAccessRincianInvoicePage ? '' : ' tabindex
             letter-spacing: 0.16em;
             text-transform: uppercase;
             color: #f8fafc !important;
+        }
+
+        .sidebar-collapse .premium-brand-link {
+            justify-content: center;
+            padding-left: 0.45rem;
+            padding-right: 0.45rem;
+        }
+
+        .sidebar-collapse .premium-brand-image {
+            width: 46px;
+            height: 38px;
         }
 
         .premium-sidebar .sidebar {

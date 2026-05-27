@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8">
   <title>Print SPK</title>
+  <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
+  <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
   <style>body{font-family:Arial,sans-serif;font-size:13px;padding:32px;}table{width:100%;border-collapse:collapse}td{padding:6px;border:1px solid #ddd}</style>
 </head>
 <body onload="window.print()">

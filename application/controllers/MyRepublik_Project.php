@@ -134,6 +134,43 @@ class MyRepublik_Project extends CI_Controller
         $this->load->view('Templates/99_JS');
     }
 
+    public function updateQuick($clusterId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $clusterId = (int) $clusterId;
+        if ($clusterId <= 0) {
+            $this->session->set_flashdata('error', 'Cluster MyRep tidak valid.');
+            redirect('MyRepublik_Project');
+            return;
+        }
+
+        $cluster = $this->MMyRepublik_Project->getClusterDetail($clusterId);
+        if (empty($cluster)) {
+            $this->session->set_flashdata('error', 'Detail cluster MyRep tidak ditemukan.');
+            redirect('MyRepublik_Project');
+            return;
+        }
+
+        $row = $this->collectQuickUpdateRow($cluster);
+        $errors = $this->validateQuickUpdateRow($row);
+        if (!empty($errors)) {
+            $this->session->set_flashdata('error', implode(' | ', $errors));
+            redirect('MyRepublik_Project/detail/' . $clusterId);
+            return;
+        }
+
+        $result = $this->applyQuickUpdateToCluster($cluster, $row, (int) $this->session->userdata('id_user'));
+        $this->session->set_flashdata(
+            !empty($result['status']) ? 'success' : 'error',
+            (string) ($result['message'] ?? 'Update quick cluster selesai.')
+        );
+        redirect('MyRepublik_Project/detail/' . $clusterId);
+    }
+
     public function deleteCluster()
     {
         if (empty($this->session->userdata('id_user'))) {
@@ -752,8 +789,75 @@ class MyRepublik_Project extends CI_Controller
         $data['packageRows'] = $rfsClusterId > 0
             ? $this->MMyRepublik_Project->getRfsPackages($rfsClusterId)
             : [];
+        $data['canQuickUpdate'] = !$isLegacy
+            && $myrepClusterId > 0
+            && $this->myrepAccess->hasPermission('MyRepublik_Project', 'EDIT');
+        $data['quickUpdateData'] = $data['canQuickUpdate']
+            ? $this->buildQuickUpdateData($cluster, $data['claimRows'])
+            : [];
 
         return $data;
+    }
+
+    private function buildQuickUpdateData(array $cluster, array $claimRows = [])
+    {
+        $row = [
+            'status_current' => (string) ($cluster['status_current'] ?? ''),
+            'city_name' => (string) ($cluster['city_name'] ?? ''),
+            'district_name' => (string) ($cluster['district_name'] ?? ''),
+            'village_name' => (string) ($cluster['village_name'] ?? ''),
+            'cluster_name' => (string) ($cluster['cluster_name'] ?? ''),
+            'cluster_code' => (string) ($cluster['cluster_code'] ?? ''),
+            'hp_plan' => (string) ($cluster['hp_plan'] ?? ''),
+            'homepass_bak' => (string) ($cluster['homepass_bak'] ?? ''),
+            'ba_open_date' => (string) ($cluster['ba_open_date'] ?? ''),
+            'bak_date' => (string) ($cluster['bak_date'] ?? ''),
+            'nomor_ntp' => (string) ($cluster['ntp_name'] ?? ''),
+            'tanggal_ntp' => (string) ($cluster['ntp_date'] ?? ''),
+            'homepass_valsal' => (string) ($cluster['homepass_valsal'] ?? ''),
+            'valsal_date' => (string) ($cluster['valsal_date'] ?? ''),
+            'remark_valsal' => (string) ($cluster['remark_valsal'] ?? ''),
+            'hp_donasi' => (string) ($cluster['hp_donasi'] ?? ''),
+            'submission_date' => (string) ($cluster['submission_date'] ?? ''),
+            'nominal_pengajuan_area' => (string) ($cluster['nominal_pengajuan_area'] ?? ''),
+            'nominal_nego_emr' => (string) ($cluster['nominal_nego_emr'] ?? ''),
+            'nominal_release_finance' => (string) ($cluster['nominal_release_finance'] ?? ''),
+            'nominal_per_homepass' => (string) ($cluster['nominal_per_homepass'] ?? ''),
+            'bank_name' => (string) ($cluster['bank_name'] ?? ''),
+            'bank_account_number' => (string) ($cluster['bank_account_number'] ?? ''),
+            'recipient_name' => (string) ($cluster['recipient_name'] ?? ''),
+            'recipient_phone' => (string) ($cluster['recipient_phone'] ?? ''),
+            'recipient_position' => (string) ($cluster['recipient_position'] ?? ''),
+            'recipient_period' => (string) ($cluster['recipient_period'] ?? ''),
+            'free_wifi_qty' => (string) ($cluster['free_wifi_qty'] ?? ''),
+            'free_wifi_period_month' => (string) ($cluster['free_wifi_period_month'] ?? ''),
+            'astri_batch_number' => (string) ($cluster['astri_batch_number'] ?? ''),
+            'staging_status' => (string) ($cluster['staging_status'] ?? ''),
+            'released_at' => (string) ($cluster['released_at'] ?? ''),
+            'remark_batch_approval' => (string) ($cluster['remark_batch_approval'] ?? ''),
+            'homepass_drm' => (string) ($cluster['homepass_drm'] ?? ''),
+            'drm_date' => (string) ($cluster['drm_date'] ?? ''),
+            'nama_olt' => (string) ($cluster['nama_olt'] ?? ''),
+            'remark_drm' => (string) ($cluster['remark_drm'] ?? ''),
+            'rfs_date' => (string) ($cluster['latest_claim_date'] ?? $cluster['tanggal_rfs'] ?? ''),
+            'status_rfs' => (string) ($cluster['status_rfs'] ?? ''),
+            'email_atp_date' => (string) ($cluster['email_atp_date'] ?? ''),
+            'actual_atp_date' => (string) ($cluster['actual_atp_date'] ?? ''),
+            'status_atp' => (string) ($cluster['status_atp'] ?? ''),
+            'remark_general' => (string) ($cluster['remark_general'] ?? ''),
+        ];
+
+        $claims = array_values($claimRows);
+        usort($claims, static function ($a, $b) {
+            return strcmp((string) ($a['claim_date'] ?? ''), (string) ($b['claim_date'] ?? ''));
+        });
+        for ($i = 1; $i <= 5; $i++) {
+            $claim = $claims[$i - 1] ?? [];
+            $row['rfs_' . $i . '_date'] = (string) ($claim['claim_date'] ?? '');
+            $row['rfs_' . $i . '_qty'] = (string) ($claim['claim_qty'] ?? '');
+        }
+
+        return $row;
     }
 
     private function getCutoffImportHeaders()
@@ -2284,6 +2388,617 @@ class MyRepublik_Project extends CI_Controller
                     ]);
             }
         }
+    }
+
+    private function collectQuickUpdateRow(array $cluster)
+    {
+        $keys = [
+            'status_current',
+            'city_name',
+            'district_name',
+            'village_name',
+            'cluster_name',
+            'cluster_code',
+            'hp_plan',
+            'homepass_bak',
+            'ba_open_date',
+            'bak_date',
+            'nomor_ntp',
+            'tanggal_ntp',
+            'homepass_valsal',
+            'valsal_date',
+            'remark_valsal',
+            'hp_donasi',
+            'submission_date',
+            'nominal_pengajuan_area',
+            'nominal_nego_emr',
+            'nominal_release_finance',
+            'nominal_per_homepass',
+            'bank_name',
+            'bank_account_number',
+            'recipient_name',
+            'recipient_phone',
+            'recipient_position',
+            'recipient_period',
+            'free_wifi_qty',
+            'free_wifi_period_month',
+            'astri_batch_number',
+            'staging_status',
+            'released_at',
+            'remark_batch_approval',
+            'homepass_drm',
+            'drm_date',
+            'nama_olt',
+            'remark_drm',
+            'rfs_date',
+            'status_rfs',
+            'email_atp_date',
+            'actual_atp_date',
+            'status_atp',
+            'remark_general',
+            'cluster_cwatp',
+            'cluster_fullopm',
+            'cluster_rfs',
+            'subfeeder_cwatp',
+            'subfeeder_fullopm',
+            'subfeeder_rfs',
+        ];
+        for ($i = 1; $i <= 5; $i++) {
+            $keys[] = 'rfs_' . $i . '_date';
+            $keys[] = 'rfs_' . $i . '_qty';
+        }
+
+        $row = [];
+        foreach ($keys as $key) {
+            $row[$key] = trim((string) $this->input->post($key));
+        }
+
+        $fallbacks = [
+            'status_current' => 'status_current',
+            'city_name' => 'city_name',
+            'district_name' => 'district_name',
+            'village_name' => 'village_name',
+            'cluster_name' => 'cluster_name',
+            'cluster_code' => 'cluster_code',
+            'hp_plan' => 'hp_plan',
+            'nomor_ntp' => 'ntp_name',
+            'tanggal_ntp' => 'ntp_date',
+            'remark_general' => 'remark_general',
+        ];
+        foreach ($fallbacks as $rowKey => $clusterKey) {
+            if ($row[$rowKey] === '') {
+                $row[$rowKey] = (string) ($cluster[$clusterKey] ?? '');
+            }
+        }
+
+        return $row;
+    }
+
+    private function validateQuickUpdateRow(array $row)
+    {
+        $errors = $this->validateCutoffImportRow($row);
+        foreach ([
+            'ba_open_date',
+            'bak_date',
+            'tanggal_ntp',
+            'valsal_date',
+            'submission_date',
+            'drm_date',
+            'rfs_date',
+            'email_atp_date',
+            'actual_atp_date',
+        ] as $dateKey) {
+            if (trim((string) ($row[$dateKey] ?? '')) !== '' && $this->normalizeDate((string) $row[$dateKey]) === null) {
+                $errors[] = $dateKey . ' tidak valid';
+            }
+        }
+
+        if (trim((string) ($row['released_at'] ?? '')) !== '' && $this->normalizeDateTime((string) $row['released_at']) === null) {
+            $errors[] = 'released_at tidak valid';
+        }
+
+        $statusCurrent = $this->normalizeImportStatus((string) ($row['status_current'] ?? ''));
+        $rfsDate = $this->normalizeDate((string) ($row['rfs_date'] ?? ''));
+        $rfsClaims = $this->extractRfsClaimsFromRow($row);
+        if ($this->quickStageAtLeast($statusCurrent, 'RFS') && $rfsDate === null && empty($rfsClaims)) {
+            $errors[] = 'Kalau status_current sudah RFS/ATP/CHECKLIST/DONE, tanggal RFS wajib diisi.';
+        }
+        if ($this->quickStageAtLeast($statusCurrent, 'RFS') && trim((string) ($row['status_rfs'] ?? '')) === '') {
+            $errors[] = 'Kalau status_current sudah RFS/ATP/CHECKLIST/DONE, status_rfs wajib diisi.';
+        }
+        if ($this->quickStageAtLeast($statusCurrent, 'ATP') && $this->normalizeDate((string) ($row['actual_atp_date'] ?? '')) === null) {
+            $errors[] = 'Kalau status_current sudah ATP/CHECKLIST/DONE, actual_atp_date wajib diisi.';
+        }
+
+        $statusAtp = strtoupper(trim((string) ($row['status_atp'] ?? '')));
+        if ($statusAtp !== '' && !in_array($statusAtp, ['DONE', 'PUNCLIST'], true)) {
+            $errors[] = 'status_atp harus DONE atau PUNCLIST';
+        }
+
+        return array_values(array_unique($errors));
+    }
+
+    private function applyQuickUpdateToCluster(array $cluster, array $row, $userId)
+    {
+        $clusterId = (int) ($cluster['id_myrep_cluster'] ?? 0);
+        if ($clusterId <= 0) {
+            return ['status' => false, 'message' => 'Cluster MyRep tidak valid.'];
+        }
+
+        $statusCurrent = $this->normalizeImportStatus((string) ($row['status_current'] ?? ''));
+        $target = $this->resolveQuickUpdateTarget($cluster, $row);
+        if (empty($target)) {
+            return ['status' => false, 'message' => 'Target kota tidak ditemukan.'];
+        }
+
+        $this->db->trans_start();
+        $this->quickUpdateClusterHeader($clusterId, $row, $userId, $target, $statusCurrent);
+        $this->quickUpsertBak($clusterId, $row, $userId, $statusCurrent);
+        $this->quickUpsertValsal($clusterId, $row, $userId, $statusCurrent);
+        $this->quickUpsertBatch($clusterId, $row, $userId, $statusCurrent);
+        $this->quickUpsertDrm($clusterId, $row, $userId, $statusCurrent);
+        $rfsClusterId = $this->quickUpsertRfsAtp($cluster, $row, $userId, $target, $statusCurrent);
+        if ($rfsClusterId > 0) {
+            $this->applyImportedChecklistStatuses($rfsClusterId, $row, $userId);
+        }
+        $this->db->trans_complete();
+
+        if (!$this->db->trans_status()) {
+            return ['status' => false, 'message' => 'Quick update gagal, transaksi rollback.'];
+        }
+
+        return ['status' => true, 'message' => 'Quick update cluster berhasil disimpan.'];
+    }
+
+    private function resolveQuickUpdateTarget(array $cluster, array $row)
+    {
+        $incomingCity = strtoupper(trim((string) ($row['city_name'] ?? '')));
+        $currentCity = strtoupper(trim((string) ($cluster['city_name'] ?? '')));
+        $currentTargetId = (int) ($cluster['id_target'] ?? 0);
+        if ($incomingCity !== '' && $incomingCity === $currentCity && $currentTargetId > 0) {
+            return [
+                'id_target' => $currentTargetId,
+                'regional_name' => $cluster['regional_name'] ?? null,
+                'province_name' => $cluster['province_name'] ?? null,
+                'city_name' => $cluster['city_name'] ?? null,
+                'team_name' => $cluster['team_name'] ?? null,
+                'chief' => $cluster['chief'] ?? null,
+                'rpm' => $cluster['rpm'] ?? null,
+                'sm' => $cluster['sm'] ?? null,
+                'spv' => $cluster['spv'] ?? null,
+            ];
+        }
+
+        return $this->resolveTargetByCity($incomingCity);
+    }
+
+    private function quickUpdateClusterHeader($clusterId, array $row, $userId, array $target, $statusCurrent)
+    {
+        $ntpDate = $this->normalizeDate((string) ($row['tanggal_ntp'] ?? ''));
+        $payload = [
+            'id_target' => (int) ($target['id_target'] ?? 0),
+            'cluster_name' => trim((string) ($row['cluster_name'] ?? '')),
+            'cluster_code' => trim((string) ($row['cluster_code'] ?? '')) ?: null,
+            'regional_name' => $target['regional_name'] ?? null,
+            'province_name' => $target['province_name'] ?? null,
+            'city_name' => strtoupper(trim((string) ($row['city_name'] ?? ''))),
+            'district_name' => trim((string) ($row['district_name'] ?? '')) ?: null,
+            'village_name' => trim((string) ($row['village_name'] ?? '')) ?: null,
+            'team_name' => $target['team_name'] ?? null,
+            'chief' => $target['chief'] ?? null,
+            'rpm' => $target['rpm'] ?? null,
+            'sm' => $target['sm'] ?? null,
+            'spv' => $target['spv'] ?? null,
+            'hp_plan' => max(0, (int) $this->normalizeNumber($row['hp_plan'] ?? 0)),
+            'ntp_name' => trim((string) ($row['nomor_ntp'] ?? '')) ?: null,
+            'ntp_date' => $ntpDate,
+            'ntp_year' => $ntpDate ? (int) date('Y', strtotime($ntpDate)) : null,
+            'status_current' => $statusCurrent,
+            'remark_general' => trim((string) ($row['remark_general'] ?? '')) ?: null,
+            'updated_by' => (int) $userId,
+        ];
+        $this->db
+            ->where('id_myrep_cluster', (int) $clusterId)
+            ->update('tb_myrep_cluster', $this->filterPayloadByTableFields('tb_myrep_cluster', $payload));
+    }
+
+    private function quickUpsertBak($clusterId, array $row, $userId, $statusCurrent)
+    {
+        if (!$this->db->table_exists('tb_myrep_bak')) {
+            return;
+        }
+
+        $needsStage = $this->quickStageAtLeast($statusCurrent, 'BAK') || $this->quickHasAnyPayload($row, ['ba_open_date', 'bak_date', 'homepass_bak']);
+        if (!$needsStage) {
+            return;
+        }
+
+        $homepassBak = (int) $this->normalizeNumber($row['homepass_bak'] ?? 0);
+        if ($homepassBak <= 0) {
+            $homepassBak = (int) $this->normalizeNumber($row['hp_plan'] ?? 0);
+        }
+        $payload = [
+            'ba_open_date' => $this->normalizeDate((string) ($row['ba_open_date'] ?? '')) ?: date('Y-m-d'),
+            'bak_date' => $this->normalizeDate((string) ($row['bak_date'] ?? '')) ?: date('Y-m-d'),
+            'homepass_bak' => max(0, $homepassBak),
+            'status_bak' => 'DONE',
+            'remark_bak' => trim((string) ($row['remark_general'] ?? '')) ?: null,
+            'updated_by' => (int) $userId,
+        ];
+        $this->upsertSingleByWhere('tb_myrep_bak', ['id_myrep_cluster' => (int) $clusterId], $payload, [
+            'id_myrep_cluster' => (int) $clusterId,
+            'created_by' => (int) $userId,
+        ]);
+    }
+
+    private function quickUpsertValsal($clusterId, array $row, $userId, $statusCurrent)
+    {
+        if (!$this->db->table_exists('tb_myrep_valsal')) {
+            return;
+        }
+
+        $needsStage = $this->quickStageAtLeast($statusCurrent, 'VALSAL') || $this->quickHasAnyPayload($row, ['homepass_valsal', 'valsal_date', 'remark_valsal']);
+        if (!$needsStage) {
+            return;
+        }
+
+        $homepassValsal = (int) $this->normalizeNumber($row['homepass_valsal'] ?? 0);
+        if ($homepassValsal <= 0) {
+            $homepassValsal = (int) $this->normalizeNumber($row['homepass_bak'] ?? 0);
+        }
+        if ($homepassValsal <= 0) {
+            $homepassValsal = (int) $this->normalizeNumber($row['hp_plan'] ?? 0);
+        }
+        $payload = [
+            'valsal_date' => $this->normalizeDate((string) ($row['valsal_date'] ?? '')) ?: date('Y-m-d'),
+            'homepass_valsal' => max(0, $homepassValsal),
+            'status_valsal' => 'DONE',
+            'remark_valsal' => trim((string) ($row['remark_valsal'] ?? '')) ?: (trim((string) ($row['remark_general'] ?? '')) ?: null),
+            'updated_by' => (int) $userId,
+        ];
+        $this->upsertSingleByWhere('tb_myrep_valsal', ['id_myrep_cluster' => (int) $clusterId], $payload, [
+            'id_myrep_cluster' => (int) $clusterId,
+            'created_by' => (int) $userId,
+        ]);
+    }
+
+    private function quickUpsertBatch($clusterId, array $row, $userId, $statusCurrent)
+    {
+        if (!$this->db->table_exists('tb_myrep_batch_approval')) {
+            return;
+        }
+
+        $needsStage = $this->quickStageAtLeast($statusCurrent, 'WAITING HO')
+            || $this->quickHasAnyPayload($row, ['hp_donasi', 'submission_date', 'nominal_pengajuan_area', 'staging_status', 'released_at']);
+        if (!$needsStage) {
+            return;
+        }
+
+        $stagingStatus = strtoupper(trim((string) ($row['staging_status'] ?? '')));
+        $allowedStaging = ['DRAFT', 'WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE', 'COMPLETED', 'REJECTED'];
+        if (!in_array($stagingStatus, $allowedStaging, true)) {
+            $stagingStatus = 'WAITING HO';
+            if ($this->quickStageAtLeast($statusCurrent, 'WAITING MYREP')) {
+                $stagingStatus = 'WAITING MYREP';
+            }
+            if ($this->quickStageAtLeast($statusCurrent, 'WAITING FINANCE')) {
+                $stagingStatus = 'WAITING FINANCE';
+            }
+            if ($this->quickStageAtLeast($statusCurrent, 'RELEASED')) {
+                $stagingStatus = 'RELEASED';
+            }
+        }
+
+        $hpDonasi = (int) $this->normalizeNumber($row['hp_donasi'] ?? 0);
+        if ($hpDonasi <= 0) {
+            $hpDonasi = (int) $this->normalizeNumber($row['homepass_valsal'] ?? 0);
+        }
+        if ($hpDonasi <= 0) {
+            $hpDonasi = (int) $this->normalizeNumber($row['homepass_bak'] ?? 0);
+        }
+        $nominalPengajuan = (float) $this->normalizeNumber($row['nominal_pengajuan_area'] ?? 0);
+        $nominalPerHp = $this->normalizeNullableNumber($row['nominal_per_homepass'] ?? null);
+        if ($nominalPerHp === null && $hpDonasi > 0 && $nominalPengajuan > 0) {
+            $nominalPerHp = round($nominalPengajuan / $hpDonasi, 2);
+        }
+        if ($nominalPerHp === null) {
+            $nominalPerHp = 0;
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $payload = [
+            'submission_date' => $this->normalizeDate((string) ($row['submission_date'] ?? '')) ?: date('Y-m-d'),
+            'hp_donasi' => max(0, $hpDonasi),
+            'nominal_pengajuan_area' => $nominalPengajuan,
+            'nominal_nego_emr' => $this->normalizeNullableNumber($row['nominal_nego_emr'] ?? null),
+            'nominal_release_finance' => $this->normalizeNullableNumber($row['nominal_release_finance'] ?? null),
+            'nominal_per_homepass' => $nominalPerHp,
+            'bank_name' => trim((string) ($row['bank_name'] ?? '')) ?: '-',
+            'bank_account_number' => trim((string) ($row['bank_account_number'] ?? '')) ?: '-',
+            'recipient_name' => trim((string) ($row['recipient_name'] ?? '')) ?: 'QUICK UPDATE',
+            'recipient_phone' => trim((string) ($row['recipient_phone'] ?? '')) ?: null,
+            'recipient_position' => trim((string) ($row['recipient_position'] ?? '')) ?: null,
+            'recipient_period' => trim((string) ($row['recipient_period'] ?? '')) ?: null,
+            'free_wifi_qty' => $this->normalizeNullableInt($row['free_wifi_qty'] ?? null),
+            'free_wifi_period_month' => $this->normalizeNullableInt($row['free_wifi_period_month'] ?? null),
+            'astri_batch_number' => trim((string) ($row['astri_batch_number'] ?? '')) ?: null,
+            'staging_status' => $stagingStatus,
+            'submitted_to_ho_at' => in_array($stagingStatus, ['WAITING HO', 'WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE', 'COMPLETED'], true) ? $now : null,
+            'submitted_to_astri_at' => in_array($stagingStatus, ['WAITING MYREP', 'WAITING FINANCE', 'RELEASED', 'DONE', 'COMPLETED'], true) ? $now : null,
+            'submitted_to_finance_at' => in_array($stagingStatus, ['WAITING FINANCE', 'RELEASED', 'DONE', 'COMPLETED'], true) ? $now : null,
+            'released_at' => $this->normalizeDateTime((string) ($row['released_at'] ?? '')),
+            'remark_batch_approval' => trim((string) ($row['remark_batch_approval'] ?? '')) ?: (trim((string) ($row['remark_general'] ?? '')) ?: null),
+            'updated_by' => (int) $userId,
+        ];
+        $this->upsertSingleByWhere('tb_myrep_batch_approval', ['id_myrep_cluster' => (int) $clusterId], $payload, [
+            'id_myrep_cluster' => (int) $clusterId,
+            'created_by' => (int) $userId,
+        ]);
+    }
+
+    private function quickUpsertDrm($clusterId, array $row, $userId, $statusCurrent)
+    {
+        if (!$this->db->table_exists('tb_myrep_drm')) {
+            return;
+        }
+
+        $needsStage = $this->quickStageAtLeast($statusCurrent, 'DRM') || $this->quickHasAnyPayload($row, ['homepass_drm', 'drm_date', 'nama_olt', 'remark_drm']);
+        if (!$needsStage) {
+            return;
+        }
+
+        $hpDrm = (int) $this->normalizeNumber($row['homepass_drm'] ?? 0);
+        if ($hpDrm <= 0) {
+            $hpDrm = (int) $this->normalizeNumber($row['hp_donasi'] ?? 0);
+        }
+        if ($hpDrm <= 0) {
+            $hpDrm = (int) $this->normalizeNumber($row['homepass_valsal'] ?? 0);
+        }
+        if ($hpDrm <= 0) {
+            $hpDrm = (int) $this->normalizeNumber($row['hp_plan'] ?? 0);
+        }
+        $payload = [
+            'drm_date' => $this->normalizeDate((string) ($row['drm_date'] ?? '')) ?: date('Y-m-d'),
+            'homepass_drm' => max(0, $hpDrm),
+            'nama_olt' => trim((string) ($row['nama_olt'] ?? '')) ?: null,
+            'status_drm' => 'COMPLETE',
+            'remark_drm' => trim((string) ($row['remark_drm'] ?? '')) ?: (trim((string) ($row['remark_general'] ?? '')) ?: null),
+            'updated_by' => (int) $userId,
+        ];
+        $this->upsertSingleByWhere('tb_myrep_drm', ['id_myrep_cluster' => (int) $clusterId], $payload, [
+            'id_myrep_cluster' => (int) $clusterId,
+            'created_by' => (int) $userId,
+        ]);
+    }
+
+    private function quickUpsertRfsAtp(array $cluster, array $row, $userId, array $target, $statusCurrent)
+    {
+        if (!$this->db->table_exists('tb_rfs_myrep_cluster')) {
+            return 0;
+        }
+
+        $needsStage = $this->quickStageAtLeast($statusCurrent, 'RFS')
+            || $this->quickHasAnyPayload($row, ['rfs_date', 'status_rfs', 'email_atp_date', 'actual_atp_date', 'status_atp'])
+            || !empty($this->extractRfsClaimsFromRow($row))
+            || $this->hasChecklistImportPayload($row);
+        if (!$needsStage) {
+            return (int) ($cluster['rfs_cluster_id'] ?? 0);
+        }
+
+        $clusterId = (int) ($cluster['id_myrep_cluster'] ?? 0);
+        $rfsClusterId = (int) ($cluster['rfs_cluster_id'] ?? 0);
+        $rfsDate = $this->normalizeDate((string) ($row['rfs_date'] ?? ''));
+        $emailAtpDate = $this->normalizeDate((string) ($row['email_atp_date'] ?? ''));
+        $actualAtpDate = $this->normalizeDate((string) ($row['actual_atp_date'] ?? ''));
+        $homepass = (int) $this->normalizeNumber($row['homepass_drm'] ?? 0);
+        if ($homepass <= 0) {
+            $homepass = (int) $this->normalizeNumber($row['hp_plan'] ?? 0);
+        }
+        $homepass = max(0, $homepass);
+
+        $rfsClaims = $this->extractRfsClaimsFromRow($row);
+        if (empty($rfsClaims) && $rfsDate !== null && $homepass > 0) {
+            $rfsClaims[] = ['claim_date' => $rfsDate, 'claim_qty' => $homepass];
+        }
+        if ($rfsDate === null && !empty($rfsClaims)) {
+            $rfsDate = (string) ($rfsClaims[0]['claim_date'] ?? '');
+        }
+
+        $totalClaimQty = 0;
+        foreach ($rfsClaims as $claim) {
+            $totalClaimQty += (int) ($claim['claim_qty'] ?? 0);
+        }
+        $homepassRfs = $totalClaimQty > 0 ? $totalClaimQty : $homepass;
+        $statusRfs = $this->normalizeQuickRfsStatus((string) ($row['status_rfs'] ?? ''));
+        if ($statusRfs === '') {
+            $statusRfs = ($homepassRfs > 0 && $totalClaimQty >= $homepassRfs) ? 'FULL RFS' : 'NY RFS';
+        }
+
+        $statusAtp = strtoupper(trim((string) ($row['status_atp'] ?? '')));
+        if (!in_array($statusAtp, ['DONE', 'PUNCLIST'], true)) {
+            $statusAtp = $this->quickStageAtLeast($statusCurrent, 'ATP') ? 'DONE' : null;
+        }
+
+        $payload = [
+            'id_target' => (int) ($target['id_target'] ?? 0),
+            'cluster_name' => trim((string) ($row['cluster_name'] ?? $cluster['cluster_name'] ?? '')),
+            'homepass' => max(0, $homepassRfs),
+            'status_rfs' => $statusRfs,
+            'email_atp_date' => $emailAtpDate,
+            'status_atp' => $statusAtp,
+        ];
+
+        if ($rfsClusterId > 0) {
+            $this->db
+                ->where('id_cluster', $rfsClusterId)
+                ->update('tb_rfs_myrep_cluster', $this->filterPayloadByTableFields('tb_rfs_myrep_cluster', $payload));
+        } else {
+            $this->db->insert('tb_rfs_myrep_cluster', $this->filterPayloadByTableFields('tb_rfs_myrep_cluster', array_merge($payload, [
+                'created_by' => (int) $userId,
+            ])));
+            $rfsClusterId = (int) $this->db->insert_id();
+            if ($rfsClusterId > 0) {
+                $this->db
+                    ->where('id_myrep_cluster', $clusterId)
+                    ->update('tb_myrep_cluster', $this->filterPayloadByTableFields('tb_myrep_cluster', [
+                        'rfs_cluster_id' => $rfsClusterId,
+                        'updated_by' => (int) $userId,
+                    ]));
+            }
+        }
+
+        if ($rfsClusterId > 0 && isset($this->MChecklist_Dokument_MyRep)) {
+            $this->MChecklist_Dokument_MyRep->ensureClusterPackages($rfsClusterId, $rfsDate);
+            $packagePayload = ['updated_by' => (int) $userId];
+            if ($rfsDate !== null) {
+                $packagePayload['tanggal_rfs'] = $rfsDate;
+            }
+            if ($actualAtpDate !== null) {
+                $packagePayload['actual_atp_date'] = $actualAtpDate;
+            }
+            if (count($packagePayload) > 1 && $this->db->table_exists('tb_rfs_myrep_doc_package')) {
+                $this->db
+                    ->where('cluster_id', $rfsClusterId)
+                    ->update('tb_rfs_myrep_doc_package', $this->filterPayloadByTableFields('tb_rfs_myrep_doc_package', $packagePayload));
+            }
+            $this->upsertQuickRfsClaims($rfsClusterId, $rfsClaims, $statusRfs, $userId);
+            $this->syncChecklistActualAtpDate($rfsClusterId, $actualAtpDate, $userId);
+        }
+
+        return $rfsClusterId;
+    }
+
+    private function upsertQuickRfsClaims($rfsClusterId, array $claims, $statusRfs, $userId)
+    {
+        if ((int) $rfsClusterId <= 0 || empty($claims) || !$this->db->table_exists('tb_rfs_myrep_claim')) {
+            return;
+        }
+
+        foreach ($claims as $claim) {
+            $claimDate = $this->normalizeDate((string) ($claim['claim_date'] ?? ''));
+            $claimQty = (int) ($claim['claim_qty'] ?? 0);
+            if ($claimDate === null || $claimQty <= 0) {
+                continue;
+            }
+
+            $payload = [
+                'claim_date' => $claimDate,
+                'claim_qty' => $claimQty,
+                'year_num' => (int) date('Y', strtotime($claimDate)),
+                'month_num' => (int) date('n', strtotime($claimDate)),
+                'claim_year' => (int) date('Y', strtotime($claimDate)),
+                'claim_month' => (int) date('n', strtotime($claimDate)),
+                'status_rfs' => $statusRfs,
+                'status_claim' => 'APPROVED',
+                'approval_status' => 'APPROVED',
+                'rpm_approval_status' => 'APPROVED',
+                'rpm_approval_note' => 'Auto approve from quick update',
+                'remark' => 'Auto claim from quick update',
+            ];
+            $existing = $this->db
+                ->from('tb_rfs_myrep_claim')
+                ->where('cluster_id', (int) $rfsClusterId)
+                ->where('claim_date', $claimDate)
+                ->limit(1)
+                ->get()
+                ->row_array();
+            if (!empty($existing['id_claim'])) {
+                $this->db
+                    ->where('id_claim', (int) $existing['id_claim'])
+                    ->update('tb_rfs_myrep_claim', $this->filterPayloadByTableFields('tb_rfs_myrep_claim', $payload));
+            } else {
+                $payload['cluster_id'] = (int) $rfsClusterId;
+                $payload['created_by'] = (int) $userId;
+                $this->db->insert('tb_rfs_myrep_claim', $this->filterPayloadByTableFields('tb_rfs_myrep_claim', $payload));
+            }
+        }
+    }
+
+    private function quickStageAtLeast($statusCurrent, $stage)
+    {
+        $order = [
+            'DRAFT',
+            'BA OPEN',
+            'BAK',
+            'VALSAL',
+            'WAITING HO',
+            'WAITING MYREP',
+            'WAITING FINANCE',
+            'RELEASED',
+            'DONE BATCH APPROVAL',
+            'DRM',
+            'RFS',
+            'ATP',
+            'CHECKLIST DOKUMENT',
+            'DONE',
+        ];
+        $statusCurrent = $this->normalizeImportStatus($statusCurrent);
+        $stage = strtoupper(trim((string) $stage));
+        $currentIndex = array_search($statusCurrent, $order, true);
+        $stageIndex = array_search($stage, $order, true);
+        if ($currentIndex === false || $stageIndex === false) {
+            return false;
+        }
+        return $currentIndex >= $stageIndex;
+    }
+
+    private function quickHasAnyPayload(array $row, array $keys)
+    {
+        foreach ($keys as $key) {
+            if (trim((string) ($row[$key] ?? '')) !== '') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function normalizeQuickRfsStatus($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        if (in_array($status, ['FULL', 'FULL RFS'], true)) {
+            return 'FULL RFS';
+        }
+        if (in_array($status, ['PARTIAL', 'PARTIAL RFS', 'NY RFS'], true)) {
+            return 'NY RFS';
+        }
+        return '';
+    }
+
+    private function upsertSingleByWhere($table, array $where, array $payload, array $insertOnly = [])
+    {
+        if (!$this->db->table_exists($table)) {
+            return;
+        }
+
+        $existing = $this->db
+            ->from($table)
+            ->where($where)
+            ->limit(1)
+            ->get()
+            ->row_array();
+        if (!empty($existing)) {
+            $this->db
+                ->where($where)
+                ->update($table, $this->filterPayloadByTableFields($table, $payload));
+            return;
+        }
+
+        $this->db->insert($table, $this->filterPayloadByTableFields($table, array_merge($insertOnly, $payload)));
+    }
+
+    private function filterPayloadByTableFields($table, array $payload)
+    {
+        if (!$this->db->table_exists($table)) {
+            return $payload;
+        }
+
+        $filtered = [];
+        foreach ($payload as $field => $value) {
+            if ($this->db->field_exists($field, $table)) {
+                $filtered[$field] = $value;
+            }
+        }
+        return $filtered;
     }
 
     private function validateCutoffImportRow(array $row)

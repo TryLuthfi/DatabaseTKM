@@ -157,6 +157,8 @@ $totalNominal = array_sum(array_map(static function ($row) {
 <head>
     <meta charset="utf-8">
     <title><?= htmlspecialchars((string) ($nodin['nomor_nota_dinas'] ?? 'Nota Dinas PO'), ENT_QUOTES) ?></title>
+  <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
+  <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
     <style>
         @page { margin: 10mm; size: <?= htmlspecialchars((string) ($pageLayout['size'] ?? 'A4'), ENT_QUOTES) ?> <?= htmlspecialchars((string) ($pageLayout['orientation'] ?? 'landscape'), ENT_QUOTES) ?>; }
         body {

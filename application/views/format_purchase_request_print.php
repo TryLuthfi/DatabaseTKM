@@ -71,6 +71,8 @@ $buildElectronicQr = static function ($seed, $label) {
 <head>
     <meta charset="utf-8">
     <title><?= htmlspecialchars((string) ($purchaseRequest['nomor_purchase_request'] ?? 'Purchase Request'), ENT_QUOTES) ?></title>
+  <link rel="icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
+  <link rel="shortcut icon" type="image/png" href="<?= base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png') ?>">
     <style>
         @page { margin: 10mm; size: A4 landscape; }
         body {

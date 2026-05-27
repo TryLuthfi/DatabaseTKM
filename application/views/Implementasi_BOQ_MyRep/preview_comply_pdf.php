@@ -204,7 +204,7 @@
 </style>
 
 <?php
-$logoTkm = base_url('assets/dist/img/logotkmsolid.png');
+$logoTkm = base_url('assets/dist/img/solid%20logo%20tkm%20landscape%20transparent.png');
 $logoMyrep = base_url('assets/dist/img/logoweb.png');
 $clusterRegion = (string) ($cluster['regional_name'] ?? '-');
 $clusterOlt = (string) ($cluster['nama_olt'] ?? '-');
