@@ -191,16 +191,26 @@ class ListUser extends CI_Controller
 
         $homebaseFilter = strtoupper(trim((string) $this->input->get('homebase')));
         $levelFilter = strtoupper(trim((string) $this->input->get('level')));
+        $statusLoginFilter = strtoupper(trim((string) $this->input->get('status_login')));
+        $statusUserFilter = strtoupper(trim((string) $this->input->get('status_user')));
         $rows = $this->MListUser->getData();
-        if ($homebaseFilter !== '' || $levelFilter !== '') {
-            $rows = array_values(array_filter($rows, function ($row) use ($homebaseFilter, $levelFilter) {
+        if ($homebaseFilter !== '' || $levelFilter !== '' || $statusLoginFilter !== '' || $statusUserFilter !== '') {
+            $rows = array_values(array_filter($rows, function ($row) use ($homebaseFilter, $levelFilter, $statusLoginFilter, $statusUserFilter) {
                 $rowHomebase = strtoupper(trim((string) ($row['homebase'] ?? '')));
                 $rowLevel = strtoupper(trim((string) ($row['nama_level'] ?? '')));
+                $rowStatusLogin = strtoupper(trim((string) ($row['status_login'] ?? '')));
+                $rowStatusUser = strtoupper(trim((string) ($row['status_user'] ?? '')));
 
                 if ($homebaseFilter !== '' && $rowHomebase !== $homebaseFilter) {
                     return false;
                 }
                 if ($levelFilter !== '' && $rowLevel !== $levelFilter) {
+                    return false;
+                }
+                if ($statusLoginFilter !== '' && $rowStatusLogin !== $statusLoginFilter) {
+                    return false;
+                }
+                if ($statusUserFilter !== '' && $rowStatusUser !== $statusUserFilter) {
                     return false;
                 }
 

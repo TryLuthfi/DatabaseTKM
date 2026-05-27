@@ -38,8 +38,8 @@ ksort($levelOptions);
                     <h3 class="card-title mb-0">Filter List User</h3>
                 </div>
                 <div class="card-body">
-                    <div class="row align-items-end">
-                        <div class="col-md-3">
+                    <div class="user-filter-grid">
+                        <div class="user-filter-control">
                             <label class="user-field-label" for="user_filter_homebase">Homebase</label>
                             <select class="form-control user-input" id="user_filter_homebase">
                                 <option value="">Semua Homebase</option>
@@ -50,7 +50,7 @@ ksort($levelOptions);
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="user-filter-control">
                             <label class="user-field-label" for="user_filter_level">Level</label>
                             <select class="form-control user-input" id="user_filter_level">
                                 <option value="">Semua Level</option>
@@ -61,18 +61,32 @@ ksort($levelOptions);
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <div class="d-flex flex-wrap justify-content-md-end user-toolbar">
-                                <button type="button" class="btn user-btn user-btn--ghost" id="user_reset_search">
-                                    <i class="fas fa-redo-alt mr-1"></i> Reset
-                                </button>
-                                <a href="<?= base_url('ListUser/downloadReport') ?>" class="btn user-btn user-btn--primary" id="user_download_report">
-                                    <i class="fas fa-file-excel mr-1"></i> Download Report
-                                </a>
-                                <button type="button" class="btn user-btn user-btn--success" id="btnTambahUser">
-                                    <i class="fas fa-plus-circle mr-1"></i> Tambah <?= $isSuperAdmin ? 'User' : 'NIK + Nama' ?>
-                                </button>
-                            </div>
+                        <div class="user-filter-control">
+                            <label class="user-field-label" for="user_filter_status_login">Status Login</label>
+                            <select class="form-control user-input" id="user_filter_status_login">
+                                <option value="">Semua Status Login</option>
+                                <option value="NY LOGIN">NY LOGIN</option>
+                                <option value="DONE">DONE</option>
+                            </select>
+                        </div>
+                        <div class="user-filter-control">
+                            <label class="user-field-label" for="user_filter_status_user">Status User</label>
+                            <select class="form-control user-input" id="user_filter_status_user">
+                                <option value="">Semua Status User</option>
+                                <option value="ACTIVE">ACTIVE</option>
+                                <option value="INACTIVE">INACTIVE</option>
+                            </select>
+                        </div>
+                        <div class="user-filter-actions user-toolbar">
+                            <button type="button" class="btn user-btn user-btn--ghost" id="user_reset_search">
+                                <i class="fas fa-redo-alt mr-1"></i> Reset
+                            </button>
+                            <a href="<?= base_url('ListUser/downloadReport') ?>" class="btn user-btn user-btn--primary" id="user_download_report">
+                                <i class="fas fa-file-excel mr-1"></i> Download Report
+                            </a>
+                            <button type="button" class="btn user-btn user-btn--success" id="btnTambahUser">
+                                <i class="fas fa-plus-circle mr-1"></i> Tambah <?= $isSuperAdmin ? 'User' : 'NIK + Nama' ?>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -419,18 +433,24 @@ ksort($levelOptions);
 
                 var homebase = $('#user_filter_homebase').val() || '';
                 var level = $('#user_filter_level').val() || '';
+                var statusLogin = $('#user_filter_status_login').val() || '';
+                var statusUser = $('#user_filter_status_user').val() || '';
                 var escapeRegex = $.fn.dataTable.util.escapeRegex;
 
                 table
                     .column(7).search(homebase ? '^' + escapeRegex(homebase) + '$' : '', true, false)
                     .column(4).search(level ? '^' + escapeRegex(level) + '$' : '', true, false)
+                    .column(10).search(statusLogin ? '^' + escapeRegex(statusLogin) + '$' : '', true, false)
+                    .column(11).search(statusUser ? '^' + escapeRegex(statusUser) + '$' : '', true, false)
                     .draw();
             }
 
-            $('#user_filter_homebase, #user_filter_level').on('change', applyUserTableFilters);
+            $('#user_filter_homebase, #user_filter_level, #user_filter_status_login, #user_filter_status_user').on('change', applyUserTableFilters);
             $('#user_reset_search').on('click', function () {
                 $('#user_filter_homebase').val('');
                 $('#user_filter_level').val('');
+                $('#user_filter_status_login').val('');
+                $('#user_filter_status_user').val('');
                 if (table) {
                     table.search('');
                     table.columns().search('');
@@ -441,10 +461,12 @@ ksort($levelOptions);
                 e.preventDefault();
                 var params = $.param({
                     homebase: $('#user_filter_homebase').val() || '',
-                    level: $('#user_filter_level').val() || ''
+                    level: $('#user_filter_level').val() || '',
+                    status_login: $('#user_filter_status_login').val() || '',
+                    status_user: $('#user_filter_status_user').val() || ''
                 });
                 var url = $(this).attr('href');
-                if (params !== 'homebase=&level=') {
+                if (params !== 'homebase=&level=&status_login=&status_user=') {
                     url += '?' + params;
                 }
                 window.location.href = url;
@@ -498,6 +520,9 @@ ksort($levelOptions);
 </script>
 
 <style>
+    .user-filter-grid { display: grid; grid-template-columns: repeat(4, minmax(140px, 200px)) 1fr; gap: 12px; align-items: end; }
+    .user-filter-control { min-width: 0; }
+    .user-filter-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; min-width: 360px; }
     .user-toolbar { gap: 10px; }
     .user-field-label { display: inline-block; margin-bottom: 8px; font-size: 0.84rem; font-weight: 700; letter-spacing: 0.04em; color: #48657f; text-transform: uppercase; }
     .user-card { border: 0; border-radius: 18px; overflow: hidden; box-shadow: 0 18px 42px rgba(14, 41, 64, 0.08); background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%); }
@@ -525,7 +550,13 @@ ksort($levelOptions);
     .user-input:focus { border-color: #55a7d5; box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18); }
     .js-user-table thead th { white-space: nowrap; }
     .dataTables_wrapper .dataTables_filter input, .dataTables_wrapper .dataTables_length select { border-radius: 10px; border: 1px solid #cfe0ee; box-shadow: none; }
+    @media (max-width: 1199.98px) {
+        .user-filter-grid { grid-template-columns: repeat(2, minmax(140px, 220px)); }
+        .user-filter-actions { grid-column: 1 / -1; justify-content: flex-start; min-width: 0; }
+    }
     @media (max-width: 767.98px) {
+        .user-filter-grid { grid-template-columns: 1fr; }
+        .user-filter-actions { display: grid; grid-template-columns: 1fr; }
         .user-toolbar { margin-top: 1rem; justify-content: flex-start !important; }
         .user-btn { width: 100%; }
         .user-modal__subtitle { max-width: 100%; }
