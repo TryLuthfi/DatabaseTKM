@@ -385,6 +385,7 @@ ksort($levelOptions);
 
         $(function () {
             var table = null;
+            var listUserTableFilterHooked = false;
             if ($.fn.DataTable) {
                 table = $('#listUserTable').DataTable({
                     paging: true,
@@ -430,19 +431,41 @@ ksort($levelOptions);
                 if (!table) {
                     return;
                 }
+                table.draw();
+            }
 
-                var homebase = $('#user_filter_homebase').val() || '';
-                var level = $('#user_filter_level').val() || '';
-                var statusLogin = $('#user_filter_status_login').val() || '';
-                var statusUser = $('#user_filter_status_user').val() || '';
-                var escapeRegex = $.fn.dataTable.util.escapeRegex;
+            if (table && !listUserTableFilterHooked) {
+                $.fn.dataTable.ext.search.push(function (settings, data) {
+                    if (settings.nTable !== document.getElementById('listUserTable')) {
+                        return true;
+                    }
 
-                table
-                    .column(7).search(homebase ? '^' + escapeRegex(homebase) + '$' : '', true, false)
-                    .column(4).search(level ? '^' + escapeRegex(level) + '$' : '', true, false)
-                    .column(10).search(statusLogin ? '^' + escapeRegex(statusLogin) + '$' : '', true, false)
-                    .column(11).search(statusUser ? '^' + escapeRegex(statusUser) + '$' : '', true, false)
-                    .draw();
+                    var homebase = String($('#user_filter_homebase').val() || '').toUpperCase().trim();
+                    var level = String($('#user_filter_level').val() || '').toUpperCase().trim();
+                    var statusLogin = String($('#user_filter_status_login').val() || '').toUpperCase().trim();
+                    var statusUser = String($('#user_filter_status_user').val() || '').toUpperCase().trim();
+
+                    var rowLevel = String(data[4] || '').toUpperCase().trim();
+                    var rowHomebase = String(data[7] || '').toUpperCase().trim();
+                    var rowStatusLogin = String(data[10] || '').toUpperCase().trim();
+                    var rowStatusUser = String(data[11] || '').toUpperCase().trim();
+
+                    if (homebase && rowHomebase !== homebase) {
+                        return false;
+                    }
+                    if (level && rowLevel !== level) {
+                        return false;
+                    }
+                    if (statusLogin && rowStatusLogin !== statusLogin) {
+                        return false;
+                    }
+                    if (statusUser && rowStatusUser !== statusUser) {
+                        return false;
+                    }
+
+                    return true;
+                });
+                listUserTableFilterHooked = true;
             }
 
             $('#user_filter_homebase, #user_filter_level, #user_filter_status_login, #user_filter_status_user').on('change', applyUserTableFilters);
