@@ -625,7 +625,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
             $params[] = $city;
         }
 
-        $sql .= " ORDER BY cl.id_claim DESC";
+        $sql .= " ORDER BY cl.claim_date DESC, cl.id_claim DESC";
 
         return $this->db->query($sql, $params)->result_array();
     }

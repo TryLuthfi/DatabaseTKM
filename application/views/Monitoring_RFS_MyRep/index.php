@@ -23,6 +23,49 @@ $claimDateRangeDisplay = ($selectedClaimStartDate !== '' && $selectedClaimEndDat
 $claimDateRangeLabel = ($selectedClaimStartDate !== '' && $selectedClaimEndDate !== '')
     ? (date('d M Y', strtotime($selectedClaimStartDate)) . ' - ' . date('d M Y', strtotime($selectedClaimEndDate)))
     : 'Periode Bulan Aktif';
+$claimWaitingRpmList = [];
+$claimWaitingHoList = [];
+$claimRejectedList = [];
+
+if (!empty($claimApprovalList)) {
+    foreach ($claimApprovalList as $claimRow) {
+        $claimStatus = strtoupper(trim((string) ($claimRow['status_claim'] ?? '')));
+        if ($claimStatus === 'WAITING APPROVAL RPM') {
+            $claimWaitingRpmList[] = $claimRow;
+        } elseif ($claimStatus === 'WAITING APPROVAL HO') {
+            $claimWaitingHoList[] = $claimRow;
+        } elseif ($claimStatus === 'REJECTED') {
+            $claimRejectedList[] = $claimRow;
+        }
+    }
+}
+
+$claimRfsTabs = [
+    [
+        'id' => 'claim-rfs-all',
+        'table_id' => 'table_rfs_claim_all',
+        'label' => 'All RFS',
+        'rows' => $claimApprovalList
+    ],
+    [
+        'id' => 'claim-rfs-waiting-rpm',
+        'table_id' => 'table_rfs_claim_waiting_rpm',
+        'label' => 'Waiting Approval RPM',
+        'rows' => $claimWaitingRpmList
+    ],
+    [
+        'id' => 'claim-rfs-waiting-ho',
+        'table_id' => 'table_rfs_claim_waiting_ho',
+        'label' => 'Waiting Approval HO',
+        'rows' => $claimWaitingHoList
+    ],
+    [
+        'id' => 'claim-rfs-rejected',
+        'table_id' => 'table_rfs_claim_rejected',
+        'label' => 'Rejected',
+        'rows' => $claimRejectedList
+    ]
+];
 
 if (!empty($targetOptions)) {
     foreach ($targetOptions as $targetOption) {
@@ -591,6 +634,158 @@ if (!empty($kpiDetailRowMap)) {
         background: linear-gradient(180deg, #f8fbff, #f4f7fb);
     }
 
+    .rfs-photo-lightbox {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, .82);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2050;
+        padding: 2rem;
+    }
+
+    .rfs-photo-lightbox.is-open {
+        display: flex;
+    }
+
+    .rfs-photo-lightbox__dialog {
+        width: min(88vw, 1280px);
+        max-height: 92vh;
+        background: #fff;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, .32);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .rfs-photo-lightbox__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: .9rem 1rem;
+        background: linear-gradient(135deg, #f8fbff, #eef6ff);
+        border-bottom: 1px solid #dbeafe;
+    }
+
+    .rfs-photo-lightbox__title {
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .rfs-photo-lightbox__toolbar {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .rfs-photo-lightbox__action,
+    .rfs-photo-lightbox__close {
+        border: 0;
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        line-height: 1;
+        cursor: pointer;
+        font-weight: 800;
+    }
+
+    .rfs-photo-lightbox__action {
+        background: #e2e8f0;
+        color: #0f172a;
+        font-size: 1rem;
+    }
+
+    .rfs-photo-lightbox__close {
+        background: #0f172a;
+        color: #fff;
+        font-size: 1.2rem;
+    }
+
+    .rfs-photo-lightbox__body {
+        padding: 1rem;
+        overflow: auto;
+        text-align: center;
+        background: #f8fafc;
+    }
+
+    .rfs-photo-lightbox__stage {
+        min-height: 70vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+    }
+
+    .rfs-photo-lightbox__image {
+        max-width: none;
+        max-height: none;
+        width: auto;
+        height: auto;
+        border-radius: 12px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, .14);
+        transition: transform .18s ease;
+        transform-origin: center center;
+    }
+
+    .rfs-photo-lightbox__caption {
+        margin-top: .85rem;
+        color: #475569;
+        font-size: .9rem;
+    }
+
+    .rfs-claim-tabs {
+        gap: .65rem;
+        border-bottom: 0;
+    }
+
+    .rfs-claim-tabs .nav-item {
+        margin-bottom: 0;
+    }
+
+    .rfs-claim-tabs .nav-link {
+        display: inline-flex;
+        align-items: center;
+        gap: .65rem;
+        border: 1px solid #d7e7f7;
+        border-radius: 999px;
+        background: #fff;
+        color: #174a7c;
+        font-weight: 800;
+        font-size: .86rem;
+        line-height: 1;
+        padding: .72rem 1rem;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, .05);
+    }
+
+    .rfs-claim-tabs .nav-link.active {
+        border-color: transparent;
+        background: linear-gradient(135deg, #0ea5e9, #27a89a);
+        color: #fff;
+        box-shadow: 0 10px 22px rgba(14, 165, 233, .24);
+    }
+
+    .rfs-claim-tabs .rfs-claim-tab-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        height: 20px;
+        padding: 0 .45rem;
+        border-radius: 999px;
+        background: #eef6ff;
+        color: #2563eb;
+        font-size: .68rem;
+        font-weight: 800;
+    }
+
+    .rfs-claim-tabs .nav-link.active .rfs-claim-tab-count {
+        background: rgba(255, 255, 255, .22);
+        color: #fff;
+    }
+
     .claim-summary-card {
         background: #fff;
         border: 1px solid #e5e7eb;
@@ -733,19 +928,19 @@ if (!empty($kpiDetailRowMap)) {
         color: #383d41;
     }
 
-    #table_rfs_claim_list tbody tr.claim-row-approved {
+    .rfs-claim-table tbody tr.claim-row-approved {
         background: #f0fdf4;
     }
 
-    #table_rfs_claim_list tbody tr.claim-row-rejected {
+    .rfs-claim-table tbody tr.claim-row-rejected {
         background: #fef2f2;
     }
 
-    #table_rfs_claim_list tbody tr.claim-row-waiting-ho {
+    .rfs-claim-table tbody tr.claim-row-waiting-ho {
         background: #ecfeff;
     }
 
-    #table_rfs_claim_list tbody tr.claim-row-waiting-rpm {
+    .rfs-claim-table tbody tr.claim-row-waiting-rpm {
         background: #eff6ff;
     }
 
@@ -2076,7 +2271,22 @@ if (!empty($kpiDetailRowMap)) {
                             </div>
                         </div>
                     </form>
-                    <table id="table_rfs_claim_list" class="table table-bordered table-striped">
+                    <ul class="nav rfs-claim-tabs mb-3" role="tablist">
+                        <?php foreach ($claimRfsTabs as $tabIndex => $claimTab) { ?>
+                            <li class="nav-item">
+                                <a class="nav-link <?= $tabIndex === 0 ? 'active' : '' ?>" data-toggle="tab"
+                                    href="#<?= htmlspecialchars($claimTab['id']) ?>" role="tab">
+                                    <?= htmlspecialchars($claimTab['label']) ?>
+                                    <span class="rfs-claim-tab-count"><?= number_format(count($claimTab['rows']), 0, ',', '.') ?></span>
+                                </a>
+                            </li>
+                        <?php } ?>
+                    </ul>
+                    <div class="tab-content">
+                        <?php foreach ($claimRfsTabs as $tabIndex => $claimTab) { ?>
+                            <div class="tab-pane fade <?= $tabIndex === 0 ? 'show active' : '' ?>"
+                                id="<?= htmlspecialchars($claimTab['id']) ?>" role="tabpanel">
+                    <table id="<?= htmlspecialchars($claimTab['table_id']) ?>" class="table table-bordered table-striped rfs-claim-table js-rfs-claim-table">
                         <thead class="text-center">
                             <tr>
                                 <th>No</th>
@@ -2092,8 +2302,7 @@ if (!empty($kpiDetailRowMap)) {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (!empty($claimApprovalList)) { ?>
-                                <?php foreach ($claimApprovalList as $claim) { ?>
+                            <?php foreach ($claimTab['rows'] as $claim) { ?>
                                     <?php
                                     $claimStatusValue = strtoupper(trim((string) ($claim['status_claim'] ?? '')));
                                     $claimRowClass = $claimStatusValue === 'APPROVED'
@@ -2113,8 +2322,12 @@ if (!empty($kpiDetailRowMap)) {
                                         </td>
                                         <td class="text-center">
                                             <?php if (!empty($claim['photo_path'])) { ?>
-                                                <a href="<?= base_url($claim['photo_path']) ?>" target="_blank"
-                                                    class="btn btn-sm btn-outline-primary">Lihat Foto</a>
+                                                <?php $claimPhotoUrl = base_url($claim['photo_path']); ?>
+                                                <a href="<?= htmlspecialchars($claimPhotoUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                                    class="btn btn-sm btn-outline-primary js-open-rfs-photo"
+                                                    data-image="<?= htmlspecialchars($claimPhotoUrl, ENT_QUOTES, 'UTF-8') ?>"
+                                                    data-title="<?= htmlspecialchars((string) ($claim['cluster_name'] ?? 'Foto Claim RFS'), ENT_QUOTES, 'UTF-8') ?>"
+                                                    data-caption="<?= htmlspecialchars('Tanggal RFS: ' . (string) ($claim['claim_date'] ?? '-'), ENT_QUOTES, 'UTF-8') ?>">Lihat Foto</a>
                                             <?php } ?>
                                         </td>
                                         <td class="text-center">
@@ -2236,11 +2449,6 @@ if (!empty($kpiDetailRowMap)) {
                                             <?php } ?>
                                         </td>
                                     </tr>
-                                <?php } ?>
-                            <?php } else { ?>
-                                <tr>
-                                    <td colspan="10" class="text-center">Belum ada claim pada periode ini.</td>
-                                </tr>
                             <?php } ?>
                         </tbody>
                         <tfoot>
@@ -2256,6 +2464,9 @@ if (!empty($kpiDetailRowMap)) {
                             </tr>
                         </tfoot>
                     </table>
+                            </div>
+                        <?php } ?>
+                    </div>
                 </div>
             </div>
 
@@ -2351,6 +2562,25 @@ if (!empty($kpiDetailRowMap)) {
     </section>
 </div>
 
+<div class="rfs-photo-lightbox" id="rfs-photo-lightbox" aria-hidden="true">
+    <div class="rfs-photo-lightbox__dialog">
+        <div class="rfs-photo-lightbox__head">
+            <div class="rfs-photo-lightbox__title" id="rfs-photo-lightbox-title">Foto Claim RFS</div>
+            <div class="rfs-photo-lightbox__toolbar">
+                <button type="button" class="rfs-photo-lightbox__action" id="rfs-photo-lightbox-zoom-out" aria-label="Zoom Out">-</button>
+                <button type="button" class="rfs-photo-lightbox__action" id="rfs-photo-lightbox-zoom-in" aria-label="Zoom In">+</button>
+                <button type="button" class="rfs-photo-lightbox__close" id="rfs-photo-lightbox-close" aria-label="Tutup">&times;</button>
+            </div>
+        </div>
+        <div class="rfs-photo-lightbox__body">
+            <div class="rfs-photo-lightbox__stage">
+                <img src="" alt="Foto Claim RFS" class="rfs-photo-lightbox__image" id="rfs-photo-lightbox-image">
+            </div>
+            <div class="rfs-photo-lightbox__caption" id="rfs-photo-lightbox-caption">-</div>
+        </div>
+    </div>
+</div>
+
 <script>
     (function bootstrapMonitoringRfsMyRep() {
         var clusterTargetCityMap = <?= json_encode($clusterTargetCityMap) ?>;
@@ -2368,6 +2598,91 @@ if (!empty($kpiDetailRowMap)) {
         }
 
         var $ = window.jQuery;
+        var rfsPhotoLightbox = document.getElementById('rfs-photo-lightbox');
+        var rfsPhotoImage = document.getElementById('rfs-photo-lightbox-image');
+        var rfsPhotoTitle = document.getElementById('rfs-photo-lightbox-title');
+        var rfsPhotoCaption = document.getElementById('rfs-photo-lightbox-caption');
+        var rfsPhotoClose = document.getElementById('rfs-photo-lightbox-close');
+        var rfsPhotoZoomIn = document.getElementById('rfs-photo-lightbox-zoom-in');
+        var rfsPhotoZoomOut = document.getElementById('rfs-photo-lightbox-zoom-out');
+        var rfsPhotoScale = 1;
+
+        function openRfsPhotoLightbox(imageUrl, title, caption) {
+            if (!rfsPhotoLightbox || !rfsPhotoImage) {
+                return;
+            }
+
+            rfsPhotoScale = 1;
+            rfsPhotoImage.src = imageUrl || '';
+            rfsPhotoImage.style.transform = 'scale(1)';
+            if (rfsPhotoTitle) {
+                rfsPhotoTitle.textContent = title || 'Foto Claim RFS';
+            }
+            if (rfsPhotoCaption) {
+                rfsPhotoCaption.textContent = caption || '-';
+            }
+            rfsPhotoLightbox.classList.add('is-open');
+            rfsPhotoLightbox.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeRfsPhotoLightbox() {
+            if (!rfsPhotoLightbox || !rfsPhotoImage) {
+                return;
+            }
+
+            rfsPhotoLightbox.classList.remove('is-open');
+            rfsPhotoLightbox.setAttribute('aria-hidden', 'true');
+            rfsPhotoImage.src = '';
+            rfsPhotoImage.style.transform = 'scale(1)';
+            rfsPhotoScale = 1;
+            document.body.style.overflow = '';
+        }
+
+        function zoomRfsPhoto(step) {
+            if (!rfsPhotoLightbox || !rfsPhotoImage || !rfsPhotoLightbox.classList.contains('is-open')) {
+                return;
+            }
+
+            rfsPhotoScale = Math.max(0.5, Math.min(3, rfsPhotoScale + step));
+            rfsPhotoImage.style.transform = 'scale(' + rfsPhotoScale + ')';
+        }
+
+        $(document).on('click', '.js-open-rfs-photo', function (event) {
+            event.preventDefault();
+            openRfsPhotoLightbox(
+                $(this).data('image') || this.href,
+                $(this).data('title') || 'Foto Claim RFS',
+                $(this).data('caption') || '-'
+            );
+        });
+
+        if (rfsPhotoClose) {
+            rfsPhotoClose.addEventListener('click', closeRfsPhotoLightbox);
+        }
+        if (rfsPhotoZoomIn) {
+            rfsPhotoZoomIn.addEventListener('click', function () {
+                zoomRfsPhoto(0.25);
+            });
+        }
+        if (rfsPhotoZoomOut) {
+            rfsPhotoZoomOut.addEventListener('click', function () {
+                zoomRfsPhoto(-0.25);
+            });
+        }
+        if (rfsPhotoLightbox) {
+            rfsPhotoLightbox.addEventListener('click', function (event) {
+                if (event.target === rfsPhotoLightbox) {
+                    closeRfsPhotoLightbox();
+                }
+            });
+        }
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && rfsPhotoLightbox && rfsPhotoLightbox.classList.contains('is-open')) {
+                closeRfsPhotoLightbox();
+            }
+        });
+
         function initClaimDateRangePicker() {
             if (!$('#claim_date_range').length) {
                 return;
@@ -3200,11 +3515,22 @@ if (!empty($kpiDetailRowMap)) {
         });
         addRowNumbers('#table_rfs_cluster_list', 0);
 
-        initAdminLteTable('#table_rfs_claim_list', [[1, 'desc']], function () {
-            var api = this.api();
-            setFooterValue(api, 4, sumColumn(api, 4), 0);
+        $('.js-rfs-claim-table').each(function () {
+            var selector = '#' + this.id;
+            initAdminLteTable(selector, [[1, 'desc']], function () {
+                var api = this.api();
+                setFooterValue(api, 4, sumColumn(api, 4), 0);
+            }, {
+                language: {
+                    emptyTable: 'Belum ada claim pada tab ini.'
+                }
+            });
+            addRowNumbers(selector, 0);
         });
-        addRowNumbers('#table_rfs_claim_list', 0);
+
+        $('a[data-toggle="tab"][href^="#claim-rfs-"]').on('shown.bs.tab', function () {
+            adjustTablesInContainer($(this).attr('href'));
+        });
 
         $(document).on('click', '.js-kpi-detail-trigger', function () {
             openKpiDetailModal($(this).data('group-type'), $(this).data('group-name'));
