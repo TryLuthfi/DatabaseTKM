@@ -343,29 +343,6 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                         data-documents='<?= htmlspecialchars(json_encode(array_values($clusterDocs)), ENT_QUOTES) ?>'>
                         Detail Dokumen
                     </button>
-                    <?php foreach ($documentDefinitions as $documentDefinition): ?>
-                        <?php
-                        $docRow = $docsById[(int) $documentDefinition['id_doc_item']] ?? [];
-                        $docStatusRaw = strtoupper(trim((string) ($docRow['status_file'] ?? '')));
-                        $docName = (string) ($documentDefinition['doc_name'] ?? 'Dokumen');
-                        $allowUploadButton = $canTambah && $docStatusRaw === '';
-                        ?>
-                        <?php if ($allowUploadButton): ?>
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-outline-info js-upload-doc mt-1"
-                                data-toggle="modal"
-                                data-target="#modal-bak-upload-doc"
-                                data-cluster_id="<?= $clusterId ?>"
-                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                data-doc_item_id="<?= (int) $documentDefinition['id_doc_item'] ?>"
-                                data-doc_name="<?= htmlspecialchars($docName, ENT_QUOTES) ?>"
-                                data-doc_status="<?= htmlspecialchars((string) bakDocLabel($docRow), ENT_QUOTES) ?>"
-                                data-doc_remark="<?= htmlspecialchars((string) ($docRow['remark'] ?? ''), ENT_QUOTES) ?>">
-                                <?= 'Upload ' . htmlspecialchars($docName) ?>
-                            </button>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
                 <?php endif; ?>
                 <?php if ($canHapus): ?>
                     <form method="post" action="<?= base_url('BAK_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta seluruh flow MyRep dari BAK sampai tahap terakhir?');">

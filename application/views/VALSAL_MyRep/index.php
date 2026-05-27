@@ -17,6 +17,7 @@ $nyBatchApprovalNyDrmRows = [];
 $allValsalRows = $clusterRows;
 $valsalDocumentDefinitions = isset($valsalDocumentDefinitions) && is_array($valsalDocumentDefinitions) ? $valsalDocumentDefinitions : [];
 $valsalDocumentMap = isset($valsalDocumentMap) && is_array($valsalDocumentMap) ? $valsalDocumentMap : [];
+$clusterReviewPicMap = isset($clusterReviewPicMap) && is_array($clusterReviewPicMap) ? $clusterReviewPicMap : [];
 $postValsalStatuses = [
     'DRM',
     'RFS',
@@ -124,6 +125,102 @@ if (!function_exists('valsalDocLabel')) {
     }
 }
 
+if (!function_exists('valsalAddWorkingDays')) {
+    function valsalAddWorkingDays($dateString, $workingDays)
+    {
+        if (empty($dateString) || $dateString === '0000-00-00') {
+            return null;
+        }
+
+        try {
+            $date = new DateTimeImmutable(substr((string) $dateString, 0, 10));
+        } catch (Exception $e) {
+            return null;
+        }
+
+        $added = 0;
+        while ($added < (int) $workingDays) {
+            $date = $date->modify('+1 day');
+            if ((int) $date->format('N') < 6) {
+                $added++;
+            }
+        }
+
+        return $date;
+    }
+}
+
+if (!function_exists('valsalCountWorkingDays')) {
+    function valsalCountWorkingDays($startDateString, $endDateString = null)
+    {
+        if (empty($startDateString) || $startDateString === '0000-00-00') {
+            return null;
+        }
+
+        $endDateString = $endDateString ?: date('Y-m-d');
+        if (empty($endDateString) || $endDateString === '0000-00-00') {
+            $endDateString = date('Y-m-d');
+        }
+
+        try {
+            $start = new DateTimeImmutable(substr((string) $startDateString, 0, 10));
+            $end = new DateTimeImmutable(substr((string) $endDateString, 0, 10));
+        } catch (Exception $e) {
+            return null;
+        }
+
+        if ($start > $end) {
+            return 0;
+        }
+
+        $workingDays = 0;
+        $cursor = $start->modify('+1 day');
+        while ($cursor <= $end) {
+            if ((int) $cursor->format('N') < 6) {
+                $workingDays++;
+            }
+            $cursor = $cursor->modify('+1 day');
+        }
+
+        return $workingDays;
+    }
+}
+
+if (!function_exists('valsalSlaInfo')) {
+    function valsalSlaInfo($row)
+    {
+        $approvedBakDate = trim((string) ($row['bak_approved_at'] ?? ''));
+        if ($approvedBakDate === '') {
+            $approvedBakDate = trim((string) ($row['bak_date'] ?? ''));
+        }
+
+        $valsalDate = trim((string) ($row['valsal_date'] ?? ''));
+        if ($approvedBakDate === '' || $approvedBakDate === '0000-00-00') {
+            return [
+                'start_date' => null,
+                'aging_days' => null,
+            ];
+        }
+
+        $hasValsalDate = $valsalDate !== '' && $valsalDate !== '0000-00-00';
+        return [
+            'start_date' => substr($approvedBakDate, 0, 10),
+            'aging_days' => valsalCountWorkingDays($approvedBakDate, $hasValsalDate ? $valsalDate : date('Y-m-d')),
+        ];
+    }
+}
+
+if (!function_exists('valsalSlaBadgeClass')) {
+    function valsalSlaBadgeClass($slaInfo)
+    {
+        if (($slaInfo['aging_days'] ?? null) === null) {
+            return 'secondary';
+        }
+
+        return (int) $slaInfo['aging_days'] > 5 ? 'danger' : 'success';
+    }
+}
+
 if (!function_exists('valsalAgingBadgeClass')) {
     function valsalAgingBadgeClass($agingDays)
     {
@@ -131,36 +228,13 @@ if (!function_exists('valsalAgingBadgeClass')) {
             return 'secondary';
         }
 
-        if ((int) $agingDays <= 3) {
-            return 'success';
-        }
-
-        if ((int) $agingDays <= 7) {
-            return 'warning';
-        }
-
-        return 'danger';
+        return (int) $agingDays > 5 ? 'danger' : 'success';
     }
 }
 
-if (!function_exists('valsalReviewLabel')) {
-    function valsalReviewLabel($row)
-    {
-        if (!empty($row['reviewed_at'])) {
-            return (string) $row['reviewed_at'];
-        }
-
-        if (!empty($row['id_doc_file'])) {
-            return 'Waiting Review';
-        }
-
-        return 'Belum ada review';
-    }
-}
-
-$renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $documentDefinitions, $documentMap) use ($canTambah, $canEdit, $canHapus) {
+$renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $documentDefinitions, $documentMap, $clusterReviewPicMap) use ($canTambah, $canEdit, $canHapus) {
     foreach ($rows as $index => $row) {
-        $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
+        $slaInfo = valsalSlaInfo($row);
         $hasValsal = (int) ($row['id_valsal'] ?? 0) > 0;
         $statusValsalLabel = $hasValsal
             ? (string) ($row['status_valsal'] ?? 'DRAFT')
@@ -170,28 +244,6 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
         $docsById = [];
         foreach ($clusterDocs as $clusterDoc) {
             $docsById[(int) ($clusterDoc['id_doc_item'] ?? 0)] = $clusterDoc;
-        }
-        $agingDays = null;
-        $bakDateRaw = trim((string) ($row['bak_date'] ?? ''));
-
-        $valsalDateRaw = trim((string) ($row['valsal_date'] ?? ''));
-
-        if ($bakDateRaw !== '') {
-            try {
-                $bakDate = new DateTimeImmutable($bakDateRaw);
-                if ($valsalDateRaw !== '') {
-                    $valsalDate = new DateTimeImmutable($valsalDateRaw);
-                    $agingDays = (int) $bakDate->diff($valsalDate)->format('%r%a');
-                } else {
-                    $todayDate = new DateTimeImmutable(date('Y-m-d'));
-                    $agingDays = (int) $bakDate->diff($todayDate)->format('%r%a');
-                }
-                if ($agingDays < 0) {
-                    $agingDays = 0;
-                }
-            } catch (Exception $e) {
-                $agingDays = null;
-            }
         }
         ?>
         <tr>
@@ -204,31 +256,41 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
             </td>
             <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-            <td><?= $targetLabel ?></td>
             <td class="text-right"><?= number_format((float) ($row['homepass_bak'] ?? 0), 0, ',', '.') ?></td>
             <td class="text-right"><?= number_format((float) ($row['homepass_valsal'] ?? 0), 0, ',', '.') ?></td>
-            <td><?= !empty($row['bak_date']) ? htmlspecialchars((string) $row['bak_date']) : '-' ?></td>
+            <td><?= !empty($slaInfo['start_date']) ? htmlspecialchars((string) $slaInfo['start_date']) : '-' ?></td>
             <td>
-                <?php if ($agingDays === null): ?>
-                    <span class="badge badge-secondary">Aging -</span>
-                <?php else: ?>
-                    <span class="badge badge-<?= valsalAgingBadgeClass($agingDays) ?>">Aging <?= (int) $agingDays ?> hari</span>
-                <?php endif; ?>
+                <div class="valsal-sla-aging-cell">
+                    <span class="badge badge-<?= valsalSlaBadgeClass($slaInfo) ?>">SLA 5 HK</span>
+                    <span class="badge badge-<?= valsalAgingBadgeClass($slaInfo['aging_days']) ?>">
+                        <?php if ($slaInfo['aging_days'] === null): ?>
+                            Aging -
+                        <?php else: ?>
+                            Aging <?= (int) $slaInfo['aging_days'] ?> HK
+                        <?php endif; ?>
+                    </span>
+                </div>
             </td>
             <td><?= !empty($row['valsal_date']) ? htmlspecialchars((string) $row['valsal_date']) : '-' ?></td>
             <td><span class="badge badge-<?= valsalBadgeClass($statusValsalLabel) ?>"><?= htmlspecialchars($statusValsalLabel) ?></span></td>
             <td>
-                <?php if ($hasValsal && $canEdit): ?>
-                    <?php foreach ($documentDefinitions as $documentDefinition): ?>
-                        <?php $docRow = $docsById[(int) $documentDefinition['id_doc_item']] ?? []; ?>
-                        <div class="mb-2">
-                            <div class="small font-weight-bold text-dark"><?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></div>
-                            <span class="badge badge-<?= valsalBadgeClass(valsalDocLabel($docRow)) ?>"><?= htmlspecialchars(valsalDocLabel($docRow)) ?></span>
-                            <?php if (!empty($docRow['file_name'])): ?>
-                                <div class="small text-muted mt-1"><?= htmlspecialchars((string) $docRow['file_name']) ?></div>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
+                <?php if ($hasValsal && !empty($documentDefinitions)): ?>
+                    <div class="valsal-doc-status-stack">
+                        <?php foreach ($documentDefinitions as $documentDefinition): ?>
+                            <?php
+                            $docRow = $docsById[(int) $documentDefinition['id_doc_item']] ?? [];
+                            $docStatusRaw = (string) valsalDocLabel($docRow);
+                            $docStatusDisplay = ucwords(strtolower($docStatusRaw));
+                            $docName = ucwords(strtolower((string) ($documentDefinition['doc_name'] ?? '-')));
+                            ?>
+                            <div class="valsal-doc-status-stack__item">
+                                <span class="valsal-doc-name"><?= htmlspecialchars($docName) ?> :</span>
+                                <span class="badge badge-<?= valsalBadgeClass($docStatusRaw) ?> valsal-doc-status-badge">
+                                    <?= htmlspecialchars($docStatusDisplay) ?>
+                                </span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 <?php elseif ($canTambah): ?>
                     <span class="badge badge-secondary">BELUM ADA DOC</span>
                 <?php endif; ?>
@@ -237,15 +299,37 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                 <?php if (!$hasValsal): ?>
                     <span class="text-muted small">Belum ada pengajuan</span>
                 <?php else: ?>
-                    <?php foreach ($documentDefinitions as $documentDefinition): ?>
-                        <?php $docRow = $docsById[(int) $documentDefinition['id_doc_item']] ?? []; ?>
-                        <div class="mb-2">
-                            <div class="small font-weight-bold text-dark"><?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></div>
-                            <div class="small <?= !empty($docRow['reviewed_at']) ? 'text-muted' : (!empty($docRow['id_doc_file']) ? 'text-warning font-weight-bold' : 'text-muted') ?>">
-                                <?= htmlspecialchars(valsalReviewLabel($docRow)) ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
+                    <?php
+                    $uploadBy = '-';
+                    $picApproval = '';
+                    $clusterMappedPic = trim((string) ($clusterReviewPicMap[$clusterId] ?? ''));
+                    $documentMappedPic = trim((string) ($clusterDocs[0]['city_pic_approval_name'] ?? ''));
+
+                    foreach ($clusterDocs as $docRow) {
+                        $uploadCandidate = trim((string) ($docRow['uploaded_by_name'] ?? ''));
+                        if ($uploadBy === '-' && $uploadCandidate !== '') {
+                            $uploadBy = $uploadCandidate;
+                        }
+
+                        $approvedCandidate = trim((string) ($docRow['approved_by_name'] ?? ''));
+                        if ($approvedCandidate !== '') {
+                            $picApproval = $approvedCandidate;
+                            break;
+                        }
+                    }
+
+                    if ($picApproval === '') {
+                        $picApproval = $clusterMappedPic !== '' ? $clusterMappedPic : $documentMappedPic;
+                    }
+
+                    if ($picApproval === '') {
+                        $picApproval = '-';
+                    }
+                    ?>
+                    <div class="small text-muted">
+                        <div>Upload by : <?= htmlspecialchars($uploadBy) ?></div>
+                        <div>PIC approval : <?= htmlspecialchars($picApproval) ?></div>
+                    </div>
                 <?php endif; ?>
             </td>
             <td><span class="badge badge-<?= valsalBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
@@ -292,29 +376,6 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                             Detail Dokumen
                         </button>
                     <?php endif; ?>
-                    <?php foreach ($documentDefinitions as $documentDefinition): ?>
-                        <?php
-                        $docRow = $docsById[(int) $documentDefinition['id_doc_item']] ?? [];
-                        $docStatusRaw = strtoupper(trim((string) ($docRow['status_file'] ?? '')));
-                        $docName = (string) ($documentDefinition['doc_name'] ?? 'Dokumen');
-                        $allowUploadButton = $canTambah && $hasValsal && $docStatusRaw === '';
-                        ?>
-                        <?php if ($allowUploadButton): ?>
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-outline-info js-upload-doc mt-1"
-                                data-toggle="modal"
-                                data-target="#modal-valsal-upload-doc"
-                                data-cluster_id="<?= $clusterId ?>"
-                                data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                                data-doc_item_id="<?= (int) $documentDefinition['id_doc_item'] ?>"
-                                data-doc_name="<?= htmlspecialchars($docName, ENT_QUOTES) ?>"
-                                data-doc_status="<?= htmlspecialchars((string) valsalDocLabel($docRow), ENT_QUOTES) ?>"
-                                data-doc_remark="<?= htmlspecialchars((string) ($docRow['remark'] ?? ''), ENT_QUOTES) ?>">
-                                <?= 'Upload ' . htmlspecialchars($docName) ?>
-                            </button>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
                 <?php endif; ?>
                 <?php if ($canHapus): ?>
                     <form method="post" action="<?= base_url('VALSAL_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta flow VALSAL dan seluruh tahap MyRep sebelumnya/sesudahnya?');">
@@ -525,11 +586,10 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                                     <th>Cluster</th>
                                                     <th>Regional</th>
                                                     <th>Kota</th>
-                                                    <th>Periode Target</th>
                                                     <th>HP BAK</th>
                                                     <th>HP VALSAL</th>
-                                                    <th>Tanggal BAK</th>
-                                                    <th>Aging BAK</th>
+                                                    <th>Approved BAK</th>
+                                                    <th>SLA &amp; Aging</th>
                                                     <th>Tanggal VALSAL</th>
                                                     <th>Status VALSAL</th>
                                                     <th>Dokumen VALSAL</th>
@@ -539,14 +599,14 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php $renderValsalTableRows($valsalOnProcessRows, $docReady, $canApprove, $valsalDocumentDefinitions, $valsalDocumentMap); ?>
+                                                <?php $renderValsalTableRows($valsalOnProcessRows, $docReady, $canApprove, $valsalDocumentDefinitions, $valsalDocumentMap, $clusterReviewPicMap); ?>
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="5" class="text-right">TOTAL</th>
+                                                    <th colspan="4" class="text-right">TOTAL</th>
                                                     <th class="text-right">0</th>
                                                     <th class="text-right">0</th>
-                                                    <th colspan="7"></th>
+                                                    <th colspan="8"></th>
                                                 </tr>
                                             </tfoot>
                                         </table>
@@ -561,11 +621,10 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                                     <th>Cluster</th>
                                                     <th>Regional</th>
                                                     <th>Kota</th>
-                                                    <th>Periode Target</th>
                                                     <th>HP BAK</th>
                                                     <th>HP VALSAL</th>
-                                                    <th>Tanggal BAK</th>
-                                                    <th>Aging BAK</th>
+                                                    <th>Approved BAK</th>
+                                                    <th>SLA &amp; Aging</th>
                                                     <th>Tanggal VALSAL</th>
                                                     <th>Status VALSAL</th>
                                                     <th>Dokumen VALSAL</th>
@@ -575,14 +634,14 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php $renderValsalTableRows($nyBatchApprovalNyDrmRows, $docReady, $canApprove, $valsalDocumentDefinitions, $valsalDocumentMap); ?>
+                                                <?php $renderValsalTableRows($nyBatchApprovalNyDrmRows, $docReady, $canApprove, $valsalDocumentDefinitions, $valsalDocumentMap, $clusterReviewPicMap); ?>
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="5" class="text-right">TOTAL</th>
+                                                    <th colspan="4" class="text-right">TOTAL</th>
                                                     <th class="text-right">0</th>
                                                     <th class="text-right">0</th>
-                                                    <th colspan="7"></th>
+                                                    <th colspan="8"></th>
                                                 </tr>
                                             </tfoot>
                                         </table>
@@ -597,11 +656,10 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                                     <th>Cluster</th>
                                                     <th>Regional</th>
                                                     <th>Kota</th>
-                                                    <th>Periode Target</th>
                                                     <th>HP BAK</th>
                                                     <th>HP VALSAL</th>
-                                                    <th>Tanggal BAK</th>
-                                                    <th>Aging BAK</th>
+                                                    <th>Approved BAK</th>
+                                                    <th>SLA &amp; Aging</th>
                                                     <th>Tanggal VALSAL</th>
                                                     <th>Status VALSAL</th>
                                                     <th>Dokumen VALSAL</th>
@@ -611,14 +669,14 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php $renderValsalTableRows($allValsalRows, $docReady, $canApprove, $valsalDocumentDefinitions, $valsalDocumentMap); ?>
+                                                <?php $renderValsalTableRows($allValsalRows, $docReady, $canApprove, $valsalDocumentDefinitions, $valsalDocumentMap, $clusterReviewPicMap); ?>
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="5" class="text-right">TOTAL</th>
+                                                    <th colspan="4" class="text-right">TOTAL</th>
                                                     <th class="text-right">0</th>
                                                     <th class="text-right">0</th>
-                                                    <th colspan="7"></th>
+                                                    <th colspan="8"></th>
                                                 </tr>
                                             </tfoot>
                                         </table>
@@ -860,19 +918,53 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
 
     <?php if ($docReady): ?>
         <div class="modal fade doc-modal" id="modal-valsal-doc-detail" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-dialog modal-xxl" role="document">
                 <div class="modal-content budget-modal valsal-modal-shell">
                     <div class="modal-header budget-modal__header">
                         <div>
-                            <span class="budget-modal__eyebrow">Dokumen VALSAL</span>
-                            <h4 class="modal-title mb-1">Detail Dokumen Cluster</h4>
-                            <p class="mb-0 budget-modal__subtitle" id="valsal-doc-detail-cluster-name">-</p>
+                            <h4 class="modal-title mb-0">Detail Dokumen Cluster</h4>
                         </div>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
+                        <div class="doc-modal-panel mb-3">
+                            <div class="valsal-doc-cluster-detail">
+                                <div class="valsal-doc-cluster-detail__item">
+                                    <span class="valsal-doc-cluster-detail__label">Cluster</span>
+                                    <span class="valsal-doc-cluster-detail__value" id="valsal-doc-detail-cluster-name">-</span>
+                                </div>
+                                <div class="valsal-doc-cluster-detail__item">
+                                    <span class="valsal-doc-cluster-detail__label">Kode Cluster</span>
+                                    <span class="valsal-doc-cluster-detail__value" id="valsal-doc-detail-cluster-code">-</span>
+                                </div>
+                                <div class="valsal-doc-cluster-detail__item">
+                                    <span class="valsal-doc-cluster-detail__label">HP BAK</span>
+                                    <span class="valsal-doc-cluster-detail__value" id="valsal-doc-detail-homepass-bak">-</span>
+                                </div>
+                                <div class="valsal-doc-cluster-detail__item">
+                                    <span class="valsal-doc-cluster-detail__label">HP VALSAL</span>
+                                    <span class="valsal-doc-cluster-detail__value" id="valsal-doc-detail-homepass-valsal">-</span>
+                                </div>
+                                <div class="valsal-doc-cluster-detail__item">
+                                    <span class="valsal-doc-cluster-detail__label">Regional</span>
+                                    <span class="valsal-doc-cluster-detail__value" id="valsal-doc-detail-regional-name">-</span>
+                                </div>
+                                <div class="valsal-doc-cluster-detail__item">
+                                    <span class="valsal-doc-cluster-detail__label">Kota</span>
+                                    <span class="valsal-doc-cluster-detail__value" id="valsal-doc-detail-city-name">-</span>
+                                </div>
+                                <div class="valsal-doc-cluster-detail__item">
+                                    <span class="valsal-doc-cluster-detail__label">Kecamatan</span>
+                                    <span class="valsal-doc-cluster-detail__value" id="valsal-doc-detail-district-name">-</span>
+                                </div>
+                                <div class="valsal-doc-cluster-detail__item">
+                                    <span class="valsal-doc-cluster-detail__label">Kelurahan</span>
+                                    <span class="valsal-doc-cluster-detail__value" id="valsal-doc-detail-village-name">-</span>
+                                </div>
+                            </div>
+                        </div>
                         <div class="doc-modal-panel mb-0">
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover">
@@ -882,13 +974,16 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                                             <th>Status</th>
                                             <th>File</th>
                                             <th>Review</th>
+                                            <th>Uploaded At</th>
+                                            <th>Reviewed At</th>
+                                            <th>Approved At</th>
                                             <th>Remark</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody id="valsal-doc-detail-body">
                                         <tr>
-                                            <td colspan="6" class="text-center text-muted">Belum ada dokumen.</td>
+                                            <td colspan="9" class="text-center text-muted">Belum ada dokumen.</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -1308,8 +1403,93 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         border-top: 0;
     }
 
+    .valsal-monitor-table {
+        min-width: 1660px;
+    }
+
+    .valsal-monitor-table tbody td {
+        white-space: nowrap;
+        vertical-align: top;
+    }
+
+    .valsal-table-card .dataTables_scrollBody {
+        overflow-x: auto !important;
+    }
+
     .valsal-monitor-table tbody tr:hover {
         background: rgba(219, 236, 247, 0.22);
+    }
+
+    .valsal-sla-aging-cell .badge {
+        display: block;
+        text-align: left;
+    }
+
+    .valsal-sla-aging-cell .badge + .badge {
+        margin-top: 0.2rem;
+    }
+
+    .valsal-doc-status-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .valsal-doc-status-stack__item {
+        display: grid;
+        grid-template-columns: 92px max-content;
+        column-gap: 0.35rem;
+        align-items: center;
+        color: #000;
+        font-size: 0.76rem;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .valsal-doc-name {
+        color: #111;
+        font-weight: 600;
+    }
+
+    .valsal-doc-status-badge {
+        font-size: 0.73rem;
+        justify-self: start;
+    }
+
+    .valsal-doc-cluster-detail {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.85rem;
+    }
+
+    .valsal-doc-cluster-detail__item {
+        min-width: 0;
+    }
+
+    .valsal-doc-cluster-detail__label {
+        display: block;
+        color: #6b7280;
+        font-size: 0.74rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .valsal-doc-cluster-detail__value {
+        display: block;
+        color: #111827;
+        font-size: 0.92rem;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 767.98px) {
+        .valsal-doc-cluster-detail {
+            grid-template-columns: 1fr;
+        }
     }
 
     .modal-xxl {
@@ -1797,9 +1977,21 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             return 'secondary';
         }
 
+        function updateValsalDocDetailClusterInfo(documents, fallbackClusterName) {
+            var firstDoc = documents && documents.length ? documents[0] : {};
+            $('#valsal-doc-detail-cluster-name').text(String(firstDoc.cluster_name || fallbackClusterName || '-').trim() || '-');
+            $('#valsal-doc-detail-cluster-code').text(String(firstDoc.cluster_code || '-').trim() || '-');
+            $('#valsal-doc-detail-homepass-bak').text(Number(firstDoc.homepass_bak || 0) > 0 ? Number(firstDoc.homepass_bak || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '-');
+            $('#valsal-doc-detail-homepass-valsal').text(Number(firstDoc.homepass_valsal || 0) > 0 ? Number(firstDoc.homepass_valsal || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '-');
+            $('#valsal-doc-detail-regional-name').text(String(firstDoc.regional_name || '-').trim() || '-');
+            $('#valsal-doc-detail-city-name').text(String(firstDoc.city_name || '-').trim() || '-');
+            $('#valsal-doc-detail-district-name').text(String(firstDoc.district_name || '-').trim() || '-');
+            $('#valsal-doc-detail-village-name').text(String(firstDoc.village_name || '-').trim() || '-');
+        }
+
         function renderValsalDocDetailRows(documents) {
             if (!documents || !documents.length) {
-                return '<tr><td colspan="6" class="text-center text-muted">Belum ada dokumen.</td></tr>';
+                return '<tr><td colspan="9" class="text-center text-muted">Belum ada dokumen.</td></tr>';
             }
 
             return documents.map(function (doc) {
@@ -1811,7 +2003,12 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                         ? 'ON REVIEW'
                         : (doc.status_file || (doc.file_name ? 'UPLOADED' : 'BELUM UPLOAD'))));
                 var statusClass = getValsalStatusBadgeClass(statusLabel);
-                var reviewLabel = escapeHtml(doc.reviewed_at || (doc.id_doc_file ? 'Waiting Review' : 'Belum ada review'));
+                var uploadBy = escapeHtml(String(doc.uploaded_by_name || '').trim() || '-');
+                var picApproval = escapeHtml(String(doc.approved_by_name || doc.city_pic_approval_name || '').trim() || '-');
+                var reviewLabel = 'Upload by : ' + uploadBy + '<br>PIC approval : ' + picApproval;
+                var uploadedAt = escapeHtml(String(doc.uploaded_at || '').trim() || '-');
+                var reviewedAt = escapeHtml(String(doc.reviewed_at || '').trim() || '-');
+                var approvedAt = escapeHtml(String(doc.approved_at || '').trim() || '-');
                 var remarkValue = escapeHtml(doc.remark || '');
                 var fileSection = '<span class="text-muted small">Belum ada file</span>';
                 var actionParts = [];
@@ -1868,6 +2065,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     '<td><span class="badge badge-' + statusClass + '">' + statusLabel + '</span></td>' +
                     '<td>' + fileSection + '</td>' +
                     '<td>' + reviewLabel + '</td>' +
+                    '<td>' + uploadedAt + '</td>' +
+                    '<td>' + reviewedAt + '</td>' +
+                    '<td>' + approvedAt + '</td>' +
                     '<td>' + remarkValue + '</td>' +
                     '<td style="min-width:220px;">' + actionSection + '</td>' +
                 '</tr>';
@@ -2148,6 +2348,8 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     try {
                         valsalTables.push($(selector).DataTable({
                             responsive: false,
+                            scrollX: true,
+                            scrollCollapse: true,
                             autoWidth: false,
                             order: [[0, 'asc']],
                             pageLength: 10,
@@ -2164,23 +2366,23 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                                 };
 
                                 var totalHpBak = api
-                                    .column(5, { search: 'applied' })
+                                    .column(4, { search: 'applied' })
                                     .data()
                                     .reduce(function (sum, val) {
                                         return sum + parseNumber(val);
                                     }, 0);
 
                                 var totalHpValsal = api
-                                    .column(6, { search: 'applied' })
+                                    .column(5, { search: 'applied' })
                                     .data()
                                     .reduce(function (sum, val) {
                                         return sum + parseNumber(val);
                                     }, 0);
 
-                                $(api.column(5).footer()).html(
+                                $(api.column(4).footer()).html(
                                     totalHpBak.toLocaleString('id-ID', { maximumFractionDigits: 0 })
                                 );
-                                $(api.column(6).footer()).html(
+                                $(api.column(5).footer()).html(
                                     totalHpValsal.toLocaleString('id-ID', { maximumFractionDigits: 0 })
                                 );
                             },
@@ -2195,10 +2397,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
                 $('a[data-toggle="tab"][href^="#valsal-"]').on('shown.bs.tab', function () {
                     valsalTables.forEach(function (table) {
-                        table.columns.adjust();
-                        if (table.responsive && typeof table.responsive.recalc === 'function') {
-                            table.responsive.recalc();
-                        }
+                        table.columns.adjust().draw(false);
                     });
                 });
             }
@@ -2334,7 +2533,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 }
 
                 currentValsalDetailClusterId = Number(documents.length ? (documents[0].id_myrep_cluster || 0) : 0);
-                $('#valsal-doc-detail-cluster-name').text($button.data('cluster_name') || '-');
+                updateValsalDocDetailClusterInfo(documents, $button.data('cluster_name') || '-');
                 $('#valsal-doc-detail-body').html(renderValsalDocDetailRows(documents));
                 syncValsalDetailFooterButtons(currentValsalDetailClusterId, documents);
             });
@@ -2403,7 +2602,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     success: function (response) {
                         if (response && response.status && response.data) {
                             currentValsalDetailClusterId = Number(response.data.cluster_id || clusterId);
-                            $('#valsal-doc-detail-cluster-name').text(response.data.cluster_name || '-');
+                            updateValsalDocDetailClusterInfo(response.data.documents || [], response.data.cluster_name || '-');
                             $('#valsal-doc-detail-body').html(renderValsalDocDetailRows(response.data.documents || []));
                             syncValsalDetailFooterButtons(currentValsalDetailClusterId, response.data.documents || []);
                             return;
@@ -2543,7 +2742,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     success: function (response) {
                         if (response && response.status && response.data) {
                             currentValsalDetailClusterId = Number(response.data.cluster_id || currentValsalDetailClusterId || 0);
-                            $('#valsal-doc-detail-cluster-name').text(response.data.cluster_name || '-');
+                            updateValsalDocDetailClusterInfo(response.data.documents || [], response.data.cluster_name || '-');
                             $('#valsal-doc-detail-body').html(renderValsalDocDetailRows(response.data.documents || []));
                             syncValsalDetailFooterButtons(currentValsalDetailClusterId, response.data.documents || []);
                             return;

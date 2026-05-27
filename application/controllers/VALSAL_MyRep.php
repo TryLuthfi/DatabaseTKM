@@ -46,6 +46,7 @@ class VALSAL_MyRep extends CI_Controller
         $data['clusterRows'] = $data['isReady']
             ? $this->MVALSAL_MyRep->getValsalRows($selectedCity, $selectedStatus)
             : [];
+        $data['clusterReviewPicMap'] = $this->MVALSAL_MyRep->getValsalClusterReviewPicMap($data['clusterRows']);
         $clusterIds = array_values(array_filter(array_map(static function ($row) {
             return (int) ($row['id_myrep_cluster'] ?? 0);
         }, $data['clusterRows'])));
