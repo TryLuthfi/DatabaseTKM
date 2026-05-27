@@ -105,24 +105,120 @@ if (!function_exists('bakDocLabel')) {
     }
 }
 
-if (!function_exists('bakReviewLabel')) {
-    function bakReviewLabel($row)
+if (!function_exists('bakAddWorkingDays')) {
+    function bakAddWorkingDays($dateString, $workingDays)
     {
-        if (!empty($row['reviewed_at'])) {
-            return (string) $row['reviewed_at'];
+        if (empty($dateString) || $dateString === '0000-00-00') {
+            return null;
         }
 
-        if (!empty($row['id_doc_file'])) {
-            return 'Waiting Review';
+        try {
+            $date = new DateTimeImmutable($dateString);
+        } catch (Exception $e) {
+            return null;
         }
 
-        return 'Belum ada review';
+        $added = 0;
+        while ($added < (int) $workingDays) {
+            $date = $date->modify('+1 day');
+            if ((int) $date->format('N') < 6) {
+                $added++;
+            }
+        }
+
+        return $date;
     }
 }
 
-$renderBakTableRows = static function (array $rows, $docReady, $canApprove, $documentDefinitions, $documentMap) use ($canTambah, $canEdit, $canHapus) {
+if (!function_exists('bakCountWorkingDays')) {
+    function bakCountWorkingDays($startDateString, $endDateString = null)
+    {
+        if (empty($startDateString) || $startDateString === '0000-00-00') {
+            return null;
+        }
+
+        $endDateString = $endDateString ?: date('Y-m-d');
+        if (empty($endDateString) || $endDateString === '0000-00-00') {
+            $endDateString = date('Y-m-d');
+        }
+
+        try {
+            $start = new DateTimeImmutable($startDateString);
+            $end = new DateTimeImmutable($endDateString);
+        } catch (Exception $e) {
+            return null;
+        }
+
+        if ($start > $end) {
+            return 0;
+        }
+
+        $workingDays = 0;
+        $cursor = $start->modify('+1 day');
+        while ($cursor <= $end) {
+            if ((int) $cursor->format('N') < 6) {
+                $workingDays++;
+            }
+            $cursor = $cursor->modify('+1 day');
+        }
+
+        return $workingDays;
+    }
+}
+
+if (!function_exists('bakSlaInfo')) {
+    function bakSlaInfo($row)
+    {
+        $baOpenDate = trim((string) ($row['ba_open_date'] ?? ''));
+        $bakDate = trim((string) ($row['bak_date'] ?? ''));
+        if ($baOpenDate === '' || $baOpenDate === '0000-00-00') {
+            return [
+                'deadline' => null,
+                'aging_days' => null,
+                'status_label' => 'BA OPEN belum ada',
+                'aging_scope' => '-',
+            ];
+        }
+
+        $deadline = bakAddWorkingDays($baOpenDate, 4);
+        $hasBakDate = $bakDate !== '' && $bakDate !== '0000-00-00';
+        $agingDays = bakCountWorkingDays($baOpenDate, $hasBakDate ? $bakDate : date('Y-m-d'));
+        $isOverSla = $agingDays !== null && $agingDays > 4;
+
+        return [
+            'deadline' => $deadline ? $deadline->format('Y-m-d') : null,
+            'aging_days' => $agingDays,
+            'status_label' => $isOverSla ? 'Lewat SLA' : ($hasBakDate ? 'Sesuai SLA' : 'Dalam SLA'),
+            'aging_scope' => $hasBakDate ? 'BA OPEN s/d BAK' : 'BA OPEN s/d hari ini',
+        ];
+    }
+}
+
+if (!function_exists('bakSlaBadgeClass')) {
+    function bakSlaBadgeClass($slaInfo)
+    {
+        if (($slaInfo['aging_days'] ?? null) === null) {
+            return 'secondary';
+        }
+
+        return (int) $slaInfo['aging_days'] > 4 ? 'danger' : 'success';
+    }
+}
+
+if (!function_exists('bakAgingBadgeClass')) {
+    function bakAgingBadgeClass($agingDays)
+    {
+        if ($agingDays === null) {
+            return 'secondary';
+        }
+
+        return (int) $agingDays > 4 ? 'danger' : 'success';
+    }
+}
+
+$renderBakTableRows = static function (array $rows, $docReady, $canApprove, $documentDefinitions, $documentMap, $clusterReviewPicMap) use ($canTambah, $canEdit, $canHapus) {
     foreach ($rows as $index => $row) {
-        $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
+        $slaInfo = bakSlaInfo($row);
         $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
         $clusterDocs = $documentMap[$clusterId] ?? [];
         $docsById = [];
@@ -140,41 +236,76 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
             </td>
             <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-            <td><?= $targetLabel ?></td>
             <td class="text-right"><?= number_format((float) ($row['homepass_bak'] ?? 0), 0, ',', '.') ?></td>
             <td><?= !empty($row['ba_open_date']) ? htmlspecialchars((string) $row['ba_open_date']) : '-' ?></td>
+            <td>
+                <div class="bak-sla-aging-cell">
+                    <span class="badge badge-<?= bakSlaBadgeClass($slaInfo) ?>">SLA 4 HK</span>
+                    <span class="badge badge-<?= bakAgingBadgeClass($slaInfo['aging_days']) ?>">
+                        <?php if ($slaInfo['aging_days'] === null): ?>
+                            Aging -
+                        <?php else: ?>
+                            Aging <?= (int) $slaInfo['aging_days'] ?> HK
+                        <?php endif; ?>
+                    </span>
+                </div>
+            </td>
             <td><?= !empty($row['bak_date']) ? htmlspecialchars((string) $row['bak_date']) : '-' ?></td>
             <td><span class="badge badge-<?= bakBadgeClass($row['status_bak'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_bak'] ?? 'DRAFT')) ?></span></td>
             <td>
                 <?php if ($docReady && !empty($documentDefinitions)): ?>
-                    <?php foreach ($documentDefinitions as $documentDefinition): ?>
-                        <?php $docRow = $docsById[(int) $documentDefinition['id_doc_item']] ?? []; ?>
-                        <div class="mb-2">
-                            <div class="small font-weight-bold text-dark"><?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></div>
-                            <span class="badge badge-<?= bakBadgeClass(bakDocLabel($docRow)) ?>"><?= htmlspecialchars(bakDocLabel($docRow)) ?></span>
-                            <?php if (!empty($docRow['file_name'])): ?>
-                                <div class="small text-muted mt-1"><?= htmlspecialchars((string) $docRow['file_name']) ?></div>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
+                    <div class="bak-doc-status-stack">
+                        <?php foreach ($documentDefinitions as $documentDefinition): ?>
+                            <?php
+                            $docRow = $docsById[(int) $documentDefinition['id_doc_item']] ?? [];
+                            $docStatusRaw = (string) bakDocLabel($docRow);
+                            $docStatusDisplay = ucwords(strtolower($docStatusRaw));
+                            $docName = ucwords(strtolower((string) ($documentDefinition['doc_name'] ?? '-')));
+                            ?>
+                            <div class="bak-doc-status-stack__item">
+                                <span class="bak-doc-name"><?= htmlspecialchars($docName) ?> :</span>
+                                <span class="badge badge-<?= bakBadgeClass($docStatusRaw) ?> bak-doc-status-badge">
+                                    <?= htmlspecialchars($docStatusDisplay) ?>
+                                </span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 <?php else: ?>
                     <span class="text-muted small">Dokumen belum aktif</span>
                 <?php endif; ?>
             </td>
             <td>
-                <?php if ($docReady && !empty($documentDefinitions)): ?>
-                    <?php foreach ($documentDefinitions as $documentDefinition): ?>
-                        <?php $docRow = $docsById[(int) $documentDefinition['id_doc_item']] ?? []; ?>
-                        <div class="mb-2">
-                            <div class="small font-weight-bold text-dark"><?= htmlspecialchars((string) ($documentDefinition['doc_name'] ?? '-')) ?></div>
-                            <div class="small <?= !empty($docRow['reviewed_at']) ? 'text-muted' : (!empty($docRow['id_doc_file']) ? 'text-warning font-weight-bold' : 'text-muted') ?>">
-                                <?= htmlspecialchars(bakReviewLabel($docRow)) ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <span class="text-muted small">Belum ada review</span>
-                <?php endif; ?>
+                <?php
+                $uploadBy = '-';
+                $picApproval = '';
+                $clusterMappedPic = trim((string) ($clusterReviewPicMap[$clusterId] ?? ''));
+                $documentMappedPic = trim((string) ($clusterDocs[0]['city_pic_approval_name'] ?? ''));
+
+                foreach ($clusterDocs as $docRow) {
+                    $uploadCandidate = trim((string) ($docRow['uploaded_by_name'] ?? ''));
+                    if ($uploadBy === '-' && $uploadCandidate !== '') {
+                        $uploadBy = $uploadCandidate;
+                    }
+
+                    $approvedCandidate = trim((string) ($docRow['approved_by_name'] ?? ''));
+                    if ($approvedCandidate !== '') {
+                        $picApproval = $approvedCandidate;
+                        break;
+                    }
+                }
+
+                if ($picApproval === '') {
+                    $picApproval = $clusterMappedPic !== '' ? $clusterMappedPic : $documentMappedPic;
+                }
+
+                if ($picApproval === '') {
+                    $picApproval = '-';
+                }
+                ?>
+                <div class="small text-muted">
+                    <div>Upload by : <?= htmlspecialchars($uploadBy) ?></div>
+                    <div>PIC approval : <?= htmlspecialchars($picApproval) ?></div>
+                </div>
             </td>
             <td><span class="badge badge-<?= bakBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
             <td>
@@ -445,9 +576,9 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                                     <th>Cluster</th>
                                                     <th>Regional</th>
                                                     <th>Kota</th>
-                                                    <th>Periode Target</th>
                                                     <th>HP Estimasi</th>
                                                     <th>Tanggal BA OPEN</th>
+                                                    <th>SLA &amp; Aging</th>
                                                     <th>Tanggal BAK</th>
                                                     <th>Status BAK</th>
                                                     <th>Dokumen BAK</th>
@@ -457,13 +588,13 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php $renderBakTableRows($bakOnProcessRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap); ?>
+                                                <?php $renderBakTableRows($bakOnProcessRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap, $clusterReviewPicMap); ?>
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="5" class="text-right">TOTAL HP ESTIMASI</th>
+                                                    <th colspan="4" class="text-right">TOTAL HP ESTIMASI</th>
                                                     <th class="text-right">0</th>
-                                                    <th colspan="7"></th>
+                                                    <th colspan="8"></th>
                                                 </tr>
                                             </tfoot>
                                         </table>
@@ -478,9 +609,9 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                                     <th>Cluster</th>
                                                     <th>Regional</th>
                                                     <th>Kota</th>
-                                                    <th>Periode Target</th>
                                                     <th>HP Estimasi</th>
                                                     <th>Tanggal BA OPEN</th>
+                                                    <th>SLA &amp; Aging</th>
                                                     <th>Tanggal BAK</th>
                                                     <th>Status BAK</th>
                                                     <th>Dokumen BAK</th>
@@ -490,13 +621,13 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php $renderBakTableRows($nyValsalRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap); ?>
+                                                <?php $renderBakTableRows($nyValsalRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap, $clusterReviewPicMap); ?>
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="5" class="text-right">TOTAL HP ESTIMASI</th>
+                                                    <th colspan="4" class="text-right">TOTAL HP ESTIMASI</th>
                                                     <th class="text-right">0</th>
-                                                    <th colspan="7"></th>
+                                                    <th colspan="8"></th>
                                                 </tr>
                                             </tfoot>
                                         </table>
@@ -511,9 +642,9 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                                     <th>Cluster</th>
                                                     <th>Regional</th>
                                                     <th>Kota</th>
-                                                    <th>Periode Target</th>
                                                     <th>HP Estimasi</th>
                                                     <th>Tanggal BA OPEN</th>
+                                                    <th>SLA &amp; Aging</th>
                                                     <th>Tanggal BAK</th>
                                                     <th>Status BAK</th>
                                                     <th>Dokumen BAK</th>
@@ -523,13 +654,13 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php $renderBakTableRows($allBakRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap); ?>
+                                                <?php $renderBakTableRows($allBakRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap, $clusterReviewPicMap); ?>
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="5" class="text-right">TOTAL HP ESTIMASI</th>
+                                                    <th colspan="4" class="text-right">TOTAL HP ESTIMASI</th>
                                                     <th class="text-right">0</th>
-                                                    <th colspan="7"></th>
+                                                    <th colspan="8"></th>
                                                 </tr>
                                             </tfoot>
                                         </table>
@@ -799,19 +930,49 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
 
     <?php if ($docReady): ?>
         <div class="modal fade doc-modal" id="modal-bak-doc-detail" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-dialog modal-xxl" role="document">
                 <div class="modal-content budget-modal bak-modal-shell">
                     <div class="modal-header budget-modal__header">
                         <div>
-                            <span class="budget-modal__eyebrow">Dokumen BAK</span>
-                            <h4 class="modal-title mb-1">Detail Dokumen Cluster</h4>
-                            <p class="mb-0 budget-modal__subtitle" id="bak-doc-detail-cluster-name">-</p>
+                            <h4 class="modal-title mb-0">Detail Dokumen Cluster</h4>
                         </div>
                         <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
+                        <div class="doc-modal-panel mb-3" id="bak-doc-detail-cluster-panel">
+                            <div class="bak-doc-cluster-detail">
+                                <div class="bak-doc-cluster-detail__item">
+                                    <span class="bak-doc-cluster-detail__label">Cluster</span>
+                                    <span class="bak-doc-cluster-detail__value" id="bak-doc-detail-cluster-name">-</span>
+                                </div>
+                                <div class="bak-doc-cluster-detail__item">
+                                    <span class="bak-doc-cluster-detail__label">Kode Cluster</span>
+                                    <span class="bak-doc-cluster-detail__value" id="bak-doc-detail-cluster-code">-</span>
+                                </div>
+                                <div class="bak-doc-cluster-detail__item">
+                                    <span class="bak-doc-cluster-detail__label">HP Estimasi</span>
+                                    <span class="bak-doc-cluster-detail__value" id="bak-doc-detail-homepass">-</span>
+                                </div>
+                                <div class="bak-doc-cluster-detail__item">
+                                    <span class="bak-doc-cluster-detail__label">Regional</span>
+                                    <span class="bak-doc-cluster-detail__value" id="bak-doc-detail-regional-name">-</span>
+                                </div>
+                                <div class="bak-doc-cluster-detail__item">
+                                    <span class="bak-doc-cluster-detail__label">Kota</span>
+                                    <span class="bak-doc-cluster-detail__value" id="bak-doc-detail-city-name">-</span>
+                                </div>
+                                <div class="bak-doc-cluster-detail__item">
+                                    <span class="bak-doc-cluster-detail__label">Kecamatan</span>
+                                    <span class="bak-doc-cluster-detail__value" id="bak-doc-detail-district-name">-</span>
+                                </div>
+                                <div class="bak-doc-cluster-detail__item">
+                                    <span class="bak-doc-cluster-detail__label">Kelurahan</span>
+                                    <span class="bak-doc-cluster-detail__value" id="bak-doc-detail-village-name">-</span>
+                                </div>
+                            </div>
+                        </div>
                         <div class="doc-modal-panel mb-0">
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover">
@@ -821,13 +982,16 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                             <th>Status</th>
                                             <th>File</th>
                                             <th>Review</th>
+                                            <th>Uploaded At</th>
+                                            <th>Reviewed At</th>
+                                            <th>Approved At</th>
                                             <th>Remark</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody id="bak-doc-detail-body">
                                         <tr>
-                                            <td colspan="6" class="text-center text-muted">Belum ada dokumen.</td>
+                                            <td colspan="9" class="text-center text-muted">Belum ada dokumen.</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -1247,8 +1411,94 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         border-top: 0;
     }
 
+    .bak-monitor-table {
+        min-width: 1580px;
+    }
+
+    .bak-monitor-table tbody td {
+        white-space: nowrap;
+        vertical-align: top;
+    }
+
+    .bak-table-card .dataTables_scrollBody {
+        overflow-x: auto !important;
+    }
+
     .bak-monitor-table tbody tr:hover {
         background: rgba(219, 236, 247, 0.22);
+    }
+
+    .bak-sla-aging-cell .badge {
+        display: block;
+        text-align: left;
+    }
+
+    .bak-sla-aging-cell .badge + .badge {
+        margin-top: 0.2rem;
+    }
+
+    .bak-doc-status-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .bak-doc-status-stack__item {
+        display: grid;
+        grid-template-columns: 82px max-content;
+        column-gap: 0.35rem;
+        align-items: center;
+        font-size: 0.76rem;
+        text-transform: none;
+        white-space: nowrap;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #000;
+    }
+
+    .bak-doc-name {
+        color: #111;
+        font-weight: 600;
+    }
+
+    .bak-doc-status-badge {
+        font-size: 0.73rem;
+        justify-self: start;
+    }
+
+    .bak-doc-cluster-detail {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.85rem;
+    }
+
+    .bak-doc-cluster-detail__item {
+        min-width: 0;
+    }
+
+    .bak-doc-cluster-detail__label {
+        display: block;
+        color: #6b7280;
+        font-size: 0.74rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .bak-doc-cluster-detail__value {
+        display: block;
+        color: #111827;
+        font-size: 0.92rem;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 767.98px) {
+        .bak-doc-cluster-detail {
+            grid-template-columns: 1fr;
+        }
     }
 
     .modal-xxl {
@@ -1782,9 +2032,20 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             return normalizeAjaxJsonResponse(xhr.responseText || '');
         }
 
+        function updateBakDocDetailClusterInfo(documents, fallbackClusterName) {
+            var firstDoc = documents && documents.length ? documents[0] : {};
+            $('#bak-doc-detail-cluster-name').text(String(firstDoc.cluster_name || fallbackClusterName || '-').trim() || '-');
+            $('#bak-doc-detail-cluster-code').text(String(firstDoc.cluster_code || '-').trim() || '-');
+            $('#bak-doc-detail-homepass').text(Number(firstDoc.homepass_bak || 0) > 0 ? Number(firstDoc.homepass_bak || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 }) : '-');
+            $('#bak-doc-detail-regional-name').text(String(firstDoc.regional_name || '-').trim() || '-');
+            $('#bak-doc-detail-city-name').text(String(firstDoc.city_name || '-').trim() || '-');
+            $('#bak-doc-detail-district-name').text(String(firstDoc.district_name || '-').trim() || '-');
+            $('#bak-doc-detail-village-name').text(String(firstDoc.village_name || '-').trim() || '-');
+        }
+
         function renderBakDocDetailRows(documents) {
             if (!documents || !documents.length) {
-                return '<tr><td colspan="6" class="text-center text-muted">Belum ada dokumen.</td></tr>';
+                return '<tr><td colspan="9" class="text-center text-muted">Belum ada dokumen.</td></tr>';
             }
 
             return documents.map(function (doc) {
@@ -1797,7 +2058,12 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                         ? 'ON REVIEW'
                         : (doc.status_file || (doc.file_name ? 'UPLOADED' : 'BELUM UPLOAD'))));
                 var statusClass = getBakStatusBadgeClass(statusLabel);
-                var reviewLabel = escapeHtml(doc.reviewed_at || (doc.id_doc_file ? 'Waiting Review' : 'Belum ada review'));
+                var uploadBy = escapeHtml(String(doc.uploaded_by_name || '').trim() || '-');
+                var picApproval = escapeHtml(String(doc.approved_by_name || doc.city_pic_approval_name || '').trim() || '-');
+                var reviewLabel = 'Upload by : ' + uploadBy + '<br>PIC approval : ' + picApproval;
+                var uploadedAt = escapeHtml(String(doc.uploaded_at || '').trim() || '-');
+                var reviewedAt = escapeHtml(String(doc.reviewed_at || '').trim() || '-');
+                var approvedAt = escapeHtml(String(doc.approved_at || '').trim() || '-');
                 var remarkValue = escapeHtml(doc.remark || '');
                 var fileSection = '<span class="text-muted small">Belum ada file</span>';
                 var actionParts = [];
@@ -1855,6 +2121,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     '<td><span class="badge badge-' + statusClass + '">' + statusLabel + '</span></td>' +
                     '<td>' + fileSection + '</td>' +
                     '<td>' + reviewLabel + '</td>' +
+                    '<td>' + uploadedAt + '</td>' +
+                    '<td>' + reviewedAt + '</td>' +
+                    '<td>' + approvedAt + '</td>' +
                     '<td>' + remarkValue + '</td>' +
                     '<td style="min-width: 220px;">' + actionSection + '</td>' +
                 '</tr>';
@@ -2181,7 +2450,9 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             if ($.fn.DataTable) {
                 ['#table_bak_on_process', '#table_bak_ny_valsal', '#table_bak_all'].forEach(function (selector) {
                     bakTables.push($(selector).DataTable({
-                        responsive: true,
+                        responsive: false,
+                        scrollX: true,
+                        scrollCollapse: true,
                         autoWidth: false,
                         order: [[0, 'asc']],
                         footerCallback: function (row, data, start, end, display) {
@@ -2196,13 +2467,13 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             };
 
                             var totalHp = api
-                                .column(5, { search: 'applied' })
+                                .column(4, { search: 'applied' })
                                 .data()
                                 .reduce(function (sum, val) {
                                     return sum + parseNumber(val);
                                 }, 0);
 
-                            $(api.column(5).footer()).html(
+                            $(api.column(4).footer()).html(
                                 totalHp.toLocaleString('id-ID', { maximumFractionDigits: 0 })
                             );
                         },
@@ -2214,7 +2485,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
                 $('a[data-toggle="tab"][href^="#bak-"]').on('shown.bs.tab', function () {
                     bakTables.forEach(function (table) {
-                        table.columns.adjust().responsive.recalc();
+                        table.columns.adjust().draw(false);
                     });
                 });
             }
@@ -2354,7 +2625,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                 }
 
                 currentBakDetailClusterId = Number(documents.length ? (documents[0].id_myrep_cluster || 0) : 0);
-                $('#bak-doc-detail-cluster-name').text($button.data('cluster_name') || '-');
+                updateBakDocDetailClusterInfo(documents, $button.data('cluster_name') || '-');
                 $('#bak-doc-detail-body').html(renderBakDocDetailRows(documents));
                 syncBakDetailFooterButtons(currentBakDetailClusterId, documents);
             });
@@ -2438,7 +2709,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                         var normalizedResponse = normalizeAjaxJsonResponse(response);
                         if (normalizedResponse && normalizedResponse.status && normalizedResponse.data) {
                             currentBakDetailClusterId = Number(normalizedResponse.data.cluster_id || clusterId);
-                            $('#bak-doc-detail-cluster-name').text(normalizedResponse.data.cluster_name || '-');
+                            updateBakDocDetailClusterInfo(normalizedResponse.data.documents || [], normalizedResponse.data.cluster_name || '-');
                             $('#bak-doc-detail-body').html(renderBakDocDetailRows(normalizedResponse.data.documents || []));
                             syncBakDetailFooterButtons(currentBakDetailClusterId, normalizedResponse.data.documents || []);
                             return;
@@ -2451,7 +2722,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                         var normalizedResponse = getAjaxJsonFromXhr(xhr);
                         if (normalizedResponse && normalizedResponse.status && normalizedResponse.data) {
                             currentBakDetailClusterId = Number(normalizedResponse.data.cluster_id || clusterId);
-                            $('#bak-doc-detail-cluster-name').text(normalizedResponse.data.cluster_name || '-');
+                            updateBakDocDetailClusterInfo(normalizedResponse.data.documents || [], normalizedResponse.data.cluster_name || '-');
                             $('#bak-doc-detail-body').html(renderBakDocDetailRows(normalizedResponse.data.documents || []));
                             syncBakDetailFooterButtons(currentBakDetailClusterId, normalizedResponse.data.documents || []);
                             return;
@@ -2588,7 +2859,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                         var normalizedResponse = normalizeAjaxJsonResponse(response);
                         if (normalizedResponse && normalizedResponse.status && normalizedResponse.data) {
                             currentBakDetailClusterId = Number(normalizedResponse.data.cluster_id || currentBakDetailClusterId || 0);
-                            $('#bak-doc-detail-cluster-name').text(normalizedResponse.data.cluster_name || '-');
+                            updateBakDocDetailClusterInfo(normalizedResponse.data.documents || [], normalizedResponse.data.cluster_name || '-');
                             $('#bak-doc-detail-body').html(renderBakDocDetailRows(normalizedResponse.data.documents || []));
                             syncBakDetailFooterButtons(currentBakDetailClusterId, normalizedResponse.data.documents || []);
                             return;
@@ -2601,7 +2872,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                         var normalizedResponse = getAjaxJsonFromXhr(xhr);
                         if (normalizedResponse && normalizedResponse.status && normalizedResponse.data) {
                             currentBakDetailClusterId = Number(normalizedResponse.data.cluster_id || currentBakDetailClusterId || 0);
-                            $('#bak-doc-detail-cluster-name').text(normalizedResponse.data.cluster_name || '-');
+                            updateBakDocDetailClusterInfo(normalizedResponse.data.documents || [], normalizedResponse.data.cluster_name || '-');
                             $('#bak-doc-detail-body').html(renderBakDocDetailRows(normalizedResponse.data.documents || []));
                             syncBakDetailFooterButtons(currentBakDetailClusterId, normalizedResponse.data.documents || []);
                             return;

@@ -5,6 +5,22 @@ class MBAK_MyRep extends CI_Model
 {
     /** @var array<string,bool>|null */
     private $currentUserAllowedCitySet = null;
+    private $cityPicRoleColumns = [
+        'rpm_area',
+        'sm_area',
+        'spv_area',
+        'snd_area',
+        'admin_area',
+        'snd_ho',
+        'atp_ho',
+        'rfs_ho',
+        'sitac_ho',
+        'dc_ho',
+        'qa_ho',
+    ];
+    private $cityPicApprovalColumn = 'sitac_ho';
+    private $cityPicApprovalNameCache = [];
+    private $masterUserNameByNikCache = [];
 
     private $defaultBakDocumentItems = [
         ['doc_name' => 'Surat Ijin', 'sort_no' => 1],
@@ -20,11 +36,132 @@ class MBAK_MyRep extends CI_Model
         }
     }
 
+    public function getBakClusterReviewPicMap(array $clusterRows)
+    {
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return [];
+        }
+
+        $map = [];
+        foreach ($clusterRows as $clusterRow) {
+            $clusterId = (int) ($clusterRow['id_myrep_cluster'] ?? 0);
+            if ($clusterId <= 0) {
+                continue;
+            }
+
+            $city = strtoupper(trim((string) ($clusterRow['city_name'] ?? '')));
+            if ($city === '') {
+                continue;
+            }
+
+            if (isset($map[$clusterId])) {
+                continue;
+            }
+
+            $map[$clusterId] = $this->getCityPicApprovalName(
+                $city,
+                strtoupper(trim((string) ($clusterRow['province_name'] ?? ''))),
+                strtoupper(trim((string) ($clusterRow['regional_name'] ?? '')))
+            );
+        }
+
+        return $map;
+    }
+
     private function getDefaultBakDocumentNames()
     {
         return array_map(static function ($item) {
             return (string) $item['doc_name'];
         }, $this->defaultBakDocumentItems);
+    }
+
+    private function getCityPicRoleColumns()
+    {
+        $availableColumns = [];
+        foreach ($this->cityPicRoleColumns as $columnName) {
+            if ($this->db->field_exists($columnName, 'tb_myrep_pic_mapping_city')) {
+                $availableColumns[] = $columnName;
+            }
+        }
+
+        return $availableColumns;
+    }
+
+    private function getCityPicApprovalName($cityName, $provinceName = '', $regionalName = '')
+    {
+        $cityName = strtoupper(trim((string) $cityName));
+        if ($cityName === '') {
+            return '';
+        }
+
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return '';
+        }
+
+        $cacheKey = $cityName . '|' . strtoupper(trim((string) $provinceName)) . '|' . strtoupper(trim((string) $regionalName));
+        if (array_key_exists($cacheKey, $this->cityPicApprovalNameCache)) {
+            return $this->cityPicApprovalNameCache[$cacheKey];
+        }
+
+        $this->db
+            ->from('tb_myrep_pic_mapping_city')
+            ->where('UPPER(city_name)', $cityName);
+        if ($provinceName !== '') {
+            $this->db->where('UPPER(province_name)', strtoupper(trim((string) $provinceName)));
+        }
+        if ($regionalName !== '') {
+            $this->db->where('UPPER(regional_name)', strtoupper(trim((string) $regionalName)));
+        }
+
+        $mappingRow = (array) $this->db->limit(1)->get()->row_array();
+        if (empty($mappingRow)) {
+            $mappingRow = (array) $this->db
+                ->from('tb_myrep_pic_mapping_city')
+                ->where('UPPER(city_name)', $cityName)
+                ->limit(1)
+                ->get()
+                ->row_array();
+        }
+
+        $picName = '';
+        if (!empty($mappingRow) && is_array($mappingRow) && $this->db->field_exists($this->cityPicApprovalColumn, 'tb_myrep_pic_mapping_city')) {
+            $nik = trim((string) ($mappingRow[$this->cityPicApprovalColumn] ?? ''));
+            if ($nik !== '') {
+                $mappedName = $this->getMasterUserNameByNik($nik);
+                $picName = $mappedName !== '' ? $mappedName : $nik;
+            }
+        }
+
+        $this->cityPicApprovalNameCache[$cacheKey] = $picName;
+        return $picName;
+    }
+
+    private function getMasterUserNameByNik($nik)
+    {
+        if (!$this->db->table_exists('tb_master_user_new')) {
+            return '';
+        }
+
+        $nik = trim((string) $nik);
+        if ($nik === '') {
+            return '';
+        }
+
+        if (array_key_exists($nik, $this->masterUserNameByNikCache)) {
+            return $this->masterUserNameByNikCache[$nik];
+        }
+
+        $row = (array) $this->db
+            ->select('nama_karyawan')
+            ->from('tb_master_user_new')
+            ->where('nik', $nik)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        $name = trim((string) ($row['nama_karyawan'] ?? ''));
+        $this->masterUserNameByNikCache[$nik] = $name;
+        return $name;
     }
 
     public function bakTablesReady()
@@ -567,7 +704,13 @@ class MBAK_MyRep extends CI_Model
             ->select('
                 c.id_myrep_cluster,
                 c.cluster_name,
+                c.cluster_code,
+                c.province_name,
+                c.regional_name,
                 c.city_name,
+                c.district_name,
+                c.village_name,
+                b.homepass_bak,
                 doc_group.id_doc_group,
                 doc_item.id_doc_item,
                 doc_item.doc_name,
@@ -582,13 +725,20 @@ class MBAK_MyRep extends CI_Model
                 doc_file.remark,
                 doc_file.uploaded_at,
                 doc_file.reviewed_at,
-                doc_file.approved_at
+                doc_file.approved_at,
+                doc_file.uploaded_by,
+                doc_file.approved_by,
+                u_upload.nama_karyawan AS uploaded_by_name,
+                u_approve.nama_karyawan AS approved_by_name
             ')
             ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join("md_myrep_flow_doc_group doc_group", "doc_group.flow_type = 'BAK' AND doc_group.group_label = 'BA OPEN' AND doc_group.is_active = 1", 'inner', false)
             ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'inner')
             ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = c.id_myrep_cluster AND doc_package.flow_type = \'BAK\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
             ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left')
+            ->join('tb_master_user_new u_upload', 'u_upload.id = doc_file.uploaded_by', 'left')
+            ->join('tb_master_user_new u_approve', 'u_approve.id = doc_file.approved_by', 'left')
             ->where_in('c.id_myrep_cluster', array_map('intval', $clusterIds))
             ->where_in('doc_item.doc_name', $this->getDefaultBakDocumentNames())
             ->order_by('doc_item.sort_no', 'ASC')
@@ -600,6 +750,11 @@ class MBAK_MyRep extends CI_Model
         foreach ($rows as $row) {
             $clusterId = (int) $row['id_myrep_cluster'];
             $fileId = (int) ($row['id_doc_file'] ?? 0);
+            $row['city_pic_approval_name'] = $this->getCityPicApprovalName(
+                (string) ($row['city_name'] ?? ''),
+                (string) ($row['province_name'] ?? ''),
+                (string) ($row['regional_name'] ?? '')
+            );
             $row['history'] = $fileId > 0 ? $this->getBakFileLogs($fileId) : [];
             $result[$clusterId][] = $row;
         }
@@ -901,7 +1056,13 @@ class MBAK_MyRep extends CI_Model
             ->select('
                 c.id_myrep_cluster,
                 c.cluster_name,
+                c.cluster_code,
+                c.province_name,
+                c.regional_name,
                 c.city_name,
+                c.district_name,
+                c.village_name,
+                b.homepass_bak,
                 doc_group.id_doc_group,
                 doc_item.id_doc_item,
                 doc_item.doc_name,
@@ -915,13 +1076,20 @@ class MBAK_MyRep extends CI_Model
                 doc_file.is_document_not_required,
                 doc_file.remark,
                 doc_file.approved_at,
-                doc_file.reviewed_at
+                doc_file.reviewed_at,
+                doc_file.uploaded_by,
+                doc_file.approved_by,
+                u_upload.nama_karyawan AS uploaded_by_name,
+                u_approve.nama_karyawan AS approved_by_name
             ')
             ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join("md_myrep_flow_doc_group doc_group", "doc_group.flow_type = 'BAK' AND doc_group.group_label = 'BA OPEN' AND doc_group.is_active = 1", 'left', false)
             ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'left')
             ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = c.id_myrep_cluster AND doc_package.flow_type = \'BAK\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
             ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left')
+            ->join('tb_master_user_new u_upload', 'u_upload.id = doc_file.uploaded_by', 'left')
+            ->join('tb_master_user_new u_approve', 'u_approve.id = doc_file.approved_by', 'left')
             ->where('c.id_myrep_cluster', (int) $clusterId)
             ->where_in('doc_item.doc_name', $this->getDefaultBakDocumentNames())
             ->order_by('doc_item.sort_no', 'ASC')
@@ -932,6 +1100,12 @@ class MBAK_MyRep extends CI_Model
         if (empty($row)) {
             return [];
         }
+
+        $row['city_pic_approval_name'] = $this->getCityPicApprovalName(
+            (string) ($row['city_name'] ?? ''),
+            (string) ($row['province_name'] ?? ''),
+            (string) ($row['regional_name'] ?? '')
+        );
 
         return $this->isCityAllowedForCurrentUser((string) ($row['city_name'] ?? '')) ? $row : [];
     }

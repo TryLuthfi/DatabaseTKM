@@ -47,6 +47,7 @@ class BAK_MyRep extends CI_Controller
         $data['clusterRows'] = $data['isReady']
             ? $this->MBAK_MyRep->getBakRows($selectedCity, $selectedStatus)
             : [];
+        $data['clusterReviewPicMap'] = $this->MBAK_MyRep->getBakClusterReviewPicMap($data['clusterRows']);
         $clusterIds = array_values(array_filter(array_map(static function ($row) {
             return (int) ($row['id_myrep_cluster'] ?? 0);
         }, $data['clusterRows'])));
@@ -710,9 +711,9 @@ class BAK_MyRep extends CI_Controller
             'Regional',
             'Provinsi',
             'Kota',
-            'Periode Target',
             'HP Estimasi',
             'Tanggal BA OPEN',
+            'SLA & Aging',
             'Tanggal BAK',
             'Status BAK',
             'Status Flow',
@@ -726,9 +727,14 @@ class BAK_MyRep extends CI_Controller
                 $docIndexed[(int) ($docRow['id_doc_item'] ?? 0)] = $docRow;
             }
 
-            $periodLabel = !empty($row['year_num']) && !empty($row['month_num'])
-                ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num'])
-                : '-';
+            $slaInfo = $this->buildBakSlaInfo($row);
+            $slaLabel = $slaInfo['aging_days'] === null
+                ? 'SLA 4 HK'
+                : 'SLA 4 HK | Target: ' . ($slaInfo['deadline'] ?: '-') . ' | ' . $slaInfo['status_label'];
+            $agingLabel = $slaInfo['aging_days'] === null
+                ? ''
+                : ((int) $slaInfo['aging_days'] . ' HK | ' . $slaInfo['aging_scope']);
+            $slaAgingLabel = trim($slaLabel . ($agingLabel !== '' ? ' | Aging: ' . $agingLabel : ''));
 
             $csvRow = [
                 (string) ($row['cluster_name'] ?? ''),
@@ -736,9 +742,9 @@ class BAK_MyRep extends CI_Controller
                 (string) ($row['regional_name'] ?? ''),
                 (string) ($row['province_name'] ?? ''),
                 (string) ($row['city_name'] ?? ''),
-                $periodLabel,
                 (string) (int) ($row['homepass_bak'] ?? 0),
                 (string) ($row['ba_open_date'] ?? ''),
+                $slaAgingLabel,
                 (string) ($row['bak_date'] ?? ''),
                 (string) ($row['status_bak'] ?? ''),
                 (string) ($row['status_current'] ?? ''),
@@ -1728,6 +1734,88 @@ class BAK_MyRep extends CI_Controller
 
         $this->session->set_flashdata('error', $message);
         redirect($redirectPath);
+    }
+
+    private function addWorkingDays($dateString, $workingDays)
+    {
+        if (empty($dateString) || $dateString === '0000-00-00') {
+            return null;
+        }
+
+        try {
+            $date = new DateTimeImmutable($dateString);
+        } catch (Exception $e) {
+            return null;
+        }
+
+        $added = 0;
+        while ($added < (int) $workingDays) {
+            $date = $date->modify('+1 day');
+            if ((int) $date->format('N') < 6) {
+                $added++;
+            }
+        }
+
+        return $date->format('Y-m-d');
+    }
+
+    private function countWorkingDays($startDateString, $endDateString = null)
+    {
+        if (empty($startDateString) || $startDateString === '0000-00-00') {
+            return null;
+        }
+
+        $endDateString = $endDateString ?: date('Y-m-d');
+        if (empty($endDateString) || $endDateString === '0000-00-00') {
+            $endDateString = date('Y-m-d');
+        }
+
+        try {
+            $start = new DateTimeImmutable($startDateString);
+            $end = new DateTimeImmutable($endDateString);
+        } catch (Exception $e) {
+            return null;
+        }
+
+        if ($start > $end) {
+            return 0;
+        }
+
+        $workingDays = 0;
+        $cursor = $start->modify('+1 day');
+        while ($cursor <= $end) {
+            if ((int) $cursor->format('N') < 6) {
+                $workingDays++;
+            }
+            $cursor = $cursor->modify('+1 day');
+        }
+
+        return $workingDays;
+    }
+
+    private function buildBakSlaInfo($row)
+    {
+        $baOpenDate = trim((string) ($row['ba_open_date'] ?? ''));
+        $bakDate = trim((string) ($row['bak_date'] ?? ''));
+        if ($baOpenDate === '' || $baOpenDate === '0000-00-00') {
+            return [
+                'deadline' => null,
+                'aging_days' => null,
+                'status_label' => 'BA OPEN belum ada',
+                'aging_scope' => '-',
+            ];
+        }
+
+        $hasBakDate = $bakDate !== '' && $bakDate !== '0000-00-00';
+        $agingDays = $this->countWorkingDays($baOpenDate, $hasBakDate ? $bakDate : date('Y-m-d'));
+        $isOverSla = $agingDays !== null && $agingDays > 4;
+
+        return [
+            'deadline' => $this->addWorkingDays($baOpenDate, 4),
+            'aging_days' => $agingDays,
+            'status_label' => $isOverSla ? 'Lewat SLA' : ($hasBakDate ? 'Sesuai SLA' : 'Dalam SLA'),
+            'aging_scope' => $hasBakDate ? 'BA OPEN s/d BAK' : 'BA OPEN s/d hari ini',
+        ];
     }
 
     private function buildReportDocumentHeaders($documentDefinitions)
