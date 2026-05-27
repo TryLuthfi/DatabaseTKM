@@ -28,6 +28,7 @@ $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batc
 $canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'EDIT') : true;
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'HAPUS') : true;
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('Batch_Approval_MyRep', 'APPROVAL') : true;
+$clusterReviewPicMap = isset($clusterReviewPicMap) && is_array($clusterReviewPicMap) ? $clusterReviewPicMap : [];
 
 foreach ($eligibleClusterOptions as $clusterOption) {
     $cityName = trim((string) ($clusterOption['city_name'] ?? ''));
@@ -140,41 +141,95 @@ if (!function_exists('batchAgingBadgeClass')) {
             return 'secondary';
         }
 
-        if ((int) $agingDays <= 3) {
-            return 'success';
-        }
-
-        if ((int) $agingDays <= 7) {
-            return 'warning';
-        }
-
-        return 'danger';
+        return (int) $agingDays > 5 ? 'danger' : 'success';
     }
 }
 
-$renderBatchTableRows = static function (array $rows, $docReady, $batchModel) use ($canTambah, $canEdit, $canHapus) {
+if (!function_exists('batchCountWorkingDays')) {
+    function batchCountWorkingDays($startDateString, $endDateString = null)
+    {
+        if (empty($startDateString) || $startDateString === '0000-00-00') {
+            return null;
+        }
+
+        $endDateString = $endDateString ?: date('Y-m-d');
+        if (empty($endDateString) || $endDateString === '0000-00-00') {
+            $endDateString = date('Y-m-d');
+        }
+
+        try {
+            $start = new DateTimeImmutable(substr((string) $startDateString, 0, 10));
+            $end = new DateTimeImmutable(substr((string) $endDateString, 0, 10));
+        } catch (Exception $e) {
+            return null;
+        }
+
+        if ($start > $end) {
+            return 0;
+        }
+
+        $workingDays = 0;
+        $cursor = $start->modify('+1 day');
+        while ($cursor <= $end) {
+            if ((int) $cursor->format('N') < 6) {
+                $workingDays++;
+            }
+            $cursor = $cursor->modify('+1 day');
+        }
+
+        return $workingDays;
+    }
+}
+
+if (!function_exists('batchSlaInfo')) {
+    function batchSlaInfo($row)
+    {
+        $approvedValsalDate = trim((string) ($row['valsal_approved_at'] ?? ''));
+        if ($approvedValsalDate === '') {
+            $approvedValsalDate = trim((string) ($row['valsal_date'] ?? ''));
+        }
+
+        if ($approvedValsalDate === '' || $approvedValsalDate === '0000-00-00') {
+            return [
+                'start_date' => null,
+                'aging_days' => null,
+            ];
+        }
+
+        $approvalEmrDate = trim((string) ($row['submitted_to_finance_at'] ?? ''));
+        return [
+            'start_date' => substr($approvedValsalDate, 0, 10),
+            'aging_days' => batchCountWorkingDays($approvedValsalDate, $approvalEmrDate !== '' ? $approvalEmrDate : date('Y-m-d')),
+        ];
+    }
+}
+
+if (!function_exists('batchSlaBadgeClass')) {
+    function batchSlaBadgeClass($slaInfo)
+    {
+        if (($slaInfo['aging_days'] ?? null) === null) {
+            return 'secondary';
+        }
+
+        return (int) $slaInfo['aging_days'] > 5 ? 'danger' : 'success';
+    }
+}
+
+$renderBatchTableRows = static function (array $rows, $docReady, $batchModel) use ($canTambah, $canEdit, $canHapus, $clusterReviewPicMap) {
     foreach ($rows as $index => $row) {
-        $targetLabel = !empty($row['year_num']) && !empty($row['month_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
+        $slaInfo = batchSlaInfo($row);
         $hasBatch = (int) ($row['id_batch_approval'] ?? 0) > 0;
         $batchStageLabel = $hasBatch ? batchStatusLabel($row['display_staging_status'] ?? $row['staging_status'] ?? 'DRAFT') : 'WAITING INPUT';
         $canStartBatchInput = !$hasBatch && strtoupper($batchStageLabel) === 'WAITING INPUT';
-        $batchDocStatusRaw = strtoupper(trim((string) ($row['batch_doc_status'] ?? '')));
-        $showUploadButton = $docReady && $hasBatch && in_array($batchDocStatusRaw, ['', 'REJECTED'], true);
-        $agingDays = null;
-        $valsalDateRaw = trim((string) ($row['valsal_date'] ?? ''));
-
-        if ($valsalDateRaw !== '') {
-            try {
-                $valsalDate = new DateTimeImmutable($valsalDateRaw);
-                $todayDate = new DateTimeImmutable(date('Y-m-d'));
-                $agingDays = (int) $valsalDate->diff($todayDate)->format('%r%a');
-                if ($agingDays < 0) {
-                    $agingDays = 0;
-                }
-            } catch (Exception $e) {
-                $agingDays = null;
-            }
-        }
+        $batchDocLabel = $hasBatch ? batchDocLabel($row) : 'BELUM ADA DOC';
+        $uploadBy = trim((string) ($row['batch_doc_uploaded_by_name'] ?? ''));
+        $picApproval = trim((string) ($clusterReviewPicMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ''));
+        $nominalRelease = $row['nominal_release_finance'] ?? null;
+        $hasReleaseNominal = $nominalRelease !== null && $nominalRelease !== '';
+        $useReleaseNominal = in_array(strtoupper($batchStageLabel), ['RELEASED', 'DONE BATCH APPROVAL', 'COMPLETED'], true) && $hasReleaseNominal;
+        $displayNominalDonasi = $useReleaseNominal ? (float) $nominalRelease : (float) ($row['nominal_pengajuan_area'] ?? 0);
+        $hpDonasi = (float) ($row['hp_donasi'] ?? 0);
+        $displayNominalPerHomepass = $hpDonasi > 0 ? $displayNominalDonasi / $hpDonasi : null;
         ?>
         <tr>
             <td><?= $index + 1 ?></td>
@@ -186,41 +241,35 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
             </td>
             <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
             <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-            <td><?= $targetLabel ?></td>
-            <td class="text-right"><?= number_format((float) ($row['hp_donasi'] ?? 0), 0, ',', '.') ?></td>
-            <td class="text-right"><?= number_format((float) ($row['nominal_pengajuan_area'] ?? 0), 0, ',', '.') ?></td>
-            <td class="text-right"><?= !is_null($row['nominal_per_homepass'] ?? null) ? number_format((float) $row['nominal_per_homepass'], 0, ',', '.') : '-' ?></td>
-            <td class="text-right"><?= !is_null($row['nominal_nego_emr'] ?? null) ? number_format((float) $row['nominal_nego_emr'], 0, ',', '.') : '-' ?></td>
-            <td class="text-right"><?= !is_null($row['nominal_release_finance'] ?? null) ? number_format((float) $row['nominal_release_finance'], 0, ',', '.') : '-' ?></td>
+            <td class="text-right"><?= number_format($hpDonasi, 0, ',', '.') ?></td>
+            <td class="text-right"><?= number_format($displayNominalDonasi, 0, ',', '.') ?></td>
+            <td class="text-right"><?= $displayNominalPerHomepass !== null ? number_format($displayNominalPerHomepass, 0, ',', '.') : '-' ?></td>
             <td>
-                <?php if ($agingDays === null): ?>
-                    <span class="badge badge-secondary">Aging -</span>
-                <?php else: ?>
-                    <span class="badge badge-<?= batchAgingBadgeClass($agingDays) ?>">Aging <?= (int) $agingDays ?> hari</span>
-                <?php endif; ?>
+                <div class="batch-sla-aging-cell">
+                    <span class="badge badge-<?= batchSlaBadgeClass($slaInfo) ?>">SLA 5 HK</span>
+                    <span class="badge badge-<?= batchAgingBadgeClass($slaInfo['aging_days']) ?>">
+                        <?php if ($slaInfo['aging_days'] === null): ?>
+                            Aging -
+                        <?php else: ?>
+                            Aging <?= (int) $slaInfo['aging_days'] ?> HK
+                        <?php endif; ?>
+                    </span>
+                </div>
             </td>
             <td><span class="badge badge-<?= batchBadgeClass($batchStageLabel) ?>"><?= htmlspecialchars($batchStageLabel) ?></span></td>
             <td>
-                <?php if ($hasBatch && $canEdit): ?>
-                    <span class="badge badge-<?= batchBadgeClass(batchDocLabel($row)) ?>"><?= htmlspecialchars(batchDocLabel($row)) ?></span>
-                <?php elseif ($canTambah): ?>
-                    <span class="badge badge-secondary">BELUM ADA DOC</span>
-                <?php endif; ?>
-                <?php if ($hasBatch && !empty($row['batch_doc_file_name'])): ?>
-                    <div class="small text-muted mt-1"><?= htmlspecialchars((string) $row['batch_doc_file_name']) ?></div>
-                <?php endif; ?>
+                <div class="batch-doc-status-stack">
+                    <div class="batch-doc-status-stack__item">
+                        <span class="batch-doc-name">RAR :</span>
+                        <span class="badge badge-<?= batchBadgeClass($batchDocLabel) ?> batch-doc-status-badge">
+                            <?= htmlspecialchars($batchDocLabel) ?>
+                        </span>
+                    </div>
+                </div>
             </td>
             <td>
-                <?php if (!$hasBatch): ?>
-                    <span class="text-muted small">Belum ada pengajuan</span>
-                <?php elseif (!empty($row['batch_doc_reviewed_at'])): ?>
-                    <div class="small text-muted">Reviewed</div>
-                    <div><?= htmlspecialchars((string) $row['batch_doc_reviewed_at']) ?></div>
-                <?php elseif (!empty($row['batch_doc_file_id'])): ?>
-                    <span class="text-warning small font-weight-bold">Waiting Review</span>
-                <?php else: ?>
-                    <span class="text-muted small">Belum ada review</span>
-                <?php endif; ?>
+                <div>Upload by : <?= htmlspecialchars($uploadBy !== '' ? $uploadBy : '-') ?></div>
+                <div>PIC approval : <?= htmlspecialchars($picApproval !== '' ? $picApproval : '-') ?></div>
             </td>
             <td><span class="badge badge-<?= batchBadgeClass($row['status_current'] ?? 'DRAFT') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'DRAFT')) ?></span></td>
             <td>
@@ -275,20 +324,6 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                     </button>
                 <?php else: ?>
                     <span class="text-muted small">Menunggu proses tahap berikutnya</span>
-                <?php endif; ?>
-
-                <?php if ($docReady && $hasBatch && $showUploadButton): ?>
-                    <button
-                        type="button"
-                        class="btn btn-sm btn-outline-info js-upload-doc mt-1"
-                        data-toggle="modal"
-                        data-target="#modal-batch-upload-doc"
-                        data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
-                        data-cluster_name="<?= htmlspecialchars((string) ($row['cluster_name'] ?? ''), ENT_QUOTES) ?>"
-                        data-doc_status="<?= htmlspecialchars((string) batchDocLabel($row), ENT_QUOTES) ?>"
-                        data-doc_remark="<?= htmlspecialchars((string) ($row['batch_doc_remark'] ?? ''), ENT_QUOTES) ?>">
-                        <?= $batchDocStatusRaw === 'REJECTED' ? 'Re-Upload Doc' : 'Upload Doc' ?>
-                    </button>
                 <?php endif; ?>
 
                 <?php if ($hasBatch && $canHapus): ?>
@@ -479,13 +514,10 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                                     <th>Cluster</th>
                                                     <th>Regional</th>
                                                     <th>Kota</th>
-                                                    <th>Periode Target</th>
                                                     <th>HP Donasi</th>
                                                     <th>Nominal Donasi</th>
                                                     <th>Nominal / Homepass</th>
-                                                    <th>Nominal Approval EMR</th>
-                                                    <th>Nominal Release</th>
-                                                    <th>Aging VALSAL</th>
+                                                    <th>SLA &amp; Aging</th>
                                                     <th>Staging</th>
                                                     <th>Dokumen RAR</th>
                                                     <th>Review Dokumen</th>
@@ -498,9 +530,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="5" class="text-right">TOTAL</th>
-                                                    <th class="text-right">0</th>
-                                                    <th class="text-right">0</th>
+                                                    <th colspan="4" class="text-right">TOTAL</th>
                                                     <th class="text-right">0</th>
                                                     <th class="text-right">0</th>
                                                     <th class="text-right">0</th>
@@ -519,13 +549,10 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                                     <th>Cluster</th>
                                                     <th>Regional</th>
                                                     <th>Kota</th>
-                                                    <th>Periode Target</th>
                                                     <th>HP Donasi</th>
                                                     <th>Nominal Donasi</th>
                                                     <th>Nominal / Homepass</th>
-                                                    <th>Nominal Approval EMR</th>
-                                                    <th>Nominal Release</th>
-                                                    <th>Aging VALSAL</th>
+                                                    <th>SLA &amp; Aging</th>
                                                     <th>Staging</th>
                                                     <th>Dokumen RAR</th>
                                                     <th>Review Dokumen</th>
@@ -538,9 +565,7 @@ $renderBatchTableRows = static function (array $rows, $docReady, $batchModel) us
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <th colspan="5" class="text-right">TOTAL</th>
-                                                    <th class="text-right">0</th>
-                                                    <th class="text-right">0</th>
+                                                    <th colspan="4" class="text-right">TOTAL</th>
                                                     <th class="text-right">0</th>
                                                     <th class="text-right">0</th>
                                                     <th class="text-right">0</th>
@@ -1566,6 +1591,39 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
     .batch-monitor-table tbody tr:hover {
         background: #f8fbff;
+    }
+
+    .batch-doc-status-stack {
+        min-width: 135px;
+    }
+
+    .batch-doc-status-stack__item {
+        display: grid;
+        grid-template-columns: 48px max-content;
+        align-items: center;
+        column-gap: .4rem;
+        margin-bottom: .25rem;
+        white-space: nowrap;
+    }
+
+    .batch-doc-name {
+        color: #111827;
+        font-size: .83rem;
+        font-weight: 700;
+    }
+
+    .batch-doc-status-badge {
+        justify-self: start;
+        min-width: 74px;
+        text-align: center;
+    }
+
+    .batch-sla-aging-cell {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .25rem;
+        min-width: 90px;
     }
 
     .budget-modal__header {
@@ -2772,7 +2830,8 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     var batchTables = [];
                     ['#table_batch_ny_drm', '#table_batch_all'].forEach(function (selector) {
                         batchTables.push($(selector).DataTable({
-                            responsive: true,
+                            responsive: false,
+                            scrollX: true,
                             autoWidth: false,
                             order: [[0, 'asc']],
                             footerCallback: function (row, data, start, end, display) {
@@ -2786,7 +2845,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                                     return isNaN(parsed) ? 0 : parsed;
                                 };
 
-                                var numericCols = [5, 6, 7, 8, 9];
+                                var numericCols = [4, 5, 6];
                                 numericCols.forEach(function (colIdx) {
                                     var total = api
                                         .column(colIdx, { search: 'applied' })
@@ -2808,7 +2867,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
                     $('a[data-toggle="tab"][href^="#batch-"]').on('shown.bs.tab', function () {
                         batchTables.forEach(function (table) {
-                            table.columns.adjust().responsive.recalc();
+                            table.columns.adjust();
                         });
                     });
                 } catch (error) {

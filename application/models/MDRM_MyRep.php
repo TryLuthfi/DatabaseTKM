@@ -130,14 +130,26 @@ class MDRM_MyRep extends CI_Model
             return [];
         }
 
+        $rfsClusterSelect = $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')
+            ? 'c.rfs_cluster_id'
+            : 'NULL AS rfs_cluster_id';
+
         $this->db
-            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ba.hp_donasi, ba.released_at, d.id_drm, d.drm_date, d.homepass_drm, d.nama_olt, d.status_drm, d.screenshot_astri_path, d.screenshot_astri_name, d.remark_drm, t.year_num, t.month_num')
+            ->select('c.id_myrep_cluster, c.cluster_name, c.cluster_code, c.regional_name, c.city_name, c.status_current, ' . $rfsClusterSelect . ', ba.hp_donasi, ba.released_at, d.id_drm, d.drm_date, d.homepass_drm, d.nama_olt, d.status_drm, d.screenshot_astri_path, d.screenshot_astri_name, d.remark_drm, t.year_num, t.month_num', false)
             ->from('tb_myrep_cluster c')
             ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'inner')
             ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left')
             ->where_in('UPPER(c.status_current)', ['RELEASED', 'DONE BATCH APPROVAL', 'DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'])
             ->where('UPPER(ba.staging_status)', 'RELEASED');
+
+        if ($this->db->table_exists('tb_rfs_myrep_cluster') && $this->db->field_exists('status_atp', 'tb_rfs_myrep_cluster') && $this->db->field_exists('rfs_cluster_id', 'tb_myrep_cluster')) {
+            $this->db
+                ->select('rfs.status_atp AS stage_atp_status')
+                ->join('tb_rfs_myrep_cluster rfs', 'rfs.id_cluster = c.rfs_cluster_id', 'left');
+        } else {
+            $this->db->select('NULL AS stage_atp_status', false);
+        }
 
         if (!$this->applyAllowedCityRestriction('c.city_name')) {
             return [];
@@ -190,12 +202,16 @@ class MDRM_MyRep extends CI_Model
             ->result_array();
 
         $docSummaryMap = $this->getDocumentSummaryMap(array_column($rows, 'id_myrep_cluster'));
+        $boqStatusMap = $this->getDrmBoqStatusMap(array_column($rows, 'id_myrep_cluster'));
         foreach ($rows as &$row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
             $summary = $docSummaryMap[(int) ($row['id_myrep_cluster'] ?? 0)] ?? ['total' => 0, 'uploaded' => 0, 'approved' => 0, 'rejected' => 0];
             $row['doc_total'] = $summary['total'];
             $row['doc_uploaded'] = $summary['uploaded'];
             $row['doc_approved'] = $summary['approved'];
             $row['doc_rejected'] = $summary['rejected'];
+            $row['drm_cluster_status'] = $boqStatusMap[$clusterId]['CLUSTER'] ?? '';
+            $row['drm_subfeeder_status'] = $boqStatusMap[$clusterId]['SUBFEEDER'] ?? '';
             $row['display_status_drm'] = $this->resolveDisplayDrmStatus($row, $summary);
         }
         unset($row);
@@ -1336,6 +1352,38 @@ class MDRM_MyRep extends CI_Model
                 'approved' => (int) $row['approved_doc'],
                 'rejected' => (int) $row['rejected_doc'],
             ];
+        }
+
+        return $map;
+    }
+
+    private function getDrmBoqStatusMap($clusterIds)
+    {
+        $clusterIds = array_values(array_filter(array_map('intval', (array) $clusterIds)));
+        if (empty($clusterIds) || !$this->drmBoqTablesReady()) {
+            return [];
+        }
+
+        $this->db
+            ->select('id_myrep_cluster, review_status')
+            ->from('tb_myrep_drm_boq')
+            ->where_in('id_myrep_cluster', $clusterIds);
+        if ($this->db->field_exists('scope_type', 'tb_myrep_drm_boq')) {
+            $this->db->select('scope_type');
+        } else {
+            $this->db->select("'CLUSTER' AS scope_type", false);
+        }
+
+        $rows = $this->db->get()->result_array();
+        $map = [];
+        foreach ($rows as $row) {
+            $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+            $scopeType = strtoupper(trim((string) ($row['scope_type'] ?? 'CLUSTER')));
+            if ($clusterId <= 0 || !in_array($scopeType, ['CLUSTER', 'SUBFEEDER'], true)) {
+                continue;
+            }
+
+            $map[$clusterId][$scopeType] = strtoupper(trim((string) ($row['review_status'] ?? '')));
         }
 
         return $map;

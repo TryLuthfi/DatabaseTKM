@@ -9,6 +9,9 @@ class MBatch_Approval_MyRep extends CI_Model
     private $lastErrorMessage = '';
     /** @var array<string,array<string,bool>> */
     private $tableFieldSetCache = [];
+    private $cityPicApprovalColumn = 'sitac_ho';
+    private $cityPicApprovalNameCache = [];
+    private $masterUserNameByNikCache = [];
 
     private $autoLinkedPostDonasiDocuments = [
         'SURAT IJIN RT / RW' => [
@@ -58,6 +61,50 @@ class MBatch_Approval_MyRep extends CI_Model
     public function getLastErrorMessage()
     {
         return (string) $this->lastErrorMessage;
+    }
+
+    public function getBatchClusterReviewPicMap(array $clusterRows)
+    {
+        if (!$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return [];
+        }
+
+        $map = [];
+        foreach ($clusterRows as $clusterRow) {
+            $clusterId = (int) ($clusterRow['id_myrep_cluster'] ?? 0);
+            if ($clusterId <= 0 || isset($map[$clusterId])) {
+                continue;
+            }
+
+            $map[$clusterId] = $this->getCityPicApprovalName(
+                (string) ($clusterRow['city_name'] ?? ''),
+                (string) ($clusterRow['province_name'] ?? ''),
+                (string) ($clusterRow['regional_name'] ?? '')
+            );
+        }
+
+        return $map;
+    }
+
+    private function getValsalApprovedAtSubquery()
+    {
+        $escapedNames = array_map([$this->db, 'escape'], $this->getDefaultValsalDocumentNamesForSla());
+        return "(SELECT MAX(valsal_doc_file.approved_at)
+            FROM tb_myrep_flow_doc_package valsal_doc_package
+            JOIN md_myrep_flow_doc_group valsal_doc_group ON valsal_doc_group.id_doc_group = valsal_doc_package.id_doc_group
+            JOIN md_myrep_flow_doc_item valsal_doc_item ON valsal_doc_item.id_doc_group = valsal_doc_group.id_doc_group
+            JOIN tb_myrep_flow_doc_file valsal_doc_file ON valsal_doc_file.id_doc_package = valsal_doc_package.id_doc_package AND valsal_doc_file.id_doc_item = valsal_doc_item.id_doc_item
+            WHERE valsal_doc_package.id_myrep_cluster = c.id_myrep_cluster
+                AND valsal_doc_package.flow_type = 'VALSAL'
+                AND valsal_doc_group.flow_type = 'VALSAL'
+                AND valsal_doc_group.group_label = 'VALIDASI SALES'
+                AND valsal_doc_file.status_file = 'APPROVED'
+                AND valsal_doc_item.doc_name IN (" . implode(',', $escapedNames) . ")) AS valsal_approved_at";
+    }
+
+    private function getDefaultValsalDocumentNamesForSla()
+    {
+        return ['SND Kasar', 'Form SND', 'Boundary KMZ'];
     }
 
     public function batchDocumentTablesReady()
@@ -248,14 +295,18 @@ class MBatch_Approval_MyRep extends CI_Model
                 doc_file.status_file AS batch_doc_status,
                 doc_file.is_document_not_required AS batch_doc_not_required,
                 doc_file.remark AS batch_doc_remark,
+                doc_file.uploaded_by AS batch_doc_uploaded_by,
+                u_upload.nama_karyawan AS batch_doc_uploaded_by_name,
                 doc_file.approved_at AS batch_doc_approved_at,
                 doc_file.reviewed_at AS batch_doc_reviewed_at
             ", false);
+            $this->db->select($this->getValsalApprovedAtSubquery(), false);
             $this->db
                 ->join("md_myrep_flow_doc_group doc_group", "doc_group.flow_type = 'BATCH_APPROVAL' AND doc_group.group_label = 'RAR' AND doc_group.is_active = 1", 'left', false)
                 ->join('md_myrep_flow_doc_item doc_item', 'doc_item.id_doc_group = doc_group.id_doc_group AND doc_item.is_active = 1', 'left')
                 ->join('tb_myrep_flow_doc_package doc_package', 'doc_package.id_myrep_cluster = c.id_myrep_cluster AND doc_package.flow_type = \'BATCH_APPROVAL\' AND doc_package.id_doc_group = doc_group.id_doc_group', 'left', false)
-                ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left');
+                ->join('tb_myrep_flow_doc_file doc_file', 'doc_file.id_doc_package = doc_package.id_doc_package AND doc_file.id_doc_item = doc_item.id_doc_item', 'left')
+                ->join('tb_master_user_new u_upload', 'u_upload.id = doc_file.uploaded_by', 'left');
         } else {
             $this->db->select("
                 NULL AS batch_doc_group_id,
@@ -268,8 +319,11 @@ class MBatch_Approval_MyRep extends CI_Model
                 NULL AS batch_doc_status,
                 NULL AS batch_doc_not_required,
                 NULL AS batch_doc_remark,
+                NULL AS batch_doc_uploaded_by,
+                NULL AS batch_doc_uploaded_by_name,
                 NULL AS batch_doc_approved_at,
-                NULL AS batch_doc_reviewed_at
+                NULL AS batch_doc_reviewed_at,
+                NULL AS valsal_approved_at
             ", false);
         }
 
@@ -1463,6 +1517,79 @@ class MBatch_Approval_MyRep extends CI_Model
 
         $cityName = strtoupper(trim((string) $cityName));
         return $cityName !== '' && isset($allowedCitySet[$cityName]);
+    }
+
+    private function getCityPicApprovalName($cityName, $provinceName = '', $regionalName = '')
+    {
+        $cityName = strtoupper(trim((string) $cityName));
+        if ($cityName === '' || !$this->db->table_exists('tb_myrep_pic_mapping_city')) {
+            return '';
+        }
+
+        $cacheKey = $cityName . '|' . strtoupper(trim((string) $provinceName)) . '|' . strtoupper(trim((string) $regionalName));
+        if (array_key_exists($cacheKey, $this->cityPicApprovalNameCache)) {
+            return $this->cityPicApprovalNameCache[$cacheKey];
+        }
+
+        $this->db
+            ->from('tb_myrep_pic_mapping_city')
+            ->where('UPPER(city_name)', $cityName);
+        if (trim((string) $provinceName) !== '') {
+            $this->db->where('UPPER(province_name)', strtoupper(trim((string) $provinceName)));
+        }
+        if (trim((string) $regionalName) !== '') {
+            $this->db->where('UPPER(regional_name)', strtoupper(trim((string) $regionalName)));
+        }
+
+        $mappingRow = (array) $this->db->limit(1)->get()->row_array();
+        if (empty($mappingRow)) {
+            $mappingRow = (array) $this->db
+                ->from('tb_myrep_pic_mapping_city')
+                ->where('UPPER(city_name)', $cityName)
+                ->limit(1)
+                ->get()
+                ->row_array();
+        }
+
+        $picName = '';
+        if (!empty($mappingRow) && $this->db->field_exists($this->cityPicApprovalColumn, 'tb_myrep_pic_mapping_city')) {
+            $nik = trim((string) ($mappingRow[$this->cityPicApprovalColumn] ?? ''));
+            if ($nik !== '') {
+                $mappedName = $this->getMasterUserNameByNik($nik);
+                $picName = $mappedName !== '' ? $mappedName : $nik;
+            }
+        }
+
+        $this->cityPicApprovalNameCache[$cacheKey] = $picName;
+        return $picName;
+    }
+
+    private function getMasterUserNameByNik($nik)
+    {
+        if (!$this->db->table_exists('tb_master_user_new')) {
+            return '';
+        }
+
+        $nik = trim((string) $nik);
+        if ($nik === '') {
+            return '';
+        }
+
+        if (array_key_exists($nik, $this->masterUserNameByNikCache)) {
+            return $this->masterUserNameByNikCache[$nik];
+        }
+
+        $row = (array) $this->db
+            ->select('nama_karyawan')
+            ->from('tb_master_user_new')
+            ->where('nik', $nik)
+            ->limit(1)
+            ->get()
+            ->row_array();
+
+        $name = trim((string) ($row['nama_karyawan'] ?? ''));
+        $this->masterUserNameByNikCache[$nik] = $name;
+        return $name;
     }
 
     private function getCurrentUserAllowedCitySet()

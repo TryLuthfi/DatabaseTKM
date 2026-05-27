@@ -44,6 +44,7 @@ class Batch_Approval_MyRep extends CI_Controller
         $data['clusterRows'] = $data['isReady']
             ? $this->MBatch_Approval_MyRep->getBatchRows($selectedCity, $selectedStatus)
             : [];
+        $data['clusterReviewPicMap'] = $this->MBatch_Approval_MyRep->getBatchClusterReviewPicMap($data['clusterRows']);
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');

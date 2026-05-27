@@ -12,6 +12,9 @@ $summaryOnProsesHp = 0;
 $summaryDoneHp = 0;
 $summaryRejectedHp = 0;
 $createCityOptions = [];
+$nyDrmRows = [];
+$nyAtpRows = [];
+$allDrmRows = $clusterRows;
 $postDrmStatuses = ['RFS', 'ATP', 'DONE'];
 $canTambah = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('DRM_MyRep', 'TAMBAH') : true;
 
@@ -31,6 +34,17 @@ foreach ($clusterRows as $row) {
     $homepassBase = (float) ($row['hp_donasi'] ?? 0);
     $homepassDrm = (float) ($row['homepass_drm'] ?? 0);
     $summaryHomepass = $homepassDrm > 0 ? $homepassDrm : $homepassBase;
+    $clusterBoqStatus = strtoupper(trim((string) ($row['drm_cluster_status'] ?? '')));
+    $subfeederBoqStatus = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? '')));
+    $atpStatus = strtoupper(trim((string) ($row['stage_atp_status'] ?? '')));
+
+    if (!$hasDrm && $currentStatus === 'DONE BATCH APPROVAL') {
+        $nyDrmRows[] = $row;
+    }
+
+    if (($clusterBoqStatus === 'APPROVED' || $subfeederBoqStatus === 'APPROVED') && $atpStatus !== 'DONE') {
+        $nyAtpRows[] = $row;
+    }
 
     if (!$hasDrm && in_array($currentStatus, ['RELEASED', 'DONE BATCH APPROVAL'], true)) {
         $summaryNyDrm++;
@@ -59,10 +73,13 @@ if (!function_exists('drmBadgeClass')) {
         switch (strtoupper(trim((string) $status))) {
             case 'DONE':
             case 'COMPLETE':
+            case 'APPROVED':
             case 'DRM':
             case 'RFS':
             case 'ATP':
                 return 'success';
+            case 'ON REVIEW':
+            case 'SUBMITTED':
             case 'WAITING APPROVE':
                 return 'warning';
             case 'WAITING DOC':
@@ -78,6 +95,102 @@ if (!function_exists('drmBadgeClass')) {
         }
     }
 }
+
+if (!function_exists('drmScopeStatusLabel')) {
+    function drmScopeStatusLabel($status)
+    {
+        $status = strtoupper(trim((string) $status));
+        return $status !== '' ? $status : 'WAITING INPUT';
+    }
+}
+
+$renderDrmTableRows = static function (array $rows) {
+    foreach ($rows as $index => $row) {
+        $hasDrm = (int) ($row['id_drm'] ?? 0) > 0;
+        $clusterStatusLabel = drmScopeStatusLabel($row['drm_cluster_status'] ?? '');
+        $subfeederStatusLabel = drmScopeStatusLabel($row['drm_subfeeder_status'] ?? '');
+        ?>
+        <tr>
+            <td><?= $index + 1 ?></td>
+            <td>
+                <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                <div class="text-muted small"><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></div>
+            </td>
+            <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
+            <td><?= !empty($row['released_at']) ? htmlspecialchars((string) $row['released_at']) : '-' ?></td>
+            <td class="text-right"><?= number_format((float) ($row['hp_donasi'] ?? 0), 0, ',', '.') ?></td>
+            <td class="text-right"><?= number_format((float) ($row['homepass_drm'] ?? 0), 0, ',', '.') ?></td>
+            <td>
+                <div class="drm-status-scope">
+                    <div class="drm-status-scope__item">
+                        <span class="drm-status-scope__name">Cluster :</span>
+                        <span class="badge badge-<?= drmBadgeClass($clusterStatusLabel) ?> drm-status-scope__badge"><?= htmlspecialchars($clusterStatusLabel) ?></span>
+                    </div>
+                    <div class="drm-status-scope__item">
+                        <span class="drm-status-scope__name">Subfeeder :</span>
+                        <span class="badge badge-<?= drmBadgeClass($subfeederStatusLabel) ?> drm-status-scope__badge"><?= htmlspecialchars($subfeederStatusLabel) ?></span>
+                    </div>
+                </div>
+            </td>
+            <td><?= (int) ($row['doc_approved'] ?? 0) ?>/<?= (int) ($row['doc_total'] ?? 0) ?> approved</td>
+            <td><span class="badge badge-<?= drmBadgeClass($row['status_current'] ?? 'RELEASED') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'RELEASED')) ?></span></td>
+            <td>
+                <?php if ($hasDrm): ?>
+                    <a href="<?= base_url('DRM_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="btn btn-sm btn-outline-primary">Detail</a>
+                    <form method="post" action="<?= base_url('DRM_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta DRM dan seluruh flow MyRep terkait?');">
+                        <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
+                    </form>
+                <?php else: ?>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary js-start-drm"
+                        data-toggle="modal"
+                        data-target="#modal-drm-create"
+                        data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
+                        data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>">
+                        Input DRM
+                    </button>
+                <?php endif; ?>
+            </td>
+        </tr>
+        <?php
+    }
+};
+
+$renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRows) {
+    ?>
+    <div class="table-responsive">
+        <table id="<?= htmlspecialchars($tableId) ?>" class="table table-bordered table-hover drm-monitor-table js-drm-monitor-table">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Cluster</th>
+                    <th>Kota</th>
+                    <th>Released</th>
+                    <th>HP Donasi</th>
+                    <th>HP DRM</th>
+                    <th>Status DRM</th>
+                    <th>Progress Dokumen</th>
+                    <th>Status Flow</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php $renderDrmTableRows($rows); ?>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="4" class="text-right">TOTAL</th>
+                    <th class="text-right">0</th>
+                    <th class="text-right">0</th>
+                    <th colspan="4"></th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <?php
+};
 ?>
 
 <div class="content-wrapper">
@@ -227,80 +340,36 @@ if (!function_exists('drmBadgeClass')) {
                             </div>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table id="table_drm_myrep" class="table table-bordered table-hover drm-monitor-table">
-                                    <thead>
-                                        <tr>
-                                            <th>No</th>
-                                            <th>Cluster</th>
-                                            <th>Kota</th>
-                                            <th>Periode</th>
-                                            <th>Released</th>
-                                            <th>HP Donasi</th>
-                                            <th>HP DRM</th>
-                                            <th>Status DRM</th>
-                                            <th>Progress Dokumen</th>
-                                            <th>Status Flow</th>
-                                            <th>Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($clusterRows as $index => $row): ?>
-                                            <?php
-                                            $targetLabel = !empty($row['month_num']) && !empty($row['year_num']) ? sprintf('%02d/%04d', (int) $row['month_num'], (int) $row['year_num']) : '-';
-                                            $hasDrm = (int) ($row['id_drm'] ?? 0) > 0;
-                                            $statusDrmLabel = $hasDrm ? (string) ($row['display_status_drm'] ?? $row['status_drm'] ?? 'WAITING DOC') : 'WAITING INPUT';
-                                            ?>
-                                            <tr>
-                                                <td><?= $index + 1 ?></td>
-                                                <td>
-                                                    <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
-                                                    <div class="text-muted small"><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></div>
-                                                </td>
-                                                <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
-                                                <td><?= $targetLabel ?></td>
-                                                <td><?= !empty($row['released_at']) ? htmlspecialchars((string) $row['released_at']) : '-' ?></td>
-                                                <td class="text-right"><?= number_format((float) ($row['hp_donasi'] ?? 0), 0, ',', '.') ?></td>
-                                                <td class="text-right"><?= number_format((float) ($row['homepass_drm'] ?? 0), 0, ',', '.') ?></td>
-                                                <td><span class="badge badge-<?= drmBadgeClass($statusDrmLabel) ?>"><?= htmlspecialchars($statusDrmLabel) ?></span></td>
-                                                <td><?= (int) ($row['doc_approved'] ?? 0) ?>/<?= (int) ($row['doc_total'] ?? 0) ?> approved</td>
-                                                <td><span class="badge badge-<?= drmBadgeClass($row['status_current'] ?? 'RELEASED') ?>"><?= htmlspecialchars((string) ($row['status_current'] ?? 'RELEASED')) ?></span></td>
-                                                <td>
-                                                    <?php if ($hasDrm): ?>
-                                                        <a href="<?= base_url('DRM_MyRep/detail/' . (int) $row['id_myrep_cluster']) ?>" class="btn btn-sm btn-outline-primary">Detail</a>
-                                                        <form method="post" action="<?= base_url('DRM_MyRep/deleteCluster') ?>" class="d-inline" onsubmit="return confirm('Hapus cluster ini beserta DRM dan seluruh flow MyRep terkait?');">
-                                                            <input type="hidden" name="cluster_id" value="<?= (int) $row['id_myrep_cluster'] ?>">
-                                                            <button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>
-                                                        </form>
-                                                    <?php else: ?>
-                                                        <button
-                                                            type="button"
-                                                            class="btn btn-sm btn-outline-primary js-start-drm"
-                                                            data-toggle="modal"
-                                                            data-target="#modal-drm-create"
-                                                            data-cluster_id="<?= (int) $row['id_myrep_cluster'] ?>"
-                                                            data-city_name="<?= htmlspecialchars((string) ($row['city_name'] ?? ''), ENT_QUOTES) ?>">
-                                                            Input DRM
-                                                        </button>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                        <?php if (empty($clusterRows)): ?>
-                                            <tr>
-                                                <td colspan="11" class="text-center text-muted">Belum ada data DRM.</td>
-                                            </tr>
-                                        <?php endif; ?>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th colspan="5" class="text-right">TOTAL</th>
-                                            <th class="text-right">0</th>
-                                            <th class="text-right">0</th>
-                                            <th colspan="4"></th>
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                            <ul class="nav nav-tabs drm-monitor-tabs" id="drm-monitor-tab" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="drm-ny-drm-tab" data-toggle="tab" href="#drm-ny-drm-pane" role="tab" aria-controls="drm-ny-drm-pane" aria-selected="true">
+                                        NY DRM
+                                        <span class="drm-monitor-tabs__count"><?= number_format(count($nyDrmRows), 0, ',', '.') ?></span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="drm-ny-atp-tab" data-toggle="tab" href="#drm-ny-atp-pane" role="tab" aria-controls="drm-ny-atp-pane" aria-selected="false">
+                                        NY ATP
+                                        <span class="drm-monitor-tabs__count"><?= number_format(count($nyAtpRows), 0, ',', '.') ?></span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="drm-all-tab" data-toggle="tab" href="#drm-all-pane" role="tab" aria-controls="drm-all-pane" aria-selected="false">
+                                        All DRM
+                                        <span class="drm-monitor-tabs__count"><?= number_format(count($allDrmRows), 0, ',', '.') ?></span>
+                                    </a>
+                                </li>
+                            </ul>
+                            <div class="tab-content drm-monitor-tabs__content" id="drm-monitor-tab-content">
+                                <div class="tab-pane fade show active" id="drm-ny-drm-pane" role="tabpanel" aria-labelledby="drm-ny-drm-tab">
+                                    <?php $renderDrmTable('table_drm_ny_drm', $nyDrmRows); ?>
+                                </div>
+                                <div class="tab-pane fade" id="drm-ny-atp-pane" role="tabpanel" aria-labelledby="drm-ny-atp-tab">
+                                    <?php $renderDrmTable('table_drm_ny_atp', $nyAtpRows); ?>
+                                </div>
+                                <div class="tab-pane fade" id="drm-all-pane" role="tabpanel" aria-labelledby="drm-all-tab">
+                                    <?php $renderDrmTable('table_drm_all', $allDrmRows); ?>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -401,7 +470,6 @@ if (!function_exists('drmBadgeClass')) {
                                         <select name="cluster_id" class="form-control js-drm-cluster-selector js-drm-cluster-select" required>
                                             <option value="">Pilih cluster released</option>
                                             <?php foreach ($eligibleClusterOptions as $option): ?>
-                                                <?php $targetLabel = !empty($option['month_num']) && !empty($option['year_num']) ? sprintf('%02d/%04d', (int) $option['month_num'], (int) $option['year_num']) : '-'; ?>
                                                 <option
                                                     value="<?= (int) $option['id_myrep_cluster'] ?>"
                                                     data-city-filter="<?= htmlspecialchars(strtoupper((string) ($option['city_name'] ?? '')), ENT_QUOTES) ?>"
@@ -410,9 +478,8 @@ if (!function_exists('drmBadgeClass')) {
                                                     data-city-name="<?= htmlspecialchars((string) ($option['city_name'] ?? ''), ENT_QUOTES) ?>"
                                                     data-released-at="<?= htmlspecialchars((string) ($option['released_at'] ?? ''), ENT_QUOTES) ?>"
                                                     data-hp-donasi="<?= (int) ($option['hp_donasi'] ?? 0) ?>"
-                                                    data-hp-valsal="<?= (int) ($option['homepass_valsal'] ?? 0) ?>"
-                                                    data-period-label="<?= htmlspecialchars((string) $targetLabel, ENT_QUOTES) ?>">
-                                                    <?= htmlspecialchars((string) ($option['cluster_name'] ?? '-')) ?> | <?= htmlspecialchars((string) ($option['city_name'] ?? '-')) ?> | <?= htmlspecialchars((string) $targetLabel) ?>
+                                                    data-hp-valsal="<?= (int) ($option['homepass_valsal'] ?? 0) ?>">
+                                                    <?= htmlspecialchars((string) ($option['cluster_name'] ?? '-')) ?> | <?= htmlspecialchars((string) ($option['city_name'] ?? '-')) ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -427,7 +494,6 @@ if (!function_exists('drmBadgeClass')) {
                                 <div class="col-md-6"><div class="form-group"><label>Cluster</label><input type="text" class="form-control js-cluster-name" readonly></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>Regional</label><input type="text" class="form-control js-cluster-regional" readonly></div></div>
                                 <div class="col-md-3"><div class="form-group"><label>Kota</label><input type="text" class="form-control js-cluster-city" readonly></div></div>
-                                <div class="col-md-3"><div class="form-group mb-md-0"><label>Periode</label><input type="text" class="form-control js-period-label" readonly></div></div>
                                 <div class="col-md-3"><div class="form-group mb-md-0"><label>Tanggal Released</label><input type="text" class="form-control js-released-at" readonly></div></div>
                                 <div class="col-md-3"><div class="form-group mb-md-0"><label>HP Valsal</label><input type="text" class="form-control js-hp-valsal js-number-format" data-decimals="0" readonly></div></div>
                                 <div class="col-md-3"><div class="form-group mb-0"><label>HP Donasi</label><input type="text" class="form-control js-hp-donasi js-number-format" data-decimals="0" readonly></div></div>
@@ -654,6 +720,42 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         margin-bottom: .85rem;
     }
 
+    .drm-monitor-tabs {
+        border-bottom: 0;
+        gap: .75rem;
+        margin-bottom: 1rem;
+    }
+
+    .drm-monitor-tabs .nav-link {
+        border: 1px solid #d9e6f2;
+        border-radius: 999px;
+        color: #45627b;
+        font-weight: 700;
+        padding: .65rem 1rem;
+        background: #f7fbff;
+    }
+
+    .drm-monitor-tabs .nav-link.active {
+        color: #fff;
+        background: linear-gradient(135deg, #0f4c81, #1d7ed6);
+        border-color: transparent;
+    }
+
+    .drm-monitor-tabs__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.6rem;
+        min-height: 1.6rem;
+        padding: 0 .45rem;
+        margin-left: .4rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .9);
+        color: #0f4c81;
+        font-size: .75rem;
+        font-weight: 800;
+    }
+
     .budget-btn {
         border: 0;
         border-radius: 999px;
@@ -693,6 +795,31 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
     .drm-monitor-table tbody tr:hover {
         background: rgba(219, 236, 247, 0.22);
+    }
+
+    .drm-status-scope {
+        min-width: 190px;
+    }
+
+    .drm-status-scope__item {
+        display: grid;
+        grid-template-columns: 76px max-content;
+        align-items: center;
+        column-gap: .45rem;
+        margin-bottom: .25rem;
+        white-space: nowrap;
+    }
+
+    .drm-status-scope__name {
+        color: #111827;
+        font-size: .83rem;
+        font-weight: 700;
+    }
+
+    .drm-status-scope__badge {
+        justify-self: start;
+        min-width: 96px;
+        text-align: center;
     }
 
     .budget-modal__header {
@@ -947,7 +1074,6 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             $container.find('.js-cluster-regional').val(optionData('regional-name'));
             $container.find('.js-cluster-city').val(optionData('city-name'));
             $container.find('.js-released-at').val(optionData('released-at'));
-            $container.find('.js-period-label').val(optionData('period-label'));
             $container.find('.js-hp-valsal').val(optionData('hp-valsal'));
             $container.find('.js-hp-donasi').val(optionData('hp-donasi'));
             $container.find('.js-homepass-drm').val(optionData('hp-donasi'));
@@ -1113,22 +1239,35 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
         $(function () {
             if ($.fn.DataTable) {
-                $('#table_drm_myrep').DataTable({
-                    responsive: true,
-                    autoWidth: false,
-                    order: [[0, 'asc']],
-                    footerCallback: function () {
-                        var api = this.api();
-                        var sumColumn = function (index) {
-                            return api.column(index, { page: 'current' }).data().reduce(function (a, b) {
-                                return parseDrmNumber(a) + parseDrmNumber(b);
-                            }, 0);
-                        };
-                        var hpDonasiTotal = sumColumn(5);
-                        var hpDrmTotal = sumColumn(6);
-                        $(api.column(5).footer()).html(hpDonasiTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
-                        $(api.column(6).footer()).html(hpDrmTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
-                    }
+                var drmTables = [];
+                $('.js-drm-monitor-table').each(function () {
+                    drmTables.push($(this).DataTable({
+                        responsive: false,
+                        scrollX: true,
+                        autoWidth: false,
+                        order: [[0, 'asc']],
+                        language: {
+                            emptyTable: 'Belum ada data DRM.'
+                        },
+                        footerCallback: function () {
+                            var api = this.api();
+                            var sumColumn = function (index) {
+                                return api.column(index, { page: 'current' }).data().reduce(function (a, b) {
+                                    return parseDrmNumber(a) + parseDrmNumber(b);
+                                }, 0);
+                            };
+                            var hpDonasiTotal = sumColumn(4);
+                            var hpDrmTotal = sumColumn(5);
+                            $(api.column(4).footer()).html(hpDonasiTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                            $(api.column(5).footer()).html(hpDrmTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                        }
+                    }));
+                });
+
+                $('a[data-toggle="tab"][href^="#drm-"]').on('shown.bs.tab', function () {
+                    drmTables.forEach(function (table) {
+                        table.columns.adjust();
+                    });
                 });
             }
 
