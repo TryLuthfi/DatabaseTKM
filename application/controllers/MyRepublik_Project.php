@@ -62,6 +62,9 @@ class MyRepublik_Project extends CI_Controller
         $data['clusterRows'] = $data['isReady']
             ? $this->MMyRepublik_Project->getClusterRows($selectedCity, $selectedStatus, $metricMode)
             : [];
+        $data['deleteClusterRows'] = ($data['isReady'] && (string) $this->session->userdata('nama_level') === 'Super Admin')
+            ? $this->MMyRepublik_Project->getClusterRows('', '', $metricMode)
+            : [];
         $data['clusterStageSummaryRows'] = $this->buildClusterStageSummaryRows($data['clusterRows']);
         $data['overview'] = $this->MMyRepublik_Project->getOverview($data['clusterRows']);
         $data['statusCards'] = $this->MMyRepublik_Project->getStatusCards($data['clusterRows'], $metricMode);
@@ -174,12 +177,32 @@ class MyRepublik_Project extends CI_Controller
             return;
         }
 
-        $deletedCount = (int) $this->MMyRep_Cleanup->deleteAllClusters();
+        $clusterIds = $this->input->post('cluster_ids');
+        if (!is_array($clusterIds)) {
+            $clusterIds = [];
+        }
+
+        $clusterIds = array_values(array_unique(array_filter(array_map('intval', $clusterIds), static function ($id) {
+            return $id > 0;
+        })));
+
+        if (empty($clusterIds)) {
+            $this->session->set_flashdata('error', 'Pilih minimal satu cluster MyRep yang akan dihapus.');
+            redirect('MyRepublik_Project');
+            return;
+        }
+
+        $deletedCount = 0;
+        foreach ($clusterIds as $clusterId) {
+            if ($this->MMyRep_Cleanup->deleteWholeCluster($clusterId)) {
+                $deletedCount++;
+            }
+        }
         $this->session->set_flashdata(
             $deletedCount > 0 ? 'success' : 'error',
             $deletedCount > 0
-                ? ('Berhasil menghapus ' . $deletedCount . ' cluster MyRep. Flow dari BAK sampai Checklist Dokument ikut terhapus.')
-                : 'Tidak ada data cluster MyRep yang dihapus.'
+                ? ('Berhasil menghapus ' . $deletedCount . ' dari ' . count($clusterIds) . ' cluster MyRep yang dipilih. Flow dari BAK sampai Checklist Dokument ikut terhapus.')
+                : 'Tidak ada data cluster MyRep yang berhasil dihapus.'
         );
         redirect('MyRepublik_Project');
     }
@@ -325,6 +348,7 @@ class MyRepublik_Project extends CI_Controller
         $userId = (int) $this->session->userdata('id_user');
         $username = (string) $this->session->userdata('nama_user');
         $inserted = 0;
+        $updated = 0;
         $skipped = 0;
         $errorDetails = [];
 
@@ -344,6 +368,8 @@ class MyRepublik_Project extends CI_Controller
                 $saveResult = $this->saveOneImportedCluster($row, $userId);
                 if (!empty($saveResult['inserted'])) {
                     $inserted++;
+                } elseif (!empty($saveResult['updated'])) {
+                    $updated++;
                 } else {
                     $skipped++;
                     $errorDetails[] = [
@@ -363,31 +389,34 @@ class MyRepublik_Project extends CI_Controller
             }
         }
 
-        if ($inserted <= 0) {
-            $this->logCutoffImportSummary($userId, $username, count($rows), $inserted, $skipped, $errorDetails);
-            $this->jsonResponse(false, 'Tidak ada data yang berhasil disimpan.', [
+        if ($inserted <= 0 && $updated <= 0) {
+            $this->logCutoffImportSummary($userId, $username, count($rows), $inserted, $skipped, $errorDetails, $updated);
+            $this->jsonResponse(false, 'Tidak ada data yang berhasil disimpan atau diupdate.', [
                 'inserted' => $inserted,
+                'updated' => $updated,
                 'skipped' => $skipped,
                 'error_rows' => $errorDetails,
             ]);
             return;
         }
 
-        $this->logCutoffImportSummary($userId, $username, count($rows), $inserted, $skipped, $errorDetails);
-        $this->jsonResponse(true, $inserted . ' cluster berhasil diimport. ' . $skipped . ' baris dilewati.', [
+        $this->logCutoffImportSummary($userId, $username, count($rows), $inserted, $skipped, $errorDetails, $updated);
+        $this->jsonResponse(true, $inserted . ' cluster berhasil diimport. ' . $updated . ' cluster existing diupdate. ' . $skipped . ' baris dilewati.', [
             'inserted' => $inserted,
+            'updated' => $updated,
             'skipped' => $skipped,
             'error_rows' => $errorDetails,
         ]);
     }
 
-    private function logCutoffImportSummary($userId, $username, $totalRows, $inserted, $skipped, array $errorDetails)
+    private function logCutoffImportSummary($userId, $username, $totalRows, $inserted, $skipped, array $errorDetails, $updated = 0)
     {
         $summary = [
             'user_id' => (int) $userId,
             'user_name' => $username,
             'total_rows' => (int) $totalRows,
             'inserted' => (int) $inserted,
+            'updated' => (int) $updated,
             'skipped' => (int) $skipped,
             'error_count' => count($errorDetails),
         ];
@@ -660,6 +689,42 @@ class MyRepublik_Project extends CI_Controller
         exit;
     }
 
+    public function downloadCutoffCurrentSnapshot()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            redirect('Auth');
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->get('city')));
+        $selectedStatus = strtoupper(trim((string) $this->input->get('status')));
+        $headers = $this->getCutoffImportHeaders();
+        $rows = $this->getCutoffCurrentSnapshotRows($selectedCity, $selectedStatus);
+        $filename = 'update_import_myrep_project_current_' . date('Ymd_His') . '.csv';
+
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $output = fopen('php://output', 'w');
+        fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputcsv($output, $headers);
+        foreach ($rows as $rowMap) {
+            $line = [];
+            foreach ($headers as $header) {
+                $line[] = isset($rowMap[$header]) ? (string) $rowMap[$header] : '';
+            }
+            fputcsv($output, $line);
+        }
+        fclose($output);
+        exit;
+    }
+
     private function buildDetailPayload($cluster, $isLegacy)
     {
         $myrepClusterId = (int) ($cluster['id_myrep_cluster'] ?? 0);
@@ -689,6 +754,270 @@ class MyRepublik_Project extends CI_Controller
             : [];
 
         return $data;
+    }
+
+    private function getCutoffImportHeaders()
+    {
+        $headers = [
+            'status_current',
+            'city_name',
+            'district_name',
+            'village_name',
+            'cluster_name',
+            'cluster_code',
+            'hp_plan',
+            'homepass_bak',
+            'ba_open_date',
+            'bak_date',
+            'nomor_ntp',
+            'tanggal_ntp',
+            'homepass_valsal',
+            'valsal_date',
+            'remark_valsal',
+            'hp_donasi',
+            'submission_date',
+            'nominal_pengajuan_area',
+            'nominal_nego_emr',
+            'nominal_release_finance',
+            'nominal_per_homepass',
+            'bank_name',
+            'bank_account_number',
+            'recipient_name',
+            'recipient_phone',
+            'recipient_position',
+            'recipient_period',
+            'free_wifi_qty',
+            'free_wifi_period_month',
+            'astri_batch_number',
+            'staging_status',
+            'released_at',
+            'remark_batch_approval',
+            'homepass_drm',
+            'drm_date',
+            'nama_olt',
+            'remark_drm',
+            'rfs_date',
+            'status_rfs',
+            'email_atp_date',
+            'actual_atp_date',
+            'status_atp',
+            'cluster_cwatp',
+            'cluster_fullopm',
+            'cluster_rfs',
+            'subfeeder_cwatp',
+            'subfeeder_fullopm',
+            'subfeeder_rfs',
+            'po_cluster_category',
+            'po_cluster_status',
+            'po_cluster_number',
+            'po_cluster_date',
+            'po_cluster_value',
+            'po_cluster_version_label',
+            'po_cluster_remark',
+            'po_subfeeder_category',
+            'po_subfeeder_status',
+            'po_subfeeder_number',
+            'po_subfeeder_date',
+            'po_subfeeder_value',
+            'po_subfeeder_version_label',
+            'po_subfeeder_remark',
+            'remark_general',
+        ];
+
+        $headers = array_merge($headers, $this->buildRfsClaimImportHeaders());
+        return array_merge($headers, $this->buildPoTerminImportHeaders());
+    }
+
+    private function getCutoffCurrentSnapshotRows($selectedCity = '', $selectedStatus = '')
+    {
+        if (!$this->db->table_exists('tb_myrep_cluster')) {
+            return [];
+        }
+
+        $query = $this->db
+            ->select("
+                c.id_myrep_cluster,
+                c.rfs_cluster_id,
+                c.status_current,
+                c.city_name,
+                c.district_name,
+                c.village_name,
+                c.cluster_name,
+                c.cluster_code,
+                c.hp_plan,
+                c.ntp_name AS nomor_ntp,
+                c.ntp_date AS tanggal_ntp,
+                c.remark_general,
+                b.homepass_bak,
+                b.ba_open_date,
+                b.bak_date,
+                v.homepass_valsal,
+                v.valsal_date,
+                v.remark_valsal,
+                ba.hp_donasi,
+                ba.submission_date,
+                ba.nominal_pengajuan_area,
+                ba.nominal_nego_emr,
+                ba.nominal_release_finance,
+                ba.nominal_per_homepass,
+                ba.bank_name,
+                ba.bank_account_number,
+                ba.recipient_name,
+                ba.recipient_phone,
+                ba.recipient_position,
+                ba.recipient_period,
+                ba.free_wifi_qty,
+                ba.free_wifi_period_month,
+                ba.astri_batch_number,
+                ba.staging_status,
+                ba.released_at,
+                ba.remark_batch_approval,
+                d.homepass_drm,
+                d.drm_date,
+                d.nama_olt,
+                d.remark_drm,
+                r.status_rfs,
+                r.email_atp_date,
+                r.status_atp,
+                latest_claim.rfs_date,
+                atp_summary.actual_atp_date
+            ", false)
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_valsal v', 'v.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_batch_approval ba', 'ba.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_myrep_drm d', 'd.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_rfs_myrep_cluster r', 'r.id_cluster = c.rfs_cluster_id', 'left')
+            ->join('(
+                SELECT cluster_id, MAX(claim_date) AS rfs_date
+                FROM tb_rfs_myrep_claim
+                WHERE status_claim = "APPROVED"
+                GROUP BY cluster_id
+            ) latest_claim', 'latest_claim.cluster_id = c.rfs_cluster_id', 'left')
+            ->join('(
+                SELECT cluster_id, MAX(actual_atp_date) AS actual_atp_date
+                FROM tb_rfs_myrep_doc_package
+                GROUP BY cluster_id
+            ) atp_summary', 'atp_summary.cluster_id = c.rfs_cluster_id', 'left');
+
+        if ($selectedCity !== '') {
+            $query->where('UPPER(c.city_name)', strtoupper($selectedCity));
+        }
+        if ($selectedStatus !== '') {
+            $query->where('UPPER(c.status_current)', strtoupper($selectedStatus));
+        }
+
+        $rows = $query
+            ->order_by('c.city_name', 'ASC')
+            ->order_by('c.cluster_name', 'ASC')
+            ->get()
+            ->result_array();
+        if (empty($rows)) {
+            return [];
+        }
+
+        $rfsClusterIds = [];
+        foreach ($rows as $row) {
+            if (!empty($row['rfs_cluster_id'])) {
+                $rfsClusterIds[] = (int) $row['rfs_cluster_id'];
+            }
+        }
+        $claimMap = $this->getCurrentRfsClaimsForSnapshot($rfsClusterIds);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $rfsClusterId = (int) ($row['rfs_cluster_id'] ?? 0);
+            $checklistStatuses = $rfsClusterId > 0 ? $this->getCurrentChecklistImportStatuses($rfsClusterId) : [];
+            $rowMap = [
+                'status_current' => (string) ($row['status_current'] ?? ''),
+                'city_name' => (string) ($row['city_name'] ?? ''),
+                'district_name' => (string) ($row['district_name'] ?? ''),
+                'village_name' => (string) ($row['village_name'] ?? ''),
+                'cluster_name' => (string) ($row['cluster_name'] ?? ''),
+                'cluster_code' => (string) ($row['cluster_code'] ?? ''),
+                'hp_plan' => (string) ($row['hp_plan'] ?? ''),
+                'homepass_bak' => (string) ($row['homepass_bak'] ?? ''),
+                'ba_open_date' => (string) ($row['ba_open_date'] ?? ''),
+                'bak_date' => (string) ($row['bak_date'] ?? ''),
+                'nomor_ntp' => (string) ($row['nomor_ntp'] ?? ''),
+                'tanggal_ntp' => (string) ($row['tanggal_ntp'] ?? ''),
+                'homepass_valsal' => (string) ($row['homepass_valsal'] ?? ''),
+                'valsal_date' => (string) ($row['valsal_date'] ?? ''),
+                'remark_valsal' => (string) ($row['remark_valsal'] ?? ''),
+                'hp_donasi' => (string) ($row['hp_donasi'] ?? ''),
+                'submission_date' => (string) ($row['submission_date'] ?? ''),
+                'nominal_pengajuan_area' => (string) ($row['nominal_pengajuan_area'] ?? ''),
+                'nominal_nego_emr' => (string) ($row['nominal_nego_emr'] ?? ''),
+                'nominal_release_finance' => (string) ($row['nominal_release_finance'] ?? ''),
+                'nominal_per_homepass' => (string) ($row['nominal_per_homepass'] ?? ''),
+                'bank_name' => (string) ($row['bank_name'] ?? ''),
+                'bank_account_number' => (string) ($row['bank_account_number'] ?? ''),
+                'recipient_name' => (string) ($row['recipient_name'] ?? ''),
+                'recipient_phone' => (string) ($row['recipient_phone'] ?? ''),
+                'recipient_position' => (string) ($row['recipient_position'] ?? ''),
+                'recipient_period' => (string) ($row['recipient_period'] ?? ''),
+                'free_wifi_qty' => (string) ($row['free_wifi_qty'] ?? ''),
+                'free_wifi_period_month' => (string) ($row['free_wifi_period_month'] ?? ''),
+                'astri_batch_number' => (string) ($row['astri_batch_number'] ?? ''),
+                'staging_status' => (string) ($row['staging_status'] ?? ''),
+                'released_at' => (string) ($row['released_at'] ?? ''),
+                'remark_batch_approval' => (string) ($row['remark_batch_approval'] ?? ''),
+                'homepass_drm' => (string) ($row['homepass_drm'] ?? ''),
+                'drm_date' => (string) ($row['drm_date'] ?? ''),
+                'nama_olt' => (string) ($row['nama_olt'] ?? ''),
+                'remark_drm' => (string) ($row['remark_drm'] ?? ''),
+                'rfs_date' => (string) ($row['rfs_date'] ?? ''),
+                'status_rfs' => (string) ($row['status_rfs'] ?? ''),
+                'email_atp_date' => (string) ($row['email_atp_date'] ?? ''),
+                'actual_atp_date' => (string) ($row['actual_atp_date'] ?? ''),
+                'status_atp' => (string) ($row['status_atp'] ?? ''),
+                'remark_general' => (string) ($row['remark_general'] ?? ''),
+            ];
+
+            foreach (array_keys($this->getChecklistImportColumnMap()) as $column) {
+                $rowMap[$column] = (string) ($checklistStatuses[$column] ?? '');
+            }
+
+            $claims = $claimMap[$rfsClusterId] ?? [];
+            for ($i = 1; $i <= 5; $i++) {
+                $claim = $claims[$i - 1] ?? [];
+                $rowMap['rfs_' . $i . '_date'] = (string) ($claim['claim_date'] ?? '');
+                $rowMap['rfs_' . $i . '_qty'] = (string) ($claim['claim_qty'] ?? '');
+            }
+
+            $result[] = $rowMap;
+        }
+
+        return $result;
+    }
+
+    private function getCurrentRfsClaimsForSnapshot(array $rfsClusterIds)
+    {
+        $rfsClusterIds = array_values(array_unique(array_filter(array_map('intval', $rfsClusterIds))));
+        if (empty($rfsClusterIds) || !$this->db->table_exists('tb_rfs_myrep_claim')) {
+            return [];
+        }
+
+        $rows = $this->db
+            ->select('cluster_id, claim_date, claim_qty')
+            ->from('tb_rfs_myrep_claim')
+            ->where_in('cluster_id', $rfsClusterIds)
+            ->where('status_claim', 'APPROVED')
+            ->order_by('claim_date', 'ASC')
+            ->order_by('id_claim', 'ASC')
+            ->get()
+            ->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $clusterId = (int) ($row['cluster_id'] ?? 0);
+            if ($clusterId <= 0 || count($map[$clusterId] ?? []) >= 5) {
+                continue;
+            }
+            $map[$clusterId][] = $row;
+        }
+
+        return $map;
     }
 
     private function buildClusterStageSummaryRows(array $clusterRows)
@@ -837,7 +1166,7 @@ class MyRepublik_Project extends CI_Controller
             ->get()
             ->row_array();
         if (!empty($existingCluster['id_myrep_cluster'])) {
-            return ['inserted' => false, 'message' => 'Cluster sudah ada di target kota yang sama.'];
+            return $this->syncExistingImportedCluster($existingCluster, $row, $userId);
         }
 
         $homepassPlan = (int) $this->normalizeNumber($row['hp_plan'] ?? 0);
@@ -1263,9 +1592,67 @@ class MyRepublik_Project extends CI_Controller
         ];
     }
 
+    private function syncExistingImportedCluster(array $existingCluster, array $row, $userId)
+    {
+        $clusterId = (int) ($existingCluster['id_myrep_cluster'] ?? 0);
+        $rfsClusterId = (int) ($existingCluster['rfs_cluster_id'] ?? 0);
+        if ($clusterId <= 0) {
+            return ['inserted' => false, 'message' => 'Cluster existing tidak valid.'];
+        }
+
+        if (!$this->hasChecklistImportPayload($row)) {
+            return ['inserted' => false, 'message' => 'Cluster sudah ada; tidak ada kolom checklist yang perlu diupdate.'];
+        }
+
+        if ($rfsClusterId <= 0) {
+            return ['inserted' => false, 'message' => 'Cluster sudah ada, tetapi belum memiliki data RFS/ATP untuk update checklist.'];
+        }
+
+        $currentStatuses = $this->getCurrentChecklistImportStatuses($rfsClusterId);
+        $changedRow = [];
+        $changedColumns = [];
+        foreach (array_keys($this->getChecklistImportColumnMap()) as $column) {
+            $incomingStatus = $this->normalizeChecklistImportStatus($row[$column] ?? '');
+            if ($incomingStatus === '') {
+                continue;
+            }
+
+            $currentStatus = $this->normalizeChecklistImportStatus($currentStatuses[$column] ?? '');
+            if ($incomingStatus !== $currentStatus) {
+                $changedRow[$column] = $incomingStatus;
+                $changedColumns[] = $column . ':' . ($currentStatus !== '' ? $currentStatus : '-') . '>' . $incomingStatus;
+            }
+        }
+
+        if (empty($changedRow)) {
+            return ['inserted' => false, 'message' => 'Cluster sudah ada; checklist tidak berubah.'];
+        }
+
+        $this->db->trans_start();
+        $this->applyImportedChecklistStatuses($rfsClusterId, $changedRow, $userId);
+        $this->db
+            ->where('id_myrep_cluster', $clusterId)
+            ->update('tb_myrep_cluster', [
+                'updated_by' => (int) $userId,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        $this->db->trans_complete();
+
+        if (!$this->db->trans_status()) {
+            return ['inserted' => false, 'message' => 'Update checklist existing gagal (rollback).'];
+        }
+
+        return [
+            'inserted' => false,
+            'updated' => true,
+            'cluster_id' => $clusterId,
+            'message' => 'Checklist updated: ' . implode(', ', $changedColumns),
+        ];
+    }
+
     private function getAllowedChecklistImportStatuses()
     {
-        return ['AREA', 'HO', 'EMR', 'CLOSED'];
+        return ['AREA', 'HO', 'EMR', 'CLOSED', 'NRO'];
     }
 
     private function normalizeChecklistImportStatus($status)
@@ -1364,9 +1751,17 @@ class MyRepublik_Project extends CI_Controller
                 continue;
             }
 
-            if ($status !== 'AREA') {
+            if ($status === 'AREA') {
+                $this->clearImportedChecklistPackage($packageId);
+            } else {
                 foreach ($itemsByGroup[$groupId] ?? [] as $item) {
-                    $this->upsertImportedChecklistFile($packageId, (int) $item['id_doc_item'], $status, $userId);
+                    $this->upsertImportedChecklistFile(
+                        $packageId,
+                        (int) $item['id_doc_item'],
+                        $status,
+                        $userId,
+                        (string) ($item['doc_name'] ?? '')
+                    );
                 }
             }
 
@@ -1374,12 +1769,148 @@ class MyRepublik_Project extends CI_Controller
         }
     }
 
+    private function getCurrentChecklistImportStatuses($rfsClusterId)
+    {
+        $rfsClusterId = (int) $rfsClusterId;
+        $result = array_fill_keys(array_keys($this->getChecklistImportColumnMap()), '');
+        if ($rfsClusterId <= 0 || !$this->db->table_exists('tb_rfs_myrep_doc_package')) {
+            return $result;
+        }
+
+        $packageRows = $this->db
+            ->select('p.id_doc_package, p.id_doc_group, g.scope_type, g.sow_type')
+            ->from('tb_rfs_myrep_doc_package p')
+            ->join('md_rfs_myrep_doc_group g', 'g.id_doc_group = p.id_doc_group', 'inner')
+            ->where('p.cluster_id', $rfsClusterId)
+            ->where('g.is_active', 1)
+            ->get()
+            ->result_array();
+        if (empty($packageRows)) {
+            return $result;
+        }
+
+        $groupIds = [];
+        $packageIds = [];
+        foreach ($packageRows as $package) {
+            $groupIds[] = (int) ($package['id_doc_group'] ?? 0);
+            $packageIds[] = (int) ($package['id_doc_package'] ?? 0);
+        }
+        $groupIds = array_values(array_unique(array_filter($groupIds)));
+        $packageIds = array_values(array_unique(array_filter($packageIds)));
+        if (empty($groupIds) || empty($packageIds)) {
+            return $result;
+        }
+
+        $itemRows = $this->db
+            ->select('id_doc_item, id_doc_group, doc_name')
+            ->from('md_rfs_myrep_doc_item')
+            ->where_in('id_doc_group', $groupIds)
+            ->where('is_active', 1)
+            ->where('is_required', 1)
+            ->get()
+            ->result_array();
+        $itemsByGroup = [];
+        foreach ($itemRows as $item) {
+            $itemsByGroup[(int) ($item['id_doc_group'] ?? 0)][] = $item;
+        }
+
+        $fileRows = $this->db
+            ->select('id_doc_package, id_doc_item, file_path, is_document_not_required, status_file, astri_status')
+            ->from('tb_rfs_myrep_doc_file')
+            ->where_in('id_doc_package', $packageIds)
+            ->get()
+            ->result_array();
+        $filesByPackageItem = [];
+        foreach ($fileRows as $file) {
+            $filesByPackageItem[(int) ($file['id_doc_package'] ?? 0)][(int) ($file['id_doc_item'] ?? 0)] = $file;
+        }
+
+        $columnByGroupKey = [];
+        foreach ($this->getChecklistImportColumnMap() as $column => $target) {
+            $columnByGroupKey[$this->buildChecklistGroupKey($target['scope_type'], $target['sow_type'])] = $column;
+        }
+
+        foreach ($packageRows as $package) {
+            $groupKey = $this->buildChecklistGroupKey($package['scope_type'] ?? '', $package['sow_type'] ?? '');
+            if (!isset($columnByGroupKey[$groupKey])) {
+                continue;
+            }
+
+            $packageId = (int) ($package['id_doc_package'] ?? 0);
+            $groupId = (int) ($package['id_doc_group'] ?? 0);
+            $result[$columnByGroupKey[$groupKey]] = $this->deriveChecklistImportStatus(
+                (string) ($package['scope_type'] ?? ''),
+                (string) ($package['sow_type'] ?? ''),
+                $itemsByGroup[$groupId] ?? [],
+                $filesByPackageItem[$packageId] ?? []
+            );
+        }
+
+        return $result;
+    }
+
+    private function deriveChecklistImportStatus($scopeType, $sowType, array $items, array $filesByItem)
+    {
+        $required = count($items);
+        if ($required <= 0) {
+            return '';
+        }
+
+        $uploaded = 0;
+        $approved = 0;
+        $astriApproved = 0;
+        $hasProjectOpnameWaitingWaspang = false;
+        foreach ($items as $item) {
+            $itemId = (int) ($item['id_doc_item'] ?? 0);
+            $file = $filesByItem[$itemId] ?? [];
+            $statusFile = strtoupper(trim((string) ($file['status_file'] ?? '')));
+            $astriStatus = strtoupper(trim((string) ($file['astri_status'] ?? 'NY')));
+            $hasDocument = !empty($file)
+                && (
+                    trim((string) ($file['file_path'] ?? '')) !== ''
+                    || (int) ($file['is_document_not_required'] ?? 0) === 1
+                );
+
+            if ($hasDocument && in_array($statusFile, ['UPLOADED', 'APPROVED'], true)) {
+                $uploaded++;
+            }
+            if ($statusFile === 'APPROVED') {
+                $approved++;
+            }
+            if ($astriStatus === 'APPROVED') {
+                $astriApproved++;
+            }
+            if (strtoupper(trim((string) ($item['doc_name'] ?? ''))) === 'PROJECT OPNAME' && $astriStatus === 'WAITING WASPANG') {
+                $hasProjectOpnameWaitingWaspang = true;
+            }
+        }
+
+        if ($uploaded <= 0) {
+            return 'AREA';
+        }
+        if ($uploaded < $required || $approved < $required) {
+            return 'HO';
+        }
+        if ($astriApproved >= $required) {
+            return 'CLOSED';
+        }
+        if (
+            strtoupper(trim((string) $scopeType)) === 'CLUSTER'
+            && strtoupper(trim((string) $sowType)) === 'RFS'
+            && $hasProjectOpnameWaitingWaspang
+        ) {
+            return 'NRO';
+        }
+
+        return 'EMR';
+    }
+
     private function buildChecklistGroupKey($scopeType, $sowType)
     {
         return strtoupper(trim((string) $scopeType)) . '|' . strtoupper(trim((string) $sowType));
     }
 
-    private function upsertImportedChecklistFile($packageId, $itemId, $cutoffStatus, $userId)
+    private function upsertImportedChecklistFile($packageId, $itemId, $cutoffStatus, $userId, $docName = '')
     {
         $packageId = (int) $packageId;
         $itemId = (int) $itemId;
@@ -1391,10 +1922,27 @@ class MyRepublik_Project extends CI_Controller
 
         $now = date('Y-m-d H:i:s');
         $today = date('Y-m-d');
-        $isHoReviewDone = in_array($cutoffStatus, ['EMR', 'CLOSED'], true);
+        $isHoReviewDone = in_array($cutoffStatus, ['EMR', 'CLOSED', 'NRO'], true);
         $isAstriDone = $cutoffStatus === 'CLOSED';
+        $isNroProjectOpname = $cutoffStatus === 'NRO'
+            && strtoupper(trim((string) $docName)) === 'PROJECT OPNAME';
         $statusFile = $isHoReviewDone ? 'APPROVED' : 'UPLOADED';
         $remark = 'Imported cutoff checklist status: ' . $cutoffStatus . '. File fisik tidak tersedia pada data cutoff.';
+        $astriStatus = 'NY';
+        $astriSubmittedDate = null;
+        $astriUpdatedAt = null;
+        $astriRemark = null;
+        if ($isAstriDone) {
+            $astriStatus = 'APPROVED';
+            $astriSubmittedDate = $today;
+            $astriUpdatedAt = $now;
+            $astriRemark = 'Imported cutoff ASTRI closed.';
+        } elseif ($isNroProjectOpname) {
+            $astriStatus = 'WAITING WASPANG';
+            $astriSubmittedDate = $today;
+            $astriUpdatedAt = $now;
+            $astriRemark = 'Imported cutoff NRO - Project Opname waiting Waspang.';
+        }
 
         $payload = [
             'id_doc_package' => $packageId,
@@ -1409,10 +1957,10 @@ class MyRepublik_Project extends CI_Controller
             'reviewed_at' => $isHoReviewDone ? $now : null,
             'approved_by' => $isHoReviewDone ? $userId : null,
             'approved_at' => $isHoReviewDone ? $now : null,
-            'astri_submitted_date' => $isAstriDone ? $today : null,
-            'astri_status' => $isAstriDone ? 'APPROVED' : 'NY',
-            'astri_status_updated_at' => $isAstriDone ? $now : null,
-            'astri_remark' => $isAstriDone ? 'Imported cutoff ASTRI closed.' : null,
+            'astri_submitted_date' => $astriSubmittedDate,
+            'astri_status' => $astriStatus,
+            'astri_status_updated_at' => $astriUpdatedAt,
+            'astri_remark' => $astriRemark,
         ];
         if ($this->db->field_exists('submitted_at', 'tb_rfs_myrep_doc_file')) {
             $payload['submitted_at'] = $now;
@@ -1439,6 +1987,23 @@ class MyRepublik_Project extends CI_Controller
         }
 
         $this->createImportedChecklistFileLog($fileId, $packageId, $itemId, $actionType, $statusFile, $remark, $userId);
+    }
+
+    private function clearImportedChecklistPackage($packageId)
+    {
+        $packageId = (int) $packageId;
+        if ($packageId <= 0 || !$this->db->table_exists('tb_rfs_myrep_doc_file')) {
+            return;
+        }
+
+        $this->db
+            ->where('id_doc_package', $packageId)
+            ->group_start()
+                ->where('file_path IS NULL', null, false)
+                ->or_where('file_path', '')
+            ->group_end()
+            ->like('remark', 'Imported cutoff checklist status:', 'after')
+            ->delete('tb_rfs_myrep_doc_file');
     }
 
     private function createImportedChecklistFileLog($fileId, $packageId, $itemId, $actionType, $statusAfter, $remark, $userId)
@@ -1740,8 +2305,12 @@ class MyRepublik_Project extends CI_Controller
         }
         foreach ($this->getChecklistImportColumnMap() as $column => $target) {
             $rawChecklistStatus = trim((string) ($row[$column] ?? ''));
-            if ($rawChecklistStatus !== '' && $this->normalizeChecklistImportStatus($rawChecklistStatus) === '') {
-                $errors[] = $column . ' harus AREA, HO, EMR, atau CLOSED';
+            $normalizedChecklistStatus = $this->normalizeChecklistImportStatus($rawChecklistStatus);
+            if ($rawChecklistStatus !== '' && $normalizedChecklistStatus === '') {
+                $errors[] = $column . ' harus AREA, HO, EMR, CLOSED, atau NRO khusus cluster_rfs';
+            }
+            if ($normalizedChecklistStatus === 'NRO' && $column !== 'cluster_rfs') {
+                $errors[] = 'NRO hanya boleh diisi pada cluster_rfs';
             }
         }
         if ($this->resolveTargetByCity((string) ($row['city_name'] ?? '')) === []) {

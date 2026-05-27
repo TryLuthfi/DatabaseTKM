@@ -151,6 +151,7 @@ if (!function_exists('myrepClusterDetailUrl')) {
 
 <?php
 $summaryRows = $clusterStageSummaryRows ?? [];
+$deleteClusterRows = $deleteClusterRows ?? [];
 $summaryFooter = null;
 $isSuperAdmin = (string) $this->session->userdata('nama_level') === 'Super Admin';
 if (!empty($summaryRows)) {
@@ -364,9 +365,7 @@ if (!empty($summaryRows)) {
                         <div class="d-flex align-items-center">
                             <div class="myrep-table-note mr-2">Angka utama saat ini: <?= $metricMode === 'PO' ? 'PO Value' : 'Homepass' ?></div>
                             <?php if ($isSuperAdmin): ?>
-                                <form method="post" action="<?= base_url('MyRepublik_Project/deleteAllClusters') ?>" class="d-inline" onsubmit="return confirm('Hapus ALL cluster MyRep? Seluruh flow dari BAK sampai Checklist Dokument akan ikut terhapus semua.');">
-                                    <button type="submit" class="btn btn-sm btn-danger">Hapus All</button>
-                                </form>
+                                <button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#modal-delete-myrep-clusters">Hapus All</button>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -441,6 +440,71 @@ if (!empty($summaryRows)) {
     </section>
 </div>
 
+<?php if ($isSuperAdmin): ?>
+<div class="modal fade" id="modal-delete-myrep-clusters" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <form method="post" action="<?= base_url('MyRepublik_Project/deleteAllClusters') ?>" id="myrep-delete-selected-form">
+                <div class="modal-header">
+                    <h5 class="modal-title">Hapus Cluster MyRep</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong><span id="myrep-delete-selected-count">0</span> cluster dipilih</strong>
+                            <div class="text-muted small">Hanya cluster yang tetap dicentang yang akan dihapus.</div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-myrep-delete-check-all">Centang Semua</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover table-sm" id="table_myrep_delete_cluster_list">
+                            <thead>
+                                <tr>
+                                    <th style="width:42px;">
+                                        <input type="checkbox" id="myrep-delete-toggle-all" checked>
+                                    </th>
+                                    <th>Cluster</th>
+                                    <th>Kota</th>
+                                    <th>Regional</th>
+                                    <th>Status</th>
+                                    <th><?= $metricMode === 'PO' ? 'Nilai PO' : 'Homepass' ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($deleteClusterRows as $row): ?>
+                                    <?php $deleteClusterId = (int) ($row['id_myrep_cluster'] ?? 0); ?>
+                                    <?php if ($deleteClusterId <= 0) continue; ?>
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="myrep-delete-cluster-check" name="cluster_ids[]" value="<?= $deleteClusterId ?>" checked>
+                                        </td>
+                                        <td>
+                                            <strong><?= htmlspecialchars((string) ($row['cluster_name'] ?? '-')) ?></strong>
+                                            <div class="small text-muted"><?= htmlspecialchars((string) ($row['cluster_code'] ?? $row['team_name'] ?? '-')) ?></div>
+                                        </td>
+                                        <td><?= htmlspecialchars((string) ($row['city_name'] ?? '-')) ?></td>
+                                        <td><?= htmlspecialchars((string) ($row['regional_name'] ?? '-')) ?></td>
+                                        <td><span class="badge badge-info"><?= htmlspecialchars((string) ($row['status_current_display'] ?? $row['status_current'] ?? '-')) ?></span></td>
+                                        <td><?= $metricMode === 'PO' ? myrepDashNumber((float) ($row['metric_value'] ?? 0)) : myrepDashNumber((float) ($row['metric_value'] ?? 0)) . ' HP' ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger" id="btn-myrep-delete-selected">Hapus Cluster Tercentang</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="modal fade" id="modal-import-cutoff-myrep" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
@@ -460,6 +524,9 @@ if (!empty($summaryRows)) {
                 <div class="mt-3">
                     <a href="<?= base_url('MyRepublik_Project/downloadCutoffImportTemplate') ?>" class="btn btn-outline-secondary btn-sm">
                         Download Contoh CSV
+                    </a>
+                    <a href="<?= base_url('MyRepublik_Project/downloadCutoffCurrentSnapshot?' . http_build_query(['city' => $selectedCity, 'status' => $selectedStatus])) ?>" class="btn btn-outline-info btn-sm">
+                        Download Update Sekarang
                     </a>
                     <button type="button" class="btn btn-primary btn-sm" id="btn-preview-cutoff-import">Preview Data</button>
                     <button type="button" class="btn btn-success btn-sm" id="btn-save-cutoff-import" disabled>Import Semua Data Valid</button>
@@ -571,9 +638,66 @@ if (!empty($summaryRows)) {
                     autoWidth: false
                 });
             }
+
+            if ($('#table_myrep_delete_cluster_list').length && !$.fn.DataTable.isDataTable('#table_myrep_delete_cluster_list')) {
+                $('#table_myrep_delete_cluster_list').DataTable({
+                    paging: false,
+                    searching: true,
+                    info: true,
+                    order: [[1, 'asc']],
+                    responsive: false,
+                    autoWidth: false,
+                    scrollY: '55vh',
+                    scrollCollapse: true,
+                    columnDefs: [
+                        { orderable: false, targets: 0 }
+                    ]
+                });
+            }
+        }
+
+        function updateDeleteSelectedCount() {
+            var checkedCount = $('.myrep-delete-cluster-check:checked').length;
+            var totalCount = $('.myrep-delete-cluster-check').length;
+            $('#myrep-delete-selected-count').text(checkedCount);
+            $('#btn-myrep-delete-selected').prop('disabled', checkedCount <= 0);
+            $('#myrep-delete-toggle-all').prop('checked', totalCount > 0 && checkedCount === totalCount);
         }
 
         bindDropzone('#myrep-cutoff-dropzone', '#myrep-cutoff-file-input', '#myrep-cutoff-file-name');
+
+        $(document).on('shown.bs.modal', '#modal-delete-myrep-clusters', function () {
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#table_myrep_delete_cluster_list')) {
+                $('#table_myrep_delete_cluster_list').DataTable().columns.adjust();
+            }
+            updateDeleteSelectedCount();
+        });
+
+        $(document).on('change', '#myrep-delete-toggle-all', function () {
+            $('.myrep-delete-cluster-check').prop('checked', this.checked);
+            updateDeleteSelectedCount();
+        });
+
+        $(document).on('click', '#btn-myrep-delete-check-all', function () {
+            $('.myrep-delete-cluster-check').prop('checked', true);
+            updateDeleteSelectedCount();
+        });
+
+        $(document).on('change', '.myrep-delete-cluster-check', updateDeleteSelectedCount);
+
+        $(document).on('submit', '#myrep-delete-selected-form', function (event) {
+            var checkedCount = $('.myrep-delete-cluster-check:checked').length;
+            if (checkedCount <= 0) {
+                event.preventDefault();
+                alert('Pilih minimal satu cluster yang akan dihapus.');
+                return false;
+            }
+
+            if (!confirm('Hapus ' + checkedCount + ' cluster MyRep yang tercentang? Seluruh flow dari BAK sampai Checklist Dokument ikut terhapus.')) {
+                event.preventDefault();
+                return false;
+            }
+        });
 
         $(document).on('click', '#btn-preview-cutoff-import', function () {
             var fileInput = document.getElementById('myrep-cutoff-file-input');
