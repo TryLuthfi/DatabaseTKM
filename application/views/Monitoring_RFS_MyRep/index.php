@@ -982,6 +982,12 @@ if (!empty($kpiDetailRowMap)) {
         background: #eff6ff;
     }
 
+    .area-approval-submit {
+        opacity: 1;
+        cursor: pointer;
+        pointer-events: auto;
+    }
+
     #table_rfs_cluster_list tbody tr.cluster-row-full {
         background: #f0fdf4;
     }
@@ -2408,7 +2414,9 @@ if (!empty($kpiDetailRowMap)) {
                                                 <span class="badge badge-secondary">SKIPPED</span>
                                                 <div><small>Tidak ada RPM/SM untuk area ini</small></div>
                                             <?php } elseif ($claimStatus === 'WAITING APPROVAL RPM' && $canApproveRpm) { ?>
+                                                <?php $areaApprovalFormId = 'form_area_approval_' . (int) ($claim['id_claim'] ?? 0); ?>
                                                 <form method="post"
+                                                    id="<?= htmlspecialchars($areaApprovalFormId) ?>"
                                                     action="<?= base_url('Monitoring_RFS_MyRep/updateClaimStatus') ?>">
                                                     <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
                                                     <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
@@ -2434,7 +2442,12 @@ if (!empty($kpiDetailRowMap)) {
                                                         <textarea name="rpm_approval_note" class="form-control form-control-sm" rows="2"
                                                             placeholder="Catatan <?= htmlspecialchars($areaApproverRole) ?>"><?= htmlspecialchars($claim['rpm_approval_note'] ?? '') ?></textarea>
                                                     </div>
-                                                    <button type="submit" class="btn btn-sm btn-primary">Update <?= htmlspecialchars($areaApproverRole) ?></button>
+                                                    <button type="submit"
+                                                        form="<?= htmlspecialchars($areaApprovalFormId) ?>"
+                                                        class="btn btn-sm btn-success area-approval-submit"
+                                                        title="Kirim approval <?= htmlspecialchars($areaApproverRole) ?>">
+                                                        Update <?= htmlspecialchars($areaApproverRole) ?>
+                                                    </button>
                                                 </form>
                                             <?php } else { ?>
                                                 <span class="badge badge-<?= monitoring_rfs_badge_class($rpmApprovalStatus !== '' ? $rpmApprovalStatus : 'WAITING APPROVAL RPM') ?>">
