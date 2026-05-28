@@ -1078,6 +1078,7 @@ class DRM_MyRep extends CI_Controller
                 foreach ($worksheets as $worksheet) {
                     $sheetParseCandidates[] = [
                         'name' => (string) $worksheet->getTitle(),
+                        'state' => (string) $worksheet->getSheetState(),
                         'rows' => $worksheet->toArray(null, true, true, true),
                     ];
                 }
@@ -1124,28 +1125,43 @@ class DRM_MyRep extends CI_Controller
             ];
         }
 
-        $parseSheets = [];
+        $parseSheetGroups = [];
         if ($extension === 'csv') {
-            $parseSheets[] = [
+            $parseSheetGroups[] = [[
                 'name' => 'CSV',
                 'rows' => $sheetData,
-            ];
+            ]];
         } else {
             $preferredSheetName = $scopeType === 'SUBFEEDER' ? 'BoQ NRO All Feeder' : 'BoQ NRO Cluster';
             $preferred = [];
-            $others = [];
+            $visibleOthers = [];
+            $hiddenOthers = [];
             foreach ($sheetParseCandidates as $candidate) {
                 $candidateName = trim((string) ($candidate['name'] ?? ''));
                 if (strcasecmp($candidateName, $preferredSheetName) === 0) {
                     $preferred[] = $candidate;
+                    continue;
+                }
+
+                $sheetState = (string) ($candidate['state'] ?? PHPExcel_Worksheet::SHEETSTATE_VISIBLE);
+                if ($sheetState === PHPExcel_Worksheet::SHEETSTATE_VISIBLE) {
+                    $visibleOthers[] = $candidate;
                 } else {
-                    $others[] = $candidate;
+                    $hiddenOthers[] = $candidate;
                 }
             }
-            $parseSheets = !empty($preferred) ? array_merge($preferred, $others) : $sheetParseCandidates;
+            $fallbackSheets = array_merge($visibleOthers, $hiddenOthers);
+            if (!empty($preferred)) {
+                $parseSheetGroups[] = $preferred;
+                if (!empty($fallbackSheets)) {
+                    $parseSheetGroups[] = $fallbackSheets;
+                }
+            } elseif (!empty($fallbackSheets)) {
+                $parseSheetGroups[] = $fallbackSheets;
+            }
         }
 
-        if (empty($parseSheets)) {
+        if (empty($parseSheetGroups)) {
             return ['items' => [], 'warnings' => ['Tidak ada sheet yang bisa diproses dari file APD BOQ.']];
         }
 
@@ -1156,103 +1172,120 @@ class DRM_MyRep extends CI_Controller
             'mapped_row_count' => 0,
             'debug' => [],
         ];
-        foreach ($parseSheets as $sheet) {
-            $sheetRows = (array) ($sheet['rows'] ?? []);
-            $sheetName = (string) ($sheet['name'] ?? 'Sheet');
-            $columnCandidates = [['item' => 'B', 'qty' => 'E']];
-            $detectedColumns = $this->detectBoqColumnsFromSheet($sheetRows);
-            if (!empty($detectedColumns)) {
-                $alreadyExists = false;
-                foreach ($columnCandidates as $candidate) {
-                    if ($candidate['item'] === $detectedColumns['item'] && $candidate['qty'] === $detectedColumns['qty']) {
-                        $alreadyExists = true;
-                        break;
+        foreach ($parseSheetGroups as $parseSheets) {
+            $groupBestResult = [
+                'sheet_name' => '',
+                'aggregates' => [],
+                'unknown_rows' => [],
+                'mapped_row_count' => 0,
+                'debug' => [],
+            ];
+
+            foreach ($parseSheets as $sheet) {
+                $sheetRows = (array) ($sheet['rows'] ?? []);
+                $sheetName = (string) ($sheet['name'] ?? 'Sheet');
+                $columnCandidates = [['item' => 'B', 'qty' => 'E']];
+                $detectedColumns = $this->detectBoqColumnsFromSheet($sheetRows);
+                if (!empty($detectedColumns)) {
+                    $alreadyExists = false;
+                    foreach ($columnCandidates as $candidate) {
+                        if ($candidate['item'] === $detectedColumns['item'] && $candidate['qty'] === $detectedColumns['qty']) {
+                            $alreadyExists = true;
+                            break;
+                        }
+                    }
+                    if (!$alreadyExists) {
+                        $columnCandidates[] = $detectedColumns;
                     }
                 }
-                if (!$alreadyExists) {
-                    $columnCandidates[] = $detectedColumns;
-                }
-            }
 
-            $aggregates = [];
-            $unknownRows = [];
-            $mappedRowCount = 0;
-            $sheetDebug = [];
+                $aggregates = [];
+                $unknownRows = [];
+                $mappedRowCount = 0;
+                $sheetDebug = [];
 
-            foreach ($columnCandidates as $columnCandidate) {
-                $currentAggregates = [];
-                $currentUnknownRows = [];
-                $currentMappedRowCount = 0;
-                $currentDebug = [];
-                $itemColumn = (string) ($columnCandidate['item'] ?? 'B');
-                $qtyColumn = (string) ($columnCandidate['qty'] ?? 'E');
+                foreach ($columnCandidates as $columnCandidate) {
+                    $currentAggregates = [];
+                    $currentUnknownRows = [];
+                    $currentMappedRowCount = 0;
+                    $currentDebug = [];
+                    $itemColumn = (string) ($columnCandidate['item'] ?? 'B');
+                    $qtyColumn = (string) ($columnCandidate['qty'] ?? 'E');
 
-                foreach ($sheetRows as $rowNumber => $row) {
-                    $itemNameRaw = trim((string) ($row[$itemColumn] ?? ''));
-                    $qtyRaw = $row[$qtyColumn] ?? '';
-                    if ($itemNameRaw === '') {
-                        continue;
-                    }
+                    foreach ($sheetRows as $rowNumber => $row) {
+                        $itemNameRaw = trim((string) ($row[$itemColumn] ?? ''));
+                        $qtyRaw = $row[$qtyColumn] ?? '';
+                        if ($itemNameRaw === '') {
+                            continue;
+                        }
 
-                    $qty = $this->normalizeNumber($qtyRaw);
-                    if ($qty <= 0) {
-                        continue;
-                    }
+                        $qty = $this->normalizeNumber($qtyRaw);
+                        if ($qty <= 0) {
+                            continue;
+                        }
 
-                    $normalizedName = $this->normalizeBoqItemName($itemNameRaw);
-                    if ($normalizedName === '') {
-                        continue;
-                    }
+                        $normalizedName = $this->normalizeBoqItemName($itemNameRaw);
+                        if ($normalizedName === '') {
+                            continue;
+                        }
 
-                    $boqItemId = $this->resolveBoqItemIdFromName($normalizedName, $masterMap, $masterMeta);
-                    if ($boqItemId <= 0) {
-                        $currentUnknownRows[] = 'Sheet ' . $sheetName . ' [' . $itemColumn . '/' . $qtyColumn . '] baris ' . (int) $rowNumber . ' item "' . $itemNameRaw . '" tidak cocok dengan master BOQ.';
+                        $boqItemId = $this->resolveBoqItemIdFromName($normalizedName, $masterMap, $masterMeta);
+                        if ($boqItemId <= 0) {
+                            $currentUnknownRows[] = 'Sheet ' . $sheetName . ' [' . $itemColumn . '/' . $qtyColumn . '] baris ' . (int) $rowNumber . ' item "' . $itemNameRaw . '" tidak cocok dengan master BOQ.';
+                            if (count($currentDebug) < 8) {
+                                $currentDebug[] = [
+                                    'row' => (int) $rowNumber,
+                                    'item_raw' => $itemNameRaw,
+                                    'item_normalized' => $normalizedName,
+                                    'qty' => $qty,
+                                    'matched_id' => 0,
+                                    'columns' => $itemColumn . '/' . $qtyColumn,
+                                ];
+                            }
+                            continue;
+                        }
+
+                        $currentMappedRowCount++;
+                        if (!isset($currentAggregates[$boqItemId])) {
+                            $currentAggregates[$boqItemId] = 0;
+                        }
+                        $currentAggregates[$boqItemId] += (float) $qty;
                         if (count($currentDebug) < 8) {
                             $currentDebug[] = [
                                 'row' => (int) $rowNumber,
                                 'item_raw' => $itemNameRaw,
                                 'item_normalized' => $normalizedName,
                                 'qty' => $qty,
-                                'matched_id' => 0,
+                                'matched_id' => (int) $boqItemId,
                                 'columns' => $itemColumn . '/' . $qtyColumn,
                             ];
                         }
-                        continue;
                     }
 
-                    $currentMappedRowCount++;
-                    if (!isset($currentAggregates[$boqItemId])) {
-                        $currentAggregates[$boqItemId] = 0;
-                    }
-                    $currentAggregates[$boqItemId] += (float) $qty;
-                    if (count($currentDebug) < 8) {
-                        $currentDebug[] = [
-                            'row' => (int) $rowNumber,
-                            'item_raw' => $itemNameRaw,
-                            'item_normalized' => $normalizedName,
-                            'qty' => $qty,
-                            'matched_id' => (int) $boqItemId,
-                            'columns' => $itemColumn . '/' . $qtyColumn,
-                        ];
+                    if ($currentMappedRowCount > $mappedRowCount) {
+                        $aggregates = $currentAggregates;
+                        $unknownRows = $currentUnknownRows;
+                        $mappedRowCount = $currentMappedRowCount;
+                        $sheetDebug = $currentDebug;
                     }
                 }
 
-                if ($currentMappedRowCount > $mappedRowCount) {
-                    $aggregates = $currentAggregates;
-                    $unknownRows = $currentUnknownRows;
-                    $mappedRowCount = $currentMappedRowCount;
-                    $sheetDebug = $currentDebug;
+                if ($mappedRowCount > $groupBestResult['mapped_row_count']) {
+                    $groupBestResult = [
+                        'sheet_name' => $sheetName,
+                        'aggregates' => $aggregates,
+                        'unknown_rows' => $unknownRows,
+                        'mapped_row_count' => $mappedRowCount,
+                        'debug' => $sheetDebug,
+                    ];
                 }
             }
 
-            if ($mappedRowCount > $bestResult['mapped_row_count']) {
-                $bestResult = [
-                    'sheet_name' => $sheetName,
-                    'aggregates' => $aggregates,
-                    'unknown_rows' => $unknownRows,
-                    'mapped_row_count' => $mappedRowCount,
-                    'debug' => $sheetDebug,
-                ];
+            if ($groupBestResult['mapped_row_count'] > $bestResult['mapped_row_count']) {
+                $bestResult = $groupBestResult;
+            }
+            if ($groupBestResult['mapped_row_count'] > 0) {
+                break;
             }
         }
 
