@@ -2458,6 +2458,10 @@ class Mobile extends CI_Controller
 
     private function json($status, $message, array $payload = [], $statusCode = 200)
     {
+        if (ob_get_length() !== false && ob_get_length() > 0) {
+            @ob_clean();
+        }
+
         $body = array_merge([
             'status' => (bool) $status,
             'message' => (string) $message,
