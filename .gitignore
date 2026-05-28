@@ -1,6 +1,25 @@
 .env
 .DS_Store
 
+# Local secrets and temporary VPS access files
+tmp_codex_*
+tmp_vps_known_hosts
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Database dumps/backups. Keep these local or in secure storage only.
+/backups/
+/db/temp/
+*.sql.gz
+*_mysql_data.sql
+*_mysql_data_xampp.sql
+local_before_*.sql
+
+# Runtime uploads/user files. Do not overwrite production uploads from git.
+/uploads/
+
 application/cache/*
 !application/cache/index.html
 
