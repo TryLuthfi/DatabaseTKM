@@ -155,6 +155,7 @@ ksort($levelOptions);
                                                             data-nik="<?= htmlspecialchars((string) ($data['nik'] ?? ''), ENT_QUOTES) ?>"
                                                             data-nama="<?= htmlspecialchars((string) ($data['nama_user'] ?? ''), ENT_QUOTES) ?>"
                                                             data-username="<?= htmlspecialchars((string) ($data['username_user'] ?? ''), ENT_QUOTES) ?>"
+                                                            data-email-kantor="<?= htmlspecialchars((string) ($data['email_kantor'] ?? ''), ENT_QUOTES) ?>"
                                                             data-id-level="<?= (int) ($data['id_level'] ?? 3) ?>"
                                                             data-jabatan-name="<?= htmlspecialchars((string) ($data['nama_jabatan'] ?? ''), ENT_QUOTES) ?>"
                                                             data-jenis-kelamin="<?= htmlspecialchars((string) ($data['jenis_kelamin'] ?? ''), ENT_QUOTES) ?>"
@@ -220,6 +221,12 @@ ksort($levelOptions);
                                 <div class="form-group">
                                     <label class="user-field-label">Username</label>
                                     <input type="text" class="form-control user-input" name="username_user" id="username_user" autocomplete="off" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="user-field-label">Email Kantor</label>
+                                    <input type="email" class="form-control user-input" name="email_kantor" id="email_kantor" autocomplete="off">
                                 </div>
                             </div>
                             <div class="col-md-6" id="passwordFieldGroup">
@@ -328,6 +335,7 @@ ksort($levelOptions);
 
             if (isSuperAdmin) {
                 var usernameInput = document.getElementById('username_user');
+                var emailKantorInput = document.getElementById('email_kantor');
                 var passwordInput = document.getElementById('password_user');
                 var passwordFieldGroup = document.getElementById('passwordFieldGroup');
                 var levelSelect = document.getElementById('id_level');
@@ -339,6 +347,9 @@ ksort($levelOptions);
 
                 if (usernameInput) {
                     usernameInput.value = isEdit ? (data.username || '') : '';
+                }
+                if (emailKantorInput) {
+                    emailKantorInput.value = isEdit ? (data.emailKantor || '') : '';
                 }
                 if (passwordInput) {
                     passwordInput.value = '';
@@ -395,7 +406,7 @@ ksort($levelOptions);
                     responsive: false,
                     autoWidth: false,
                     scrollX: true,
-                    dom: 'lrtip',
+                    dom: 'frtip',
                     pageLength: 10,
                     language: {
                         search: 'Search:',
@@ -418,6 +429,7 @@ ksort($levelOptions);
                     nik: $(this).data('nik'),
                     nama: $(this).data('nama'),
                     username: $(this).data('username'),
+                    emailKantor: $(this).data('email-kantor'),
                     idLevel: $(this).data('id-level'),
                     jabatanName: $(this).data('jabatan-name'),
                     jenisKelamin: $(this).data('jenis-kelamin'),

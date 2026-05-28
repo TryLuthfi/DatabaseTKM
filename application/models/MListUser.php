@@ -12,6 +12,7 @@ class MListUser extends CI_Model
                 u.nik,
                 u.nama_karyawan AS nama_user,
                 u.username_user,
+                u.email_kantor,
                 u.password_user,
                 CASE
                     WHEN COALESCE(TRIM(u.nik), '') <> ''
