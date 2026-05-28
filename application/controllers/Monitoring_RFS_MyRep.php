@@ -18,7 +18,6 @@ class Monitoring_RFS_MyRep extends CI_Controller
             $this->myrepAccess->enforceView('Monitoring_RFS_MyRep');
             $this->myrepAccess->enforceByMethod('Monitoring_RFS_MyRep', (string) $this->router->fetch_method(), [
                 'submitClaim' => 'TAMBAH',
-                'updateClaimStatus' => 'APPROVAL',
                 'previewClusterImport' => 'TAMBAH',
             ]);
         }
@@ -816,6 +815,12 @@ class Monitoring_RFS_MyRep extends CI_Controller
 
         if (!$this->isHoApprover()) {
             $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Approval claim hanya bisa dilakukan PIC HO.');
+            redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity, $filterClaimStartDate, $filterClaimEndDate));
+            return;
+        }
+
+        if (!$this->myrepAccess->hasPermission('Monitoring_RFS_MyRep', 'APPROVAL')) {
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Anda tidak memiliki akses approval HO.');
             redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity, $filterClaimStartDate, $filterClaimEndDate));
             return;
         }

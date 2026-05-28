@@ -50,7 +50,7 @@ $claimRfsTabs = [
     [
         'id' => 'claim-rfs-waiting-rpm',
         'table_id' => 'table_rfs_claim_waiting_rpm',
-        'label' => 'Waiting Approval RPM',
+        'label' => 'Waiting Approval Area',
         'rows' => $claimWaitingRpmList
     ],
     [
@@ -2335,7 +2335,7 @@ if (!empty($kpiDetailRowMap)) {
                                 <th>Foto</th>
                                 <th>Status</th>
                                 <th>PIC Area</th>
-                                <th>Approval RPM</th>
+                                <th>Approval Area</th>
                                 <th>Approval HO</th>
                             </tr>
                         </thead>
@@ -2407,7 +2407,7 @@ if (!empty($kpiDetailRowMap)) {
                                             <?php if ($claimRpm === '') { ?>
                                                 <span class="badge badge-secondary">SKIPPED</span>
                                                 <div><small>Tidak ada RPM/SM untuk area ini</small></div>
-                                            <?php } elseif ($claimStatus === 'WAITING APPROVAL RPM' && $canApproveRpm && $canApprovalAction) { ?>
+                                            <?php } elseif ($claimStatus === 'WAITING APPROVAL RPM' && $canApproveRpm) { ?>
                                                 <form method="post"
                                                     action="<?= base_url('Monitoring_RFS_MyRep/updateClaimStatus') ?>">
                                                     <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
