@@ -1067,8 +1067,10 @@ class MDRM_MyRep extends CI_Model
             ->select('f.id_doc_file, f.id_doc_package, f.id_doc_item, f.file_name, f.status_file')
             ->from('tb_myrep_flow_doc_package p')
             ->join('tb_myrep_flow_doc_file f', 'f.id_doc_package = p.id_doc_package', 'inner')
+            ->join('md_myrep_flow_doc_item i', 'i.id_doc_item = f.id_doc_item', 'inner')
             ->where('p.id_myrep_cluster', (int) $clusterId)
             ->where('p.flow_type', $flowType)
+            ->where('UPPER(i.doc_name)', 'APD BOQ')
             ->get()
             ->result_array();
 
@@ -1242,8 +1244,10 @@ class MDRM_MyRep extends CI_Model
                 ->select('f.id_doc_file, f.id_doc_package, f.id_doc_item, f.file_name, f.status_file')
                 ->from('tb_myrep_flow_doc_package p')
                 ->join('tb_myrep_flow_doc_file f', 'f.id_doc_package = p.id_doc_package', 'inner')
+                ->join('md_myrep_flow_doc_item i', 'i.id_doc_item = f.id_doc_item', 'inner')
                 ->where('p.id_myrep_cluster', (int) $clusterId)
                 ->where('p.flow_type', $flowType)
+                ->where('UPPER(i.doc_name)', 'APD BOQ')
                 ->get()
                 ->result_array();
 
