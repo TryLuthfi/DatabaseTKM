@@ -26,7 +26,6 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
         $selectedCity = strtoupper(trim((string) $this->input->get('city')));
         $selectedRegional = strtoupper(trim((string) $this->input->get('regional')));
-        $cacheKey = 'checklist_doc_index_' . md5($selectedCity . '|' . $selectedRegional);
 
         try {
             // Sync bridge bisa berat; jangan sampai memblokir render halaman monitoring.
@@ -41,37 +40,71 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $data['selectedRegional'] = $selectedRegional;
         $data['cityOptions'] = $this->MChecklist_Dokument_MyRep->getCityOptions();
         $data['regionalOptions'] = $this->MChecklist_Dokument_MyRep->getRegionalOptions();
-
-        $cachedPayload = $this->getChecklistCache($cacheKey);
-        if (!is_array($cachedPayload)) {
-            $clusterList = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional);
-            $documentItemList = $this->MChecklist_Dokument_MyRep->getClusterDocumentItemRows($selectedCity, $selectedRegional);
-            $cachedPayload = [
-                'clusterList' => $clusterList,
-                'documentItemList' => $documentItemList,
-                'dashboardSummary' => $this->buildDashboardSummary($clusterList, $documentItemList),
-            ];
-            $this->saveChecklistCache($cacheKey, $cachedPayload, 300);
-        }
-
-        $sourceClusterList = isset($cachedPayload['clusterList']) && is_array($cachedPayload['clusterList']) ? $cachedPayload['clusterList'] : [];
         $data['clusterList'] = [];
         $data['renderClusterRows'] = false;
-        // Hindari render ribuan row item dokumen di initial page load (akan diload server-side via AJAX).
         $data['documentItemList'] = [];
-        $sourceDocumentItemList = isset($cachedPayload['documentItemList']) && is_array($cachedPayload['documentItemList'])
-            ? $cachedPayload['documentItemList']
-            : [];
-        $data['dashboardSummary'] = isset($cachedPayload['dashboardSummary']) && is_array($cachedPayload['dashboardSummary'])
-            ? $cachedPayload['dashboardSummary']
-            : $this->buildDashboardSummary($sourceClusterList, $sourceDocumentItemList);
-        $data['itemFilterOptions'] = $this->buildItemFilterOptions($sourceDocumentItemList);
+        $data['dashboardSummary'] = $this->buildDashboardSummary([], []);
+        $data['itemFilterOptions'] = [];
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
         $this->load->view('Checklist_Dokument_MyRep/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function dashboardData()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'status' => false,
+                    'dashboardSummary' => $this->buildDashboardSummary([], []),
+                    'itemFilterOptions' => [],
+                ]));
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->post('selected_city')));
+        $selectedRegional = strtoupper(trim((string) $this->input->post('selected_regional')));
+        $cacheKey = 'checklist_doc_dashboard_' . md5($selectedCity . '|' . $selectedRegional);
+
+        try {
+            $cachedPayload = $this->getChecklistCache($cacheKey);
+            if (!is_array($cachedPayload)) {
+                $clusterList = $this->MChecklist_Dokument_MyRep->getFullRfsClusters($selectedCity, $selectedRegional);
+                $documentItemList = $this->MChecklist_Dokument_MyRep->getClusterDocumentItemRows($selectedCity, $selectedRegional);
+                $cachedPayload = [
+                    'dashboardSummary' => $this->buildDashboardSummary($clusterList, $documentItemList),
+                    'itemFilterOptions' => $this->buildItemFilterOptions($documentItemList),
+                    'generatedAt' => date('Y-m-d H:i:s'),
+                ];
+                $this->saveChecklistCache($cacheKey, $cachedPayload, 300);
+            }
+
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'status' => true,
+                    'dashboardSummary' => isset($cachedPayload['dashboardSummary']) && is_array($cachedPayload['dashboardSummary'])
+                        ? $cachedPayload['dashboardSummary']
+                        : $this->buildDashboardSummary([], []),
+                    'itemFilterOptions' => isset($cachedPayload['itemFilterOptions']) && is_array($cachedPayload['itemFilterOptions'])
+                        ? $cachedPayload['itemFilterOptions']
+                        : [],
+                    'generatedAt' => (string) ($cachedPayload['generatedAt'] ?? ''),
+                ]));
+        } catch (\Throwable $e) {
+            log_message('error', 'Checklist dashboardData failed: ' . $e->getMessage());
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'status' => false,
+                    'dashboardSummary' => $this->buildDashboardSummary([], []),
+                    'itemFilterOptions' => [],
+                ]));
+        }
     }
 
     public function clusterTableData()
@@ -766,13 +799,61 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
         $data['title'] = 'Checklist Dokument Detail';
         $data['cluster'] = $cluster;
-        $data['scopeTabs'] = $this->MChecklist_Dokument_MyRep->getClusterScopeTabs($clusterId);
+        $data['scopeTabs'] = $this->MChecklist_Dokument_MyRep->getClusterScopeTabs($clusterId, false);
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
         $this->load->view('Checklist_Dokument_MyRep/detail', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function documentHistoryData($fileId = 0)
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'status' => false,
+                    'message' => 'Session habis. Silakan login ulang.',
+                    'history' => [],
+                ]));
+            return;
+        }
+
+        $fileId = (int) $fileId;
+        if ($fileId <= 0) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'status' => false,
+                    'message' => 'Dokumen tidak valid.',
+                    'history' => [],
+                ]));
+            return;
+        }
+
+        $file = $this->MChecklist_Dokument_MyRep->getFileById($fileId);
+        if (empty($file)) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'status' => false,
+                    'message' => 'Dokumen tidak ditemukan.',
+                    'history' => [],
+                ]));
+            return;
+        }
+
+        $historyByFileId = $this->MChecklist_Dokument_MyRep->getFileLogsByFileIds([$fileId]);
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => true,
+                'history' => isset($historyByFileId[$fileId]) && is_array($historyByFileId[$fileId])
+                    ? $historyByFileId[$fileId]
+                    : [],
+            ]));
     }
 
     public function mainfeeder()

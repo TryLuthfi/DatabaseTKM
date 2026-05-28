@@ -392,7 +392,7 @@ class DRM_MyRep extends CI_Controller
 
             $config = [
                 'upload_path' => $uploadDir,
-                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png|rar|zip',
+                'allowed_types' => '*',
                 'max_size' => 30720,
                 'file_name' => $fileName,
                 'overwrite' => true,
@@ -499,7 +499,7 @@ class DRM_MyRep extends CI_Controller
                 $fileName = 'DRM_' . $scopeType . '_' . $clusterId . '_' . $docItemId . '_' . $safeDocName . '_' . date('YmdHis') . '.' . $extension;
                 $config = [
                     'upload_path' => $uploadDir,
-                    'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png|rar|zip',
+                    'allowed_types' => '*',
                     'max_size' => 30720,
                     'file_name' => $fileName,
                     'overwrite' => true,
@@ -925,7 +925,7 @@ class DRM_MyRep extends CI_Controller
 
             $config = [
                 'upload_path' => $uploadDir,
-                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png|rar|zip',
+                'allowed_types' => '*',
                 'max_size' => 30720,
                 'file_name' => $fileName,
                 'overwrite' => true,

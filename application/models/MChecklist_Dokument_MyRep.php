@@ -892,7 +892,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         return empty($rows) ? [] : $rows[0];
     }
 
-    public function getClusterScopeTabs($clusterId)
+    public function getClusterScopeTabs($clusterId, $includeHistory = true)
     {
         $clusterDetail = $this->getClusterDetail($clusterId);
         $groups = $this->getDocumentGroups();
@@ -1055,31 +1055,33 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ];
         }
 
-        $fileIds = [];
-        foreach ($scopes as $scopeRows) {
-            foreach ($scopeRows as $groupRow) {
-                foreach ($groupRow['items'] as $itemRow) {
-                    if (!empty($itemRow['id_doc_file'])) {
-                        $fileIds[] = (int) $itemRow['id_doc_file'];
+        if ($includeHistory) {
+            $fileIds = [];
+            foreach ($scopes as $scopeRows) {
+                foreach ($scopeRows as $groupRow) {
+                    foreach ($groupRow['items'] as $itemRow) {
+                        if (!empty($itemRow['id_doc_file'])) {
+                            $fileIds[] = (int) $itemRow['id_doc_file'];
+                        }
                     }
                 }
             }
-        }
 
-        $historyByFileId = $this->getFileLogsByFileIds(array_values(array_unique($fileIds)));
+            $historyByFileId = $this->getFileLogsByFileIds(array_values(array_unique($fileIds)));
 
-        foreach ($scopes as &$scopeRows) {
-            foreach ($scopeRows as &$groupRow) {
-                foreach ($groupRow['items'] as &$itemRow) {
-                    $itemRow['history'] = !empty($itemRow['id_doc_file']) && isset($historyByFileId[(int) $itemRow['id_doc_file']])
-                        ? $historyByFileId[(int) $itemRow['id_doc_file']]
-                        : [];
+            foreach ($scopes as &$scopeRows) {
+                foreach ($scopeRows as &$groupRow) {
+                    foreach ($groupRow['items'] as &$itemRow) {
+                        $itemRow['history'] = !empty($itemRow['id_doc_file']) && isset($historyByFileId[(int) $itemRow['id_doc_file']])
+                            ? $historyByFileId[(int) $itemRow['id_doc_file']]
+                            : [];
+                    }
+                    unset($itemRow);
                 }
-                unset($itemRow);
+                unset($groupRow);
             }
-            unset($groupRow);
+            unset($scopeRows);
         }
-        unset($scopeRows);
 
         return $scopes;
     }

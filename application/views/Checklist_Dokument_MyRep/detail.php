@@ -809,7 +809,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             data-toggle="modal"
                                                                             data-target="#modalHistoryDocument"
                                                                             data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
-                                                                            data-history='<?= htmlspecialchars(json_encode($item["history"]), ENT_QUOTES, "UTF-8") ?>'>
+                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>">
                                                                             Detail
                                                                         </button>
                                                                     <?php endif; ?>
@@ -1116,7 +1116,7 @@ $clusterProgressPercent = checklist_doc_percent(
                                                                             data-toggle="modal"
                                                                             data-target="#modalHistoryDocument"
                                                                             data-doc-name="<?= htmlspecialchars($item['doc_name'], ENT_QUOTES) ?>"
-                                                                            data-history='<?= htmlspecialchars(json_encode($item["history"]), ENT_QUOTES, "UTF-8") ?>'>
+                                                                            data-file-id="<?= (int) $item['id_doc_file'] ?>">
                                                                             Detail
                                                                         </button>
                                                                     <?php endif; ?>
@@ -1703,19 +1703,12 @@ $clusterProgressPercent = checklist_doc_percent(
         $('#astri-submitted-date').prop('required', astriStatus !== 'NY');
     });
 
-    $(document).on('click', '.btn-history-doc', function() {
-        var docName = $(this).data('doc-name');
-        var rawHistory = $(this).attr('data-history');
-        var history = [];
+    function escapeHistoryText(value) {
+        return $('<div>').text(value || '').html();
+    }
 
-        try {
-            history = rawHistory ? JSON.parse(rawHistory) : [];
-        } catch (e) {
-            history = [];
-        }
-
-        $('#history-doc-title').text(docName);
-
+    function renderDocumentHistory(history) {
+        history = $.isArray(history) ? history : [];
         if (!history.length) {
             $('#history-doc-list').html('<li class="text-muted">Belum ada history.</li>');
             return;
@@ -1736,14 +1729,37 @@ $clusterProgressPercent = checklist_doc_percent(
 
             html += '<li class="doc-history-item">' +
                 '<span class="doc-history-dot"></span>' +
-                '<div class="doc-history-title">' + actionLabel + '</div>' +
-                '<div class="doc-history-meta">' + actionAt + ' | ' + actor + '</div>' +
-                '<p class="doc-history-note"><strong>File:</strong> ' + fileName + '</p>' +
-                '<p class="doc-history-note"><strong>Remark:</strong> ' + remark + '</p>' +
+                '<div class="doc-history-title">' + escapeHistoryText(actionLabel) + '</div>' +
+                '<div class="doc-history-meta">' + escapeHistoryText(actionAt) + ' | ' + escapeHistoryText(actor) + '</div>' +
+                '<p class="doc-history-note"><strong>File:</strong> ' + escapeHistoryText(fileName) + '</p>' +
+                '<p class="doc-history-note"><strong>Remark:</strong> ' + escapeHistoryText(remark) + '</p>' +
                 '</li>';
         });
 
         $('#history-doc-list').html(html);
+    }
+
+    $(document).on('click', '.btn-history-doc', function() {
+        var docName = $(this).data('doc-name');
+        var fileId = parseInt($(this).data('file-id'), 10) || 0;
+
+        $('#history-doc-title').text(docName);
+        $('#history-doc-list').html('<li class="text-muted">Memuat history...</li>');
+
+        if (!fileId) {
+            renderDocumentHistory([]);
+            return;
+        }
+
+        $.ajax({
+            url: "<?= base_url('Checklist_Dokument_MyRep/documentHistoryData') ?>/" + fileId,
+            type: 'GET',
+            dataType: 'json'
+        }).done(function(response) {
+            renderDocumentHistory(response && response.status ? response.history : []);
+        }).fail(function() {
+            $('#history-doc-list').html('<li class="text-danger">Gagal memuat history dokumen.</li>');
+        });
     });
 
     $(document).on('change', '#is-document-not-required', function() {

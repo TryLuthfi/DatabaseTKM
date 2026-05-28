@@ -92,9 +92,13 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $data['smSummary'] = $this->MMonitoring_RFS_MyRep->getGroupedKpiSummary($selectedYear, $selectedStartMonth, $selectedEndMonth, 'sm', $selectedCity);
         $data['teamSummary'] = $this->MMonitoring_RFS_MyRep->getGroupedKpiSummary($selectedYear, $selectedStartMonth, $selectedEndMonth, 'team_name', $selectedCity);
         $data['threeMonthSummary'] = $this->MMonitoring_RFS_MyRep->getThreeMonthSummary($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
-        $data['clusterList'] = $this->MMonitoring_RFS_MyRep->getClustersWithPlan($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
+        $data['clusterList'] = [];
+        $data['renderClusterRows'] = false;
+        $data['clusterStatusSummary'] = $this->MMonitoring_RFS_MyRep->getClusterRfsStatusSummary($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
         $data['claimList'] = $this->MMonitoring_RFS_MyRep->getClaims($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
-        $data['claimApprovalList'] = $this->MMonitoring_RFS_MyRep->getClaims($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity, $selectedClaimStartDate, $selectedClaimEndDate);
+        $data['claimApprovalList'] = ($selectedClaimStartDate === '' && $selectedClaimEndDate === '')
+            ? $data['claimList']
+            : $this->MMonitoring_RFS_MyRep->getClaims($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity, $selectedClaimStartDate, $selectedClaimEndDate);
         $data['cityOptions'] = $this->MMonitoring_RFS_MyRep->getCityOptions();
         $data['targetOptions'] = $this->MMonitoring_RFS_MyRep->getTargetOptions($selectedYear, $selectedStartMonth, $selectedEndMonth, $selectedCity);
         $data['allTargetOptions'] = $this->MMonitoring_RFS_MyRep->getTargetOptions($selectedYear, 1, 12, '');
@@ -106,6 +110,135 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $this->load->view('Monitoring_RFS_MyRep/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function clusterTableData()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonDataTableResponse(0, 0, []);
+            return;
+        }
+
+        $selectedYear = (int) $this->input->post('year');
+        $selectedStartMonth = (int) $this->input->post('start_month');
+        $selectedEndMonth = (int) $this->input->post('end_month');
+        $selectedCity = strtoupper(trim((string) $this->input->post('city')));
+
+        if ($selectedYear <= 0) {
+            $selectedYear = (int) date('Y');
+        }
+        if ($selectedStartMonth < 1 || $selectedStartMonth > 12) {
+            $selectedStartMonth = (int) date('n');
+        }
+        if ($selectedEndMonth < 1 || $selectedEndMonth > 12) {
+            $selectedEndMonth = (int) date('n');
+        }
+        if ($selectedStartMonth > $selectedEndMonth) {
+            $temp = $selectedStartMonth;
+            $selectedStartMonth = $selectedEndMonth;
+            $selectedEndMonth = $temp;
+        }
+
+        $searchPayload = $this->input->post('search');
+        $searchValue = is_array($searchPayload) ? (string) ($searchPayload['value'] ?? '') : '';
+        $orderPayload = $this->input->post('order');
+        $order = [];
+        if (is_array($orderPayload) && isset($orderPayload[0]) && is_array($orderPayload[0])) {
+            $order = [
+                'column' => $orderPayload[0]['column'] ?? null,
+                'dir' => $orderPayload[0]['dir'] ?? 'asc',
+            ];
+        }
+
+        $start = max(0, (int) $this->input->post('start'));
+        $length = (int) $this->input->post('length');
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        try {
+            $page = $this->MMonitoring_RFS_MyRep->getClustersWithPlanPage(
+                $selectedYear,
+                $selectedStartMonth,
+                $selectedEndMonth,
+                $selectedCity,
+                $start,
+                $length,
+                $searchValue,
+                $order
+            );
+
+            $canTambahAction = isset($this->myrepAccess)
+                ? $this->myrepAccess->hasPermission('Monitoring_RFS_MyRep', 'TAMBAH')
+                : true;
+
+            $data = [];
+            $no = $start + 1;
+            foreach (($page['rows'] ?? []) as $cluster) {
+                $data[] = $this->buildClusterTableRow($cluster, $no++, $canTambahAction);
+            }
+
+            $this->jsonDataTableResponse((int) ($page['recordsTotal'] ?? 0), (int) ($page['recordsFiltered'] ?? 0), $data);
+        } catch (\Throwable $e) {
+            log_message('error', 'Monitoring RFS clusterTableData failed: ' . $e->getMessage());
+            $this->jsonDataTableResponse(0, 0, []);
+        }
+    }
+
+    private function jsonDataTableResponse($recordsTotal, $recordsFiltered, array $data)
+    {
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'draw' => (int) $this->input->post('draw'),
+                'recordsTotal' => (int) $recordsTotal,
+                'recordsFiltered' => (int) $recordsFiltered,
+                'data' => $data,
+            ]));
+    }
+
+    private function buildClusterTableRow(array $cluster, $no, $canTambahAction)
+    {
+        $statusRfs = (string) ($cluster['status_rfs'] ?? 'NY RFS');
+        $hasPendingClaim = (int) ($cluster['pending_claim_count'] ?? 0) > 0;
+        $displayStatusRfs = $hasPendingClaim ? 'WAITING APPROVAL' : $statusRfs;
+        $displayBadgeClass = $displayStatusRfs === 'FULL RFS'
+            ? 'success'
+            : ($displayStatusRfs === 'PARTIAL'
+                ? 'warning'
+                : ($displayStatusRfs === 'WAITING APPROVAL'
+                    ? 'info'
+                    : ($displayStatusRfs === 'REJECTED' ? 'danger' : 'secondary')));
+        $clusterHomepassDrm = (float) ($cluster['homepass_drm_effective'] ?? $cluster['homepass'] ?? 0);
+        $claimedQty = (float) ($cluster['claimed_qty'] ?? 0);
+
+        $actionHtml = '<span class="text-muted small">Tidak tersedia</span>';
+        if ($canTambahAction && in_array($displayStatusRfs, ['NY RFS', 'PARTIAL', 'REJECTED'], true)) {
+            $actionHtml = '<button type="button" class="btn btn-sm btn-success js-open-claim-rfs-modal" data-toggle="modal" data-target="#claimRfsModal"'
+                . ' data-cluster-id="' . (int) ($cluster['id_cluster'] ?? 0) . '"'
+                . ' data-cluster-name="' . $this->html($cluster['cluster_name'] ?? '') . '"'
+                . ' data-homepass="' . (int) $clusterHomepassDrm . '"'
+                . ' data-status-rfs="' . $this->html($statusRfs) . '">Claim RFS</button>';
+        }
+
+        return [
+            (int) $no,
+            $this->html($cluster['city_name'] ?? ''),
+            $this->html($cluster['cluster_name'] ?? ''),
+            '<span class="badge badge-' . $displayBadgeClass . '">' . $this->html($displayStatusRfs) . '</span>',
+            $this->html($cluster['rpm'] ?? ''),
+            $this->html($cluster['sm'] ?? ''),
+            $this->html($cluster['spv'] ?? ''),
+            number_format($clusterHomepassDrm, 0, ',', '.'),
+            number_format($claimedQty, 0, ',', '.'),
+            number_format($clusterHomepassDrm - $claimedQty, 0, ',', '.'),
+            $actionHtml,
+        ];
+    }
+
+    private function html($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES);
     }
 
     public function saveMonthlyTarget()

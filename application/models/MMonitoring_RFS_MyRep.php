@@ -590,6 +590,178 @@ class MMonitoring_RFS_MyRep extends CI_Model
         return $this->db->query($sql, $params)->result_array();
     }
 
+    public function getClustersWithPlanPage($year, $startMonth, $endMonth, $city = '', $start = 0, $length = 10, $search = '', array $order = [])
+    {
+        if (!$this->hasMyrepClusterTables() || !$this->hasMyrepDrmDocumentTables()) {
+            return [
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'rows' => [],
+            ];
+        }
+
+        $start = max(0, (int) $start);
+        $length = (int) $length;
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        $recordsTotal = $this->countClustersWithPlan($year, $endMonth, $city);
+        $recordsFiltered = $this->countClustersWithPlan($year, $endMonth, $city, $search);
+
+        $sql = $this->getClustersWithPlanSelectSql() . $this->getClustersWithPlanBaseSql();
+        $params = [(int) $year, (int) $endMonth];
+        $this->appendClusterWithPlanFilters($sql, $params, $city, $search);
+        $sql .= ' ' . $this->getClustersWithPlanOrderSql($order) . ' LIMIT ? OFFSET ?';
+        $params[] = $length;
+        $params[] = $start;
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $this->db->query($sql, $params)->result_array(),
+        ];
+    }
+
+    public function getClusterRfsStatusSummary($year, $startMonth, $endMonth, $city = '')
+    {
+        if (!$this->hasMyrepClusterTables() || !$this->hasMyrepDrmDocumentTables()) {
+            return ['fullRfsCount' => 0, 'waitingApprovalCount' => 0, 'rejectedClusterCount' => 0];
+        }
+
+        $innerSql = $this->getClustersWithPlanSelectSql() . $this->getClustersWithPlanBaseSql();
+        $params = [(int) $year, (int) $endMonth];
+        $this->appendClusterWithPlanFilters($innerSql, $params, $city, '');
+
+        $sql = "SELECT
+                SUM(CASE WHEN display_status = 'FULL RFS' THEN 1 ELSE 0 END) AS full_rfs_count,
+                SUM(CASE WHEN display_status = 'WAITING APPROVAL' THEN 1 ELSE 0 END) AS waiting_approval_count,
+                SUM(CASE WHEN display_status = 'REJECTED' THEN 1 ELSE 0 END) AS rejected_cluster_count
+            FROM (
+                SELECT
+                    CASE
+                        WHEN src.pending_claim_count > 0 THEN 'WAITING APPROVAL'
+                        ELSE UPPER(COALESCE(src.status_rfs, 'NY RFS'))
+                    END AS display_status
+                FROM (" . $innerSql . ") src
+            ) status_src";
+
+        $row = $this->db->query($sql, $params)->row_array();
+
+        return [
+            'fullRfsCount' => (int) ($row['full_rfs_count'] ?? 0),
+            'waitingApprovalCount' => (int) ($row['waiting_approval_count'] ?? 0),
+            'rejectedClusterCount' => (int) ($row['rejected_cluster_count'] ?? 0),
+        ];
+    }
+
+    private function countClustersWithPlan($year, $endMonth, $city = '', $search = '')
+    {
+        $sql = "SELECT COUNT(*) AS total " . $this->getClustersWithPlanBaseSql();
+        $params = [(int) $year, (int) $endMonth];
+        $this->appendClusterWithPlanFilters($sql, $params, $city, $search);
+        $row = $this->db->query($sql, $params)->row_array();
+
+        return (int) ($row['total'] ?? 0);
+    }
+
+    private function getClustersWithPlanSelectSql()
+    {
+        return "SELECT
+                c.*,
+                mc.id_myrep_cluster,
+                mc.status_current AS myrep_status_current,
+                md.homepass_drm AS homepass_drm_latest,
+                COALESCE(NULLIF(md.homepass_drm, 0), c.homepass) AS homepass_drm_effective,
+                mt.id_target,
+                mt.year_num,
+                mt.month_num,
+                mt.regional_name,
+                mt.province_name,
+                mt.city_name,
+                mt.chief,
+                mt.rpm,
+                mt.sm,
+                mt.spv,
+                COALESCE((
+                    SELECT COUNT(1)
+                    FROM tb_rfs_myrep_claim cl_pending
+                    WHERE cl_pending.cluster_id = c.id_cluster
+                    AND cl_pending.status_claim IN ('WAITING APPROVAL RPM', 'WAITING APPROVAL HO')
+                ), 0) AS pending_claim_count,
+                COALESCE(p.optimistic_target, 0) AS optimistic_target,
+                COALESCE((
+                    SELECT SUM(claim_qty)
+                    FROM tb_rfs_myrep_claim cl
+                    WHERE cl.cluster_id = c.id_cluster
+                    AND cl.status_claim IN ('WAITING APPROVAL RPM', 'WAITING APPROVAL HO', 'APPROVED')
+                ), 0) AS claimed_qty ";
+    }
+
+    private function getClustersWithPlanBaseSql()
+    {
+        return " FROM tb_rfs_myrep_cluster c
+             INNER JOIN tb_rfs_myrep_monthly_target mt ON mt.id_target = c.id_target
+             INNER JOIN tb_myrep_cluster mc ON mc.rfs_cluster_id = c.id_cluster
+             INNER JOIN (
+                SELECT d.id_myrep_cluster, d.homepass_drm
+                FROM tb_myrep_drm d
+                INNER JOIN (
+                    SELECT id_myrep_cluster, MAX(id_drm) AS latest_id_drm
+                    FROM tb_myrep_drm
+                    GROUP BY id_myrep_cluster
+                ) latest_drm ON latest_drm.latest_id_drm = d.id_drm
+             ) md ON md.id_myrep_cluster = mc.id_myrep_cluster
+             LEFT JOIN tb_rfs_myrep_cluster_plan p
+               ON p.cluster_id = c.id_cluster
+               AND p.year_num = ?
+               AND p.month_num = ?
+             WHERE UPPER(COALESCE(mc.status_current, '')) IN ('DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE') ";
+    }
+
+    private function appendClusterWithPlanFilters(&$sql, array &$params, $city = '', $search = '')
+    {
+        $city = strtoupper(trim((string) $city));
+        if ($city !== '') {
+            $sql .= " AND UPPER(mt.city_name) = ? ";
+            $params[] = $city;
+        }
+
+        $search = strtoupper(trim((string) $search));
+        if ($search !== '') {
+            $sql .= " AND (
+                UPPER(mt.city_name) LIKE ?
+                OR UPPER(c.cluster_name) LIKE ?
+                OR UPPER(COALESCE(c.status_rfs, '')) LIKE ?
+                OR UPPER(COALESCE(mt.rpm, '')) LIKE ?
+                OR UPPER(COALESCE(mt.sm, '')) LIKE ?
+                OR UPPER(COALESCE(mt.spv, '')) LIKE ?
+            ) ";
+            $like = '%' . $search . '%';
+            array_push($params, $like, $like, $like, $like, $like, $like);
+        }
+    }
+
+    private function getClustersWithPlanOrderSql(array $order = [])
+    {
+        $columnMap = [
+            1 => 'mt.city_name',
+            2 => 'c.cluster_name',
+            3 => 'c.status_rfs',
+            4 => 'mt.rpm',
+            5 => 'mt.sm',
+            6 => 'mt.spv',
+        ];
+
+        $column = isset($order['column']) ? (int) $order['column'] : 0;
+        $dir = strtoupper(trim((string) ($order['dir'] ?? 'ASC'))) === 'DESC' ? 'DESC' : 'ASC';
+        if (isset($columnMap[$column])) {
+            return ' ORDER BY ' . $columnMap[$column] . ' ' . $dir . ', mt.city_name ASC, c.cluster_name ASC ';
+        }
+
+        return ' ORDER BY mt.city_name ASC, c.cluster_name ASC ';
+    }
+
     public function syncMyrepCompatibilityBridge($year, $month, $city = '')
     {
         $year = (int) $year;

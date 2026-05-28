@@ -657,7 +657,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                 <div class="col-md-3">
                     <div class="small-box bg-info">
                         <div class="inner">
-                            <h3><?= $totalCluster ?></h3>
+                            <h3 data-dashboard-count="totalCluster"><?= $totalCluster ?></h3>
                             <p>ATP DONE</p>
                         </div>
                         <div class="icon">
@@ -668,7 +668,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                 <div class="col-md-3">
                     <div class="small-box bg-danger">
                         <div class="inner">
-                            <h3><?= $clusterDoneAtpBelumDokument ?></h3>
+                            <h3 data-dashboard-count="clusterDoneAtpBelumDokument"><?= $clusterDoneAtpBelumDokument ?></h3>
                             <p>NY DOKUMENT</p>
                         </div>
                         <div class="icon">
@@ -679,7 +679,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                 <div class="col-md-3">
                     <div class="small-box bg-secondary">
                         <div class="inner">
-                            <h3><?= $clusterNyAstri ?></h3>
+                            <h3 data-dashboard-count="clusterNyAstri"><?= $clusterNyAstri ?></h3>
                             <p>NY ASTRI</p>
                         </div>
                         <div class="icon">
@@ -690,7 +690,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                 <div class="col-md-3">
                     <div class="small-box bg-success">
                         <div class="inner">
-                            <h3><?= max(0, $totalCluster - $clusterNyAstri) ?></h3>
+                            <h3 data-dashboard-count="astriDone"><?= max(0, $totalCluster - $clusterNyAstri) ?></h3>
                             <p>ASTRI DONE</p>
                         </div>
                         <div class="icon">
@@ -708,19 +708,19 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                             <ul class="status-summary-list">
                                 <li class="is-clickable quick-item-filter" data-filter-type="internal" data-filter-value="NOT UPLOADED">
                                     <span class="status-summary-label">Not Uploaded</span>
-                                    <span class="status-summary-count dark"><?= (int) $internalStatusSummary['NY'] ?></span>
+                                    <span class="status-summary-count dark" data-summary-section="internalStatusSummary" data-summary-key="NY"><?= (int) $internalStatusSummary['NY'] ?></span>
                                 </li>
                                 <li class="is-clickable quick-item-filter" data-filter-type="internal" data-filter-value="ON REVIEW">
                                     <span class="status-summary-label">On Review</span>
-                                    <span class="status-summary-count warning"><?= (int) $internalStatusSummary['ON REVIEW'] ?></span>
+                                    <span class="status-summary-count warning" data-summary-section="internalStatusSummary" data-summary-key="ON REVIEW"><?= (int) $internalStatusSummary['ON REVIEW'] ?></span>
                                 </li>
                                 <li class="is-clickable quick-item-filter" data-filter-type="internal" data-filter-value="REJECTED">
                                     <span class="status-summary-label">Rejected</span>
-                                    <span class="status-summary-count danger"><?= (int) $internalStatusSummary['REJECTED'] ?></span>
+                                    <span class="status-summary-count danger" data-summary-section="internalStatusSummary" data-summary-key="REJECTED"><?= (int) $internalStatusSummary['REJECTED'] ?></span>
                                 </li>
                                 <li class="is-clickable quick-item-filter" data-filter-type="internal" data-filter-value="APPROVED">
                                     <span class="status-summary-label">Approved</span>
-                                    <span class="status-summary-count success"><?= (int) $internalStatusSummary['APPROVED'] ?></span>
+                                    <span class="status-summary-count success" data-summary-section="internalStatusSummary" data-summary-key="APPROVED"><?= (int) $internalStatusSummary['APPROVED'] ?></span>
                                 </li>
                             </ul>
                         </div>
@@ -733,19 +733,19 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                             <ul class="status-summary-list">
                                 <li class="is-clickable quick-item-filter" data-filter-type="astri" data-filter-value="NOT UPLOADED">
                                     <span class="status-summary-label">Not Uploaded</span>
-                                    <span class="status-summary-count dark"><?= (int) $astriStatusSummary['NY'] ?></span>
+                                    <span class="status-summary-count dark" data-summary-section="astriStatusSummary" data-summary-key="NY"><?= (int) $astriStatusSummary['NY'] ?></span>
                                 </li>
                                 <li class="is-clickable quick-item-filter" data-filter-type="astri" data-filter-value="ON REVIEW">
                                     <span class="status-summary-label">On Review</span>
-                                    <span class="status-summary-count warning"><?= (int) $astriStatusSummary['ON REVIEW'] ?></span>
+                                    <span class="status-summary-count warning" data-summary-section="astriStatusSummary" data-summary-key="ON REVIEW"><?= (int) $astriStatusSummary['ON REVIEW'] ?></span>
                                 </li>
                                 <li class="is-clickable quick-item-filter" data-filter-type="astri" data-filter-value="REJECTED">
                                     <span class="status-summary-label">Rejected</span>
-                                    <span class="status-summary-count danger"><?= (int) $astriStatusSummary['REJECTED'] ?></span>
+                                    <span class="status-summary-count danger" data-summary-section="astriStatusSummary" data-summary-key="REJECTED"><?= (int) $astriStatusSummary['REJECTED'] ?></span>
                                 </li>
                                 <li class="is-clickable quick-item-filter" data-filter-type="astri" data-filter-value="APPROVED">
                                     <span class="status-summary-label">Approved</span>
-                                    <span class="status-summary-count success"><?= (int) $astriStatusSummary['APPROVED'] ?></span>
+                                    <span class="status-summary-count success" data-summary-section="astriStatusSummary" data-summary-key="APPROVED"><?= (int) $astriStatusSummary['APPROVED'] ?></span>
                                 </li>
                             </ul>
                         </div>
@@ -758,19 +758,19 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                             <ul class="status-summary-list">
                                 <li class="is-clickable quick-item-filter" data-filter-type="project-opname" data-filter-value="WAITING WASPANG">
                                     <span class="status-summary-label">Waiting Waspang</span>
-                                    <span class="status-summary-count warning"><?= (int) $projectOpnameFlowSummary['WAITING WASPANG'] ?></span>
+                                    <span class="status-summary-count warning" data-summary-section="projectOpnameFlowSummary" data-summary-key="WAITING WASPANG"><?= (int) $projectOpnameFlowSummary['WAITING WASPANG'] ?></span>
                                 </li>
                                 <li class="is-clickable quick-item-filter" data-filter-type="project-opname" data-filter-value="WAITING PLANNING">
                                     <span class="status-summary-label">Waiting Planning</span>
-                                    <span class="status-summary-count primary"><?= (int) $projectOpnameFlowSummary['WAITING PLANNING'] ?></span>
+                                    <span class="status-summary-count primary" data-summary-section="projectOpnameFlowSummary" data-summary-key="WAITING PLANNING"><?= (int) $projectOpnameFlowSummary['WAITING PLANNING'] ?></span>
                                 </li>
                                 <li class="is-clickable quick-item-filter" data-filter-type="project-opname" data-filter-value="WAITING TL">
                                     <span class="status-summary-label">Waiting TL</span>
-                                    <span class="status-summary-count primary"><?= (int) $projectOpnameFlowSummary['WAITING TL'] ?></span>
+                                    <span class="status-summary-count primary" data-summary-section="projectOpnameFlowSummary" data-summary-key="WAITING TL"><?= (int) $projectOpnameFlowSummary['WAITING TL'] ?></span>
                                 </li>
                                 <li class="is-clickable quick-item-filter" data-filter-type="project-opname" data-filter-value="WAITING LOGISTIK">
                                     <span class="status-summary-label">Waiting Logistik</span>
-                                    <span class="status-summary-count primary"><?= (int) $projectOpnameFlowSummary['WAITING LOGISTIK'] ?></span>
+                                    <span class="status-summary-count primary" data-summary-section="projectOpnameFlowSummary" data-summary-key="WAITING LOGISTIK"><?= (int) $projectOpnameFlowSummary['WAITING LOGISTIK'] ?></span>
                                 </li>
                             </ul>
                         </div>
@@ -1388,6 +1388,58 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
             });
         }
 
+        function dashboardNumber(value) {
+            value = parseInt(value, 10);
+            return isNaN(value) ? 0 : value;
+        }
+
+        function updateDashboardSummary(summary) {
+            summary = summary || {};
+
+            var totalCluster = dashboardNumber(summary.totalCluster);
+            var clusterNyAstri = dashboardNumber(summary.clusterNyAstri);
+            var counts = {
+                totalCluster: totalCluster,
+                clusterDoneAtpBelumDokument: dashboardNumber(summary.clusterDoneAtpBelumDokument),
+                clusterNyAstri: clusterNyAstri,
+                astriDone: Math.max(0, totalCluster - clusterNyAstri)
+            };
+
+            Object.keys(counts).forEach(function(key) {
+                $('[data-dashboard-count="' + key + '"]').text(counts[key]);
+            });
+
+            $('[data-summary-section][data-summary-key]').each(function() {
+                var el = $(this);
+                var section = el.data('summary-section');
+                var key = el.data('summary-key');
+                var sectionData = summary[section] || {};
+                el.text(dashboardNumber(sectionData[key]));
+            });
+        }
+
+        function loadDashboardData() {
+            $.ajax({
+                url: "<?= base_url('Checklist_Dokument_MyRep/dashboardData') ?>",
+                type: "POST",
+                dataType: "json",
+                data: {
+                    selected_city: "<?= htmlspecialchars($selectedCity, ENT_QUOTES) ?>",
+                    selected_regional: "<?= htmlspecialchars($selectedRegional, ENT_QUOTES) ?>"
+                }
+            }).done(function(response) {
+                if (!response || response.status === false) {
+                    return;
+                }
+
+                updateDashboardSummary(response.dashboardSummary || {});
+                if ($.isArray(response.itemFilterOptions)) {
+                    itemFilterOptionRows = response.itemFilterOptions;
+                    refreshItemCascadingFilters();
+                }
+            });
+        }
+
         function setCardCollapsed(cardSelector, collapsed) {
             var card = $(cardSelector);
             var body = card.children('.card-body');
@@ -1507,6 +1559,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
         }
 
         refreshItemCascadingFilters();
+        loadDashboardData();
 
         $('#item-filter-regional').on('change', function() {
             refreshItemCascadingFilters('regional');

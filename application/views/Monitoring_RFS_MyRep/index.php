@@ -231,6 +231,12 @@ if (!empty($clusterList)) {
     }
 }
 
+if (!empty($clusterStatusSummary) && is_array($clusterStatusSummary)) {
+    $fullRfsCount = (int) ($clusterStatusSummary['fullRfsCount'] ?? $fullRfsCount);
+    $waitingApprovalCount = (int) ($clusterStatusSummary['waitingApprovalCount'] ?? $waitingApprovalCount);
+    $rejectedClusterCount = (int) ($clusterStatusSummary['rejectedClusterCount'] ?? $rejectedClusterCount);
+}
+
 if (!empty($claimList)) {
     foreach ($claimList as $claimRow) {
         $claimStatus = strtoupper(trim((string) ($claimRow['status_claim'] ?? '')));
@@ -2114,7 +2120,7 @@ if (!empty($kpiDetailRowMap)) {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (!empty($clusterList)) { ?>
+                            <?php if (!empty($clusterList) && !empty($renderClusterRows)) { ?>
                                 <?php foreach ($clusterList as $cluster) { ?>
                                     <?php
                                     $statusRfs = (string) ($cluster['status_rfs'] ?? 'NY RFS');
@@ -2262,7 +2268,7 @@ if (!empty($kpiDetailRowMap)) {
                                     $clusterClaimModals[] = ob_get_clean();
                                     ?>
                                 <?php } ?>
-                            <?php } else { ?>
+                            <?php } elseif (!empty($renderClusterRows)) { ?>
                                 <tr>
                                     <td colspan="11" class="text-center">Belum ada master cluster.</td>
                                 </tr>
@@ -2280,6 +2286,73 @@ if (!empty($kpiDetailRowMap)) {
                         </tfoot>
                     </table>
                     <?php if (!empty($clusterClaimModals)) { echo implode("\n", $clusterClaimModals); } ?>
+                    <div class="modal fade claim-rfs-modal" id="claimRfsModal">
+                        <div class="modal-dialog modal-xl">
+                            <div class="modal-content">
+                                <form method="post" action="<?= base_url('Monitoring_RFS_MyRep/submitClaim') ?>"
+                                    class="js-claim-rfs-form"
+                                    enctype="multipart/form-data">
+                                    <div class="modal-header">
+                                        <h4 class="modal-title">Claim RFS - <span id="claim_rfs_cluster_name">-</span></h4>
+                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
+                                        <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
+                                        <input type="hidden" name="filter_city" value="<?= htmlspecialchars($selectedCity) ?>">
+                                        <input type="hidden" name="filter_start_month" value="<?= (int) $selectedStartMonth ?>">
+                                        <input type="hidden" name="filter_end_month" value="<?= (int) $selectedEndMonth ?>">
+                                        <input type="hidden" name="filter_claim_start_date" value="<?= htmlspecialchars($selectedClaimStartDate) ?>">
+                                        <input type="hidden" name="filter_claim_end_date" value="<?= htmlspecialchars($selectedClaimEndDate) ?>">
+                                        <input type="hidden" name="cluster_id" id="claim_rfs_cluster_id">
+                                        <div class="claim-summary-card">
+                                            <span class="summary-label">HP DRM</span>
+                                            <div class="summary-value" id="claim_rfs_homepass_label">0</div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Tanggal RFS</label>
+                                            <input type="date" name="claim_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>HP RFS</label>
+                                            <input type="number" min="1" name="claim_qty" class="form-control claim-rfs-qty-input" id="claim_rfs_qty_input" data-homepass="0" data-deviasi-target="#claim_rfs_deviasi_dynamic" required>
+                                            <small class="text-muted">Isi sesuai HP RFS actual pada cluster ini.</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Deviasi</label>
+                                            <input type="text" id="claim_rfs_deviasi_dynamic" class="form-control claim-rfs-deviasi-output" value="0" readonly>
+                                            <small class="text-muted">Deviasi = HP DRM - HP RFS</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Status RFS</label>
+                                            <select name="status_rfs" class="form-control" id="claim_rfs_status_select" required>
+                                                <option value="">Pilih Status RFS</option>
+                                                <option value="PARTIAL">PARTIAL</option>
+                                                <option value="FULL RFS">FULL RFS</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Foto Claim</label>
+                                            <div class="claim-photo-dropzone">
+                                                <input type="file" name="claim_photo" class="claim-photo-input" accept=".jpg,.jpeg,.png,.webp" hidden>
+                                                <h6 class="mb-2">Drop foto claim di sini</h6>
+                                                <p class="text-muted mb-2">atau klik area ini untuk pilih file gambar</p>
+                                                <button type="button" class="btn btn-outline-primary btn-sm claim-photo-picker-btn">Pilih Foto</button>
+                                                <div class="small text-muted mt-2 claim-photo-filename">Belum ada file dipilih</div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Keterangan</label>
+                                            <textarea name="claim_note" class="form-control" rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-success">Kirim Claim</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -3584,8 +3657,28 @@ if (!empty($kpiDetailRowMap)) {
             setFooterValue(api, 7, sumColumn(api, 7), 0);
             setFooterValue(api, 8, sumColumn(api, 8), 0);
             setFooterValue(api, 9, sumColumn(api, 9), 0);
+        }, {
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "<?= base_url('Monitoring_RFS_MyRep/clusterTableData') ?>",
+                type: 'POST',
+                data: function (d) {
+                    d.year = <?= (int) $selectedYear ?>;
+                    d.start_month = <?= (int) $selectedStartMonth ?>;
+                    d.end_month = <?= (int) $selectedEndMonth ?>;
+                    d.city = "<?= htmlspecialchars($selectedCity, ENT_QUOTES) ?>";
+                }
+            },
+            columnDefs: [
+                { targets: [0, 10], orderable: false },
+                { targets: [7, 8, 9], className: 'text-right' },
+                { targets: [3], className: 'text-center' }
+            ],
+            language: {
+                emptyTable: 'Belum ada master cluster.'
+            }
         });
-        addRowNumbers('#table_rfs_cluster_list', 0);
 
         $('.js-rfs-claim-table').each(function () {
             var selector = '#' + this.id;
