@@ -2445,6 +2445,7 @@ if (!empty($kpiDetailRowMap)) {
                                                     <button type="submit"
                                                         form="<?= htmlspecialchars($areaApprovalFormId) ?>"
                                                         class="btn btn-sm btn-success area-approval-submit"
+                                                        data-form-target="#<?= htmlspecialchars($areaApprovalFormId) ?>"
                                                         title="Kirim approval <?= htmlspecialchars($areaApproverRole) ?>">
                                                         Update <?= htmlspecialchars($areaApproverRole) ?>
                                                     </button>
@@ -3595,6 +3596,15 @@ if (!empty($kpiDetailRowMap)) {
                 }
             });
             addRowNumbers(selector, 0);
+        });
+
+        $(document).on('click', '.area-approval-submit', function (e) {
+            e.preventDefault();
+            var formSelector = $(this).data('form-target');
+            var form = formSelector ? $(formSelector).get(0) : $(this).closest('form').get(0);
+            if (form) {
+                form.submit();
+            }
         });
 
         $('a[data-toggle="tab"][href^="#claim-rfs-"]').on('shown.bs.tab', function () {
