@@ -1383,17 +1383,51 @@ class DRM_MyRep extends CI_Controller
         }
 
         foreach ($masterMeta as $id => $meta) {
+            $excelKey = (string) ($meta['excel_key'] ?? '');
+            $itemKey = (string) ($meta['item_key'] ?? '');
             $excelFlat = (string) ($meta['excel_flat'] ?? '');
             $itemFlat = (string) ($meta['item_flat'] ?? '');
             if (
-                ($excelFlat !== '' && (strpos($flat, $excelFlat) !== false || strpos($excelFlat, $flat) !== false)) ||
-                ($itemFlat !== '' && (strpos($flat, $itemFlat) !== false || strpos($itemFlat, $flat) !== false))
+                ($excelFlat !== '' && $this->isBoqFuzzyNameMatch($normalizedName, $excelKey, $flat, $excelFlat)) ||
+                ($itemFlat !== '' && $this->isBoqFuzzyNameMatch($normalizedName, $itemKey, $flat, $itemFlat))
             ) {
                 return (int) $id;
             }
         }
 
         return 0;
+    }
+
+    private function isBoqFuzzyNameMatch($sourceName, $masterName, $sourceFlat, $masterFlat)
+    {
+        $sourceFlat = (string) $sourceFlat;
+        $masterFlat = (string) $masterFlat;
+        if ($sourceFlat === '' || $masterFlat === '') {
+            return false;
+        }
+
+        if (strpos($sourceFlat, $masterFlat) === false && strpos($masterFlat, $sourceFlat) === false) {
+            return false;
+        }
+
+        $sourceLength = strlen($sourceFlat);
+        $masterLength = strlen($masterFlat);
+        $longestLength = max($sourceLength, $masterLength);
+        if ($longestLength <= 0 || (min($sourceLength, $masterLength) / $longestLength) < 0.85) {
+            return false;
+        }
+
+        return $this->getBoqNameWorkSide($sourceName) === $this->getBoqNameWorkSide($masterName);
+    }
+
+    private function getBoqNameWorkSide($name)
+    {
+        $name = strtoupper(trim((string) $name));
+        if (preg_match('/^(INSTAL|INSTALL|INSTALLATION|PEMASANGAN|PASANG)\b/', $name)) {
+            return 'SERVICE';
+        }
+
+        return 'MATERIAL';
     }
 
     private function detectBoqColumnsFromSheet(array $sheetRows)
