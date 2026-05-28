@@ -16,10 +16,15 @@ class Monitoring_RFS_MyRep extends CI_Controller
         $this->load->library('Myrep_access_service', null, 'myrepAccess');
         if (!empty($this->session->userdata('id_user'))) {
             $this->myrepAccess->enforceView('Monitoring_RFS_MyRep');
-            $this->myrepAccess->enforceByMethod('Monitoring_RFS_MyRep', (string) $this->router->fetch_method(), [
-                'submitClaim' => 'TAMBAH',
-                'previewClusterImport' => 'TAMBAH',
-            ]);
+            $methodName = strtolower((string) $this->router->fetch_method());
+            if ($methodName !== 'updateclaimstatus') {
+                $this->myrepAccess->enforceByMethod('Monitoring_RFS_MyRep', (string) $this->router->fetch_method(), [
+                    'submitClaim' => 'TAMBAH',
+                    'submitclaim' => 'TAMBAH',
+                    'previewClusterImport' => 'TAMBAH',
+                    'previewclusterimport' => 'TAMBAH',
+                ]);
+            }
         }
     }
 

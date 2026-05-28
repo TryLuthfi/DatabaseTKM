@@ -103,6 +103,9 @@ class ModuleAccess_hook
         $allowedActions = array_map('strtoupper', (array) ($entry['actions'] ?? []));
         $methodName = (string) $CI->router->fetch_method();
         $actionKey = resolve_user_page_access_action($methodName);
+        if ($controller === 'MONITORING_RFS_MYREP' && strtolower($methodName) === 'updateclaimstatus') {
+            $actionKey = 'VIEW';
+        }
         if (!in_array($actionKey, $allowedActions, true)) {
             $actionKey = 'VIEW';
         }
