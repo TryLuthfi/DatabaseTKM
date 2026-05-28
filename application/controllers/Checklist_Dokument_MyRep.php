@@ -54,7 +54,9 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $this->saveChecklistCache($cacheKey, $cachedPayload, 300);
         }
 
-        $data['clusterList'] = isset($cachedPayload['clusterList']) && is_array($cachedPayload['clusterList']) ? $cachedPayload['clusterList'] : [];
+        $sourceClusterList = isset($cachedPayload['clusterList']) && is_array($cachedPayload['clusterList']) ? $cachedPayload['clusterList'] : [];
+        $data['clusterList'] = [];
+        $data['renderClusterRows'] = false;
         // Hindari render ribuan row item dokumen di initial page load (akan diload server-side via AJAX).
         $data['documentItemList'] = [];
         $sourceDocumentItemList = isset($cachedPayload['documentItemList']) && is_array($cachedPayload['documentItemList'])
@@ -62,7 +64,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             : [];
         $data['dashboardSummary'] = isset($cachedPayload['dashboardSummary']) && is_array($cachedPayload['dashboardSummary'])
             ? $cachedPayload['dashboardSummary']
-            : $this->buildDashboardSummary($data['clusterList'], $sourceDocumentItemList);
+            : $this->buildDashboardSummary($sourceClusterList, $sourceDocumentItemList);
         $data['itemFilterOptions'] = $this->buildItemFilterOptions($sourceDocumentItemList);
 
         $this->load->view('Templates/01_Header', $data);
@@ -70,6 +72,85 @@ class Checklist_Dokument_MyRep extends CI_Controller
         $this->load->view('Checklist_Dokument_MyRep/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function clusterTableData()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'draw' => (int) $this->input->post('draw'),
+                    'recordsTotal' => 0,
+                    'recordsFiltered' => 0,
+                    'data' => [],
+                ]));
+            return;
+        }
+
+        try {
+            $selectedCity = strtoupper(trim((string) $this->input->post('selected_city')));
+            $selectedRegional = strtoupper(trim((string) $this->input->post('selected_regional')));
+            $searchPayload = $this->input->post('search');
+            $searchValue = '';
+            if (is_array($searchPayload) && isset($searchPayload['value'])) {
+                $searchValue = strtoupper(trim((string) $searchPayload['value']));
+            }
+
+            $orderPayload = $this->input->post('order');
+            $order = [];
+            if (is_array($orderPayload) && isset($orderPayload[0]) && is_array($orderPayload[0])) {
+                $order = [
+                    'column' => $orderPayload[0]['column'] ?? null,
+                    'dir' => $orderPayload[0]['dir'] ?? 'asc',
+                ];
+            }
+
+            $start = max(0, (int) $this->input->post('start'));
+            $length = (int) $this->input->post('length');
+            if ($length <= 0) {
+                $length = 5;
+            }
+
+            $page = $this->MChecklist_Dokument_MyRep->getFullRfsClusterPage(
+                $selectedCity,
+                $selectedRegional,
+                ['search' => $searchValue],
+                $start,
+                $length,
+                $order
+            );
+
+            $canHapus = isset($this->myrepAccess)
+                ? $this->myrepAccess->hasPermission('Checklist_Dokument_MyRep', 'HAPUS')
+                : true;
+
+            $data = [];
+            $no = $start + 1;
+            $rows = isset($page['rows']) && is_array($page['rows']) ? $page['rows'] : [];
+            foreach ($rows as $cluster) {
+                $data[] = $this->buildClusterTableRow($cluster, $no++, $canHapus);
+            }
+
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'draw' => (int) $this->input->post('draw'),
+                    'recordsTotal' => (int) ($page['recordsTotal'] ?? 0),
+                    'recordsFiltered' => (int) ($page['recordsFiltered'] ?? 0),
+                    'data' => $data,
+                ]));
+        } catch (\Throwable $e) {
+            log_message('error', 'Checklist clusterTableData failed: ' . $e->getMessage());
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'draw' => (int) $this->input->post('draw'),
+                    'recordsTotal' => 0,
+                    'recordsFiltered' => 0,
+                    'data' => [],
+                ]));
+        }
     }
 
     public function itemTableData()
@@ -89,150 +170,77 @@ class Checklist_Dokument_MyRep extends CI_Controller
         try {
             $selectedCity = strtoupper(trim((string) $this->input->post('selected_city')));
             $selectedRegional = strtoupper(trim((string) $this->input->post('selected_regional')));
-            $cacheKey = 'checklist_doc_index_' . md5($selectedCity . '|' . $selectedRegional);
-            $cachedPayload = $this->getChecklistCache($cacheKey);
-            if (!is_array($cachedPayload)) {
-                // Fallback: tetap ambil data item langsung agar tabel tidak kosong saat cache belum terbentuk.
-                $documentItemList = $this->MChecklist_Dokument_MyRep->getClusterDocumentItemRows($selectedCity, $selectedRegional);
-                $cachedPayload = ['documentItemList' => $documentItemList];
-                $this->saveChecklistCache($cacheKey, $cachedPayload, 180);
+
+            $searchPayload = $this->input->post('search');
+            $searchValue = '';
+            if (is_array($searchPayload) && isset($searchPayload['value'])) {
+                $searchValue = strtoupper(trim((string) $searchPayload['value']));
             }
 
-            $rows = isset($cachedPayload['documentItemList']) && is_array($cachedPayload['documentItemList'])
-                ? $cachedPayload['documentItemList']
-                : [];
-
-        $itemRegional = strtoupper(trim((string) $this->input->post('item_regional')));
-        $itemCity = strtoupper(trim((string) $this->input->post('item_city')));
-        $itemCluster = strtoupper(trim((string) $this->input->post('item_cluster')));
-        $itemScope = strtoupper(trim((string) $this->input->post('item_scope')));
-        $itemSow = strtoupper(trim((string) $this->input->post('item_sow')));
-        $itemDoc = strtoupper(trim((string) $this->input->post('item_doc')));
-        $internalStatus = strtoupper(trim((string) $this->input->post('internal_status')));
-        $astriStatus = strtoupper(trim((string) $this->input->post('astri_status')));
-        $quickType = strtolower(trim((string) $this->input->post('quick_type')));
-        $quickValue = strtoupper(trim((string) $this->input->post('quick_value')));
-        $searchPayload = $this->input->post('search');
-        $searchValue = '';
-        if (is_array($searchPayload) && isset($searchPayload['value'])) {
-            $searchValue = strtoupper(trim((string) $searchPayload['value']));
-        }
-
-        $recordsTotal = count($rows);
-        $filtered = [];
-        foreach ($rows as $row) {
-            $rowRegional = strtoupper(trim((string) ($row['regional_name'] ?? '')));
-            $rowCity = strtoupper(trim((string) ($row['city_name'] ?? '')));
-            $rowCluster = strtoupper(trim((string) ($row['cluster_name'] ?? '')));
-            $rowScope = strtoupper(trim((string) ($row['scope_type'] ?? '')));
-            $rowSow = strtoupper(trim((string) ($row['sow_type'] ?? '')));
-            $rowInternal = $this->normalizeUiStatusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED'));
-            $rowAstri = $this->normalizeUiStatusLabel((string) ($row['astri_status'] ?? 'NY'));
-            $rowDoc = strtoupper(trim((string) ($row['doc_name'] ?? '')));
-
-            if ($itemRegional !== '' && $rowRegional !== $itemRegional) {
-                continue;
-            }
-            if ($itemCity !== '' && $rowCity !== $itemCity) {
-                continue;
-            }
-            if ($itemCluster !== '' && $rowCluster !== $itemCluster) {
-                continue;
-            }
-            if ($itemScope !== '' && $rowScope !== $itemScope) {
-                continue;
-            }
-            if ($itemSow !== '' && $rowSow !== $itemSow) {
-                continue;
-            }
-            if ($itemDoc !== '' && $rowDoc !== $itemDoc) {
-                continue;
-            }
-            if ($internalStatus !== '' && $rowInternal !== $internalStatus) {
-                continue;
-            }
-            if ($astriStatus !== '' && $rowAstri !== $astriStatus) {
-                continue;
+            $start = max(0, (int) $this->input->post('start'));
+            $length = (int) $this->input->post('length');
+            if ($length <= 0) {
+                $length = 10;
             }
 
-            if ($quickType === 'project-opname') {
-                if (!($rowDoc === 'PROJECT OPNAME' && $rowAstri === $quickValue)) {
-                    continue;
-                }
-            } elseif ($quickType === 'astri' && $quickValue === 'ON REVIEW') {
-                if (!in_array($rowAstri, ['ON REVIEW', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'], true)) {
-                    continue;
-                }
+            $page = $this->MChecklist_Dokument_MyRep->getClusterDocumentItemPage(
+                $selectedCity,
+                $selectedRegional,
+                [
+                    'item_regional' => $this->input->post('item_regional'),
+                    'item_city' => $this->input->post('item_city'),
+                    'item_cluster' => $this->input->post('item_cluster'),
+                    'item_scope' => $this->input->post('item_scope'),
+                    'item_sow' => $this->input->post('item_sow'),
+                    'item_doc' => $this->input->post('item_doc'),
+                    'internal_status' => $this->input->post('internal_status'),
+                    'astri_status' => $this->input->post('astri_status'),
+                    'quick_type' => $this->input->post('quick_type'),
+                    'quick_value' => $this->input->post('quick_value'),
+                    'search' => $searchValue,
+                ],
+                $start,
+                $length
+            );
+
+            $recordsTotal = (int) ($page['recordsTotal'] ?? 0);
+            $recordsFiltered = (int) ($page['recordsFiltered'] ?? 0);
+            $pageRows = isset($page['rows']) && is_array($page['rows']) ? $page['rows'] : [];
+
+            $data = [];
+            $no = $start + 1;
+            foreach ($pageRows as $row) {
+                $idCluster = (int) ($row['id_cluster'] ?? 0);
+                $internalStatusLabel = $this->statusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED'));
+                $astriStatusLabel = $this->statusLabel((string) ($row['astri_status'] ?? 'NY'));
+                $internalBadge = $this->statusBadge((string) ($row['status_file'] ?? 'NOT UPLOADED'));
+                $astriBadge = $this->statusBadge((string) ($row['astri_status'] ?? 'NY'));
+
+                $data[] = [
+                    $no++,
+                    htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES),
+                    htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES),
+                    '<div class="flat-cluster-name"><a href="' . base_url('Checklist_Dokument_MyRep/detail/' . $idCluster) . '" class="cluster-name-link">'
+                        . htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES) . '</a></div>',
+                    htmlspecialchars((string) ($row['scope_type'] ?? '-'), ENT_QUOTES),
+                    htmlspecialchars((string) ($row['sow_type'] ?? '-'), ENT_QUOTES),
+                    '<strong>' . htmlspecialchars((string) ($row['doc_name'] ?? '-'), ENT_QUOTES) . '</strong>',
+                    htmlspecialchars((string) ($row['verification_by'] ?? '-'), ENT_QUOTES),
+                    '<span class="badge badge-' . $internalBadge . '">' . htmlspecialchars($internalStatusLabel, ENT_QUOTES) . '</span>',
+                    !empty($row['remark']) ? nl2br(htmlspecialchars((string) $row['remark'], ENT_QUOTES)) : '-',
+                    '<span class="badge badge-' . $astriBadge . '">' . htmlspecialchars($astriStatusLabel, ENT_QUOTES) . '</span>',
+                    !empty($row['astri_remark']) ? nl2br(htmlspecialchars((string) $row['astri_remark'], ENT_QUOTES)) : '-',
+                    $this->formatDateDisplay($row['uploaded_at'] ?? null),
+                    $this->formatDateDisplay($row['reviewed_at'] ?? null),
+                    $this->formatDateDisplay($row['approved_at'] ?? null),
+                    $this->formatDateDisplay($row['astri_submitted_date'] ?? null),
+                    '<a href="' . base_url('Checklist_Dokument_MyRep/detail/' . $idCluster) . '" class="btn btn-primary btn-sm">Detail</a> '
+                    . '<form method="post" action="' . base_url('Checklist_Dokument_MyRep/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?\');">'
+                    . '<input type="hidden" name="cluster_id" value="' . $idCluster . '">'
+                    . '<button type="submit" class="btn btn-danger btn-sm">Hapus</button>'
+                    . '</form>',
+                ];
             }
-
-            if ($searchValue !== '') {
-                $haystack = strtoupper(implode(' ', [
-                    (string) ($row['regional_name'] ?? ''),
-                    (string) ($row['city_name'] ?? ''),
-                    (string) ($row['cluster_name'] ?? ''),
-                    (string) ($row['scope_type'] ?? ''),
-                    (string) ($row['sow_type'] ?? ''),
-                    (string) ($row['doc_name'] ?? ''),
-                    (string) ($row['verification_by'] ?? ''),
-                    $rowInternal,
-                    (string) ($row['remark'] ?? ''),
-                    $rowAstri,
-                    (string) ($row['astri_remark'] ?? ''),
-                    (string) ($row['uploaded_at'] ?? ''),
-                    (string) ($row['reviewed_at'] ?? ''),
-                    (string) ($row['approved_at'] ?? ''),
-                    (string) ($row['astri_submitted_date'] ?? ''),
-                ]));
-                if (strpos($haystack, $searchValue) === false) {
-                    continue;
-                }
-            }
-
-            $filtered[] = $row;
-        }
-
-        $recordsFiltered = count($filtered);
-        $start = max(0, (int) $this->input->post('start'));
-        $length = (int) $this->input->post('length');
-        if ($length <= 0) {
-            $length = 10;
-        }
-
-        $pageRows = array_slice($filtered, $start, $length);
-        $data = [];
-        $no = $start + 1;
-        foreach ($pageRows as $row) {
-            $idCluster = (int) ($row['id_cluster'] ?? 0);
-            $internalStatusLabel = $this->statusLabel((string) ($row['status_file'] ?? 'NOT UPLOADED'));
-            $astriStatusLabel = $this->statusLabel((string) ($row['astri_status'] ?? 'NY'));
-            $internalBadge = $this->statusBadge((string) ($row['status_file'] ?? 'NOT UPLOADED'));
-            $astriBadge = $this->statusBadge((string) ($row['astri_status'] ?? 'NY'));
-
-            $data[] = [
-                $no++,
-                htmlspecialchars((string) ($row['regional_name'] ?? '-'), ENT_QUOTES),
-                htmlspecialchars((string) ($row['city_name'] ?? '-'), ENT_QUOTES),
-                '<div class="flat-cluster-name"><a href="' . base_url('Checklist_Dokument_MyRep/detail/' . $idCluster) . '" class="cluster-name-link">'
-                    . htmlspecialchars((string) ($row['cluster_name'] ?? '-'), ENT_QUOTES) . '</a></div>',
-                htmlspecialchars((string) ($row['scope_type'] ?? '-'), ENT_QUOTES),
-                htmlspecialchars((string) ($row['sow_type'] ?? '-'), ENT_QUOTES),
-                '<strong>' . htmlspecialchars((string) ($row['doc_name'] ?? '-'), ENT_QUOTES) . '</strong>',
-                htmlspecialchars((string) ($row['verification_by'] ?? '-'), ENT_QUOTES),
-                '<span class="badge badge-' . $internalBadge . '">' . htmlspecialchars($internalStatusLabel, ENT_QUOTES) . '</span>',
-                !empty($row['remark']) ? nl2br(htmlspecialchars((string) $row['remark'], ENT_QUOTES)) : '-',
-                '<span class="badge badge-' . $astriBadge . '">' . htmlspecialchars($astriStatusLabel, ENT_QUOTES) . '</span>',
-                !empty($row['astri_remark']) ? nl2br(htmlspecialchars((string) $row['astri_remark'], ENT_QUOTES)) : '-',
-                $this->formatDateDisplay($row['uploaded_at'] ?? null),
-                $this->formatDateDisplay($row['reviewed_at'] ?? null),
-                $this->formatDateDisplay($row['approved_at'] ?? null),
-                $this->formatDateDisplay($row['astri_submitted_date'] ?? null),
-                '<a href="' . base_url('Checklist_Dokument_MyRep/detail/' . $idCluster) . '" class="btn btn-primary btn-sm">Detail</a> '
-                . '<form method="post" action="' . base_url('Checklist_Dokument_MyRep/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?\');">'
-                . '<input type="hidden" name="cluster_id" value="' . $idCluster . '">'
-                . '<button type="submit" class="btn btn-danger btn-sm">Hapus</button>'
-                . '</form>',
-            ];
-        }
 
             $this->output
                 ->set_content_type('application/json')
@@ -365,6 +373,183 @@ class Checklist_Dokument_MyRep extends CI_Controller
         }
         echo '</table>';
         exit;
+    }
+
+    private function buildClusterTableRow(array $cluster, $no, $canHapus)
+    {
+        $idCluster = (int) ($cluster['id_cluster'] ?? 0);
+        $cwCard = $this->buildClusterDocCard('CW ATP', 'Realisasi', $cluster, 'doc_cw_atp_uploaded', 'doc_cw_atp_required', 'doc_cw_atp');
+        $opmCard = $this->buildClusterDocCard('FULL OPM', 'Realisasi', $cluster, 'doc_full_opm_uploaded', 'doc_full_opm_required', 'doc_full_opm');
+        $rfsCard = $this->buildClusterDocCard('FULL RFS', 'Realisasi', $cluster, 'doc_rfs_uploaded', 'doc_rfs_required', 'doc_rfs');
+        $astriCwCard = $this->buildClusterDocCard('ASTRI CW ATP', 'Submit', $cluster, 'astri_doc_cw_atp_submitted', 'doc_cw_atp_required', 'astri_doc_cw_atp');
+        $astriOpmCard = $this->buildClusterDocCard('ASTRI FULL OPM', 'Submit', $cluster, 'astri_doc_full_opm_submitted', 'doc_full_opm_required', 'astri_doc_full_opm');
+        $astriRfsCard = $this->buildClusterDocCard('ASTRI FULL RFS', 'Submit', $cluster, 'astri_doc_rfs_submitted', 'doc_rfs_required', 'astri_doc_rfs');
+
+        return [
+            (int) $no,
+            $this->html($cluster['regional_name'] ?? '-'),
+            $this->buildClusterIdentityHtml($cluster),
+            $this->buildClusterTimelineHtml('Plan ATP', $cluster['plan_atp_date'] ?? null, $cluster['aging_atp_days'] ?? null, 'Realisasi ATP', $cluster['actual_atp_date'] ?? null),
+            $this->buildClusterTimelineHtml('Plan Dokument', $cluster['plan_submit_doc_date'] ?? null, $cluster['aging_doc_days'] ?? null, 'Realisasi Dokument', $cluster['actual_submit_doc_date'] ?? null),
+            $cwCard,
+            $opmCard,
+            $rfsCard,
+            $this->buildClusterAstriTimelineHtml($cluster),
+            $astriCwCard,
+            $astriOpmCard,
+            $astriRfsCard,
+            $this->buildClusterActionHtml($idCluster, $canHapus),
+        ];
+    }
+
+    private function buildClusterIdentityHtml(array $cluster)
+    {
+        $idCluster = (int) ($cluster['id_cluster'] ?? 0);
+        $homepass = number_format((float) ($cluster['homepass'] ?? 0), 0, ',', '.');
+
+        return '<div class="cluster-identity">'
+            . '<div class="cluster-name"><a href="' . base_url('Checklist_Dokument_MyRep/detail/' . $idCluster) . '" class="cluster-name-link">'
+            . $this->html($cluster['cluster_name'] ?? '-') . '</a></div>'
+            . '<div class="cluster-meta">'
+            . '<span class="cluster-chip">' . $this->html($cluster['city_name'] ?? '-') . '</span>'
+            . '<span class="cluster-chip">HP ' . $this->html($homepass) . '</span>'
+            . '<span class="cluster-chip">RFS ' . $this->html($this->formatDateDisplay($cluster['tanggal_rfs'] ?? null)) . '</span>'
+            . '</div></div>';
+    }
+
+    private function buildClusterTimelineHtml($planLabel, $planDate, $agingDays, $actualLabel, $actualDate)
+    {
+        $agingHtml = '<span class="badge badge-secondary">Aging -</span>';
+        if ($agingDays !== null) {
+            $agingHtml = '<span class="badge badge-' . $this->clusterAgingBadge($agingDays) . '">Aging ' . (int) $agingDays . ' hari</span>';
+        }
+
+        return '<div class="timeline-stack">'
+            . '<div class="timeline-item">'
+            . '<span class="timeline-label">' . $this->html($planLabel) . '</span>'
+            . '<div class="timeline-value">' . $this->html($this->formatDateDisplay($planDate)) . '</div>'
+            . $agingHtml
+            . '</div>'
+            . '<div class="timeline-item">'
+            . '<span class="timeline-label">' . $this->html($actualLabel) . '</span>'
+            . '<div class="timeline-value">' . $this->html($this->formatDateDisplay($actualDate)) . '</div>'
+            . '</div>'
+            . '</div>';
+    }
+
+    private function buildClusterAstriTimelineHtml(array $cluster)
+    {
+        $agingDays = null;
+        if (!empty($cluster['submit_astri_date'])) {
+            $start = new DateTime((string) $cluster['submit_astri_date']);
+            $end = new DateTime(!empty($cluster['approved_astri_date']) ? (string) $cluster['approved_astri_date'] : date('Y-m-d'));
+            $invert = $start > $end ? -1 : 1;
+            $diff = $start->diff($end);
+            $agingDays = $diff->days * $invert;
+        }
+
+        return '<div class="sla-separator-left"><div class="timeline-stack">'
+            . '<div class="timeline-item">'
+            . '<span class="timeline-label">Submit Astri</span>'
+            . '<div class="timeline-value">' . $this->html($this->formatDateDisplay($cluster['submit_astri_date'] ?? null)) . '</div>'
+            . '</div>'
+            . '<div class="timeline-item">'
+            . '<span class="timeline-label">Approved Astri</span>'
+            . '<div class="timeline-value">' . $this->html($this->formatDateDisplay($cluster['approved_astri_date'] ?? null)) . '</div>'
+            . ($agingDays === null
+                ? '<span class="badge badge-secondary">Aging -</span>'
+                : '<span class="badge badge-' . $this->clusterAgingBadge($agingDays) . '">Aging ' . (int) $agingDays . ' hari</span>')
+            . '</div>'
+            . '</div></div>';
+    }
+
+    private function buildClusterDocCard($title, $verb, array $cluster, $doneKey, $requiredKey, $prefix)
+    {
+        $done = (int) ($cluster[$doneKey] ?? 0);
+        $required = (int) ($cluster[$requiredKey] ?? 0);
+        $percent = $this->clusterProgressPercent($done, $required);
+        $theme = $this->clusterProgressTheme($done, $required);
+
+        return '<div class="doc-card ' . $theme['box'] . '">'
+            . '<div class="doc-card-head"><div>'
+            . '<div class="doc-card-title">' . $this->html($title) . '</div>'
+            . '<div class="doc-card-subtitle">' . $this->html($verb) . ' ' . $done . '/' . $required . '</div>'
+            . '</div><div class="doc-card-progress ' . $theme['tone'] . '">' . $percent . '%</div></div>'
+            . '<div class="doc-progress-track"><div class="doc-progress-bar ' . $theme['bar'] . '" style="width: ' . $percent . '%;"></div></div>'
+            . '<div class="doc-status-grid">'
+            . $this->buildClusterDocStatusItem('NY', (int) ($cluster[$prefix . '_ny'] ?? 0))
+            . $this->buildClusterDocStatusItem('On Review', (int) ($cluster[$prefix . '_on_review'] ?? 0))
+            . $this->buildClusterDocStatusItem('Reject', (int) ($cluster[$prefix . '_rejected'] ?? 0))
+            . $this->buildClusterDocStatusItem('Approved', (int) ($cluster[$prefix . '_approved'] ?? 0))
+            . '</div></div>';
+    }
+
+    private function buildClusterDocStatusItem($label, $value)
+    {
+        return '<div class="doc-status-item">'
+            . '<span class="doc-status-label">' . $this->html($label) . '</span>'
+            . '<span class="doc-status-value">' . (int) $value . '</span>'
+            . '</div>';
+    }
+
+    private function buildClusterActionHtml($idCluster, $canHapus)
+    {
+        $html = '<div class="action-stack">'
+            . '<a href="' . base_url('Checklist_Dokument_MyRep/detail/' . (int) $idCluster) . '" class="btn btn-primary btn-sm">Detail</a>';
+
+        if ($canHapus) {
+            $html .= '<form method="post" action="' . base_url('Checklist_Dokument_MyRep/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini dari ATP/RFS beserta seluruh flow MyRep sebelumnya?\');">'
+                . '<input type="hidden" name="cluster_id" value="' . (int) $idCluster . '">'
+                . '<button type="submit" class="btn btn-danger btn-sm">Hapus</button>'
+                . '</form>';
+        }
+
+        return $html . '</div>';
+    }
+
+    private function clusterProgressPercent($uploaded, $required)
+    {
+        $required = (int) $required;
+        $uploaded = (int) $uploaded;
+        if ($required <= 0) {
+            return 0;
+        }
+
+        return min(100, (int) round(($uploaded / $required) * 100));
+    }
+
+    private function clusterProgressTheme($uploaded, $required)
+    {
+        $required = (int) $required;
+        $uploaded = (int) $uploaded;
+        if ($required <= 0 || $uploaded <= 0) {
+            return ['box' => 'bg-light', 'bar' => 'bg-secondary', 'tone' => 'text-muted'];
+        }
+        if ($uploaded >= $required) {
+            return ['box' => 'bg-success-light', 'bar' => 'bg-success-strong', 'tone' => 'text-success-dark'];
+        }
+
+        return ['box' => 'bg-warning-light', 'bar' => 'bg-warning', 'tone' => 'text-warning-dark'];
+    }
+
+    private function clusterAgingBadge($aging)
+    {
+        if ($aging === null) {
+            return 'secondary';
+        }
+        if ((int) $aging <= 0) {
+            return 'success';
+        }
+        if ((int) $aging <= 3) {
+            return 'warning';
+        }
+
+        return 'danger';
+    }
+
+    private function html($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES);
     }
 
     private function formatDateDisplay($date)

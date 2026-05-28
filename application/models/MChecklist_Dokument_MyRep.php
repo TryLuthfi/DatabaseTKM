@@ -347,8 +347,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
 
     public function getFullRfsClusters($city = '', $regional = '')
     {
-        $query = $this->db
-            ->select("
+        $this->db->select("
                 c.id_cluster,
                 c.cluster_name,
                 c.homepass,
@@ -362,7 +361,84 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 mt.sm,
                 mt.spv,
                 latest_claim.rfs_date
-            ", false)
+            ", false);
+
+        if (!$this->prepareFullRfsClusterQuery($city, $regional)) {
+            return [];
+        }
+
+        $rows = $this->applyFullRfsClusterOrder()
+            ->get()
+            ->result_array();
+
+        return $this->enrichClusterRows($rows);
+    }
+
+    public function getFullRfsClusterPage($city = '', $regional = '', array $filters = [], $start = 0, $length = 10, array $order = [])
+    {
+        $start = max(0, (int) $start);
+        $length = (int) $length;
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        $recordsTotal = $this->countFullRfsClusters($city, $regional);
+        $recordsFiltered = $this->countFullRfsClusters($city, $regional, $filters);
+
+        $this->db->select("
+                c.id_cluster,
+                c.cluster_name,
+                c.homepass,
+                c.status_rfs,
+                mc.status_current,
+                mt.city_name,
+                mt.regional_name,
+                mt.province_name,
+                mt.chief,
+                mt.rpm,
+                mt.sm,
+                mt.spv,
+                latest_claim.rfs_date
+            ", false);
+
+        if (!$this->prepareFullRfsClusterQuery($city, $regional)) {
+            return [
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'rows' => [],
+            ];
+        }
+
+        $this->applyFullRfsClusterFilters($filters);
+        $this->applyFullRfsClusterOrder($order);
+        $rows = $this->db
+            ->limit($length, $start)
+            ->get()
+            ->result_array();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $this->enrichClusterRows($rows),
+        ];
+    }
+
+    private function countFullRfsClusters($city = '', $regional = '', array $filters = [])
+    {
+        $this->db->select('COUNT(*) AS total', false);
+        if (!$this->prepareFullRfsClusterQuery($city, $regional)) {
+            return 0;
+        }
+
+        $this->applyFullRfsClusterFilters($filters);
+        $row = $this->db->get()->row_array();
+
+        return (int) ($row['total'] ?? 0);
+    }
+
+    private function prepareFullRfsClusterQuery($city = '', $regional = '')
+    {
+        $this->db
             ->from('tb_rfs_myrep_cluster c')
             ->join('tb_myrep_cluster mc', 'mc.rfs_cluster_id = c.id_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
@@ -379,7 +455,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->group_end();
 
         if ($this->supportsAtpColumns()) {
-            $query
+            $this->db
                 ->join('(
                     SELECT cluster_id, MAX(actual_atp_date) AS actual_atp_date
                     FROM tb_rfs_myrep_doc_package
@@ -390,30 +466,74 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         if (!$this->applyAllowedCityRestriction('mt.city_name')) {
-            return [];
+            return false;
         }
 
         if ($city !== '') {
-            $query->where('UPPER(mt.city_name)', strtoupper($city));
+            $this->db->where('UPPER(mt.city_name)', strtoupper($city));
         }
 
         if ($regional !== '') {
-            $query->where('UPPER(mt.regional_name)', strtoupper($regional));
+            $this->db->where('UPPER(mt.regional_name)', strtoupper($regional));
         }
 
-        $rows = $query
-            ->order_by('mt.city_name', 'ASC')
-            ->order_by('c.cluster_name', 'ASC')
-            ->get()
-            ->result_array();
+        return true;
+    }
 
-        return $this->enrichClusterRows($rows);
+    private function applyFullRfsClusterFilters(array $filters)
+    {
+        $searchValue = strtoupper(trim((string) ($filters['search'] ?? '')));
+        if ($searchValue === '') {
+            return;
+        }
+
+        $expressions = [
+            'UPPER(COALESCE(mt.regional_name, \'\'))',
+            'UPPER(COALESCE(mt.city_name, \'\'))',
+            'UPPER(COALESCE(c.cluster_name, \'\'))',
+            'UPPER(COALESCE(CAST(c.homepass AS CHAR), \'\'))',
+            'UPPER(COALESCE(CAST(latest_claim.rfs_date AS CHAR), \'\'))',
+            'UPPER(COALESCE(c.status_rfs, \'\'))',
+            'UPPER(COALESCE(mc.status_current, \'\'))',
+        ];
+
+        $like = $this->db->escape('%' . $this->db->escape_like_str($searchValue) . '%');
+        $this->db->group_start();
+        foreach ($expressions as $index => $expression) {
+            $condition = $expression . " LIKE " . $like . " ESCAPE '!'";
+            if ($index === 0) {
+                $this->db->where($condition, null, false);
+            } else {
+                $this->db->or_where($condition, null, false);
+            }
+        }
+        $this->db->group_end();
+    }
+
+    private function applyFullRfsClusterOrder(array $order = [])
+    {
+        $columnMap = [
+            1 => 'mt.regional_name',
+            2 => 'c.cluster_name',
+        ];
+
+        $columnIndex = isset($order['column']) ? (int) $order['column'] : null;
+        $direction = strtoupper(trim((string) ($order['dir'] ?? 'ASC'))) === 'DESC' ? 'DESC' : 'ASC';
+        if ($columnIndex !== null && isset($columnMap[$columnIndex])) {
+            return $this->db
+                ->order_by($columnMap[$columnIndex], $direction)
+                ->order_by('mt.city_name', 'ASC')
+                ->order_by('c.cluster_name', 'ASC');
+        }
+
+        return $this->db
+            ->order_by('mt.city_name', 'ASC')
+            ->order_by('c.cluster_name', 'ASC');
     }
 
     public function getClusterDocumentItemRows($city = '', $regional = '')
     {
-        $query = $this->db
-            ->select("
+        $this->db->select("
                 c.id_cluster,
                 c.cluster_name,
                 mc.status_current,
@@ -442,7 +562,98 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 f.astri_submitted_date,
                 f.astri_status,
                 f.astri_remark
-            ", false)
+            ", false);
+
+        if (!$this->prepareClusterDocumentItemQuery($city, $regional)) {
+            return [];
+        }
+
+        $rows = $this->applyClusterDocumentItemOrder()
+            ->get()
+            ->result_array();
+
+        return $this->enrichClusterDocumentItemRows($rows);
+    }
+
+    public function getClusterDocumentItemPage($city = '', $regional = '', array $filters = [], $start = 0, $length = 10)
+    {
+        $start = max(0, (int) $start);
+        $length = (int) $length;
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        $recordsTotal = $this->countClusterDocumentItemRows($city, $regional);
+        $recordsFiltered = $this->countClusterDocumentItemRows($city, $regional, $filters);
+
+        $this->db->select("
+                c.id_cluster,
+                c.cluster_name,
+                mc.status_current,
+                mt.city_name,
+                mt.regional_name,
+                mt.id_user_pic_ho,
+                g.scope_type,
+                g.sow_type,
+                g.group_label,
+                i.id_doc_item,
+                i.doc_name,
+                i.doc_requirement_note,
+                i.format_file_name,
+                i.format_file_path,
+                i.verification_team,
+                u_ho.nama_karyawan AS ho_pic_name,
+                p.actual_atp_date,
+                f.id_doc_file,
+                f.status_file,
+                f.file_name,
+                f.file_path,
+                f.remark,
+                f.uploaded_at,
+                f.reviewed_at,
+                f.approved_at,
+                f.astri_submitted_date,
+                f.astri_status,
+                f.astri_remark
+            ", false);
+
+        if (!$this->prepareClusterDocumentItemQuery($city, $regional)) {
+            return [
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'rows' => [],
+            ];
+        }
+
+        $this->applyClusterDocumentItemFilters($filters);
+        $rows = $this->applyClusterDocumentItemOrder()
+            ->limit($length, $start)
+            ->get()
+            ->result_array();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $this->enrichClusterDocumentItemRows($rows),
+        ];
+    }
+
+    private function countClusterDocumentItemRows($city = '', $regional = '', array $filters = [])
+    {
+        $this->db->select('COUNT(*) AS total', false);
+        if (!$this->prepareClusterDocumentItemQuery($city, $regional)) {
+            return 0;
+        }
+
+        $this->applyClusterDocumentItemFilters($filters);
+        $row = $this->db->get()->row_array();
+
+        return (int) ($row['total'] ?? 0);
+    }
+
+    private function prepareClusterDocumentItemQuery($city = '', $regional = '')
+    {
+        $this->db
             ->from('tb_rfs_myrep_cluster c')
             ->join('tb_myrep_cluster mc', 'mc.rfs_cluster_id = c.id_cluster', 'left')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
@@ -458,7 +669,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
             ->group_end();
 
         if ($this->supportsAtpColumns()) {
-            $query
+            $this->db
                 ->join('(
                     SELECT cluster_id, MAX(actual_atp_date) AS actual_atp_date
                     FROM tb_rfs_myrep_doc_package
@@ -469,26 +680,32 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         if (!$this->applyAllowedCityRestriction('mt.city_name')) {
-            return [];
+            return false;
         }
 
         if ($city !== '') {
-            $query->where('UPPER(mt.city_name)', strtoupper($city));
+            $this->db->where('UPPER(mt.city_name)', strtoupper($city));
         }
 
         if ($regional !== '') {
-            $query->where('UPPER(mt.regional_name)', strtoupper($regional));
+            $this->db->where('UPPER(mt.regional_name)', strtoupper($regional));
         }
 
-        $rows = $query
+        return true;
+    }
+
+    private function applyClusterDocumentItemOrder()
+    {
+        return $this->db
             ->order_by('mt.regional_name', 'ASC')
             ->order_by('mt.city_name', 'ASC')
             ->order_by('c.cluster_name', 'ASC')
             ->order_by('g.sort_no', 'ASC')
-            ->order_by('i.sort_no', 'ASC')
-            ->get()
-            ->result_array();
+            ->order_by('i.sort_no', 'ASC');
+    }
 
+    private function enrichClusterDocumentItemRows(array $rows)
+    {
         foreach ($rows as &$row) {
             $row['status_file'] = !empty($row['status_file']) ? $row['status_file'] : 'NOT UPLOADED';
             $row['astri_status'] = $this->getEffectiveAstriStatus(
@@ -510,6 +727,119 @@ class MChecklist_Dokument_MyRep extends CI_Model
         unset($row);
 
         return $rows;
+    }
+
+    private function applyClusterDocumentItemFilters(array $filters)
+    {
+        $exactFilters = [
+            'item_regional' => 'mt.regional_name',
+            'item_city' => 'mt.city_name',
+            'item_cluster' => 'c.cluster_name',
+            'item_scope' => 'g.scope_type',
+            'item_sow' => 'g.sow_type',
+            'item_doc' => 'i.doc_name',
+        ];
+
+        foreach ($exactFilters as $filterKey => $column) {
+            $value = strtoupper(trim((string) ($filters[$filterKey] ?? '')));
+            if ($value !== '') {
+                $this->db->where('UPPER(' . $column . ')', $value);
+            }
+        }
+
+        $internalStatus = strtoupper(trim((string) ($filters['internal_status'] ?? '')));
+        if ($internalStatus !== '') {
+            $this->db->where($this->getInternalStatusLabelSql() . ' = ' . $this->db->escape($internalStatus), null, false);
+        }
+
+        $astriStatus = strtoupper(trim((string) ($filters['astri_status'] ?? '')));
+        if ($astriStatus !== '') {
+            $this->db->where($this->getAstriStatusLabelSql() . ' = ' . $this->db->escape($astriStatus), null, false);
+        }
+
+        $quickType = strtolower(trim((string) ($filters['quick_type'] ?? '')));
+        $quickValue = strtoupper(trim((string) ($filters['quick_value'] ?? '')));
+        if ($quickType === 'project-opname' && $quickValue !== '') {
+            $this->db
+                ->where("UPPER(TRIM(i.doc_name)) = 'PROJECT OPNAME'", null, false)
+                ->where($this->getAstriStatusLabelSql() . ' = ' . $this->db->escape($quickValue), null, false);
+        } elseif ($quickType === 'astri' && $quickValue === 'ON REVIEW') {
+            $onReviewStatuses = array_map([$this->db, 'escape'], array_merge(['ON REVIEW'], $this->getProjectOpnameAstriStatuses()));
+            $this->db->where($this->getAstriStatusLabelSql() . ' IN (' . implode(',', $onReviewStatuses) . ')', null, false);
+        }
+
+        $searchValue = strtoupper(trim((string) ($filters['search'] ?? '')));
+        if ($searchValue !== '') {
+            $this->applyClusterDocumentItemSearch($searchValue);
+        }
+    }
+
+    private function applyClusterDocumentItemSearch($searchValue)
+    {
+        $expressions = [
+            'UPPER(COALESCE(mt.regional_name, \'\'))',
+            'UPPER(COALESCE(mt.city_name, \'\'))',
+            'UPPER(COALESCE(c.cluster_name, \'\'))',
+            'UPPER(COALESCE(g.scope_type, \'\'))',
+            'UPPER(COALESCE(g.sow_type, \'\'))',
+            'UPPER(COALESCE(i.doc_name, \'\'))',
+            'UPPER(COALESCE(i.verification_team, \'\'))',
+            'UPPER(COALESCE(u_ho.nama_karyawan, \'\'))',
+            $this->getInternalStatusLabelSql(),
+            'UPPER(COALESCE(f.remark, \'\'))',
+            $this->getAstriStatusLabelSql(),
+            'UPPER(COALESCE(f.astri_remark, \'\'))',
+            'UPPER(COALESCE(CAST(f.uploaded_at AS CHAR), \'\'))',
+            'UPPER(COALESCE(CAST(f.reviewed_at AS CHAR), \'\'))',
+            'UPPER(COALESCE(CAST(f.approved_at AS CHAR), \'\'))',
+            'UPPER(COALESCE(CAST(f.astri_submitted_date AS CHAR), \'\'))',
+        ];
+
+        $like = $this->db->escape('%' . $this->db->escape_like_str($searchValue) . '%');
+        $this->db->group_start();
+        foreach ($expressions as $index => $expression) {
+            $condition = $expression . " LIKE " . $like . " ESCAPE '!'";
+            if ($index === 0) {
+                $this->db->where($condition, null, false);
+            } else {
+                $this->db->or_where($condition, null, false);
+            }
+        }
+        $this->db->group_end();
+    }
+
+    private function getInternalStatusLabelSql()
+    {
+        return "CASE
+            WHEN f.status_file IS NULL OR TRIM(f.status_file) = '' OR UPPER(TRIM(f.status_file)) = 'NY' THEN 'NOT UPLOADED'
+            WHEN UPPER(TRIM(f.status_file)) = 'UPLOADED' THEN 'ON REVIEW'
+            ELSE UPPER(TRIM(f.status_file))
+        END";
+    }
+
+    private function getAstriStatusLabelSql()
+    {
+        $effectiveStatus = $this->getEffectiveAstriStatusSql();
+
+        return "CASE
+            WHEN (" . $effectiveStatus . ") = 'NY' THEN 'NOT UPLOADED'
+            WHEN (" . $effectiveStatus . ") = 'UPLOADED' THEN 'ON REVIEW'
+            ELSE (" . $effectiveStatus . ")
+        END";
+    }
+
+    private function getEffectiveAstriStatusSql()
+    {
+        return "CASE
+            WHEN COALESCE(NULLIF(UPPER(TRIM(f.astri_status)), ''), 'NY') = 'NY'
+                AND p.actual_atp_date IS NOT NULL
+                AND CAST(p.actual_atp_date AS CHAR) NOT IN ('', '0000-00-00', '0000-00-00 00:00:00')
+                AND UPPER(TRIM(g.scope_type)) = 'CLUSTER'
+                AND UPPER(TRIM(g.sow_type)) = 'RFS'
+                AND UPPER(TRIM(i.doc_name)) = 'PROJECT OPNAME'
+            THEN 'WAITING WASPANG'
+            ELSE COALESCE(NULLIF(UPPER(TRIM(f.astri_status)), ''), 'NY')
+        END";
     }
 
     public function getClusterDetail($clusterId)

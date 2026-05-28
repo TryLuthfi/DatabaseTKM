@@ -836,7 +836,7 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (!empty($clusterList)): ?>
+                            <?php if (!empty($clusterList) && !empty($renderClusterRows)): ?>
                                 <?php $no = 1; ?>
                                 <?php foreach ($clusterList as $cluster): ?>
                                     <?php
@@ -1419,6 +1419,8 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
 
         if ($('#table-checklist-dokument').length) {
             $('#table-checklist-dokument').DataTable({
+                "processing": true,
+                "serverSide": true,
                 "paging": true,
                 "lengthChange": true,
                 "searching": true,
@@ -1427,10 +1429,29 @@ $projectOpnameFlowSummary = isset($summary['projectOpnameFlowSummary']) && is_ar
                 "autoWidth": false,
                 "responsive": false,
                 "scrollX": true,
+                "order": [],
                 "pageLength": 5,
                 "lengthMenu": [
                     [5, 10, 25, 50, 100],
                     [5, 10, 25, 50, 100]
+                ],
+                "ajax": {
+                    "url": "<?= base_url('Checklist_Dokument_MyRep/clusterTableData') ?>",
+                    "type": "POST",
+                    "data": function(d) {
+                        d.selected_city = "<?= htmlspecialchars($selectedCity, ENT_QUOTES) ?>";
+                        d.selected_regional = "<?= htmlspecialchars($selectedRegional, ENT_QUOTES) ?>";
+                    }
+                },
+                "columnDefs": [
+                    {
+                        "targets": [0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                        "orderable": false
+                    },
+                    {
+                        "targets": 8,
+                        "className": "sla-separator-left"
+                    }
                 ],
                 "language": {
                     "emptyTable": "Belum ada cluster ATP DONE."
