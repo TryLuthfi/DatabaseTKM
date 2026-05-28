@@ -162,6 +162,44 @@ if (!function_exists('monitoring_rfs_badge_class')) {
     }
 }
 
+if (!function_exists('monitoring_rfs_normalize_rpm_name')) {
+    function monitoring_rfs_normalize_rpm_name($rpmName)
+    {
+        $rpmName = trim((string) $rpmName);
+        $upperName = strtoupper($rpmName);
+
+        if ($rpmName === '' || in_array($upperName, ['-', 'NA', 'N/A', 'HO', 'PIC HO', 'HEAD OFFICE'], true)) {
+            return '';
+        }
+
+        return $rpmName;
+    }
+}
+
+if (!function_exists('monitoring_rfs_area_approver')) {
+    function monitoring_rfs_area_approver(array $claim)
+    {
+        $role = trim((string) ($claim['area_approval_role'] ?? ''));
+        $name = trim((string) ($claim['area_approval_name'] ?? ''));
+
+        if ($name !== '') {
+            return ['role' => $role !== '' ? $role : 'AREA', 'name' => $name];
+        }
+
+        $rpmName = monitoring_rfs_normalize_rpm_name($claim['rpm'] ?? '');
+        if ($rpmName !== '') {
+            return ['role' => 'RPM', 'name' => $rpmName];
+        }
+
+        $smName = monitoring_rfs_normalize_rpm_name($claim['sm'] ?? '');
+        if ($smName !== '') {
+            return ['role' => 'SM', 'name' => $smName];
+        }
+
+        return ['role' => '', 'name' => ''];
+    }
+}
+
 if (!function_exists('monitoring_rfs_tkm_percent_class')) {
     function monitoring_rfs_tkm_percent_class($percent)
     {
@@ -2331,17 +2369,35 @@ if (!empty($kpiDetailRowMap)) {
                                             <?php } ?>
                                         </td>
                                         <td class="text-center">
+                                            <?php
+                                            $statusAreaApprover = monitoring_rfs_area_approver((array) $claim);
+                                            $claimStatusDisplay = (string) ($claim['status_claim'] ?? '');
+                                            if (strtoupper(trim($claimStatusDisplay)) === 'WAITING APPROVAL RPM' && ($statusAreaApprover['role'] ?? '') === 'SM') {
+                                                $claimStatusDisplay = 'WAITING APPROVAL SM';
+                                            }
+                                            ?>
                                             <span class="badge badge-<?= monitoring_rfs_badge_class($claim['status_claim']) ?>">
-                                                <?= htmlspecialchars($claim['status_claim'] ?? '') ?>
+                                                <?= htmlspecialchars($claimStatusDisplay) ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <?= htmlspecialchars(trim(($claim['rpm'] ?? '') . ' / ' . ($claim['sm'] ?? '') . ' / ' . ($claim['spv'] ?? ''), ' /')) ?><br>
+                                            <?php
+                                            $picAreaParts = array_filter([
+                                                monitoring_rfs_normalize_rpm_name($claim['rpm'] ?? ''),
+                                                trim((string) ($claim['sm'] ?? '')),
+                                                trim((string) ($claim['spv'] ?? '')),
+                                            ], function ($value) {
+                                                return trim((string) $value) !== '';
+                                            });
+                                            ?>
+                                            <?= htmlspecialchars(!empty($picAreaParts) ? implode(' / ', $picAreaParts) : '-') ?><br>
                                             <small>Submitter: <?= htmlspecialchars($claim['submitted_name'] ?? '') ?></small>
                                         </td>
                                         <td style="min-width: 260px;">
                                             <?php
-                                            $claimRpm = trim((string) ($claim['rpm'] ?? ''));
+                                            $areaApprover = monitoring_rfs_area_approver((array) $claim);
+                                            $claimRpm = $areaApprover['name'];
+                                            $areaApproverRole = $areaApprover['role'] !== '' ? $areaApprover['role'] : 'PIC Area';
                                             $rpmApprovalStatus = trim((string) ($claim['rpm_approval_status'] ?? ''));
                                             $claimStatus = trim((string) ($claim['status_claim'] ?? ''));
                                             $sessionName = strtoupper(trim((string) $this->session->userdata('nama_user')));
@@ -2350,7 +2406,7 @@ if (!empty($kpiDetailRowMap)) {
                                             ?>
                                             <?php if ($claimRpm === '') { ?>
                                                 <span class="badge badge-secondary">SKIPPED</span>
-                                                <div><small>Tidak ada RPM untuk area ini</small></div>
+                                                <div><small>Tidak ada RPM/SM untuk area ini</small></div>
                                             <?php } elseif ($claimStatus === 'WAITING APPROVAL RPM' && $canApproveRpm && $canApprovalAction) { ?>
                                                 <form method="post"
                                                     action="<?= base_url('Monitoring_RFS_MyRep/updateClaimStatus') ?>">
@@ -2376,9 +2432,9 @@ if (!empty($kpiDetailRowMap)) {
                                                     </div>
                                                     <div class="form-group mb-2">
                                                         <textarea name="rpm_approval_note" class="form-control form-control-sm" rows="2"
-                                                            placeholder="Catatan RPM"><?= htmlspecialchars($claim['rpm_approval_note'] ?? '') ?></textarea>
+                                                            placeholder="Catatan <?= htmlspecialchars($areaApproverRole) ?>"><?= htmlspecialchars($claim['rpm_approval_note'] ?? '') ?></textarea>
                                                     </div>
-                                                    <button type="submit" class="btn btn-sm btn-primary">Update RPM</button>
+                                                    <button type="submit" class="btn btn-sm btn-primary">Update <?= htmlspecialchars($areaApproverRole) ?></button>
                                                 </form>
                                             <?php } else { ?>
                                                 <span class="badge badge-<?= monitoring_rfs_badge_class($rpmApprovalStatus !== '' ? $rpmApprovalStatus : 'WAITING APPROVAL RPM') ?>">
@@ -2388,7 +2444,7 @@ if (!empty($kpiDetailRowMap)) {
                                                     <div><small>By: <?= htmlspecialchars($claim['rpm_approved_name'] ?? '') ?> |
                                                             <?= htmlspecialchars($claim['rpm_approved_at'] ?? '') ?></small></div>
                                                 <?php } else { ?>
-                                                    <div><small>RPM: <?= htmlspecialchars($claimRpm) ?></small></div>
+                                                    <div><small><?= htmlspecialchars($areaApproverRole) ?>: <?= htmlspecialchars($claimRpm) ?></small></div>
                                                 <?php } ?>
                                                 <?php if (!empty($claim['rpm_approval_note'])) { ?>
                                                     <div><small><?= htmlspecialchars($claim['rpm_approval_note'] ?? '') ?></small></div>

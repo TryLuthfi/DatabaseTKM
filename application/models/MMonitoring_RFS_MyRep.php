@@ -5,6 +5,42 @@ class MMonitoring_RFS_MyRep extends CI_Model
 {
     private $rfsReadyStatuses = ['DRM', 'RFS', 'ATP', 'CHECKLIST DOKUMENT', 'DONE'];
 
+    public function normalizeAreaApproverName($approverName)
+    {
+        $approverName = trim((string) $approverName);
+        $upperName = strtoupper($approverName);
+
+        if ($approverName === '' || in_array($upperName, ['-', 'NA', 'N/A', 'HO', 'PIC HO', 'HEAD OFFICE'], true)) {
+            return '';
+        }
+
+        return $approverName;
+    }
+
+    public function normalizeRpmApproverName($rpmName)
+    {
+        return $this->normalizeAreaApproverName($rpmName);
+    }
+
+    public function resolveAreaApprover($cluster)
+    {
+        if (!is_array($cluster)) {
+            $cluster = ['rpm' => $cluster];
+        }
+
+        $rpmName = $this->normalizeAreaApproverName($cluster['rpm'] ?? '');
+        if ($rpmName !== '') {
+            return ['role' => 'RPM', 'name' => $rpmName];
+        }
+
+        $smName = $this->normalizeAreaApproverName($cluster['sm'] ?? '');
+        if ($smName !== '') {
+            return ['role' => 'SM', 'name' => $smName];
+        }
+
+        return ['role' => '', 'name' => ''];
+    }
+
     public function claimSupportsStatusRfs()
     {
         return $this->db->field_exists('status_rfs', 'tb_rfs_myrep_claim');
@@ -627,7 +663,7 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
         $sql .= " ORDER BY cl.claim_date DESC, cl.id_claim DESC";
 
-        return $this->db->query($sql, $params)->result_array();
+        return $this->normalizeClaimApprovalRows($this->db->query($sql, $params)->result_array());
     }
 
     private function normalizeDateFilter($value)
@@ -705,11 +741,11 @@ class MMonitoring_RFS_MyRep extends CI_Model
                 ? $data['chief']
                 : ($existing['chief'] ?? null),
             'rpm' => array_key_exists('rpm', $data)
-                ? $data['rpm']
-                : ($existing['rpm'] ?? null),
+                ? $this->normalizeRpmApproverName($data['rpm'])
+                : $this->normalizeRpmApproverName($existing['rpm'] ?? null),
             'sm' => array_key_exists('sm', $data)
-                ? $data['sm']
-                : ($existing['sm'] ?? null),
+                ? $this->normalizeAreaApproverName($data['sm'])
+                : $this->normalizeAreaApproverName($existing['sm'] ?? null),
             'spv' => array_key_exists('spv', $data)
                 ? $data['spv']
                 : ($existing['spv'] ?? null),
@@ -851,14 +887,50 @@ class MMonitoring_RFS_MyRep extends CI_Model
 
     public function getClaimById($claimId)
     {
-        return $this->db
-            ->select('cl.*, mt.rpm, mt.city_name, c.cluster_name')
+        $row = $this->db
+            ->select('cl.*, mt.rpm, mt.sm, mt.spv, mt.city_name, c.cluster_name')
             ->from('tb_rfs_myrep_claim cl')
             ->join('tb_rfs_myrep_cluster c', 'c.id_cluster = cl.cluster_id', 'inner')
             ->join('tb_rfs_myrep_monthly_target mt', 'mt.id_target = c.id_target', 'inner')
             ->where('cl.id_claim', (int) $claimId)
             ->get()
             ->row_array();
+
+        return !empty($row) ? $this->normalizeClaimApprovalRow($row) : $row;
+    }
+
+    private function normalizeClaimApprovalRows(array $rows)
+    {
+        foreach ($rows as &$row) {
+            $row = $this->normalizeClaimApprovalRow($row);
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    private function normalizeClaimApprovalRow(array $row)
+    {
+        $row['rpm_raw'] = $row['rpm'] ?? '';
+        $row['rpm'] = $this->normalizeRpmApproverName($row['rpm'] ?? '');
+        $row['sm_raw'] = $row['sm'] ?? '';
+        $row['sm'] = $this->normalizeAreaApproverName($row['sm'] ?? '');
+        $areaApprover = $this->resolveAreaApprover($row);
+        $row['area_approval_role'] = $areaApprover['role'];
+        $row['area_approval_name'] = $areaApprover['name'];
+        $statusClaim = strtoupper(trim((string) ($row['status_claim'] ?? '')));
+        $rpmApprovalStatus = strtoupper(trim((string) ($row['rpm_approval_status'] ?? '')));
+
+        if ($row['area_approval_name'] === '') {
+            if ($statusClaim === 'WAITING APPROVAL RPM') {
+                $row['status_claim'] = 'WAITING APPROVAL HO';
+            }
+            if ($rpmApprovalStatus === '' || $rpmApprovalStatus === 'WAITING APPROVAL RPM') {
+                $row['rpm_approval_status'] = 'SKIPPED';
+            }
+        }
+
+        return $row;
     }
 
     public function clusterExistsForTarget($idTarget, $clusterName)
@@ -1178,8 +1250,8 @@ class MMonitoring_RFS_MyRep extends CI_Model
             'province_name' => strtoupper(trim((string) ($cluster['province_name'] ?? ''))),
             'team_name' => trim((string) ($cluster['team_name'] ?? '')),
             'chief' => trim((string) ($cluster['chief'] ?? '')),
-            'rpm' => trim((string) ($cluster['rpm'] ?? '')),
-            'sm' => trim((string) ($cluster['sm'] ?? '')),
+            'rpm' => $this->normalizeRpmApproverName($cluster['rpm'] ?? ''),
+            'sm' => $this->normalizeAreaApproverName($cluster['sm'] ?? ''),
             'spv' => trim((string) ($cluster['spv'] ?? '')),
             'updated_at' => date('Y-m-d H:i:s'),
         ];

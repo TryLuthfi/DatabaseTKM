@@ -716,6 +716,8 @@ class Monitoring_RFS_MyRep extends CI_Controller
             return;
         }
 
+        $areaApprover = $this->MMonitoring_RFS_MyRep->resolveAreaApprover($cluster);
+        $hasAreaApprover = $areaApprover['name'] !== '';
         $payload = [
             'cluster_id' => $clusterId,
             'claim_year' => $claimYear,
@@ -725,8 +727,8 @@ class Monitoring_RFS_MyRep extends CI_Controller
             'status_rfs' => $statusRfs,
             'photo_path' => $uploadResult['file_path'],
             'claim_note' => trim((string) $this->input->post('claim_note')),
-            'status_claim' => $this->hasRpmApprover($cluster) ? 'WAITING APPROVAL RPM' : 'WAITING APPROVAL HO',
-            'rpm_approval_status' => $this->hasRpmApprover($cluster) ? 'WAITING APPROVAL RPM' : 'SKIPPED',
+            'status_claim' => $hasAreaApprover ? 'WAITING APPROVAL RPM' : 'WAITING APPROVAL HO',
+            'rpm_approval_status' => $hasAreaApprover ? 'WAITING APPROVAL RPM' : 'SKIPPED',
             'submitted_by' => (int) $this->session->userdata('id_user')
         ];
 
@@ -734,8 +736,8 @@ class Monitoring_RFS_MyRep extends CI_Controller
 
         $this->session->set_flashdata(
             'monitoring_rfs_myrep_message',
-            $this->hasRpmApprover($cluster)
-                ? 'Claim RFS berhasil dikirim dan menunggu approval RPM.'
+            $hasAreaApprover
+                ? 'Claim RFS berhasil dikirim dan menunggu approval ' . $areaApprover['role'] . '.'
                 : 'Claim RFS berhasil dikirim dan menunggu approval HO.'
         );
 
@@ -774,14 +776,15 @@ class Monitoring_RFS_MyRep extends CI_Controller
         }
 
         if ($approverStage === 'RPM') {
-            if (!$this->isRpmApprover($claim['rpm'] ?? '')) {
-                $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Approval RPM hanya bisa dilakukan oleh RPM terkait.');
+            $areaApproverRole = (string) ($claim['area_approval_role'] ?? 'RPM');
+            if (!$this->isAreaApprover($claim)) {
+                $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Approval area hanya bisa dilakukan oleh ' . ($areaApproverRole !== '' ? $areaApproverRole : 'PIC area') . ' terkait.');
                 redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity, $filterClaimStartDate, $filterClaimEndDate));
                 return;
             }
 
             if (($claim['status_claim'] ?? '') !== 'WAITING APPROVAL RPM') {
-                $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Claim ini tidak sedang menunggu approval RPM.');
+                $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Claim ini tidak sedang menunggu approval area.');
                 redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity, $filterClaimStartDate, $filterClaimEndDate));
                 return;
             }
@@ -801,8 +804,8 @@ class Monitoring_RFS_MyRep extends CI_Controller
             $this->session->set_flashdata(
                 'monitoring_rfs_myrep_message',
                 $status === 'APPROVED'
-                    ? 'Approval RPM berhasil. Claim diteruskan ke HO.'
-                    : 'Claim berhasil direject oleh RPM.'
+                    ? 'Approval ' . $areaApproverRole . ' berhasil. Claim diteruskan ke HO.'
+                    : 'Claim berhasil direject oleh ' . $areaApproverRole . '.'
             );
             if ($status === 'APPROVED') {
                 $this->sendClaimRfsNotification($claim);
@@ -819,7 +822,7 @@ class Monitoring_RFS_MyRep extends CI_Controller
 
         $rpmApprovalStatus = strtoupper(trim((string) ($claim['rpm_approval_status'] ?? '')));
         if ($rpmApprovalStatus === 'REJECTED') {
-            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Claim sudah direject RPM, approval HO tidak dapat dilakukan.');
+            $this->session->set_flashdata('monitoring_rfs_myrep_error', 'Claim sudah direject approval area, approval HO tidak dapat dilakukan.');
             redirect($this->buildRedirectUrl($year, $filterStartMonth, $filterEndMonth, $filterCity, $filterClaimStartDate, $filterClaimEndDate));
             return;
         }
@@ -1008,18 +1011,20 @@ class Monitoring_RFS_MyRep extends CI_Controller
         return $this->session->userdata('lokasi_user') === 'HO' || $this->session->userdata('nama_level') === 'Super Admin';
     }
 
-    private function hasRpmApprover($cluster)
-    {
-        return trim((string) ($cluster['rpm'] ?? '')) !== '';
-    }
-
-    private function isRpmApprover($rpmName)
+    private function isAreaApprover($claim)
     {
         if ($this->session->userdata('nama_level') === 'Super Admin') {
             return true;
         }
 
-        return strtoupper(trim((string) $this->session->userdata('nama_user'))) === strtoupper(trim((string) $rpmName));
+        $areaApproverName = trim((string) ($claim['area_approval_name'] ?? ''));
+        if ($areaApproverName === '') {
+            $areaApprover = $this->MMonitoring_RFS_MyRep->resolveAreaApprover($claim);
+            $areaApproverName = (string) ($areaApprover['name'] ?? '');
+        }
+
+        return $areaApproverName !== ''
+            && strtoupper(trim((string) $this->session->userdata('nama_user'))) === strtoupper($areaApproverName);
     }
 
     private function getMonthLabels()
