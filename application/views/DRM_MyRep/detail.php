@@ -628,6 +628,7 @@ if (!function_exists('drmScopeText')) {
                                                             <th>Status</th>
                                                             <th>File</th>
                                                             <th>Upload / Update</th>
+                                                            <th>Remarks</th>
                                                             <?php if ($canApprove && $canApprovalAction): ?><th>Review</th><?php endif; ?>
                                                         </tr>
                                                     </thead>
@@ -693,6 +694,9 @@ if (!function_exists('drmScopeText')) {
                                                                         <span class="text-muted small">Upload tidak tersedia</span>
                                                                     <?php endif; ?>
                                                                 </td>
+                                                                <td style="min-width:220px;">
+                                                                    <?= !empty($row['remark']) ? nl2br(htmlspecialchars((string) $row['remark'])) : '-' ?>
+                                                                </td>
                                                                 <?php if ($canApprove && $canApprovalAction): ?>
                                                                     <td style="min-width:220px;">
                                                                         <?php if (($row['doc_name'] ?? '') === 'APD BOQ'): ?>
@@ -726,7 +730,7 @@ if (!function_exists('drmScopeText')) {
                                                             </tr>
                                                         <?php endforeach; ?>
                                                         <?php if (empty($documentRows)): ?>
-                                                            <tr><td colspan="<?= ($canApprove && $canApprovalAction) ? '6' : '5' ?>" class="text-center text-muted">Belum ada dokumen <?= htmlspecialchars($scopeLabel) ?>.</td></tr>
+                                                            <tr><td colspan="<?= ($canApprove && $canApprovalAction) ? '7' : '6' ?>" class="text-center text-muted">Belum ada dokumen <?= htmlspecialchars($scopeLabel) ?>.</td></tr>
                                                         <?php endif; ?>
                                                     </tbody>
                                                 </table>
