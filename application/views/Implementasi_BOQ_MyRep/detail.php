@@ -131,6 +131,9 @@ if (!function_exists('implBuildHistoryRowsByScope')) {
                     && strpos($upper, '[DAILY]') !== 0
                     && strpos($upper, 'UPLOAD FOTO COMPLY -') !== 0;
             }));
+            $dailyRemarkPool = array_values(array_filter(array_unique((array) ($entry['daily_progress_remarks'] ?? [])), static function ($text) {
+                return trim((string) $text) !== '';
+            }));
             $dailyNonBoqRemark = '';
             if (!empty($entry['daily_non_boq_labels']) && is_array($entry['daily_non_boq_labels'])) {
                 $labels = array_keys($entry['daily_non_boq_labels']);
@@ -143,10 +146,12 @@ if (!function_exists('implBuildHistoryRowsByScope')) {
                 });
                 $dailyNonBoqRemark = implode(' / ', $labels);
             }
-            $finalRemark = !empty($manualRemarkPool)
+            $finalRemark = !empty($dailyRemarkPool)
+                ? implode(' | ', $dailyRemarkPool)
+                : (!empty($manualRemarkPool)
                 ? implode(' | ', $manualRemarkPool)
                 : ($dailyNonBoqRemark !== '' ? $dailyNonBoqRemark
-                : (!empty($remarkPool) ? implode(' | ', $remarkPool) : 'Progress Harian'));
+                : (!empty($remarkPool) ? implode(' | ', $remarkPool) : 'Progress Harian')));
 
             $historyRows[] = [
                 'progress_date' => $progressDate,
@@ -280,6 +285,15 @@ foreach ((array) $dailyActivities as $dailyActivity) {
     $dailyActivitiesByDate[$dailyDateKey][] = $dailyActivity;
 
     $dailyCode = strtoupper(trim((string) ($dailyActivity['activity_code'] ?? '')));
+    $dailyActivityRemark = trim((string) ($dailyActivity['activity_detail'] ?? ''));
+    if ($dailyActivityRemark === '' || $dailyActivityRemark === '-') {
+        $dailyActivityRemark = trim((string) ($dailyActivity['activity_name'] ?? ''));
+    }
+    if ($dailyActivityRemark === '' || $dailyActivityRemark === '-') {
+        $dailyActivityRemark = str_replace('_', ' ', $dailyCode);
+    }
+    $dailyActivityRemark = strtoupper($dailyActivityRemark);
+
     $label = '';
     if ($dailyCode === 'DIGGING_HOLE') {
         $label = 'DIGGING HOLE';
@@ -298,12 +312,17 @@ foreach ((array) $dailyActivities as $dailyActivity) {
                     'remark' => [],
                     'achieve' => [],
                     'daily_non_boq_labels' => [],
+                    'daily_progress_remarks' => [],
                 ];
             }
             if (!isset($historyDateRowsSubfeeder[$dailyDateKey]['daily_non_boq_labels'])) {
                 $historyDateRowsSubfeeder[$dailyDateKey]['daily_non_boq_labels'] = [];
             }
+            if (!isset($historyDateRowsSubfeeder[$dailyDateKey]['daily_progress_remarks'])) {
+                $historyDateRowsSubfeeder[$dailyDateKey]['daily_progress_remarks'] = [];
+            }
             $historyDateRowsSubfeeder[$dailyDateKey]['daily_non_boq_labels'][$label] = true;
+            $historyDateRowsSubfeeder[$dailyDateKey]['daily_progress_remarks'][] = $dailyActivityRemark;
         } else {
             if (!isset($historyDateRowsCluster[$dailyDateKey])) {
                 $historyDateRowsCluster[$dailyDateKey] = [
@@ -311,13 +330,34 @@ foreach ((array) $dailyActivities as $dailyActivity) {
                     'remark' => [],
                     'achieve' => [],
                     'daily_non_boq_labels' => [],
+                    'daily_progress_remarks' => [],
                 ];
             }
             if (!isset($historyDateRowsCluster[$dailyDateKey]['daily_non_boq_labels'])) {
                 $historyDateRowsCluster[$dailyDateKey]['daily_non_boq_labels'] = [];
             }
+            if (!isset($historyDateRowsCluster[$dailyDateKey]['daily_progress_remarks'])) {
+                $historyDateRowsCluster[$dailyDateKey]['daily_progress_remarks'] = [];
+            }
             $historyDateRowsCluster[$dailyDateKey]['daily_non_boq_labels'][$label] = true;
+            $historyDateRowsCluster[$dailyDateKey]['daily_progress_remarks'][] = $dailyActivityRemark;
         }
+    } else {
+        $dailyScope = implDetectHistoryScope($dailyActivity['scope_type'] ?? '', '');
+        $targetHistoryRows = $dailyScope === 'SUBFEEDER' ? 'historyDateRowsSubfeeder' : 'historyDateRowsCluster';
+        if (!isset($$targetHistoryRows[$dailyDateKey])) {
+            $$targetHistoryRows[$dailyDateKey] = [
+                'progress_date' => $dailyDateKey,
+                'remark' => [],
+                'achieve' => [],
+                'daily_non_boq_labels' => [],
+                'daily_progress_remarks' => [],
+            ];
+        }
+        if (!isset($$targetHistoryRows[$dailyDateKey]['daily_progress_remarks'])) {
+            $$targetHistoryRows[$dailyDateKey]['daily_progress_remarks'] = [];
+        }
+        $$targetHistoryRows[$dailyDateKey]['daily_progress_remarks'][] = $dailyActivityRemark;
     }
 }
 
