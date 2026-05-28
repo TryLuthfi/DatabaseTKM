@@ -2417,6 +2417,7 @@ if (!empty($kpiDetailRowMap)) {
                                                 <?php $areaApprovalFormId = 'form_area_approval_' . (int) ($claim['id_claim'] ?? 0); ?>
                                                 <form method="post"
                                                     id="<?= htmlspecialchars($areaApprovalFormId) ?>"
+                                                    data-role-guard-exempt="1"
                                                     action="<?= base_url('Monitoring_RFS_MyRep/updateClaimStatus') ?>">
                                                     <input type="hidden" name="year" value="<?= (int) $selectedYear ?>">
                                                     <input type="hidden" name="month" value="<?= (int) $selectedEndMonth ?>">
@@ -2446,6 +2447,7 @@ if (!empty($kpiDetailRowMap)) {
                                                         form="<?= htmlspecialchars($areaApprovalFormId) ?>"
                                                         class="btn btn-sm btn-success area-approval-submit"
                                                         data-form-target="#<?= htmlspecialchars($areaApprovalFormId) ?>"
+                                                        data-role-guard-exempt="1"
                                                         title="Kirim approval <?= htmlspecialchars($areaApproverRole) ?>">
                                                         Update <?= htmlspecialchars($areaApproverRole) ?>
                                                     </button>
