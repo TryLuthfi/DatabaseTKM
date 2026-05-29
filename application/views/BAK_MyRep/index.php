@@ -4,6 +4,22 @@ $flashError = $this->session->flashdata('error');
 $statusOptions = ['DRAFT', 'ON REVIEW', 'REJECTED', 'DONE'];
 $today = date('Y-m-d');
 $bakSummary = isset($bakSummary) && is_array($bakSummary) ? $bakSummary : [];
+$bakApprovalStatusSummary = isset($bakApprovalStatusSummary) && is_array($bakApprovalStatusSummary) ? $bakApprovalStatusSummary : [];
+$emptyBakApprovalSummary = ['onReviewCount' => 0, 'rejectedCount' => 0];
+if (!isset($bakApprovalStatusSummary['on_process'])) {
+    $flatBakApprovalSummary = array_merge($emptyBakApprovalSummary, $bakApprovalStatusSummary);
+    $bakApprovalStatusSummary = [
+        'on_process' => $flatBakApprovalSummary,
+        'ny_valsal' => $emptyBakApprovalSummary,
+        'all' => $flatBakApprovalSummary,
+    ];
+}
+$bakApprovalSummaryByTab = [
+    'on_process' => array_merge($emptyBakApprovalSummary, (array) ($bakApprovalStatusSummary['on_process'] ?? [])),
+    'ny_valsal' => array_merge($emptyBakApprovalSummary, (array) ($bakApprovalStatusSummary['ny_valsal'] ?? [])),
+    'all' => array_merge($emptyBakApprovalSummary, (array) ($bakApprovalStatusSummary['all'] ?? [])),
+];
+$bakActiveApprovalSummary = $bakApprovalSummaryByTab['on_process'];
 $renderBakRows = !empty($renderBakRows);
 $summaryTotal = (int) ($bakSummary['totalCount'] ?? count($clusterRows));
 $summaryBaOpen = (int) ($bakSummary['baOpenCount'] ?? 0);
@@ -16,6 +32,8 @@ $summaryRejectedHp = (float) ($bakSummary['rejectedHp'] ?? 0);
 $bakOnProcessCount = (int) ($bakSummary['onProcessCount'] ?? 0);
 $nyValsalCount = (int) ($bakSummary['nyValsalCount'] ?? 0);
 $allBakCount = (int) ($bakSummary['allCount'] ?? $summaryTotal);
+$bakOnReviewCount = (int) ($bakActiveApprovalSummary['onReviewCount'] ?? 0);
+$bakApprovalRejectedCount = (int) ($bakActiveApprovalSummary['rejectedCount'] ?? 0);
 $bakOnProcessRows = [];
 $nyValsalRows = [];
 $allBakRows = $clusterRows;
@@ -541,26 +559,44 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                             </div>
                         </div>
                         <div class="card-body">
-                            <ul class="nav nav-tabs bak-monitor-tabs" id="bak-monitor-tab" role="tablist">
-                                <li class="nav-item">
-                                    <a class="nav-link active" id="bak-on-process-tab" data-toggle="tab" href="#bak-on-process-pane" role="tab" aria-controls="bak-on-process-pane" aria-selected="true">
-                                        On Proses
-                                        <span class="bak-monitor-tabs__count"><?= number_format($bakOnProcessCount, 0, ',', '.') ?></span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="bak-ny-valsal-tab" data-toggle="tab" href="#bak-ny-valsal-pane" role="tab" aria-controls="bak-ny-valsal-pane" aria-selected="false">
-                                        Status NY VALSAL
-                                        <span class="bak-monitor-tabs__count"><?= number_format($nyValsalCount, 0, ',', '.') ?></span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="bak-all-tab" data-toggle="tab" href="#bak-all-pane" role="tab" aria-controls="bak-all-pane" aria-selected="false">
-                                        ALL BAK
-                                        <span class="bak-monitor-tabs__count"><?= number_format($allBakCount, 0, ',', '.') ?></span>
-                                    </a>
-                                </li>
-                            </ul>
+                            <div class="bak-tab-stack">
+                                <div class="bak-tab-section">
+                                    <div class="bak-tab-section__label">Flow</div>
+                                    <ul class="nav nav-tabs bak-monitor-tabs" id="bak-monitor-tab" role="tablist">
+                                        <li class="nav-item">
+                                            <a class="nav-link active" id="bak-on-process-tab" data-toggle="tab" href="#bak-on-process-pane" role="tab" aria-controls="bak-on-process-pane" aria-selected="true">
+                                                On Proses
+                                                <span class="bak-monitor-tabs__count"><?= number_format($bakOnProcessCount, 0, ',', '.') ?></span>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="bak-ny-valsal-tab" data-toggle="tab" href="#bak-ny-valsal-pane" role="tab" aria-controls="bak-ny-valsal-pane" aria-selected="false">
+                                                Status NY VALSAL
+                                                <span class="bak-monitor-tabs__count"><?= number_format($nyValsalCount, 0, ',', '.') ?></span>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="bak-all-tab" data-toggle="tab" href="#bak-all-pane" role="tab" aria-controls="bak-all-pane" aria-selected="false">
+                                                ALL BAK
+                                                <span class="bak-monitor-tabs__count"><?= number_format($allBakCount, 0, ',', '.') ?></span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="bak-status-filter-row">
+                                    <div class="bak-tab-section__label">Filter Status</div>
+                                    <div class="bak-status-pillbar" aria-label="Filter status approval BAK">
+                                        <button type="button" class="bak-status-pill js-bak-approval-filter" data-approval-status="on_review">
+                                            <span>On Review</span>
+                                            <span class="bak-status-pill__count" data-approval-count="onReviewCount"><?= number_format($bakOnReviewCount, 0, ',', '.') ?></span>
+                                        </button>
+                                        <button type="button" class="bak-status-pill js-bak-approval-filter" data-approval-status="rejected">
+                                            <span>Rejected</span>
+                                            <span class="bak-status-pill__count" data-approval-count="rejectedCount"><?= number_format($bakApprovalRejectedCount, 0, ',', '.') ?></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="tab-content bak-monitor-tabs__content" id="bak-monitor-tab-content">
                                 <div class="tab-pane fade show active" id="bak-on-process-pane" role="tabpanel" aria-labelledby="bak-on-process-tab">
                                     <div class="table-responsive">
@@ -1889,10 +1925,106 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         border-radius: 999px;
     }
 
+    .bak-tab-stack {
+        display: grid;
+        gap: .75rem;
+        margin-bottom: 1rem;
+    }
+
+    .bak-tab-section {
+        display: grid;
+        gap: .4rem;
+    }
+
+    .bak-tab-section__label {
+        font-size: .72rem;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #6b7f90;
+    }
+
+    .bak-status-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .65rem .85rem;
+        padding: .7rem .85rem;
+        border: 1px solid #e3edf6;
+        border-radius: 12px;
+        background: #f8fbfe;
+    }
+
+    .bak-status-filter-row .bak-tab-section__label {
+        margin-right: .15rem;
+        color: #51697e;
+    }
+
+    .bak-status-pillbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+
+    .bak-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        min-height: 32px;
+        border: 1px solid #d7e3ee;
+        border-radius: 999px;
+        padding: .38rem .68rem;
+        background: #fff;
+        color: #2f5f84;
+        font-size: .76rem;
+        font-weight: 800;
+        box-shadow: none;
+        transition: all .16s ease;
+    }
+
+    .bak-status-pill:hover,
+    .bak-status-pill:focus {
+        border-color: #9bc8eb;
+        background: #fafdff;
+        outline: none;
+    }
+
+    .bak-status-pill.is-active {
+        color: #fff;
+        background: #2277a8;
+        border-color: #2277a8;
+        box-shadow: 0 8px 18px rgba(34, 119, 168, 0.18);
+    }
+
+    .bak-status-pill[data-approval-status="rejected"].is-active {
+        background: #dc3545;
+        border-color: #dc3545;
+        box-shadow: 0 8px 18px rgba(220, 53, 69, 0.18);
+    }
+
+    .bak-status-pill__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 22px;
+        height: 18px;
+        padding: 0 .4rem;
+        border-radius: 999px;
+        background: #eef4fa;
+        color: #315f84;
+        font-size: .68rem;
+        font-weight: 900;
+    }
+
+    .bak-status-pill.is-active .bak-status-pill__count {
+        background: rgba(255, 255, 255, .24);
+        color: #fff;
+    }
+
     .bak-monitor-tabs {
         border-bottom: 0;
         gap: .75rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0;
     }
 
     .bak-monitor-tabs .nav-link {
@@ -1958,6 +2090,23 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
         .bak-filter-actions .btn {
             width: 100%;
+        }
+
+        .bak-status-filter-row {
+            align-items: stretch;
+        }
+
+        .bak-status-filter-row .bak-tab-section__label {
+            width: 100%;
+        }
+
+        .bak-status-pillbar,
+        .bak-status-pill {
+            width: 100%;
+        }
+
+        .bak-status-pill {
+            justify-content: space-between;
         }
     }
 </style>
@@ -2447,11 +2596,23 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             var bakTables = {};
             var bakFilterCity = <?= json_encode($selectedCity) ?>;
             var bakFilterStatus = <?= json_encode($selectedStatus) ?>;
+            var bakApprovalStatus = '';
+            var bakActiveFlowTab = 'on_process';
+            var bakApprovalStatusSummaryByTab = <?= json_encode($bakApprovalSummaryByTab, JSON_UNESCAPED_UNICODE) ?>;
             var bakTableConfigs = {
                 '#table_bak_on_process': { selector: '#table_bak_on_process', tab: 'on_process' },
                 '#table_bak_ny_valsal': { selector: '#table_bak_ny_valsal', tab: 'ny_valsal' },
                 '#table_bak_all': { selector: '#table_bak_all', tab: 'all' }
             };
+
+            function updateBakApprovalStatusCounts(tab) {
+                var summary = bakApprovalStatusSummaryByTab[tab] || {};
+                $('[data-approval-count]').each(function () {
+                    var key = String($(this).data('approval-count') || '');
+                    var value = Number(summary[key] || 0);
+                    $(this).text(value.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                });
+            }
 
             function initBakMonitorTable(selector) {
                 if (!$.fn.DataTable || !bakTableConfigs[selector]) {
@@ -2477,6 +2638,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             payload.city = bakFilterCity;
                             payload.status = bakFilterStatus;
                             payload.tab = config.tab;
+                            payload.approval_status = bakApprovalStatus;
                         }
                     },
                     order: [[1, 'asc']],
@@ -2523,10 +2685,27 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                     var tableSelector = $(this).attr('href') === '#bak-ny-valsal-pane'
                         ? '#table_bak_ny_valsal'
                         : ($(this).attr('href') === '#bak-all-pane' ? '#table_bak_all' : '#table_bak_on_process');
+                    bakActiveFlowTab = bakTableConfigs[tableSelector] ? bakTableConfigs[tableSelector].tab : 'on_process';
+                    updateBakApprovalStatusCounts(bakActiveFlowTab);
                     var table = initBakMonitorTable(tableSelector);
                     if (table) {
                         table.columns.adjust().draw(false);
                     }
+                });
+
+                $('.js-bak-approval-filter').on('click', function () {
+                    var nextStatus = String($(this).data('approval-status') || '').trim();
+                    bakApprovalStatus = bakApprovalStatus === nextStatus ? '' : nextStatus;
+
+                    $('.js-bak-approval-filter').each(function () {
+                        $(this).toggleClass('is-active', String($(this).data('approval-status') || '').trim() === bakApprovalStatus);
+                    });
+
+                    Object.keys(bakTables).forEach(function (selector) {
+                        if (bakTables[selector]) {
+                            bakTables[selector].ajax.reload(null, true);
+                        }
+                    });
                 });
             }
 

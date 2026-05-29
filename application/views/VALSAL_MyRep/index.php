@@ -83,6 +83,43 @@ foreach ($clusterRows as $row) {
     }
 }
 
+$buildValsalStatusSummary = static function (array $rows) {
+    $summary = [
+        'waitingInputCount' => 0,
+        'onReviewCount' => 0,
+        'rejectedCount' => 0,
+    ];
+
+    foreach ($rows as $row) {
+        $hasValsal = (int) ($row['id_valsal'] ?? 0) > 0;
+        $valsalStatus = strtoupper(trim((string) ($row['status_valsal'] ?? 'DRAFT')));
+        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
+        if (!$hasValsal) {
+            $summary['waitingInputCount']++;
+            continue;
+        }
+
+        if ($valsalStatus === 'ON REVIEW') {
+            $summary['onReviewCount']++;
+        }
+
+        if ($valsalStatus === 'REJECTED' || $currentStatus === 'REJECTED') {
+            $summary['rejectedCount']++;
+        }
+    }
+
+    return $summary;
+};
+$valsalStatusSummaryByTab = [
+    'on_process' => $buildValsalStatusSummary($valsalOnProcessRows),
+    'ny_batch' => $buildValsalStatusSummary($nyBatchApprovalNyDrmRows),
+    'all' => $buildValsalStatusSummary($allValsalRows),
+];
+$valsalActiveStatusSummary = $valsalStatusSummaryByTab['on_process'];
+$valsalWaitingInputCount = (int) ($valsalActiveStatusSummary['waitingInputCount'] ?? 0);
+$valsalOnReviewCount = (int) ($valsalActiveStatusSummary['onReviewCount'] ?? 0);
+$valsalStatusRejectedCount = (int) ($valsalActiveStatusSummary['rejectedCount'] ?? 0);
+
 if (!function_exists('valsalBadgeClass')) {
     function valsalBadgeClass($status)
     {
@@ -556,26 +593,48 @@ $renderValsalTableRows = static function (array $rows, $docReady, $canApprove, $
                             </div>
                         </div>
                         <div class="card-body">
-                            <ul class="nav nav-tabs valsal-monitor-tabs" id="valsal-monitor-tab" role="tablist">
-                                <li class="nav-item">
-                                    <a class="nav-link active" id="valsal-on-process-tab" data-toggle="tab" href="#valsal-on-process-pane" role="tab" aria-controls="valsal-on-process-pane" aria-selected="true">
-                                        On Proses
-                                        <span class="valsal-monitor-tabs__count"><?= number_format(count($valsalOnProcessRows), 0, ',', '.') ?></span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="valsal-ny-batch-tab" data-toggle="tab" href="#valsal-ny-batch-pane" role="tab" aria-controls="valsal-ny-batch-pane" aria-selected="false">
-                                        Status NY Batch Approval &amp; NY DRM
-                                        <span class="valsal-monitor-tabs__count"><?= number_format(count($nyBatchApprovalNyDrmRows), 0, ',', '.') ?></span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="valsal-all-tab" data-toggle="tab" href="#valsal-all-pane" role="tab" aria-controls="valsal-all-pane" aria-selected="false">
-                                        ALL VALSAL
-                                        <span class="valsal-monitor-tabs__count"><?= number_format(count($allValsalRows), 0, ',', '.') ?></span>
-                                    </a>
-                                </li>
-                            </ul>
+                            <div class="valsal-tab-stack">
+                                <div class="valsal-tab-section">
+                                    <div class="valsal-tab-section__label">Flow</div>
+                                    <ul class="nav nav-tabs valsal-monitor-tabs" id="valsal-monitor-tab" role="tablist">
+                                        <li class="nav-item">
+                                            <a class="nav-link active" id="valsal-on-process-tab" data-toggle="tab" href="#valsal-on-process-pane" role="tab" aria-controls="valsal-on-process-pane" aria-selected="true">
+                                                On Proses
+                                                <span class="valsal-monitor-tabs__count"><?= number_format(count($valsalOnProcessRows), 0, ',', '.') ?></span>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="valsal-ny-batch-tab" data-toggle="tab" href="#valsal-ny-batch-pane" role="tab" aria-controls="valsal-ny-batch-pane" aria-selected="false">
+                                                Status NY Batch Approval &amp; NY DRM
+                                                <span class="valsal-monitor-tabs__count"><?= number_format(count($nyBatchApprovalNyDrmRows), 0, ',', '.') ?></span>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="valsal-all-tab" data-toggle="tab" href="#valsal-all-pane" role="tab" aria-controls="valsal-all-pane" aria-selected="false">
+                                                ALL VALSAL
+                                                <span class="valsal-monitor-tabs__count"><?= number_format(count($allValsalRows), 0, ',', '.') ?></span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="valsal-status-filter-row">
+                                    <div class="valsal-tab-section__label">Filter Status</div>
+                                    <div class="valsal-status-pillbar" aria-label="Filter status VALSAL">
+                                        <button type="button" class="valsal-status-pill js-valsal-status-filter" data-valsal-status="waiting_input">
+                                            <span>Waiting Input</span>
+                                            <span class="valsal-status-pill__count" data-valsal-status-count="waitingInputCount"><?= number_format($valsalWaitingInputCount, 0, ',', '.') ?></span>
+                                        </button>
+                                        <button type="button" class="valsal-status-pill js-valsal-status-filter" data-valsal-status="on_review">
+                                            <span>On Review</span>
+                                            <span class="valsal-status-pill__count" data-valsal-status-count="onReviewCount"><?= number_format($valsalOnReviewCount, 0, ',', '.') ?></span>
+                                        </button>
+                                        <button type="button" class="valsal-status-pill js-valsal-status-filter" data-valsal-status="rejected">
+                                            <span>Rejected</span>
+                                            <span class="valsal-status-pill__count" data-valsal-status-count="rejectedCount"><?= number_format($valsalStatusRejectedCount, 0, ',', '.') ?></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="tab-content valsal-monitor-tabs__content" id="valsal-monitor-tab-content">
                                 <div class="tab-pane fade show active" id="valsal-on-process-pane" role="tabpanel" aria-labelledby="valsal-on-process-tab">
                                     <div class="table-responsive">
@@ -1854,10 +1913,106 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         box-shadow: 0 0 0 0.18rem rgba(85, 167, 213, 0.18);
     }
 
+    .valsal-tab-stack {
+        display: grid;
+        gap: .75rem;
+        margin-bottom: 1rem;
+    }
+
+    .valsal-tab-section {
+        display: grid;
+        gap: .4rem;
+    }
+
+    .valsal-tab-section__label {
+        font-size: .72rem;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #6b7f90;
+    }
+
+    .valsal-status-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .65rem .85rem;
+        padding: .7rem .85rem;
+        border: 1px solid #e3edf6;
+        border-radius: 12px;
+        background: #f8fbfe;
+    }
+
+    .valsal-status-filter-row .valsal-tab-section__label {
+        margin-right: .15rem;
+        color: #51697e;
+    }
+
+    .valsal-status-pillbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+
+    .valsal-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        min-height: 32px;
+        border: 1px solid #d7e3ee;
+        border-radius: 999px;
+        padding: .38rem .68rem;
+        background: #fff;
+        color: #2f5f84;
+        font-size: .76rem;
+        font-weight: 800;
+        box-shadow: none;
+        transition: all .16s ease;
+    }
+
+    .valsal-status-pill:hover,
+    .valsal-status-pill:focus {
+        border-color: #9bc8eb;
+        background: #fafdff;
+        outline: none;
+    }
+
+    .valsal-status-pill.is-active {
+        color: #fff;
+        background: #2277a8;
+        border-color: #2277a8;
+        box-shadow: 0 8px 18px rgba(34, 119, 168, 0.18);
+    }
+
+    .valsal-status-pill[data-valsal-status="rejected"].is-active {
+        background: #dc3545;
+        border-color: #dc3545;
+        box-shadow: 0 8px 18px rgba(220, 53, 69, 0.18);
+    }
+
+    .valsal-status-pill__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 22px;
+        height: 18px;
+        padding: 0 .4rem;
+        border-radius: 999px;
+        background: #eef4fa;
+        color: #315f84;
+        font-size: .68rem;
+        font-weight: 900;
+    }
+
+    .valsal-status-pill.is-active .valsal-status-pill__count {
+        background: rgba(255, 255, 255, .24);
+        color: #fff;
+    }
+
     .valsal-monitor-tabs {
         border-bottom: 0;
         gap: .75rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0;
     }
 
     .valsal-monitor-tabs .nav-link {
@@ -1937,6 +2092,23 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             width: 100%;
         }
 
+        .valsal-status-filter-row {
+            align-items: stretch;
+        }
+
+        .valsal-status-filter-row .valsal-tab-section__label {
+            width: 100%;
+        }
+
+        .valsal-status-pillbar,
+        .valsal-status-pill {
+            width: 100%;
+        }
+
+        .valsal-status-pill {
+            justify-content: space-between;
+        }
+
     }
 </style>
 
@@ -1954,6 +2126,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         var valsalCityOptionsByRegional = <?= json_encode($cityOptionsByRegional, JSON_UNESCAPED_UNICODE) ?>;
         var valsalRegionalOptionsByCity = <?= json_encode($regionalOptionsByCity, JSON_UNESCAPED_UNICODE) ?>;
         var valsalSelectedStatus = '<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>';
+        var valsalStatusSummaryByTab = <?= json_encode($valsalStatusSummaryByTab, JSON_UNESCAPED_UNICODE) ?>;
         var currentValsalDetailClusterId = 0;
         var importedValsalRows = [];
         var valsalSyncingSelection = false;
@@ -2335,18 +2508,68 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         }
 
         $(function () {
-            var valsalTables = [];
+            var valsalTables = {};
+            var valsalActiveFlowTab = 'on_process';
+            var valsalStatusFilter = '';
+            var valsalTableConfigs = {
+                '#table_valsal_on_process': { tab: 'on_process' },
+                '#table_valsal_ny_batch_drm': { tab: 'ny_batch' },
+                '#table_valsal_all': { tab: 'all' }
+            };
+
+            function getActiveValsalTableSelector() {
+                var href = $('#valsal-monitor-tab .nav-link.active').attr('href') || '#valsal-on-process-pane';
+                if (href === '#valsal-ny-batch-pane') {
+                    return '#table_valsal_ny_batch_drm';
+                }
+                if (href === '#valsal-all-pane') {
+                    return '#table_valsal_all';
+                }
+                return '#table_valsal_on_process';
+            }
+
+            function updateValsalStatusCounts(tab) {
+                var summary = valsalStatusSummaryByTab[tab] || {};
+                $('[data-valsal-status-count]').each(function () {
+                    var key = String($(this).data('valsal-status-count') || '');
+                    var value = Number(summary[key] || 0);
+                    $(this).text(value.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                });
+            }
+
+            function applyValsalStatusFilterToTable(table) {
+                if (!table) {
+                    return;
+                }
+
+                var keyword = '';
+                if (valsalStatusFilter === 'waiting_input') {
+                    keyword = 'WAITING INPUT';
+                } else if (valsalStatusFilter === 'on_review') {
+                    keyword = 'ON REVIEW';
+                } else if (valsalStatusFilter === 'rejected') {
+                    keyword = 'REJECTED';
+                }
+
+                table.column(9).search(keyword, false, false).draw();
+            }
+
+            function syncValsalStatusFilterButtons() {
+                $('.js-valsal-status-filter').each(function () {
+                    $(this).toggleClass('is-active', String($(this).data('valsal-status') || '').trim() === valsalStatusFilter);
+                });
+            }
 
             handleValsalFlashAlerts();
 
             if ($.fn.DataTable) {
-                ['#table_valsal_on_process', '#table_valsal_ny_batch_drm', '#table_valsal_all'].forEach(function (selector) {
+                Object.keys(valsalTableConfigs).forEach(function (selector) {
                     if (!$(selector).length) {
                         return;
                     }
 
                     try {
-                        valsalTables.push($(selector).DataTable({
+                        valsalTables[selector] = $(selector).DataTable({
                             responsive: false,
                             scrollX: true,
                             scrollCollapse: true,
@@ -2389,16 +2612,28 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             language: {
                                 emptyTable: 'Belum ada data untuk tab ini.'
                             }
-                        }));
+                        });
                     } catch (err) {
                         console.error('DataTable init failed for', selector, err);
                     }
                 });
 
                 $('a[data-toggle="tab"][href^="#valsal-"]').on('shown.bs.tab', function () {
-                    valsalTables.forEach(function (table) {
-                        table.columns.adjust().draw(false);
+                    var tableSelector = getActiveValsalTableSelector();
+                    valsalActiveFlowTab = valsalTableConfigs[tableSelector] ? valsalTableConfigs[tableSelector].tab : 'on_process';
+                    updateValsalStatusCounts(valsalActiveFlowTab);
+
+                    Object.keys(valsalTables).forEach(function (selector) {
+                        valsalTables[selector].columns.adjust();
                     });
+                    applyValsalStatusFilterToTable(valsalTables[tableSelector]);
+                });
+
+                $('.js-valsal-status-filter').on('click', function () {
+                    var nextStatus = String($(this).data('valsal-status') || '').trim();
+                    valsalStatusFilter = valsalStatusFilter === nextStatus ? '' : nextStatus;
+                    syncValsalStatusFilterButtons();
+                    applyValsalStatusFilterToTable(valsalTables[getActiveValsalTableSelector()]);
                 });
             }
 

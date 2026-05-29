@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class MSuperAdmin_UserAccess extends CI_Model
 {
@@ -991,11 +992,9 @@ class MSuperAdmin_UserAccess extends CI_Model
                 ->result_array();
 
             foreach ($nikRows as $nikRow) {
-                $nik = trim((string) ($nikRow['nik'] ?? ''));
-                if ($nik === '') {
-                    continue;
+                foreach (myrep_pic_nik_list($nikRow['nik'] ?? '') as $nik) {
+                    $mappedNiks[$nik] = true;
                 }
-                $mappedNiks[$nik] = true;
             }
         }
 
@@ -1366,7 +1365,7 @@ class MSuperAdmin_UserAccess extends CI_Model
             $found = (array) $this->db
                 ->select('1 AS hit', false)
                 ->from('tb_myrep_pic_mapping_city')
-                ->where($columnName, $nik)
+                ->where(myrep_pic_column_contains_sql($this->db, '`' . $columnName . '`', $nik), null, false)
                 ->limit(1)
                 ->get()
                 ->row_array();

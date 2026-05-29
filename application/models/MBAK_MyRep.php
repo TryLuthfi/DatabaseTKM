@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class MBAK_MyRep extends CI_Model
 {
@@ -125,11 +126,12 @@ class MBAK_MyRep extends CI_Model
 
         $picName = '';
         if (!empty($mappingRow) && is_array($mappingRow) && $this->db->field_exists($this->cityPicApprovalColumn, 'tb_myrep_pic_mapping_city')) {
-            $nik = trim((string) ($mappingRow[$this->cityPicApprovalColumn] ?? ''));
-            if ($nik !== '') {
+            $picNames = [];
+            foreach (myrep_pic_nik_list($mappingRow[$this->cityPicApprovalColumn] ?? '') as $nik) {
                 $mappedName = $this->getMasterUserNameByNik($nik);
-                $picName = $mappedName !== '' ? $mappedName : $nik;
+                $picNames[] = $mappedName !== '' ? $mappedName : $nik;
             }
+            $picName = implode(', ', $picNames);
         }
 
         $this->cityPicApprovalNameCache[$cacheKey] = $picName;
@@ -447,7 +449,7 @@ class MBAK_MyRep extends CI_Model
             ->result_array();
     }
 
-    public function getBakRowsPage($city = '', $status = '', $tab = 'all', $start = 0, $length = 10, $search = '', array $order = [])
+    public function getBakRowsPage($city = '', $status = '', $tab = 'all', $approvalStatus = '', $start = 0, $length = 10, $search = '', array $order = [])
     {
         if (!$this->bakTablesReady()) {
             return [
@@ -463,10 +465,10 @@ class MBAK_MyRep extends CI_Model
             $length = 10;
         }
 
-        $recordsTotal = $this->countBakRows($city, $status, $tab);
-        $recordsFiltered = $this->countBakRows($city, $status, $tab, $search);
+        $recordsTotal = $this->countBakRows($city, $status, $tab, $approvalStatus);
+        $recordsFiltered = $this->countBakRows($city, $status, $tab, $approvalStatus, $search);
 
-        $this->prepareBakRowsQuery($city, $status, $tab, $search);
+        $this->prepareBakRowsQuery($city, $status, $tab, $approvalStatus, $search);
         $this->applyBakRowsOrder($order);
         $rows = $this->db
             ->limit($length, $start)
@@ -560,15 +562,50 @@ class MBAK_MyRep extends CI_Model
         ];
     }
 
-    private function countBakRows($city = '', $status = '', $tab = 'all', $search = '')
+    public function getBakApprovalStatusSummary($city = '', $status = '', $tab = 'all')
     {
-        $this->prepareBakRowsQuery($city, $status, $tab, $search, true);
+        $emptySummary = [
+            'onReviewCount' => 0,
+            'rejectedCount' => 0,
+        ];
+
+        if (!$this->bakTablesReady()) {
+            return $emptySummary;
+        }
+
+        $onReviewSql = $this->buildBakApprovalStatusSql('on_review');
+        $rejectedSql = $this->buildBakApprovalStatusSql('rejected');
+
+        $this->db
+            ->select("SUM(CASE WHEN {$onReviewSql} THEN 1 ELSE 0 END) AS on_review_count", false)
+            ->select("SUM(CASE WHEN {$rejectedSql} THEN 1 ELSE 0 END) AS rejected_count", false)
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left');
+
+        if (!$this->applyBakBaseFilters($city, $status)) {
+            return $emptySummary;
+        }
+
+        $this->applyBakTabFilter($tab);
+
+        $row = (array) $this->db->get()->row_array();
+
+        return [
+            'onReviewCount' => (int) ($row['on_review_count'] ?? 0),
+            'rejectedCount' => (int) ($row['rejected_count'] ?? 0),
+        ];
+    }
+
+    private function countBakRows($city = '', $status = '', $tab = 'all', $approvalStatus = '', $search = '')
+    {
+        $this->prepareBakRowsQuery($city, $status, $tab, $approvalStatus, $search, true);
         $row = (array) $this->db->get()->row_array();
 
         return (int) ($row['total'] ?? 0);
     }
 
-    private function prepareBakRowsQuery($city = '', $status = '', $tab = 'all', $search = '', $countOnly = false)
+    private function prepareBakRowsQuery($city = '', $status = '', $tab = 'all', $approvalStatus = '', $search = '', $countOnly = false)
     {
         if ($countOnly) {
             $this->db->select('COUNT(1) AS total', false);
@@ -617,6 +654,7 @@ class MBAK_MyRep extends CI_Model
         }
 
         $this->applyBakTabFilter($tab);
+        $this->applyBakApprovalStatusFilter($approvalStatus);
         $this->applyBakSearchFilter($search);
     }
 
@@ -660,6 +698,73 @@ class MBAK_MyRep extends CI_Model
             $this->db->where("UPPER(COALESCE(b.status_bak, 'DRAFT')) IN ('DONE', 'APPROVED')", null, false);
             $this->db->where("UPPER(COALESCE(c.status_current, 'DRAFT')) = 'BAK'", null, false);
         }
+    }
+
+    private function applyBakApprovalStatusFilter($approvalStatus)
+    {
+        $condition = $this->buildBakApprovalStatusSql($approvalStatus);
+        if ($condition !== '') {
+            $this->db->where($condition, null, false);
+        }
+    }
+
+    private function buildBakApprovalStatusSql($approvalStatus)
+    {
+        $approvalStatus = strtolower(trim((string) $approvalStatus));
+        $rejectedSql = $this->buildBakRejectedSql();
+
+        if ($approvalStatus === 'on_review') {
+            return "(UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'ON REVIEW' AND NOT ({$rejectedSql}))";
+        }
+
+        if ($approvalStatus === 'rejected') {
+            return "({$rejectedSql})";
+        }
+
+        return '';
+    }
+
+    private function buildBakRejectedSql()
+    {
+        $docRejectedSql = $this->buildBakDocStatusExistsSql(['REJECTED']);
+        return "(UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'REJECTED' OR UPPER(COALESCE(c.status_current, 'DRAFT')) = 'REJECTED' OR {$docRejectedSql})";
+    }
+
+    private function buildBakDocStatusExistsSql(array $statuses)
+    {
+        if (!$this->bakDocumentTablesReady()) {
+            return '0 = 1';
+        }
+
+        $normalizedStatuses = array_values(array_unique(array_filter(array_map(static function ($status) {
+            return strtoupper(trim((string) $status));
+        }, $statuses))));
+        if (empty($normalizedStatuses)) {
+            return '0 = 1';
+        }
+
+        $escapedStatuses = implode(',', array_map([$this->db, 'escape'], $normalizedStatuses));
+        $escapedDocNames = implode(',', array_map([$this->db, 'escape'], $this->getDefaultBakDocumentNames()));
+
+        return "EXISTS (
+            SELECT 1
+            FROM tb_myrep_flow_doc_package doc_package_filter
+            JOIN tb_myrep_flow_doc_file doc_file_filter
+                ON doc_file_filter.id_doc_package = doc_package_filter.id_doc_package
+            JOIN md_myrep_flow_doc_group doc_group_filter
+                ON doc_group_filter.id_doc_group = doc_package_filter.id_doc_group
+                AND doc_group_filter.flow_type = 'BAK'
+                AND doc_group_filter.group_label = 'BA OPEN'
+                AND doc_group_filter.is_active = 1
+            JOIN md_myrep_flow_doc_item doc_item_filter
+                ON doc_item_filter.id_doc_item = doc_file_filter.id_doc_item
+                AND doc_item_filter.id_doc_group = doc_group_filter.id_doc_group
+                AND doc_item_filter.is_active = 1
+            WHERE doc_package_filter.id_myrep_cluster = c.id_myrep_cluster
+                AND doc_package_filter.flow_type = 'BAK'
+                AND doc_item_filter.doc_name IN ({$escapedDocNames})
+                AND UPPER(COALESCE(doc_file_filter.status_file, '')) IN ({$escapedStatuses})
+        )";
     }
 
     private function applyBakSearchFilter($search = '')
@@ -1182,10 +1287,8 @@ class MBAK_MyRep extends CI_Model
         }
 
         $whereParts = [];
-        $params = [];
         foreach ($existingRoleColumns as $columnName) {
-            $whereParts[] = '`' . $columnName . '` = ?';
-            $params[] = $nik;
+            $whereParts[] = myrep_pic_column_contains_sql($this->db, '`' . $columnName . '`', $nik);
         }
 
         $sql = 'SELECT city_name FROM tb_myrep_pic_mapping_city WHERE ';
@@ -1194,7 +1297,7 @@ class MBAK_MyRep extends CI_Model
         }
         $sql .= '(' . implode(' OR ', $whereParts) . ')';
 
-        $rows = (array) $this->db->query($sql, $params)->result_array();
+        $rows = (array) $this->db->query($sql)->result_array();
         foreach ($rows as $row) {
             $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
             if ($cityName !== '') {

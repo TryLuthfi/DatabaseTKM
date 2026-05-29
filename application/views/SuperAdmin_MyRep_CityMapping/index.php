@@ -141,21 +141,25 @@ sort($provinceOptions);
                                         <td><?= htmlspecialchars((string) ($row['team_name'] ?? '-')) ?></td>
                                         <td><?= htmlspecialchars((string) ($row['chief'] ?? '-')) ?></td>
                                         <?php foreach ($roleColumns as $roleCol): ?>
-                                            <?php $selectedNik = trim((string) ($row[$roleCol] ?? '')); ?>
+                                            <?php
+                                            $selectedNiks = preg_split('/[,;|]+/', (string) ($row[$roleCol] ?? ''));
+                                            $selectedNiks = array_values(array_unique(array_filter(array_map('trim', (array) $selectedNiks))));
+                                            $selectedNikCsv = implode(',', $selectedNiks);
+                                            ?>
                                             <td>
                                                 <?php
                                                 $nameField = (string) ($roleNameField[$roleCol] ?? '');
                                                 $currentName = trim((string) ($nameField !== '' ? ($row[$nameField] ?? '') : ''));
+                                                $currentNames = array_values(array_filter(array_map('trim', explode(',', $currentName))));
                                                 ?>
                                                 <div class="js-view-only"><?= htmlspecialchars($currentName !== '' ? $currentName : '-') ?></div>
                                                 <div class="js-edit-only d-none">
-                                                    <select class="form-control form-control-sm js-city-pic-select" name="<?= htmlspecialchars($roleCol) ?>" data-original="<?= htmlspecialchars($selectedNik, ENT_QUOTES) ?>">
-                                                        <option value="">-</option>
-                                                        <?php if ($selectedNik !== ''): ?>
+                                                    <select class="form-control form-control-sm js-city-pic-select" name="<?= htmlspecialchars($roleCol) ?>" data-original="<?= htmlspecialchars($selectedNikCsv, ENT_QUOTES) ?>" multiple>
+                                                        <?php foreach ($selectedNiks as $selectedIndex => $selectedNik): ?>
                                                             <option value="<?= htmlspecialchars($selectedNik) ?>" selected>
-                                                                <?= htmlspecialchars($currentName !== '' ? $currentName : $selectedNik) ?>
+                                                                <?= htmlspecialchars($currentNames[$selectedIndex] ?? $selectedNik) ?>
                                                             </option>
-                                                        <?php endif; ?>
+                                                        <?php endforeach; ?>
                                                     </select>
                                                 </div>
                                             </td>
@@ -179,6 +183,20 @@ sort($provinceOptions);
         var isEditMode = false;
         var cityTable = null;
 
+        function normalizePicCsv(value) {
+            var rawValues = Array.isArray(value) ? value : String(value || '').split(/[;,|]+/);
+            var seen = {};
+            var values = [];
+            rawValues.forEach(function (item) {
+                var nik = String(item || '').trim();
+                if (nik !== '' && !seen[nik]) {
+                    seen[nik] = true;
+                    values.push(nik);
+                }
+            });
+            return values.join(',');
+        }
+
         function syncTableLayout() {
             if (!cityTable || !$.fn.DataTable) {
                 return;
@@ -201,8 +219,9 @@ sort($provinceOptions);
                 $select.select2({
                     theme: 'bootstrap4',
                     width: '100%',
-                    placeholder: 'Pilih user',
+                    placeholder: 'Pilih PIC',
                     allowClear: true,
+                    multiple: true,
                     ajax: {
                         url: userOptionsUrl,
                         dataType: 'json',
@@ -293,7 +312,8 @@ sort($provinceOptions);
         $('#btn_cancel_edit_city_mapping').on('click', function () {
             $('#table_myrep_city_mapping_edit .js-city-pic-select').each(function () {
                 var $select = $(this);
-                $select.val(String($select.data('original') || '')).trigger('change.select2');
+                var originalCsv = normalizePicCsv($select.data('original') || '');
+                $select.val(originalCsv === '' ? [] : originalCsv.split(',')).trigger('change.select2');
             });
             setEditMode(false);
         });
@@ -314,8 +334,8 @@ sort($provinceOptions);
 
                 roleColumns.forEach(function (col) {
                     var $select = $row.find('select[name="' + col + '"]');
-                    var currentVal = String($select.val() || '');
-                    var originalVal = String($select.data('original') || '');
+                    var currentVal = normalizePicCsv($select.val() || []);
+                    var originalVal = normalizePicCsv($select.data('original') || '');
                     payload[col] = currentVal;
                     if (currentVal !== originalVal) {
                         isChanged = true;
@@ -363,29 +383,24 @@ sort($provinceOptions);
 
     #table_myrep_city_mapping_edit .js-edit-only .select2-container {
         width: 100% !important;
-        min-width: 120px;
+        min-width: 180px;
     }
 
-    #table_myrep_city_mapping_edit .select2-container--bootstrap4 .select2-selection--single {
+    #table_myrep_city_mapping_edit .select2-container--bootstrap4 .select2-selection--multiple {
         min-height: 34px;
-        height: 34px;
-        padding: 0 28px 0 8px;
-        display: flex;
-        align-items: center;
+        padding: 2px 6px;
     }
 
-    #table_myrep_city_mapping_edit .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+    #table_myrep_city_mapping_edit .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice {
+        max-width: 160px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #table_myrep_city_mapping_edit .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__rendered {
         line-height: 1.2;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        padding-left: 0;
-        padding-right: 0;
-    }
-
-    #table_myrep_city_mapping_edit .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
-        height: 32px;
-        top: 0;
-        right: 4px;
     }
 </style>

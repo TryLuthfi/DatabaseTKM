@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 if (!function_exists('get_validation_user_list')) {
     function get_validation_user_list()
@@ -578,7 +579,7 @@ if (!function_exists('has_myrep_role_page_access')) {
             $found = (array) $CI->db
                 ->select('1 AS hit', false)
                 ->from('tb_myrep_pic_mapping_city')
-                ->where($columnName, $nik)
+                ->where(myrep_pic_column_contains_sql($CI->db, '`' . $columnName . '`', $nik), null, false)
                 ->limit(1)
                 ->get()
                 ->row_array();

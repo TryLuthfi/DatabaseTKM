@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class MChecklist_Dokument_MyRep extends CI_Model
 {
@@ -2363,14 +2364,18 @@ class MChecklist_Dokument_MyRep extends CI_Model
         ];
 
         if (isset($roleColumnMap[$verificationTeam])) {
-            $mappedNik = trim((string) ($cityPicMapping[$roleColumnMap[$verificationTeam]] ?? ''));
-            if ($mappedNik !== '') {
+            $mappedNames = [];
+            foreach (myrep_pic_nik_list($cityPicMapping[$roleColumnMap[$verificationTeam]] ?? '') as $mappedNik) {
                 $mappedUser = $this->getUserByNik($mappedNik);
                 if (!empty($mappedUser['nama_user'])) {
-                    return (string) $mappedUser['nama_user'];
+                    $mappedNames[] = (string) $mappedUser['nama_user'];
+                    continue;
                 }
 
-                return $mappedNik;
+                $mappedNames[] = $mappedNik;
+            }
+            if (!empty($mappedNames)) {
+                return implode(', ', $mappedNames);
             }
         }
 
@@ -2478,10 +2483,8 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
 
         $whereParts = [];
-        $params = [];
         foreach ($existingRoleColumns as $columnName) {
-            $whereParts[] = '`' . $columnName . '` = ?';
-            $params[] = $nik;
+            $whereParts[] = myrep_pic_column_contains_sql($this->db, '`' . $columnName . '`', $nik);
         }
 
         $sql = 'SELECT city_name FROM tb_myrep_pic_mapping_city WHERE ';
@@ -2490,7 +2493,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
         }
         $sql .= '(' . implode(' OR ', $whereParts) . ')';
 
-        $rows = (array) $this->db->query($sql, $params)->result_array();
+        $rows = (array) $this->db->query($sql)->result_array();
         foreach ($rows as $row) {
             $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
             if ($cityName !== '') {

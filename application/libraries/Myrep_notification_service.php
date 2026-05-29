@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class Myrep_notification_service
 {
@@ -168,6 +169,62 @@ class Myrep_notification_service
         ];
     }
 
+    private function getUsersByNikList(array $nikList)
+    {
+        $nikList = array_values(array_unique(array_filter(array_map(static function ($nik) {
+            return trim((string) $nik);
+        }, $nikList))));
+        if (empty($nikList)) {
+            return [];
+        }
+
+        $rows = (array) $this->ci->db
+            ->select('id AS id_user, nik, nama_karyawan AS nama_user, telegram_user_id')
+            ->from('tb_master_user_new')
+            ->where_in('nik', $nikList)
+            ->get()
+            ->result_array();
+
+        $byNik = [];
+        foreach ($rows as $row) {
+            $nik = trim((string) ($row['nik'] ?? ''));
+            if ($nik !== '') {
+                $byNik[$nik] = [
+                    'id_user' => (int) ($row['id_user'] ?? 0),
+                    'name' => (string) ($row['nama_user'] ?? $nik),
+                    'telegram_user_id' => (string) ($row['telegram_user_id'] ?? ''),
+                ];
+            }
+        }
+
+        $users = [];
+        foreach ($nikList as $nik) {
+            $users[] = $byNik[$nik] ?? [
+                'id_user' => 0,
+                'name' => $nik,
+                'telegram_user_id' => '',
+            ];
+        }
+
+        return $users;
+    }
+
+    private function combineRecipients(array $users)
+    {
+        if (empty($users)) {
+            return [];
+        }
+
+        return [
+            'id_user' => (int) ($users[0]['id_user'] ?? 0),
+            'name' => implode(', ', array_filter(array_map(static function ($user) {
+                return trim((string) ($user['name'] ?? ''));
+            }, $users))),
+            'telegram_user_id' => (string) ($users[0]['telegram_user_id'] ?? ''),
+            'recipients' => $users,
+        ];
+    }
+
     private function getUserByCityRole($targetRole, array $payload = [])
     {
         $targetRole = strtoupper(trim((string) $targetRole));
@@ -198,12 +255,12 @@ class Myrep_notification_service
             return [];
         }
 
-        $nik = trim((string) ($mapping[$roleColumnMap[$targetRole]] ?? ''));
-        if ($nik === '') {
+        $nikList = myrep_pic_nik_list($mapping[$roleColumnMap[$targetRole]] ?? '');
+        if (empty($nikList)) {
             return [];
         }
 
-        return $this->getUserByNik($nik);
+        return $this->combineRecipients($this->getUsersByNikList($nikList));
     }
 
     private function getCityPicMapping(array $payload = [])
@@ -387,6 +444,15 @@ class Myrep_notification_service
 
     private function buildRecipientMention(array $recipient)
     {
+        if (!empty($recipient['recipients']) && is_array($recipient['recipients'])) {
+            $mentions = [];
+            foreach ($recipient['recipients'] as $recipientRow) {
+                $mentions[] = $this->buildRecipientMention((array) $recipientRow);
+            }
+
+            return implode(', ', array_filter($mentions));
+        }
+
         $name = $this->escapeTelegramText((string) ($recipient['name'] ?? 'PIC'));
         $telegramUserId = trim((string) ($recipient['telegram_user_id'] ?? ''));
         if ($telegramUserId === '') {

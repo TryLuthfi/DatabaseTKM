@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class Myrep_access_service
 {
@@ -148,7 +149,7 @@ class Myrep_access_service
             $found = (array) $this->ci->db
                 ->select('1 AS hit', false)
                 ->from('tb_myrep_pic_mapping_city')
-                ->where($columnName, $nik)
+                ->where(myrep_pic_column_contains_sql($this->ci->db, '`' . $columnName . '`', $nik), null, false)
                 ->limit(1)
                 ->get()
                 ->row_array();

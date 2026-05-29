@@ -50,6 +50,12 @@ class BAK_MyRep extends CI_Controller
         $data['bakSummary'] = $data['isReady']
             ? $this->MBAK_MyRep->getBakSummary($selectedCity, $selectedStatus)
             : [];
+        $data['bakApprovalStatusSummary'] = [];
+        if ($data['isReady']) {
+            foreach (['on_process', 'ny_valsal', 'all'] as $summaryTab) {
+                $data['bakApprovalStatusSummary'][$summaryTab] = $this->MBAK_MyRep->getBakApprovalStatusSummary($selectedCity, $selectedStatus, $summaryTab);
+            }
+        }
         $data['bakDocumentDefinitions'] = $data['docReady'] ? $this->MBAK_MyRep->getBakDocumentDefinitions() : [];
         $data['bakDocumentMap'] = [];
 
@@ -78,6 +84,10 @@ class BAK_MyRep extends CI_Controller
         if (!in_array($tab, ['on_process', 'ny_valsal', 'all'], true)) {
             $tab = 'all';
         }
+        $approvalStatus = strtolower(trim((string) $this->input->post('approval_status')));
+        if (!in_array($approvalStatus, ['on_review', 'rejected'], true)) {
+            $approvalStatus = '';
+        }
 
         $searchPayload = $this->input->post('search');
         $searchValue = is_array($searchPayload) ? (string) ($searchPayload['value'] ?? '') : '';
@@ -97,7 +107,7 @@ class BAK_MyRep extends CI_Controller
         }
 
         try {
-            $page = $this->MBAK_MyRep->getBakRowsPage($selectedCity, $selectedStatus, $tab, $start, $length, $searchValue, $order);
+            $page = $this->MBAK_MyRep->getBakRowsPage($selectedCity, $selectedStatus, $tab, $approvalStatus, $start, $length, $searchValue, $order);
             $rows = (array) ($page['rows'] ?? []);
             $clusterIds = array_values(array_filter(array_map(static function ($row) {
                 return (int) ($row['id_myrep_cluster'] ?? 0);

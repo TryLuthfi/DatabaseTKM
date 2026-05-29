@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class MSuperAdmin_MyRep_Config extends CI_Model
 {
@@ -175,20 +176,6 @@ class MSuperAdmin_MyRep_Config extends CI_Model
         }
 
         $tableName = 'tb_myrep_pic_mapping_city';
-        $hasMasterUser = $this->db->table_exists('tb_master_user_new');
-        $aliasByRoleColumn = [
-            'rpm_area' => 'u_rpm',
-            'sm_area' => 'u_sm',
-            'spv_area' => 'u_spv',
-            'snd_area' => 'u_snd',
-            'admin_area' => 'u_admin',
-            'snd_ho' => 'u_snd_ho',
-            'atp_ho' => 'u_atp_ho',
-            'rfs_ho' => 'u_rfs_ho',
-            'sitac_ho' => 'u_sitac_ho',
-            'dc_ho' => 'u_dc_ho',
-            'qa_ho' => 'u_qa_ho',
-        ];
 
         $this->db
             ->from($tableName . ' m')
@@ -204,25 +191,68 @@ class MSuperAdmin_MyRep_Config extends CI_Model
             $nameFieldAlias = $columnName . '_name';
             if ($this->db->field_exists($columnName, $tableName)) {
                 $this->db->select('m.' . $columnName);
-                if ($hasMasterUser) {
-                    $joinAlias = (string) ($aliasByRoleColumn[$columnName] ?? ('u_' . $columnName));
-                    $this->db->select($joinAlias . '.nama_karyawan AS ' . $nameFieldAlias);
-                    $this->db->join('tb_master_user_new ' . $joinAlias, $joinAlias . '.nik = m.' . $columnName, 'left');
-                } else {
-                    $this->db->select('NULL AS ' . $nameFieldAlias, false);
-                }
             } else {
                 $this->db->select('NULL AS ' . $columnName, false);
-                $this->db->select('NULL AS ' . $nameFieldAlias, false);
             }
+            $this->db->select('NULL AS ' . $nameFieldAlias, false);
         }
 
-        return (array) $this->db
+        $rows = (array) $this->db
             ->order_by('m.regional_name', 'ASC')
             ->order_by('m.province_name', 'ASC')
             ->order_by('m.city_name', 'ASC')
             ->get()
             ->result_array();
+
+        return $this->decorateCityPicMappingNames($rows);
+    }
+
+    private function decorateCityPicMappingNames(array $rows)
+    {
+        if (empty($rows) || !$this->db->table_exists('tb_master_user_new')) {
+            return $rows;
+        }
+
+        $nikSet = [];
+        foreach ($rows as $row) {
+            foreach ($this->cityPicRoleColumns as $columnName) {
+                foreach (myrep_pic_nik_list($row[$columnName] ?? '') as $nik) {
+                    $nikSet[$nik] = true;
+                }
+            }
+        }
+
+        if (empty($nikSet)) {
+            return $rows;
+        }
+
+        $userRows = (array) $this->db
+            ->select('nik, nama_karyawan')
+            ->from('tb_master_user_new')
+            ->where_in('nik', array_keys($nikSet))
+            ->get()
+            ->result_array();
+
+        $nameByNik = [];
+        foreach ($userRows as $userRow) {
+            $nik = trim((string) ($userRow['nik'] ?? ''));
+            if ($nik !== '') {
+                $nameByNik[$nik] = trim((string) ($userRow['nama_karyawan'] ?? ''));
+            }
+        }
+
+        foreach ($rows as &$row) {
+            foreach ($this->cityPicRoleColumns as $columnName) {
+                $names = [];
+                foreach (myrep_pic_nik_list($row[$columnName] ?? '') as $nik) {
+                    $names[] = ($nameByNik[$nik] ?? '') !== '' ? $nameByNik[$nik] : $nik;
+                }
+                $row[$columnName . '_name'] = implode(', ', $names);
+            }
+        }
+        unset($row);
+
+        return $rows;
     }
 
     public function getCityPicRoleColumns()
@@ -261,7 +291,7 @@ class MSuperAdmin_MyRep_Config extends CI_Model
 
             $data = [];
             foreach ($roleColumns as $column) {
-                $value = trim((string) ($row[$column] ?? ''));
+                $value = myrep_pic_nik_csv($row[$column] ?? '');
                 $data[$column] = $value === '' ? null : $value;
             }
 

@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class MBatch_Approval_MyRep extends CI_Model
 {
@@ -1553,11 +1554,12 @@ class MBatch_Approval_MyRep extends CI_Model
 
         $picName = '';
         if (!empty($mappingRow) && $this->db->field_exists($this->cityPicApprovalColumn, 'tb_myrep_pic_mapping_city')) {
-            $nik = trim((string) ($mappingRow[$this->cityPicApprovalColumn] ?? ''));
-            if ($nik !== '') {
+            $picNames = [];
+            foreach (myrep_pic_nik_list($mappingRow[$this->cityPicApprovalColumn] ?? '') as $nik) {
                 $mappedName = $this->getMasterUserNameByNik($nik);
-                $picName = $mappedName !== '' ? $mappedName : $nik;
+                $picNames[] = $mappedName !== '' ? $mappedName : $nik;
             }
+            $picName = implode(', ', $picNames);
         }
 
         $this->cityPicApprovalNameCache[$cacheKey] = $picName;
@@ -1650,10 +1652,8 @@ class MBatch_Approval_MyRep extends CI_Model
         }
 
         $whereParts = [];
-        $params = [];
         foreach ($existingRoleColumns as $columnName) {
-            $whereParts[] = '`' . $columnName . '` = ?';
-            $params[] = $nik;
+            $whereParts[] = myrep_pic_column_contains_sql($this->db, '`' . $columnName . '`', $nik);
         }
 
         $sql = 'SELECT city_name FROM tb_myrep_pic_mapping_city WHERE ';
@@ -1662,7 +1662,7 @@ class MBatch_Approval_MyRep extends CI_Model
         }
         $sql .= '(' . implode(' OR ', $whereParts) . ')';
 
-        $rows = (array) $this->db->query($sql, $params)->result_array();
+        $rows = (array) $this->db->query($sql)->result_array();
         foreach ($rows as $row) {
             $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
             if ($cityName !== '') {

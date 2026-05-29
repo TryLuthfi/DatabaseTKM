@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
+require_once APPPATH . 'helpers/myrep_pic_helper.php';
 
 class MDRM_MyRep extends CI_Model
 {
@@ -1559,10 +1560,8 @@ class MDRM_MyRep extends CI_Model
         }
 
         $whereParts = [];
-        $params = [];
         foreach ($existingRoleColumns as $columnName) {
-            $whereParts[] = '`' . $columnName . '` = ?';
-            $params[] = $nik;
+            $whereParts[] = myrep_pic_column_contains_sql($this->db, '`' . $columnName . '`', $nik);
         }
 
         $sql = 'SELECT city_name FROM tb_myrep_pic_mapping_city WHERE ';
@@ -1571,7 +1570,7 @@ class MDRM_MyRep extends CI_Model
         }
         $sql .= '(' . implode(' OR ', $whereParts) . ')';
 
-        $rows = (array) $this->db->query($sql, $params)->result_array();
+        $rows = (array) $this->db->query($sql)->result_array();
         foreach ($rows as $row) {
             $cityName = strtoupper(trim((string) ($row['city_name'] ?? '')));
             if ($cityName !== '') {
