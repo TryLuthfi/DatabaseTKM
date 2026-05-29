@@ -114,11 +114,19 @@ class BAK_MyRep extends CI_Controller
             }, $rows)));
 
             $docReady = $this->MBAK_MyRep->bakDocumentTablesReady();
-            $documentDefinitions = $docReady ? $this->MBAK_MyRep->getBakDocumentDefinitions() : [];
-            $documentMap = ($docReady && !empty($clusterIds))
-                ? $this->MBAK_MyRep->getBakDocumentItemsByClusterIds($clusterIds)
-                : [];
-            $clusterReviewPicMap = $this->MBAK_MyRep->getBakClusterReviewPicMap($rows);
+            $documentDefinitions = [];
+            $documentMap = [];
+            $clusterReviewPicMap = [];
+            try {
+                $documentDefinitions = $docReady ? $this->MBAK_MyRep->getBakDocumentDefinitions() : [];
+                $documentMap = ($docReady && !empty($clusterIds))
+                    ? $this->MBAK_MyRep->getBakDocumentItemsByClusterIds($clusterIds)
+                    : [];
+                $clusterReviewPicMap = $this->MBAK_MyRep->getBakClusterReviewPicMap($rows);
+            } catch (\Throwable $docException) {
+                log_message('error', 'BAK tableData document context failed: ' . $docException->getMessage());
+                $docReady = false;
+            }
 
             $permissions = [
                 'canEdit' => isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('BAK_MyRep', 'EDIT') : true,

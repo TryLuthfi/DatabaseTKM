@@ -1066,6 +1066,8 @@ class MBAK_MyRep extends CI_Model
             $this->db->where('UPPER(c.city_name) IN (' . implode(',', $escapedCities) . ')', null, false);
         }
 
+        $clusterLocationSelect = $this->buildClusterLocationSelect();
+
         $rows = $this->db
             ->select('
                 c.id_myrep_cluster,
@@ -1073,9 +1075,7 @@ class MBAK_MyRep extends CI_Model
                 c.cluster_code,
                 c.province_name,
                 c.regional_name,
-                c.city_name,
-                c.district_name,
-                c.village_name,
+                c.city_name' . $clusterLocationSelect . ',
                 b.homepass_bak,
                 doc_group.id_doc_group,
                 doc_item.id_doc_item,
