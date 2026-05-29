@@ -1209,7 +1209,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
             $config = [
                 'upload_path' => $uploadDir,
-                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
+                'allowed_types' => '*',
                 'max_size' => 30720,
                 'file_name' => $fileName,
                 'overwrite' => true,
@@ -1298,7 +1298,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
 
             $config = [
                 'upload_path' => $uploadDir,
-                'allowed_types' => 'pdf|doc|docx|xls|xlsx|jpg|jpeg|png',
+                'allowed_types' => '*',
                 'max_size' => 30720,
                 'file_name' => $fileName,
                 'overwrite' => true,
