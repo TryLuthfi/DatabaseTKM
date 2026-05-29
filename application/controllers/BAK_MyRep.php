@@ -78,7 +78,7 @@ class BAK_MyRep extends CI_Controller
         if (!$this->MBAK_MyRep->bakTablesReady()) {
             $extra = $debugEnabled ? ['_debug' => [
                 'reason' => 'bak_tables_not_ready',
-                'context' => $this->MBAK_MyRep->getBakTableDataDebugContext(),
+                'context' => $this->getTableDataDebugContextSafely(),
             ]] : [];
             $this->jsonDataTableResponse(0, 0, [], $extra);
             return;
@@ -163,7 +163,7 @@ class BAK_MyRep extends CI_Controller
                         'recordsFiltered' => (int) ($page['recordsFiltered'] ?? 0),
                         'rows' => count($rows),
                     ],
-                    'context' => $this->MBAK_MyRep->getBakTableDataDebugContext(),
+                    'context' => $this->getTableDataDebugContextSafely(),
                 ];
             }
 
@@ -173,9 +173,33 @@ class BAK_MyRep extends CI_Controller
             $extra = $debugEnabled ? ['_debug' => [
                 'reason' => 'exception',
                 'message' => $e->getMessage(),
-                'context' => $this->MBAK_MyRep->getBakTableDataDebugContext(),
+                'context' => $this->getTableDataDebugContextSafely(),
             ]] : [];
             $this->jsonDataTableResponse(0, 0, [], $extra);
+        }
+    }
+
+    private function getTableDataDebugContextSafely()
+    {
+        try {
+            if (!method_exists($this->MBAK_MyRep, 'getBakTableDataDebugContext')) {
+                return [
+                    'debug_error' => 'MBAK_MyRep::getBakTableDataDebugContext not deployed',
+                    'user_id' => (int) $this->session->userdata('id_user'),
+                    'id_level' => (int) $this->session->userdata('id_level'),
+                    'level' => (string) $this->session->userdata('nama_level'),
+                ];
+            }
+
+            return $this->MBAK_MyRep->getBakTableDataDebugContext();
+        } catch (\Throwable $e) {
+            log_message('error', 'BAK tableData debug context failed: ' . $e->getMessage());
+            return [
+                'debug_error' => $e->getMessage(),
+                'user_id' => (int) $this->session->userdata('id_user'),
+                'id_level' => (int) $this->session->userdata('id_level'),
+                'level' => (string) $this->session->userdata('nama_level'),
+            ];
         }
     }
 
