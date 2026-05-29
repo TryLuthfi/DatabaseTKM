@@ -67,6 +67,54 @@ foreach ($clusterRows as $row) {
     }
 }
 
+$buildDrmStatusSummary = static function (array $rows) {
+    $summary = [
+        'waitingInputCount' => 0,
+        'waitingHoCount' => 0,
+        'approvedCount' => 0,
+        'rejectedCount' => 0,
+    ];
+
+    foreach ($rows as $row) {
+        $clusterStatus = strtoupper(trim((string) ($row['drm_cluster_status'] ?? '')));
+        $subfeederStatus = strtoupper(trim((string) ($row['drm_subfeeder_status'] ?? '')));
+        $clusterStatus = $clusterStatus !== '' ? $clusterStatus : 'WAITING INPUT';
+        $subfeederStatus = $subfeederStatus !== '' ? $subfeederStatus : 'WAITING INPUT';
+        $statusSet = array_unique([
+            $clusterStatus,
+            $subfeederStatus,
+        ]);
+
+        if (in_array('WAITING INPUT', $statusSet, true)) {
+            $summary['waitingInputCount']++;
+        }
+
+        if (in_array('WAITING HO', $statusSet, true)) {
+            $summary['waitingHoCount']++;
+        }
+
+        if (in_array('APPROVED', $statusSet, true)) {
+            $summary['approvedCount']++;
+        }
+
+        if (in_array('REJECTED', $statusSet, true)) {
+            $summary['rejectedCount']++;
+        }
+    }
+
+    return $summary;
+};
+$drmStatusSummaryByTab = [
+    'ny_drm' => $buildDrmStatusSummary($nyDrmRows),
+    'ny_atp' => $buildDrmStatusSummary($nyAtpRows),
+    'all' => $buildDrmStatusSummary($allDrmRows),
+];
+$drmActiveStatusSummary = $drmStatusSummaryByTab['ny_drm'];
+$drmWaitingInputCount = (int) ($drmActiveStatusSummary['waitingInputCount'] ?? 0);
+$drmWaitingHoCount = (int) ($drmActiveStatusSummary['waitingHoCount'] ?? 0);
+$drmApprovedCount = (int) ($drmActiveStatusSummary['approvedCount'] ?? 0);
+$drmStatusRejectedCount = (int) ($drmActiveStatusSummary['rejectedCount'] ?? 0);
+
 if (!function_exists('drmBadgeClass')) {
     function drmBadgeClass($status)
     {
@@ -81,6 +129,7 @@ if (!function_exists('drmBadgeClass')) {
             case 'ON REVIEW':
             case 'SUBMITTED':
             case 'WAITING APPROVE':
+            case 'WAITING HO':
                 return 'warning';
             case 'WAITING DOC':
             case 'WAITING INPUT':
@@ -340,26 +389,52 @@ $renderDrmTable = static function ($tableId, array $rows) use ($renderDrmTableRo
                             </div>
                         </div>
                         <div class="card-body">
-                            <ul class="nav nav-tabs drm-monitor-tabs" id="drm-monitor-tab" role="tablist">
-                                <li class="nav-item">
-                                    <a class="nav-link active" id="drm-ny-drm-tab" data-toggle="tab" href="#drm-ny-drm-pane" role="tab" aria-controls="drm-ny-drm-pane" aria-selected="true">
-                                        NY DRM
-                                        <span class="drm-monitor-tabs__count"><?= number_format(count($nyDrmRows), 0, ',', '.') ?></span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="drm-ny-atp-tab" data-toggle="tab" href="#drm-ny-atp-pane" role="tab" aria-controls="drm-ny-atp-pane" aria-selected="false">
-                                        NY ATP
-                                        <span class="drm-monitor-tabs__count"><?= number_format(count($nyAtpRows), 0, ',', '.') ?></span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="drm-all-tab" data-toggle="tab" href="#drm-all-pane" role="tab" aria-controls="drm-all-pane" aria-selected="false">
-                                        All DRM
-                                        <span class="drm-monitor-tabs__count"><?= number_format(count($allDrmRows), 0, ',', '.') ?></span>
-                                    </a>
-                                </li>
-                            </ul>
+                            <div class="drm-tab-stack">
+                                <div class="drm-tab-section">
+                                    <div class="drm-tab-section__label">Flow</div>
+                                    <ul class="nav nav-tabs drm-monitor-tabs" id="drm-monitor-tab" role="tablist">
+                                        <li class="nav-item">
+                                            <a class="nav-link active" id="drm-ny-drm-tab" data-toggle="tab" href="#drm-ny-drm-pane" role="tab" aria-controls="drm-ny-drm-pane" aria-selected="true">
+                                                NY DRM
+                                                <span class="drm-monitor-tabs__count"><?= number_format(count($nyDrmRows), 0, ',', '.') ?></span>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="drm-ny-atp-tab" data-toggle="tab" href="#drm-ny-atp-pane" role="tab" aria-controls="drm-ny-atp-pane" aria-selected="false">
+                                                NY ATP
+                                                <span class="drm-monitor-tabs__count"><?= number_format(count($nyAtpRows), 0, ',', '.') ?></span>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="drm-all-tab" data-toggle="tab" href="#drm-all-pane" role="tab" aria-controls="drm-all-pane" aria-selected="false">
+                                                All DRM
+                                                <span class="drm-monitor-tabs__count"><?= number_format(count($allDrmRows), 0, ',', '.') ?></span>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="drm-status-filter-row">
+                                    <div class="drm-tab-section__label">Filter Status</div>
+                                    <div class="drm-status-pillbar" aria-label="Filter status DRM">
+                                        <button type="button" class="drm-status-pill js-drm-status-filter" data-drm-status="waiting_input">
+                                            <span>Waiting Input</span>
+                                            <span class="drm-status-pill__count" data-drm-status-count="waitingInputCount"><?= number_format($drmWaitingInputCount, 0, ',', '.') ?></span>
+                                        </button>
+                                        <button type="button" class="drm-status-pill js-drm-status-filter" data-drm-status="waiting_ho">
+                                            <span>Waiting HO</span>
+                                            <span class="drm-status-pill__count" data-drm-status-count="waitingHoCount"><?= number_format($drmWaitingHoCount, 0, ',', '.') ?></span>
+                                        </button>
+                                        <button type="button" class="drm-status-pill js-drm-status-filter" data-drm-status="approved">
+                                            <span>Approved</span>
+                                            <span class="drm-status-pill__count" data-drm-status-count="approvedCount"><?= number_format($drmApprovedCount, 0, ',', '.') ?></span>
+                                        </button>
+                                        <button type="button" class="drm-status-pill js-drm-status-filter" data-drm-status="rejected">
+                                            <span>Rejected</span>
+                                            <span class="drm-status-pill__count" data-drm-status-count="rejectedCount"><?= number_format($drmStatusRejectedCount, 0, ',', '.') ?></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="tab-content drm-monitor-tabs__content" id="drm-monitor-tab-content">
                                 <div class="tab-pane fade show active" id="drm-ny-drm-pane" role="tabpanel" aria-labelledby="drm-ny-drm-tab">
                                     <?php $renderDrmTable('table_drm_ny_drm', $nyDrmRows); ?>
@@ -720,10 +795,112 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         margin-bottom: .85rem;
     }
 
+    .drm-tab-stack {
+        display: grid;
+        gap: .75rem;
+        margin-bottom: 1rem;
+    }
+
+    .drm-tab-section {
+        display: grid;
+        gap: .4rem;
+    }
+
+    .drm-tab-section__label {
+        font-size: .72rem;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #6b7f90;
+    }
+
+    .drm-status-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .65rem .85rem;
+        padding: .7rem .85rem;
+        border: 1px solid #e3edf6;
+        border-radius: 12px;
+        background: #f8fbfe;
+    }
+
+    .drm-status-filter-row .drm-tab-section__label {
+        margin-right: .15rem;
+        color: #51697e;
+    }
+
+    .drm-status-pillbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+
+    .drm-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        min-height: 32px;
+        border: 1px solid #d7e3ee;
+        border-radius: 999px;
+        padding: .38rem .68rem;
+        background: #fff;
+        color: #2f5f84;
+        font-size: .76rem;
+        font-weight: 800;
+        box-shadow: none;
+        transition: all .16s ease;
+    }
+
+    .drm-status-pill:hover,
+    .drm-status-pill:focus {
+        border-color: #9bc8eb;
+        background: #fafdff;
+        outline: none;
+    }
+
+    .drm-status-pill.is-active {
+        color: #fff;
+        background: #2277a8;
+        border-color: #2277a8;
+        box-shadow: 0 8px 18px rgba(34, 119, 168, 0.18);
+    }
+
+    .drm-status-pill[data-drm-status="approved"].is-active {
+        background: #198754;
+        border-color: #198754;
+        box-shadow: 0 8px 18px rgba(25, 135, 84, 0.18);
+    }
+
+    .drm-status-pill[data-drm-status="rejected"].is-active {
+        background: #dc3545;
+        border-color: #dc3545;
+        box-shadow: 0 8px 18px rgba(220, 53, 69, 0.18);
+    }
+
+    .drm-status-pill__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 22px;
+        height: 18px;
+        padding: 0 .4rem;
+        border-radius: 999px;
+        background: #eef4fa;
+        color: #315f84;
+        font-size: .68rem;
+        font-weight: 900;
+    }
+
+    .drm-status-pill.is-active .drm-status-pill__count {
+        background: rgba(255, 255, 255, .24);
+        color: #fff;
+    }
+
     .drm-monitor-tabs {
         border-bottom: 0;
         gap: .75rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0;
     }
 
     .drm-monitor-tabs .nav-link {
@@ -980,6 +1157,23 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
             max-width: calc(100vw - 1rem);
             margin: .5rem auto;
         }
+
+        .drm-status-filter-row {
+            align-items: stretch;
+        }
+
+        .drm-status-filter-row .drm-tab-section__label {
+            width: 100%;
+        }
+
+        .drm-status-pillbar,
+        .drm-status-pill {
+            width: 100%;
+        }
+
+        .drm-status-pill {
+            justify-content: space-between;
+        }
     }
 </style>
 
@@ -991,6 +1185,7 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
         var drmCityOptionsByRegional = <?= json_encode($cityOptionsByRegional, JSON_UNESCAPED_UNICODE) ?>;
         var drmRegionalOptionsByCity = <?= json_encode($regionalOptionsByCity, JSON_UNESCAPED_UNICODE) ?>;
         var drmSelectedStatus = '<?= htmlspecialchars((string) $selectedStatus, ENT_QUOTES) ?>';
+        var drmStatusSummaryByTab = <?= json_encode($drmStatusSummaryByTab, JSON_UNESCAPED_UNICODE) ?>;
         var importedDrmRows = [];
 
         function initDrmSelects() {
@@ -1239,9 +1434,62 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
         $(function () {
             if ($.fn.DataTable) {
-                var drmTables = [];
+                var drmTables = {};
+                var drmStatusFilter = '';
+                var drmTableConfigs = {
+                    '#table_drm_ny_drm': { tab: 'ny_drm' },
+                    '#table_drm_ny_atp': { tab: 'ny_atp' },
+                    '#table_drm_all': { tab: 'all' }
+                };
+
+                function getActiveDrmTableSelector() {
+                    var href = $('#drm-monitor-tab .nav-link.active').attr('href') || '#drm-ny-drm-pane';
+                    if (href === '#drm-ny-atp-pane') {
+                        return '#table_drm_ny_atp';
+                    }
+                    if (href === '#drm-all-pane') {
+                        return '#table_drm_all';
+                    }
+                    return '#table_drm_ny_drm';
+                }
+
+                function updateDrmStatusCounts(tab) {
+                    var summary = drmStatusSummaryByTab[tab] || {};
+                    $('[data-drm-status-count]').each(function () {
+                        var key = String($(this).data('drm-status-count') || '');
+                        var value = Number(summary[key] || 0);
+                        $(this).text(value.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
+                    });
+                }
+
+                function applyDrmStatusFilterToTable(table) {
+                    if (!table) {
+                        return;
+                    }
+
+                    var keyword = '';
+                    if (drmStatusFilter === 'waiting_input') {
+                        keyword = 'WAITING INPUT';
+                    } else if (drmStatusFilter === 'waiting_ho') {
+                        keyword = 'WAITING HO';
+                    } else if (drmStatusFilter === 'approved') {
+                        keyword = 'APPROVED';
+                    } else if (drmStatusFilter === 'rejected') {
+                        keyword = 'REJECTED';
+                    }
+
+                    table.column(6).search(keyword, false, false).draw();
+                }
+
+                function syncDrmStatusFilterButtons() {
+                    $('.js-drm-status-filter').each(function () {
+                        $(this).toggleClass('is-active', String($(this).data('drm-status') || '').trim() === drmStatusFilter);
+                    });
+                }
+
                 $('.js-drm-monitor-table').each(function () {
-                    drmTables.push($(this).DataTable({
+                    var selector = '#' + $(this).attr('id');
+                    drmTables[selector] = $(this).DataTable({
                         responsive: false,
                         scrollX: true,
                         autoWidth: false,
@@ -1261,13 +1509,25 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                             $(api.column(4).footer()).html(hpDonasiTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                             $(api.column(5).footer()).html(hpDrmTotal.toLocaleString('id-ID', { maximumFractionDigits: 0 }));
                         }
-                    }));
+                    });
                 });
 
                 $('a[data-toggle="tab"][href^="#drm-"]').on('shown.bs.tab', function () {
-                    drmTables.forEach(function (table) {
-                        table.columns.adjust();
+                    var tableSelector = getActiveDrmTableSelector();
+                    var activeTab = drmTableConfigs[tableSelector] ? drmTableConfigs[tableSelector].tab : 'ny_drm';
+                    updateDrmStatusCounts(activeTab);
+
+                    Object.keys(drmTables).forEach(function (selector) {
+                        drmTables[selector].columns.adjust();
                     });
+                    applyDrmStatusFilterToTable(drmTables[tableSelector]);
+                });
+
+                $('.js-drm-status-filter').on('click', function () {
+                    var nextStatus = String($(this).data('drm-status') || '').trim();
+                    drmStatusFilter = drmStatusFilter === nextStatus ? '' : nextStatus;
+                    syncDrmStatusFilterButtons();
+                    applyDrmStatusFilterToTable(drmTables[getActiveDrmTableSelector()]);
                 });
             }
 
