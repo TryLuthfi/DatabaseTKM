@@ -1169,6 +1169,7 @@ class DRM_MyRep extends CI_Controller
             'sheet_name' => '',
             'aggregates' => [],
             'unknown_rows' => [],
+            'item_warnings' => [],
             'mapped_row_count' => 0,
             'debug' => [],
         ];
@@ -1177,6 +1178,7 @@ class DRM_MyRep extends CI_Controller
                 'sheet_name' => '',
                 'aggregates' => [],
                 'unknown_rows' => [],
+                'item_warnings' => [],
                 'mapped_row_count' => 0,
                 'debug' => [],
             ];
@@ -1201,12 +1203,14 @@ class DRM_MyRep extends CI_Controller
 
                 $aggregates = [];
                 $unknownRows = [];
+                $itemWarnings = [];
                 $mappedRowCount = 0;
                 $sheetDebug = [];
 
                 foreach ($columnCandidates as $columnCandidate) {
                     $currentAggregates = [];
                     $currentUnknownRows = [];
+                    $currentItemWarnings = [];
                     $currentMappedRowCount = 0;
                     $currentDebug = [];
                     $itemColumn = (string) ($columnCandidate['item'] ?? 'B');
@@ -1214,12 +1218,12 @@ class DRM_MyRep extends CI_Controller
 
                     foreach ($sheetRows as $rowNumber => $row) {
                         $itemNameRaw = trim((string) ($row[$itemColumn] ?? ''));
-                        $qtyRaw = $row[$qtyColumn] ?? '';
                         if ($itemNameRaw === '') {
                             continue;
                         }
 
-                        $qty = $this->normalizeNumber($qtyRaw);
+                        $qtyResult = $this->resolveBoqQtyFromRow((array) $row, $qtyColumn);
+                        $qty = (float) ($qtyResult['qty'] ?? 0);
                         if ($qty <= 0) {
                             continue;
                         }
@@ -1246,6 +1250,13 @@ class DRM_MyRep extends CI_Controller
                         }
 
                         $currentMappedRowCount++;
+                        $qtyWarning = trim((string) ($qtyResult['warning'] ?? ''));
+                        if ($qtyWarning !== '') {
+                            if (!isset($currentItemWarnings[$boqItemId])) {
+                                $currentItemWarnings[$boqItemId] = [];
+                            }
+                            $currentItemWarnings[$boqItemId][] = 'Baris ' . (int) $rowNumber . ': ' . $qtyWarning;
+                        }
                         if (!isset($currentAggregates[$boqItemId])) {
                             $currentAggregates[$boqItemId] = 0;
                         }
@@ -1265,6 +1276,7 @@ class DRM_MyRep extends CI_Controller
                     if ($currentMappedRowCount > $mappedRowCount) {
                         $aggregates = $currentAggregates;
                         $unknownRows = $currentUnknownRows;
+                        $itemWarnings = $currentItemWarnings;
                         $mappedRowCount = $currentMappedRowCount;
                         $sheetDebug = $currentDebug;
                     }
@@ -1275,6 +1287,7 @@ class DRM_MyRep extends CI_Controller
                         'sheet_name' => $sheetName,
                         'aggregates' => $aggregates,
                         'unknown_rows' => $unknownRows,
+                        'item_warnings' => $itemWarnings,
                         'mapped_row_count' => $mappedRowCount,
                         'debug' => $sheetDebug,
                     ];
@@ -1291,6 +1304,7 @@ class DRM_MyRep extends CI_Controller
 
         $aggregates = (array) $bestResult['aggregates'];
         $unknownRows = (array) $bestResult['unknown_rows'];
+        $itemWarnings = (array) $bestResult['item_warnings'];
 
         if (empty($aggregates)) {
             return ['items' => [], 'warnings' => $unknownRows];
@@ -1316,6 +1330,7 @@ class DRM_MyRep extends CI_Controller
                 'remarks_rule' => $remarksRule,
                 'target_foto_required' => max($targetFoto, 0),
                 'item_note' => null,
+                'warnings' => array_values((array) ($itemWarnings[(int) $boqItemId] ?? [])),
             ];
         }
 
@@ -1432,6 +1447,39 @@ class DRM_MyRep extends CI_Controller
         }
 
         return 0;
+    }
+
+    private function resolveBoqQtyFromRow(array $row, $qtyColumn = 'E')
+    {
+        $qtyColumn = strtoupper(trim((string) $qtyColumn));
+        if ($qtyColumn === 'D' || $qtyColumn === 'E') {
+            $qtyD = $this->normalizeNumber($row['D'] ?? '');
+            $qtyE = $this->normalizeNumber($row['E'] ?? '');
+
+            if ($qtyD <= 0 && $qtyE <= 0) {
+                return ['qty' => 0, 'warning' => ''];
+            }
+            if ($qtyD > 0 && $qtyE > 0) {
+                if (abs($qtyD - $qtyE) < 0.00001) {
+                    return ['qty' => (float) $qtyE, 'warning' => ''];
+                }
+
+                return [
+                    'qty' => (float) $qtyE,
+                    'warning' => 'Qty tidak match: kolom D=' . $this->formatBoqWarningNumber($qtyD) . ', kolom E=' . $this->formatBoqWarningNumber($qtyE) . '. Qty dipakai=' . $this->formatBoqWarningNumber($qtyE) . ' (kolom E).',
+                ];
+            }
+
+            return ['qty' => (float) ($qtyE > 0 ? $qtyE : $qtyD), 'warning' => ''];
+        }
+
+        return ['qty' => $this->normalizeNumber($row[$qtyColumn] ?? ''), 'warning' => ''];
+    }
+
+    private function formatBoqWarningNumber($value)
+    {
+        $value = (float) $value;
+        return rtrim(rtrim(number_format($value, 6, '.', ''), '0'), '.');
     }
 
     private function isBoqFuzzyNameMatch($sourceName, $masterName, $sourceFlat, $masterFlat)

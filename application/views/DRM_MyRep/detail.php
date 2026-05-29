@@ -969,6 +969,7 @@ if (!function_exists('drmScopeText')) {
                                                 <td><?= htmlspecialchars((string) ($item['item_satuan'] ?? '-')) ?></td>
                                                 <td>
                                                     <input type="number" step="any" min="0" name="boq_qty[<?= (int) $item['id_boq_item'] ?>]" class="form-control form-control-sm js-modal-boq-qty" value="<?= rtrim(rtrim(number_format($qtyValue, 3, '.', ''), '0'), '.') ?>" <?= $isBoqLocked ? 'readonly' : '' ?>>
+                                                    <div class="small text-danger mt-1 js-modal-boq-warning" style="display:none;"></div>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -1369,6 +1370,15 @@ if (!function_exists('drmScopeText')) {
             var map = getQtyInputMap(form);
             Object.keys(map).forEach(function (id) {
                 map[id].value = '0';
+                var row = map[id].closest('tr');
+                if (row) {
+                    row.dataset.qtyMismatch = '0';
+                    var warningEl = row.querySelector('.js-modal-boq-warning');
+                    if (warningEl) {
+                        warningEl.style.display = 'none';
+                        warningEl.textContent = '';
+                    }
+                }
             });
 
             items.forEach(function (item) {
@@ -1379,6 +1389,18 @@ if (!function_exists('drmScopeText')) {
                 }
                 var qty = parseFloat(item.qty_boq || 0);
                 input.value = qty > 0 ? String(qty) : '';
+                var row = input.closest('tr');
+                var warnings = Array.isArray(item.warnings) ? item.warnings.filter(function (warning) {
+                    return String(warning || '').trim() !== '';
+                }) : [];
+                if (row) {
+                    row.dataset.qtyMismatch = warnings.length ? '1' : '0';
+                    var warningEl = row.querySelector('.js-modal-boq-warning');
+                    if (warningEl) {
+                        warningEl.style.display = warnings.length ? '' : 'none';
+                        warningEl.textContent = warnings.join(' ');
+                    }
+                }
             });
             refreshManualBoqRowColors(form);
         }
@@ -1391,8 +1413,10 @@ if (!function_exists('drmScopeText')) {
                     return;
                 }
                 var qty = parseFloat(input.value || '0');
-                row.classList.remove('table-success', 'table-light');
-                if (qty > 0) {
+                row.classList.remove('table-success', 'table-light', 'table-danger');
+                if (row.dataset.qtyMismatch === '1') {
+                    row.classList.add('table-danger');
+                } else if (qty > 0) {
                     row.classList.add('table-success');
                 } else {
                     row.classList.add('table-light');
@@ -1496,7 +1520,14 @@ if (!function_exists('drmScopeText')) {
                             console.log('[APD BOQ][Preview] Parsing berhasil. Item terpetakan:', payload.items.length, '| warning:', (payload.warnings || []).length);
                             fillManualQtyFromParsed(form, payload.items);
                             console.log('[APD BOQ][Preview] Auto-fill qty manual selesai.');
-                            renderApdBoqNotice(form, 'success', 'Parsing APD BOQ berhasil. ' + payload.items.length + ' item terpetakan.');
+                            var hasQtyMismatch = payload.items.some(function (item) {
+                                return Array.isArray(item.warnings) && item.warnings.length > 0;
+                            });
+                            if (hasQtyMismatch) {
+                                renderApdBoqNotice(form, '', '');
+                            } else {
+                                renderApdBoqNotice(form, 'success', 'Parsing APD BOQ berhasil. ' + payload.items.length + ' item terpetakan.');
+                            }
                         } else {
                             console.warn('[APD BOQ][Preview] Parsing tidak menghasilkan item terpetakan.');
                             renderApdBoqNotice(form, 'warning', 'Parsing APD BOQ selesai, tetapi tidak ada item yang berhasil terpetakan.');
