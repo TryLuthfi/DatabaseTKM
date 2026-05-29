@@ -447,6 +447,267 @@ class MBAK_MyRep extends CI_Model
             ->result_array();
     }
 
+    public function getBakRowsPage($city = '', $status = '', $tab = 'all', $start = 0, $length = 10, $search = '', array $order = [])
+    {
+        if (!$this->bakTablesReady()) {
+            return [
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'rows' => [],
+            ];
+        }
+
+        $start = max(0, (int) $start);
+        $length = (int) $length;
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        $recordsTotal = $this->countBakRows($city, $status, $tab);
+        $recordsFiltered = $this->countBakRows($city, $status, $tab, $search);
+
+        $this->prepareBakRowsQuery($city, $status, $tab, $search);
+        $this->applyBakRowsOrder($order);
+        $rows = $this->db
+            ->limit($length, $start)
+            ->get()
+            ->result_array();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
+    }
+
+    public function getBakSummary($city = '', $status = '')
+    {
+        if (!$this->bakTablesReady()) {
+            return [
+                'totalCount' => 0,
+                'totalHp' => 0,
+                'baOpenCount' => 0,
+                'baOpenHp' => 0,
+                'doneCount' => 0,
+                'doneHp' => 0,
+                'rejectedCount' => 0,
+                'rejectedHp' => 0,
+                'onProcessCount' => 0,
+                'nyValsalCount' => 0,
+                'allCount' => 0,
+            ];
+        }
+
+        $postBakStatuses = [
+            'VALSAL',
+            'WAITING HO',
+            'WAITING MYREP',
+            'WAITING FINANCE',
+            'RELEASED',
+            'DONE BATCH APPROVAL',
+            'DRM',
+            'RFS',
+            'ATP',
+            'DONE',
+        ];
+        $escapedPostBakStatuses = implode(',', array_map([$this->db, 'escape'], $postBakStatuses));
+
+        $this->db
+            ->select('COUNT(1) AS total_count', false)
+            ->select('COALESCE(SUM(COALESCE(b.homepass_bak, 0)), 0) AS total_hp', false)
+            ->select("SUM(CASE WHEN UPPER(COALESCE(c.status_current, 'DRAFT')) = 'BA OPEN' THEN 1 ELSE 0 END) AS ba_open_count", false)
+            ->select("COALESCE(SUM(CASE WHEN UPPER(COALESCE(c.status_current, 'DRAFT')) = 'BA OPEN' THEN COALESCE(b.homepass_bak, 0) ELSE 0 END), 0) AS ba_open_hp", false)
+            ->select("SUM(CASE WHEN UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'DONE' AND UPPER(COALESCE(c.status_current, 'DRAFT')) NOT IN (" . $escapedPostBakStatuses . ") THEN 1 ELSE 0 END) AS done_count", false)
+            ->select("COALESCE(SUM(CASE WHEN UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'DONE' AND UPPER(COALESCE(c.status_current, 'DRAFT')) NOT IN (" . $escapedPostBakStatuses . ") THEN COALESCE(b.homepass_bak, 0) ELSE 0 END), 0) AS done_hp", false)
+            ->select("SUM(CASE WHEN UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'REJECTED' OR UPPER(COALESCE(c.status_current, 'DRAFT')) = 'REJECTED' THEN 1 ELSE 0 END) AS rejected_count", false)
+            ->select("COALESCE(SUM(CASE WHEN UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'REJECTED' OR UPPER(COALESCE(c.status_current, 'DRAFT')) = 'REJECTED' THEN COALESCE(b.homepass_bak, 0) ELSE 0 END), 0) AS rejected_hp", false)
+            ->select("SUM(CASE WHEN UPPER(COALESCE(b.status_bak, 'DRAFT')) NOT IN ('DONE', 'APPROVED') OR UPPER(COALESCE(b.status_bak, 'DRAFT')) = 'REJECTED' THEN 1 ELSE 0 END) AS on_process_count", false)
+            ->select("SUM(CASE WHEN UPPER(COALESCE(b.status_bak, 'DRAFT')) IN ('DONE', 'APPROVED') AND UPPER(COALESCE(c.status_current, 'DRAFT')) = 'BAK' THEN 1 ELSE 0 END) AS ny_valsal_count", false)
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left');
+
+        if (!$this->applyBakBaseFilters($city, $status)) {
+            return [
+                'totalCount' => 0,
+                'totalHp' => 0,
+                'baOpenCount' => 0,
+                'baOpenHp' => 0,
+                'doneCount' => 0,
+                'doneHp' => 0,
+                'rejectedCount' => 0,
+                'rejectedHp' => 0,
+                'onProcessCount' => 0,
+                'nyValsalCount' => 0,
+                'allCount' => 0,
+            ];
+        }
+
+        $row = (array) $this->db->get()->row_array();
+
+        return [
+            'totalCount' => (int) ($row['total_count'] ?? 0),
+            'totalHp' => (float) ($row['total_hp'] ?? 0),
+            'baOpenCount' => (int) ($row['ba_open_count'] ?? 0),
+            'baOpenHp' => (float) ($row['ba_open_hp'] ?? 0),
+            'doneCount' => (int) ($row['done_count'] ?? 0),
+            'doneHp' => (float) ($row['done_hp'] ?? 0),
+            'rejectedCount' => (int) ($row['rejected_count'] ?? 0),
+            'rejectedHp' => (float) ($row['rejected_hp'] ?? 0),
+            'onProcessCount' => (int) ($row['on_process_count'] ?? 0),
+            'nyValsalCount' => (int) ($row['ny_valsal_count'] ?? 0),
+            'allCount' => (int) ($row['total_count'] ?? 0),
+        ];
+    }
+
+    private function countBakRows($city = '', $status = '', $tab = 'all', $search = '')
+    {
+        $this->prepareBakRowsQuery($city, $status, $tab, $search, true);
+        $row = (array) $this->db->get()->row_array();
+
+        return (int) ($row['total'] ?? 0);
+    }
+
+    private function prepareBakRowsQuery($city = '', $status = '', $tab = 'all', $search = '', $countOnly = false)
+    {
+        if ($countOnly) {
+            $this->db->select('COUNT(1) AS total', false);
+        } else {
+            $clusterLocationSelect = $this->buildClusterLocationSelect();
+            $this->db->select('
+                c.id_myrep_cluster,
+                c.rfs_cluster_id,
+                c.id_target,
+                c.cluster_name,
+                c.cluster_code,
+                c.regional_name,
+                c.province_name,
+                c.city_name' . $clusterLocationSelect . ',
+                c.team_name,
+                c.chief,
+                c.rpm,
+                c.sm,
+                c.spv,
+                c.hp_plan,
+                c.ntp_name,
+                c.ntp_date,
+                c.ntp_year,
+                c.status_current,
+                c.outstanding_progress,
+                c.remark_general,
+                c.created_at,
+                b.id_bak,
+                b.ba_open_date,
+                b.bak_date,
+                b.homepass_bak,
+                b.status_bak,
+                b.remark_bak,
+                t.year_num,
+                t.month_num
+            ');
+        }
+
+        $this->db
+            ->from('tb_myrep_cluster c')
+            ->join('tb_myrep_bak b', 'b.id_myrep_cluster = c.id_myrep_cluster', 'left')
+            ->join('tb_rfs_myrep_monthly_target t', 't.id_target = c.id_target', 'left');
+
+        if (!$this->applyBakBaseFilters($city, $status)) {
+            $this->db->where('1 = 0', null, false);
+        }
+
+        $this->applyBakTabFilter($tab);
+        $this->applyBakSearchFilter($search);
+    }
+
+    private function applyBakBaseFilters($city = '', $status = '')
+    {
+        $allowedCitySet = $this->getCurrentUserAllowedCitySet();
+        if ($this->shouldRestrictCityByUser()) {
+            if (empty($allowedCitySet)) {
+                return false;
+            }
+            $escapedCities = array_map([$this->db, 'escape'], array_keys($allowedCitySet));
+            $this->db->where('UPPER(c.city_name) IN (' . implode(',', $escapedCities) . ')', null, false);
+        }
+
+        $city = strtoupper(trim((string) $city));
+        if ($city !== '') {
+            $this->db->where('UPPER(c.city_name)', $city);
+        }
+
+        $status = strtoupper(trim((string) $status));
+        if ($status !== '') {
+            if (in_array($status, ['DRAFT', 'SUBMITTED', 'ON REVIEW', 'APPROVED', 'REJECTED', 'DONE'], true)) {
+                $this->db->where("UPPER(COALESCE(b.status_bak, 'DRAFT')) = " . $this->db->escape($status), null, false);
+            } else {
+                $this->db->where('UPPER(c.status_current)', $status);
+            }
+        }
+
+        return true;
+    }
+
+    private function applyBakTabFilter($tab)
+    {
+        $tab = strtolower(trim((string) $tab));
+        if ($tab === 'on_process') {
+            $this->db->where("UPPER(COALESCE(b.status_bak, 'DRAFT')) NOT IN ('DONE', 'APPROVED')", null, false);
+            return;
+        }
+
+        if ($tab === 'ny_valsal') {
+            $this->db->where("UPPER(COALESCE(b.status_bak, 'DRAFT')) IN ('DONE', 'APPROVED')", null, false);
+            $this->db->where("UPPER(COALESCE(c.status_current, 'DRAFT')) = 'BAK'", null, false);
+        }
+    }
+
+    private function applyBakSearchFilter($search = '')
+    {
+        $search = strtoupper(trim((string) $search));
+        if ($search === '') {
+            return;
+        }
+
+        $like = $this->db->escape('%' . $this->db->escape_like_str($search) . '%');
+        $this->db->where("(
+            UPPER(c.cluster_name) LIKE " . $like . " ESCAPE '!'
+            OR UPPER(c.cluster_code) LIKE " . $like . " ESCAPE '!'
+            OR UPPER(c.regional_name) LIKE " . $like . " ESCAPE '!'
+            OR UPPER(c.city_name) LIKE " . $like . " ESCAPE '!'
+            OR UPPER(COALESCE(b.status_bak, 'DRAFT')) LIKE " . $like . " ESCAPE '!'
+            OR UPPER(COALESCE(c.status_current, 'DRAFT')) LIKE " . $like . " ESCAPE '!'
+            OR UPPER(c.rpm) LIKE " . $like . " ESCAPE '!'
+            OR UPPER(c.sm) LIKE " . $like . " ESCAPE '!'
+            OR UPPER(c.spv) LIKE " . $like . " ESCAPE '!'
+        )", null, false);
+    }
+
+    private function applyBakRowsOrder(array $order = [])
+    {
+        $columnMap = [
+            1 => 'c.cluster_name',
+            2 => 'c.regional_name',
+            3 => 'c.city_name',
+            4 => 'b.homepass_bak',
+            5 => 'b.ba_open_date',
+            7 => 'b.bak_date',
+            8 => 'b.status_bak',
+            11 => 'c.status_current',
+        ];
+
+        $column = isset($order['column']) ? (int) $order['column'] : 0;
+        $dir = strtoupper(trim((string) ($order['dir'] ?? 'ASC'))) === 'DESC' ? 'DESC' : 'ASC';
+
+        if (isset($columnMap[$column])) {
+            $this->db->order_by($columnMap[$column], $dir);
+        } else {
+            $this->db->order_by('c.created_at', 'DESC');
+        }
+
+        $this->db->order_by('c.cluster_name', 'ASC');
+    }
+
     public function getRegionalOptions()
     {
         if (!$this->bakTablesReady()) {

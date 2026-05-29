@@ -3,14 +3,19 @@ $flashSuccess = $this->session->flashdata('success');
 $flashError = $this->session->flashdata('error');
 $statusOptions = ['DRAFT', 'ON REVIEW', 'REJECTED', 'DONE'];
 $today = date('Y-m-d');
-$summaryTotal = count($clusterRows);
-$summaryBaOpen = 0;
-$summaryDone = 0;
-$summaryRejected = 0;
-$summaryTotalHp = 0;
-$summaryBaOpenHp = 0;
-$summaryDoneHp = 0;
-$summaryRejectedHp = 0;
+$bakSummary = isset($bakSummary) && is_array($bakSummary) ? $bakSummary : [];
+$renderBakRows = !empty($renderBakRows);
+$summaryTotal = (int) ($bakSummary['totalCount'] ?? count($clusterRows));
+$summaryBaOpen = (int) ($bakSummary['baOpenCount'] ?? 0);
+$summaryDone = (int) ($bakSummary['doneCount'] ?? 0);
+$summaryRejected = (int) ($bakSummary['rejectedCount'] ?? 0);
+$summaryTotalHp = (float) ($bakSummary['totalHp'] ?? 0);
+$summaryBaOpenHp = (float) ($bakSummary['baOpenHp'] ?? 0);
+$summaryDoneHp = (float) ($bakSummary['doneHp'] ?? 0);
+$summaryRejectedHp = (float) ($bakSummary['rejectedHp'] ?? 0);
+$bakOnProcessCount = (int) ($bakSummary['onProcessCount'] ?? 0);
+$nyValsalCount = (int) ($bakSummary['nyValsalCount'] ?? 0);
+$allBakCount = (int) ($bakSummary['allCount'] ?? $summaryTotal);
 $bakOnProcessRows = [];
 $nyValsalRows = [];
 $allBakRows = $clusterRows;
@@ -33,36 +38,49 @@ $canEdit = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('BAK_My
 $canHapus = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('BAK_MyRep', 'HAPUS') : true;
 $canApprovalAction = isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('BAK_MyRep', 'APPROVAL') : true;
 
-foreach ($clusterRows as $row) {
-    $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
-    $bakStatus = strtoupper(trim((string) ($row['status_bak'] ?? 'DRAFT')));
-    $homepassBak = (float) ($row['homepass_bak'] ?? 0);
-    $isBakApproved = in_array($bakStatus, ['DONE', 'APPROVED'], true);
+if ($renderBakRows) {
+    $summaryTotal = count($clusterRows);
+    $summaryBaOpen = 0;
+    $summaryDone = 0;
+    $summaryRejected = 0;
+    $summaryTotalHp = 0;
+    $summaryBaOpenHp = 0;
+    $summaryDoneHp = 0;
+    $summaryRejectedHp = 0;
+    foreach ($clusterRows as $row) {
+        $currentStatus = strtoupper(trim((string) ($row['status_current'] ?? 'DRAFT')));
+        $bakStatus = strtoupper(trim((string) ($row['status_bak'] ?? 'DRAFT')));
+        $homepassBak = (float) ($row['homepass_bak'] ?? 0);
+        $isBakApproved = in_array($bakStatus, ['DONE', 'APPROVED'], true);
 
-    if (!$isBakApproved || $bakStatus === 'REJECTED') {
-        $bakOnProcessRows[] = $row;
+        if (!$isBakApproved || $bakStatus === 'REJECTED') {
+            $bakOnProcessRows[] = $row;
+        }
+
+        if ($isBakApproved && $currentStatus === 'BAK') {
+            $nyValsalRows[] = $row;
+        }
+
+        $summaryTotalHp += $homepassBak;
+
+        if ($currentStatus === 'BA OPEN') {
+            $summaryBaOpen++;
+            $summaryBaOpenHp += $homepassBak;
+        }
+
+        if ($bakStatus === 'DONE' && !in_array($currentStatus, $postBakStatuses, true)) {
+            $summaryDone++;
+            $summaryDoneHp += $homepassBak;
+        }
+
+        if ($bakStatus === 'REJECTED' || $currentStatus === 'REJECTED') {
+            $summaryRejected++;
+            $summaryRejectedHp += $homepassBak;
+        }
     }
-
-    if ($isBakApproved && $currentStatus === 'BAK') {
-        $nyValsalRows[] = $row;
-    }
-
-    $summaryTotalHp += $homepassBak;
-
-    if ($currentStatus === 'BA OPEN') {
-        $summaryBaOpen++;
-        $summaryBaOpenHp += $homepassBak;
-    }
-
-    if ($bakStatus === 'DONE' && !in_array($currentStatus, $postBakStatuses, true)) {
-        $summaryDone++;
-        $summaryDoneHp += $homepassBak;
-    }
-
-    if ($bakStatus === 'REJECTED' || $currentStatus === 'REJECTED') {
-        $summaryRejected++;
-        $summaryRejectedHp += $homepassBak;
-    }
+    $bakOnProcessCount = count($bakOnProcessRows);
+    $nyValsalCount = count($nyValsalRows);
+    $allBakCount = count($allBakRows);
 }
 
 if (!function_exists('bakBadgeClass')) {
@@ -527,19 +545,19 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                 <li class="nav-item">
                                     <a class="nav-link active" id="bak-on-process-tab" data-toggle="tab" href="#bak-on-process-pane" role="tab" aria-controls="bak-on-process-pane" aria-selected="true">
                                         On Proses
-                                        <span class="bak-monitor-tabs__count"><?= number_format(count($bakOnProcessRows), 0, ',', '.') ?></span>
+                                        <span class="bak-monitor-tabs__count"><?= number_format($bakOnProcessCount, 0, ',', '.') ?></span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" id="bak-ny-valsal-tab" data-toggle="tab" href="#bak-ny-valsal-pane" role="tab" aria-controls="bak-ny-valsal-pane" aria-selected="false">
                                         Status NY VALSAL
-                                        <span class="bak-monitor-tabs__count"><?= number_format(count($nyValsalRows), 0, ',', '.') ?></span>
+                                        <span class="bak-monitor-tabs__count"><?= number_format($nyValsalCount, 0, ',', '.') ?></span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" id="bak-all-tab" data-toggle="tab" href="#bak-all-pane" role="tab" aria-controls="bak-all-pane" aria-selected="false">
                                         ALL BAK
-                                        <span class="bak-monitor-tabs__count"><?= number_format(count($allBakRows), 0, ',', '.') ?></span>
+                                        <span class="bak-monitor-tabs__count"><?= number_format($allBakCount, 0, ',', '.') ?></span>
                                     </a>
                                 </li>
                             </ul>
@@ -565,7 +583,9 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php $renderBakTableRows($bakOnProcessRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap, $clusterReviewPicMap); ?>
+                                                <?php if ($renderBakRows): ?>
+                                                    <?php $renderBakTableRows($bakOnProcessRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap, $clusterReviewPicMap); ?>
+                                                <?php endif; ?>
                                             </tbody>
                                             <tfoot>
                                                 <tr>
@@ -598,7 +618,9 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php $renderBakTableRows($nyValsalRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap, $clusterReviewPicMap); ?>
+                                                <?php if ($renderBakRows): ?>
+                                                    <?php $renderBakTableRows($nyValsalRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap, $clusterReviewPicMap); ?>
+                                                <?php endif; ?>
                                             </tbody>
                                             <tfoot>
                                                 <tr>
@@ -631,7 +653,9 @@ $renderBakTableRows = static function (array $rows, $docReady, $canApprove, $doc
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php $renderBakTableRows($allBakRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap, $clusterReviewPicMap); ?>
+                                                <?php if ($renderBakRows): ?>
+                                                    <?php $renderBakTableRows($allBakRows, $docReady, $canApprove, $bakDocumentDefinitions, $bakDocumentMap, $clusterReviewPicMap); ?>
+                                                <?php endif; ?>
                                             </tbody>
                                             <tfoot>
                                                 <tr>
@@ -2421,17 +2445,39 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
 
         $(function () {
             var bakTables = [];
+            var bakFilterCity = <?= json_encode($selectedCity) ?>;
+            var bakFilterStatus = <?= json_encode($selectedStatus) ?>;
 
             handleBakFlashAlerts();
 
             if ($.fn.DataTable) {
-                ['#table_bak_on_process', '#table_bak_ny_valsal', '#table_bak_all'].forEach(function (selector) {
+                [
+                    { selector: '#table_bak_on_process', tab: 'on_process' },
+                    { selector: '#table_bak_ny_valsal', tab: 'ny_valsal' },
+                    { selector: '#table_bak_all', tab: 'all' }
+                ].forEach(function (config) {
+                    var selector = config.selector;
                     bakTables.push($(selector).DataTable({
                         responsive: false,
                         scrollX: true,
                         scrollCollapse: true,
                         autoWidth: false,
-                        order: [[0, 'asc']],
+                        processing: true,
+                        serverSide: true,
+                        ajax: {
+                            url: "<?= base_url('BAK_MyRep/tableData') ?>",
+                            type: 'POST',
+                            data: function (payload) {
+                                payload.city = bakFilterCity;
+                                payload.status = bakFilterStatus;
+                                payload.tab = config.tab;
+                            }
+                        },
+                        order: [[1, 'asc']],
+                        columnDefs: [
+                            { targets: [0, 6, 9, 10, 12], orderable: false },
+                            { targets: [4], className: 'text-right' }
+                        ],
                         footerCallback: function (row, data, start, end, display) {
                             var api = this.api();
                             var parseNumber = function (value) {

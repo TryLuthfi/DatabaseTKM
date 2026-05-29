@@ -750,31 +750,46 @@ if (!empty($kpiDetailRowMap)) {
 
     .rfs-photo-lightbox__body {
         padding: 1rem;
-        overflow: auto;
+        overflow: hidden;
         text-align: center;
         background: #f8fafc;
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-height: 0;
     }
 
     .rfs-photo-lightbox__stage {
-        min-height: 70vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        flex: 1 1 auto;
+        height: calc(92vh - 132px);
+        min-height: 0;
+        display: block;
         overflow: auto;
+        cursor: grab;
+        user-select: none;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .rfs-photo-lightbox__stage.is-dragging {
+        cursor: grabbing;
     }
 
     .rfs-photo-lightbox__image {
+        display: block;
+        margin: 0 auto;
         max-width: none;
         max-height: none;
         width: auto;
         height: auto;
         border-radius: 12px;
         box-shadow: 0 10px 28px rgba(15, 23, 42, .14);
-        transition: transform .18s ease;
-        transform-origin: center center;
+        user-select: none;
+        -webkit-user-drag: none;
     }
 
     .rfs-photo-lightbox__caption {
+        flex: 0 0 auto;
         margin-top: .85rem;
         color: #475569;
         font-size: .9rem;
@@ -2750,7 +2765,59 @@ if (!empty($kpiDetailRowMap)) {
         var rfsPhotoClose = document.getElementById('rfs-photo-lightbox-close');
         var rfsPhotoZoomIn = document.getElementById('rfs-photo-lightbox-zoom-in');
         var rfsPhotoZoomOut = document.getElementById('rfs-photo-lightbox-zoom-out');
+        var rfsPhotoStage = document.querySelector('#rfs-photo-lightbox .rfs-photo-lightbox__stage');
         var rfsPhotoScale = 1;
+
+        function applyRfsPhotoScale() {
+            if (!rfsPhotoImage) {
+                return;
+            }
+
+            var naturalWidth = rfsPhotoImage.naturalWidth || 0;
+            var naturalHeight = rfsPhotoImage.naturalHeight || 0;
+
+            if (!naturalWidth || !naturalHeight) {
+                rfsPhotoImage.style.width = '';
+                rfsPhotoImage.style.height = 'auto';
+                return;
+            }
+
+            rfsPhotoImage.style.width = Math.round(naturalWidth * rfsPhotoScale) + 'px';
+            rfsPhotoImage.style.height = 'auto';
+        }
+
+        function zoomRfsPhotoTo(nextScale, originEvent) {
+            if (!rfsPhotoLightbox || !rfsPhotoImage || !rfsPhotoLightbox.classList.contains('is-open')) {
+                return;
+            }
+
+            var targetScale = Math.max(0.5, Math.min(3, nextScale));
+            if (targetScale === rfsPhotoScale) {
+                return;
+            }
+
+            var stageRect = rfsPhotoStage ? rfsPhotoStage.getBoundingClientRect() : null;
+            var originX = stageRect ? stageRect.width / 2 : 0;
+            var originY = stageRect ? stageRect.height / 2 : 0;
+            var contentX = 0;
+            var contentY = 0;
+            var scaleRatio = targetScale / rfsPhotoScale;
+
+            if (rfsPhotoStage && stageRect) {
+                originX = originEvent ? originEvent.clientX - stageRect.left : originX;
+                originY = originEvent ? originEvent.clientY - stageRect.top : originY;
+                contentX = rfsPhotoStage.scrollLeft + originX;
+                contentY = rfsPhotoStage.scrollTop + originY;
+            }
+
+            rfsPhotoScale = targetScale;
+            applyRfsPhotoScale();
+
+            if (rfsPhotoStage) {
+                rfsPhotoStage.scrollLeft = (contentX * scaleRatio) - originX;
+                rfsPhotoStage.scrollTop = (contentY * scaleRatio) - originY;
+            }
+        }
 
         function openRfsPhotoLightbox(imageUrl, title, caption) {
             if (!rfsPhotoLightbox || !rfsPhotoImage) {
@@ -2759,7 +2826,8 @@ if (!empty($kpiDetailRowMap)) {
 
             rfsPhotoScale = 1;
             rfsPhotoImage.src = imageUrl || '';
-            rfsPhotoImage.style.transform = 'scale(1)';
+            rfsPhotoImage.style.width = '';
+            rfsPhotoImage.style.height = 'auto';
             if (rfsPhotoTitle) {
                 rfsPhotoTitle.textContent = title || 'Foto Claim RFS';
             }
@@ -2769,6 +2837,15 @@ if (!empty($kpiDetailRowMap)) {
             rfsPhotoLightbox.classList.add('is-open');
             rfsPhotoLightbox.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
+
+            if (rfsPhotoStage) {
+                rfsPhotoStage.scrollLeft = 0;
+                rfsPhotoStage.scrollTop = 0;
+            }
+
+            if (rfsPhotoImage.complete) {
+                applyRfsPhotoScale();
+            }
         }
 
         function closeRfsPhotoLightbox() {
@@ -2779,7 +2856,8 @@ if (!empty($kpiDetailRowMap)) {
             rfsPhotoLightbox.classList.remove('is-open');
             rfsPhotoLightbox.setAttribute('aria-hidden', 'true');
             rfsPhotoImage.src = '';
-            rfsPhotoImage.style.transform = 'scale(1)';
+            rfsPhotoImage.style.width = '';
+            rfsPhotoImage.style.height = 'auto';
             rfsPhotoScale = 1;
             document.body.style.overflow = '';
         }
@@ -2789,8 +2867,81 @@ if (!empty($kpiDetailRowMap)) {
                 return;
             }
 
-            rfsPhotoScale = Math.max(0.5, Math.min(3, rfsPhotoScale + step));
-            rfsPhotoImage.style.transform = 'scale(' + rfsPhotoScale + ')';
+            zoomRfsPhotoTo(rfsPhotoScale + step);
+        }
+
+        function initDragScroll(container) {
+            if (!container || container.dataset.dragScrollReady === '1') {
+                return;
+            }
+
+            container.dataset.dragScrollReady = '1';
+
+            var isDragging = false;
+            var startX = 0;
+            var startY = 0;
+            var startScrollLeft = 0;
+            var startScrollTop = 0;
+            var activePointerId = null;
+
+            container.addEventListener('pointerdown', function (event) {
+                if (event.button !== undefined && event.button !== 0) {
+                    return;
+                }
+
+                isDragging = true;
+                activePointerId = event.pointerId;
+                startX = event.clientX;
+                startY = event.clientY;
+                startScrollLeft = container.scrollLeft;
+                startScrollTop = container.scrollTop;
+                container.classList.add('is-dragging');
+
+                if (container.setPointerCapture && activePointerId !== null) {
+                    container.setPointerCapture(activePointerId);
+                }
+
+                event.preventDefault();
+            });
+
+            container.addEventListener('pointermove', function (event) {
+                if (!isDragging) {
+                    return;
+                }
+
+                container.scrollLeft = startScrollLeft - (event.clientX - startX);
+                container.scrollTop = startScrollTop - (event.clientY - startY);
+                event.preventDefault();
+            });
+
+            ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (eventName) {
+                container.addEventListener(eventName, function () {
+                    isDragging = false;
+                    activePointerId = null;
+                    container.classList.remove('is-dragging');
+                });
+            });
+
+            container.addEventListener('dragstart', function (event) {
+                event.preventDefault();
+            });
+
+            container.addEventListener('wheel', function (event) {
+                if (!rfsPhotoLightbox || !rfsPhotoLightbox.classList.contains('is-open')) {
+                    return;
+                }
+
+                event.preventDefault();
+                zoomRfsPhotoTo(rfsPhotoScale + (event.deltaY < 0 ? 0.15 : -0.15), event);
+            }, { passive: false });
+        }
+
+        initDragScroll(rfsPhotoStage);
+
+        if (rfsPhotoImage) {
+            rfsPhotoImage.addEventListener('load', function () {
+                applyRfsPhotoScale();
+            });
         }
 
         $(document).on('click', '.js-open-rfs-photo', function (event) {

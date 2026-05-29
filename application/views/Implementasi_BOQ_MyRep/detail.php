@@ -1510,31 +1510,46 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
     .impl-lightbox__body {
         padding: 1rem;
-        overflow: auto;
+        overflow: hidden;
         text-align: center;
         background: #f8fafc;
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-height: 0;
     }
 
     .impl-lightbox__stage {
-        min-height: 72vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        flex: 1 1 auto;
+        height: calc(92vh - 132px);
+        min-height: 0;
+        display: block;
         overflow: auto;
+        cursor: grab;
+        user-select: none;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .impl-lightbox__stage.is-dragging {
+        cursor: grabbing;
     }
 
     .impl-lightbox__image {
+        display: block;
+        margin: 0 auto;
         max-width: none;
         max-height: none;
         width: auto;
         height: auto;
         border-radius: 12px;
         box-shadow: 0 10px 28px rgba(15, 23, 42, .14);
-        transition: transform .18s ease;
-        transform-origin: center center;
+        user-select: none;
+        -webkit-user-drag: none;
     }
 
     .impl-lightbox__caption {
+        flex: 0 0 auto;
         margin-top: .85rem;
         color: #475569;
         font-size: .9rem;
@@ -3302,6 +3317,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
         var lightboxNext = document.getElementById('impl-lightbox-next');
         var lightboxZoomIn = document.getElementById('impl-lightbox-zoom-in');
         var lightboxZoomOut = document.getElementById('impl-lightbox-zoom-out');
+        var lightboxStage = document.querySelector('#impl-lightbox .impl-lightbox__stage');
         var lightboxItems = [];
         var lightboxIndex = -1;
         var lightboxScale = 1;
@@ -3500,6 +3516,131 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             lightboxNext.disabled = !hasMultiple;
         }
 
+        function applyLightboxScale() {
+            if (!lightboxImage) {
+                return;
+            }
+
+            var naturalWidth = lightboxImage.naturalWidth || 0;
+            var naturalHeight = lightboxImage.naturalHeight || 0;
+
+            if (!naturalWidth || !naturalHeight) {
+                lightboxImage.style.width = '';
+                lightboxImage.style.height = 'auto';
+                return;
+            }
+
+            lightboxImage.style.width = Math.round(naturalWidth * lightboxScale) + 'px';
+            lightboxImage.style.height = 'auto';
+        }
+
+        function zoomLightboxTo(nextScale, originEvent) {
+            if (!lightbox || !lightboxImage || !lightbox.classList.contains('is-open')) {
+                return;
+            }
+
+            var targetScale = Math.max(0.5, Math.min(3, nextScale));
+            if (targetScale === lightboxScale) {
+                return;
+            }
+
+            var stageRect = lightboxStage ? lightboxStage.getBoundingClientRect() : null;
+            var originX = stageRect ? stageRect.width / 2 : 0;
+            var originY = stageRect ? stageRect.height / 2 : 0;
+            var contentX = 0;
+            var contentY = 0;
+            var scaleRatio = targetScale / lightboxScale;
+
+            if (lightboxStage && stageRect) {
+                originX = originEvent ? originEvent.clientX - stageRect.left : originX;
+                originY = originEvent ? originEvent.clientY - stageRect.top : originY;
+                contentX = lightboxStage.scrollLeft + originX;
+                contentY = lightboxStage.scrollTop + originY;
+            }
+
+            lightboxScale = targetScale;
+            applyLightboxScale();
+
+            if (lightboxStage) {
+                lightboxStage.scrollLeft = (contentX * scaleRatio) - originX;
+                lightboxStage.scrollTop = (contentY * scaleRatio) - originY;
+            }
+        }
+
+        function initLightboxDragScroll(container) {
+            if (!container || container.dataset.dragScrollReady === '1') {
+                return;
+            }
+
+            container.dataset.dragScrollReady = '1';
+
+            var isDragging = false;
+            var startX = 0;
+            var startY = 0;
+            var startScrollLeft = 0;
+            var startScrollTop = 0;
+            var activePointerId = null;
+
+            container.addEventListener('pointerdown', function (event) {
+                if (event.button !== undefined && event.button !== 0) {
+                    return;
+                }
+
+                isDragging = true;
+                activePointerId = event.pointerId;
+                startX = event.clientX;
+                startY = event.clientY;
+                startScrollLeft = container.scrollLeft;
+                startScrollTop = container.scrollTop;
+                container.classList.add('is-dragging');
+
+                if (container.setPointerCapture && activePointerId !== null) {
+                    container.setPointerCapture(activePointerId);
+                }
+
+                event.preventDefault();
+            });
+
+            container.addEventListener('pointermove', function (event) {
+                if (!isDragging) {
+                    return;
+                }
+
+                container.scrollLeft = startScrollLeft - (event.clientX - startX);
+                container.scrollTop = startScrollTop - (event.clientY - startY);
+                event.preventDefault();
+            });
+
+            ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (eventName) {
+                container.addEventListener(eventName, function () {
+                    isDragging = false;
+                    activePointerId = null;
+                    container.classList.remove('is-dragging');
+                });
+            });
+
+            container.addEventListener('dragstart', function (event) {
+                event.preventDefault();
+            });
+
+            container.addEventListener('wheel', function (event) {
+                if (!lightbox || !lightbox.classList.contains('is-open')) {
+                    return;
+                }
+
+                event.preventDefault();
+                zoomLightboxTo(lightboxScale + (event.deltaY < 0 ? 0.15 : -0.15), event);
+            }, { passive: false });
+        }
+
+        initLightboxDragScroll(lightboxStage);
+
+        if (lightboxImage) {
+            lightboxImage.addEventListener('load', function () {
+                applyLightboxScale();
+            });
+        }
+
         function renderLightbox(index) {
             if (!lightboxItems.length || !lightboxImage) {
                 return;
@@ -3518,7 +3659,15 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
             lightboxTitle.textContent = activeItem.title || 'Preview Foto';
             lightboxCaption.textContent = activeItem.caption || '-';
             lightboxScale = 1;
-            lightboxImage.style.transform = 'scale(1)';
+            lightboxImage.style.width = '';
+            lightboxImage.style.height = 'auto';
+            if (lightboxStage) {
+                lightboxStage.scrollLeft = 0;
+                lightboxStage.scrollTop = 0;
+            }
+            if (lightboxImage.complete) {
+                applyLightboxScale();
+            }
             syncLightboxButtons();
         }
 
@@ -3571,6 +3720,8 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
 
             lightbox.classList.remove('is-open');
             lightboxImage.src = '';
+            lightboxImage.style.width = '';
+            lightboxImage.style.height = 'auto';
             document.body.style.overflow = '';
             lightboxItems = [];
             lightboxIndex = -1;
@@ -3602,8 +3753,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 if (!lightboxImage || !lightbox.classList.contains('is-open')) {
                     return;
                 }
-                lightboxScale = Math.min(3, lightboxScale + 0.25);
-                lightboxImage.style.transform = 'scale(' + lightboxScale + ')';
+                zoomLightboxTo(lightboxScale + 0.25);
             });
         }
 
@@ -3612,8 +3762,7 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 if (!lightboxImage || !lightbox.classList.contains('is-open')) {
                     return;
                 }
-                lightboxScale = Math.max(0.5, lightboxScale - 0.25);
-                lightboxImage.style.transform = 'scale(' + lightboxScale + ')';
+                zoomLightboxTo(lightboxScale - 0.25);
             });
         }
 
@@ -3655,12 +3804,10 @@ if (!function_exists('implPhotoReviewBadgeClass')) {
                 }
             } else if (event.key === '+' || event.key === '=') {
                 event.preventDefault();
-                lightboxScale = Math.min(3, lightboxScale + 0.25);
-                lightboxImage.style.transform = 'scale(' + lightboxScale + ')';
+                zoomLightboxTo(lightboxScale + 0.25);
             } else if (event.key === '-') {
                 event.preventDefault();
-                lightboxScale = Math.max(0.5, lightboxScale - 0.25);
-                lightboxImage.style.transform = 'scale(' + lightboxScale + ')';
+                zoomLightboxTo(lightboxScale - 0.25);
             }
         });
 

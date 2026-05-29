@@ -44,23 +44,387 @@ class BAK_MyRep extends CI_Controller
         $data['regionalOptionsByCity'] = $this->MBAK_MyRep->getRegionalOptionsByCity();
         $data['targetOptions'] = $this->MBAK_MyRep->getTargetOptions();
         $data['createTargetOptions'] = $this->MBAK_MyRep->getCreateTargetOptions();
-        $data['clusterRows'] = $data['isReady']
-            ? $this->MBAK_MyRep->getBakRows($selectedCity, $selectedStatus)
+        $data['clusterRows'] = [];
+        $data['renderBakRows'] = false;
+        $data['clusterReviewPicMap'] = [];
+        $data['bakSummary'] = $data['isReady']
+            ? $this->MBAK_MyRep->getBakSummary($selectedCity, $selectedStatus)
             : [];
-        $data['clusterReviewPicMap'] = $this->MBAK_MyRep->getBakClusterReviewPicMap($data['clusterRows']);
-        $clusterIds = array_values(array_filter(array_map(static function ($row) {
-            return (int) ($row['id_myrep_cluster'] ?? 0);
-        }, $data['clusterRows'])));
         $data['bakDocumentDefinitions'] = $data['docReady'] ? $this->MBAK_MyRep->getBakDocumentDefinitions() : [];
-        $data['bakDocumentMap'] = ($data['docReady'] && !empty($clusterIds))
-            ? $this->MBAK_MyRep->getBakDocumentItemsByClusterIds($clusterIds)
-            : [];
+        $data['bakDocumentMap'] = [];
 
         $this->load->view('Templates/01_Header', $data);
         $this->load->view('Templates/02_Menu');
         $this->load->view('BAK_MyRep/index', $data);
         $this->load->view('Templates/03_Footer');
         $this->load->view('Templates/99_JS');
+    }
+
+    public function tableData()
+    {
+        if (empty($this->session->userdata('id_user'))) {
+            $this->jsonDataTableResponse(0, 0, []);
+            return;
+        }
+
+        if (!$this->MBAK_MyRep->bakTablesReady()) {
+            $this->jsonDataTableResponse(0, 0, []);
+            return;
+        }
+
+        $selectedCity = strtoupper(trim((string) $this->input->post('city')));
+        $selectedStatus = strtoupper(trim((string) $this->input->post('status')));
+        $tab = strtolower(trim((string) $this->input->post('tab')));
+        if (!in_array($tab, ['on_process', 'ny_valsal', 'all'], true)) {
+            $tab = 'all';
+        }
+
+        $searchPayload = $this->input->post('search');
+        $searchValue = is_array($searchPayload) ? (string) ($searchPayload['value'] ?? '') : '';
+        $orderPayload = $this->input->post('order');
+        $order = [];
+        if (is_array($orderPayload) && isset($orderPayload[0]) && is_array($orderPayload[0])) {
+            $order = [
+                'column' => $orderPayload[0]['column'] ?? null,
+                'dir' => $orderPayload[0]['dir'] ?? 'asc',
+            ];
+        }
+
+        $start = max(0, (int) $this->input->post('start'));
+        $length = (int) $this->input->post('length');
+        if ($length <= 0) {
+            $length = 10;
+        }
+
+        try {
+            $page = $this->MBAK_MyRep->getBakRowsPage($selectedCity, $selectedStatus, $tab, $start, $length, $searchValue, $order);
+            $rows = (array) ($page['rows'] ?? []);
+            $clusterIds = array_values(array_filter(array_map(static function ($row) {
+                return (int) ($row['id_myrep_cluster'] ?? 0);
+            }, $rows)));
+
+            $docReady = $this->MBAK_MyRep->bakDocumentTablesReady();
+            $documentDefinitions = $docReady ? $this->MBAK_MyRep->getBakDocumentDefinitions() : [];
+            $documentMap = ($docReady && !empty($clusterIds))
+                ? $this->MBAK_MyRep->getBakDocumentItemsByClusterIds($clusterIds)
+                : [];
+            $clusterReviewPicMap = $this->MBAK_MyRep->getBakClusterReviewPicMap($rows);
+
+            $permissions = [
+                'canEdit' => isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('BAK_MyRep', 'EDIT') : true,
+                'canHapus' => isset($this->myrepAccess) ? $this->myrepAccess->hasPermission('BAK_MyRep', 'HAPUS') : true,
+            ];
+
+            $data = [];
+            $no = $start + 1;
+            foreach ($rows as $row) {
+                $data[] = $this->buildBakTableRow($row, $no++, $docReady, $documentDefinitions, $documentMap, $clusterReviewPicMap, $permissions);
+            }
+
+            $this->jsonDataTableResponse((int) ($page['recordsTotal'] ?? 0), (int) ($page['recordsFiltered'] ?? 0), $data);
+        } catch (\Throwable $e) {
+            log_message('error', 'BAK tableData failed: ' . $e->getMessage());
+            $this->jsonDataTableResponse(0, 0, []);
+        }
+    }
+
+    private function jsonDataTableResponse($recordsTotal, $recordsFiltered, array $data)
+    {
+        $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'draw' => (int) $this->input->post('draw'),
+                'recordsTotal' => (int) $recordsTotal,
+                'recordsFiltered' => (int) $recordsFiltered,
+                'data' => $data,
+            ]));
+    }
+
+    private function buildBakTableRow(array $row, $no, $docReady, array $documentDefinitions, array $documentMap, array $clusterReviewPicMap, array $permissions)
+    {
+        $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+        $clusterDocs = $documentMap[$clusterId] ?? [];
+        $slaInfo = $this->bakSlaInfo($row);
+        $clusterName = (string) ($row['cluster_name'] ?? '-');
+        $clusterCode = trim((string) ($row['cluster_code'] ?? ''));
+        $clusterHtml = '<strong>' . $this->html($clusterName) . '</strong>';
+        if ($clusterCode !== '') {
+            $clusterHtml .= '<div class="text-muted small">' . $this->html($clusterCode) . '</div>';
+        }
+
+        return [
+            (int) $no,
+            $clusterHtml,
+            $this->html($row['regional_name'] ?? '-'),
+            $this->html($row['city_name'] ?? '-'),
+            '<span class="d-block text-right">' . number_format((float) ($row['homepass_bak'] ?? 0), 0, ',', '.') . '</span>',
+            !empty($row['ba_open_date']) ? $this->html($row['ba_open_date']) : '-',
+            $this->buildBakSlaHtml($slaInfo),
+            !empty($row['bak_date']) ? $this->html($row['bak_date']) : '-',
+            '<span class="badge badge-' . $this->bakBadgeClass($row['status_bak'] ?? 'DRAFT') . '">' . $this->html($row['status_bak'] ?? 'DRAFT') . '</span>',
+            $this->buildBakDocStatusHtml($docReady, $documentDefinitions, $clusterDocs),
+            $this->buildBakReviewHtml($clusterId, $clusterDocs, $clusterReviewPicMap),
+            '<span class="badge badge-' . $this->bakBadgeClass($row['status_current'] ?? 'DRAFT') . '">' . $this->html($row['status_current'] ?? 'DRAFT') . '</span>',
+            $this->buildBakActionHtml($row, $docReady, $clusterDocs, $permissions),
+        ];
+    }
+
+    private function buildBakSlaHtml(array $slaInfo)
+    {
+        $agingDays = $slaInfo['aging_days'];
+        $agingLabel = $agingDays === null ? 'Aging -' : 'Aging ' . (int) $agingDays . ' HK';
+
+        return '<div class="bak-sla-aging-cell">'
+            . '<span class="badge badge-' . $this->bakSlaBadgeClass($slaInfo) . '">SLA 4 HK</span>'
+            . '<span class="badge badge-' . $this->bakAgingBadgeClass($agingDays) . '">' . $this->html($agingLabel) . '</span>'
+            . '</div>';
+    }
+
+    private function buildBakDocStatusHtml($docReady, array $documentDefinitions, array $clusterDocs)
+    {
+        if (!$docReady || empty($documentDefinitions)) {
+            return '<span class="text-muted small">Dokumen belum aktif</span>';
+        }
+
+        $docsById = [];
+        foreach ($clusterDocs as $clusterDoc) {
+            $docsById[(int) ($clusterDoc['id_doc_item'] ?? 0)] = $clusterDoc;
+        }
+
+        $html = '<div class="bak-doc-status-stack">';
+        foreach ($documentDefinitions as $documentDefinition) {
+            $docRow = $docsById[(int) ($documentDefinition['id_doc_item'] ?? 0)] ?? [];
+            $docStatusRaw = $this->bakDocLabel($docRow);
+            $docStatusDisplay = ucwords(strtolower($docStatusRaw));
+            $docName = ucwords(strtolower((string) ($documentDefinition['doc_name'] ?? '-')));
+            $html .= '<div class="bak-doc-status-stack__item">'
+                . '<span class="bak-doc-name">' . $this->html($docName) . ' :</span>'
+                . '<span class="badge badge-' . $this->bakBadgeClass($docStatusRaw) . ' bak-doc-status-badge">' . $this->html($docStatusDisplay) . '</span>'
+                . '</div>';
+        }
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    private function buildBakReviewHtml($clusterId, array $clusterDocs, array $clusterReviewPicMap)
+    {
+        $uploadBy = '-';
+        $picApproval = '';
+        $clusterMappedPic = trim((string) ($clusterReviewPicMap[(int) $clusterId] ?? ''));
+        $documentMappedPic = trim((string) ($clusterDocs[0]['city_pic_approval_name'] ?? ''));
+
+        foreach ($clusterDocs as $docRow) {
+            $uploadCandidate = trim((string) ($docRow['uploaded_by_name'] ?? ''));
+            if ($uploadBy === '-' && $uploadCandidate !== '') {
+                $uploadBy = $uploadCandidate;
+            }
+
+            $approvedCandidate = trim((string) ($docRow['approved_by_name'] ?? ''));
+            if ($approvedCandidate !== '') {
+                $picApproval = $approvedCandidate;
+                break;
+            }
+        }
+
+        if ($picApproval === '') {
+            $picApproval = $clusterMappedPic !== '' ? $clusterMappedPic : $documentMappedPic;
+        }
+        if ($picApproval === '') {
+            $picApproval = '-';
+        }
+
+        return '<div class="small text-muted">'
+            . '<div>Upload by : ' . $this->html($uploadBy) . '</div>'
+            . '<div>PIC approval : ' . $this->html($picApproval) . '</div>'
+            . '</div>';
+    }
+
+    private function buildBakActionHtml(array $row, $docReady, array $clusterDocs, array $permissions)
+    {
+        $clusterId = (int) ($row['id_myrep_cluster'] ?? 0);
+        $html = '';
+
+        if (!empty($permissions['canEdit'])) {
+            $html .= '<button type="button" class="btn btn-sm btn-outline-primary js-edit-bak" data-toggle="modal" data-target="#modal-bak-edit"'
+                . ' data-id_myrep_cluster="' . $clusterId . '"'
+                . ' data-id_target="' . (int) ($row['id_target'] ?? 0) . '"'
+                . ' data-cluster_name="' . $this->attr($row['cluster_name'] ?? '') . '"'
+                . ' data-cluster_code="' . $this->attr($row['cluster_code'] ?? '') . '"'
+                . ' data-district_id="' . $this->attr($row['district_id'] ?? '') . '"'
+                . ' data-district_name="' . $this->attr($row['district_name'] ?? '') . '"'
+                . ' data-village_id="' . $this->attr($row['village_id'] ?? '') . '"'
+                . ' data-village_name="' . $this->attr($row['village_name'] ?? '') . '"'
+                . ' data-homepass_bak="' . (int) ($row['homepass_bak'] ?? 0) . '"'
+                . ' data-ba_open_date="' . $this->attr($row['ba_open_date'] ?? '') . '"'
+                . ' data-bak_date="' . $this->attr($row['bak_date'] ?? '') . '"'
+                . ' data-ntp-name="' . $this->attr($row['ntp_name'] ?? '') . '"'
+                . ' data-ntp-date="' . $this->attr($row['ntp_date'] ?? '') . '"'
+                . ' data-status_bak="' . $this->attr($row['status_bak'] ?? 'DRAFT') . '"'
+                . ' data-remark_bak="' . $this->attr($row['remark_bak'] ?? '') . '">Edit</button>';
+        }
+
+        if ($docReady) {
+            $html .= '<button type="button" class="btn btn-sm btn-outline-dark js-bak-doc-detail mt-1" data-toggle="modal" data-target="#modal-bak-doc-detail"'
+                . ' data-cluster_name="' . $this->attr($row['cluster_name'] ?? '') . '"'
+                . ' data-documents="' . $this->attr(json_encode(array_values($clusterDocs))) . '">Detail Dokumen</button>';
+        }
+
+        if (!empty($permissions['canHapus'])) {
+            $html .= '<form method="post" action="' . base_url('BAK_MyRep/deleteCluster') . '" class="d-inline" onsubmit="return confirm(\'Hapus cluster ini beserta seluruh flow MyRep dari BAK sampai tahap terakhir?\');">'
+                . '<input type="hidden" name="cluster_id" value="' . $clusterId . '">'
+                . '<button type="submit" class="btn btn-sm btn-outline-danger mt-1">Hapus Cluster</button>'
+                . '</form>';
+        }
+
+        return $html !== '' ? $html : '<span class="text-muted small">Tidak tersedia</span>';
+    }
+
+    private function bakBadgeClass($status)
+    {
+        switch (strtoupper(trim((string) $status))) {
+            case 'DONE':
+            case 'APPROVED':
+            case 'BAK':
+                return 'success';
+            case 'REJECTED':
+                return 'danger';
+            case 'BA OPEN':
+                return 'info';
+            case 'ON REVIEW':
+                return 'warning';
+            default:
+                return 'secondary';
+        }
+    }
+
+    private function bakDocLabel(array $row)
+    {
+        if ((int) ($row['is_document_not_required'] ?? 0) === 1) {
+            return 'Tidak Dibutuhkan';
+        }
+
+        $status = strtoupper(trim((string) ($row['status_file'] ?? '')));
+        if ($status === 'UPLOADED') {
+            return 'ON REVIEW';
+        }
+
+        if ($status !== '') {
+            return $status;
+        }
+
+        return !empty($row['file_name']) ? 'UPLOADED' : 'BELUM UPLOAD';
+    }
+
+    private function bakSlaInfo(array $row)
+    {
+        $baOpenDate = trim((string) ($row['ba_open_date'] ?? ''));
+        $bakDate = trim((string) ($row['bak_date'] ?? ''));
+        if ($baOpenDate === '' || $baOpenDate === '0000-00-00') {
+            return [
+                'deadline' => null,
+                'aging_days' => null,
+                'status_label' => 'BA OPEN belum ada',
+                'aging_scope' => '-',
+            ];
+        }
+
+        $deadline = $this->bakAddWorkingDays($baOpenDate, 4);
+        $hasBakDate = $bakDate !== '' && $bakDate !== '0000-00-00';
+        $agingDays = $this->bakCountWorkingDays($baOpenDate, $hasBakDate ? $bakDate : date('Y-m-d'));
+        $isOverSla = $agingDays !== null && $agingDays > 4;
+
+        return [
+            'deadline' => $deadline ? $deadline->format('Y-m-d') : null,
+            'aging_days' => $agingDays,
+            'status_label' => $isOverSla ? 'Lewat SLA' : ($hasBakDate ? 'Sesuai SLA' : 'Dalam SLA'),
+            'aging_scope' => $hasBakDate ? 'BA OPEN s/d BAK' : 'BA OPEN s/d hari ini',
+        ];
+    }
+
+    private function bakAddWorkingDays($dateString, $workingDays)
+    {
+        if (empty($dateString) || $dateString === '0000-00-00') {
+            return null;
+        }
+
+        try {
+            $date = new DateTimeImmutable($dateString);
+        } catch (Exception $e) {
+            return null;
+        }
+
+        $added = 0;
+        while ($added < (int) $workingDays) {
+            $date = $date->modify('+1 day');
+            if ((int) $date->format('N') < 6) {
+                $added++;
+            }
+        }
+
+        return $date;
+    }
+
+    private function bakCountWorkingDays($startDateString, $endDateString = null)
+    {
+        if (empty($startDateString) || $startDateString === '0000-00-00') {
+            return null;
+        }
+
+        $endDateString = $endDateString ?: date('Y-m-d');
+        if (empty($endDateString) || $endDateString === '0000-00-00') {
+            $endDateString = date('Y-m-d');
+        }
+
+        try {
+            $start = new DateTimeImmutable($startDateString);
+            $end = new DateTimeImmutable($endDateString);
+        } catch (Exception $e) {
+            return null;
+        }
+
+        if ($start > $end) {
+            return 0;
+        }
+
+        $workingDays = 0;
+        $cursor = $start->modify('+1 day');
+        while ($cursor <= $end) {
+            if ((int) $cursor->format('N') < 6) {
+                $workingDays++;
+            }
+            $cursor = $cursor->modify('+1 day');
+        }
+
+        return $workingDays;
+    }
+
+    private function bakSlaBadgeClass(array $slaInfo)
+    {
+        if (($slaInfo['aging_days'] ?? null) === null) {
+            return 'secondary';
+        }
+
+        return (int) $slaInfo['aging_days'] > 4 ? 'danger' : 'success';
+    }
+
+    private function bakAgingBadgeClass($agingDays)
+    {
+        if ($agingDays === null) {
+            return 'secondary';
+        }
+
+        return (int) $agingDays > 4 ? 'danger' : 'success';
+    }
+
+    private function html($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    }
+
+    private function attr($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
     }
 
     public function saveCluster()
