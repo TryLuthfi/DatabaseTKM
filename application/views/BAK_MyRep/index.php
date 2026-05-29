@@ -2701,6 +2701,17 @@ $regionalOptionsByCity = isset($regionalOptionsByCity) && is_array($regionalOpti
                         $(this).toggleClass('is-active', String($(this).data('approval-status') || '').trim() === bakApprovalStatus);
                     });
 
+                    var activeSelector = '#table_bak_on_process';
+                    var $activePane = $('#bak-monitor-tab-content .tab-pane.active');
+                    if ($activePane.is('#bak-ny-valsal-pane')) {
+                        activeSelector = '#table_bak_ny_valsal';
+                    } else if ($activePane.is('#bak-all-pane')) {
+                        activeSelector = '#table_bak_all';
+                    }
+                    bakActiveFlowTab = bakTableConfigs[activeSelector] ? bakTableConfigs[activeSelector].tab : 'on_process';
+                    updateBakApprovalStatusCounts(bakActiveFlowTab);
+                    initBakMonitorTable(activeSelector);
+
                     Object.keys(bakTables).forEach(function (selector) {
                         if (bakTables[selector]) {
                             bakTables[selector].ajax.reload(null, true);
