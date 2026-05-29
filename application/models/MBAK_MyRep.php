@@ -607,6 +607,12 @@ class MBAK_MyRep extends CI_Model
 
     private function prepareBakRowsQuery($city = '', $status = '', $tab = 'all', $approvalStatus = '', $search = '', $countOnly = false)
     {
+        if ($this->shouldRestrictCityByUser()) {
+            $this->getCurrentUserAllowedCitySet();
+        }
+
+        $this->db->reset_query();
+
         if ($countOnly) {
             $this->db->select('COUNT(1) AS total', false);
         } else {
@@ -1251,11 +1257,7 @@ class MBAK_MyRep extends CI_Model
         }
 
         $user = (array) $this->db
-            ->select('nik')
-            ->from('tb_master_user_new')
-            ->where('id', $userId)
-            ->limit(1)
-            ->get()
+            ->query('SELECT nik FROM tb_master_user_new WHERE id = ? LIMIT 1', [$userId])
             ->row_array();
         $nik = trim((string) ($user['nik'] ?? ''));
         if ($nik === '') {
