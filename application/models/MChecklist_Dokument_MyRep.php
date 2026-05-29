@@ -764,8 +764,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                 ->where("UPPER(TRIM(i.doc_name)) = 'PROJECT OPNAME'", null, false)
                 ->where($this->getAstriStatusLabelSql() . ' = ' . $this->db->escape($quickValue), null, false);
         } elseif ($quickType === 'astri' && $quickValue === 'ON REVIEW') {
-            $onReviewStatuses = array_map([$this->db, 'escape'], array_merge(['ON REVIEW'], $this->getProjectOpnameAstriStatuses()));
-            $this->db->where($this->getAstriStatusLabelSql() . ' IN (' . implode(',', $onReviewStatuses) . ')', null, false);
+            $this->db->where($this->getAstriStatusLabelSql() . ' = ' . $this->db->escape('ON REVIEW'), null, false);
         }
 
         $searchValue = strtoupper(trim((string) ($filters['search'] ?? '')));
@@ -2719,17 +2718,7 @@ class MChecklist_Dokument_MyRep extends CI_Model
                     COUNT(*) AS existing,
                     SUM(CASE WHEN f.astri_status = 'APPROVED' THEN 1 ELSE 0 END) AS astri_approved,
                     SUM(CASE WHEN f.astri_status = 'REJECTED' THEN 1 ELSE 0 END) AS astri_rejected,
-                    SUM(CASE
-                        WHEN f.astri_status IN ('ON REVIEW', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
-                            THEN 1
-                        WHEN f.astri_status = 'NY'
-                            AND p.actual_atp_date IS NOT NULL
-                            AND g.scope_type = 'CLUSTER'
-                            AND g.sow_type = 'RFS'
-                            AND UPPER(i.doc_name) = 'PROJECT OPNAME'
-                            THEN 1
-                        ELSE 0
-                    END) AS astri_on_review,
+                    SUM(CASE WHEN f.astri_status = 'ON REVIEW' THEN 1 ELSE 0 END) AS astri_on_review,
                     SUM(CASE
                         WHEN f.astri_status IN ('ON REVIEW', 'REJECTED', 'APPROVED', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK')
                             THEN 1

@@ -355,7 +355,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             if ($astriStatus !== '' && $rowAstri !== $astriStatus) continue;
 
             if ($quickType === 'project-opname' && !($rowDoc === 'PROJECT OPNAME' && $rowAstri === $quickValue)) continue;
-            if ($quickType === 'astri' && $quickValue === 'ON REVIEW' && !in_array($rowAstri, ['ON REVIEW', 'WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'], true)) continue;
+            if ($quickType === 'astri' && $quickValue === 'ON REVIEW' && $rowAstri !== 'ON REVIEW') continue;
 
             if ($searchValue !== '') {
                 $haystack = strtoupper(implode(' ', [
@@ -719,7 +719,7 @@ class Checklist_Dokument_MyRep extends CI_Controller
             $astriStatus = strtoupper(trim((string) ($item['astri_status'] ?? 'NY')));
             if ($astriStatus === '' || $astriStatus === 'NOT UPLOADED' || $astriStatus === 'NY') {
                 $summary['astriStatusSummary']['NY']++;
-            } elseif ($astriStatus === 'UPLOADED' || in_array($astriStatus, ['WAITING WASPANG', 'WAITING PLANNING', 'WAITING TL', 'WAITING LOGISTIK'], true)) {
+            } elseif ($astriStatus === 'UPLOADED' || $astriStatus === 'ON REVIEW') {
                 $summary['astriStatusSummary']['ON REVIEW']++;
             } elseif (isset($summary['astriStatusSummary'][$astriStatus])) {
                 $summary['astriStatusSummary'][$astriStatus]++;
